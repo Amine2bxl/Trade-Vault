@@ -10,7 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+import { reportAppError } from "../lib/error-reporting";
 
 function NotFoundComponent() {
   return (
@@ -38,7 +38,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    reportAppError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (
@@ -84,16 +84,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "TradeVault" },
       { title: "Tradevault" },
       { name: "description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
-      { name: "author", content: "Lovable" },
       { property: "og:title", content: "Tradevault" },
       { property: "og:description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Tradevault" },
       { name: "twitter:description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3029c5cb-7647-48da-b85c-fa3ad2774b42/id-preview-e5a0503f--097405c3-c22c-4544-a224-297dd7774e89.lovable.app-1780690543403.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3029c5cb-7647-48da-b85c-fa3ad2774b42/id-preview-e5a0503f--097405c3-c22c-4544-a224-297dd7774e89.lovable.app-1780690543403.png" },
     ],
     links: [
       {

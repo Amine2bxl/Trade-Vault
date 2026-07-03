@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 // VAPID public key — safe to expose to the browser.
-// Rotated after project extraction from Lovable (old private key was not recoverable
-// from Lovable Cloud's Secrets panel — it doesn't allow revealing existing values).
 export const VAPID_PUBLIC_KEY =
   'BDkC7QUwB0PLYU3Go24FEBGER2FTvqkBZIcExhsymEny5yBDPtNmrkyxGwU3NZ0N_ikK_pGa7quP3vhC2kTW3lU';
 

@@ -23,7 +23,9 @@ export const askTradingInsight = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InsightInput.parse(input))
   .handler(async ({ data }) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
+    if (!apiKey) {
+      throw new Error("AI coach is not configured yet. Add an ANTHROPIC_API_KEY to enable this feature.");
+    }
 
     const language = data.language || 'en';
     const LANG_NAMES: Record<string, string> = {
