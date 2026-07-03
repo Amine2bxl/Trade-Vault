@@ -4,6 +4,7 @@ import { Trade, STRATEGIES, MISTAKE_OPTIONS } from '../types';
 import { generateId } from '../store';
 import { loadConfluences, saveConfluences, loadAccountBalance, saveAccountBalance } from '../store';
 import { useAuth } from '../contexts/AuthContext';
+import { useT } from '../i18n/LanguageContext';
 import { cn } from '../utils/cn';
 
 interface TradeModalProps {
@@ -65,6 +66,7 @@ const defaultForm = {
 export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) {
   const { user } = useAuth();
   const userId = user?.id || '';
+  const { t } = useT();
 
   const [userConfluences, setUserConfluences] = useState<string[]>([]);
   const [newConfluence, setNewConfluence] = useState('');
@@ -165,16 +167,16 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative glass-strong rounded-t-3xl md:rounded-3xl w-full md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-          <h2 className="text-lg font-bold text-white">{trade ? 'Edit Trade' : 'New Trade'}</h2>
+          <h2 className="text-lg font-bold text-white">{trade ? t('trade.editTitle') : t('trade.newTitle')}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-5">
           {/* Row 1: Symbol, Direction, Date */}
           <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelClass}>Symbol *</label><input type="text" value={form.symbol} onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))} placeholder="TSLA" className={inputClass} /></div>
+            <div><label className={labelClass}>{t('trade.symbol')}</label><input type="text" value={form.symbol} onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))} placeholder="TSLA" className={inputClass} /></div>
             <div>
-              <label className={labelClass}>Direction</label>
+              <label className={labelClass}>{t('trade.direction')}</label>
               <div className="flex gap-2">
                 {(['long', 'short', 'be'] as const).map(dir => {
                   const activeClass = dir === 'long'
@@ -182,7 +184,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     : dir === 'short'
                       ? 'bg-red-500/15 border-red-500/25 text-red-400'
                       : 'bg-slate-500/15 border-slate-500/25 text-slate-300';
-                  const label = dir === 'be' ? 'BE' : dir.charAt(0).toUpperCase() + dir.slice(1);
+                  const label = dir === 'be' ? t('common.be') : dir === 'long' ? t('common.long') : t('common.short');
                   return (
                     <button key={dir} onClick={() => setForm(f => ({
                       ...f,
@@ -198,13 +200,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 })}
               </div>
             </div>
-            <div><label className={labelClass}>Date *</label><input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inputClass} /></div>
+            <div><label className={labelClass}>{t('trade.date')}</label><input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inputClass} /></div>
           </div>
 
           {/* Row 2: Risk Amount + R:R + P&L */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={labelClass}>Risk Amount *</label>
+              <label className={labelClass}>{t('trade.riskAmount')}</label>
               <div className="flex gap-1.5">
                 <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{form.riskType === 'dollar' ? '$' : ''}</span>
@@ -218,12 +220,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               </div>
             </div>
             <div>
-              <label className={labelClass}>R:R Multiple *</label>
+              <label className={labelClass}>{t('trade.rrMultiple')}</label>
               <input type="number" step="0.1" value={form.rMultiple} onChange={e => setForm(f => ({ ...f, rMultiple: e.target.value }))} placeholder="2.0" className={inputClass} />
-              <div className="text-[10px] text-slate-600 mt-1">Use negative for losses (e.g. -1)</div>
+              <div className="text-[10px] text-slate-600 mt-1">{t('trade.rrHint')}</div>
             </div>
             <div>
-              <label className={labelClass}>Est. P&L</label>
+              <label className={labelClass}>{t('trade.estPnl')}</label>
               <div className={cn('w-full rounded-xl px-3 py-2.5 text-sm font-bold border',
                 calculatedPnl > 0 ? 'bg-emerald-500/10 border-emerald-500/15 text-emerald-400' :
                 calculatedPnl < 0 ? 'bg-red-500/10 border-red-500/15 text-red-400' :
@@ -236,7 +238,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {form.riskType === 'percent' && (
             <div className="flex items-center gap-3 bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
               <Wallet className="w-4 h-4 text-slate-500 shrink-0" />
-              <span className="text-xs text-slate-500 shrink-0">Account $</span>
+              <span className="text-xs text-slate-500 shrink-0">{t('trade.accountBalance')}</span>
               <input type="number" value={accountBalance} onChange={e => { const v = parseFloat(e.target.value) || 0; setAccountBalance(v); saveAccountBalance(userId, v); }}
                 className="flex-1 bg-transparent text-sm text-white focus:outline-none" />
               <span className="text-xs text-slate-600">→ ${riskDollar.toFixed(2)} risk</span>
@@ -245,9 +247,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Entry/Exit Time + Strategy */}
           <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelClass}>Entry Time</label><input type="time" value={form.entryTime} onChange={e => setForm(f => ({ ...f, entryTime: e.target.value }))} className={inputClass} /></div>
-            <div><label className={labelClass}>Exit Time</label><input type="time" value={form.exitTime} onChange={e => setForm(f => ({ ...f, exitTime: e.target.value }))} className={inputClass} /></div>
-            <div><label className={labelClass}>Strategy</label>
+            <div><label className={labelClass}>{t('trade.entryTime')}</label><input type="time" value={form.entryTime} onChange={e => setForm(f => ({ ...f, entryTime: e.target.value }))} className={inputClass} /></div>
+            <div><label className={labelClass}>{t('trade.exitTime')}</label><input type="time" value={form.exitTime} onChange={e => setForm(f => ({ ...f, exitTime: e.target.value }))} className={inputClass} /></div>
+            <div><label className={labelClass}>{t('trade.strategy')}</label>
               <select value={form.strategy} onChange={e => setForm(f => ({ ...f, strategy: e.target.value }))} className={cn(inputClass, 'cursor-pointer appearance-none')}>
                 {STRATEGIES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -256,7 +258,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Setup Quality */}
           <div>
-            <label className={labelClass}>Setup Quality</label>
+            <label className={labelClass}>{t('trade.setupQuality')}</label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setForm(f => ({ ...f, setupQuality: n }))} className="focus:outline-none">
@@ -269,7 +271,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Confidence */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className={labelClass + ' mb-0'}>Confidence</label>
+              <label className={labelClass + ' mb-0'}>{t('trade.confidence')}</label>
               <span className={cn('text-sm font-bold', form.confidence >= 75 ? 'text-emerald-400' : form.confidence >= 50 ? 'text-amber-400' : 'text-red-400')}>{form.confidence}%</span>
             </div>
             <input type="range" min="1" max="100" value={form.confidence} onChange={e => setForm(f => ({ ...f, confidence: parseInt(e.target.value) }))} className="w-full" />
@@ -277,7 +279,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Confluences (Customizable) */}
           <div>
-            <label className={labelClass}>Confluences</label>
+            <label className={labelClass}>{t('trade.confluences')}</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {userConfluences.map(c => (
                 <div key={c} className="flex items-center gap-1 group">
@@ -295,7 +297,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             <div className="flex gap-2">
               <input type="text" value={newConfluence} onChange={e => setNewConfluence(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addConfluence())}
-                placeholder="Add custom confluence..." className={cn(inputClass, 'flex-1 py-2 text-xs')} />
+                placeholder={t('trade.addConfluencePlaceholder')} className={cn(inputClass, 'flex-1 py-2 text-xs')} />
               <button onClick={addConfluence} className="px-3 rounded-xl border border-white/[0.08] text-blue-400 hover:bg-blue-500/10 transition-all">
                 <Plus className="w-4 h-4" />
               </button>
@@ -304,7 +306,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Mistakes */}
           <div>
-            <label className={labelClass}>Mistakes</label>
+            <label className={labelClass}>{t('trade.mistakes')}</label>
             <div className="flex flex-wrap gap-2">
               {(showAllMistakes ? MISTAKE_OPTIONS : MISTAKE_OPTIONS.slice(0, 5)).map(m => (
                 <button key={m} onClick={() => setForm(f => ({ ...f, mistakes: f.mistakes.includes(m) ? f.mistakes.filter(x => x !== m) : [...f.mistakes, m] }))}
@@ -320,7 +322,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Screenshots */}
           <div>
-            <label className={labelClass}>Chart Screenshots (max 3)</label>
+            <label className={labelClass}>{t('trade.screenshots')}</label>
             <div className="flex gap-3 flex-wrap items-start">
               {form.screenshots.map((src, i) => (
                 <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group">
@@ -330,7 +332,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               ))}
               {form.screenshots.length < 3 && (
                 <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-blue-500/30 hover:bg-blue-500/[0.03] transition-all">
-                  {uploading ? <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /> : (<><ImagePlus className="w-5 h-5 text-slate-600" /><span className="text-[10px] text-slate-600 mt-1">Upload</span></>)}
+                  {uploading ? <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /> : (<><ImagePlus className="w-5 h-5 text-slate-600" /><span className="text-[10px] text-slate-600 mt-1">{t('trade.upload')}</span></>)}
                   <input type="file" accept="image/*" multiple onChange={e => handleScreenshotUpload(e.target.files)} className="hidden" />
                 </label>
               )}
@@ -339,17 +341,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Notes */}
           <div>
-            <label className={labelClass}>Notes</label>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder="Trade observations, lessons learned..." className={cn(inputClass, 'resize-none')} />
+            <label className={labelClass}>{t('trade.notes')}</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder={t('trade.notesPlaceholder')} className={cn(inputClass, 'resize-none')} />
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 border-t border-white/[0.06]">
-          <button onClick={onClose} className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+          <button onClick={onClose} className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors">{t('common.cancel')}</button>
           <button onClick={handleSave} disabled={!isValid}
             className={cn('px-6 py-2.5 rounded-xl text-sm font-bold transition-all',
               isValid ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-            )}>{trade ? 'Update Trade' : 'Save Trade'}</button>
+            )}>{trade ? t('trade.updateTrade') : t('trade.saveTrade')}</button>
         </div>
       </div>
     </div>

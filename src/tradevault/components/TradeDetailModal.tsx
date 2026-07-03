@@ -3,6 +3,7 @@ import { Trade, MissedOpportunity, isBreakEven } from '../types';
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
 import { useState } from 'react';
+import { useT } from '../i18n/LanguageContext';
 
 interface TradeDetailModalProps {
   trades: Trade[];
@@ -12,12 +13,15 @@ interface TradeDetailModalProps {
   onOpenMissed?: (m: MissedOpportunity) => void;
 }
 
+const LOCALE_MAP: Record<string, string> = { en: 'en-US', es: 'es-ES', pt: 'pt-PT', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', nl: 'nl-NL', ru: 'ru-RU', zh: 'zh-CN', ja: 'ja-JP', ar: 'ar-SA', hi: 'hi-IN' };
+
 export default function TradeDetailModal({ trades, date, onClose, missed = [], onOpenMissed }: TradeDetailModalProps) {
+  const { t, lang } = useT();
+  const locale = LOCALE_MAP[lang] || 'en-US';
   const [fullscreenImg, setFullscreenImg] = useState<string | null>(null);
   const dayPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const d = new Date(date + 'T12:00:00');
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const dateStr = `${d.toLocaleDateString('en-US', { weekday: 'long' })}, ${months[d.getMonth()]} ${d.getDate()}, '${String(d.getFullYear()).slice(-2)}`;
+  const dateStr = `${d.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}, '${String(d.getFullYear()).slice(-2)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
@@ -28,7 +32,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">{dateStr}</h2>
-              <p className="text-sm text-slate-400 mt-1">{trades.length} trade{trades.length !== 1 ? 's' : ''}</p>
+              <p className="text-sm text-slate-400 mt-1">{trades.length} {trades.length !== 1 ? t('tradeDetail.tradesCountSuffix') : t('tradeDetail.tradeCountSuffix')}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className={cn('text-2xl font-bold', dayPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(dayPnl)}</div>
@@ -47,7 +51,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                   className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition-all"
                 >
                   <Target className="w-3.5 h-3.5" />
-                  Missed Setup{m.symbol ? `: ${m.symbol}` : ''}
+                  {t('tradeDetail.missedSetup')}{m.symbol ? `: ${m.symbol}` : ''}
                 </button>
               ))}
             </div>
@@ -79,40 +83,40 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               <div className="grid grid-cols-5 gap-3">
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center">
                   <Clock className="w-3.5 h-3.5 text-slate-500 mx-auto mb-1" />
-                  <div className="text-[10px] text-slate-500 mb-0.5">Entry</div>
+                  <div className="text-[10px] text-slate-500 mb-0.5">{t('tradeDetail.entry')}</div>
                   <div className="text-sm font-semibold text-white">{trade.entryTime || '—'}</div>
                 </div>
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center">
                   <Clock className="w-3.5 h-3.5 text-slate-500 mx-auto mb-1" />
-                  <div className="text-[10px] text-slate-500 mb-0.5">Exit</div>
+                  <div className="text-[10px] text-slate-500 mb-0.5">{t('tradeDetail.exit')}</div>
                   <div className="text-sm font-semibold text-white">{trade.exitTime || '—'}</div>
                 </div>
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center">
-                  <div className="text-[10px] text-slate-500 mb-1">Duration</div>
+                  <div className="text-[10px] text-slate-500 mb-1">{t('tradeDetail.duration')}</div>
                   <div className="text-sm font-semibold text-white">{getDuration(trade.entryTime, trade.exitTime)}</div>
                 </div>
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center">
                   <BarChart3 className="w-3.5 h-3.5 text-slate-500 mx-auto mb-1" />
-                  <div className="text-[10px] text-slate-500 mb-0.5">R:R</div>
+                  <div className="text-[10px] text-slate-500 mb-0.5">{t('tradeDetail.rr')}</div>
                   <div className={cn('text-sm font-semibold', trade.rMultiple >= 0 ? 'text-emerald-400' : 'text-red-400')}>{trade.rMultiple.toFixed(2)}R</div>
                 </div>
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center">
                   <Star className="w-3.5 h-3.5 text-slate-500 mx-auto mb-1" />
-                  <div className="text-[10px] text-slate-500 mb-0.5">Quality</div>
+                  <div className="text-[10px] text-slate-500 mb-0.5">{t('tradeDetail.quality')}</div>
                   <div className="text-sm font-semibold text-slate-300">{'★'.repeat(trade.setupQuality)}{'☆'.repeat(5 - trade.setupQuality)}</div>
                 </div>
               </div>
 
               {/* Risk */}
               <div className="flex gap-4 text-xs">
-                <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">Risk: </span><span className="text-white font-semibold">${trade.riskAmount.toFixed(2)}</span></div>
-                <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">P&L/Risk: </span><span className={cn('font-semibold', trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{(trade.pnl / trade.riskAmount).toFixed(2)}R</span></div>
+                <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('tradeDetail.risk')}: </span><span className="text-white font-semibold">${trade.riskAmount.toFixed(2)}</span></div>
+                <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('tradeDetail.pnlPerRisk')}: </span><span className={cn('font-semibold', trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{(trade.pnl / trade.riskAmount).toFixed(2)}R</span></div>
               </div>
 
               {/* Confidence */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-slate-500">Confidence Level</span>
+                  <span className="text-xs text-slate-500">{t('tradeDetail.confidenceLevel')}</span>
                   <span className={cn('text-xs font-bold', trade.confidence >= 75 ? 'text-emerald-400' : trade.confidence >= 50 ? 'text-slate-300' : 'text-red-400')}>{trade.confidence}%</span>
                 </div>
                 <div className="w-full bg-white/[0.05] rounded-full h-2 overflow-hidden">
@@ -124,7 +128,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               {/* Confluences */}
               {trade.confluences.length > 0 && (
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Confluences</span>
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.confluences')}</span>
                   <div className="flex flex-wrap gap-2">
                     {trade.confluences.map(c => <span key={c} className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/15 text-blue-400 text-xs font-medium">{c}</span>)}
                   </div>
@@ -134,7 +138,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               {/* Mistakes */}
               {trade.mistakes.length > 0 && (
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Mistakes</span>
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.mistakes')}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {trade.mistakes.map(m => <span key={m} className="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-[10px] font-medium">{m}</span>)}
                   </div>
@@ -144,7 +148,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               {/* Screenshots */}
               {trade.screenshots.length > 0 && (
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Chart Screenshots</span>
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.chartScreenshots')}</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {trade.screenshots.map((src, i) => (
                       <button key={i} onClick={() => setFullscreenImg(src)} className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-blue-500/30 transition-all group bg-black/40">
@@ -156,7 +160,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                           className="w-full max-h-[420px] object-contain"
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white font-medium bg-black/40 px-2 py-1 rounded-md">View</span>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white font-medium bg-black/40 px-2 py-1 rounded-md">{t('common.view')}</span>
                         </div>
                       </button>
                     ))}
@@ -167,7 +171,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               {/* Notes */}
               {trade.notes && (
                 <div>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Notes</span>
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.notes')}</span>
                   <div className="bg-white/[0.03] rounded-xl p-4 text-sm text-slate-300 leading-relaxed border border-white/[0.04]">{trade.notes}</div>
                 </div>
               )}

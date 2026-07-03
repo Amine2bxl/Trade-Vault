@@ -226,7 +226,7 @@ function Field({ label, value, tone }: { label: string; value: string; tone: 're
   );
 }
 
-function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove?: (p: string) => void }) {
+export function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove?: (p: string) => void }) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [lightbox, setLightbox] = useState<string | null>(null);
 
