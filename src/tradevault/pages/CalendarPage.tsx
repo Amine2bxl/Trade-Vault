@@ -90,7 +90,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
 
   return (
     <div className="p-3 md:p-8 max-w-[1400px] mx-auto">
-      <div className="mb-3 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-lg md:text-2xl font-bold text-white">Calendar</h1><p className="text-[11px] md:text-sm text-slate-500 mt-0.5 md:mt-1">Daily performance overview</p></div>
+      <div className="mb-3 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Calendar</h1><p className="text-[11px] md:text-sm text-slate-500 mt-0.5 md:mt-1">Daily performance overview</p></div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-4 mb-3 md:mb-6">

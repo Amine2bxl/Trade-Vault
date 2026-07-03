@@ -13,24 +13,29 @@ interface StatsCardProps {
 export default function StatsCard({ title, value, subtitle, icon, trend, delay = 0 }: StatsCardProps) {
   return (
     <div
-      className="glass rounded-2xl p-5 card-premium animate-fade-in-up"
+      className="group relative glass rounded-2xl p-5 card-premium animate-fade-in-up overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between mb-3">
+      {/* Corner glow accent */}
+      <div className={cn(
+        'pointer-events-none absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500',
+        trend === 'up' ? 'bg-emerald-500/30' : trend === 'down' ? 'bg-red-500/30' : 'bg-blue-500/30'
+      )} />
+      <div className="relative flex items-start justify-between mb-3">
         <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{title}</span>
         {icon && (
           <div className={cn(
-            'w-9 h-9 rounded-xl flex items-center justify-center transition-colors',
-            trend === 'up' ? 'bg-emerald-500/10 text-emerald-400' :
-            trend === 'down' ? 'bg-red-500/10 text-red-400' :
-            'bg-blue-500/10 text-blue-400'
+            'w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110',
+            trend === 'up' ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.15)]' :
+            trend === 'down' ? 'bg-gradient-to-br from-red-500/20 to-red-500/5 text-red-400 shadow-[0_0_16px_rgba(239,68,68,0.15)]' :
+            'bg-gradient-to-br from-blue-500/20 to-blue-500/5 text-blue-400 shadow-[0_0_16px_rgba(59,130,246,0.15)]'
           )}>
             {icon}
           </div>
         )}
       </div>
       <div className={cn(
-        'text-2xl font-bold tracking-tight',
+        'relative text-[26px] md:text-3xl font-bold tracking-tight tabular-nums',
         trend === 'up' ? 'text-emerald-400' :
         trend === 'down' ? 'text-red-400' :
         'text-white'
@@ -38,7 +43,7 @@ export default function StatsCard({ title, value, subtitle, icon, trend, delay =
         {value}
       </div>
       {subtitle && (
-        <p className="text-[11px] text-slate-500 mt-1">{subtitle}</p>
+        <p className="relative text-[11px] text-slate-500 mt-1.5">{subtitle}</p>
       )}
     </div>
   );

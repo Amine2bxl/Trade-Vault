@@ -69,7 +69,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between gap-2 mb-3 md:mb-6">
-        <div className="animate-fade-in-up stagger-0 min-w-0"><h1 className="text-lg md:text-2xl font-bold text-white truncate">Trade Journal</h1><p className="text-[11px] md:text-sm text-slate-500 mt-0.5 md:mt-1">{filtered.length} trades</p></div>
+        <div className="animate-fade-in-up stagger-0 min-w-0"><h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent truncate">Trade Journal</h1><p className="text-[11px] md:text-sm text-slate-500 mt-0.5 md:mt-1">{filtered.length} trades</p></div>
         <div className="flex items-center gap-1.5 md:gap-3 animate-fade-in-up stagger-1 shrink-0">
           <button onClick={() => exportTradesCSV(trades)} className="flex items-center gap-1.5 md:gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all">
             <Download className="w-3.5 h-3.5 md:w-4 md:h-4" /><span className="hidden md:inline">Export CSV</span>
@@ -77,7 +77,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }
           <button onClick={onDeleteAll} className="flex items-center gap-1.5 md:gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all">
             <Trash className="w-3.5 h-3.5 md:w-4 md:h-4" /><span className="hidden md:inline">Delete All</span>
           </button>
-          <button onClick={onAdd} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20">
+          <button onClick={onAdd} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5">
             <Plus className="w-4 h-4" /> Add Trade
           </button>
         </div>

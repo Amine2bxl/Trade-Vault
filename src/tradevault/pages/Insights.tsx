@@ -46,11 +46,11 @@ export default function Insights({ trades }: InsightsProps) {
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 animate-glow">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white">{t('insights.title')}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">{t('insights.title')}</h1>
           <p className="text-xs md:text-sm text-slate-500">{t('insights.subtitle')}</p>
         </div>
       </div>

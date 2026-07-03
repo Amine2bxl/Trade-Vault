@@ -111,7 +111,7 @@ export default function MissedOpportunities() {
         <div>
           <div className="flex items-center gap-2">
             <Target className="w-5 h-5 text-amber-400" />
-            <h1 className="text-lg md:text-2xl font-bold text-white">{t('missed.title')}</h1>
+            <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">{t('missed.title')}</h1>
           </div>
           <p className="text-[11px] md:text-sm text-slate-500 mt-0.5">{t('missed.subtitle')}</p>
         </div>

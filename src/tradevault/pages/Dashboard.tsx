@@ -1,4 +1,4 @@
-import { Plus, TrendingUp, TrendingDown, Target, Activity, BarChart3, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Target, Activity, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Sparkles } from 'lucide-react';
 import { Trade, isBreakEven } from '../types';
 import { computeStats, formatPnl, formatPct, formatShortDate, directionLabel, directionBadgeClass } from '../utils/tradeCalcs';
 import StatsCard from '../components/StatsCard';
@@ -6,6 +6,14 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { cn } from '../utils/cn';
 
 interface DashboardProps { trades: Trade[]; onAddTrade: () => void; }
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 5) return 'Still up';
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
 export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
   const stats = computeStats(trades);
@@ -15,10 +23,14 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <div className="animate-fade-in-up stagger-0">
-          <h1 className="text-xl md:text-2xl font-bold text-white">Dashboard</h1>
+          <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-blue-400/80 mb-1">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{getGreeting()}</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-white bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Dashboard</h1>
           <p className="text-xs md:text-sm text-slate-500 mt-1">Your trading performance at a glance</p>
         </div>
-        <button onClick={onAddTrade} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20 animate-fade-in-up stagger-1">
+        <button onClick={onAddTrade} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 animate-fade-in-up stagger-1">
           <Plus className="w-4 h-4" /> Add Trade
         </button>
       </div>
@@ -33,8 +45,12 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         {/* Equity Curve */}
-        <div className="col-span-1 md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
-          <h3 className="text-sm font-semibold text-white mb-4">Equity Curve</h3>
+        <div className="relative col-span-1 md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4 overflow-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white">Equity Curve</h3>
+            <span className={cn('text-xs font-bold tabular-nums', stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(stats.totalPnl)}</span>
+          </div>
           {stats.equityCurve.length > 0 ? (
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -54,14 +70,14 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
         <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5 space-y-2 md:space-y-3">
           <h3 className="text-sm font-semibold text-white">Performance</h3>
           {[
-            { label: 'Avg Win', value: formatPnl(stats.avgWin), color: 'text-emerald-400' },
-            { label: 'Avg Loss', value: formatPnl(stats.avgLoss), color: 'text-red-400' },
-            { label: 'Best Trade', value: stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : '$0.00', color: 'text-emerald-400' },
-            { label: 'Worst Trade', value: stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : '$0.00', color: 'text-red-400' },
+            { label: 'Avg Win', value: formatPnl(stats.avgWin), color: 'text-emerald-400', dot: 'bg-emerald-400' },
+            { label: 'Avg Loss', value: formatPnl(stats.avgLoss), color: 'text-red-400', dot: 'bg-red-400' },
+            { label: 'Best Trade', value: stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : '$0.00', color: 'text-emerald-400', dot: 'bg-emerald-400' },
+            { label: 'Worst Trade', value: stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : '$0.00', color: 'text-red-400', dot: 'bg-red-400' },
           ].map(item => (
             <div key={item.label} className="flex items-center justify-between py-1.5 md:py-2 border-b border-white/[0.04]">
-              <span className="text-xs text-slate-500">{item.label}</span>
-              <span className={cn('text-xs md:text-sm font-bold', item.color)}>{item.value}</span>
+              <span className="flex items-center gap-2 text-xs text-slate-500"><span className={cn('w-1.5 h-1.5 rounded-full', item.dot)} />{item.label}</span>
+              <span className={cn('text-xs md:text-sm font-bold tabular-nums', item.color)}>{item.value}</span>
             </div>
           ))}
           <div className="flex items-center justify-between py-1.5 md:py-2">
