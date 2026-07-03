@@ -12,7 +12,7 @@ interface TradeModalProps {
   onSave: (trade: Trade) => void;
 }
 
-function compressImage(file: File): Promise<string> {
+function compressImage(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = reject;
@@ -102,8 +102,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return riskDollar * rm;
   }, [riskDollar, form.rMultiple]);
 
-  const handleScreenshotUpload = useCallback(async (files: FileList | null) => {
-    if (!files) return;
+  const handleScreenshotUpload = useCallback(async (files: FileList | Blob[] | null) => {
+    if (!files || files.length === 0) return;
     setUploading(true);
     const newScreenshots: string[] = [];
     for (let i = 0; i < files.length && form.screenshots.length + newScreenshots.length < 3; i++) {
@@ -112,6 +112,21 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     setForm(f => ({ ...f, screenshots: [...f.screenshots, ...newScreenshots] }));
     setUploading(false);
   }, [form.screenshots.length]);
+
+  // Lets a user paste a screenshot (e.g. Win+Shift+S, then Ctrl+V) directly instead
+  // of having to save the image to disk first and pick it from a file dialog.
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const images = Array.from(items).filter(it => it.type.startsWith('image/')).map(it => it.getAsFile()).filter((f): f is File => !!f);
+      if (images.length === 0) return;
+      e.preventDefault();
+      handleScreenshotUpload(images);
+    };
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [handleScreenshotUpload]);
 
   const removeScreenshot = (idx: number) => {
     setForm(f => ({ ...f, screenshots: f.screenshots.filter((_, i) => i !== idx) }));
@@ -321,6 +336,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Screenshots */}
           <div>
             <label className={labelClass}>Chart Screenshots (max 3)</label>
+            <p className="text-[10px] text-slate-600 mb-2 -mt-1">Take a screenshot, then press Ctrl+V (Cmd+V on Mac) anywhere here to paste it — no need to save it to disk first.</p>
             <div className="flex gap-3 flex-wrap items-start">
               {form.screenshots.map((src, i) => (
                 <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group">
