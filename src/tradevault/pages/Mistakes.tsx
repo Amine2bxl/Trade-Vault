@@ -42,7 +42,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
   return (
     <div className={cn(embedded ? 'pt-2' : 'p-4 md:p-8 max-w-[1400px] mx-auto')}>
-      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-xl md:text-2xl font-bold text-white">Mistakes Tracker</h1><p className="text-xs md:text-sm text-slate-500 mt-1">Identify and eliminate costly errors</p></div>
+      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Mistakes Tracker</h1><p className="text-xs md:text-sm text-slate-500 mt-1">Identify and eliminate costly errors</p></div>
       <div className="space-y-4 md:space-y-6">
         {/* Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">

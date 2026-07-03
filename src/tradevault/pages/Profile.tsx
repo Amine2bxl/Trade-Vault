@@ -51,10 +51,14 @@ export default function Profile({ trades, onDeleteAll }: ProfileProps) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-      <div className="glass-strong rounded-3xl p-6 sm:p-8">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
-            {user.name.charAt(0).toUpperCase()}
+      <div className="relative glass-strong rounded-3xl p-6 sm:p-8 overflow-hidden">
+        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="relative flex items-center gap-4">
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 rounded-2xl bg-blue-500/40 blur-lg opacity-70" />
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
           </div>
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-white truncate">{user.name}</h1>
