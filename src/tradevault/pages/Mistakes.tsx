@@ -4,6 +4,7 @@ import { Trade } from '../types';
 import { computeStats, formatPnl } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useT } from '../i18n/LanguageContext';
 
 interface MistakesProps { trades: Trade[]; embedded?: boolean; }
 const MISTAKE_TIPS: Record<string, string> = {
@@ -22,6 +23,7 @@ const MISTAKE_TIPS: Record<string, string> = {
 };
 
 export default function Mistakes({ trades, embedded = false }: MistakesProps) {
+  const { t } = useT();
   const stats = computeStats(trades);
   const mistakeData = useMemo(() => Object.entries(stats.mistakeStats).map(([mistake, data]) => ({ mistake, count: data.count, totalPnl: Math.round(data.totalPnl * 100) / 100, avgPnl: Math.round(data.totalPnl / data.count * 100) / 100 })).sort((a, b) => b.count - a.count), [stats.mistakeStats]);
   const topMistakes = mistakeData.slice(0, 3);
@@ -37,20 +39,20 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
   if (trades.length === 0) {
     if (embedded) return null;
-    return (<div className="p-4 md:p-8"><h1 className="text-xl md:text-2xl font-bold text-white mb-2">Mistakes</h1><div className="glass rounded-2xl p-10 text-center text-slate-600">Add trades to track mistakes</div></div>);
+    return (<div className="p-4 md:p-8"><h1 className="text-xl md:text-2xl font-bold text-white mb-2">{t('mistakes.title')}</h1><div className="glass rounded-2xl p-10 text-center text-slate-600">{t('mistakes.noTrades')}</div></div>);
   }
 
   return (
     <div className={cn(embedded ? 'pt-2' : 'p-4 md:p-8 max-w-[1400px] mx-auto')}>
-      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Mistakes Tracker</h1><p className="text-xs md:text-sm text-slate-500 mt-1">Identify and eliminate costly errors</p></div>
+      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">{t('mistakes.title')}</h1><p className="text-xs md:text-sm text-slate-500 mt-1">{t('mistakes.subtitle')}</p></div>
       <div className="space-y-4 md:space-y-6">
         {/* Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
           {[
-            { icon: <AlertTriangle className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />, label: 'Total Mistakes', value: String(totalMistakes), sub: `${tradesWithMistakes} trades`, color: 'text-white', delay: 0 },
-            { icon: <TrendingDown className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />, label: 'Total Cost', value: formatPnl(totalCost), sub: `avg ${formatPnl(totalMistakes > 0 ? totalCost / totalMistakes : 0)}`, color: 'text-red-400', delay: 1 },
-            { icon: <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-400" />, label: 'Clean WR', value: `${(cleanWinRate * 100).toFixed(1)}%`, sub: `${cleanTrades} clean`, color: 'text-emerald-400', delay: 2 },
-            { icon: <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />, label: 'Mistake WR', value: `${(mistakeWinRate * 100).toFixed(1)}%`, sub: `${tradesWithMistakes} mistake`, color: 'text-amber-400', delay: 3 },
+            { icon: <AlertTriangle className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />, label: t('mistakes.totalMistakes'), value: String(totalMistakes), sub: `${tradesWithMistakes} ${t('mistakes.tradesSuffix')}`, color: 'text-white', delay: 0 },
+            { icon: <TrendingDown className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />, label: t('mistakes.totalCost'), value: formatPnl(totalCost), sub: `${t('mistakes.avgPrefix')} ${formatPnl(totalMistakes > 0 ? totalCost / totalMistakes : 0)}`, color: 'text-red-400', delay: 1 },
+            { icon: <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-400" />, label: t('mistakes.cleanWr'), value: `${(cleanWinRate * 100).toFixed(1)}%`, sub: `${cleanTrades} ${t('mistakes.cleanSuffix')}`, color: 'text-emerald-400', delay: 2 },
+            { icon: <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />, label: t('mistakes.mistakeWr'), value: `${(mistakeWinRate * 100).toFixed(1)}%`, sub: `${tradesWithMistakes} ${t('mistakes.mistakeSuffix')}`, color: 'text-amber-400', delay: 3 },
           ].map(card => (
             <div key={card.label} className={cn('glass rounded-xl md:rounded-2xl p-3 md:p-5 card-premium animate-fade-in-up', `stagger-${card.delay}`)}>
               <div className="flex items-center gap-1.5 mb-1 md:mb-2">{card.icon}<span className="text-[9px] md:text-[10px] text-slate-500">{card.label}</span></div>
@@ -63,7 +65,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
         {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div className="md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
-            <h3 className="text-sm font-semibold text-white mb-3">Mistake Cost Analysis</h3>
+            <h3 className="text-sm font-semibold text-white mb-3">{t('mistakes.costAnalysis')}</h3>
             {costData.length > 0 ? (
               <div className="h-56 md:h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -75,31 +77,31 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            ) : (<div className="h-40 flex items-center justify-center text-slate-600 text-sm"><div className="text-center"><CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1" />No mistakes!</div></div>)}
+            ) : (<div className="h-40 flex items-center justify-center text-slate-600 text-sm"><div className="text-center"><CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1" />{t('mistakes.noMistakesShort')}</div></div>)}
           </div>
           <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
-            <h3 className="text-sm font-semibold text-white mb-3">Most Common</h3>
+            <h3 className="text-sm font-semibold text-white mb-3">{t('mistakes.mostCommon')}</h3>
             <div className="space-y-2.5">
               {mistakeData.slice(0, 8).map(m => (<div key={m.mistake}><div className="flex items-center justify-between mb-0.5"><span className="text-[10px] md:text-xs text-slate-300 truncate mr-2">{m.mistake}</span><span className="text-[10px] md:text-xs font-bold text-slate-400">{m.count}×</span></div><div className="w-full bg-white/[0.05] rounded-full h-1"><div className="h-full rounded-full bg-red-500/40" style={{ width: `${(m.count / (mistakeData[0]?.count || 1)) * 100}%` }} /></div></div>))}
-              {mistakeData.length === 0 && <div className="text-sm text-slate-600 text-center py-4">No mistakes</div>}
+              {mistakeData.length === 0 && <div className="text-sm text-slate-600 text-center py-4">{t('mistakes.noMistakes')}</div>}
             </div>
           </div>
         </div>
 
         {/* Tips */}
         <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6">
-          <div className="flex items-center gap-2 mb-3 md:mb-4"><Lightbulb className="w-4 h-4 text-amber-400" /><h3 className="text-sm font-semibold text-white">Improvement Tips</h3></div>
+          <div className="flex items-center gap-2 mb-3 md:mb-4"><Lightbulb className="w-4 h-4 text-amber-400" /><h3 className="text-sm font-semibold text-white">{t('mistakes.improvementTips')}</h3></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
             {topMistakes.length > 0 ? topMistakes.map((m, idx) => (
               <div key={m.mistake} className={cn('bg-white/[0.03] border rounded-xl md:rounded-2xl p-3 md:p-4 card-premium', idx === 0 ? 'border-red-500/20' : 'border-white/[0.06]')}>
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  {idx === 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">PRIORITY</span>}
+                  {idx === 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">{t('mistakes.priority')}</span>}
                   <AlertCircle className="w-3 h-3 text-red-400" /><span className="text-[10px] md:text-xs font-bold text-red-400">{m.mistake}</span>
                 </div>
-                <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">{MISTAKE_TIPS[m.mistake] || 'Focus on reducing this mistake.'}</p>
+                <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">{MISTAKE_TIPS[m.mistake] || t('mistakes.defaultTip')}</p>
                 <div className="mt-1.5 text-[9px] text-slate-600">{m.count}× · {formatPnl(m.totalPnl)}</div>
               </div>
-            )) : <div className="col-span-full text-center py-4 text-slate-600 text-sm">No mistakes — great discipline!</div>}
+            )) : <div className="col-span-full text-center py-4 text-slate-600 text-sm">{t('mistakes.noMistakesGreat')}</div>}
           </div>
         </div>
       </div>

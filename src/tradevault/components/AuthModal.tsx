@@ -1,17 +1,23 @@
 import { useState, FormEvent } from 'react';
 import { Mail, Lock, User, Eye, EyeOff, BookOpen, BarChart3, Sparkles, Target } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useT } from '../i18n/LanguageContext';
 import { cn } from '../utils/cn';
 import logoSrc from '@/assets/tradevault-logo.png';
 
-const FEATURES = [
-  { icon: BookOpen, title: 'Log every trade', desc: 'Capture entries, exits, screenshots, confluences and mistakes in seconds.' },
-  { icon: BarChart3, title: 'Deep analytics', desc: 'Equity curve, win rate, P&L by strategy, symbol and day of week.' },
-  { icon: Target, title: 'Track missed setups', desc: "Review the A+ setups you didn't take and learn from them." },
-  { icon: Sparkles, title: 'AI-powered insights', desc: 'Ask questions about your trading history and get instant answers.' },
-];
+function useFeatures() {
+  const { t } = useT();
+  return [
+    { icon: BookOpen, title: t('auth.feature1Title'), desc: t('auth.feature1Desc') },
+    { icon: BarChart3, title: t('auth.feature2Title'), desc: t('auth.feature2Desc') },
+    { icon: Target, title: t('auth.feature3Title'), desc: t('auth.feature3Desc') },
+    { icon: Sparkles, title: t('auth.feature4Title'), desc: t('auth.feature4Desc') },
+  ];
+}
 
 export default function AuthModal() {
+  const { t } = useT();
+  const FEATURES = useFeatures();
   const { login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [name, setName] = useState('');
@@ -78,10 +84,10 @@ export default function AuthModal() {
               <span className="text-xl font-bold text-white">TradeVault</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-3">
-              Your premium day trading journal
+              {t('auth.headline')}
             </h1>
             <p className="text-sm md:text-base text-slate-400 max-w-md mx-auto md:mx-0 mb-8">
-              TradeVault helps day traders log trades, review missed setups, and turn raw performance data into clear, actionable insights — so you can trade with discipline, not guesswork.
+              {t('auth.description')}
             </p>
             <div className="grid sm:grid-cols-2 gap-4 max-w-md mx-auto md:mx-0">
               {FEATURES.map(({ icon: Icon, title, desc }) => (
@@ -112,7 +118,7 @@ export default function AuthModal() {
               />
             </div>
             <h1 className="text-2xl font-bold text-white">TradeVault</h1>
-            <p className="text-sm text-slate-400 mt-1">Your premium day trading journal</p>
+            <p className="text-sm text-slate-400 mt-1">{t('auth.headline')}</p>
           </div>
 
           {/* Tab Switcher */}
@@ -124,7 +130,7 @@ export default function AuthModal() {
                 mode === 'login' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white'
               )}
             >
-              Sign In
+              {t('auth.signIn')}
             </button>
             <button
               onClick={() => { setMode('signup'); setError(''); }}
@@ -133,7 +139,7 @@ export default function AuthModal() {
                 mode === 'signup' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white'
               )}
             >
-              Create Account
+              {t('auth.createAccount')}
             </button>
           </div>
 
@@ -159,7 +165,7 @@ export default function AuthModal() {
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="Full name"
+                  placeholder={t('auth.fullName')}
                   className={inputClass}
                 />
               </div>
@@ -170,7 +176,7 @@ export default function AuthModal() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="Email address"
+                placeholder={t('auth.emailAddress')}
                 className={inputClass}
               />
             </div>
@@ -180,7 +186,7 @@ export default function AuthModal() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder={t('auth.password')}
                 className={cn(inputClass, 'pr-11')}
               />
               <button
@@ -202,7 +208,7 @@ export default function AuthModal() {
                   : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30'
               )}
             >
-              {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              {loading ? t('auth.pleaseWait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
             </button>
 
             {mode === 'login' && (
@@ -210,14 +216,14 @@ export default function AuthModal() {
                 type="button"
                 onClick={async () => {
                   setError(''); setInfo('');
-                  if (!email) { setError('Enter your email above to reset your password'); return; }
+                  if (!email) { setError(t('auth.enterEmailForReset')); return; }
                   const err = await requestPasswordReset(email);
                   if (err) setError(err);
-                  else setInfo('Password reset email sent. Check your inbox.');
+                  else setInfo(t('auth.resetSent'));
                 }}
                 className="w-full text-xs text-slate-400 hover:text-blue-400 transition-colors"
               >
-                Forgot password?
+                {t('auth.forgotPassword')}
               </button>
             )}
           </form>
@@ -225,7 +231,7 @@ export default function AuthModal() {
           {/* Divider */}
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-white/[0.06]" />
-            <span className="text-xs text-slate-600">or continue with</span>
+            <span className="text-xs text-slate-600">{t('auth.orContinueWith')}</span>
             <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
@@ -241,13 +247,13 @@ export default function AuthModal() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            Continue with Google
+            {t('auth.continueWithGoogle')}
           </button>
 
           {/* Footer */}
           <p className="text-[10px] text-slate-600 text-center mt-6 leading-relaxed">
-            By signing in you agree to our <a href="/terms" className="underline hover:text-slate-400">Terms of Service</a> and <a href="/privacy" className="underline hover:text-slate-400">Privacy Policy</a>.<br />
-            Your data is stored securely in Supabase.
+            {t('auth.termsAgree')} <a href="/terms" className="underline hover:text-slate-400">{t('auth.termsOfService')}</a> {t('auth.and')} <a href="/privacy" className="underline hover:text-slate-400">{t('auth.privacyPolicy')}</a>.<br />
+            {t('auth.dataStored')}
           </p>
         </div>
           </div>

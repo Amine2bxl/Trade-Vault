@@ -3,18 +3,24 @@ import { MissedOpportunity } from '../types';
 import { formatShortDate } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
 import { ScreenshotsView } from '../pages/MissedOpportunities';
+import { useT } from '../i18n/LanguageContext';
 
 interface MissedSetupDetailModalProps {
   missed: MissedOpportunity;
   onClose: () => void;
 }
 
-const SECTIONS = [
-  { key: 'reasonNotTaken' as const, label: 'Why I didn\'t take it', icon: HelpCircle, tone: 'red' as const },
-  { key: 'whatHappened' as const, label: 'What happened', icon: Activity, tone: 'amber' as const },
-  { key: 'lessonLearned' as const, label: 'Lesson learned', icon: Lightbulb, tone: 'blue' as const },
-  { key: 'nextTimePlan' as const, label: 'Next time plan', icon: Compass, tone: 'emerald' as const },
-];
+const LOCALE_MAP: Record<string, string> = { en: 'en-US', es: 'es-ES', pt: 'pt-PT', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', nl: 'nl-NL', ru: 'ru-RU', zh: 'zh-CN', ja: 'ja-JP', ar: 'ar-SA', hi: 'hi-IN' };
+
+function useSections() {
+  const { t } = useT();
+  return [
+    { key: 'reasonNotTaken' as const, label: t('missed.card.why'), icon: HelpCircle, tone: 'red' as const },
+    { key: 'whatHappened' as const, label: t('missed.card.what'), icon: Activity, tone: 'amber' as const },
+    { key: 'lessonLearned' as const, label: t('missed.card.lesson'), icon: Lightbulb, tone: 'blue' as const },
+    { key: 'nextTimePlan' as const, label: t('missed.card.next'), icon: Compass, tone: 'emerald' as const },
+  ];
+}
 
 const TONES: Record<string, { border: string; bg: string; text: string; iconBg: string }> = {
   red: { border: 'border-red-500/15', bg: 'bg-red-500/[0.03]', text: 'text-red-400', iconBg: 'bg-red-500/10' },
@@ -24,9 +30,11 @@ const TONES: Record<string, { border: string; bg: string; text: string; iconBg: 
 };
 
 export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupDetailModalProps) {
+  const { t, lang } = useT();
+  const locale = LOCALE_MAP[lang] || 'en-US';
+  const SECTIONS = useSections();
   const d = new Date(missed.date + 'T12:00:00');
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const dateStr = `${d.toLocaleDateString('en-US', { weekday: 'long' })}, ${months[d.getMonth()]} ${d.getDate()}, '${String(d.getFullYear()).slice(-2)}`;
+  const dateStr = `${d.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}, '${String(d.getFullYear()).slice(-2)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
@@ -43,10 +51,10 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-white">{missed.symbol || 'Missed Setup'}</h2>
+                  <h2 className="text-lg font-bold text-white">{missed.symbol || t('tradeDetail.missedSetup')}</h2>
                   {missed.estimatedR > 0 && (
                     <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-bold">
-                      +{missed.estimatedR.toFixed(1)}R missed
+                      +{missed.estimatedR.toFixed(1)}{t('missed.rMissed')}
                     </span>
                   )}
                 </div>
@@ -63,17 +71,17 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
         <div className="overflow-y-auto max-h-[calc(96vh-100px)] md:max-h-[calc(88vh-110px)] p-4 md:p-6 space-y-3 md:space-y-4">
           {SECTIONS.map(({ key, label, icon: Icon, tone }) => {
             const value = missed[key];
-            const t = TONES[tone];
+            const toneStyle = TONES[tone];
             return (
-              <div key={key} className={cn('rounded-2xl border p-4 md:p-5', t.border, t.bg)}>
+              <div key={key} className={cn('rounded-2xl border p-4 md:p-5', toneStyle.border, toneStyle.bg)}>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center', t.iconBg)}>
-                    <Icon className={cn('w-3.5 h-3.5', t.text)} />
+                  <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center', toneStyle.iconBg)}>
+                    <Icon className={cn('w-3.5 h-3.5', toneStyle.text)} />
                   </div>
-                  <span className={cn('text-[10px] uppercase tracking-wider font-bold', t.text)}>{label}</span>
+                  <span className={cn('text-[10px] uppercase tracking-wider font-bold', toneStyle.text)}>{label}</span>
                 </div>
                 <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
-                  {value || <span className="text-slate-600 italic">Nothing noted</span>}
+                  {value || <span className="text-slate-600 italic">{t('missed.nothingNoted')}</span>}
                 </p>
               </div>
             );
@@ -81,7 +89,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
 
           {missed.screenshots && missed.screenshots.length > 0 && (
             <div>
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Chart Screenshots</span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.chartScreenshots')}</span>
               <ScreenshotsView paths={missed.screenshots} />
             </div>
           )}
