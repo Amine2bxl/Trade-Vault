@@ -290,7 +290,7 @@ function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove?: (p: 
   );
 }
 
-function MissedEditor({ value, onClose, onSave }: { value: MissedOpportunity; onClose: () => void; onSave: (m: MissedOpportunity) => void }) {
+export function MissedEditor({ value, onClose, onSave }: { value: MissedOpportunity; onClose: () => void; onSave: (m: MissedOpportunity) => void }) {
   const { user } = useAuth();
   const { t } = useT();
   const [m, setM] = useState<MissedOpportunity>(value);

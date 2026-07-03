@@ -1,12 +1,12 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import { Trade, MissedOpportunity } from '../types';
-import { loadMissedOpportunities } from '../store';
+import { loadMissedOpportunities, upsertMissedOpportunity } from '../store';
 import { useAuth } from '../contexts/AuthContext';
 
 import { cn } from '../utils/cn';
 import TradeDetailModal from '../components/TradeDetailModal';
-import MissedOpportunities from './MissedOpportunities';
+import MissedOpportunities, { MissedEditor } from './MissedOpportunities';
 
 interface CalendarPageProps { trades: Trade[]; }
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -17,6 +17,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedMissed, setSelectedMissed] = useState<MissedOpportunity | null>(null);
   const [missed, setMissed] = useState<MissedOpportunity[]>([]);
 
   useEffect(() => {
@@ -29,10 +30,17 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
   }, [user?.id]);
 
   const missedByDate = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const m of missed) map[m.date] = (map[m.date] || 0) + 1;
+    const map: Record<string, MissedOpportunity[]> = {};
+    for (const m of missed) (map[m.date] ??= []).push(m);
     return map;
   }, [missed]);
+
+  const handleSaveMissed = useCallback(async (m: MissedOpportunity) => {
+    if (!user) return;
+    await upsertMissedOpportunity(user.id, m);
+    setMissed(prev => prev.map(x => x.id === m.id ? m : x));
+    setSelectedMissed(null);
+  }, [user]);
 
   const dailyData = useMemo(() => {
     const map: Record<string, { pnl: number; count: number; trades: Trade[]; avgRR: number; totalRR: number; wins: number; breakEven: number; winRate: number }> = {};
@@ -135,9 +143,13 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
                 const isNeutral = data && !isAllBE && data.pnl === 0;
                 const isToday = dateStr === new Date().toISOString().split('T')[0];
                 const isWeekend = colIdx >= 5;
-                const missedCount = missedByDate[dateStr] || 0;
+                const dayMissed = missedByDate[dateStr] || [];
+                const missedCount = dayMissed.length;
                 return (
-                  <button key={dateStr} onClick={() => data && setSelectedDate(dateStr)} disabled={!data && missedCount === 0}
+                  <button key={dateStr} onClick={() => {
+                    if (data) setSelectedDate(dateStr);
+                    else if (dayMissed.length > 0) setSelectedMissed(dayMissed[0]);
+                  }} disabled={!data && missedCount === 0}
                     className={cn(
                       'h-14 md:min-h-[100px] md:p-3 p-1.5 rounded-lg md:rounded-2xl text-left transition-all duration-300 relative overflow-hidden group',
                       isWin && 'bg-gradient-to-br from-emerald-500/[0.18] to-emerald-600/[0.06] border border-emerald-500/20',
@@ -199,7 +211,23 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
         <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-lg ring-1 ring-blue-500/40" /><span className="text-[10px] text-slate-500">Today</span></div>
       </div>
 
-      {selectedDate && selectedTrades.length > 0 && <TradeDetailModal trades={selectedTrades} date={selectedDate} onClose={() => setSelectedDate(null)} />}
+      {selectedDate && selectedTrades.length > 0 && (
+        <TradeDetailModal
+          trades={selectedTrades}
+          date={selectedDate}
+          onClose={() => setSelectedDate(null)}
+          missed={missedByDate[selectedDate] || []}
+          onOpenMissed={(m) => { setSelectedDate(null); setSelectedMissed(m); }}
+        />
+      )}
+
+      {selectedMissed && (
+        <MissedEditor
+          value={selectedMissed}
+          onClose={() => setSelectedMissed(null)}
+          onSave={handleSaveMissed}
+        />
+      )}
 
       {/* Mobile: Missed Opportunities embedded below calendar */}
       <div className="md:hidden mt-6">

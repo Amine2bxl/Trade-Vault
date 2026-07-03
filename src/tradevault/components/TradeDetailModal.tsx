@@ -1,5 +1,5 @@
-import { X, ArrowUpRight, ArrowDownRight, Clock, Star, BarChart3, Minus } from 'lucide-react';
-import { Trade, isBreakEven } from '../types';
+import { X, ArrowUpRight, ArrowDownRight, Clock, Star, BarChart3, Minus, Target } from 'lucide-react';
+import { Trade, MissedOpportunity, isBreakEven } from '../types';
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
 import { useState } from 'react';
@@ -8,9 +8,11 @@ interface TradeDetailModalProps {
   trades: Trade[];
   date: string;
   onClose: () => void;
+  missed?: MissedOpportunity[];
+  onOpenMissed?: (m: MissedOpportunity) => void;
 }
 
-export default function TradeDetailModal({ trades, date, onClose }: TradeDetailModalProps) {
+export default function TradeDetailModal({ trades, date, onClose, missed = [], onOpenMissed }: TradeDetailModalProps) {
   const [fullscreenImg, setFullscreenImg] = useState<string | null>(null);
   const dayPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const d = new Date(date + 'T12:00:00');
@@ -36,6 +38,20 @@ export default function TradeDetailModal({ trades, date, onClose }: TradeDetailM
         </div>
 
         <div className="overflow-y-auto max-h-[calc(96vh-100px)] md:max-h-[calc(88vh-90px)] p-4 md:p-6 space-y-3 md:space-y-4">
+          {missed.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {missed.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => onOpenMissed?.(m)}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition-all"
+                >
+                  <Target className="w-3.5 h-3.5" />
+                  Missed Setup{m.symbol ? `: ${m.symbol}` : ''}
+                </button>
+              ))}
+            </div>
+          )}
           {trades.map(trade => { const be = isBreakEven(trade); return (
             <div key={trade.id} className="glass rounded-2xl p-5 space-y-5 card-premium">
               {/* Header */}
