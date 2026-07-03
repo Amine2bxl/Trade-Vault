@@ -199,8 +199,8 @@ export default function AuthModal() {
 
           {/* Footer */}
           <p className="text-[10px] text-slate-600 text-center mt-6 leading-relaxed">
-            By signing in you agree to our Terms of Service.<br />
-            Your data is stored securely in your browser.
+            By signing in you agree to our <a href="/terms" className="underline hover:text-slate-400">Terms of Service</a> and <a href="/privacy" className="underline hover:text-slate-400">Privacy Policy</a>.<br />
+            Your data is stored securely in Supabase.
           </p>
         </div>
       </div>
