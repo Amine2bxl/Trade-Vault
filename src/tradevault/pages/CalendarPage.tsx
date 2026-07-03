@@ -1,12 +1,13 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import { Trade, MissedOpportunity } from '../types';
-import { loadMissedOpportunities, upsertMissedOpportunity } from '../store';
+import { loadMissedOpportunities } from '../store';
 import { useAuth } from '../contexts/AuthContext';
 
 import { cn } from '../utils/cn';
 import TradeDetailModal from '../components/TradeDetailModal';
-import MissedOpportunities, { MissedEditor } from './MissedOpportunities';
+import MissedSetupDetailModal from '../components/MissedSetupDetailModal';
+import MissedOpportunities from './MissedOpportunities';
 
 interface CalendarPageProps { trades: Trade[]; }
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -34,13 +35,6 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
     for (const m of missed) (map[m.date] ??= []).push(m);
     return map;
   }, [missed]);
-
-  const handleSaveMissed = useCallback(async (m: MissedOpportunity) => {
-    if (!user) return;
-    await upsertMissedOpportunity(user.id, m);
-    setMissed(prev => prev.map(x => x.id === m.id ? m : x));
-    setSelectedMissed(null);
-  }, [user]);
 
   const dailyData = useMemo(() => {
     const map: Record<string, { pnl: number; count: number; trades: Trade[]; avgRR: number; totalRR: number; wins: number; breakEven: number; winRate: number }> = {};
@@ -222,10 +216,9 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
       )}
 
       {selectedMissed && (
-        <MissedEditor
-          value={selectedMissed}
+        <MissedSetupDetailModal
+          missed={selectedMissed}
           onClose={() => setSelectedMissed(null)}
-          onSave={handleSaveMissed}
         />
       )}
 

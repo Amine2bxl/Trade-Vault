@@ -1,8 +1,15 @@
 import { useState, FormEvent } from 'react';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, BookOpen, BarChart3, Sparkles, Target } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import logoSrc from '@/assets/tradevault-logo.png';
+
+const FEATURES = [
+  { icon: BookOpen, title: 'Log every trade', desc: 'Capture entries, exits, screenshots, confluences and mistakes in seconds.' },
+  { icon: BarChart3, title: 'Deep analytics', desc: 'Equity curve, win rate, P&L by strategy, symbol and day of week.' },
+  { icon: Target, title: 'Track missed setups', desc: "Review the A+ setups you didn't take and learn from them." },
+  { icon: Sparkles, title: 'AI-powered insights', desc: 'Ask questions about your trading history and get instant answers.' },
+];
 
 export default function AuthModal() {
   const { login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
@@ -50,18 +57,50 @@ export default function AuthModal() {
   const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all';
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center min-h-screen overflow-hidden"
+    <div className="relative min-h-screen overflow-y-auto overflow-x-hidden"
       style={{ background: 'linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)' }}>
-      
+
       {/* Decorative orbs */}
       <div className="auth-orb w-[500px] h-[500px] bg-blue-600 -top-40 -left-40" style={{ animationDelay: '0s' }} />
       <div className="auth-orb w-[400px] h-[400px] bg-purple-600 -bottom-32 -right-32" style={{ animationDelay: '-5s' }} />
       <div className="auth-orb w-[300px] h-[300px] bg-cyan-600 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '-10s' }} />
 
-      <div className="relative z-10 w-full max-w-md mx-4 animate-slide-in">
+      <div className="relative z-10 min-h-screen flex items-center justify-center py-10 md:py-16">
+        <div className="w-full max-w-5xl mx-4 grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+
+          {/* Marketing / product intro — makes this page explain what TradeVault does without requiring sign-in */}
+          <div className="text-center md:text-left animate-fade-in-up">
+            <div className="flex items-center gap-3 justify-center md:justify-start mb-5">
+              <div className="relative w-11 h-11 shrink-0">
+                <div className="absolute inset-0 rounded-xl bg-blue-500/40 blur-lg opacity-70" />
+                <img src={logoSrc} alt="TradeVault" width={44} height={44} className="relative w-11 h-11 rounded-xl drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
+              </div>
+              <span className="text-xl font-bold text-white">TradeVault</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-3">
+              Your premium day trading journal
+            </h1>
+            <p className="text-sm md:text-base text-slate-400 max-w-md mx-auto md:mx-0 mb-8">
+              TradeVault helps day traders log trades, review missed setups, and turn raw performance data into clear, actionable insights — so you can trade with discipline, not guesswork.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 max-w-md mx-auto md:mx-0">
+              {FEATURES.map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="text-left glass rounded-2xl p-4">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-2">
+                    <Icon className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div className="text-sm font-semibold text-white mb-0.5">{title}</div>
+                  <div className="text-xs text-slate-500 leading-relaxed">{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Auth card */}
+          <div className="w-full max-w-md mx-auto animate-slide-in">
         <div className="glass-strong rounded-3xl p-8 shadow-2xl shadow-black/40">
           {/* Logo */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 md:hidden">
             <div className="relative w-14 h-14 mx-auto mb-4">
               <div className="absolute inset-0 rounded-2xl bg-blue-500/40 blur-xl opacity-70" />
               <img
@@ -210,6 +249,8 @@ export default function AuthModal() {
             By signing in you agree to our <a href="/terms" className="underline hover:text-slate-400">Terms of Service</a> and <a href="/privacy" className="underline hover:text-slate-400">Privacy Policy</a>.<br />
             Your data is stored securely in Supabase.
           </p>
+        </div>
+          </div>
         </div>
       </div>
     </div>
