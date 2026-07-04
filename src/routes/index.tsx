@@ -5,13 +5,13 @@ import App from "@/tradevault/App";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TradeVault — Trading Journal & Analytics" },
+      { title: "TradeVault" },
       {
         name: "description",
         content:
           "Track your trades, analyze your performance, review your mistakes and level up as a trader.",
       },
-      { property: "og:title", content: "TradeVault — Trading Journal & Analytics" },
+      { property: "og:title", content: "TradeVault" },
       {
         property: "og:description",
         content:
