@@ -34,12 +34,14 @@ export default function StatsCard({ title, value, subtitle, icon, trend, delay =
           </div>
         )}
       </div>
-      <div className={cn(
-        'relative text-[26px] md:text-3xl font-bold tracking-tight tabular-nums',
-        trend === 'up' ? 'text-emerald-400' :
-        trend === 'down' ? 'text-red-400' :
-        'text-white'
-      )}>
+      <div
+        className={cn(
+          'relative text-lg md:text-xl font-bold tracking-tight tabular-nums',
+          trend === 'up' ? 'text-emerald-400' :
+          trend === 'down' ? 'text-red-400' :
+          'text-white'
+        )}
+      >
         {value}
       </div>
       {subtitle && (

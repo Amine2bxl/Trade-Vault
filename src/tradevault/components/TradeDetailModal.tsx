@@ -4,6 +4,7 @@ import { formatPnl, getDuration, directionLabel, directionBadgeClass } from '../
 import { cn } from '../utils/cn';
 import { useState } from 'react';
 import { useT } from '../i18n/LanguageContext';
+import Lightbox from './Lightbox';
 
 interface TradeDetailModalProps {
   trades: Trade[];
@@ -18,7 +19,7 @@ const LOCALE_MAP: Record<string, string> = { en: 'en-US', es: 'es-ES', pt: 'pt-P
 export default function TradeDetailModal({ trades, date, onClose, missed = [], onOpenMissed }: TradeDetailModalProps) {
   const { t, lang } = useT();
   const locale = LOCALE_MAP[lang] || 'en-US';
-  const [fullscreenImg, setFullscreenImg] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
   const dayPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const d = new Date(date + 'T12:00:00');
   const dateStr = `${d.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}, '${String(d.getFullYear()).slice(-2)}`;
@@ -151,7 +152,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                   <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.chartScreenshots')}</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {trade.screenshots.map((src, i) => (
-                      <button key={i} onClick={() => setFullscreenImg(src)} className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-blue-500/30 transition-all group bg-black/40">
+                      <button key={i} onClick={() => setLightbox({ images: trade.screenshots, index: i })} className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-blue-500/30 transition-all group bg-black/40">
                         <img
                           src={src}
                           alt={`Chart ${i + 1}`}
@@ -180,10 +181,13 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
         </div>
       </div>
 
-      {fullscreenImg && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-8" onClick={() => setFullscreenImg(null)}>
-          <img src={fullscreenImg} alt="Chart screenshot" className="max-w-full max-h-full object-contain rounded-xl" />
-        </div>
+      {lightbox && (
+        <Lightbox
+          images={lightbox.images}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onIndexChange={(i) => setLightbox((prev) => (prev ? { ...prev, index: i } : prev))}
+        />
       )}
     </div>
   );

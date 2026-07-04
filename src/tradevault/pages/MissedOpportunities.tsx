@@ -15,6 +15,9 @@ import { formatShortDate } from '../utils/tradeCalcs';
 import { compressImageToFile } from '../utils/image';
 import { cn } from '../utils/cn';
 import { useT } from '../i18n/LanguageContext';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
+import Lightbox from '../components/Lightbox';
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -33,6 +36,8 @@ function emptyMissed(): MissedOpportunity {
 export default function MissedOpportunities() {
   const { user } = useAuth();
   const { t } = useT();
+  const { toast } = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<MissedOpportunity[]>([]);
   const [editing, setEditing] = useState<MissedOpportunity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,13 +95,13 @@ export default function MissedOpportunities() {
       setEditing(null);
     } catch (e) {
       console.error(e);
-      alert(t('missed.saveFailed'));
+      toast(t('missed.saveFailed'), 'error');
     }
-  }, [user, t]);
+  }, [user, t, toast]);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!user) return;
-    if (!confirm(t('missed.confirmDelete'))) return;
+    if (!(await confirm(t('missed.confirmDelete'), { danger: true }))) return;
     const target = items.find((x) => x.id === id);
     // Best-effort cleanup of orphaned screenshots in storage
     if (target?.screenshots?.length) {
@@ -104,7 +109,7 @@ export default function MissedOpportunities() {
     }
     await deleteMissedOpportunity(user.id, id);
     setItems((prev) => prev.filter((x) => x.id !== id));
-  }, [user, t, items]);
+  }, [user, t, items, confirm]);
 
   return (
     <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
@@ -231,7 +236,8 @@ function Field({ label, value, tone }: { label: string; value: string; tone: 're
 
 export function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove?: (p: string) => void }) {
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const resolvedUrls = paths.map((p) => urls[p]).filter(Boolean);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,7 +266,7 @@ export function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove
         {paths.map((p) => (
           <div key={p} className="relative group aspect-video rounded-xl overflow-hidden bg-white/[0.04] border border-white/[0.08]">
             {urls[p] ? (
-              <button type="button" onClick={() => setLightbox(urls[p])} className="block w-full h-full">
+              <button type="button" onClick={() => setLightboxIndex(resolvedUrls.indexOf(urls[p]))} className="block w-full h-full">
                 <img src={urls[p]} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
               </button>
             ) : (
@@ -281,13 +287,13 @@ export function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove
           </div>
         ))}
       </div>
-      {lightbox && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox} alt="" className="max-w-full max-h-full rounded-xl shadow-2xl" />
-          <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center" aria-label="Close">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+      {lightboxIndex !== null && (
+        <Lightbox
+          images={resolvedUrls}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
       )}
     </>
   );
@@ -296,6 +302,7 @@ export function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove
 export function MissedEditor({ value, onClose, onSave }: { value: MissedOpportunity; onClose: () => void; onSave: (m: MissedOpportunity) => void }) {
   const { user } = useAuth();
   const { t } = useT();
+  const { toast } = useToast();
   const [m, setM] = useState<MissedOpportunity>(value);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -305,7 +312,7 @@ export function MissedEditor({ value, onClose, onSave }: { value: MissedOpportun
     if (!files || !user) return;
     const current = m.screenshots ?? [];
     const slots = 3 - current.length;
-    if (slots <= 0) { alert(t('missed.maxImages')); return; }
+    if (slots <= 0) { toast(t('missed.maxImages'), 'info'); return; }
     const picks = Array.from(files).filter((f) => f.type.startsWith('image/')).slice(0, slots);
     if (picks.length === 0) return;
     setUploading(true);
@@ -321,12 +328,12 @@ export function MissedEditor({ value, onClose, onSave }: { value: MissedOpportun
       setM((prev) => ({ ...prev, screenshots: [...(prev.screenshots ?? []), ...uploaded] }));
     } catch (e) {
       console.error(e);
-      alert(t('missed.uploadFailed'));
+      toast(t('missed.uploadFailed'), 'error');
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
-  }, [user, m.screenshots, t]);
+  }, [user, m.screenshots, t, toast]);
 
   const removeShot = useCallback((path: string) => {
     setM((prev) => ({ ...prev, screenshots: (prev.screenshots ?? []).filter((p) => p !== path) }));

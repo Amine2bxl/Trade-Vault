@@ -55,7 +55,7 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
             <span className={cn('text-xs font-bold tabular-nums', stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(stats.totalPnl)}</span>
           </div>
           {stats.equityCurve.length > 0 ? (
-            <div className="h-48 md:h-64">
+            <div className="h-48 md:h-64 chart-organic">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.equityCurve} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
                   <defs>
@@ -68,7 +68,7 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
                   <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, 'Equity'])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
+                  <Area type="natural" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

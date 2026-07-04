@@ -1,9 +1,16 @@
 // Shared Recharts theming so every chart across the app (Dashboard, Analytics,
 // Mistakes, Calendar) animates and looks the same — one place to tune "premium feel".
 
+// Same signature ease-out-with-a-touch-of-overshoot curve used by .card-premium /
+// .animate-fade-in-up in styles.css, so chart reveals feel like one motion language
+// with the rest of the UI instead of recharts' default linear-ish easing.
+const ORGANIC_EASING = 'cubic-bezier(0.16,1,0.3,1)';
+
 export const CHART_ANIMATION = {
-  animationDuration: 900,
-  animationEasing: 'ease-out' as const,
+  animationDuration: 1100,
+  // react-smooth (recharts' animation engine) accepts any cubic-bezier string at
+  // runtime; its TS union only lists the 5 named presets, so we cast past that.
+  animationEasing: ORGANIC_EASING as unknown as 'ease-out',
 };
 
 export const tooltipStyle = {

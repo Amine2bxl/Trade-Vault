@@ -15,10 +15,15 @@ import { loadUserTrades, upsertTrade, deleteTrade, deleteAllTrades } from './sto
 import { computeStats } from './utils/tradeCalcs';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
-import { LanguageProvider } from './i18n/LanguageContext';
+import { LanguageProvider, useT } from './i18n/LanguageContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
+import { ConfirmProvider, useConfirm } from './contexts/ConfirmContext';
 
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
+  const { t } = useT();
+  const { toast } = useToast();
+  const confirm = useConfirm();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [page, setPage] = useState<Page>('dashboard');
   const [modalOpen, setModalOpen] = useState(false);
@@ -48,33 +53,35 @@ function AppContent() {
       });
     } catch (e) {
       console.error('Failed to save trade', e);
-      alert('Could not save trade. Please try again.');
+      toast(t('app.saveTradeFailed'), 'error');
     }
     setModalOpen(false);
     setEditingTrade(null);
-  }, [user]);
+  }, [user, t, toast]);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!user) return;
-    if (!confirm('Delete this trade?')) return;
+    if (!(await confirm(t('app.confirmDeleteTrade'), { danger: true }))) return;
     try {
       await deleteTrade(user.id, id);
       setTrades(prev => prev.filter(t => t.id !== id));
     } catch (e) {
       console.error('Failed to delete trade', e);
+      toast(t('app.saveTradeFailed'), 'error');
     }
-  }, [user]);
+  }, [user, t, confirm, toast]);
 
   const handleDeleteAll = useCallback(async () => {
     if (!user) return;
-    if (!confirm('⚠️ Delete ALL trades? This cannot be undone.')) return;
+    if (!(await confirm(t('app.confirmDeleteAllTrades'), { danger: true }))) return;
     try {
       await deleteAllTrades(user.id);
       setTrades([]);
     } catch (e) {
       console.error('Failed to delete trades', e);
+      toast(t('app.saveTradeFailed'), 'error');
     }
-  }, [user]);
+  }, [user, t, confirm, toast]);
 
   const handleEdit = useCallback((trade: Trade) => { setEditingTrade(trade); setModalOpen(true); }, []);
   const handleAdd = useCallback(() => { setEditingTrade(null); setModalOpen(true); }, []);
@@ -100,14 +107,16 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="relative flex-1 overflow-y-auto min-h-screen pb-24 md:pb-0">
-        {page === 'dashboard' && <Dashboard trades={trades} onAddTrade={handleAdd} />}
-        {page === 'journal' && <Journal trades={trades} onEdit={handleEdit} onDelete={handleDelete} onDeleteAll={handleDeleteAll} onAdd={handleAdd} />}
-        {page === 'calendar' && <CalendarPage trades={trades} />}
-        {page === 'analytics' && <Analytics trades={trades} />}
-        {page === 'mistakes' && <Mistakes trades={trades} />}
-        {page === 'missed' && <MissedOpportunities />}
-        {page === 'insights' && <Insights trades={trades} />}
-        {page === 'profile' && <Profile trades={trades} onDeleteAll={handleDeleteAll} />}
+        <div key={page} className="animate-fade-in">
+          {page === 'dashboard' && <Dashboard trades={trades} onAddTrade={handleAdd} />}
+          {page === 'journal' && <Journal trades={trades} onEdit={handleEdit} onDelete={handleDelete} onDeleteAll={handleDeleteAll} onAdd={handleAdd} />}
+          {page === 'calendar' && <CalendarPage trades={trades} />}
+          {page === 'analytics' && <Analytics trades={trades} />}
+          {page === 'mistakes' && <Mistakes trades={trades} />}
+          {page === 'missed' && <MissedOpportunities />}
+          {page === 'insights' && <Insights trades={trades} />}
+          {page === 'profile' && <Profile trades={trades} onDeleteAll={handleDeleteAll} />}
+        </div>
       </main>
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
       {modalOpen && <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />}
@@ -116,5 +125,15 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AuthProvider><LanguageProvider><AppContent /></LanguageProvider></AuthProvider>;
+  return (
+    <AuthProvider>
+      <LanguageProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+            <AppContent />
+          </ConfirmProvider>
+        </ToastProvider>
+      </LanguageProvider>
+    </AuthProvider>
+  );
 }

@@ -66,7 +66,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div className="md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2">
             <h3 className="text-sm font-semibold text-white mb-3">{t('analytics.equityCurve')}</h3>
-            <div className="h-48 md:h-72">
+            <div className="h-48 md:h-72 chart-organic">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.equityCurve}>
                   <defs>
@@ -79,7 +79,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, t('analytics.equityCurve')])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqG)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
+                  <Area type="natural" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqG)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

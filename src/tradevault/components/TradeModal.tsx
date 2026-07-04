@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useT } from '../i18n/LanguageContext';
 import { cn } from '../utils/cn';
 import { compressImageToDataUrl } from '../utils/image';
+import Lightbox from './Lightbox';
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -62,6 +63,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const riskDollar = useMemo(() => {
     const val = parseFloat(form.riskAmount) || 0;
@@ -315,7 +317,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             <div className="flex gap-3 flex-wrap items-start">
               {form.screenshots.map((src, i) => (
                 <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group">
-                  <img src={src} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setLightboxIndex(i)} className="block w-full h-full">
+                    <img src={src} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                  </button>
                   <button onClick={() => removeScreenshot(i)} className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3 text-white" /></button>
                 </div>
               ))}
@@ -343,6 +347,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             )}>{trade ? t('trade.updateTrade') : t('trade.saveTrade')}</button>
         </div>
       </div>
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          images={form.screenshots}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
+      )}
     </div>
   );
 }
