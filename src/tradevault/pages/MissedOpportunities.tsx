@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, Target, Trash2, Pencil, X, Save, ImagePlus, Loader2, ChevronDown, Download } from 'lucide-react';
+import { Plus, Target, Trash2, Pencil, Eye, X, Save, ImagePlus, Loader2, ChevronDown, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { MissedOpportunity } from '../types';
 import {
@@ -18,6 +18,7 @@ import { useT } from '../i18n/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import Lightbox from '../components/Lightbox';
+import MissedSetupDetailModal from '../components/MissedSetupDetailModal';
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -40,6 +41,7 @@ export default function MissedOpportunities() {
   const confirm = useConfirm();
   const [items, setItems] = useState<MissedOpportunity[]>([]);
   const [editing, setEditing] = useState<MissedOpportunity | null>(null);
+  const [viewing, setViewing] = useState<MissedOpportunity | null>(null);
   const [loading, setLoading] = useState(true);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
@@ -179,6 +181,9 @@ export default function MissedOpportunities() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setViewing(m)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10">
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
                     <button onClick={() => setEditing(m)} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -206,6 +211,13 @@ export default function MissedOpportunities() {
             );
           })}
         </div>
+      )}
+
+      {viewing && (
+        <MissedSetupDetailModal
+          missed={viewing}
+          onClose={() => setViewing(null)}
+        />
       )}
 
       {editing && (

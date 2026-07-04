@@ -110,7 +110,7 @@ function AppContent() {
       <main className="relative flex-1 overflow-y-auto min-h-screen pb-24 md:pb-0">
         <div key={page} className="animate-fade-in">
           {page === 'dashboard' && <Dashboard trades={trades} onAddTrade={handleAdd} />}
-          {page === 'journal' && <Journal trades={trades} onEdit={handleEdit} onDelete={handleDelete} onDeleteAll={handleDeleteAll} onAdd={handleAdd} />}
+          {page === 'journal' && <Journal trades={trades} onEdit={handleEdit} onDelete={handleDelete} onDeleteAll={handleDeleteAll} onAdd={handleAdd} onOpenMissed={() => setPage('missed')} />}
           {page === 'calendar' && <CalendarPage trades={trades} />}
           {page === 'analytics' && <Analytics trades={trades} />}
           {page === 'mistakes' && <Mistakes trades={trades} />}

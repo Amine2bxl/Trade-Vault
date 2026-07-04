@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, ArrowUpDown, Pencil, Trash2, ChevronDown, ChevronUp, Trash, ArrowUpRight, ArrowDownRight, Minus, Download } from 'lucide-react';
+import { Plus, ArrowUpDown, Pencil, Trash2, Eye, ChevronDown, ChevronUp, Trash, ArrowUpRight, ArrowDownRight, Minus, Download, Target } from 'lucide-react';
 import { Trade, isBreakEven } from '../types';
 import { formatPnl, formatShortDate, directionLabel, directionBadgeClass } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
 import { useT } from '../i18n/LanguageContext';
+import TradeDetailModal from '../components/TradeDetailModal';
 
-interface JournalProps { trades: Trade[]; onEdit: (trade: Trade) => void; onDelete: (id: string) => void; onDeleteAll: () => void; onAdd: () => void; }
+interface JournalProps { trades: Trade[]; onEdit: (trade: Trade) => void; onDelete: (id: string) => void; onDeleteAll: () => void; onAdd: () => void; onOpenMissed: () => void; }
 type SortKey = 'date' | 'symbol' | 'pnl' | 'strategy' | 'rMultiple';
 type SortDir = 'asc' | 'desc';
 type ResultFilter = 'all' | 'win' | 'loss' | 'be';
@@ -33,17 +34,16 @@ function exportTradesCSV(trades: Trade[]) {
   URL.revokeObjectURL(url);
 }
 
-export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }: JournalProps) {
+export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, onOpenMissed }: JournalProps) {
   const { t } = useT();
   const [search, setSearch] = useState('');
   const [strategyFilter, setStrategyFilter] = useState('all');
   const [resultFilter, setResultFilter] = useState<ResultFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<Trade | null>(null);
 
   const strategies = useMemo(() => ['all', ...new Set(trades.map(t => t.strategy))], [trades]);
-
 
   const filtered = useMemo(() => {
     let list = [...trades];
@@ -85,25 +85,35 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }
         </div>
       </div>
 
-      {/* Result filter pill group */}
-      <div className="flex items-center gap-1.5 mb-3 md:mb-5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 w-full md:w-auto md:inline-flex">
-        {([
-          { v: 'all', label: t('common.all') },
-          { v: 'win', label: t('common.win') },
-          { v: 'loss', label: t('common.loss') },
-          { v: 'be', label: t('common.be') },
-        ] as { v: ResultFilter; label: string }[]).map(opt => (
-          <button key={opt.v} onClick={() => setResultFilter(opt.v)}
-            className={cn(
-              'flex-1 md:flex-none md:px-5 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all',
-              resultFilter === opt.v
-                ? opt.v === 'win' ? 'bg-emerald-500/15 text-emerald-400'
-                  : opt.v === 'loss' ? 'bg-red-500/15 text-red-400'
-                  : opt.v === 'be' ? 'bg-slate-500/20 text-slate-200'
-                  : 'bg-blue-500/15 text-blue-400'
-                : 'text-slate-500 hover:text-slate-300'
-            )}>{opt.label}</button>
-        ))}
+      {/* Result filter pill group + Missed Setups shortcut */}
+      <div className="flex items-center gap-1.5 mb-3 md:mb-5">
+        <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
+          {([
+            { v: 'all', label: t('common.all') },
+            { v: 'win', label: t('common.win') },
+            { v: 'loss', label: t('common.loss') },
+            { v: 'be', label: t('common.be') },
+          ] as { v: ResultFilter; label: string }[]).map(opt => (
+            <button key={opt.v} onClick={() => setResultFilter(opt.v)}
+              className={cn(
+                'flex-1 md:flex-none md:px-5 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all',
+                resultFilter === opt.v
+                  ? opt.v === 'win' ? 'bg-emerald-500/15 text-emerald-400'
+                    : opt.v === 'loss' ? 'bg-red-500/15 text-red-400'
+                    : opt.v === 'be' ? 'bg-slate-500/20 text-slate-200'
+                    : 'bg-blue-500/15 text-blue-400'
+                  : 'text-slate-500 hover:text-slate-300'
+              )}>{opt.label}</button>
+          ))}
+        </div>
+        <button
+          onClick={onOpenMissed}
+          title={t('missed.title')}
+          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-xs md:text-sm font-semibold transition-all"
+        >
+          <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
+          <span className="hidden sm:inline">{t('missed.title')}</span>
+        </button>
       </div>
 
       {/* ── Mobile: Card List ── */}
@@ -112,8 +122,8 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }
           <div className="glass rounded-2xl p-10 text-center text-slate-600 text-sm">{t('common.noTradesFound')}</div>
         ) : filtered.map(trade => { const be = isBreakEven(trade); return (
           <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
-            <div className="px-2.5 py-2" onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>
-              <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 px-2.5 py-2">
+              <button type="button" className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity" onClick={() => setViewing(trade)}>
                 <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
                   be ? 'bg-slate-500/10' : trade.pnl >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10')}>
                   {be ? <Minus className="w-4 h-4 text-slate-300" /> :
@@ -123,38 +133,27 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-bold text-white truncate">{trade.symbol}</span>
                     <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded leading-none', directionBadgeClass(trade.direction))}>{directionLabel(trade.direction)}</span>
-                    <span className="text-[10px] text-slate-500 ml-auto pr-1">{formatShortDate(trade.date)}</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 truncate">{trade.strategy}</div>
+                  <div className="text-[10px] text-slate-500 truncate">{trade.strategy} · {formatShortDate(trade.date)}</div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <div className={cn('text-[13px] font-bold leading-tight', be ? 'text-slate-300' : trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(trade.pnl)}</div>
                   <div className={cn('text-[10px] font-semibold', be ? 'text-slate-300/60' : trade.rMultiple >= 0 ? 'text-emerald-400/60' : 'text-red-400/60')}>{trade.rMultiple.toFixed(1)}R</div>
                 </div>
+              </button>
+              <div className="flex items-center shrink-0 -mr-1">
+                <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 active:bg-blue-500/10 active:text-blue-400 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => onDelete(trade.id)} aria-label={t('common.delete')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
-            {expandedId === trade.id && (
-              <div className="px-4 pb-3 border-t border-white/[0.04] pt-3 space-y-2">
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div><span className="text-slate-600 block text-[10px]">{t('common.risk')}</span><span className="text-white font-semibold">${trade.riskAmount.toFixed(0)}</span></div>
-                  <div><span className="text-slate-600 block text-[10px]">R:R</span><span className={cn('font-semibold', trade.rMultiple >= 0 ? 'text-emerald-400' : 'text-red-400')}>{trade.rMultiple.toFixed(2)}R</span></div>
-                  <div><span className="text-slate-600 block text-[10px]">{t('common.quality')}</span><span className="text-slate-300">{'★'.repeat(trade.setupQuality)}</span></div>
-                </div>
-                {trade.confluences.length > 0 && <div className="flex flex-wrap gap-1">{trade.confluences.map((c: string) => <span key={c} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">{c}</span>)}</div>}
-                {trade.mistakes.length > 0 && <div className="flex flex-wrap gap-1">{trade.mistakes.map((m: string) => <span key={m} className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">{m}</span>)}</div>}
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => onEdit(trade)} className="flex-1 py-2 rounded-xl text-xs font-semibold text-blue-400 bg-blue-500/10 active:scale-95 transition-transform">{t('common.edit')}</button>
-                  <button onClick={() => onDelete(trade.id)} className="flex-1 py-2 rounded-xl text-xs font-semibold text-red-400 bg-red-500/10 active:scale-95 transition-transform">{t('common.delete')}</button>
-                </div>
-              </div>
-            )}
           </div>
         );})}
       </div>
 
       {/* ── Desktop: Table ── */}
       <div className="hidden md:block glass rounded-2xl overflow-hidden animate-fade-in-up stagger-2">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[880px]">
           <thead>
             <tr className="border-b border-white/[0.06]">
               {(['date', 'symbol', 'strategy', 'pnl', 'rMultiple'] as SortKey[]).map(key => (
@@ -177,8 +176,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }
             {filtered.length === 0 ? (
               <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-600 text-sm">{t('common.noTradesFound')}</td></tr>
             ) : filtered.map(trade => { const be = isBreakEven(trade); return (
-              <>
-                <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>
+                <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setViewing(trade)}>
                   <td className="px-5 py-3 text-sm text-slate-300">{formatShortDate(trade.date)}</td>
                   <td className="px-5 py-3"><span className="text-sm font-bold text-white">{trade.symbol}</span></td>
                   <td className="px-5 py-3 text-sm text-slate-400">{trade.strategy}</td>
@@ -188,31 +186,25 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd }
                   <td className="px-5 py-3 text-sm text-slate-400">${trade.riskAmount.toFixed(0)}</td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => onEdit(trade)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => onDelete(trade.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setViewing(trade)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Eye className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} title={t('common.edit')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => onDelete(trade.id)} aria-label={t('common.delete')} title={t('common.delete')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>
                 </tr>
-                {expandedId === trade.id && (
-                  <tr key={trade.id + '-detail'} className="bg-white/[0.01]">
-                    <td colSpan={8} className="px-5 py-4">
-                      <div className="grid grid-cols-4 gap-4 text-sm">
-                        <div><span className="text-[10px] text-slate-500 block mb-1">{t('common.risk')}</span><span className="text-slate-300">${trade.riskAmount.toFixed(2)}</span></div>
-                        <div><span className="text-[10px] text-slate-500 block mb-1">{t('journal.detailRMultiple')}</span><span className={cn('font-semibold', trade.rMultiple >= 0 ? 'text-emerald-400' : 'text-red-400')}>{trade.rMultiple.toFixed(2)}R</span></div>
-                        <div><span className="text-[10px] text-slate-500 block mb-1">{t('common.time')}</span><span className="text-slate-300">{trade.entryTime} → {trade.exitTime}</span></div>
-                        <div><span className="text-[10px] text-slate-500 block mb-1">{t('common.quality')}</span><span className="text-slate-300">{'★'.repeat(trade.setupQuality)}{'☆'.repeat(5 - trade.setupQuality)}</span></div>
-                      </div>
-                      {trade.confluences.length > 0 && <div className="flex items-center gap-2 mt-3 flex-wrap">{trade.confluences.map((c: string) => <span key={c} className="text-[10px] px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 font-medium">{c}</span>)}</div>}
-                      {trade.mistakes.length > 0 && <div className="flex items-center gap-2 mt-2 flex-wrap">{trade.mistakes.map((m: string) => <span key={m} className="text-[10px] px-2 py-1 rounded-lg bg-red-500/10 text-red-400 font-medium">{m}</span>)}</div>}
-                      {trade.notes && (<div className="mt-3 text-sm text-slate-400 bg-white/[0.03] rounded-xl p-3 border border-white/[0.04]">{trade.notes}</div>)}
-                    </td>
-                  </tr>
-                )}
-              </>
               );})}
           </tbody>
         </table>
+        </div>
       </div>
+
+      {viewing && (
+        <TradeDetailModal
+          trades={[viewing]}
+          date={viewing.date}
+          onClose={() => setViewing(null)}
+        />
+      )}
     </div>
   );
 }

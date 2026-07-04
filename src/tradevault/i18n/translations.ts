@@ -130,6 +130,7 @@ const en = {
   'missed.collapse': 'Hide details',
   'missed.countOnDay': 'missed',
   'missed.nothingNoted': 'Nothing noted',
+  'missed.preview': 'Preview',
 
   // Insights
   'insights.title': 'AI Insights',
@@ -392,6 +393,7 @@ const fr: Dict = {
   'missed.exportCsv': 'Exporter en CSV', 'missed.expand': 'Afficher les détails',
   'missed.collapse': 'Masquer les détails', 'missed.countOnDay': 'manqué(s)',
   'missed.nothingNoted': 'Rien de noté',
+  'missed.preview': 'Aperçu',
   'insights.title': 'IA Insights', 'insights.subtitle': 'Posez toutes vos questions sur votre trading',
   'insights.askLabel': 'Posez une question sur votre trading',
   'insights.placeholder': 'ex. Quelles sont mes plus grandes faiblesses ?',
