@@ -258,7 +258,12 @@ input[type="number"] { -moz-appearance: textfield; }
   }
 }
 
-.recharts-tooltip-wrapper { outline: none !important; }
+.recharts-tooltip-wrapper {
+  outline: none !important;
+  transition: transform 150ms ease-out, opacity 150ms ease-out !important;
+}
+.recharts-surface { overflow: visible; }
+.recharts-active-dot { transition: r 150ms ease-out; }
 
 input[type="range"] {
   -webkit-appearance: none; appearance: none;

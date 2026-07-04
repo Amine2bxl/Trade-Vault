@@ -4,6 +4,7 @@ import { computeStats, formatPnl, formatPct, formatShortDate, directionLabel, di
 import StatsCard from '../components/StatsCard';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '../utils/cn';
+import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from '../utils/chartTheme';
 import { useT } from '../i18n/LanguageContext';
 
 interface DashboardProps { trades: Trade[]; onAddTrade: () => void; }
@@ -57,11 +58,17 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.equityCurve} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-                  <defs><linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="100%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient></defs>
+                  <defs>
+                    <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.45} />
+                      <stop offset="55%" stopColor="#3b82f6" stopOpacity={0.12} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
-                  <Tooltip contentStyle={{ background: '#111827', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '12px', fontSize: 11 }} labelStyle={{ color: '#94a3b8' }} itemStyle={{ color: '#e2e8f0' }} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, 'Equity'])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2} fill="url(#eqGrad)" />
+                  <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, 'Equity'])} labelFormatter={(v) => formatShortDate(v)} />
+                  <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

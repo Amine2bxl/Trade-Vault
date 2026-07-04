@@ -5,6 +5,7 @@ import { computeStats, formatPnl } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useT } from '../i18n/LanguageContext';
+import { CHART_ANIMATION, tooltipStyle } from '../utils/chartTheme';
 
 interface MistakesProps { trades: Trade[]; embedded?: boolean; }
 const MISTAKE_TIPS: Record<string, string> = {
@@ -72,8 +73,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   <BarChart data={costData} layout="vertical">
                     <XAxis type="number" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} />
                     <YAxis dataKey="mistake" type="category" tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} tickLine={false} width={100} />
-                    <Tooltip contentStyle={{ background: '#111827', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '12px', fontSize: 11 }} labelStyle={{ color: '#94a3b8' }} itemStyle={{ color: '#e2e8f0' }} formatter={((value: any) => [`$${Number(value).toFixed(2)}`])} />
-                    <Bar dataKey="totalPnl" radius={[0, 4, 4, 0]}>{costData.map((e, i) => <Cell key={i} fill={e.totalPnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.7} />)}</Bar>
+                    <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`])} />
+                    <Bar dataKey="totalPnl" radius={[0, 4, 4, 0]} {...CHART_ANIMATION}>{costData.map((e, i) => <Cell key={i} fill={e.totalPnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.7} />)}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

@@ -30,6 +30,7 @@ const en = {
   'nav.profile': 'Profile',
   'nav.home': 'Home',
   'nav.ai': 'AI',
+  'nav.more': 'More',
 
   // Common
   'common.save': 'Save',
@@ -248,6 +249,7 @@ const en = {
   'trade.mistakes': 'Mistakes',
   'trade.screenshots': 'Chart Screenshots (max 3)',
   'trade.upload': 'Upload',
+  'common.pasteHint': 'Snip with Win+Shift+S, then paste with Ctrl+V',
   'trade.notes': 'Notes',
   'trade.notesPlaceholder': 'Trade observations, lessons learned...',
   'trade.updateTrade': 'Update Trade',
@@ -325,7 +327,7 @@ type Dict = Partial<Record<keyof typeof en, string>>;
 const fr: Dict = {
   'nav.dashboard': 'Tableau de bord', 'nav.journal': 'Journal', 'nav.missed': 'Setups manqués',
   'nav.calendar': 'Calendrier', 'nav.analytics': 'Analyses', 'nav.mistakes': 'Erreurs',
-  'nav.insights': 'IA Insights', 'nav.profile': 'Profil', 'nav.home': 'Accueil', 'nav.ai': 'IA',
+  'nav.insights': 'IA Insights', 'nav.profile': 'Profil', 'nav.home': 'Accueil', 'nav.ai': 'IA', 'nav.more': 'Plus',
   'common.save': 'Enregistrer', 'common.cancel': 'Annuler', 'common.delete': 'Supprimer',
   'common.edit': 'Modifier', 'common.add': 'Ajouter', 'common.view': 'Voir', 'common.loading': 'Chargement…',
   'common.saved': 'enregistré', 'common.signOut': 'Se déconnecter', 'common.close': 'Fermer',
@@ -426,6 +428,7 @@ const fr: Dict = {
   'trade.strategy': 'Stratégie', 'trade.setupQuality': 'Qualité du setup', 'trade.confidence': 'Confiance',
   'trade.confluences': 'Confluences', 'trade.addConfluencePlaceholder': 'Ajouter une confluence personnalisée...',
   'trade.mistakes': 'Erreurs', 'trade.screenshots': "Captures d'écran (max 3)", 'trade.upload': 'Téléverser',
+  'common.pasteHint': 'Capture avec Win+Maj+S, puis colle avec Ctrl+V',
   'trade.notes': 'Notes', 'trade.notesPlaceholder': 'Observations sur le trade, leçons apprises...',
   'trade.updateTrade': 'Mettre à jour le trade', 'trade.saveTrade': 'Enregistrer le trade',
   'trade.pasteHint': 'Faites une capture d\'écran, puis appuyez sur Ctrl+V (Cmd+V sur Mac) ici pour la coller — pas besoin de l\'enregistrer sur le disque avant.',

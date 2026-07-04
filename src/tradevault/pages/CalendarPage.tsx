@@ -79,20 +79,22 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
   const getDateStr = (day: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const monthlySummary = useMemo(() => {
-    let total = 0, tradingDays = 0, winDays = 0, beDays = 0, avgRRsum = 0, rrCount = 0, decidedTrades = 0, totalWins = 0, totalRR = 0;
+    let total = 0, tradingDays = 0, winDays = 0, beDays = 0, absRRsum = 0, tradeCount = 0, decidedTrades = 0, totalWins = 0, totalRR = 0;
     for (let d = 1; d <= new Date(year, month + 1, 0).getDate(); d++) {
       const dateStr = getDateStr(d); const data = dailyData[dateStr];
       if (data) {
         total += data.pnl; tradingDays++;
         if (data.pnl > 0) winDays++;
         if (data.count > 0 && data.count === data.breakEven) beDays++;
-        avgRRsum += data.avgRR; rrCount++;
+        // data.avgRR is already the per-day average; multiply back by count so the
+        // monthly figure is a true trade-weighted average, matching Dashboard's avgRR.
+        absRRsum += data.avgRR * data.count; tradeCount += data.count;
         totalRR += data.totalRR;
         const dec = data.count - data.breakEven;
         decidedTrades += dec; totalWins += data.wins;
       }
     }
-    return { total, tradingDays, winDays, beDays, avgRR: rrCount > 0 ? avgRRsum / rrCount : 0, totalRR, winRate: decidedTrades > 0 ? totalWins / decidedTrades : 0 };
+    return { total, tradingDays, winDays, beDays, avgRR: tradeCount > 0 ? absRRsum / tradeCount : 0, totalRR, winRate: decidedTrades > 0 ? totalWins / decidedTrades : 0 };
   }, [year, month, dailyData]);
 
   const selectedTrades = selectedDate ? (dailyData[selectedDate]?.trades || []) : [];

@@ -148,9 +148,9 @@ export default function Profile({ trades, onDeleteAll }: ProfileProps) {
 
 function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent: string }) {
   return (
-    <div className="glass rounded-2xl p-4">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500 mb-2">{icon}{label}</div>
-      <div className={`text-base font-bold ${accent}`}>{value}</div>
+    <div className="glass rounded-2xl p-2.5 md:p-4 min-w-0">
+      <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 mb-1.5 md:mb-2 truncate">{icon}{label}</div>
+      <div className={`text-sm md:text-base font-bold truncate ${accent}`}>{value}</div>
     </div>
   );
 }

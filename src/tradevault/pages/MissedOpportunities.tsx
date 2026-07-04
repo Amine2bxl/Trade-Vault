@@ -12,6 +12,7 @@ import {
   deleteScreenshot,
 } from '../store';
 import { formatShortDate } from '../utils/tradeCalcs';
+import { compressImageToFile } from '../utils/image';
 import { cn } from '../utils/cn';
 import { useT } from '../i18n/LanguageContext';
 
@@ -149,10 +150,12 @@ export default function MissedOpportunities() {
             const open = openIds.has(m.id);
             return (
               <div key={m.id} className="glass rounded-2xl overflow-hidden">
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleOpen(m.id)}
-                  className="w-full flex items-center justify-between gap-3 p-3 md:p-4 text-left hover:bg-white/[0.02] transition"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOpen(m.id); } }}
+                  className="w-full flex items-center justify-between gap-3 p-3 md:p-4 text-left hover:bg-white/[0.02] transition cursor-pointer"
                   aria-expanded={open}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -178,7 +181,7 @@ export default function MissedOpportunities() {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </button>
+                </div>
                 {open && (
                   <div className="px-4 md:px-5 pb-4 md:pb-5 pt-1 animate-fade-in">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs md:text-sm">
@@ -298,21 +301,21 @@ export function MissedEditor({ value, onClose, onSave }: { value: MissedOpportun
   const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof MissedOpportunity>(k: K, v: MissedOpportunity[K]) => setM((p) => ({ ...p, [k]: v }));
 
-  const handleFiles = useCallback(async (files: FileList | null) => {
+  const handleFiles = useCallback(async (files: FileList | File[] | null) => {
     if (!files || !user) return;
     const current = m.screenshots ?? [];
     const slots = 3 - current.length;
     if (slots <= 0) { alert(t('missed.maxImages')); return; }
-    const picks = Array.from(files).slice(0, slots);
-    for (const f of picks) {
-      if (f.size > 8 * 1024 * 1024) { alert(t('missed.imageTooLarge')); continue; }
-    }
+    const picks = Array.from(files).filter((f) => f.type.startsWith('image/')).slice(0, slots);
+    if (picks.length === 0) return;
     setUploading(true);
     try {
       const uploaded: string[] = [];
       for (const f of picks) {
-        if (f.size > 8 * 1024 * 1024) continue;
-        const path = await uploadMissedScreenshot(user.id, f);
+        // Compress client-side first: high-DPI PNGs routinely exceed the 8 MB
+        // storage limit and would fail. JPEG output stays well under it.
+        const compressed = await compressImageToFile(f);
+        const path = await uploadMissedScreenshot(user.id, compressed);
         uploaded.push(path);
       }
       setM((prev) => ({ ...prev, screenshots: [...(prev.screenshots ?? []), ...uploaded] }));
@@ -329,6 +332,22 @@ export function MissedEditor({ value, onClose, onSave }: { value: MissedOpportun
     setM((prev) => ({ ...prev, screenshots: (prev.screenshots ?? []).filter((p) => p !== path) }));
     deleteScreenshot(path).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files = Array.from(items)
+        .filter((it) => it.type.startsWith('image/'))
+        .map((it) => it.getAsFile())
+        .filter((f): f is File => !!f);
+      if (files.length === 0) return;
+      e.preventDefault();
+      handleFiles(files);
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [handleFiles]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
@@ -351,7 +370,7 @@ export function MissedEditor({ value, onClose, onSave }: { value: MissedOpportun
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">{t('missed.field.screenshots')} <span className="text-slate-700">({(m.screenshots ?? []).length}/3)</span></span>
-              <span className="text-[10px] text-slate-600">{t('missed.field.screenshotsHint')}</span>
+              <span className="text-[10px] text-slate-600">{t('missed.field.screenshotsHint')} · {t('common.pasteHint')}</span>
             </div>
             <ScreenshotsView paths={m.screenshots ?? []} onRemove={removeShot} />
             {(m.screenshots ?? []).length < 3 && (
