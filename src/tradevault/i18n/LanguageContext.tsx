@@ -15,11 +15,13 @@ const LanguageCtx = createContext<Ctx | null>(null);
 const STORAGE_KEY = 'tv.lang';
 
 function readInitialLang(): Lang {
+  // Always default to English. Language only changes when the user explicitly
+  // picks one in Settings (persisted to localStorage / their profile). We do NOT
+  // auto-detect the browser locale — that caused unwanted Spanish/other defaults.
   if (typeof window === 'undefined') return 'en';
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored && stored in LANG_NAMES) return stored as Lang;
-  const browser = window.navigator.language?.slice(0, 2);
-  return (browser && browser in LANG_NAMES) ? (browser as Lang) : 'en';
+  return 'en';
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

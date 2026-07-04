@@ -28,6 +28,9 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Vercel CLI local artifacts
+.vercel
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

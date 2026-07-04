@@ -80,7 +80,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               </div>
 
               {/* Metrics */}
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center">
                   <Clock className="w-3.5 h-3.5 text-slate-500 mx-auto mb-1" />
                   <div className="text-[10px] text-slate-500 mb-0.5">{t('tradeDetail.entry')}</div>
@@ -108,7 +108,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               </div>
 
               {/* Risk */}
-              <div className="flex gap-4 text-xs">
+              <div className="flex flex-wrap gap-3 md:gap-4 text-xs">
                 <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('tradeDetail.risk')}: </span><span className="text-white font-semibold">${trade.riskAmount.toFixed(2)}</span></div>
                 <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('tradeDetail.pnlPerRisk')}: </span><span className={cn('font-semibold', trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{(trade.pnl / trade.riskAmount).toFixed(2)}R</span></div>
               </div>

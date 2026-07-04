@@ -6,42 +6,12 @@ import { loadConfluences, saveConfluences, loadAccountBalance, saveAccountBalanc
 import { useAuth } from '../contexts/AuthContext';
 import { useT } from '../i18n/LanguageContext';
 import { cn } from '../utils/cn';
+import { compressImageToDataUrl } from '../utils/image';
 
 interface TradeModalProps {
   trade: Trade | null;
   onClose: () => void;
   onSave: (trade: Trade) => void;
-}
-
-function compressImage(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = reject;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        // High-quality: preserve chart legibility up to 1920px on the long edge
-        const MAX = 1920;
-        if (w > MAX || h > MAX) {
-          const ratio = Math.min(MAX / w, MAX / h);
-          w = Math.round(w * ratio);
-          h = Math.round(h * ratio);
-        }
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d')!;
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, w, h);
-        // JPEG at 0.92 keeps text on candlestick charts crisp while staying reasonable in size
-        resolve(canvas.toDataURL('image/jpeg', 0.92));
-      };
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 const defaultForm = {
@@ -104,16 +74,32 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return riskDollar * rm;
   }, [riskDollar, form.rMultiple]);
 
-  const handleScreenshotUpload = useCallback(async (files: FileList | null) => {
-    if (!files) return;
+  const handleScreenshotUpload = useCallback(async (files: FileList | File[] | null) => {
+    if (!files || files.length === 0) return;
     setUploading(true);
     const newScreenshots: string[] = [];
     for (let i = 0; i < files.length && form.screenshots.length + newScreenshots.length < 3; i++) {
-      try { newScreenshots.push(await compressImage(files[i])); } catch {}
+      try { newScreenshots.push(await compressImageToDataUrl(files[i])); } catch {}
     }
     setForm(f => ({ ...f, screenshots: [...f.screenshots, ...newScreenshots] }));
     setUploading(false);
   }, [form.screenshots.length]);
+
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files = Array.from(items)
+        .filter((it) => it.type.startsWith('image/'))
+        .map((it) => it.getAsFile())
+        .filter((f): f is File => !!f);
+      if (files.length === 0) return;
+      e.preventDefault();
+      handleScreenshotUpload(files);
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [handleScreenshotUpload]);
 
   const removeScreenshot = (idx: number) => {
     setForm(f => ({ ...f, screenshots: f.screenshots.filter((_, i) => i !== idx) }));
@@ -322,7 +308,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Screenshots */}
           <div>
-            <label className={labelClass}>{t('trade.screenshots')}</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelClass + ' mb-0'}>{t('trade.screenshots')}</label>
+              <span className="text-[10px] text-slate-600 flex items-center gap-1">{t('common.pasteHint')}</span>
+            </div>
             <div className="flex gap-3 flex-wrap items-start">
               {form.screenshots.map((src, i) => (
                 <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group">

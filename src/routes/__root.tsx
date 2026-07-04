@@ -87,9 +87,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Tradevault" },
       { property: "og:description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/icon-512.png" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Tradevault" },
       { name: "twitter:description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
+      { name: "twitter:image", content: "/icon-512.png" },
     ],
     links: [
       {
@@ -97,6 +99,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Trade } from '../types';
 import { computeStats, formatPnl, formatPct, formatShortDate } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line } from 'recharts';
 import Mistakes from './Mistakes';
 import { useT } from '../i18n/LanguageContext';
+import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from '../utils/chartTheme';
 
 interface AnalyticsProps { trades: Trade[]; }
-const tooltipStyle = { contentStyle: { background: '#111827', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '12px', fontSize: 11 }, labelStyle: { color: '#94a3b8' }, itemStyle: { color: '#e2e8f0' } };
 const LOCALE_MAP: Record<string, string> = {
   en: 'en-US', es: 'es-ES', pt: 'pt-PT', fr: 'fr-FR', de: 'de-DE', it: 'it-IT',
   nl: 'nl-NL', ru: 'ru-RU', zh: 'zh-CN', ja: 'ja-JP', ar: 'ar-SA', hi: 'hi-IN',
@@ -16,6 +16,7 @@ const LOCALE_MAP: Record<string, string> = {
 export default function Analytics({ trades }: AnalyticsProps) {
   const { t, lang } = useT();
   const locale = LOCALE_MAP[lang] || 'en-US';
+  const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const DAY_NAMES = useMemo(() => Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2023, 0, 1 + i))), [locale]);
   const MONTH_NAMES_SHORT = useMemo(() => Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(2000, i, 1))), [locale]);
   const stats = computeStats(trades);
@@ -68,11 +69,17 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <div className="h-48 md:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.equityCurve}>
-                  <defs><linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="100%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient></defs>
+                  <defs>
+                    <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.45} />
+                      <stop offset="55%" stopColor="#3b82f6" stopOpacity={0.12} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, t('analytics.equityCurve')])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2} fill="url(#eqG)" />
+                  <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqG)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -81,7 +88,38 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <h3 className="text-sm font-semibold text-white mb-3">{t('analytics.winLoss')}</h3>
             <div className="h-40 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart><Pie data={winLossData} cx="50%" cy="45%" innerRadius={45} outerRadius={65} paddingAngle={3} dataKey="value" stroke="none">{winLossData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip {...tooltipStyle} /><Legend verticalAlign="bottom" formatter={(v) => <span className="text-[10px] text-slate-400">{v}</span>} /></PieChart>
+                <PieChart>
+                  <Pie
+                    data={winLossData}
+                    cx="50%" cy="45%"
+                    innerRadius={45}
+                    outerRadius={65}
+                    paddingAngle={4}
+                    cornerRadius={6}
+                    dataKey="value"
+                    stroke="none"
+                    onMouseEnter={(_, i) => setActivePieIndex(i)}
+                    onMouseLeave={() => setActivePieIndex(null)}
+                    animationDuration={900}
+                    animationEasing="ease-out"
+                  >
+                    {winLossData.map((e, i) => (
+                      <Cell
+                        key={i}
+                        fill={e.color}
+                        style={{
+                          filter: activePieIndex === i ? `drop-shadow(0 0 8px ${e.color})` : 'none',
+                          transform: activePieIndex === i ? 'scale(1.04)' : 'scale(1)',
+                          transformOrigin: 'center',
+                          transformBox: 'fill-box',
+                          transition: 'transform 200ms ease-out, filter 200ms ease-out',
+                        }}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip {...tooltipStyle} />
+                  <Legend verticalAlign="bottom" formatter={(v) => <span className="text-[10px] text-slate-400">{v}</span>} />
+                </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="text-center mt-1"><div className="text-xl md:text-2xl font-bold text-white">{formatPct(stats.winRate)}</div><div className="text-[10px] text-slate-500">{t('analytics.winRateLabel')}</div></div>
@@ -100,9 +138,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <YAxis yAxisId="left" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={50} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} domain={[0, 100]} width={35} />
                   <Tooltip {...tooltipStyle} formatter={((value: any, name: any) => { if (name === 'winRate') return [`${value}%`, t('analytics.winRateLabel')]; if (name === 'avgRR') return [`${value}R`, t('dashboard.avgRR')]; return [`$${Number(value).toFixed(2)}`, t('journal.colPnl')]; })} />
-                  <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]}>{monthlyData.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.55} />)}</Bar>
-                  <Line yAxisId="right" type="monotone" dataKey="winRate" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 3, strokeWidth: 0 }} name="winRate" />
-                  <Line yAxisId="right" type="monotone" dataKey="avgRR" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 4" dot={{ fill: '#f59e0b', r: 2, strokeWidth: 0 }} name="avgRR" />
+                  <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>{monthlyData.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.55} />)}</Bar>
+                  <Line yAxisId="right" type="monotone" dataKey="winRate" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 3, strokeWidth: 0 }} activeDot={glowActiveDot('#3b82f6')} name="winRate" {...CHART_ANIMATION} />
+                  <Line yAxisId="right" type="monotone" dataKey="avgRR" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 4" dot={{ fill: '#f59e0b', r: 2, strokeWidth: 0 }} activeDot={glowActiveDot('#f59e0b')} name="avgRR" {...CHART_ANIMATION} />
                 </ComposedChart>
               </ResponsiveContainer>
               <div className="flex items-center justify-center gap-4 mt-1">
@@ -125,8 +163,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <YAxis yAxisId="left" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={50} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} domain={[0, 100]} width={35} />
                   <Tooltip {...tooltipStyle} formatter={((value: any, name: any) => [name === 'winRate' ? `${value}%` : `$${Number(value).toFixed(2)}`, name === 'winRate' ? t('analytics.winRateLabel') : t('journal.colPnl')])} />
-                  <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]}>{dayOfWeekData.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.6} />)}</Bar>
-                  <Line yAxisId="right" type="monotone" dataKey="winRate" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 3, strokeWidth: 0 }} />
+                  <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>{dayOfWeekData.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.6} />)}</Bar>
+                  <Line yAxisId="right" type="monotone" dataKey="winRate" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 3, strokeWidth: 0 }} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -139,7 +177,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <XAxis type="number" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} />
                   <YAxis dataKey="strategy" type="category" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} width={85} />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, t('journal.colPnl')])} />
-                  <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>{strategyData.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? '#3b82f6' : '#ef4444'} fillOpacity={0.7} />)}</Bar>
+                  <Bar dataKey="pnl" radius={[0, 4, 4, 0]} {...CHART_ANIMATION}>{strategyData.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? '#3b82f6' : '#ef4444'} fillOpacity={0.7} />)}</Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -156,7 +194,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <XAxis dataKey="range" tick={{ fill: '#475569', fontSize: 9 }} axisLine={false} tickLine={false} angle={-20} textAnchor="end" height={35} />
                   <YAxis tick={{ fill: '#475569', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>{pnlDistribution.map((e, i) => <Cell key={i} fill={e.fill} fillOpacity={0.7} />)}</Bar>
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>{pnlDistribution.map((e, i) => <Cell key={i} fill={e.fill} fillOpacity={0.7} />)}</Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
