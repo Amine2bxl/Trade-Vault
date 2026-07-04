@@ -10,6 +10,7 @@ import Mistakes from './pages/Mistakes';
 import Insights from './pages/Insights';
 import Profile from './pages/Profile';
 import MissedOpportunities from './pages/MissedOpportunities';
+import AiAssistant from './components/AiAssistant';
 import { Trade, Page } from './types';
 import { loadUserTrades, upsertTrade, deleteTrade, deleteAllTrades } from './store';
 import { computeStats } from './utils/tradeCalcs';
@@ -119,6 +120,7 @@ function AppContent() {
         </div>
       </main>
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
+      <AiAssistant trades={trades} />
       {modalOpen && <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />}
     </div>
   );

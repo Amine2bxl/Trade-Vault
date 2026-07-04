@@ -11,6 +11,7 @@ const TradeSummary = z.object({
   mistakes: z.array(z.string()),
   setupQuality: z.number(),
   confluences: z.array(z.string()),
+  notes: z.string().optional(),
 });
 
 const InsightInput = z.object({
@@ -22,9 +23,9 @@ const InsightInput = z.object({
 export const askTradingInsight = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InsightInput.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("AI coach is not configured yet. Add an ANTHROPIC_API_KEY to enable this feature.");
+      throw new Error("AI coach is not configured yet. Add a GEMINI_API_KEY to enable this feature.");
     }
 
     const language = data.language || 'en';
@@ -78,25 +79,23 @@ One bold sentence summarizing the verdict.
 
 Rules: Use **bold** for key numbers. Keep paragraphs short. No fluff. No generic advice. If the trader has no data, say so clearly and suggest what to log first.`;
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: `${tradesContext}\n\nQuestion: ${data.question}`,
-          },
-        ],
-      }),
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `${tradesContext}\n\nQuestion: ${data.question}` }],
+            },
+          ],
+          generationConfig: { maxOutputTokens: 4096 },
+        }),
+      }
+    );
 
     if (!res.ok) {
       const text = await res.text();
@@ -106,6 +105,6 @@ Rules: Use **bold** for key numbers. Keep paragraphs short. No fluff. No generic
     }
 
     const json = await res.json();
-    const content: string = json?.content?.[0]?.text ?? "";
+    const content: string = json?.candidates?.[0]?.content?.parts?.map((p: any) => p.text ?? '').join('') ?? "";
     return { answer: content };
   });

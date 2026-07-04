@@ -111,6 +111,16 @@ export function formatPct(value: number): string {
   return (value * 100).toFixed(1) + '%';
 }
 
+// Shared shape sent to the AI coach (Insights page + floating AI Assistant) —
+// caps volume and trims fields so both callers stay in sync with the backend schema.
+export function toInsightTradesPayload(trades: Trade[]) {
+  return trades.slice(0, 200).map(t => ({
+    date: t.date, symbol: t.symbol, direction: t.direction, pnl: t.pnl,
+    rMultiple: t.rMultiple, strategy: t.strategy, mistakes: t.mistakes,
+    setupQuality: t.setupQuality, confluences: t.confluences, notes: t.notes,
+  }));
+}
+
 export function formatShortDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
   const dd = String(d.getDate()).padStart(2, '0');

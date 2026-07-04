@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { Trade } from '../types';
 import { computeStats, formatPnl, formatPct, formatShortDate } from '../utils/tradeCalcs';
 import { cn } from '../utils/cn';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 import Mistakes from './Mistakes';
 import { useT } from '../i18n/LanguageContext';
-import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from '../utils/chartTheme';
+import { CHART_ANIMATION, tooltipStyle, glowActiveDot, equityYDomain, EQUITY_X_PADDING } from '../utils/chartTheme';
 
 interface AnalyticsProps { trades: Trade[]; }
 const LOCALE_MAP: Record<string, string> = {
@@ -64,11 +64,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
         {/* Equity + Pie */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          <div className="md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2">
-            <h3 className="text-sm font-semibold text-white mb-3">{t('analytics.equityCurve')}</h3>
-            <div className="h-48 md:h-72 chart-organic">
+          <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-6 card-premium animate-fade-in-up stagger-2 overflow-hidden">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
+            <h3 className="text-sm font-semibold text-white mb-4">{t('analytics.equityCurve')}</h3>
+            <div className="h-56 md:h-80 chart-organic">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.equityCurve}>
+                <AreaChart data={stats.equityCurve} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
                   <defs>
                     <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.45} />
@@ -76,10 +77,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
+                  <XAxis dataKey="date" padding={EQUITY_X_PADDING} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
+                  <YAxis domain={equityYDomain} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
+                  <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, t('analytics.equityCurve')])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="natural" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqG)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
+                  <Area type="natural" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqG)" dot={false} activeDot={glowActiveDot('#3b82f6')} style={{ filter: 'drop-shadow(0 2px 6px rgba(59,130,246,0.35))' }} {...CHART_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

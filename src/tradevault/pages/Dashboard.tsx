@@ -2,9 +2,9 @@ import { Plus, TrendingUp, TrendingDown, Target, Activity, BarChart3, ArrowUpRig
 import { Trade, isBreakEven } from '../types';
 import { computeStats, formatPnl, formatPct, formatShortDate, directionLabel, directionBadgeClass } from '../utils/tradeCalcs';
 import StatsCard from '../components/StatsCard';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { cn } from '../utils/cn';
-import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from '../utils/chartTheme';
+import { CHART_ANIMATION, tooltipStyle, glowActiveDot, equityYDomain, EQUITY_X_PADDING } from '../utils/chartTheme';
 import { useT } from '../i18n/LanguageContext';
 
 interface DashboardProps { trades: Trade[]; onAddTrade: () => void; }
@@ -48,16 +48,16 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         {/* Equity Curve */}
-        <div className="relative col-span-1 md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4 overflow-hidden">
+        <div className="relative col-span-1 md:col-span-2 glass rounded-3xl p-4 md:p-6 card-premium animate-fade-in-up stagger-4 overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-white">{t('dashboard.equityCurve')}</h3>
             <span className={cn('text-xs font-bold tabular-nums', stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(stats.totalPnl)}</span>
           </div>
           {stats.equityCurve.length > 0 ? (
-            <div className="h-48 md:h-64 chart-organic">
+            <div className="h-52 md:h-72 chart-organic">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.equityCurve} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+                <AreaChart data={stats.equityCurve} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
                   <defs>
                     <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.45} />
@@ -65,14 +65,15 @@ export default function Dashboard({ trades, onAddTrade }: DashboardProps) {
                       <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
+                  <XAxis dataKey="date" padding={EQUITY_X_PADDING} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
+                  <YAxis domain={equityYDomain} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
+                  <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, 'Equity'])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="natural" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={glowActiveDot('#3b82f6')} {...CHART_ANIMATION} />
+                  <Area type="natural" dataKey="equity" stroke="#3b82f6" strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={glowActiveDot('#3b82f6')} style={{ filter: 'drop-shadow(0 2px 6px rgba(59,130,246,0.35))' }} {...CHART_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          ) : (<div className="h-48 md:h-64 flex items-center justify-center text-slate-600 text-sm">{t('common.noTradesYet')}</div>)}
+          ) : (<div className="h-52 md:h-72 flex items-center justify-center text-slate-600 text-sm">{t('common.noTradesYet')}</div>)}
         </div>
 
         {/* Quick Stats */}

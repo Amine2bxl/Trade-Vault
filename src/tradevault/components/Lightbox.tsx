@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface LightboxProps {
@@ -32,7 +33,7 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
   const src = images[index];
   if (!src) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md animate-fade-in"
       onClick={onClose}
@@ -81,6 +82,7 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

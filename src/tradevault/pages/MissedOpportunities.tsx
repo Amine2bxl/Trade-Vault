@@ -234,7 +234,7 @@ function Field({ label, value, tone }: { label: string; value: string; tone: 're
   );
 }
 
-export function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove?: (p: string) => void }) {
+export function ScreenshotsView({ paths, onRemove, size = 'sm' }: { paths: string[]; onRemove?: (p: string) => void; size?: 'sm' | 'lg' }) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const resolvedUrls = paths.map((p) => urls[p]).filter(Boolean);
@@ -262,12 +262,18 @@ export function ScreenshotsView({ paths, onRemove }: { paths: string[]; onRemove
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-2">
-        {paths.map((p) => (
-          <div key={p} className="relative group aspect-video rounded-xl overflow-hidden bg-white/[0.04] border border-white/[0.08]">
+      <div className={cn('grid gap-2', size === 'lg' ? 'grid-cols-2 sm:grid-cols-3 gap-3' : 'grid-cols-3')}>
+        {paths.map((p, i) => (
+          <div key={p} className={cn('relative group aspect-video overflow-hidden bg-white/[0.04] border border-white/[0.08] hover:border-blue-500/30 transition-all', size === 'lg' ? 'rounded-2xl shadow-lg shadow-black/20' : 'rounded-xl')}>
             {urls[p] ? (
               <button type="button" onClick={() => setLightboxIndex(resolvedUrls.indexOf(urls[p]))} className="block w-full h-full">
-                <img src={urls[p]} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                <img src={urls[p]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                  <span className={cn('opacity-0 group-hover:opacity-100 transition-opacity text-white font-semibold bg-black/50 rounded-md backdrop-blur-sm', size === 'lg' ? 'text-xs px-2.5 py-1' : 'text-[10px] px-1.5 py-0.5')}>View</span>
+                </div>
+                {size === 'lg' && (
+                  <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm">{i + 1}/{paths.length}</span>
+                )}
               </button>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-600">

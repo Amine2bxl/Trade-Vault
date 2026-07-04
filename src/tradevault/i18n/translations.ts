@@ -145,6 +145,17 @@ const en = {
   'insights.quick.symbols': 'Symbol Performance',
   'insights.quick.improvements': 'Improvements',
 
+  // AI Assistant (floating chat)
+  'assistant.title': 'AI Coach',
+  'assistant.subtitle': 'Ask about your stats, trades or mistakes',
+  'assistant.placeholder': 'Ask your AI coach…',
+  'assistant.empty': 'Ask me anything about your trading — stats, patterns, mistakes, or a specific trade.',
+  'assistant.listening': 'Listening…',
+  'assistant.micUnsupported': 'Voice input is not supported in this browser.',
+  'assistant.thinking': 'Thinking…',
+  'assistant.open': 'Open AI coach',
+  'assistant.close': 'Close',
+
   // Dashboard
   'dashboard.greetingStillUp': 'Still up',
   'dashboard.greetingMorning': 'Good morning',
@@ -389,6 +400,12 @@ const fr: Dict = {
   'insights.tip': 'Astuce : enregistrez quelques trades pour des analyses plus pertinentes.',
   'insights.quick.winLoss': 'Gains / Pertes', 'insights.quick.days': 'Meilleurs / Pires jours',
   'insights.quick.symbols': 'Performance par symbole', 'insights.quick.improvements': 'Améliorations',
+  'assistant.title': 'Coach IA', 'assistant.subtitle': 'Pose une question sur tes stats, trades ou erreurs',
+  'assistant.placeholder': 'Demande à ton coach IA…',
+  'assistant.empty': 'Pose-moi une question sur ton trading — stats, tendances, erreurs, ou un trade précis.',
+  'assistant.listening': 'Écoute en cours…',
+  'assistant.micUnsupported': "La saisie vocale n'est pas prise en charge par ce navigateur.",
+  'assistant.thinking': 'Réflexion…', 'assistant.open': 'Ouvrir le coach IA', 'assistant.close': 'Fermer',
   'dashboard.greetingStillUp': 'Encore debout', 'dashboard.greetingMorning': 'Bonjour',
   'dashboard.greetingAfternoon': 'Bon après-midi', 'dashboard.greetingEvening': 'Bonsoir',
   'dashboard.title': 'Tableau de bord', 'dashboard.subtitle': "Vos performances de trading en un coup d'œil",

@@ -63,7 +63,7 @@ export default function AuthModal() {
   const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all';
 
   return (
-    <div className="relative min-h-screen overflow-y-auto overflow-x-hidden"
+    <div className="relative h-dvh w-full overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)' }}>
 
       {/* Decorative orbs */}
@@ -71,12 +71,13 @@ export default function AuthModal() {
       <div className="auth-orb w-[400px] h-[400px] bg-purple-600 -bottom-32 -right-32" style={{ animationDelay: '-5s' }} />
       <div className="auth-orb w-[300px] h-[300px] bg-cyan-600 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '-10s' }} />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center py-10 md:py-16">
-        <div className="w-full max-w-5xl mx-4 grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+      <div className="relative z-10 h-full flex items-center justify-center px-4 py-4 md:py-6 overflow-hidden">
+        <div className="w-full max-w-5xl h-full md:h-auto md:max-h-full grid md:grid-cols-2 gap-8 md:gap-16 md:items-center">
 
-          {/* Marketing / product intro — makes this page explain what TradeVault does without requiring sign-in */}
-          <div className="text-center md:text-left animate-fade-in-up">
-            <div className="flex items-center gap-3 justify-center md:justify-start mb-5">
+          {/* Marketing / product intro — desktop only, so the mobile card always fits
+              within one screen height without needing to scroll. */}
+          <div className="hidden md:block text-left animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-5">
               <div className="relative w-11 h-11 shrink-0">
                 <div className="absolute inset-0 rounded-xl bg-blue-500/40 blur-lg opacity-70" />
                 <img src={logoSrc} alt="TradeVault" width={44} height={44} className="relative w-11 h-11 rounded-xl drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
@@ -86,10 +87,10 @@ export default function AuthModal() {
             <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-3">
               {t('auth.headline')}
             </h1>
-            <p className="text-sm md:text-base text-slate-400 max-w-md mx-auto md:mx-0 mb-8">
+            <p className="text-sm md:text-base text-slate-400 max-w-md mb-8">
               {t('auth.description')}
             </p>
-            <div className="grid sm:grid-cols-2 gap-4 max-w-md mx-auto md:mx-0">
+            <div className="grid sm:grid-cols-2 gap-4 max-w-md">
               {FEATURES.map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="text-left glass rounded-2xl p-4">
                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-2">
@@ -103,8 +104,8 @@ export default function AuthModal() {
           </div>
 
           {/* Auth card */}
-          <div className="w-full max-w-md mx-auto animate-slide-in">
-        <div className="glass-strong rounded-3xl p-8 shadow-2xl shadow-black/40">
+          <div className="w-full max-w-md mx-auto h-full md:h-auto flex flex-col justify-center animate-slide-in overflow-y-auto">
+        <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/40 my-auto">
           {/* Logo */}
           <div className="text-center mb-8 md:hidden">
             <div className="relative w-14 h-14 mx-auto mb-4">

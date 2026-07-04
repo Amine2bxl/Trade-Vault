@@ -34,3 +34,13 @@ export function glowDot(color: string) {
 export function glowActiveDot(color: string) {
   return { r: 6, strokeWidth: 2, stroke: '#0a0f1e', fill: color, style: { filter: `drop-shadow(0 0 6px ${color})` } };
 }
+
+// Pads the Y domain so the curve's peaks/troughs never touch the chart edges —
+// without this, recharts fits the axis exactly to data min/max and the line
+// looks visually "cut off" at the top/bottom of the plot area.
+export function equityYDomain([dataMin, dataMax]: [number, number]): [number, number] {
+  const pad = Math.max((dataMax - dataMin) * 0.15, 20);
+  return [Math.floor(dataMin - pad), Math.ceil(dataMax + pad)];
+}
+
+export const EQUITY_X_PADDING = { left: 16, right: 16 };
