@@ -1,8 +1,4 @@
-import { supabase as supabaseClient } from '@/integrations/supabase/client';
-// Cast to `any` because Supabase generated types haven't synced for these tables yet.
-// Runtime behavior is unchanged; RLS still enforces auth.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const supabase = supabaseClient as any;
+import { supabase } from '@/integrations/supabase/client';
 import { Trade, DEFAULT_CONFLUENCES, MissedOpportunity } from './types';
 
 export function generateId(): string {
@@ -60,6 +56,10 @@ function rowToTrade(r: TradeRow): Trade {
   };
 }
 
+// Money values are rounded to cents at the storage boundary so float noise
+// from client-side math (risk * R) never lands in the DB numeric columns.
+const toCents = (n: number) => Math.round(n * 100) / 100;
+
 function tradeToRow(t: Trade, userId: string): TradeRow {
   return {
     id: t.id,
@@ -67,8 +67,8 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
     trade_date: t.date,
     symbol: t.symbol,
     direction: t.direction,
-    pnl: t.pnl,
-    risk_amount: t.riskAmount,
+    pnl: toCents(t.pnl),
+    risk_amount: toCents(t.riskAmount),
     r_multiple: t.rMultiple,
     strategy: t.strategy,
     mistakes: t.mistakes,
@@ -96,25 +96,50 @@ export async function loadUserTrades(userId: string): Promise<Trade[]> {
 export async function upsertTrade(userId: string, trade: Trade): Promise<void> {
   const { error } = await supabase
     .from('trades')
-    .upsert(tradeToRow(trade, userId) as never);
+    .upsert(tradeToRow(trade, userId));
   if (error) throw error;
 }
 
+// Storage paths (non data: URLs) referenced by rows must be removed together
+// with the rows, otherwise files pile up as unreachable orphans in the bucket.
+function storagePathsOf(screenshots: string[] | null | undefined): string[] {
+  return (screenshots ?? []).filter((s) => !s.startsWith('data:'));
+}
+
+async function removeScreenshotFiles(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+  // Best-effort: a failed storage cleanup should never block the row delete.
+  try { await supabase.storage.from(SCREENSHOTS_BUCKET).remove(paths); } catch { /* ignore */ }
+}
+
 export async function deleteTrade(userId: string, id: string): Promise<void> {
+  const { data } = await supabase
+    .from('trades')
+    .select('screenshots')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .maybeSingle();
   const { error } = await supabase
     .from('trades')
     .delete()
     .eq('id', id)
     .eq('user_id', userId);
   if (error) throw error;
+  await removeScreenshotFiles(storagePathsOf(data?.screenshots));
 }
 
 export async function deleteAllTrades(userId: string): Promise<void> {
+  const { data } = await supabase
+    .from('trades')
+    .select('screenshots')
+    .eq('user_id', userId);
   const { error } = await supabase
     .from('trades')
     .delete()
     .eq('user_id', userId);
   if (error) throw error;
+  const all = (data ?? []).flatMap((r: { screenshots: string[] }) => storagePathsOf(r.screenshots));
+  await removeScreenshotFiles(all);
 }
 
 // ── Confluences (stored on profile) ──
@@ -132,7 +157,7 @@ export async function loadConfluences(userId: string): Promise<string[]> {
 export async function saveConfluences(userId: string, confluences: string[]): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .update({ confluences } as never)
+    .update({ confluences })
     .eq('id', userId);
   if (error) throw error;
 }
@@ -152,7 +177,7 @@ export async function loadAccountBalance(userId: string): Promise<number> {
 export async function saveAccountBalance(userId: string, balance: number): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .update({ account_balance: balance } as never)
+    .update({ account_balance: balance })
     .eq('id', userId);
   if (error) throw error;
 }
@@ -172,7 +197,7 @@ export async function loadStartingBalance(userId: string): Promise<number> {
 export async function saveStartingBalance(userId: string, balance: number): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .update({ starting_balance: balance } as never)
+    .update({ starting_balance: balance })
     .eq('id', userId);
   if (error) throw error;
 }
@@ -191,7 +216,7 @@ export async function loadLanguage(userId: string): Promise<string> {
 export async function saveLanguage(userId: string, language: string): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .update({ language } as never)
+    .update({ language })
     .eq('id', userId);
   if (error) throw error;
 }
@@ -252,17 +277,24 @@ export async function loadMissedOpportunities(userId: string): Promise<MissedOpp
 export async function upsertMissedOpportunity(userId: string, m: MissedOpportunity): Promise<void> {
   const { error } = await supabase
     .from('missed_opportunities')
-    .upsert(missedToRow(m, userId) as never);
+    .upsert(missedToRow(m, userId));
   if (error) throw error;
 }
 
 export async function deleteMissedOpportunity(userId: string, id: string): Promise<void> {
+  const { data } = await supabase
+    .from('missed_opportunities')
+    .select('screenshots')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .maybeSingle();
   const { error } = await supabase
     .from('missed_opportunities')
     .delete()
     .eq('id', id)
     .eq('user_id', userId);
   if (error) throw error;
+  await removeScreenshotFiles(storagePathsOf(data?.screenshots));
 }
 
 // ── Screenshots (Supabase Storage) ──
@@ -292,11 +324,67 @@ export async function uploadMissedScreenshot(userId: string, file: File): Promis
 }
 
 export async function getScreenshotUrl(path: string): Promise<string> {
+  // Legacy trades stored inline base64 data URLs — display them as-is.
+  if (path.startsWith('data:')) return path;
   const { data, error } = await supabase.storage
     .from(SCREENSHOTS_BUCKET)
     .createSignedUrl(path, 60 * 60);
   if (error) throw error;
   return data.signedUrl;
+}
+
+/** Batch variant: one network call for N paths instead of N calls. */
+export async function getScreenshotUrls(paths: string[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  const storagePaths: string[] = [];
+  for (const p of paths) {
+    if (p.startsWith('data:')) out[p] = p;
+    else storagePaths.push(p);
+  }
+  if (storagePaths.length > 0) {
+    const { data, error } = await supabase.storage
+      .from(SCREENSHOTS_BUCKET)
+      .createSignedUrls(storagePaths, 60 * 60);
+    if (error) throw error;
+    for (const item of data ?? []) {
+      if (item.signedUrl && item.path) out[item.path] = item.signedUrl;
+    }
+  }
+  return out;
+}
+
+// ── Legacy base64 → Storage migration ──
+// Trades created before the Storage migration hold data: URLs inline in
+// trades.screenshots (~650 KB per image, re-downloaded on every load).
+// This runs once in the background after login: uploads each inline image
+// to the bucket and rewrites the row to reference the storage path.
+export async function migrateLegacyTradeScreenshots(
+  userId: string,
+  trades: Trade[],
+  onTradeMigrated?: (trade: Trade) => void,
+): Promise<number> {
+  const legacy = trades.filter((t) => t.screenshots.some((s) => s.startsWith('data:')));
+  let migrated = 0;
+  for (const trade of legacy) {
+    try {
+      const newShots: string[] = [];
+      for (const shot of trade.screenshots) {
+        if (!shot.startsWith('data:')) { newShots.push(shot); continue; }
+        const blob = await (await fetch(shot)).blob();
+        const ext = blob.type === 'image/png' ? 'png' : 'jpg';
+        const file = new File([blob], `legacy-${Date.now()}.${ext}`, { type: blob.type || 'image/jpeg' });
+        newShots.push(await uploadScreenshot(userId, file));
+      }
+      const updated = { ...trade, screenshots: newShots };
+      await upsertTrade(userId, updated);
+      onTradeMigrated?.(updated);
+      migrated++;
+    } catch (e) {
+      // Non-fatal: the data: URL still displays; retry happens on next load.
+      console.warn('[migrate] screenshot migration failed for trade', trade.id, e);
+    }
+  }
+  return migrated;
 }
 
 export async function deleteScreenshot(path: string): Promise<void> {

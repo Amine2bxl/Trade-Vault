@@ -1,12 +1,13 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { X, Star, ChevronDown, ChevronUp, ImagePlus, Plus, Wallet } from 'lucide-react';
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from '../types';
 import { generateId } from '../store';
-import { loadConfluences, saveConfluences, loadAccountBalance, saveAccountBalance } from '../store';
+import { loadConfluences, saveConfluences, loadAccountBalance, saveAccountBalance, uploadScreenshot, deleteScreenshot } from '../store';
 import { useAuth } from '../contexts/AuthContext';
 import { useT } from '../i18n/LanguageContext';
 import { cn } from '../utils/cn';
-import { compressImageToDataUrl } from '../utils/image';
+import { compressImageToFile } from '../utils/image';
+import { useScreenshotUrls } from '../hooks/useScreenshotUrls';
 import Lightbox from './Lightbox';
 
 interface TradeModalProps {
@@ -76,16 +77,36 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return riskDollar * rm;
   }, [riskDollar, form.rMultiple]);
 
+  // Screenshots upload straight to Supabase Storage (bucket path stored on the
+  // trade) instead of inlining base64 into the row. Uploads made in this modal
+  // session are tracked so they can be cleaned up if the user cancels.
+  const sessionUploadsRef = useRef<string[]>([]);
+  const savedRef = useRef(false);
+  const screenshotUrls = useScreenshotUrls(form.screenshots);
+
   const handleScreenshotUpload = useCallback(async (files: FileList | File[] | null) => {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !userId) return;
     setUploading(true);
     const newScreenshots: string[] = [];
     for (let i = 0; i < files.length && form.screenshots.length + newScreenshots.length < 3; i++) {
-      try { newScreenshots.push(await compressImageToDataUrl(files[i])); } catch {}
+      try {
+        const compressed = await compressImageToFile(files[i]);
+        const path = await uploadScreenshot(userId, compressed);
+        sessionUploadsRef.current.push(path);
+        newScreenshots.push(path);
+      } catch {}
     }
     setForm(f => ({ ...f, screenshots: [...f.screenshots, ...newScreenshots] }));
     setUploading(false);
-  }, [form.screenshots.length]);
+  }, [form.screenshots.length, userId]);
+
+  // Cancel/close without saving → remove files uploaded during this session.
+  useEffect(() => () => {
+    if (savedRef.current) return;
+    for (const path of sessionUploadsRef.current) {
+      deleteScreenshot(path).catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
@@ -104,6 +125,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   }, [handleScreenshotUpload]);
 
   const removeScreenshot = (idx: number) => {
+    const removed = form.screenshots[idx];
+    // Only delete the file immediately if it was uploaded in this session —
+    // pre-existing files stay until the trade is saved without them.
+    if (removed && sessionUploadsRef.current.includes(removed)) {
+      sessionUploadsRef.current = sessionUploadsRef.current.filter((p) => p !== removed);
+      deleteScreenshot(removed).catch(() => {});
+    }
     setForm(f => ({ ...f, screenshots: f.screenshots.filter((_, i) => i !== idx) }));
   };
 
@@ -132,6 +160,16 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     const isBE = form.direction === 'be';
     const rm = isBE ? 0 : parseFloat(form.rMultiple) || 0;
     const risk = riskDollar;
+    savedRef.current = true;
+    // Pre-existing screenshots the user removed in this session: their files
+    // are no longer referenced once the trade saves — delete them now.
+    if (trade) {
+      for (const old of trade.screenshots) {
+        if (!old.startsWith('data:') && !form.screenshots.includes(old)) {
+          deleteScreenshot(old).catch(() => {});
+        }
+      }
+    }
     onSave({
       id: trade?.id || generateId(),
       date: form.date, symbol: form.symbol.toUpperCase(), direction: form.direction,
@@ -315,10 +353,14 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <span className="text-[10px] text-slate-600 flex items-center gap-1">{t('common.pasteHint')}</span>
             </div>
             <div className="flex gap-3 flex-wrap items-start">
-              {form.screenshots.map((src, i) => (
+              {form.screenshots.map((shot, i) => (
                 <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group">
                   <button type="button" onClick={() => setLightboxIndex(i)} className="block w-full h-full">
-                    <img src={src} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    {screenshotUrls[shot] ? (
+                      <img src={screenshotUrls[shot]} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>
+                    )}
                   </button>
                   <button onClick={() => removeScreenshot(i)} className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3 text-white" /></button>
                 </div>
@@ -350,7 +392,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
       {lightboxIndex !== null && (
         <Lightbox
-          images={form.screenshots}
+          images={form.screenshots.map((s) => screenshotUrls[s] || '')}
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onIndexChange={setLightboxIndex}

@@ -8,9 +8,9 @@ import {
   deleteMissedOpportunity,
   generateId,
   uploadMissedScreenshot,
-  getScreenshotUrl,
   deleteScreenshot,
 } from '../store';
+import { useScreenshotUrls } from '../hooks/useScreenshotUrls';
 import { formatShortDate } from '../utils/tradeCalcs';
 import { compressImageToFile } from '../utils/image';
 import { cn } from '../utils/cn';
@@ -247,30 +247,10 @@ function Field({ label, value, tone }: { label: string; value: string; tone: 're
 }
 
 export function ScreenshotsView({ paths, onRemove, size = 'sm' }: { paths: string[]; onRemove?: (p: string) => void; size?: 'sm' | 'lg' }) {
-  const [urls, setUrls] = useState<Record<string, string>>({});
+  // Batched + cached signed-URL resolution shared with the trade modals.
+  const urls = useScreenshotUrls(paths);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const resolvedUrls = paths.map((p) => urls[p]).filter(Boolean);
-
-  useEffect(() => {
-    let cancelled = false;
-    const missing = paths.filter((p) => !urls[p]);
-    if (missing.length === 0) return;
-    Promise.all(
-      missing.map(async (p) => {
-        try { return [p, await getScreenshotUrl(p)] as const; }
-        catch { return [p, ''] as const; }
-      })
-    ).then((res) => {
-      if (cancelled) return;
-      setUrls((prev) => {
-        const next = { ...prev };
-        for (const [p, u] of res) next[p] = u;
-        return next;
-      });
-    });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paths.join('|')]);
 
   return (
     <>

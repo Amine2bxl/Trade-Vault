@@ -2,7 +2,7 @@
 // (rather than two) because two service workers cannot both control scope "/"
 // at once without one evicting the other's registration.
 
-const CACHE_NAME = 'tradevault-shell-v1';
+const CACHE_NAME = 'tradevault-shell-v2';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {

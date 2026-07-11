@@ -1,17 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const TradeSummary = z.object({
-  date: z.string(),
-  symbol: z.string(),
-  direction: z.string(),
+  date: z.string().max(10),
+  symbol: z.string().max(20),
+  direction: z.string().max(10),
   pnl: z.number(),
   rMultiple: z.number(),
-  strategy: z.string(),
-  mistakes: z.array(z.string()),
+  strategy: z.string().max(50),
+  mistakes: z.array(z.string().max(100)).max(20),
   setupQuality: z.number(),
-  confluences: z.array(z.string()),
-  notes: z.string().optional(),
+  confluences: z.array(z.string().max(100)).max(30),
+  notes: z.string().max(10000).optional(),
 });
 
 const InsightInput = z.object({
@@ -21,6 +22,10 @@ const InsightInput = z.object({
 });
 
 export const askTradingInsight = createServerFn({ method: "POST" })
+  // Auth required: without this the endpoint is publicly callable and every
+  // call spends Gemini quota. The client attaches the Bearer token globally
+  // (see src/integrations/supabase/auth-attacher.ts registered in start.ts).
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InsightInput.parse(input))
   .handler(async ({ data }) => {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -80,10 +85,12 @@ One bold sentence summarizing the verdict.
 Rules: Use **bold** for key numbers. Keep paragraphs short. No fluff. No generic advice. If the trader has no data, say so clearly and suggest what to log first.`;
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      // API key goes in a header, not the query string, so it never lands in
+      // URL-based access logs.
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [

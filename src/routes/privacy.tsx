@@ -41,6 +41,11 @@ function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="text-lg font-semibold text-white mb-2">AI features and third-party processing</h2>
+            <p>When you use the AI Insights or AI coach features, the trading data needed to answer your question (trade dates, symbols, P&amp;L, strategies, mistake tags, and your trade notes — never your screenshots or account credentials) is sent to Google's Gemini API for processing. This only happens when you actively ask the AI a question. Google processes this data to generate the response and does not use it to identify you. If you prefer not to share this data, simply do not use the AI features.</p>
+          </section>
+
+          <section>
             <h2 className="text-lg font-semibold text-white mb-2">Your rights</h2>
             <p>You can delete your trades, missed opportunities, and screenshots at any time from within the app. To request full account deletion, contact us at the address below.</p>
           </section>

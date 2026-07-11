@@ -14,31 +14,34 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
   const { t } = useT();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // Symmetric 2 + FAB + 2 layout. Two primary tabs each side of the central
+  // add button; everything else lives behind "More".
   const leftItems = [
     { id: 'dashboard' as Page, label: t('nav.home'), icon: LayoutDashboard },
     { id: 'journal' as Page, label: t('nav.journal'), icon: BookOpen },
-    { id: 'missed' as Page, label: t('nav.missed'), icon: Target },
   ];
   const rightItems = [
-    { id: 'calendar' as Page, label: t('nav.calendar'), icon: Calendar },
     { id: 'analytics' as Page, label: t('nav.analytics'), icon: BarChart3 },
   ];
-  // Pages that don't fit in the 7-slot bottom bar live behind "More".
   const moreItems = [
+    { id: 'calendar' as Page, label: t('nav.calendar'), icon: Calendar },
+    { id: 'missed' as Page, label: t('nav.missed'), icon: Target },
     { id: 'mistakes' as Page, label: t('nav.mistakes'), icon: AlertTriangle },
     { id: 'insights' as Page, label: t('nav.insights'), icon: Sparkles },
     { id: 'profile' as Page, label: t('nav.profile'), icon: User },
   ];
   const isMoreActive = moreItems.some((m) => m.id === page);
 
-  const renderItem = ({ id, label, icon: Icon }: { id: Page; label: string; icon: typeof LayoutDashboard }) => (
+  const renderItem = ({ id, label, icon: Icon, active, onClick }: { id: string; label: string; icon: typeof LayoutDashboard; active: boolean; onClick: () => void }) => (
     <button
       key={id}
-      onClick={() => setPage(id)}
-      className={cn('bottom-nav-item', page === id ? 'text-blue-400' : 'text-slate-500')}
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={cn('bottom-nav-item', active ? 'text-blue-400' : 'text-slate-500')}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-[9px] font-semibold">{label}</span>
+      <span className={cn('bottom-nav-dot', active && 'bottom-nav-dot-active')} />
+      <Icon className="w-[22px] h-[22px]" />
+      <span className="text-[10px] font-semibold leading-none">{label}</span>
     </button>
   );
 
@@ -46,25 +49,19 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     <>
       <div className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
         <div className="w-full glass-strong border-t border-white/[0.08]">
-          <div className="grid grid-cols-7 items-end px-1 pt-1.5 pb-1 gap-0.5">
-            {leftItems.map(renderItem)}
-            <div className="flex justify-center">
+          <div className="grid grid-cols-5 items-stretch px-2 pt-2 pb-1 gap-1">
+            {leftItems.map((it) => renderItem({ ...it, active: page === it.id, onClick: () => setPage(it.id) }))}
+            <div className="flex justify-center items-center">
               <button
                 onClick={onAddTrade}
                 aria-label="Add trade"
-                className="fab-button text-white -mt-5"
+                className="fab-button text-white -mt-6"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
               </button>
             </div>
-            {rightItems.map(renderItem)}
-            <button
-              onClick={() => setMoreOpen(true)}
-              className={cn('bottom-nav-item', isMoreActive ? 'text-blue-400' : 'text-slate-500')}
-            >
-              <MoreHorizontal className="w-5 h-5" />
-              <span className="text-[9px] font-semibold">{t('nav.more')}</span>
-            </button>
+            {rightItems.map((it) => renderItem({ ...it, active: page === it.id, onClick: () => setPage(it.id) }))}
+            {renderItem({ id: 'more', label: t('nav.more'), icon: MoreHorizontal, active: isMoreActive, onClick: () => setMoreOpen(true) })}
           </div>
         </div>
       </div>

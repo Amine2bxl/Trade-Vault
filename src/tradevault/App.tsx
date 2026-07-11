@@ -1,18 +1,20 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import TradeModal from './components/TradeModal';
+// Dashboard is the landing page — keep it in the main chunk. Every other page
+// (and its heavy deps: recharts, react-markdown) loads on demand.
 import Dashboard from './pages/Dashboard';
-import Journal from './pages/Journal';
-import CalendarPage from './pages/CalendarPage';
-import Analytics from './pages/Analytics';
-import Mistakes from './pages/Mistakes';
-import Insights from './pages/Insights';
-import Profile from './pages/Profile';
-import MissedOpportunities from './pages/MissedOpportunities';
-import AiAssistant from './components/AiAssistant';
+const Journal = lazy(() => import('./pages/Journal'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Mistakes = lazy(() => import('./pages/Mistakes'));
+const Insights = lazy(() => import('./pages/Insights'));
+const Profile = lazy(() => import('./pages/Profile'));
+const MissedOpportunities = lazy(() => import('./pages/MissedOpportunities'));
+const AiAssistant = lazy(() => import('./components/AiAssistant'));
 import { Trade, Page } from './types';
-import { loadUserTrades, upsertTrade, deleteTrade, deleteAllTrades } from './store';
+import { loadUserTrades, upsertTrade, deleteTrade, deleteAllTrades, migrateLegacyTradeScreenshots } from './store';
 import { computeStats } from './utils/tradeCalcs';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
@@ -33,8 +35,20 @@ function AppContent() {
   useEffect(() => {
     let active = true;
     if (user) {
-      loadUserTrades(user.id)
-        .then((t) => { if (active) setTrades(t); })
+      const userId = user.id;
+      loadUserTrades(userId)
+        .then((loaded) => {
+          if (!active) return;
+          setTrades(loaded);
+          // One-time background migration: trades that still carry inline
+          // base64 screenshots get their images moved to Storage. Each
+          // migrated trade is swapped into state so the UI stays in sync.
+          migrateLegacyTradeScreenshots(userId, loaded, (migrated) => {
+            if (active) setTrades((prev) => prev.map((t) => (t.id === migrated.id ? migrated : t)));
+          }).then((n) => {
+            if (n > 0) console.info(`[migrate] moved screenshots of ${n} trade(s) to Storage`);
+          }).catch(() => {});
+        })
         .catch((e) => console.error('Failed to load trades', e));
     } else {
       setTrades([]);
@@ -107,20 +121,24 @@ function AppContent() {
         <div className="auth-orb w-[500px] h-[500px] bg-indigo-600 top-1/2 -left-64" style={{ animationDelay: '-7s' }} />
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
-      <main className="relative flex-1 overflow-y-auto min-h-screen pb-24 md:pb-0">
+      <main className="app-main relative flex-1 overflow-y-auto">
         <div key={page} className="animate-fade-in">
-          {page === 'dashboard' && <Dashboard trades={trades} onAddTrade={handleAdd} />}
-          {page === 'journal' && <Journal trades={trades} onEdit={handleEdit} onDelete={handleDelete} onDeleteAll={handleDeleteAll} onAdd={handleAdd} onOpenMissed={() => setPage('missed')} />}
-          {page === 'calendar' && <CalendarPage trades={trades} />}
-          {page === 'analytics' && <Analytics trades={trades} />}
-          {page === 'mistakes' && <Mistakes trades={trades} />}
-          {page === 'missed' && <MissedOpportunities />}
-          {page === 'insights' && <Insights trades={trades} />}
-          {page === 'profile' && <Profile trades={trades} onDeleteAll={handleDeleteAll} />}
+          <Suspense fallback={<div className="flex items-center justify-center py-24"><div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>}>
+            {page === 'dashboard' && <Dashboard trades={trades} onAddTrade={handleAdd} />}
+            {page === 'journal' && <Journal trades={trades} onEdit={handleEdit} onDelete={handleDelete} onDeleteAll={handleDeleteAll} onAdd={handleAdd} onOpenMissed={() => setPage('missed')} />}
+            {page === 'calendar' && <CalendarPage trades={trades} />}
+            {page === 'analytics' && <Analytics trades={trades} />}
+            {page === 'mistakes' && <Mistakes trades={trades} />}
+            {page === 'missed' && <MissedOpportunities />}
+            {page === 'insights' && <Insights trades={trades} />}
+            {page === 'profile' && <Profile trades={trades} onDeleteAll={handleDeleteAll} />}
+          </Suspense>
         </div>
       </main>
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
-      <AiAssistant trades={trades} />
+      <Suspense fallback={null}>
+        <AiAssistant trades={trades} />
+      </Suspense>
       {modalOpen && <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />}
     </div>
   );

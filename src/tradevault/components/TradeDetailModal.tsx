@@ -4,6 +4,7 @@ import { formatPnl, getDuration, directionLabel, directionBadgeClass } from '../
 import { cn } from '../utils/cn';
 import { useState } from 'react';
 import { useT } from '../i18n/LanguageContext';
+import { useScreenshotUrls } from '../hooks/useScreenshotUrls';
 import Lightbox from './Lightbox';
 
 interface TradeDetailModalProps {
@@ -20,6 +21,9 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
   const { t, lang } = useT();
   const locale = LOCALE_MAP[lang] || 'en-US';
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
+  // Screenshots are stored as storage paths (or legacy data: URLs) — resolve
+  // them all in one batched signed-URL request.
+  const screenshotUrls = useScreenshotUrls(trades.flatMap((tr) => tr.screenshots));
   const dayPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const d = new Date(date + 'T12:00:00');
   const dateStr = `${d.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}, '${String(d.getFullYear()).slice(-2)}`;
@@ -151,15 +155,19 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.chartScreenshots')}</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {trade.screenshots.map((src, i) => (
-                      <button key={i} onClick={() => setLightbox({ images: trade.screenshots, index: i })} className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-blue-500/30 transition-all group bg-black/40">
-                        <img
-                          src={src}
-                          alt={`Chart ${i + 1}`}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full max-h-[420px] object-contain"
-                        />
+                    {trade.screenshots.map((shot, i) => (
+                      <button key={i} onClick={() => setLightbox({ images: trade.screenshots.map((s) => screenshotUrls[s] || ''), index: i })} className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-blue-500/30 transition-all group bg-black/40">
+                        {screenshotUrls[shot] ? (
+                          <img
+                            src={screenshotUrls[shot]}
+                            alt={`Chart ${i + 1}`}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full max-h-[420px] object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-32 flex items-center justify-center"><div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>
+                        )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white font-medium bg-black/40 px-2 py-1 rounded-md">{t('common.view')}</span>
                         </div>

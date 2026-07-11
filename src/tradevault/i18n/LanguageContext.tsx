@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { loadLanguage, saveLanguage } from '../store';
-import { LANG_NAMES, translate, type Lang, type TKey } from './translations';
+import { LANG_NAMES, en, localeLoaders, type Dict, type Lang, type TKey } from './translations';
 
 interface Ctx {
   lang: Lang;
@@ -27,6 +27,18 @@ function readInitialLang(): Lang {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [lang, setLangState] = useState<Lang>(() => readInitialLang());
+  // Non-English dicts are code-split; English (the fallback) ships in the
+  // main bundle. Until the chunk resolves, t() falls back to English.
+  const [dict, setDict] = useState<Dict | null>(null);
+
+  useEffect(() => {
+    if (lang === 'en') { setDict(null); return; }
+    let active = true;
+    localeLoaders[lang]()
+      .then((m) => { if (active) setDict(m.default); })
+      .catch(() => { if (active) setDict(null); });
+    return () => { active = false; };
+  }, [lang]);
 
   useEffect(() => {
     if (!user) return;
@@ -56,9 +68,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(() => ({
     lang,
     setLang,
-    t: (k: TKey) => translate(lang, k),
+    t: (k: TKey) => dict?.[k] ?? en[k],
     langName: LANG_NAMES[lang],
-  }), [lang, setLang]);
+  }), [lang, setLang, dict]);
 
   return <LanguageCtx.Provider value={value}>{children}</LanguageCtx.Provider>;
 }
