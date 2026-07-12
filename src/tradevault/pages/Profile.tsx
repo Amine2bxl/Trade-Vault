@@ -52,11 +52,11 @@ export default function Profile({ trades, onDeleteAll }: ProfileProps) {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
       <div className="relative glass-strong rounded-3xl p-6 sm:p-8 overflow-hidden">
-        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
           <div className="relative shrink-0">
-            <div className="absolute inset-0 rounded-2xl bg-blue-500/40 blur-lg opacity-70" />
-            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
+            <div className="absolute inset-0 rounded-2xl bg-cyan-500/40 blur-lg opacity-70" />
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-cyan-500/20">
               {user.name.charAt(0).toUpperCase()}
             </div>
           </div>
@@ -70,7 +70,7 @@ export default function Profile({ trades, onDeleteAll }: ProfileProps) {
       <div className="grid grid-cols-3 gap-3">
         <Stat icon={<TrendingUp className="w-4 h-4" />} label={t('stats.totalPnl')} value={formatPnl(stats.totalPnl)} accent={stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'} />
         <Stat icon={<Hash className="w-4 h-4" />} label={t('stats.trades')} value={String(stats.totalTrades)} accent="text-white" />
-        <Stat icon={<UserIcon className="w-4 h-4" />} label={t('stats.winRate')} value={formatPct(stats.winRate)} accent="text-blue-400" />
+        <Stat icon={<UserIcon className="w-4 h-4" />} label={t('stats.winRate')} value={formatPct(stats.winRate)} accent="text-cyan-400" />
       </div>
 
       {/* Preferences */}
@@ -85,7 +85,7 @@ export default function Profile({ trades, onDeleteAll }: ProfileProps) {
           <select
             value={language}
             onChange={(e) => handleLanguage(e.target.value)}
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500/40"
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
           >
             {LANGUAGES.map((l) => (
               <option key={l.code} value={l.code} className="bg-[#0a0f1e]">{l.label}</option>
@@ -108,7 +108,7 @@ export default function Profile({ trades, onDeleteAll }: ProfileProps) {
               onBlur={handleEquityBlur}
               min={0}
               step={100}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-7 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500/40"
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-7 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
             />
           </div>
           <p className="text-[10px] text-slate-600 mt-1.5">{t('profile.startingEquityHint')}</p>
@@ -162,7 +162,7 @@ function ContactLink({ icon, label, sub, subject }: { icon: React.ReactNode; lab
       href={href}
       className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition"
     >
-      <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">{icon}</div>
+      <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white">{label}</div>
         <div className="text-[11px] text-slate-500 truncate">{sub} · {SUPPORT_EMAIL}</div>

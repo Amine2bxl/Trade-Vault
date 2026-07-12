@@ -60,15 +60,15 @@ export default function AuthModal() {
     }
   };
 
-  const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all';
+  const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all';
 
   return (
     <div className="relative h-dvh w-full overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)' }}>
 
       {/* Decorative orbs */}
-      <div className="auth-orb w-[500px] h-[500px] bg-blue-600 -top-40 -left-40" style={{ animationDelay: '0s' }} />
-      <div className="auth-orb w-[400px] h-[400px] bg-purple-600 -bottom-32 -right-32" style={{ animationDelay: '-5s' }} />
+      <div className="auth-orb w-[500px] h-[500px] bg-cyan-600 -top-40 -left-40" style={{ animationDelay: '0s' }} />
+      <div className="auth-orb w-[400px] h-[400px] bg-teal-600 -bottom-32 -right-32" style={{ animationDelay: '-5s' }} />
       <div className="auth-orb w-[300px] h-[300px] bg-cyan-600 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '-10s' }} />
 
       <div className="relative z-10 h-full flex items-center justify-center px-4 py-4 md:py-6 overflow-hidden">
@@ -79,8 +79,8 @@ export default function AuthModal() {
           <div className="hidden md:block text-left animate-fade-in-up">
             <div className="flex items-center gap-3 mb-5">
               <div className="relative w-11 h-11 shrink-0">
-                <div className="absolute inset-0 rounded-xl bg-blue-500/40 blur-lg opacity-70" />
-                <img src={logoSrc} alt="TradeVault" width={44} height={44} className="relative w-11 h-11 rounded-xl drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
+                <div className="absolute inset-0 rounded-xl bg-cyan-500/40 blur-lg opacity-70" />
+                <img src={logoSrc} alt="TradeVault" width={44} height={44} className="relative w-11 h-11 rounded-xl drop-shadow-[0_0_12px_rgba(6,182,212,0.5)]" />
               </div>
               <span className="text-xl font-bold text-white">TradeVault</span>
             </div>
@@ -93,8 +93,8 @@ export default function AuthModal() {
             <div className="grid sm:grid-cols-2 gap-4 max-w-md">
               {FEATURES.map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="text-left glass rounded-2xl p-4">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-2">
-                    <Icon className="w-4 h-4 text-blue-400" />
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-2">
+                    <Icon className="w-4 h-4 text-cyan-400" />
                   </div>
                   <div className="text-sm font-semibold text-white mb-0.5">{title}</div>
                   <div className="text-xs text-slate-500 leading-relaxed">{desc}</div>
@@ -109,13 +109,13 @@ export default function AuthModal() {
           {/* Logo */}
           <div className="text-center mb-8 md:hidden">
             <div className="relative w-14 h-14 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-2xl bg-blue-500/40 blur-xl opacity-70" />
+              <div className="absolute inset-0 rounded-2xl bg-cyan-500/40 blur-xl opacity-70" />
               <img
                 src={logoSrc}
                 alt="TradeVault"
                 width={56}
                 height={56}
-                className="relative w-14 h-14 rounded-2xl drop-shadow-[0_0_14px_rgba(59,130,246,0.5)]"
+                className="relative w-14 h-14 rounded-2xl drop-shadow-[0_0_14px_rgba(6,182,212,0.5)]"
               />
             </div>
             <h1 className="text-2xl font-bold text-white">TradeVault</h1>
@@ -128,7 +128,7 @@ export default function AuthModal() {
               onClick={() => { setMode('login'); setError(''); }}
               className={cn(
                 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all',
-                mode === 'login' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white'
+                mode === 'login' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'
               )}
             >
               {t('auth.signIn')}
@@ -137,7 +137,7 @@ export default function AuthModal() {
               onClick={() => { setMode('signup'); setError(''); }}
               className={cn(
                 'flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all',
-                mode === 'signup' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white'
+                mode === 'signup' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20' : 'text-slate-400 hover:text-white'
               )}
             >
               {t('auth.createAccount')}
@@ -205,8 +205,8 @@ export default function AuthModal() {
               className={cn(
                 'w-full py-3 rounded-xl text-sm font-bold transition-all',
                 loading
-                  ? 'bg-blue-500/50 text-blue-200 cursor-wait'
-                  : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30'
+                  ? 'bg-cyan-500/50 text-cyan-200 cursor-wait'
+                  : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30'
               )}
             >
               {loading ? t('auth.pleaseWait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
@@ -222,7 +222,7 @@ export default function AuthModal() {
                   if (err) setError(err);
                   else setInfo(t('auth.resetSent'));
                 }}
-                className="w-full text-xs text-slate-400 hover:text-blue-400 transition-colors"
+                className="w-full text-xs text-slate-400 hover:text-cyan-400 transition-colors"
               >
                 {t('auth.forgotPassword')}
               </button>

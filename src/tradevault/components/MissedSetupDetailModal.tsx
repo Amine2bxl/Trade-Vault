@@ -15,7 +15,7 @@ const LOCALE_MAP: Record<string, string> = { en: 'en-US', es: 'es-ES', pt: 'pt-P
 const TONES = {
   red: { border: 'border-red-500/15', bg: 'bg-red-500/[0.04]', text: 'text-red-400', iconBg: 'bg-red-500/10', bar: 'bg-red-500/60' },
   amber: { border: 'border-amber-500/15', bg: 'bg-amber-500/[0.04]', text: 'text-amber-400', iconBg: 'bg-amber-500/10', bar: 'bg-amber-500/60' },
-  blue: { border: 'border-blue-500/25', bg: 'bg-blue-500/[0.06]', text: 'text-blue-400', iconBg: 'bg-blue-500/10', bar: 'bg-blue-500/70' },
+  blue: { border: 'border-cyan-500/25', bg: 'bg-cyan-500/[0.06]', text: 'text-cyan-400', iconBg: 'bg-cyan-500/10', bar: 'bg-cyan-500/70' },
   emerald: { border: 'border-emerald-500/15', bg: 'bg-emerald-500/[0.04]', text: 'text-emerald-400', iconBg: 'bg-emerald-500/10', bar: 'bg-emerald-500/60' },
 } as const;
 
@@ -32,7 +32,7 @@ function Section({ tone, icon: Icon, label, children, big, empty }: {
     <div className={cn(
       'relative rounded-2xl border overflow-hidden transition-all',
       s.border, s.bg,
-      big && !empty && 'shadow-[0_4px_24px_-4px_rgba(59,130,246,0.18)]',
+      big && !empty && 'shadow-[0_4px_24px_-4px_rgba(6,182,212,0.18)]',
       empty && 'opacity-50'
     )}>
       <div className={cn('absolute inset-y-0 left-0 w-[3px]', s.bar)} />

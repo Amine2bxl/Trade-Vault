@@ -41,7 +41,7 @@ export default function Insights({ trades }: InsightsProps) {
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 animate-glow">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 animate-glow">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -61,12 +61,12 @@ export default function Insights({ trades }: InsightsProps) {
               onKeyDown={e => { if (e.key === 'Enter') ask(question); }}
               placeholder={t('insights.placeholder')}
               disabled={loading}
-              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all disabled:opacity-50"
+              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all disabled:opacity-50"
             />
             <button
               onClick={() => ask(question)}
               disabled={loading || !question.trim()}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 md:px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20"
+              className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 md:px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               <span className="hidden md:inline">{t('insights.analyze')}</span>
@@ -80,7 +80,7 @@ export default function Insights({ trades }: InsightsProps) {
               key={p.label}
               onClick={() => { setQuestion(p.q); ask(p.q); }}
               disabled={loading}
-              className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs md:text-sm text-slate-300 hover:bg-white/[0.08] hover:border-blue-500/30 hover:text-white transition-all disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs md:text-sm text-slate-300 hover:bg-white/[0.08] hover:border-cyan-500/30 hover:text-white transition-all disabled:opacity-50"
             >
               {p.label}
             </button>

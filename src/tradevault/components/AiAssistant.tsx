@@ -89,7 +89,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? t('assistant.close') : t('assistant.open')}
-        className="fixed z-40 bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 hover:scale-105 active:scale-95 transition-transform animate-glow"
+        className="fixed z-40 bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/30 hover:scale-105 active:scale-95 transition-transform animate-glow"
       >
         {open ? <X className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
       </button>
@@ -97,8 +97,8 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       {open && (
         <div className="fixed z-40 bottom-36 right-4 left-4 md:left-auto md:bottom-24 md:right-6 md:w-[380px] h-[65vh] md:h-[600px] max-h-[calc(100vh-180px)] glass-strong rounded-3xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-blue-500/[0.06] to-transparent shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.06] to-transparent shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
               <Sparkles className="w-4.5 h-4.5 text-white" />
             </div>
             <div className="min-w-0 flex-1">
@@ -120,7 +120,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
                 <div
                   className={cn(
                     'max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-                    m.role === 'user' && 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium',
+                    m.role === 'user' && 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium',
                     m.role === 'assistant' && 'bg-white/[0.04] border border-white/[0.08] text-slate-200',
                     m.role === 'error' && 'bg-red-500/10 border border-red-500/20 text-red-300'
                   )}
@@ -141,8 +141,8 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
           {/* Input */}
           <div className="p-3 border-t border-white/[0.06] shrink-0">
             {listening && (
-              <div className="flex items-center gap-1.5 text-[11px] text-blue-400 font-semibold mb-2 px-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> {t('assistant.listening')}
+              <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-semibold mb-2 px-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" /> {t('assistant.listening')}
               </div>
             )}
             <div className="flex items-center gap-2">
@@ -166,13 +166,13 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
                 onKeyDown={(e) => { if (e.key === 'Enter') ask(question); }}
                 placeholder={t('assistant.placeholder')}
                 disabled={loading}
-                className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all disabled:opacity-50"
+                className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all disabled:opacity-50"
               />
               <button
                 onClick={() => ask(question)}
                 disabled={loading || !question.trim()}
                 aria-label="Send"
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed text-white shrink-0 transition-all"
+                className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white shrink-0 transition-all"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>

@@ -162,8 +162,8 @@ function AppContent() {
     <div className="relative flex min-h-screen text-white overflow-hidden">
       {/* Ambient background glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="auth-orb w-[600px] h-[600px] bg-blue-600 -top-64 -right-64" style={{ animationDelay: '0s' }} />
-        <div className="auth-orb w-[500px] h-[500px] bg-indigo-600 top-1/2 -left-64" style={{ animationDelay: '-7s' }} />
+        <div className="auth-orb w-[600px] h-[600px] bg-cyan-600 -top-64 -right-64" style={{ animationDelay: '0s' }} />
+        <div className="auth-orb w-[500px] h-[500px] bg-teal-600 top-1/2 -left-64" style={{ animationDelay: '-7s' }} />
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">

@@ -230,7 +230,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 {result.duplicates > 0 && <span>{result.duplicates} {t('import.duplicatesSkipped')} · </span>}
                 {result.invalid > 0 && <span>{result.invalid} {t('import.invalidSkipped')}</span>}
               </div>
-              <button onClick={onClose} className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 text-white">{t('common.close')}</button>
+              <button onClick={onClose} className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-white">{t('common.close')}</button>
             </div>
           ) : !parsed ? (
             <div
@@ -305,7 +305,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 onClick={doImport}
                 disabled={!canImport || importing}
                 className={cn('w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2',
-                  canImport && !importing ? 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white shadow-lg shadow-cyan-500/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed')}
+                  canImport && !importing ? 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed')}
               >
                 {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 {t('import.importBtn')} ({mappedTrades.valid.length})

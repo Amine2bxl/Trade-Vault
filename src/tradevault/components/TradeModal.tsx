@@ -219,7 +219,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   const isValid = form.symbol && form.date && parseFloat(form.riskAmount) > 0 && (form.direction === 'be' || form.rMultiple !== '');
 
-  const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all';
+  const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all';
   const labelClass = 'block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5';
 
   return (
@@ -383,7 +383,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 <div key={c} className="flex items-center gap-1 group">
                   <button onClick={() => toggleConfluence(c)}
                     className={cn('px-3 py-1.5 rounded-xl text-xs font-medium transition-all border',
-                      form.confluences.includes(c) ? 'bg-blue-500/15 border-blue-500/25 text-blue-400' : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600'
+                      form.confluences.includes(c) ? 'bg-cyan-500/15 border-cyan-500/25 text-cyan-400' : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600'
                     )}>{c}</button>
                   <button onClick={() => removeConfluence(c)}
                     className="w-4 h-4 rounded-full flex items-center justify-center text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
@@ -396,7 +396,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <input type="text" value={newConfluence} onChange={e => setNewConfluence(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addConfluence())}
                 placeholder={t('trade.addConfluencePlaceholder')} className={cn(inputClass, 'flex-1 py-2 text-xs')} />
-              <button onClick={addConfluence} className="px-3 rounded-xl border border-white/[0.08] text-blue-400 hover:bg-blue-500/10 transition-all">
+              <button onClick={addConfluence} className="px-3 rounded-xl border border-white/[0.08] text-cyan-400 hover:bg-cyan-500/10 transition-all">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -431,15 +431,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     {screenshotUrls[shot] ? (
                       <img src={screenshotUrls[shot]} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center"><div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>
+                      <div className="w-full h-full flex items-center justify-center"><div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" /></div>
                     )}
                   </button>
                   <button onClick={() => removeScreenshot(i)} className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3 text-white" /></button>
                 </div>
               ))}
               {form.screenshots.length < 3 && (
-                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-blue-500/30 hover:bg-blue-500/[0.03] transition-all">
-                  {uploading ? <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /> : (<><ImagePlus className="w-5 h-5 text-slate-600" /><span className="text-[10px] text-slate-600 mt-1">{t('trade.upload')}</span></>)}
+                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-cyan-500/30 hover:bg-cyan-500/[0.03] transition-all">
+                  {uploading ? <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" /> : (<><ImagePlus className="w-5 h-5 text-slate-600" /><span className="text-[10px] text-slate-600 mt-1">{t('trade.upload')}</span></>)}
                   <input type="file" accept="image/*" multiple onChange={e => handleScreenshotUpload(e.target.files)} className="hidden" />
                 </label>
               )}
@@ -488,7 +488,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           <button onClick={onClose} className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0">{t('common.cancel')}</button>
           <button onClick={handleSave} disabled={!isValid}
             className={cn('px-6 py-2.5 rounded-xl text-sm font-bold transition-all',
-              isValid ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+              isValid ? 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'
             )}>{trade ? t('trade.updateTrade') : t('trade.saveTrade')}</button>
         </div>
       </div>

@@ -37,11 +37,15 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       key={id}
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={cn('bottom-nav-item', active ? 'text-blue-400' : 'text-slate-500')}
+      className={cn('bottom-nav-item', active ? 'text-cyan-300' : 'text-slate-500')}
     >
-      <span className={cn('bottom-nav-dot', active && 'bottom-nav-dot-active')} />
-      <Icon className="w-[22px] h-[22px]" />
-      <span className="text-[10px] font-semibold leading-none">{label}</span>
+      {/* Active top bar indicator */}
+      <span className={cn('bottom-nav-bar', active && 'bottom-nav-bar-active')} />
+      {/* Icon on an active pill that lights up cyan */}
+      <span className={cn('bottom-nav-icon', active && 'bottom-nav-icon-active')}>
+        <Icon className="w-[21px] h-[21px]" strokeWidth={active ? 2.4 : 2} />
+      </span>
+      <span className={cn('text-[10px] leading-none transition-all', active ? 'font-bold' : 'font-semibold')}>{label}</span>
     </button>
   );
 
@@ -49,13 +53,13 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     <>
       <div className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
         <div className="w-full glass-strong border-t border-white/[0.08]">
-          <div className="grid grid-cols-5 items-stretch px-2 pt-2 pb-1 gap-1">
+          <div className="grid grid-cols-5 items-end px-2 pt-1.5 pb-1 gap-1">
             {leftItems.map((it) => renderItem({ ...it, active: page === it.id, onClick: () => setPage(it.id) }))}
             <div className="flex justify-center items-center">
               <button
                 onClick={onAddTrade}
                 aria-label="Add trade"
-                className="fab-button text-white -mt-6"
+                className="fab-button text-white -mt-7"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
               </button>
@@ -83,7 +87,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
                   className={cn(
                     'flex flex-col items-center justify-center gap-2 rounded-2xl p-4 border transition-all',
                     page === id
-                      ? 'bg-blue-500/15 border-blue-500/25 text-blue-400'
+                      ? 'bg-cyan-500/15 border-cyan-500/25 text-cyan-400'
                       : 'bg-white/[0.03] border-white/[0.06] text-slate-400'
                   )}
                 >

@@ -16,7 +16,7 @@ export const CHART_ANIMATION = {
 export const tooltipStyle = {
   contentStyle: {
     background: 'rgba(17,24,39,0.96)',
-    border: '1px solid rgba(59,130,246,0.18)',
+    border: '1px solid rgba(6,182,212,0.18)',
     borderRadius: '12px',
     fontSize: 11,
     boxShadow: '0 8px 24px rgba(0,0,0,0.35)',

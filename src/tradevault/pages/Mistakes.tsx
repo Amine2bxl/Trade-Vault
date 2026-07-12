@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
-import { AlertTriangle, TrendingDown, AlertCircle, Lightbulb, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, TrendingDown, AlertCircle, Lightbulb, CheckCircle2, ShieldCheck, Target } from 'lucide-react';
 import { Trade } from '../types';
-import { computeStats, formatPnl } from '../utils/tradeCalcs';
+import { formatPnl } from '../utils/tradeCalcs';
+import { computeBehavioral, Severity } from '../utils/behavioral';
 import { cn } from '../utils/cn';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ComposedChart, Line } from 'recharts';
 import { useT } from '../i18n/LanguageContext';
-import { CHART_ANIMATION, tooltipStyle } from '../utils/chartTheme';
+import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from '../utils/chartTheme';
 
 interface MistakesProps { trades: Trade[]; embedded?: boolean; }
+
 const MISTAKE_TIPS: Record<string, string> = {
   'No stop loss': 'Always set a stop loss before entering. Risk management is non-negotiable. Place your stop and size your position before clicking buy.',
   'Overtrading': 'Set a max of 3-5 trades per day. Quality over quantity. If you\'ve hit your limit, close the platform.',
@@ -23,87 +25,218 @@ const MISTAKE_TIPS: Record<string, string> = {
   'Low liquidity': 'Only trade stocks with avg volume > 1M shares.',
 };
 
+const SEV_STYLE: Record<Severity, { text: string; bg: string; bar: string; dot: string }> = {
+  high: { text: 'text-red-400', bg: 'bg-red-500/10 border-red-500/25', bar: 'bg-red-500/60', dot: 'bg-red-400' },
+  medium: { text: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/25', bar: 'bg-amber-500/60', dot: 'bg-amber-400' },
+  low: { text: 'text-slate-300', bg: 'bg-slate-500/10 border-slate-500/25', bar: 'bg-slate-400/50', dot: 'bg-slate-400' },
+};
+
 export default function Mistakes({ trades, embedded = false }: MistakesProps) {
-  const { t } = useT();
-  const stats = computeStats(trades);
-  const mistakeData = useMemo(() => Object.entries(stats.mistakeStats).map(([mistake, data]) => ({ mistake, count: data.count, totalPnl: Math.round(data.totalPnl * 100) / 100, avgPnl: Math.round(data.totalPnl / data.count * 100) / 100 })).sort((a, b) => b.count - a.count), [stats.mistakeStats]);
-  const topMistakes = mistakeData.slice(0, 3);
-  const totalMistakes = mistakeData.reduce((s, m) => s + m.count, 0);
-  const totalCost = mistakeData.reduce((s, m) => s + m.totalPnl, 0);
-  const tradesWithMistakes = trades.filter(t => t.mistakes.length > 0).length;
-  const cleanTrades = trades.length - tradesWithMistakes;
-  const cleanDecided = trades.filter(t => t.mistakes.length === 0 && t.direction !== 'be').length;
-  const mistakeDecided = trades.filter(t => t.mistakes.length > 0 && t.direction !== 'be').length;
-  const cleanWinRate = cleanDecided > 0 ? trades.filter(t => t.mistakes.length === 0 && t.direction !== 'be' && t.pnl > 0).length / cleanDecided : 0;
-  const mistakeWinRate = mistakeDecided > 0 ? trades.filter(t => t.mistakes.length > 0 && t.direction !== 'be' && t.pnl > 0).length / mistakeDecided : 0;
-  const costData = useMemo(() => [...mistakeData].sort((a, b) => a.totalPnl - b.totalPnl), [mistakeData]);
+  const { t, lang } = useT();
+  const locale = ({ en: 'en-US', es: 'es-ES', pt: 'pt-PT', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', nl: 'nl-NL', ru: 'ru-RU', zh: 'zh-CN', ja: 'ja-JP', ar: 'ar-SA', hi: 'hi-IN' } as Record<string, string>)[lang] || 'en-US';
+  const DAY_NAMES = useMemo(() => Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2023, 0, 1 + i))), [locale]);
+
+  const b = useMemo(() => computeBehavioral(trades), [trades]);
+  const topMistakes = b.rows.slice(0, 3);
+
+  const dayData = useMemo(() => Array.from({ length: 5 }, (_, i) => i + 1).map(d => ({ day: DAY_NAMES[d], count: b.byDay[d] || 0 })), [b.byDay, DAY_NAMES]);
+  const sessionData = useMemo(() => (['london', 'newyork', 'asia'] as const).map(s => ({ session: t(`session.${s}` as never), count: b.bySession[s] })), [b.bySession, t]);
+  const maxSessionCount = Math.max(...sessionData.map(s => s.count), 1);
+  const severityTotal = b.severityCounts.high + b.severityCounts.medium + b.severityCounts.low;
 
   if (trades.length === 0) {
     if (embedded) return null;
     return (<div className="p-4 md:p-8"><h1 className="text-xl md:text-2xl font-bold text-white mb-2">{t('mistakes.title')}</h1><div className="glass rounded-2xl p-10 text-center text-slate-600">{t('mistakes.noTrades')}</div></div>);
   }
 
+  // Discipline dial color
+  const disc = b.disciplineScore;
+  const discColor = disc >= 80 ? 'text-emerald-400' : disc >= 60 ? 'text-cyan-400' : disc >= 40 ? 'text-amber-400' : 'text-red-400';
+  const discStroke = disc >= 80 ? '#10b981' : disc >= 60 ? '#06b6d4' : disc >= 40 ? '#f59e0b' : '#ef4444';
+  const R = 34, C = 2 * Math.PI * R;
+
   return (
     <div className={cn(embedded ? 'pt-2' : 'p-4 md:p-8 max-w-[1400px] mx-auto')}>
       <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">{t('mistakes.title')}</h1><p className="text-xs md:text-sm text-slate-500 mt-1">{t('mistakes.subtitle')}</p></div>
+
       <div className="space-y-4 md:space-y-6">
-        {/* Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-          {[
-            { icon: <AlertTriangle className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />, label: t('mistakes.totalMistakes'), value: String(totalMistakes), sub: `${tradesWithMistakes} ${t('mistakes.tradesSuffix')}`, color: 'text-white', delay: 0 },
-            { icon: <TrendingDown className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />, label: t('mistakes.totalCost'), value: formatPnl(totalCost), sub: `${t('mistakes.avgPrefix')} ${formatPnl(totalMistakes > 0 ? totalCost / totalMistakes : 0)}`, color: 'text-red-400', delay: 1 },
-            { icon: <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-400" />, label: t('mistakes.cleanWr'), value: `${(cleanWinRate * 100).toFixed(1)}%`, sub: `${cleanTrades} ${t('mistakes.cleanSuffix')}`, color: 'text-emerald-400', delay: 2 },
-            { icon: <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />, label: t('mistakes.mistakeWr'), value: `${(mistakeWinRate * 100).toFixed(1)}%`, sub: `${tradesWithMistakes} ${t('mistakes.mistakeSuffix')}`, color: 'text-amber-400', delay: 3 },
-          ].map(card => (
-            <div key={card.label} className={cn('glass rounded-xl md:rounded-2xl p-3 md:p-5 card-premium animate-fade-in-up', `stagger-${card.delay}`)}>
-              <div className="flex items-center gap-1.5 mb-1 md:mb-2">{card.icon}<span className="text-[9px] md:text-[10px] text-slate-500">{card.label}</span></div>
-              <div className={cn('text-lg md:text-2xl font-bold', card.color)}>{card.value}</div>
-              <div className="text-[9px] md:text-[10px] text-slate-600 mt-0.5">{card.sub}</div>
+        {/* ── Discipline score + summary KPIs ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+          {/* Discipline dial */}
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 flex items-center gap-4">
+            <div className="relative shrink-0" style={{ width: 84, height: 84 }}>
+              <svg width="84" height="84" viewBox="0 0 84 84" className="-rotate-90">
+                <circle cx="42" cy="42" r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7" />
+                <circle cx="42" cy="42" r={R} fill="none" stroke={discStroke} strokeWidth="7" strokeLinecap="round"
+                  strokeDasharray={C} strokeDashoffset={C * (1 - disc / 100)}
+                  style={{ transition: 'stroke-dashoffset 900ms cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 5px ${discStroke})` }} />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={cn('text-xl font-bold tabular-nums', discColor)}>{disc}</span>
+                <span className="text-[8px] text-slate-500 uppercase tracking-wider">/ 100</span>
+              </div>
             </div>
-          ))}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5"><ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /><span className="text-xs font-bold text-white">{t('mistakes.discipline')}</span></div>
+              <p className="text-[10px] text-slate-500 leading-snug">{t('mistakes.disciplineSub')}</p>
+              <div className="mt-1.5 text-[10px] text-slate-400">{b.cleanTrades}/{trades.length} {t('mistakes.cleanSuffix')}</div>
+            </div>
+          </div>
+
+          {/* KPIs (2×2) */}
+          <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+            {[
+              { icon: <AlertTriangle className="w-3.5 h-3.5 text-red-400" />, label: t('mistakes.totalMistakes'), value: String(b.totalIncidents), sub: `${b.tradesWithMistakes} ${t('mistakes.tradesSuffix')}`, color: 'text-white' },
+              { icon: <TrendingDown className="w-3.5 h-3.5 text-red-400" />, label: t('mistakes.totalCost'), value: formatPnl(b.totalCost), sub: `${t('mistakes.avgPrefix')} ${formatPnl(b.totalIncidents > 0 ? b.totalCost / b.totalIncidents : 0)}`, color: 'text-red-400' },
+              { icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />, label: t('mistakes.cleanWr'), value: b.cleanWinRate !== null ? `${(b.cleanWinRate * 100).toFixed(0)}%` : '—', sub: t('mistakes.cleanSuffix'), color: 'text-emerald-400' },
+              { icon: <AlertCircle className="w-3.5 h-3.5 text-amber-400" />, label: t('mistakes.mistakeWr'), value: b.mistakeWinRate !== null ? `${(b.mistakeWinRate * 100).toFixed(0)}%` : '—', sub: t('mistakes.mistakeSuffix'), color: 'text-amber-400' },
+            ].map((card, i) => (
+              <div key={i} className="glass rounded-xl p-3 card-premium animate-fade-in-up" style={{ animationDelay: `${(i + 1) * 60}ms` }}>
+                <div className="flex items-center gap-1.5 mb-1">{card.icon}<span className="text-[9px] text-slate-500 truncate">{card.label}</span></div>
+                <div className={cn('text-base md:text-lg font-bold leading-none', card.color)}>{card.value}</div>
+                <div className="text-[9px] text-slate-600 mt-1 truncate">{card.sub}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Charts */}
+        {/* Clean vs mistake edge callout */}
+        {b.cleanWinRate !== null && b.mistakeWinRate !== null && (
+          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-2 flex items-center gap-3 text-xs">
+            <Target className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="text-slate-400">
+              {t('mistakes.edgePrefix')} <span className="font-bold text-emerald-400">{((b.cleanWinRate - b.mistakeWinRate) * 100).toFixed(0)} {t('mistakes.edgePoints')}</span> {t('mistakes.edgeSuffix')}
+            </span>
+          </div>
+        )}
+
+        {/* ── Behavioral breakdown: severity + cost ── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {/* Severity distribution */}
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
+            <h3 className="text-sm font-semibold text-white mb-3">{t('mistakes.severity')}</h3>
+            {severityTotal > 0 ? (
+              <div className="space-y-3">
+                {(['high', 'medium', 'low'] as Severity[]).map(sev => {
+                  const cnt = b.severityCounts[sev];
+                  return (
+                    <div key={sev}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={cn('flex items-center gap-1.5 text-xs font-semibold', SEV_STYLE[sev].text)}>
+                          <span className={cn('w-1.5 h-1.5 rounded-full', SEV_STYLE[sev].dot)} />{t(`mistakes.sev_${sev}` as never)}
+                        </span>
+                        <span className="text-xs font-bold text-slate-400 tabular-nums">{cnt}</span>
+                      </div>
+                      <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
+                        <div className={cn('h-full rounded-full', SEV_STYLE[sev].bar)} style={{ width: `${(cnt / severityTotal) * 100}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <p className="text-[10px] text-slate-600 pt-1">{t('mistakes.severityHint')}</p>
+              </div>
+            ) : (<div className="h-32 flex items-center justify-center text-slate-600 text-sm text-center"><div><CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1" />{t('mistakes.noMistakesShort')}</div></div>)}
+          </div>
+
+          {/* Cost per mistake type */}
           <div className="md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
             <h3 className="text-sm font-semibold text-white mb-3">{t('mistakes.costAnalysis')}</h3>
-            {costData.length > 0 ? (
-              <div className="h-56 md:h-72">
+            {b.rows.length > 0 ? (
+              <div className="h-56 md:h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={costData} layout="vertical">
+                  <BarChart data={[...b.rows].sort((x, y) => x.totalPnl - y.totalPnl)} layout="vertical">
                     <XAxis type="number" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} />
-                    <YAxis dataKey="mistake" type="category" tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} tickLine={false} width={100} />
+                    <YAxis dataKey="mistake" type="category" tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} tickLine={false} width={104} />
                     <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`])} />
-                    <Bar dataKey="totalPnl" radius={[0, 4, 4, 0]} {...CHART_ANIMATION}>{costData.map((e, i) => <Cell key={i} fill={e.totalPnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.7} />)}</Bar>
+                    <Bar dataKey="totalPnl" radius={[0, 4, 4, 0]} {...CHART_ANIMATION}>{[...b.rows].sort((x, y) => x.totalPnl - y.totalPnl).map((e, i) => <Cell key={i} fill={e.totalPnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.7} />)}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (<div className="h-40 flex items-center justify-center text-slate-600 text-sm"><div className="text-center"><CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1" />{t('mistakes.noMistakesShort')}</div></div>)}
           </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
-            <h3 className="text-sm font-semibold text-white mb-3">{t('mistakes.mostCommon')}</h3>
-            <div className="space-y-2.5">
-              {mistakeData.slice(0, 8).map(m => (<div key={m.mistake}><div className="flex items-center justify-between mb-0.5"><span className="text-[10px] md:text-xs text-slate-300 truncate mr-2">{m.mistake}</span><span className="text-[10px] md:text-xs font-bold text-slate-400">{m.count}×</span></div><div className="w-full bg-white/[0.05] rounded-full h-1"><div className="h-full rounded-full bg-red-500/40" style={{ width: `${(m.count / (mistakeData[0]?.count || 1)) * 100}%` }} /></div></div>))}
-              {mistakeData.length === 0 && <div className="text-sm text-slate-600 text-center py-4">{t('mistakes.noMistakes')}</div>}
-            </div>
-          </div>
         </div>
 
-        {/* Tips */}
-        <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6">
-          <div className="flex items-center gap-2 mb-3 md:mb-4"><Lightbulb className="w-4 h-4 text-amber-400" /><h3 className="text-sm font-semibold text-white">{t('mistakes.improvementTips')}</h3></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            {topMistakes.length > 0 ? topMistakes.map((m, idx) => (
-              <div key={m.mistake} className={cn('bg-white/[0.03] border rounded-xl md:rounded-2xl p-3 md:p-4 card-premium', idx === 0 ? 'border-red-500/20' : 'border-white/[0.06]')}>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  {idx === 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">{t('mistakes.priority')}</span>}
-                  <AlertCircle className="w-3 h-3 text-red-400" /><span className="text-[10px] md:text-xs font-bold text-red-400">{m.mistake}</span>
+        {/* ── When mistakes happen: weekly trend + session + day ── */}
+        {b.totalIncidents > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            {/* Weekly trend */}
+            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
+              <h3 className="text-sm font-semibold text-white mb-1">{t('mistakes.weeklyTrend')}</h3>
+              <p className="text-[10px] text-slate-600 mb-3">{t('mistakes.weeklyTrendSub')}</p>
+              {b.weeklyTrend.length > 0 ? (
+                <div className="h-44">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={b.weeklyTrend}>
+                      <XAxis dataKey="week" tick={{ fill: '#475569', fontSize: 9 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: '#475569', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} width={24} />
+                      <Tooltip {...tooltipStyle} formatter={((value: any, name: any) => [name === 'count' ? `${value}` : `$${Number(value).toFixed(2)}`, name === 'count' ? t('mistakes.incidents') : t('mistakes.totalCost')])} />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#f59e0b" fillOpacity={0.5} {...CHART_ANIMATION} />
+                      <Line type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 2, strokeWidth: 0 }} activeDot={glowActiveDot('#f59e0b')} {...CHART_ANIMATION} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </div>
-                <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">{MISTAKE_TIPS[m.mistake] || t('mistakes.defaultTip')}</p>
-                <div className="mt-1.5 text-[9px] text-slate-600">{m.count}× · {formatPnl(m.totalPnl)}</div>
+              ) : <div className="h-40 flex items-center justify-center text-slate-600 text-sm">—</div>}
+            </div>
+
+            {/* Session + day distribution */}
+            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-2">{t('mistakes.bySession')}</h3>
+                <div className="space-y-2">
+                  {sessionData.map(s => (
+                    <div key={s.session} className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-500 w-16 shrink-0">{s.session}</span>
+                      <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden"><div className="h-full rounded-full bg-amber-500/50" style={{ width: `${(s.count / maxSessionCount) * 100}%` }} /></div>
+                      <span className="text-[10px] font-bold text-slate-400 w-6 text-right tabular-nums">{s.count}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )) : <div className="col-span-full text-center py-4 text-slate-600 text-sm">{t('mistakes.noMistakesGreat')}</div>}
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-2">{t('mistakes.byDay')}</h3>
+                <div className="h-28">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dayData}>
+                      <XAxis dataKey="day" tick={{ fill: '#475569', fontSize: 9 }} axisLine={false} tickLine={false} />
+                      <YAxis hide allowDecimals={false} />
+                      <Tooltip {...tooltipStyle} formatter={((value: any) => [`${value}`, t('mistakes.incidents')])} />
+                      <Bar dataKey="count" radius={[3, 3, 0, 0]} fill="#f59e0b" fillOpacity={0.5} {...CHART_ANIMATION} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
           </div>
+        )}
+
+        {/* ── Personalized recommendations + progression goal ── */}
+        <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-7">
+          <div className="flex items-center gap-2 mb-3 md:mb-4"><Lightbulb className="w-4 h-4 text-amber-400" /><h3 className="text-sm font-semibold text-white">{t('mistakes.improvementTips')}</h3></div>
+          {topMistakes.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+                {topMistakes.map((m, idx) => (
+                  <div key={m.mistake} className={cn('rounded-xl md:rounded-2xl p-3 md:p-4 border card-premium', idx === 0 ? SEV_STYLE[m.severity].bg : 'bg-white/[0.03] border-white/[0.06]')}>
+                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                      {idx === 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">{t('mistakes.priority')}</span>}
+                      <span className={cn('text-[8px] font-bold px-1 py-0.5 rounded uppercase', SEV_STYLE[m.severity].bg, SEV_STYLE[m.severity].text)}>{t(`mistakes.sev_${m.severity}` as never)}</span>
+                      <span className={cn('text-[10px] md:text-xs font-bold', SEV_STYLE[m.severity].text)}>{m.mistake}</span>
+                    </div>
+                    <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">{MISTAKE_TIPS[m.mistake] || t('mistakes.defaultTip')}</p>
+                    <div className="mt-1.5 text-[9px] text-slate-600">{m.count}× · {formatPnl(m.totalPnl)}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Progression goal */}
+              <div className="mt-4 flex items-start gap-3 rounded-xl bg-cyan-500/[0.06] border border-cyan-500/15 p-3.5">
+                <Target className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-slate-300 leading-relaxed">
+                  <span className="font-bold text-cyan-300">{t('mistakes.goal')}: </span>
+                  {t('mistakes.goalIntro')} <span className="font-bold text-white">{topMistakes[0].mistake}</span> {t('mistakes.goalMid')} <span className="font-bold text-emerald-400">{Math.min(100, disc + 10)}/100</span> {t('mistakes.goalEnd')}
+                </div>
+              </div>
+            </>
+          ) : <div className="text-center py-6 text-slate-500 text-sm"><CheckCircle2 className="w-7 h-7 text-emerald-500 mx-auto mb-2" />{t('mistakes.noMistakesGreat')}</div>}
         </div>
       </div>
     </div>

@@ -110,7 +110,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
           { label: t('calendar.monthlyPnl'), value: monthlySummary.tradingDays === 0 ? '$0.00' : `${monthlySummary.total >= 0 ? '' : '-'}$${Math.abs(monthlySummary.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: monthlySummary.tradingDays === 0 ? 'text-white' : monthlySummary.total > 0 ? 'text-emerald-400' : monthlySummary.total < 0 ? 'text-red-400' : 'text-white', delay: 0 },
           { label: t('calendar.tradingDays'), value: String(monthlySummary.tradingDays), color: 'text-white', delay: 1 },
           { label: t('calendar.winningDays'), value: `${monthlySummary.winDays}/${monthlySummary.tradingDays}`, color: monthlySummary.tradingDays === 0 ? 'text-white' : 'text-emerald-400', delay: 2 },
-          { label: t('dashboard.avgRR'), value: monthlySummary.avgRR.toFixed(2), color: monthlySummary.tradingDays === 0 ? 'text-white' : 'text-blue-400', delay: 3 },
+          { label: t('dashboard.avgRR'), value: monthlySummary.avgRR.toFixed(2), color: monthlySummary.tradingDays === 0 ? 'text-white' : 'text-cyan-400', delay: 3 },
           { label: t('calendar.totalRR'), value: `${monthlySummary.totalRR.toFixed(2)}R`, color: monthlySummary.tradingDays === 0 ? 'text-white' : monthlySummary.totalRR > 0 ? 'text-emerald-400' : monthlySummary.totalRR < 0 ? 'text-red-400' : 'text-white', delay: 4 },
           { label: t('stats.winRate'), value: `${(monthlySummary.winRate * 100).toFixed(1)}%`, color: monthlySummary.tradingDays === 0 ? 'text-white' : monthlySummary.winRate > 0.5 ? 'text-emerald-400' : monthlySummary.winRate < 0.5 ? 'text-red-400' : 'text-white', delay: 5 },
         ].map(card => (
@@ -127,7 +127,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
           <button onClick={prevMonth} className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"><ChevronLeft className="w-5 h-5" /></button>
           <div className="flex items-center gap-2">
             <h3 className="text-base md:text-lg font-bold text-white">{MONTHS[month]} '{String(year).slice(-2)}</h3>
-            <button onClick={goToday} className="text-[10px] md:text-xs text-blue-400 hover:text-blue-300 font-semibold px-2 md:px-3 py-1 rounded-lg hover:bg-blue-500/10 transition-all active:scale-95">{t('calendar.today')}</button>
+            <button onClick={goToday} className="text-[10px] md:text-xs text-cyan-400 hover:text-cyan-300 font-semibold px-2 md:px-3 py-1 rounded-lg hover:bg-cyan-500/10 transition-all active:scale-95">{t('calendar.today')}</button>
           </div>
           <button onClick={nextMonth} className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"><ChevronRight className="w-5 h-5" /></button>
         </div>
@@ -163,7 +163,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
                       !data && !isWeekend && !missedCount && 'border border-transparent',
                       !data && missedCount > 0 && 'bg-amber-500/[0.06] border border-amber-500/20',
                       !data && isWeekend && 'bg-white/[0.01]',
-                      isToday && 'ring-1 ring-blue-500/40',
+                      isToday && 'ring-1 ring-cyan-500/40',
                       (data || missedCount > 0) && 'cursor-pointer active:scale-95'
                     )}>
                     {missedCount > 0 && (
@@ -179,7 +179,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
                       isWin ? 'font-bold text-emerald-300' :
                       isLoss ? 'font-bold text-red-300' :
                       isAllBE ? 'font-bold text-slate-200' :
-                      isToday ? 'font-bold text-blue-400' :
+                      isToday ? 'font-bold text-cyan-400' :
                       isWeekend ? 'text-slate-700' : 'font-medium text-slate-500'
                     )}>{day}</div>
                     {data && (
@@ -197,7 +197,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
                           isWin ? 'bg-emerald-500/20 text-emerald-400' :
                           isLoss ? 'bg-red-500/20 text-red-400' : 'bg-white/[0.06] text-slate-400')}>{data.count}t</span>
                         {data.breakEven > 0 && !isAllBE && <span className="text-[7px] md:text-[10px] font-bold text-slate-300 hidden md:inline">{data.breakEven}BE</span>}
-                        {data.avgRR > 0 && <span className="text-[7px] md:text-[10px] font-semibold text-blue-400 hidden md:inline">RR{data.avgRR.toFixed(1)}</span>}
+                        {data.avgRR > 0 && <span className="text-[7px] md:text-[10px] font-semibold text-cyan-400 hidden md:inline">RR{data.avgRR.toFixed(1)}</span>}
                       </div>
                     )}
                   </button>
@@ -212,7 +212,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
         <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20" /><span className="text-[10px] text-slate-500">{t('calendar.legendWinningDay')}</span></div>
         <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-lg bg-gradient-to-br from-red-500/15 to-red-600/5 border border-red-500/15" /><span className="text-[10px] text-slate-500">{t('calendar.legendLosingDay')}</span></div>
         <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-lg bg-gradient-to-br from-slate-500/20 to-slate-600/5 border border-slate-500/25" /><span className="text-[10px] text-slate-500">{t('calendar.legendBreakEvenDay')}</span></div>
-        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-lg ring-1 ring-blue-500/40" /><span className="text-[10px] text-slate-500">{t('calendar.legendToday')}</span></div>
+        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-lg ring-1 ring-cyan-500/40" /><span className="text-[10px] text-slate-500">{t('calendar.legendToday')}</span></div>
       </div>
 
       {selectedDate && selectedTrades.length > 0 && (

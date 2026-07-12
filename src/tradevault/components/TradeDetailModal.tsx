@@ -201,7 +201,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.confluences')}</span>
                   <div className="flex flex-wrap gap-2">
-                    {trade.confluences.map(c => <span key={c} className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/15 text-blue-400 text-xs font-medium">{c}</span>)}
+                    {trade.confluences.map(c => <span key={c} className="px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/15 text-cyan-400 text-xs font-medium">{c}</span>)}
                   </div>
                 </div>
               )}
@@ -222,7 +222,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                   <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">{t('tradeDetail.chartScreenshots')}</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {trade.screenshots.map((shot, i) => (
-                      <button key={i} onClick={() => setLightbox({ images: trade.screenshots.map((s) => screenshotUrls[s] || ''), index: i })} className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-blue-500/30 transition-all group bg-black/40">
+                      <button key={i} onClick={() => setLightbox({ images: trade.screenshots.map((s) => screenshotUrls[s] || ''), index: i })} className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-cyan-500/30 transition-all group bg-black/40">
                         {screenshotUrls[shot] ? (
                           <img
                             src={screenshotUrls[shot]}
@@ -232,7 +232,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                             className="w-full max-h-[420px] object-contain"
                           />
                         ) : (
-                          <div className="w-full h-32 flex items-center justify-center"><div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>
+                          <div className="w-full h-32 flex items-center justify-center"><div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" /></div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white font-medium bg-black/40 px-2 py-1 rounded-md">{t('common.view')}</span>

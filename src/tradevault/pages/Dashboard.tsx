@@ -92,7 +92,7 @@ export default function Dashboard({ trades, onAddTrade, tradesLoading }: Dashboa
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">{t('dashboard.title')}</h1>
         </div>
-        <button onClick={onAddTrade} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 animate-fade-in-up stagger-1">
+        <button onClick={onAddTrade} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 animate-fade-in-up stagger-1">
           <Plus className="w-4 h-4" /> {t('common.addTrade')}
         </button>
       </div>
@@ -114,7 +114,7 @@ export default function Dashboard({ trades, onAddTrade, tradesLoading }: Dashboa
           </svg>
           <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t('empty.title')}</h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t('empty.subtitle')}</p>
-          <button onClick={onAddTrade} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5">
+          <button onClick={onAddTrade} className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5">
             <Plus className="w-4 h-4" /> {t('empty.cta')}
           </button>
           {/* Ghost example of what a logged trade looks like */}
@@ -177,11 +177,11 @@ export default function Dashboard({ trades, onAddTrade, tradesLoading }: Dashboa
                 <defs>
                   <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.4} />
-                    <stop offset="55%" stopColor="#3b82f6" stopOpacity={0.12} />
-                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="55%" stopColor="#06b6d4" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="eqStroke" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="0%" stopColor="#06b6d4" />
                     <stop offset="100%" stopColor="#22d3ee" />
                   </linearGradient>
                 </defs>

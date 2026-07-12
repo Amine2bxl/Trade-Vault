@@ -184,7 +184,7 @@ export default function MissedOpportunities() {
                     <button onClick={() => setViewing(m)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10">
                       <Eye className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setEditing(m)} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10">
+                    <button onClick={() => setEditing(m)} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => handleDelete(m.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10">
@@ -235,7 +235,7 @@ function Field({ label, value, tone }: { label: string; value: string; tone: 're
   const tones: Record<string, string> = {
     red: 'text-red-400 border-red-500/15',
     amber: 'text-amber-400 border-amber-500/15',
-    blue: 'text-blue-400 border-blue-500/15',
+    blue: 'text-cyan-400 border-cyan-500/15',
     emerald: 'text-emerald-400 border-emerald-500/15',
   };
   return (
@@ -256,7 +256,7 @@ export function ScreenshotsView({ paths, onRemove, size = 'sm' }: { paths: strin
     <>
       <div className={cn('grid gap-2', size === 'lg' ? 'grid-cols-2 sm:grid-cols-3 gap-3' : 'grid-cols-3')}>
         {paths.map((p, i) => (
-          <div key={p} className={cn('relative group aspect-video overflow-hidden bg-white/[0.04] border border-white/[0.08] hover:border-blue-500/30 transition-all', size === 'lg' ? 'rounded-2xl shadow-lg shadow-black/20' : 'rounded-xl')}>
+          <div key={p} className={cn('relative group aspect-video overflow-hidden bg-white/[0.04] border border-white/[0.08] hover:border-cyan-500/30 transition-all', size === 'lg' ? 'rounded-2xl shadow-lg shadow-black/20' : 'rounded-xl')}>
             {urls[p] ? (
               <button type="button" onClick={() => setLightboxIndex(resolvedUrls.indexOf(urls[p]))} className="block w-full h-full">
                 <img src={urls[p]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />

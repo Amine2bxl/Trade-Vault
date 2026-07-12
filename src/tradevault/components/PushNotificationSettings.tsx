@@ -49,8 +49,8 @@ export function PushNotificationSettings() {
       </h2>
 
       {isiOS && !isPWA ? (
-        <div className="flex gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4">
-          <Smartphone className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+        <div className="flex gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+          <Smartphone className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
           <div className="text-xs text-slate-300 leading-relaxed">
             <div className="font-semibold text-white mb-1">{t('push.iosInstallTitle')}</div>
             <ol className="list-decimal list-inside space-y-0.5 text-slate-400">
@@ -106,7 +106,7 @@ export function PushNotificationSettings() {
             <button
               onClick={handleTest}
               disabled={isSending}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 hover:bg-blue-500/15 transition disabled:opacity-50 text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-50 text-sm font-medium"
             >
               {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {t('push.sendTest')}

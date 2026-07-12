@@ -11,12 +11,12 @@ const ToastCtx = createContext<Ctx | null>(null);
 const ICONS: Record<ToastType, ReactNode> = {
   success: <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />,
   error: <XCircle className="w-4 h-4 text-red-400 shrink-0" />,
-  info: <Info className="w-4 h-4 text-blue-400 shrink-0" />,
+  info: <Info className="w-4 h-4 text-cyan-400 shrink-0" />,
 };
 const ACCENT: Record<ToastType, string> = {
   success: 'border-emerald-500/20 shadow-emerald-500/10',
   error: 'border-red-500/20 shadow-red-500/10',
-  info: 'border-blue-500/20 shadow-blue-500/10',
+  info: 'border-cyan-500/20 shadow-cyan-500/10',
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {

@@ -36,7 +36,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           >
             <div className={cn(
               'w-11 h-11 rounded-2xl flex items-center justify-center mb-4',
-              pending.danger ? 'bg-red-500/15 text-red-400' : 'bg-blue-500/15 text-blue-400'
+              pending.danger ? 'bg-red-500/15 text-red-400' : 'bg-cyan-500/15 text-cyan-400'
             )}>
               <AlertTriangle className="w-5 h-5" />
             </div>
@@ -54,7 +54,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   'px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg',
                   pending.danger
                     ? 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-400 hover:to-rose-400 shadow-red-500/20'
-                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 shadow-blue-500/20'
+                    : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-cyan-500/20'
                 )}
               >
                 {t('common.confirm')}

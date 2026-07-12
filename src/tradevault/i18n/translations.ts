@@ -411,6 +411,27 @@ const en = {
   'import.importBtn': 'Import',
   'import.imported': 'trades imported',
   'import.duplicatesSkipped': 'duplicates skipped',
+
+  // Mistakes — behavioral analytics
+  'mistakes.discipline': 'Discipline score',
+  'mistakes.disciplineSub': 'Weighted by mistake severity across all trades',
+  'mistakes.severity': 'Severity distribution',
+  'mistakes.severityHint': 'High-severity errors (no stop, revenge, oversizing) blow up accounts fastest.',
+  'mistakes.sev_high': 'High',
+  'mistakes.sev_medium': 'Medium',
+  'mistakes.sev_low': 'Low',
+  'mistakes.weeklyTrend': 'Weekly trend',
+  'mistakes.weeklyTrendSub': 'Are you cleaning up your act over time?',
+  'mistakes.bySession': 'By session',
+  'mistakes.byDay': 'By weekday',
+  'mistakes.incidents': 'Incidents',
+  'mistakes.edgePrefix': 'Your clean trades win',
+  'mistakes.edgePoints': 'points',
+  'mistakes.edgeSuffix': 'more often than trades with mistakes — discipline is your edge.',
+  'mistakes.goal': 'Next goal',
+  'mistakes.goalIntro': 'Cut',
+  'mistakes.goalMid': 'this week to lift discipline toward',
+  'mistakes.goalEnd': '.',
 };
 
 // The English dict above is the source of truth and the runtime fallback —

@@ -71,21 +71,21 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
   const viewing = viewingIdx !== null ? filtered[viewingIdx] ?? null : null;
 
   const handleSort = (key: SortKey) => { if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortDir('desc'); } };
-  const SortIcon = ({ col }: { col: SortKey }) => { if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 text-slate-700" />; return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-blue-400" /> : <ChevronDown className="w-3 h-3 text-blue-400" />; };
-  const inputClass = 'bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all';
+  const SortIcon = ({ col }: { col: SortKey }) => { if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 text-slate-700" />; return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-cyan-400" /> : <ChevronDown className="w-3 h-3 text-cyan-400" />; };
+  const inputClass = 'bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all';
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between gap-2 mb-3 md:mb-6">
         <div className="animate-fade-in-up stagger-0 min-w-0"><h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent truncate">{t('journal.title')}</h1><p className="text-[11px] md:text-sm text-slate-500 mt-0.5 md:mt-1">{filtered.length} {t('common.trades')}</p></div>
         <div className="flex items-center gap-1.5 md:gap-3 animate-fade-in-up stagger-1 shrink-0">
-          <button onClick={() => exportTradesCSV(trades)} className="flex items-center gap-1.5 md:gap-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all">
+          <button onClick={() => exportTradesCSV(trades)} className="flex items-center gap-1.5 md:gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all">
             <Download className="w-3.5 h-3.5 md:w-4 md:h-4" /><span className="hidden md:inline">{t('common.exportCsv')}</span>
           </button>
           <button onClick={onDeleteAll} className="flex items-center gap-1.5 md:gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all">
             <Trash className="w-3.5 h-3.5 md:w-4 md:h-4" /><span className="hidden md:inline">{t('common.deleteAll')}</span>
           </button>
-          <button onClick={onAdd} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5">
+          <button onClick={onAdd} className="hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5">
             <Plus className="w-4 h-4" /> {t('common.addTrade')}
           </button>
         </div>
@@ -107,7 +107,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
                   ? opt.v === 'win' ? 'bg-emerald-500/15 text-emerald-400'
                     : opt.v === 'loss' ? 'bg-red-500/15 text-red-400'
                     : opt.v === 'be' ? 'bg-slate-500/20 text-slate-200'
-                    : 'bg-blue-500/15 text-blue-400'
+                    : 'bg-cyan-500/15 text-cyan-400'
                   : 'text-slate-500 hover:text-slate-300'
               )}>{opt.label}</button>
           ))}
@@ -128,7 +128,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
           <div className="glass rounded-2xl p-10 text-center">
             <div className="text-sm font-semibold text-white mb-1">{t('empty.title')}</div>
             <p className="text-xs text-slate-500 mb-4">{t('empty.subtitle')}</p>
-            <button onClick={onAdd} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20">
+            <button onClick={onAdd} className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20">
               <Plus className="w-3.5 h-3.5" /> {t('empty.cta')}
             </button>
           </div>
@@ -156,7 +156,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
                 </div>
               </button>
               <div className="flex items-center shrink-0 -mr-1">
-                <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 active:bg-blue-500/10 active:text-blue-400 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                 <button onClick={() => onDelete(trade.id)} aria-label={t('common.delete')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
               <tr><td colSpan={8} className="px-5 py-14 text-center">
                 <div className="text-sm font-semibold text-white mb-1">{t('empty.title')}</div>
                 <p className="text-xs text-slate-500 mb-4">{t('empty.subtitle')}</p>
-                <button onClick={onAdd} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all">
+                <button onClick={onAdd} className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all">
                   <Plus className="w-3.5 h-3.5" /> {t('empty.cta')}
                 </button>
               </td></tr>
@@ -209,7 +209,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setViewingIdx(i)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Eye className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} title={t('common.edit')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} title={t('common.edit')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                       <button onClick={() => onDelete(trade.id)} aria-label={t('common.delete')} title={t('common.delete')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>

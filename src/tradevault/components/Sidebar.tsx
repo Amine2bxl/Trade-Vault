@@ -28,17 +28,17 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
   ];
 
   return (
-    <aside className="hidden md:flex w-[260px] bg-[#080d1a]/80 border-r border-white/[0.05] flex-col min-h-screen shrink-0 backdrop-blur-xl">
+    <aside className="hidden md:flex w-[260px] bg-[#080a0d]/85 border-r border-white/[0.05] flex-col min-h-screen shrink-0 backdrop-blur-xl">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/[0.05] flex items-center gap-3">
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-xl bg-blue-500/40 blur-xl opacity-70 animate-pulse" />
+          <div className="absolute inset-0 rounded-xl bg-cyan-500/40 blur-xl opacity-70 animate-pulse" />
           <img
             src={logoSrc}
             alt="TradeVault"
             width={36}
             height={36}
-            className="relative w-9 h-9 rounded-xl drop-shadow-[0_0_12px_rgba(59,130,246,0.55)]"
+            className="relative w-9 h-9 rounded-xl drop-shadow-[0_0_12px_rgba(6,182,212,0.55)]"
           />
         </div>
         <div className="min-w-0">
@@ -56,14 +56,14 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
             className={cn(
               'relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
               page === id
-                ? 'bg-gradient-to-r from-blue-500/15 to-indigo-500/5 text-blue-400 shadow-sm shadow-blue-500/10'
+                ? 'bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10'
                 : 'text-slate-500 hover:text-slate-200 hover:bg-white/[0.03] hover:translate-x-0.5'
             )}
           >
-            {page === id && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-gradient-to-b from-blue-400 to-indigo-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />}
-            <Icon className={cn('w-[18px] h-[18px] transition-transform', page === id ? 'text-blue-400' : 'text-slate-600')} />
+            {page === id && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />}
+            <Icon className={cn('w-[18px] h-[18px] transition-transform', page === id ? 'text-cyan-400' : 'text-slate-600')} />
             {label}
-            {page === id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />}
+            {page === id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
           </button>
         ))}
       </nav>
@@ -84,7 +84,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           </div>
           <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-700"
               style={{ width: `${winRate * 100}%` }}
             />
           </div>
@@ -95,7 +95,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       {user && (
         <div className="px-4 pb-5">
           <div className="glass rounded-2xl p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center text-sm font-bold text-blue-400 border border-blue-500/10">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20 flex items-center justify-center text-sm font-bold text-cyan-400 border border-cyan-500/10">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">

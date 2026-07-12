@@ -216,6 +216,26 @@ const fr: Dict = {
   'import.importBtn': 'Importer',
   'import.imported': 'trades importés',
   'import.duplicatesSkipped': 'doublons ignorés',
+
+  'mistakes.discipline': 'Score de discipline',
+  'mistakes.disciplineSub': 'Pondéré par la gravité des erreurs sur tous les trades',
+  'mistakes.severity': 'Répartition par gravité',
+  'mistakes.severityHint': 'Les erreurs graves (pas de stop, revenge, sur-taille) font sauter un compte le plus vite.',
+  'mistakes.sev_high': 'Grave',
+  'mistakes.sev_medium': 'Moyenne',
+  'mistakes.sev_low': 'Faible',
+  'mistakes.weeklyTrend': 'Tendance hebdo',
+  'mistakes.weeklyTrendSub': 'Corriges-tu tes erreurs dans le temps ?',
+  'mistakes.bySession': 'Par session',
+  'mistakes.byDay': 'Par jour',
+  'mistakes.incidents': 'Incidents',
+  'mistakes.edgePrefix': 'Tes trades propres gagnent',
+  'mistakes.edgePoints': 'points',
+  'mistakes.edgeSuffix': 'plus souvent que ceux avec erreurs — la discipline est ton edge.',
+  'mistakes.goal': 'Prochain objectif',
+  'mistakes.goalIntro': 'Élimine',
+  'mistakes.goalMid': 'cette semaine pour monter la discipline vers',
+  'mistakes.goalEnd': '.',
 };
 
 export default fr;
