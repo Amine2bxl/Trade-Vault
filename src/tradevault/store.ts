@@ -32,6 +32,9 @@ interface TradeRow {
   exit_time: string;
   confluences: string[];
   confidence: number;
+  mae?: number | null;
+  mfe?: number | null;
+  slippage?: number | null;
 }
 
 function rowToTrade(r: TradeRow): Trade {
@@ -53,6 +56,9 @@ function rowToTrade(r: TradeRow): Trade {
     exitTime: r.exit_time ?? '',
     confluences: r.confluences ?? [],
     confidence: r.confidence,
+    mae: r.mae ?? null,
+    mfe: r.mfe ?? null,
+    slippage: r.slippage ?? null,
   };
 }
 
@@ -79,6 +85,9 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
     exit_time: t.exitTime,
     confluences: t.confluences,
     confidence: t.confidence,
+    mae: t.mae != null ? toCents(t.mae) : null,
+    mfe: t.mfe != null ? toCents(t.mfe) : null,
+    slippage: t.slippage != null ? toCents(t.slippage) : null,
   };
 }
 

@@ -334,6 +334,83 @@ const en = {
   'push.iosStep1': 'Tap the Share button in Safari',
   'push.iosStep2': 'Scroll down and tap "Add to Home Screen"',
   'push.iosStep3': 'Open TradeVault from your home screen',
+
+  // Dashboard v2
+  'dashboard.noTradesInPeriod': 'No trades in this period',
+
+  // Empty states
+  'empty.title': 'Your journal starts here',
+  'empty.subtitle': 'Log your first trade or import your broker history — every metric derives automatically.',
+  'empty.cta': 'Add my first trade',
+  'empty.example': 'Example trade',
+
+  // Quant metrics
+  'quant.expectancy': 'Expectancy',
+  'quant.planAdherence': 'Plan adherence',
+  'quant.needTenDays': 'needs ≥10 trading days',
+  'quant.annualized': 'annualized, daily PnL',
+  'quant.kellyHint': 'indication only',
+  'quant.consistency': 'Consistency',
+  'quant.bestDay': 'best day',
+  'quant.recovery': 'Recovery',
+  'quant.inDrawdown': 'in drawdown',
+  'quant.daysShort': 'd',
+  'quant.recoverySub': 'drawdown to new high',
+
+  // Analytics v2
+  'analytics.setupTable': 'Performance by setup',
+  'analytics.setupCol': 'Setup',
+  'analytics.wrCol': 'Win rate',
+  'analytics.heatmap': 'Session × day heatmap',
+  'analytics.heatmapSub': 'PnL per session and weekday (entry time, ET)',
+  'analytics.byHour': 'Performance by entry hour',
+  'analytics.byHourSub': 'PnL bars and win-rate line (ET)',
+
+  // Trading sessions
+  'session.london': 'London',
+  'session.newyork': 'New York',
+  'session.asia': 'Asia',
+
+  // Trade modal v2
+  'trade.positionCalc': 'Position size calculator',
+  'trade.stopPoints': 'Stop (points)',
+  'trade.pointValue': '$ / point',
+  'trade.contracts': 'contracts',
+  'trade.effectiveRisk': 'Effective risk',
+  'trade.calcHint': 'Set risk, stop and point value',
+  'trade.advanced': 'Advanced — MAE / MFE / slippage',
+  'trade.maeHint': 'Worst drawdown during the trade',
+  'trade.mfeHint': 'Best profit during the trade',
+  'trade.slippage': 'Slippage',
+  'trade.fillRequired': 'Fill symbol, risk and R to save',
+
+  // Trade detail v2
+  'tradeDetail.macroHint': 'High-impact macro event that day',
+
+  // Command palette
+  'palette.title': 'Command palette',
+  'palette.placeholder': 'Search trades, navigate, act…',
+  'palette.noResults': 'No results',
+  'palette.actions': 'Actions',
+  'palette.goTo': 'Go to',
+  'palette.import': 'Import CSV',
+
+  // Journal v2
+  'journal.loadMore': 'Show more',
+
+  // CSV import
+  'import.title': 'Import trades (CSV)',
+  'import.dropHint': 'Drop a CSV file here or click to browse',
+  'import.rowsDetected': 'rows detected',
+  'import.otherFile': 'Choose another file',
+  'import.mapColumns': 'Column mapping',
+  'import.preview': 'Preview',
+  'import.validRows': 'valid',
+  'import.invalidSkipped': 'invalid skipped',
+  'import.noValidRows': 'No valid rows — check the column mapping',
+  'import.importBtn': 'Import',
+  'import.imported': 'trades imported',
+  'import.duplicatesSkipped': 'duplicates skipped',
 };
 
 // The English dict above is the source of truth and the runtime fallback —

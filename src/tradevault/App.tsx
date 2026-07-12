@@ -13,11 +13,15 @@ const Insights = lazy(() => import('./pages/Insights'));
 const Profile = lazy(() => import('./pages/Profile'));
 const MissedOpportunities = lazy(() => import('./pages/MissedOpportunities'));
 const AiAssistant = lazy(() => import('./components/AiAssistant'));
+const CommandPalette = lazy(() => import('./components/CommandPalette'));
+const ImportCsvModal = lazy(() => import('./components/ImportCsvModal'));
+import TradeDetailModal from './components/TradeDetailModal';
 import { Trade, Page } from './types';
 import { loadUserTrades, upsertTrade, deleteTrade, deleteAllTrades, migrateLegacyTradeScreenshots } from './store';
 import { computeStats } from './utils/tradeCalcs';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
+import { PageSkeleton } from './components/Skeleton';
 import { LanguageProvider, useT } from './i18n/LanguageContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ConfirmProvider, useConfirm } from './contexts/ConfirmContext';
@@ -28,14 +32,31 @@ function AppContent() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [tradesLoading, setTradesLoading] = useState(false);
   const [page, setPage] = useState<Page>('dashboard');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
+
+  // Cmd/Ctrl+K toggles the command palette
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen(v => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     let active = true;
     if (user) {
       const userId = user.id;
+      setTradesLoading(true);
       loadUserTrades(userId)
         .then((loaded) => {
           if (!active) return;
@@ -49,7 +70,8 @@ function AppContent() {
             if (n > 0) console.info(`[migrate] moved screenshots of ${n} trade(s) to Storage`);
           }).catch(() => {});
         })
-        .catch((e) => console.error('Failed to load trades', e));
+        .catch((e) => console.error('Failed to load trades', e))
+        .finally(() => { if (active) setTradesLoading(false); });
     } else {
       setTrades([]);
     }
@@ -58,30 +80,37 @@ function AppContent() {
 
   const stats = computeStats(trades);
 
+  // Optimistic writes: the UI updates instantly and rolls back to the previous
+  // snapshot if the request fails, so saving never blocks the workflow.
   const handleSave = useCallback(async (trade: Trade) => {
     if (!user) return;
-    try {
-      await upsertTrade(user.id, trade);
-      setTrades(prev => {
-        const exists = prev.find(t => t.id === trade.id);
-        return exists ? prev.map(t => t.id === trade.id ? trade : t) : [trade, ...prev];
-      });
-    } catch (e) {
-      console.error('Failed to save trade', e);
-      toast(t('app.saveTradeFailed'), 'error');
-    }
     setModalOpen(false);
     setEditingTrade(null);
+    let snapshot: Trade[] = [];
+    setTrades(prev => {
+      snapshot = prev;
+      const exists = prev.find(t => t.id === trade.id);
+      return exists ? prev.map(t => t.id === trade.id ? trade : t) : [trade, ...prev];
+    });
+    try {
+      await upsertTrade(user.id, trade);
+    } catch (e) {
+      console.error('Failed to save trade', e);
+      setTrades(snapshot);
+      toast(t('app.saveTradeFailed'), 'error');
+    }
   }, [user, t, toast]);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!user) return;
     if (!(await confirm(t('app.confirmDeleteTrade'), { danger: true }))) return;
+    let snapshot: Trade[] = [];
+    setTrades(prev => { snapshot = prev; return prev.filter(t => t.id !== id); });
     try {
       await deleteTrade(user.id, id);
-      setTrades(prev => prev.filter(t => t.id !== id));
     } catch (e) {
       console.error('Failed to delete trade', e);
+      setTrades(snapshot);
       toast(t('app.saveTradeFailed'), 'error');
     }
   }, [user, t, confirm, toast]);
@@ -101,6 +130,22 @@ function AppContent() {
   const handleEdit = useCallback((trade: Trade) => { setEditingTrade(trade); setModalOpen(true); }, []);
   const handleAdd = useCallback(() => { setEditingTrade(null); setModalOpen(true); }, []);
   const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingTrade(null); }, []);
+
+  // CSV import: persist each row, keep the ones that made it
+  const handleImportTrades = useCallback(async (imported: Trade[]): Promise<number> => {
+    if (!user) return 0;
+    const saved: Trade[] = [];
+    for (const tr of imported) {
+      try {
+        await upsertTrade(user.id, tr);
+        saved.push(tr);
+      } catch (e) {
+        console.error('Failed to import trade', e);
+      }
+    }
+    if (saved.length > 0) setTrades(prev => [...saved, ...prev]);
+    return saved.length;
+  }, [user]);
 
   if (loading) {
     return (
@@ -123,8 +168,8 @@ function AppContent() {
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
         <div key={page} className="animate-fade-in">
-          <Suspense fallback={<div className="flex items-center justify-center py-24"><div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>}>
-            {page === 'dashboard' && <Dashboard trades={trades} onAddTrade={handleAdd} />}
+          <Suspense fallback={<PageSkeleton />}>
+            {page === 'dashboard' && <Dashboard trades={trades} onAddTrade={handleAdd} tradesLoading={tradesLoading} />}
             {page === 'journal' && <Journal trades={trades} onEdit={handleEdit} onDelete={handleDelete} onDeleteAll={handleDeleteAll} onAdd={handleAdd} onOpenMissed={() => setPage('missed')} />}
             {page === 'calendar' && <CalendarPage trades={trades} />}
             {page === 'analytics' && <Analytics trades={trades} />}
@@ -140,6 +185,29 @@ function AppContent() {
         <AiAssistant trades={trades} />
       </Suspense>
       {modalOpen && <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />}
+      <Suspense fallback={null}>
+        {paletteOpen && (
+          <CommandPalette
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+            trades={trades}
+            setPage={setPage}
+            onAddTrade={handleAdd}
+            onOpenImport={() => setImportOpen(true)}
+            onViewTrade={setViewingTrade}
+          />
+        )}
+        {importOpen && (
+          <ImportCsvModal
+            existing={trades}
+            onClose={() => setImportOpen(false)}
+            onImport={handleImportTrades}
+          />
+        )}
+      </Suspense>
+      {viewingTrade && (
+        <TradeDetailModal trades={[viewingTrade]} date={viewingTrade.date} onClose={() => setViewingTrade(null)} />
+      )}
     </div>
   );
 }

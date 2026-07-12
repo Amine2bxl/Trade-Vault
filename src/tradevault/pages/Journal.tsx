@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, ArrowUpDown, Pencil, Trash2, Eye, ChevronDown, ChevronUp, Trash, ArrowUpRight, ArrowDownRight, Minus, Download, Target } from 'lucide-react';
 import { Trade, isBreakEven } from '../types';
 import { formatPnl, formatShortDate, directionLabel, directionBadgeClass } from '../utils/tradeCalcs';
+import { exportTradesCSV } from '../utils/exportCsv';
 import { cn } from '../utils/cn';
 import { useT } from '../i18n/LanguageContext';
 import TradeDetailModal from '../components/TradeDetailModal';
@@ -11,37 +12,37 @@ type SortKey = 'date' | 'symbol' | 'pnl' | 'strategy' | 'rMultiple';
 type SortDir = 'asc' | 'desc';
 type ResultFilter = 'all' | 'win' | 'loss' | 'be';
 
-function csvEscape(v: unknown): string {
-  const s = v == null ? '' : String(v);
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
+const PAGE_SIZE = 50;
+const FILTERS_STORAGE_KEY = 'tv.journal.filters';
 
-function exportTradesCSV(trades: Trade[]) {
-  const headers = ['Date','Symbol','Direction','P&L','Risk','R Multiple','Strategy','Setup Quality','Confidence','Entry Time','Exit Time','Confluences','Mistakes','Notes'];
-  const rows = trades.map(t => [
-    t.date, t.symbol, t.direction, t.pnl, t.riskAmount, t.rMultiple, t.strategy,
-    t.setupQuality, t.confidence, t.entryTime, t.exitTime,
-    t.confluences.join('; '), t.mistakes.join('; '), t.notes,
-  ].map(csvEscape).join(','));
-  const csv = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `tradevault-journal-${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+interface StoredFilters { strategyFilter: string; resultFilter: ResultFilter; sortKey: SortKey; sortDir: SortDir; }
+
+function loadStoredFilters(): Partial<StoredFilters> {
+  try {
+    const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
 }
 
 export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, onOpenMissed }: JournalProps) {
   const { t } = useT();
+  const stored = useMemo(loadStoredFilters, []);
   const [search, setSearch] = useState('');
-  const [strategyFilter, setStrategyFilter] = useState('all');
-  const [resultFilter, setResultFilter] = useState<ResultFilter>('all');
-  const [sortKey, setSortKey] = useState<SortKey>('date');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [viewing, setViewing] = useState<Trade | null>(null);
+  const [strategyFilter, setStrategyFilter] = useState(stored.strategyFilter ?? 'all');
+  const [resultFilter, setResultFilter] = useState<ResultFilter>(stored.resultFilter ?? 'all');
+  const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? 'date');
+  const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? 'desc');
+  const [viewingIdx, setViewingIdx] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Filters survive reloads (search stays session-local on purpose)
+  useEffect(() => {
+    try {
+      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({ strategyFilter, resultFilter, sortKey, sortDir } satisfies StoredFilters));
+    } catch {}
+  }, [strategyFilter, resultFilter, sortKey, sortDir]);
+
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, strategyFilter, resultFilter]);
 
   const strategies = useMemo(() => ['all', ...new Set(trades.map(t => t.strategy))], [trades]);
 
@@ -63,6 +64,11 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
     });
     return list;
   }, [trades, search, strategyFilter, resultFilter, sortKey, sortDir]);
+
+  // Render at most `visibleCount` rows — keeps the DOM light on big journals
+  const shown = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = filtered.length > visibleCount;
+  const viewing = viewingIdx !== null ? filtered[viewingIdx] ?? null : null;
 
   const handleSort = (key: SortKey) => { if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortDir('desc'); } };
   const SortIcon = ({ col }: { col: SortKey }) => { if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 text-slate-700" />; return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-blue-400" /> : <ChevronDown className="w-3 h-3 text-blue-400" />; };
@@ -118,12 +124,20 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
 
       {/* ── Mobile: Card List ── */}
       <div className="md:hidden space-y-2 animate-fade-in-up stagger-2">
-        {filtered.length === 0 ? (
+        {trades.length === 0 ? (
+          <div className="glass rounded-2xl p-10 text-center">
+            <div className="text-sm font-semibold text-white mb-1">{t('empty.title')}</div>
+            <p className="text-xs text-slate-500 mb-4">{t('empty.subtitle')}</p>
+            <button onClick={onAdd} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20">
+              <Plus className="w-3.5 h-3.5" /> {t('empty.cta')}
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="glass rounded-2xl p-10 text-center text-slate-600 text-sm">{t('common.noTradesFound')}</div>
-        ) : filtered.map(trade => { const be = isBreakEven(trade); return (
+        ) : shown.map((trade, i) => { const be = isBreakEven(trade); return (
           <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
             <div className="flex items-center gap-2 px-2.5 py-2">
-              <button type="button" className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity" onClick={() => setViewing(trade)}>
+              <button type="button" className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity" onClick={() => setViewingIdx(i)}>
                 <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
                   be ? 'bg-slate-500/10' : trade.pnl >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10')}>
                   {be ? <Minus className="w-4 h-4 text-slate-300" /> :
@@ -173,10 +187,18 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.04]">
-            {filtered.length === 0 ? (
+            {trades.length === 0 ? (
+              <tr><td colSpan={8} className="px-5 py-14 text-center">
+                <div className="text-sm font-semibold text-white mb-1">{t('empty.title')}</div>
+                <p className="text-xs text-slate-500 mb-4">{t('empty.subtitle')}</p>
+                <button onClick={onAdd} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all">
+                  <Plus className="w-3.5 h-3.5" /> {t('empty.cta')}
+                </button>
+              </td></tr>
+            ) : filtered.length === 0 ? (
               <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-600 text-sm">{t('common.noTradesFound')}</td></tr>
-            ) : filtered.map(trade => { const be = isBreakEven(trade); return (
-                <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setViewing(trade)}>
+            ) : shown.map((trade, i) => { const be = isBreakEven(trade); return (
+                <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setViewingIdx(i)}>
                   <td className="px-5 py-3 text-sm text-slate-300">{formatShortDate(trade.date)}</td>
                   <td className="px-5 py-3"><span className="text-sm font-bold text-white">{trade.symbol}</span></td>
                   <td className="px-5 py-3 text-sm text-slate-400">{trade.strategy}</td>
@@ -186,7 +208,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
                   <td className="px-5 py-3 text-sm text-slate-400">${trade.riskAmount.toFixed(0)}</td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => setViewing(trade)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Eye className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setViewingIdx(i)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Eye className="w-3.5 h-3.5" /></button>
                       <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} title={t('common.edit')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                       <button onClick={() => onDelete(trade.id)} aria-label={t('common.delete')} title={t('common.delete')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
@@ -198,11 +220,30 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
         </div>
       </div>
 
-      {viewing && (
+      {/* Load more (both layouts) */}
+      {hasMore && (
+        <div className="mt-3 text-center">
+          <button onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            className="px-5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 transition-all">
+            {t('journal.loadMore')} ({filtered.length - visibleCount})
+          </button>
+        </div>
+      )}
+
+      {viewing && viewingIdx !== null && (
         <TradeDetailModal
           trades={[viewing]}
           date={viewing.date}
-          onClose={() => setViewing(null)}
+          onClose={() => setViewingIdx(null)}
+          onNavigate={(dir) => {
+            const next = viewingIdx + dir;
+            if (next < 0 || next >= filtered.length) return;
+            if (next >= visibleCount) setVisibleCount(c => c + PAGE_SIZE);
+            setViewingIdx(next);
+          }}
+          hasPrev={viewingIdx > 0}
+          hasNext={viewingIdx < filtered.length - 1}
+          positionLabel={`${viewingIdx + 1}/${filtered.length}`}
         />
       )}
     </div>

@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
-import { Trade } from '../types';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Trade, isBreakEven } from '../types';
 import { computeStats, formatPnl, formatPct, formatShortDate } from '../utils/tradeCalcs';
+import { computeQuantStats, getSession, statsByHour, winRateOf, TradingSession } from '../utils/quantStats';
+import { loadStartingBalance } from '../store';
+import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 import Mistakes from './Mistakes';
@@ -15,8 +18,16 @@ const LOCALE_MAP: Record<string, string> = {
 
 export default function Analytics({ trades }: AnalyticsProps) {
   const { t, lang } = useT();
+  const { user } = useAuth();
   const locale = LOCALE_MAP[lang] || 'en-US';
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
+  const [startingBalance, setStartingBalance] = useState(0);
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    loadStartingBalance(user.id).then((b) => { if (active) setStartingBalance(b); }).catch(() => {});
+    return () => { active = false; };
+  }, [user?.id]);
   const DAY_NAMES = useMemo(() => Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2023, 0, 1 + i))), [locale]);
   const MONTH_NAMES_SHORT = useMemo(() => Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(2000, i, 1))), [locale]);
   const stats = computeStats(trades);
@@ -34,6 +45,58 @@ export default function Analytics({ trades }: AnalyticsProps) {
   const symbolData = useMemo(() => { const map: Record<string, { pnl: number; count: number }> = {}; for (const t of trades) { if (!map[t.symbol]) map[t.symbol] = { pnl: 0, count: 0 }; map[t.symbol].pnl += t.pnl; map[t.symbol].count++; } return Object.entries(map).map(([symbol, data]) => ({ symbol, pnl: Math.round(data.pnl * 100) / 100, trades: data.count })).sort((a, b) => b.pnl - a.pnl); }, [trades]);
   const monthlyData = useMemo(() => { const map: Record<string, { pnl: number; count: number; wins: number; be: number; totalRR: number }> = {}; for (const t of trades) { const k = t.date.substring(0, 7); if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0 }; map[k].pnl += t.pnl; map[k].count++; map[k].totalRR += Math.abs(t.rMultiple); if (t.direction === 'be') map[k].be++; else if (t.pnl > 0) map[k].wins++; } return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([key, data]) => { const [y, m] = key.split('-'); const dec = data.count - data.be; return { month: `${MONTH_NAMES_SHORT[parseInt(m) - 1]} '${y.slice(-2)}`, pnl: Math.round(data.pnl * 100) / 100, trades: data.count, winRate: dec > 0 ? Math.round(data.wins / dec * 100) : 0, avgRR: data.count > 0 ? +(data.totalRR / data.count).toFixed(2) : 0 }; }); }, [trades]);
   const profitFactorData = useMemo(() => { const tp = trades.filter(t => t.direction !== 'be' && t.pnl > 0).reduce((s, t) => s + t.pnl, 0); const tl = Math.abs(trades.filter(t => t.direction !== 'be' && t.pnl < 0).reduce((s, t) => s + t.pnl, 0)); const pf = tl > 0 ? tp / tl : tp > 0 ? 99 : 0; return { totalProfits: tp, totalLosses: tl, profitFactor: pf, isProfitable: pf > 1 }; }, [trades]);
+
+  const quant = useMemo(() => computeQuantStats(trades, startingBalance), [trades, startingBalance]);
+
+  // Per-setup table: WR / expectancy / PF / avg R for every strategy used
+  const setupTable = useMemo(() => {
+    const byStrategy: Record<string, Trade[]> = {};
+    for (const tr of trades) { (byStrategy[tr.strategy] ??= []).push(tr); }
+    return Object.entries(byStrategy).map(([strategy, list]) => {
+      const decisive = list.filter(tr => !isBreakEven(tr));
+      const wins = decisive.filter(tr => tr.pnl > 0);
+      const losses = decisive.filter(tr => tr.pnl < 0);
+      const gp = wins.reduce((s, tr) => s + tr.pnl, 0);
+      const gl = Math.abs(losses.reduce((s, tr) => s + tr.pnl, 0));
+      const withRisk = list.filter(tr => tr.riskAmount > 0);
+      return {
+        strategy,
+        count: list.length,
+        pnl: list.reduce((s, tr) => s + tr.pnl, 0),
+        winRate: decisive.length > 0 ? wins.length / decisive.length : null,
+        expectancy: list.reduce((s, tr) => s + tr.pnl, 0) / list.length,
+        profitFactor: gl > 0 ? gp / gl : gp > 0 ? 99 : 0,
+        avgR: withRisk.length > 0 ? withRisk.reduce((s, tr) => s + tr.pnl / tr.riskAmount, 0) / withRisk.length : 0,
+      };
+    }).sort((a, b) => b.pnl - a.pnl);
+  }, [trades]);
+
+  // Session (rows) × weekday (columns) PnL heatmap
+  const SESSIONS: TradingSession[] = ['london', 'newyork', 'asia'];
+  const heatmap = useMemo(() => {
+    const map: Record<string, { pnl: number; count: number }> = {};
+    let maxAbs = 0;
+    for (const tr of trades) {
+      const s = getSession(tr.entryTime);
+      if (!s) continue;
+      const dow = new Date(tr.date + 'T12:00:00').getDay();
+      if (dow < 1 || dow > 5) continue;
+      const k = `${s}-${dow}`;
+      if (!map[k]) map[k] = { pnl: 0, count: 0 };
+      map[k].pnl += tr.pnl;
+      map[k].count++;
+    }
+    for (const v of Object.values(map)) maxAbs = Math.max(maxAbs, Math.abs(v.pnl));
+    return { map, maxAbs };
+  }, [trades]);
+
+  // Win rate per entry hour
+  const hourData = useMemo(() => {
+    const byHour = statsByHour(trades);
+    return Object.entries(byHour)
+      .map(([h, b]) => ({ hour: `${h}h`, h: Number(h), pnl: Math.round(b.pnl * 100) / 100, winRate: winRateOf(b) !== null ? Math.round(winRateOf(b)! * 100) : 0, trades: b.count }))
+      .sort((a, b) => a.h - b.h);
+  }, [trades]);
 
   if (trades.length === 0) return (<div className="p-4 md:p-8"><h1 className="text-xl md:text-2xl font-bold text-white mb-2">{t('analytics.title')}</h1><div className="glass rounded-2xl p-10 text-center text-slate-600">{t('analytics.noTrades')}</div></div>);
 
@@ -59,6 +122,100 @@ export default function Analytics({ trades }: AnalyticsProps) {
           </div>
           <div className="mt-2 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
             <div className={cn('h-full rounded-full', profitFactorData.isProfitable ? 'bg-emerald-500/60' : 'bg-red-500/60')} style={{ width: `${Math.min(profitFactorData.profitFactor / 3 * 100, 100)}%` }} />
+          </div>
+        </div>
+
+        {/* Quant metrics grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-fade-in-up stagger-1">
+          {[
+            { label: t('quant.expectancy'), value: formatPnl(quant.expectancy), sub: `${quant.expectancyR >= 0 ? '+' : ''}${quant.expectancyR.toFixed(2)}R`, good: quant.expectancy >= 0 },
+            { label: 'Sharpe', value: quant.sharpe !== null ? quant.sharpe.toFixed(2) : '—', sub: quant.sharpe === null ? t('quant.needTenDays') : t('quant.annualized'), good: (quant.sharpe ?? 0) >= 1 },
+            { label: 'Sortino', value: quant.sortino !== null ? (quant.sortino >= 99 ? '99+' : quant.sortino.toFixed(2)) : '—', sub: quant.sortino === null ? t('quant.needTenDays') : t('quant.annualized'), good: (quant.sortino ?? 0) >= 1.5 },
+            { label: 'Kelly', value: quant.kelly !== null ? `${(quant.kelly * 100).toFixed(1)}%` : '—', sub: t('quant.kellyHint'), good: (quant.kelly ?? 0) > 0 },
+            { label: t('quant.consistency'), value: quant.consistencyScore !== null ? `${quant.consistencyScore.toFixed(0)}/100` : '—', sub: quant.bestDayShare !== null ? `${t('quant.bestDay')} ${(quant.bestDayShare * 100).toFixed(0)}%` : '—', good: (quant.consistencyScore ?? 0) >= 60 },
+            { label: t('quant.recovery'), value: quant.recoveryDays === null ? '—' : quant.recoveryDays === -1 ? t('quant.inDrawdown') : `${quant.recoveryDays}${t('quant.daysShort')}`, sub: t('quant.recoverySub'), good: quant.recoveryDays !== -1 },
+          ].map((m, i) => (
+            <div key={i} className="glass rounded-2xl p-3.5 card-premium">
+              <div className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold mb-1.5">{m.label}</div>
+              <div className={cn('text-base md:text-lg font-bold tabular-nums', m.good ? 'text-emerald-400' : 'text-amber-400')}>{m.value}</div>
+              <div className="text-[9px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Performance by setup */}
+        <div className="glass rounded-2xl overflow-hidden card-premium animate-fade-in-up stagger-2">
+          <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]"><h3 className="text-sm font-semibold text-white">{t('analytics.setupTable')}</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px]">
+              <thead>
+                <tr className="border-b border-white/[0.06]">
+                  {[t('analytics.setupCol'), t('common.trades'), t('analytics.wrCol'), t('quant.expectancy'), 'PF', `${t('dashboard.avgRR')}`, t('journal.colPnl')].map((h, i) => (
+                    <th key={i} className={cn('px-4 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider', i === 0 ? 'text-left' : 'text-right')}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {setupTable.map(row => (
+                  <tr key={row.strategy} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-4 py-2.5 text-xs font-bold text-white">{row.strategy}</td>
+                    <td className="px-4 py-2.5 text-xs text-slate-400 text-right tabular-nums">{row.count}</td>
+                    <td className="px-4 py-2.5 text-xs text-right tabular-nums"><span className={cn('font-semibold', row.winRate === null ? 'text-slate-500' : row.winRate >= 0.5 ? 'text-emerald-400' : 'text-red-400')}>{row.winRate === null ? '—' : formatPct(row.winRate)}</span></td>
+                    <td className="px-4 py-2.5 text-xs text-right tabular-nums"><span className={cn('font-semibold', row.expectancy >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(row.expectancy)}</span></td>
+                    <td className="px-4 py-2.5 text-xs text-right tabular-nums text-slate-300 font-semibold">{row.profitFactor >= 99 ? '99+' : row.profitFactor.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-xs text-right tabular-nums"><span className={cn('font-semibold', row.avgR >= 0 ? 'text-emerald-400' : 'text-red-400')}>{row.avgR >= 0 ? '+' : ''}{row.avgR.toFixed(2)}R</span></td>
+                    <td className="px-4 py-2.5 text-xs text-right tabular-nums"><span className={cn('font-bold', row.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(row.pnl)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Session × weekday heatmap + win rate by hour */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2">
+            <h3 className="text-sm font-semibold text-white mb-1">{t('analytics.heatmap')}</h3>
+            <p className="text-[10px] text-slate-600 mb-3">{t('analytics.heatmapSub')}</p>
+            <div className="grid gap-1" style={{ gridTemplateColumns: 'auto repeat(5, 1fr)' }}>
+              <div />
+              {[1, 2, 3, 4, 5].map(d => <div key={d} className="text-center text-[9px] text-slate-500 font-semibold pb-1">{DAY_NAMES[d]}</div>)}
+              {SESSIONS.map(s => (
+                <Fragment key={s}>
+                  <div className="text-[9px] text-slate-500 font-semibold pr-2 flex items-center">{t(`session.${s}` as never)}</div>
+                  {[1, 2, 3, 4, 5].map(d => {
+                    const cell = heatmap.map[`${s}-${d}`];
+                    const intensity = cell && heatmap.maxAbs > 0 ? Math.abs(cell.pnl) / heatmap.maxAbs : 0;
+                    return (
+                      <div key={`${s}-${d}`}
+                        title={cell ? `${formatPnl(cell.pnl)} · ${cell.count} trades` : ''}
+                        className={cn('rounded-lg h-11 flex flex-col items-center justify-center text-[9px] font-bold transition-transform hover:scale-105', !cell && 'bg-white/[0.02]')}
+                        style={cell ? { background: cell.pnl >= 0 ? `rgba(16,185,129,${0.08 + intensity * 0.45})` : `rgba(239,68,68,${0.08 + intensity * 0.45})` } : undefined}>
+                        {cell && (<><span className={cell.pnl >= 0 ? 'text-emerald-300' : 'text-red-300'}>{cell.pnl >= 0 ? '+' : '-'}${Math.abs(Math.round(cell.pnl))}</span><span className="text-slate-400 font-medium">{cell.count}</span></>)}
+                      </div>
+                    );
+                  })}
+                </Fragment>
+              ))}
+            </div>
+          </div>
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
+            <h3 className="text-sm font-semibold text-white mb-1">{t('analytics.byHour')}</h3>
+            <p className="text-[10px] text-slate-600 mb-3">{t('analytics.byHourSub')}</p>
+            {hourData.length > 0 ? (
+              <div className="h-48 md:h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={hourData}>
+                    <XAxis dataKey="hour" tick={{ fill: '#475569', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="left" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} domain={[0, 100]} width={32} />
+                    <Tooltip {...tooltipStyle} formatter={((value: any, name: any) => [name === 'winRate' ? `${value}%` : `$${Number(value).toFixed(2)}`, name === 'winRate' ? t('analytics.winRateLabel') : t('journal.colPnl')])} />
+                    <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>{hourData.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.55} />)}</Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="winRate" stroke="#22d3ee" strokeWidth={2} dot={{ fill: '#22d3ee', r: 3, strokeWidth: 0 }} activeDot={glowActiveDot('#22d3ee')} {...CHART_ANIMATION} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <div className="h-40 flex items-center justify-center text-slate-600 text-sm">{t('analytics.noData')}</div>}
           </div>
         </div>
 

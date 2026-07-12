@@ -353,4 +353,24 @@ input[type="range"]::-webkit-slider-thumb {
 .trade-card { transition: transform 0.15s; }
 .trade-card:active { transform: scale(0.98); }
 
+/* Skeleton loaders — shimmer sweep while data loads */
+@keyframes skeletonShimmer {
+  to { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(100deg,
+    rgba(30, 41, 59, 0.45) 40%,
+    rgba(56, 72, 100, 0.55) 50%,
+    rgba(30, 41, 59, 0.45) 60%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* cmdk: kill default outline, selection handled via data-[selected] classes */
+[cmdk-root] { outline: none; }
+[cmdk-input] { outline: none; }
+
 select { -webkit-appearance: none; }

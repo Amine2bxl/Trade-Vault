@@ -19,6 +19,12 @@ export interface Trade {
   exitTime: string;
   confluences: string[];
   confidence: number;
+  /** Maximum Adverse Excursion in $ — worst unrealized drawdown during the trade (optional) */
+  mae?: number | null;
+  /** Maximum Favorable Excursion in $ — best unrealized profit during the trade (optional) */
+  mfe?: number | null;
+  /** Slippage in $ (optional, mostly populated by broker imports) */
+  slippage?: number | null;
 }
 
 export interface User {
@@ -56,7 +62,11 @@ export function isBreakEven(t: Trade): boolean {
 
 export const STRATEGIES = [
   'Scalping', 'Momentum', 'Reversal', 'Breakout',
-  'Trend Following', 'VWAP Play', 'Gap Fill', 'Range Trading', 'Other',
+  'Trend Following', 'VWAP Play', 'Gap Fill', 'Range Trading',
+  // ICT setups
+  'Silver Bullet', 'Judas Swing', 'FVG Entry', 'Order Block',
+  'Liquidity Sweep', 'Breaker Block', 'Power of 3',
+  'Other',
 ] as const;
 
 export const MISTAKE_OPTIONS = [

@@ -1,6 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { X, Star, ChevronDown, ChevronUp, ImagePlus, Plus, Wallet } from 'lucide-react';
+import { X, Star, ChevronDown, ChevronUp, ImagePlus, Plus, Wallet, Calculator, SlidersHorizontal } from 'lucide-react';
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from '../types';
+import { getSession } from '../utils/quantStats';
+import { getDuration } from '../utils/tradeCalcs';
 import { generateId } from '../store';
 import { loadConfluences, saveConfluences, loadAccountBalance, saveAccountBalance, uploadScreenshot, deleteScreenshot } from '../store';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,7 +35,17 @@ const defaultForm = {
   exitTime: '10:00',
   confluences: [] as string[],
   confidence: 70,
+  mae: '',
+  mfe: '',
+  slippage: '',
 };
+
+// Common futures point values for the position-size helper
+const POINT_VALUES = [
+  { label: 'NQ', value: 20 }, { label: 'MNQ', value: 2 },
+  { label: 'ES', value: 50 }, { label: 'MES', value: 5 },
+  { label: 'YM', value: 5 }, { label: 'GC', value: 100 },
+];
 
 export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) {
   const { user } = useAuth();
@@ -60,7 +72,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     screenshots: trade.screenshots, entryTime: trade.entryTime,
     exitTime: trade.exitTime, confluences: trade.confluences,
     confidence: trade.confidence,
+    mae: trade.mae != null ? String(trade.mae) : '',
+    mfe: trade.mfe != null ? String(trade.mfe) : '',
+    slippage: trade.slippage != null ? String(trade.slippage) : '',
   } : {}) });
+
+  const [showCalc, setShowCalc] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [stopPoints, setStopPoints] = useState('');
+  const [pointValue, setPointValue] = useState('20');
 
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -76,6 +96,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     const rm = parseFloat(form.rMultiple) || 0;
     return riskDollar * rm;
   }, [riskDollar, form.rMultiple]);
+
+  // Position-size helper: contracts = risk / (stop distance × $ per point)
+  const calcContracts = useMemo(() => {
+    const stop = parseFloat(stopPoints) || 0;
+    const pv = parseFloat(pointValue) || 0;
+    if (riskDollar <= 0 || stop <= 0 || pv <= 0) return null;
+    const contracts = Math.floor(riskDollar / (stop * pv));
+    return { contracts, effectiveRisk: contracts * stop * pv };
+  }, [riskDollar, stopPoints, pointValue]);
+
+  const session = getSession(form.entryTime);
 
   // Screenshots upload straight to Supabase Storage (bucket path stored on the
   // trade) instead of inlining base64 into the row. Uploads made in this modal
@@ -180,6 +211,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       setupQuality: form.setupQuality, notes: form.notes,
       screenshots: form.screenshots, entryTime: form.entryTime, exitTime: form.exitTime,
       confluences: form.confluences, confidence: form.confidence,
+      mae: form.mae === '' ? null : parseFloat(form.mae) || 0,
+      mfe: form.mfe === '' ? null : parseFloat(form.mfe) || 0,
+      slippage: form.slippage === '' ? null : parseFloat(form.slippage) || 0,
     });
   };
 
@@ -192,6 +226,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative glass-strong rounded-t-3xl md:rounded-3xl w-full md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50">
+        {/* Dynamic accent: green when the entry is a gain, red when a loss */}
+        <div className={cn('pointer-events-none absolute inset-x-0 top-0 h-[2px] transition-colors duration-300',
+          form.direction === 'be' ? 'bg-slate-500/40' : calculatedPnl > 0 ? 'bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent' : calculatedPnl < 0 ? 'bg-gradient-to-r from-transparent via-red-400/70 to-transparent' : 'bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent')} />
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
           <h2 className="text-lg font-bold text-white">{trade ? t('trade.editTitle') : t('trade.newTitle')}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"><X className="w-4 h-4" /></button>
@@ -270,6 +307,41 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <span className="text-xs text-slate-600">→ ${riskDollar.toFixed(2)} risk</span>
             </div>
           )}
+
+          {/* Position size calculator */}
+          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
+            <button type="button" onClick={() => setShowCalc(v => !v)} className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+              <Calculator className="w-3.5 h-3.5 text-cyan-400/70" />
+              {t('trade.positionCalc')}
+              {showCalc ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+            </button>
+            {showCalc && (
+              <div className="px-3 pb-3 space-y-2.5">
+                <div className="flex flex-wrap gap-1.5">
+                  {POINT_VALUES.map(p => (
+                    <button key={p.label} type="button" onClick={() => setPointValue(String(p.value))}
+                      className={cn('px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border',
+                        pointValue === String(p.value) ? 'bg-cyan-500/15 border-cyan-500/25 text-cyan-300' : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300')}>
+                      {p.label} ${p.value}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><label className={labelClass}>{t('trade.stopPoints')}</label><input type="number" step="0.25" min="0" value={stopPoints} onChange={e => setStopPoints(e.target.value)} placeholder="10" className={inputClass} /></div>
+                  <div><label className={labelClass}>{t('trade.pointValue')}</label><input type="number" step="0.5" min="0" value={pointValue} onChange={e => setPointValue(e.target.value)} className={inputClass} /></div>
+                </div>
+                <div className={cn('rounded-xl px-3 py-2.5 text-xs font-semibold border flex items-center justify-between',
+                  calcContracts ? 'bg-cyan-500/[0.06] border-cyan-500/15 text-cyan-300' : 'bg-white/[0.02] border-white/[0.04] text-slate-500')}>
+                  {calcContracts ? (
+                    <>
+                      <span>{calcContracts.contracts} {t('trade.contracts')}</span>
+                      <span className="text-slate-400">{t('trade.effectiveRisk')}: ${calcContracts.effectiveRisk.toFixed(2)}</span>
+                    </>
+                  ) : (<span>{t('trade.calcHint')}</span>)}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Entry/Exit Time + Strategy */}
           <div className="grid grid-cols-3 gap-3">
@@ -374,6 +446,22 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
           </div>
 
+          {/* Advanced: MAE / MFE / slippage */}
+          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
+            <button type="button" onClick={() => setShowAdvanced(v => !v)} className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400/70" />
+              {t('trade.advanced')}
+              {showAdvanced ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+            </button>
+            {showAdvanced && (
+              <div className="px-3 pb-3 grid grid-cols-3 gap-2">
+                <div><label className={labelClass}>MAE ($)</label><input type="number" step="0.01" value={form.mae} onChange={e => setForm(f => ({ ...f, mae: e.target.value }))} placeholder="—" className={inputClass} /><div className="text-[9px] text-slate-600 mt-1">{t('trade.maeHint')}</div></div>
+                <div><label className={labelClass}>MFE ($)</label><input type="number" step="0.01" value={form.mfe} onChange={e => setForm(f => ({ ...f, mfe: e.target.value }))} placeholder="—" className={inputClass} /><div className="text-[9px] text-slate-600 mt-1">{t('trade.mfeHint')}</div></div>
+                <div><label className={labelClass}>{t('trade.slippage')} ($)</label><input type="number" step="0.01" value={form.slippage} onChange={e => setForm(f => ({ ...f, slippage: e.target.value }))} placeholder="—" className={inputClass} /></div>
+              </div>
+            )}
+          </div>
+
           {/* Notes */}
           <div>
             <label className={labelClass}>{t('trade.notes')}</label>
@@ -381,8 +469,23 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 border-t border-white/[0.06]">
-          <button onClick={onClose} className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors">{t('common.cancel')}</button>
+        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 border-t border-white/[0.06]">
+          {/* Live recap: what will be saved */}
+          <div className="flex-1 min-w-0 flex items-center gap-2 text-[11px] text-slate-500 overflow-hidden">
+            {isValid ? (
+              <>
+                <span className="font-bold text-white shrink-0">{form.symbol.toUpperCase()}</span>
+                {session && <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase shrink-0">{t(`session.${session}` as never)}</span>}
+                <span className="hidden sm:inline shrink-0">{getDuration(form.entryTime, form.exitTime)}</span>
+                <span className={cn('font-bold tabular-nums shrink-0', form.direction === 'be' ? 'text-slate-300' : calculatedPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                  {form.direction === 'be' ? 'BE' : `${calculatedPnl >= 0 ? '+' : ''}$${Math.abs(calculatedPnl).toFixed(2)}`}
+                </span>
+              </>
+            ) : (
+              <span className="truncate">{t('trade.fillRequired')}</span>
+            )}
+          </div>
+          <button onClick={onClose} className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0">{t('common.cancel')}</button>
           <button onClick={handleSave} disabled={!isValid}
             className={cn('px-6 py-2.5 rounded-xl text-sm font-bold transition-all',
               isValid ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'

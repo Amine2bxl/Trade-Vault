@@ -1,8 +1,9 @@
-import { X, ArrowUpRight, ArrowDownRight, Clock, Star, BarChart3, Minus, Target } from 'lucide-react';
+import { X, ArrowUpRight, ArrowDownRight, Clock, Star, BarChart3, Minus, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Trade, MissedOpportunity, isBreakEven } from '../types';
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from '../utils/tradeCalcs';
+import { getSession, getMacroEvents } from '../utils/quantStats';
 import { cn } from '../utils/cn';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n/LanguageContext';
 import { useScreenshotUrls } from '../hooks/useScreenshotUrls';
 import Lightbox from './Lightbox';
@@ -13,11 +14,16 @@ interface TradeDetailModalProps {
   onClose: () => void;
   missed?: MissedOpportunity[];
   onOpenMissed?: (m: MissedOpportunity) => void;
+  /** Swipe (mobile) / arrow-key navigation between trades in a list */
+  onNavigate?: (dir: 1 | -1) => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
+  positionLabel?: string;
 }
 
 const LOCALE_MAP: Record<string, string> = { en: 'en-US', es: 'es-ES', pt: 'pt-PT', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', nl: 'nl-NL', ru: 'ru-RU', zh: 'zh-CN', ja: 'ja-JP', ar: 'ar-SA', hi: 'hi-IN' };
 
-export default function TradeDetailModal({ trades, date, onClose, missed = [], onOpenMissed }: TradeDetailModalProps) {
+export default function TradeDetailModal({ trades, date, onClose, missed = [], onOpenMissed, onNavigate, hasPrev, hasNext, positionLabel }: TradeDetailModalProps) {
   const { t, lang } = useT();
   const locale = LOCALE_MAP[lang] || 'en-US';
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
@@ -27,19 +33,63 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
   const dayPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const d = new Date(date + 'T12:00:00');
   const dateStr = `${d.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}, '${String(d.getFullYear()).slice(-2)}`;
+  const macro = getMacroEvents(date);
+
+  // Arrow keys navigate when a list context is provided
+  useEffect(() => {
+    if (!onNavigate) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && hasPrev) onNavigate(-1);
+      else if (e.key === 'ArrowRight' && hasNext) onNavigate(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onNavigate, hasPrev, hasNext]);
+
+  // Horizontal swipe on mobile
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!onNavigate || !touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx > 0 && hasPrev) onNavigate(-1);
+    else if (dx < 0 && hasNext) onNavigate(1);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-      <div className="relative glass-strong rounded-t-3xl md:rounded-3xl max-w-3xl w-full max-h-[96vh] md:max-h-[88vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50">
+      <div className="relative glass-strong rounded-t-3xl md:rounded-3xl max-w-3xl w-full max-h-[96vh] md:max-h-[88vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50"
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mt-2 md:hidden" />
         <div className="px-4 md:px-6 pt-2 md:p-6 pb-3 md:pb-6 border-b border-white/[0.06]">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">{dateStr}</h2>
-              <p className="text-sm text-slate-400 mt-1">{trades.length} {trades.length !== 1 ? t('tradeDetail.tradesCountSuffix') : t('tradeDetail.tradeCountSuffix')}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-slate-400">{trades.length} {trades.length !== 1 ? t('tradeDetail.tradesCountSuffix') : t('tradeDetail.tradeCountSuffix')}</p>
+                {macro.map(ev => (
+                  <span key={ev} className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[9px] font-bold" title={t('tradeDetail.macroHint')}>{ev}</span>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
+              {onNavigate && (
+                <div className="flex items-center gap-1">
+                  <button onClick={() => onNavigate(-1)} disabled={!hasPrev} aria-label="Previous trade"
+                    className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-colors', hasPrev ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-700 cursor-not-allowed')}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {positionLabel && <span className="text-[10px] text-slate-500 tabular-nums min-w-[36px] text-center">{positionLabel}</span>}
+                  <button onClick={() => onNavigate(1)} disabled={!hasNext} aria-label="Next trade"
+                    className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-colors', hasNext ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-700 cursor-not-allowed')}>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
               <div className={cn('text-2xl font-bold', dayPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(dayPnl)}</div>
               <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"><X className="w-5 h-5" /></button>
             </div>
@@ -76,7 +126,12 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                       <span className="text-lg font-bold text-white">{trade.symbol}</span>
                       <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md', directionBadgeClass(trade.direction))}>{directionLabel(trade.direction)}</span>
                     </div>
-                    <span className="text-xs text-slate-500">{trade.strategy}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500">{trade.strategy}</span>
+                      {getSession(trade.entryTime) && (
+                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase">{t(`session.${getSession(trade.entryTime)}` as never)}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -115,7 +170,18 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
               {/* Risk */}
               <div className="flex flex-wrap gap-3 md:gap-4 text-xs">
                 <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('tradeDetail.risk')}: </span><span className="text-white font-semibold">${trade.riskAmount.toFixed(2)}</span></div>
-                <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('tradeDetail.pnlPerRisk')}: </span><span className={cn('font-semibold', trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{(trade.pnl / trade.riskAmount).toFixed(2)}R</span></div>
+                {trade.riskAmount > 0 && (
+                  <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('tradeDetail.pnlPerRisk')}: </span><span className={cn('font-semibold', trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{(trade.pnl / trade.riskAmount).toFixed(2)}R</span></div>
+                )}
+                {trade.mae != null && (
+                  <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">MAE: </span><span className="text-red-400 font-semibold">-${Math.abs(trade.mae).toFixed(2)}</span></div>
+                )}
+                {trade.mfe != null && (
+                  <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">MFE: </span><span className="text-emerald-400 font-semibold">+${Math.abs(trade.mfe).toFixed(2)}</span></div>
+                )}
+                {trade.slippage != null && (
+                  <div className="bg-white/[0.03] rounded-lg px-3 py-2"><span className="text-slate-500">{t('trade.slippage')}: </span><span className="text-slate-300 font-semibold">${trade.slippage.toFixed(2)}</span></div>
+                )}
               </div>
 
               {/* Confidence */}

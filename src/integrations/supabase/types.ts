@@ -134,6 +134,8 @@ export type Database = {
           entry_time: string
           exit_time: string
           id: string
+          mae: number | null
+          mfe: number | null
           mistakes: string[]
           notes: string
           pnl: number
@@ -141,6 +143,7 @@ export type Database = {
           risk_amount: number
           screenshots: string[]
           setup_quality: number
+          slippage: number | null
           strategy: string
           symbol: string
           trade_date: string
@@ -155,6 +158,8 @@ export type Database = {
           entry_time?: string
           exit_time?: string
           id?: string
+          mae?: number | null
+          mfe?: number | null
           mistakes?: string[]
           notes?: string
           pnl?: number
@@ -162,6 +167,7 @@ export type Database = {
           risk_amount?: number
           screenshots?: string[]
           setup_quality?: number
+          slippage?: number | null
           strategy?: string
           symbol: string
           trade_date: string
@@ -176,6 +182,8 @@ export type Database = {
           entry_time?: string
           exit_time?: string
           id?: string
+          mae?: number | null
+          mfe?: number | null
           mistakes?: string[]
           notes?: string
           pnl?: number
@@ -183,6 +191,7 @@ export type Database = {
           risk_amount?: number
           screenshots?: string[]
           setup_quality?: number
+          slippage?: number | null
           strategy?: string
           symbol?: string
           trade_date?: string

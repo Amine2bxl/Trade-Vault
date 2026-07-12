@@ -149,6 +149,73 @@ const fr: Dict = {
   'push.iosInstallTitle': "Installez d'abord l'application", 'push.iosStep1': 'Touchez le bouton Partager dans Safari',
   'push.iosStep2': 'Faites défiler et touchez « Sur l\'écran d\'accueil »',
   'push.iosStep3': "Ouvrez TradeVault depuis votre écran d'accueil",
+
+  'dashboard.noTradesInPeriod': 'Aucun trade sur cette période',
+
+  'empty.title': 'Votre journal commence ici',
+  'empty.subtitle': 'Enregistrez votre premier trade ou importez votre historique broker — chaque métrique se calcule automatiquement.',
+  'empty.cta': 'Ajouter mon premier trade',
+  'empty.example': 'Exemple de trade',
+
+  'quant.expectancy': 'Espérance',
+  'quant.planAdherence': 'Respect du plan',
+  'quant.needTenDays': '≥10 jours de trading requis',
+  'quant.annualized': 'annualisé, PnL journalier',
+  'quant.kellyHint': 'indicatif uniquement',
+  'quant.consistency': 'Régularité',
+  'quant.bestDay': 'meilleur jour',
+  'quant.recovery': 'Récupération',
+  'quant.inDrawdown': 'en drawdown',
+  'quant.daysShort': 'j',
+  'quant.recoverySub': 'du drawdown au nouveau sommet',
+
+  'analytics.setupTable': 'Performance par setup',
+  'analytics.setupCol': 'Setup',
+  'analytics.wrCol': 'Taux de réussite',
+  'analytics.heatmap': 'Heatmap session × jour',
+  'analytics.heatmapSub': "PnL par session et jour de semaine (heure d'entrée, ET)",
+  'analytics.byHour': "Performance par heure d'entrée",
+  'analytics.byHourSub': 'Barres PnL et courbe de réussite (ET)',
+
+  'session.london': 'Londres',
+  'session.newyork': 'New York',
+  'session.asia': 'Asie',
+
+  'trade.positionCalc': 'Calculateur de taille de position',
+  'trade.stopPoints': 'Stop (points)',
+  'trade.pointValue': '$ / point',
+  'trade.contracts': 'contrats',
+  'trade.effectiveRisk': 'Risque effectif',
+  'trade.calcHint': 'Renseignez risque, stop et valeur du point',
+  'trade.advanced': 'Avancé — MAE / MFE / slippage',
+  'trade.maeHint': 'Pire drawdown pendant le trade',
+  'trade.mfeHint': 'Meilleur profit pendant le trade',
+  'trade.slippage': 'Slippage',
+  'trade.fillRequired': 'Renseignez symbole, risque et R pour sauvegarder',
+
+  'tradeDetail.macroHint': 'Événement macro à fort impact ce jour-là',
+
+  'palette.title': 'Palette de commandes',
+  'palette.placeholder': 'Rechercher un trade, naviguer, agir…',
+  'palette.noResults': 'Aucun résultat',
+  'palette.actions': 'Actions',
+  'palette.goTo': 'Aller à',
+  'palette.import': 'Importer un CSV',
+
+  'journal.loadMore': 'Afficher plus',
+
+  'import.title': 'Importer des trades (CSV)',
+  'import.dropHint': 'Déposez un fichier CSV ici ou cliquez pour parcourir',
+  'import.rowsDetected': 'lignes détectées',
+  'import.otherFile': 'Choisir un autre fichier',
+  'import.mapColumns': 'Correspondance des colonnes',
+  'import.preview': 'Aperçu',
+  'import.validRows': 'valides',
+  'import.invalidSkipped': 'invalides ignorées',
+  'import.noValidRows': 'Aucune ligne valide — vérifiez la correspondance des colonnes',
+  'import.importBtn': 'Importer',
+  'import.imported': 'trades importés',
+  'import.duplicatesSkipped': 'doublons ignorés',
 };
 
 export default fr;

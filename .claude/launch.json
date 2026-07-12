@@ -13,6 +13,24 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "preview"],
       "port": 4173
+    },
+    {
+      "name": "jarvis",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "JARVIS", "-l", "4180"],
+      "port": 4180
+    },
+    {
+      "name": "pretrade-os",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "../Trading-Plan", "-l", "4190"],
+      "port": 4190
+    },
+    {
+      "name": "jarvis-live",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["JARVIS/server.js"],
+      "port": 7777
     }
   ]
 }
