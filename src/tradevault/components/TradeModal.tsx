@@ -240,7 +240,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             <div><label className={labelClass}>{t('trade.symbol')}</label><input type="text" value={form.symbol} onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))} placeholder="TSLA" className={inputClass} /></div>
             <div>
               <label className={labelClass}>{t('trade.direction')}</label>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {(['long', 'short', 'be'] as const).map(dir => {
                   const activeClass = dir === 'long'
                     ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400'
@@ -248,17 +248,22 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       ? 'bg-red-500/15 border-red-500/25 text-red-400'
                       : 'bg-slate-500/15 border-slate-500/25 text-slate-300';
                   const label = dir === 'be' ? t('common.be') : dir === 'long' ? t('common.long') : t('common.short');
+                  const shortLabel = dir === 'long' ? 'L' : dir === 'short' ? 'S' : 'BE';
                   return (
                     <button key={dir} onClick={() => setForm(f => ({
                       ...f,
                       direction: dir,
                       ...(dir === 'be' ? { rMultiple: '0' } : {}),
                     }))}
-                      className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border',
+                      className={cn('w-full py-2.5 rounded-xl text-sm font-semibold transition-all border text-center',
                         form.direction === dir
                           ? activeClass
                           : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300'
-                      )}>{label}</button>
+                      )}>
+                      {/* Compact single-letter labels on mobile, full words on ≥sm */}
+                      <span className="sm:hidden">{shortLabel}</span>
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
                   );
                 })}
               </div>
@@ -357,12 +362,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Setup Quality */}
           <div>
             <label className={labelClass}>{t('trade.setupQuality')}</label>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} onClick={() => setForm(f => ({ ...f, setupQuality: n }))} className="focus:outline-none">
-                  <Star className={cn('w-7 h-7 transition-all', n <= form.setupQuality ? 'text-amber-400 fill-amber-400' : 'text-slate-700 hover:text-slate-500')} />
-                </button>
-              ))}
+            <div className="flex gap-2.5">
+              {[1, 2, 3, 4, 5].map(n => {
+                const on = n <= form.setupQuality;
+                return (
+                  <button key={n} onClick={() => setForm(f => ({ ...f, setupQuality: n }))} aria-label={`${n} / 5`} className="star-btn focus:outline-none p-0.5">
+                    <Star className={cn('w-8 h-8 transition-colors', on ? 'text-amber-400 fill-amber-400 star-on' : 'text-slate-700 hover:text-amber-400/40')} strokeWidth={on ? 2 : 1.75} />
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -378,16 +386,18 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Confluences (Customizable) */}
           <div>
             <label className={labelClass}>{t('trade.confluences')}</label>
-            <div className="flex flex-wrap gap-2 mb-2">
+            {/* Equal-size bubbles: a 2-col grid on mobile keeps every chip the
+                exact same width/height; flows naturally as wrap chips on ≥sm. */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-2">
               {userConfluences.map(c => (
-                <div key={c} className="flex items-center gap-1 group">
+                <div key={c} className="relative group">
                   <button onClick={() => toggleConfluence(c)}
-                    className={cn('px-3 py-1.5 rounded-xl text-xs font-medium transition-all border',
+                    className={cn('w-full px-3 py-2 rounded-xl text-xs font-medium transition-all border text-center truncate',
                       form.confluences.includes(c) ? 'bg-cyan-500/15 border-cyan-500/25 text-cyan-400' : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600'
                     )}>{c}</button>
-                  <button onClick={() => removeConfluence(c)}
-                    className="w-4 h-4 rounded-full flex items-center justify-center text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
-                    <X className="w-3 h-3" />
+                  <button onClick={() => removeConfluence(c)} aria-label="Remove"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#0c1018] border border-white/10 flex items-center justify-center text-slate-500 hover:text-red-400 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                    <X className="w-2.5 h-2.5" />
                   </button>
                 </div>
               ))}

@@ -52,7 +52,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   // Discipline dial color
   const disc = b.disciplineScore;
   const discColor = disc >= 80 ? 'text-emerald-400' : disc >= 60 ? 'text-cyan-400' : disc >= 40 ? 'text-amber-400' : 'text-red-400';
-  const discStroke = disc >= 80 ? '#10b981' : disc >= 60 ? '#06b6d4' : disc >= 40 ? '#f59e0b' : '#ef4444';
+  const discStroke = disc >= 80 ? '#10b981' : disc >= 60 ? 'var(--tv-accent)' : disc >= 40 ? '#f59e0b' : '#ef4444';
   const R = 34, C = 2 * Math.PI * R;
 
   return (

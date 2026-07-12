@@ -148,14 +148,63 @@
  * TradeVault front-end design tokens & styles
  * ============================================================ */
 @theme {
-  --color-brand: #06b6d4;
-  --color-brand-light: #22d3ee;
-  --color-brand-dark: #0e7490;
+  --color-brand: var(--tv-accent);
+  --color-brand-light: var(--tv-highlight);
+  --color-brand-dark: var(--tv-accent);
   --color-surface: #0c1222;
   --color-surface-light: #111827;
   --color-surface-lighter: #1e293b;
   --color-profit: #10b981;
   --color-loss: #ef4444;
+
+  /* ----------------------------------------------------------------
+   * Themeable accent ramps.
+   *
+   * The whole app styles its accents with Tailwind's `cyan-*` (primary)
+   * and `teal-*` (secondary) utilities. Here we regenerate both ramps in
+   * oklch from a single hue + chroma pair per family, so changing
+   * --tv-primary-h / --tv-secondary-h at runtime retints every accent
+   * surface in one paint — no component edits, no rebuild.
+   * ---------------------------------------------------------------- */
+  --color-cyan-50:  oklch(0.971 calc(0.022 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-100: oklch(0.941 calc(0.050 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-200: oklch(0.902 calc(0.090 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-300: oklch(0.850 calc(0.120 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-400: oklch(0.780 calc(0.150 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-500: oklch(0.710 calc(0.152 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-600: oklch(0.620 calc(0.140 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-700: oklch(0.530 calc(0.115 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-800: oklch(0.450 calc(0.090 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-900: oklch(0.400 calc(0.075 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-cyan-950: oklch(0.300 calc(0.055 * var(--tv-primary-c)) var(--tv-primary-h));
+
+  --color-teal-50:  oklch(0.971 calc(0.022 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-100: oklch(0.941 calc(0.050 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-200: oklch(0.902 calc(0.090 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-300: oklch(0.850 calc(0.120 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-400: oklch(0.780 calc(0.150 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-500: oklch(0.710 calc(0.152 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-600: oklch(0.620 calc(0.140 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-700: oklch(0.530 calc(0.115 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-800: oklch(0.450 calc(0.090 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-900: oklch(0.400 calc(0.075 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-teal-950: oklch(0.300 calc(0.055 * var(--tv-secondary-c)) var(--tv-secondary-h));
+}
+
+/* Theme tokens — default = "Jarvis" (cyan/teal). The ThemeProvider (and the
+ * pre-paint bootstrap in __root) override these on :root at runtime. Defining
+ * them here means SSR / no-JS still renders the default identity with no flash. */
+:root {
+  --tv-primary-h: 215.2;
+  --tv-primary-c: 0.898;
+  --tv-secondary-h: 182.5;
+  --tv-secondary-c: 0.879;
+  --tv-accent: #06b6d4;
+  --tv-accent-2: #14b8a6;
+  --tv-highlight: #22d3ee;
+  --tv-accent-rgb: 6 182 212;
+  --tv-accent-2-rgb: 20 184 166;
+  --tv-highlight-rgb: 34 211 238;
 }
 
 html {
@@ -167,7 +216,7 @@ body {
   font-weight: 500;
   /* Deep near-black terminal backdrop with a faint cyan-tinted vignette */
   background:
-    radial-gradient(1200px 800px at 78% -8%, rgba(6, 182, 212, 0.06), transparent 60%),
+    radial-gradient(1200px 800px at 78% -8%, rgba(var(--tv-accent-rgb), 0.06), transparent 60%),
     linear-gradient(160deg, #05070a 0%, #060a0f 55%, #05080c 100%);
   background-attachment: fixed;
   color: #e2e8f0;
@@ -191,7 +240,8 @@ body {
 @media (max-width: 767px) {
   .app-main {
     padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    /* Floating dock: pill height + its 10px bottom gap + safe-area inset. */
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -211,8 +261,8 @@ h1, h2, h3, h4, h5, h6 {
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #155e75; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #0891b2; }
+::-webkit-scrollbar-thumb { background: rgba(var(--tv-accent-rgb), 0.5); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(var(--tv-accent-rgb), 0.8); }
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -235,8 +285,8 @@ input[type="number"] { -moz-appearance: textfield; }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.08); }
-  50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.18); }
+  0%, 100% { box-shadow: 0 0 20px rgba(var(--tv-accent-rgb), 0.08); }
+  50% { box-shadow: 0 0 40px rgba(var(--tv-accent-rgb), 0.18); }
 }
 @keyframes orb-float {
   0%, 100% { transform: translate(0, 0); }
@@ -277,8 +327,8 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (hover: hover) {
   .card-premium:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(6,182,212,0.08);
-    border-color: rgba(6,182,212,0.15);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(var(--tv-accent-rgb),0.08);
+    border-color: rgba(var(--tv-accent-rgb),0.15);
   }
 }
 
@@ -295,8 +345,31 @@ input[type="number"] { -moz-appearance: textfield; }
   50% { filter: drop-shadow(0 0 7px currentColor); }
 }
 .chart-organic .recharts-area-curve {
-  color: #06b6d4;
+  color: var(--tv-accent);
   animation: lineBreathe 4.5s ease-in-out 1.1s infinite;
+}
+
+/* Hover crosshair — recharts renders the cursor as .recharts-tooltip-cursor.
+ * We give it a soft glow in the active theme accent so every chart shares one
+ * precise, premium hover affordance. */
+.recharts-tooltip-cursor {
+  filter: drop-shadow(0 0 5px rgba(var(--tv-accent-rgb), 0.85));
+}
+
+/* Equity curve "draw in" reveal — the plotted area wipes on left→right on
+ * mount / data change, on top of recharts' own line growth, for a hand-drawn
+ * feel. Scoped to the area layer so axes/grid don't wipe with it. */
+@keyframes drawReveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.chart-draw .recharts-area,
+.chart-draw .recharts-line {
+  animation: drawReveal 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-draw .recharts-area,
+  .chart-draw .recharts-line { animation: none; }
 }
 
 input[type="range"] {
@@ -306,8 +379,8 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 18px; height: 18px; border-radius: 50%;
-  background: #06b6d4; cursor: pointer;
-  box-shadow: 0 0 10px rgba(6,182,212,0.4);
+  background: var(--tv-accent); cursor: pointer;
+  box-shadow: 0 0 10px rgba(var(--tv-accent-rgb),0.4);
 }
 
 .auth-orb {
@@ -321,15 +394,29 @@ input[type="range"]::-webkit-slider-thumb {
   .auth-orb { animation: none; }
 }
 
+/* Floating premium dock — detached rounded pill (Lucid-style) instead of a
+ * full-width edge bar. Horizontal margin + big radius + layered shadow. */
 .bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: rgba(5, 7, 10, 0.92);
+  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  background: transparent;
+}
+.bottom-nav-shell {
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(14, 19, 27, 0.86) 0%, rgba(7, 10, 14, 0.94) 100%);
+  border: 1px solid rgba(var(--tv-accent-rgb), 0.10);
+  box-shadow:
+    0 10px 34px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  overflow: hidden;
 }
 .bottom-nav-item {
   position: relative;
   min-width: 44px; min-height: 50px; width: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4px; border-radius: 14px; transition: color 0.2s, transform 0.18s cubic-bezier(0.16,1,0.3,1);
+  gap: 4px; border-radius: 16px; transition: color 0.2s, transform 0.18s cubic-bezier(0.16,1,0.3,1);
   -webkit-tap-highlight-color: transparent;
 }
 .bottom-nav-item:active { transform: scale(0.9); }
@@ -338,40 +425,50 @@ input[type="range"]::-webkit-slider-thumb {
 .bottom-nav-bar {
   position: absolute; top: 0; left: 50%; transform: translateX(-50%) scaleX(0);
   width: 26px; height: 2px; border-radius: 0 0 3px 3px;
-  background: linear-gradient(90deg, #06b6d4, #22d3ee);
+  background: linear-gradient(90deg, var(--tv-accent), var(--tv-highlight));
   transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
 }
 .bottom-nav-bar-active {
   transform: translateX(-50%) scaleX(1);
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+  box-shadow: 0 0 10px rgba(var(--tv-highlight-rgb), 0.7);
 }
 
-/* Icon sits on a pill that fills with a soft cyan glow when active */
+/* Icon sits on a pill that fills with a soft accent glow when active */
 .bottom-nav-icon {
   display: flex; align-items: center; justify-content: center;
-  width: 40px; height: 26px; border-radius: 10px;
+  width: 42px; height: 28px; border-radius: 12px;
   transition: background 0.22s ease, box-shadow 0.22s ease, transform 0.22s cubic-bezier(0.16,1,0.3,1);
 }
 .bottom-nav-icon-active {
-  background: rgba(6, 182, 212, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.18), 0 0 14px rgba(6, 182, 212, 0.18);
+  background: rgba(var(--tv-accent-rgb), 0.14);
+  box-shadow: inset 0 0 0 1px rgba(var(--tv-highlight-rgb), 0.18), 0 0 14px rgba(var(--tv-accent-rgb), 0.18);
   transform: translateY(-1px);
 }
 
 @keyframes fabBreathe {
-  0%, 100% { box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4); }
-  50% { box-shadow: 0 4px 30px rgba(6, 182, 212, 0.7); }
+  0%, 100% { box-shadow: 0 4px 20px rgba(var(--tv-accent-rgb), 0.4); }
+  50% { box-shadow: 0 4px 30px rgba(var(--tv-accent-rgb), 0.7); }
 }
 .fab-button {
   width: 54px; height: 54px; border-radius: 18px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #06b6d4, #14b8a6);
-  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: linear-gradient(135deg, var(--tv-accent), var(--tv-accent-2));
+  box-shadow: 0 4px 20px rgba(var(--tv-accent-rgb), 0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+  border: 1px solid rgba(var(--tv-highlight-rgb), 0.35);
   transition: transform 0.2s cubic-bezier(0.16,1,0.3,1);
   animation: fabBreathe 3.2s ease-in-out infinite;
 }
 .fab-button:active { transform: scale(0.88) rotate(90deg); animation-play-state: paused; }
+
+/* Setup-quality stars — soft amber glow + spring pop on select */
+@keyframes starPop {
+  0% { transform: scale(0.7); }
+  55% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.star-btn { transition: transform 0.18s cubic-bezier(0.16,1,0.3,1); }
+.star-btn:active { transform: scale(0.85); }
+.star-on { animation: starPop 0.32s cubic-bezier(0.16,1,0.3,1); filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.55)); }
 
 .trade-card { transition: transform 0.15s; }
 .trade-card:active { transform: scale(0.98); }

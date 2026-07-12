@@ -51,9 +51,9 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
 
   return (
     <>
-      <div className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
-        <div className="w-full glass-strong border-t border-white/[0.08]">
-          <div className="grid grid-cols-5 items-end px-2 pt-1.5 pb-1 gap-1">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
+        <div className="bottom-nav-shell">
+          <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2 gap-1">
             {leftItems.map((it) => renderItem({ ...it, active: page === it.id, onClick: () => setPage(it.id) }))}
             <div className="flex justify-center items-center">
               <button

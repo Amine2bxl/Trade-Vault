@@ -92,6 +92,27 @@ const en = {
   'profile.deleteAllTrades': 'Delete all trades',
   'profile.confirmDeleteAll': '⚠️ Delete ALL trades? This cannot be undone.',
 
+  // Appearance / themes
+  'appearance.title': 'Appearance',
+  'appearance.subtitle': 'Pick a theme or craft your own. Applies everywhere, instantly.',
+  'appearance.presets': 'Presets',
+  'appearance.yours': 'Your themes',
+  'appearance.new': 'New theme',
+  'appearance.name': 'Theme name',
+  'appearance.namePlaceholder': 'My theme',
+  'appearance.primary': 'Primary',
+  'appearance.secondary': 'Secondary',
+  'appearance.highlight': 'Highlight',
+  'appearance.auto': 'Auto palette',
+  'appearance.done': 'Done',
+  'appearance.duplicate': 'Duplicate',
+  'appearance.edit': 'Edit',
+  'appearance.delete': 'Delete',
+  'appearance.setDefault': 'Set as default',
+  'appearance.default': 'Default',
+  'appearance.active': 'Active',
+  'appearance.deleteConfirm': 'Delete this theme?',
+
   // Missed Setups
   'missed.title': 'Missed Setups',
   'missed.subtitle': "A+ setups you didn't take — and what to do next time",

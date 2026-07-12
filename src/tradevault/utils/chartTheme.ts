@@ -13,10 +13,21 @@ export const CHART_ANIMATION = {
   animationEasing: ORGANIC_EASING as unknown as 'ease-out',
 };
 
+// Hover crosshair shared by every chart: a dashed vertical line (plus a faint
+// band on bar charts) in the active theme accent. The soft glow is applied in
+// CSS via `.recharts-tooltip-cursor`, so it always tracks the current theme.
+export const crosshairCursor = {
+  stroke: 'var(--tv-accent)',
+  strokeWidth: 1.25,
+  strokeDasharray: '4 4',
+  strokeOpacity: 0.9,
+  fill: 'rgba(var(--tv-accent-rgb), 0.05)',
+};
+
 export const tooltipStyle = {
   contentStyle: {
     background: 'rgba(17,24,39,0.96)',
-    border: '1px solid rgba(6,182,212,0.18)',
+    border: '1px solid rgba(var(--tv-accent-rgb),0.18)',
     borderRadius: '12px',
     fontSize: 11,
     boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
@@ -24,7 +35,7 @@ export const tooltipStyle = {
   },
   labelStyle: { color: '#94a3b8', marginBottom: 2 },
   itemStyle: { color: '#e2e8f0' },
-  cursor: { fill: 'rgba(148,163,184,0.06)' },
+  cursor: crosshairCursor,
 };
 
 export function glowDot(color: string) {

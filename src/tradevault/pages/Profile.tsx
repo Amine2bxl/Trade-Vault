@@ -11,6 +11,7 @@ import {
 import { LogOut, Mail, User as UserIcon, TrendingUp, Hash, Trash2, Globe, DollarSign, MessageSquare, Handshake, Lightbulb, Check } from 'lucide-react';
 import { useT } from '../i18n/LanguageContext';
 import { PushNotificationSettings } from '../components/PushNotificationSettings';
+import ThemeSettings from '../components/ThemeSettings';
 
 interface ProfileProps {
   trades: Trade[];
@@ -114,6 +115,9 @@ export default function Profile({ trades, onDeleteAll }: ProfileProps) {
           <p className="text-[10px] text-slate-600 mt-1.5">{t('profile.startingEquityHint')}</p>
         </label>
       </div>
+
+      {/* Appearance / themes */}
+      <ThemeSettings />
 
       {/* Contact / Support */}
       <div className="glass-strong rounded-3xl p-6 space-y-3">

@@ -25,6 +25,7 @@ import { PageSkeleton } from './components/Skeleton';
 import { LanguageProvider, useT } from './i18n/LanguageContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ConfirmProvider, useConfirm } from './contexts/ConfirmContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -214,14 +215,16 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <ToastProvider>
-          <ConfirmProvider>
-            <AppContent />
-          </ConfirmProvider>
-        </ToastProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <LanguageProvider>
+          <ToastProvider>
+            <ConfirmProvider>
+              <AppContent />
+            </ConfirmProvider>
+          </ToastProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -104,13 +104,13 @@ export default function Dashboard({ trades, onAddTrade, tradesLoading }: Dashboa
           <svg viewBox="0 0 200 80" className="w-48 md:w-64 mx-auto mb-6 opacity-80" aria-hidden="true">
             <defs>
               <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity="0" />
               </linearGradient>
             </defs>
-            <path d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22" fill="none" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 6px rgba(34,211,238,0.5))' }} />
+            <path d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22" fill="none" stroke="var(--tv-highlight)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 6px rgba(var(--tv-highlight-rgb),0.5))' }} />
             <path d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z" fill="url(#emptyGrad)" stroke="none" />
-            <circle cx="162" cy="14" r="3.5" fill="#22d3ee" style={{ filter: 'drop-shadow(0 0 5px rgba(34,211,238,0.9))' }} />
+            <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" style={{ filter: 'drop-shadow(0 0 5px rgba(var(--tv-highlight-rgb),0.9))' }} />
           </svg>
           <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t('empty.title')}</h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t('empty.subtitle')}</p>
@@ -171,25 +171,25 @@ export default function Dashboard({ trades, onAddTrade, tradesLoading }: Dashboa
           </div>
         </div>
         {stats.equityCurve.length > 0 ? (
-          <div className="h-56 md:h-80 chart-organic">
+          <div className="h-56 md:h-80 chart-organic chart-draw">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats.equityCurve} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.4} />
-                    <stop offset="55%" stopColor="#06b6d4" stopOpacity={0.12} />
-                    <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.4} />
+                    <stop offset="55%" stopColor="var(--tv-accent)" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="var(--tv-accent)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="eqStroke" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="100%" stopColor="#22d3ee" />
+                    <stop offset="0%" stopColor="var(--tv-accent)" />
+                    <stop offset="100%" stopColor="var(--tv-highlight)" />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="date" padding={EQUITY_X_PADDING} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
                 <YAxis domain={equityYDomain} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
                 <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
                 <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, 'Equity'])} labelFormatter={(v) => formatShortDate(v)} />
-                <Area type="natural" dataKey="equity" stroke="url(#eqStroke)" strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={glowActiveDot('#22d3ee')} style={{ filter: 'drop-shadow(0 2px 6px rgba(34,211,238,0.35))' }} {...CHART_ANIMATION} />
+                <Area type="natural" dataKey="equity" stroke="url(#eqStroke)" strokeWidth={2.5} fill="url(#eqGrad)" dot={false} activeDot={glowActiveDot('var(--tv-highlight)')} style={{ filter: 'drop-shadow(0 2px 6px rgba(var(--tv-highlight-rgb),0.35))' }} {...CHART_ANIMATION} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
