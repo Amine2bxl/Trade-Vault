@@ -219,7 +219,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   const isValid = form.symbol && form.date && parseFloat(form.riskAmount) > 0 && (form.direction === 'be' || form.rMultiple !== '');
 
-  const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all';
+  // Shared visual base so every field reads as one system. `inputClass` locks a
+  // single control height (h-11 / 44px touch target) so text, number, date, time
+  // and select inputs line up pixel-perfect across every row; `textareaClass`
+  // reuses the same skin but stays auto-height for multiline notes.
+  const fieldBase = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all';
+  const inputClass = cn(fieldBase, 'h-11');
+  const textareaClass = cn(fieldBase, 'py-2.5');
   const labelClass = 'block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5';
 
   return (
@@ -255,7 +261,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       direction: dir,
                       ...(dir === 'be' ? { rMultiple: '0' } : {}),
                     }))}
-                      className={cn('w-full py-2.5 rounded-xl text-sm font-semibold transition-all border text-center',
+                      className={cn('w-full h-11 flex items-center justify-center rounded-xl text-sm font-semibold transition-all border',
                         form.direction === dir
                           ? activeClass
                           : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300'
@@ -294,7 +300,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
             <div>
               <label className={labelClass}>{t('trade.estPnl')}</label>
-              <div className={cn('w-full rounded-xl px-3 py-2.5 text-sm font-bold border',
+              <div className={cn('w-full h-11 flex items-center rounded-xl px-3 text-sm font-bold border tabular-nums',
                 calculatedPnl > 0 ? 'bg-emerald-500/10 border-emerald-500/15 text-emerald-400' :
                 calculatedPnl < 0 ? 'bg-red-500/10 border-red-500/15 text-red-400' :
                 'bg-white/[0.03] border-white/[0.06] text-slate-400'
@@ -475,7 +481,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Notes */}
           <div>
             <label className={labelClass}>{t('trade.notes')}</label>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder={t('trade.notesPlaceholder')} className={cn(inputClass, 'resize-none')} />
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder={t('trade.notesPlaceholder')} className={cn(textareaClass, 'resize-none')} />
           </div>
         </div>
 

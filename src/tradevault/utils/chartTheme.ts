@@ -13,15 +13,16 @@ export const CHART_ANIMATION = {
   animationEasing: ORGANIC_EASING as unknown as 'ease-out',
 };
 
-// Hover crosshair shared by every chart: a dashed vertical line (plus a faint
-// band on bar charts) in the active theme accent. The soft glow is applied in
-// CSS via `.recharts-tooltip-cursor`, so it always tracks the current theme.
+// Hover cursor shared by every chart. TradingView-style: a single hairline-thin,
+// solid guide in the active theme accent — deliberately faint so the glowing
+// marker dot (glowActiveDot) is the star of the hover, not a loud dashed line.
+// The soft glow is applied in CSS via `.recharts-tooltip-cursor`, so it always
+// tracks the current theme.
 export const crosshairCursor = {
   stroke: 'var(--tv-accent)',
-  strokeWidth: 1.25,
-  strokeDasharray: '4 4',
-  strokeOpacity: 0.9,
-  fill: 'rgba(var(--tv-accent-rgb), 0.05)',
+  strokeWidth: 1,
+  strokeOpacity: 0.28,
+  fill: 'transparent',
 };
 
 export const tooltipStyle = {
@@ -42,8 +43,18 @@ export function glowDot(color: string) {
   return { r: 4, strokeWidth: 2, stroke: '#0a0f1e', fill: color };
 }
 
+// Premium hover marker — a small, precise circle with a soft two-stop glow in
+// the series color. Small radius + a thin dark ring keep it discreet and crisp
+// against the line; the layered drop-shadows give the light TradingView-like
+// halo without a heavy dashed crosshair.
 export function glowActiveDot(color: string) {
-  return { r: 6, strokeWidth: 2, stroke: '#0a0f1e', fill: color, style: { filter: `drop-shadow(0 0 6px ${color})` } };
+  return {
+    r: 4,
+    strokeWidth: 1.5,
+    stroke: '#0a0f1e',
+    fill: color,
+    style: { filter: `drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px rgba(255,255,255,0.12))` },
+  };
 }
 
 // Pads the Y domain so the curve's peaks/troughs never touch the chart edges —

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, Wand2 } from 'lucide-react';
+import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, Wand2, ChevronDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useT } from '../i18n/LanguageContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -37,6 +37,8 @@ export default function ThemeSettings() {
   const confirm = useConfirm();
   const { themes, activeId, defaultId, setActive, setDefault, createTheme, updateTheme, duplicateTheme, deleteTheme } = useTheme();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [openPresets, setOpenPresets] = useState(true);
+  const [openCustom, setOpenCustom] = useState(false);
 
   const presets = themes.filter((th) => th.builtin);
   const custom = themes.filter((th) => !th.builtin);
@@ -117,15 +119,13 @@ export default function ThemeSettings() {
         </div>
       </div>
 
-      <div>
-        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-600 mb-2">{t('appearance.presets')}</p>
+      <Section title={t('appearance.presets')} count={presets.length} open={openPresets} onToggle={() => setOpenPresets((v) => !v)}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {presets.map((th) => <Card key={th.id} th={th} />)}
         </div>
-      </div>
+      </Section>
 
-      <div>
-        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-600 mb-2">{t('appearance.yours')}</p>
+      <Section title={t('appearance.yours')} count={custom.length} open={openCustom} onToggle={() => setOpenCustom((v) => !v)}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {custom.map((th) => <Card key={th.id} th={th} />)}
           <button
@@ -136,7 +136,7 @@ export default function ThemeSettings() {
             <span className="text-[11px] font-semibold">{t('appearance.new')}</span>
           </button>
         </div>
-      </div>
+      </Section>
 
       {editing && (
         <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-4 space-y-3 animate-fade-in">
@@ -170,6 +170,30 @@ export default function ThemeSettings() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Collapsible group. Header stays visible so the panel reads clean when closed;
+// the body animates open/closed via grid-rows 0fr→1fr for a smooth, premium reveal.
+function Section({ title, count, open, onToggle, children }: { title: string; count: number; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2 mb-2 group"
+      >
+        <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 group-hover:text-slate-300 transition-colors">{title}</span>
+        <span className="text-[10px] font-bold text-slate-600 tabular-nums">{count}</span>
+        <span className="flex-1 h-px bg-white/[0.06]" />
+        <ChevronDown className={cn('w-3.5 h-3.5 text-slate-500 transition-transform duration-300', open ? 'rotate-180' : 'rotate-0')} />
+      </button>
+      <div className={cn('grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]', open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>
+        <div className="overflow-hidden">
+          <div className="pb-1">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -89,9 +89,9 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? t('assistant.close') : t('assistant.open')}
-        className="fixed z-40 bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/30 hover:scale-105 active:scale-95 transition-transform animate-glow"
+        className="fixed z-40 bottom-24 right-4 md:bottom-6 md:right-6 w-11 h-11 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-cyan-500/20 md:shadow-lg md:shadow-cyan-500/30 hover:scale-105 active:scale-95 transition-transform md:animate-glow"
       >
-        {open ? <X className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
+        {open ? <X className="w-5 h-5 md:w-6 md:h-6" /> : <Sparkles className="w-5 h-5 md:w-6 md:h-6" />}
       </button>
 
       {open && (
