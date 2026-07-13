@@ -230,6 +230,84 @@ export async function saveLanguage(userId: string, language: string): Promise<vo
   if (error) throw error;
 }
 
+// ── Onboarding (stored on profile) ──
+export interface OnboardingData {
+  goal: string | null;
+  assets: string[];
+  style: string | null;
+  experience: string | null;
+  usesIct: boolean;
+  brokers: string[];
+  pain: string | null;
+  onboardedAt: string | null;
+  skipped: boolean;
+}
+
+const EMPTY_ONBOARDING: OnboardingData = {
+  goal: null, assets: [], style: null, experience: null,
+  usesIct: false, brokers: [], pain: null, onboardedAt: null, skipped: false,
+};
+
+interface OnboardingRow {
+  onboarding_goal: string | null;
+  onboarding_assets: string[] | null;
+  onboarding_style: string | null;
+  onboarding_experience: string | null;
+  onboarding_uses_ict: boolean | null;
+  onboarding_brokers: string[] | null;
+  onboarding_pain: string | null;
+  onboarded_at: string | null;
+  onboarding_skipped: boolean | null;
+}
+
+export async function loadOnboarding(userId: string): Promise<OnboardingData> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(
+      'onboarding_goal, onboarding_assets, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_brokers, onboarding_pain, onboarded_at, onboarding_skipped',
+    )
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return { ...EMPTY_ONBOARDING };
+  const r = data as OnboardingRow;
+  return {
+    goal: r.onboarding_goal ?? null,
+    assets: r.onboarding_assets ?? [],
+    style: r.onboarding_style ?? null,
+    experience: r.onboarding_experience ?? null,
+    usesIct: !!r.onboarding_uses_ict,
+    brokers: r.onboarding_brokers ?? [],
+    pain: r.onboarding_pain ?? null,
+    onboardedAt: r.onboarded_at ?? null,
+    skipped: !!r.onboarding_skipped,
+  };
+}
+
+// Persists the collected answers and stamps `onboarded_at` so the flow never
+// shows again. `skipped` records that the user bailed with defaults.
+export async function saveOnboarding(
+  userId: string,
+  d: OnboardingData,
+  opts: { skipped?: boolean } = {},
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      onboarding_goal: d.goal,
+      onboarding_assets: d.assets,
+      onboarding_style: d.style,
+      onboarding_experience: d.experience,
+      onboarding_uses_ict: d.usesIct,
+      onboarding_brokers: d.brokers,
+      onboarding_pain: d.pain,
+      onboarding_skipped: opts.skipped ?? false,
+      onboarded_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+  if (error) throw error;
+}
+
 // ── Missed Opportunities ──
 interface MissedRow {
   id: string;

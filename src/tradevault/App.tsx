@@ -18,6 +18,7 @@ const Seasonality = lazy(() => import("./pages/Seasonality"));
 const LotSizeCalculator = lazy(() => import("./pages/LotSizeCalculator"));
 const Settings = lazy(() => import("./pages/Settings"));
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
+const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
 const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
 import TradeDetailModal from "./components/TradeDetailModal";
@@ -28,6 +29,7 @@ import {
   deleteTrade,
   deleteAllTrades,
   migrateLegacyTradeScreenshots,
+  loadOnboarding,
 } from "./store";
 import { computeStats } from "./utils/tradeCalcs";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -52,6 +54,9 @@ function AppContent() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
+  // First-run gate: 'loading' until we know, 'needed' shows onboarding, 'done'
+  // lets the app render. `onboarded_at` on the profile is the source of truth.
+  const [onboarding, setOnboarding] = useState<"loading" | "needed" | "done">("loading");
 
   // Cmd/Ctrl+K toggles the command palette
   useEffect(() => {
@@ -64,6 +69,25 @@ function AppContent() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setOnboarding("loading");
+      return;
+    }
+    let active = true;
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setOnboarding(o.onboardedAt ? "done" : "needed");
+      })
+      .catch(() => {
+        // If the check fails, don't block the app — fall through to it.
+        if (active) setOnboarding("done");
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     let active = true;
@@ -194,6 +218,20 @@ function AppContent() {
   }
 
   if (!isAuthenticated) return <AuthModal />;
+
+  if (onboarding === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-slate-400">Loading…</div>
+    );
+  }
+
+  if (onboarding === "needed" && user) {
+    return (
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-slate-400">Loading…</div>}>
+        <Onboarding userId={user.id} onDone={() => setOnboarding("done")} />
+      </Suspense>
+    );
+  }
 
   return (
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content

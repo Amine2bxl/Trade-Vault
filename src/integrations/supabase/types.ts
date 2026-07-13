@@ -68,6 +68,15 @@ export type Database = {
           id: string
           language: string
           name: string
+          onboarded_at: string | null
+          onboarding_assets: string[]
+          onboarding_brokers: string[]
+          onboarding_experience: string | null
+          onboarding_goal: string | null
+          onboarding_pain: string | null
+          onboarding_skipped: boolean
+          onboarding_style: string | null
+          onboarding_uses_ict: boolean
           starting_balance: number
           updated_at: string
         }
@@ -79,6 +88,15 @@ export type Database = {
           id: string
           language?: string
           name?: string
+          onboarded_at?: string | null
+          onboarding_assets?: string[]
+          onboarding_brokers?: string[]
+          onboarding_experience?: string | null
+          onboarding_goal?: string | null
+          onboarding_pain?: string | null
+          onboarding_skipped?: boolean
+          onboarding_style?: string | null
+          onboarding_uses_ict?: boolean
           starting_balance?: number
           updated_at?: string
         }
@@ -90,6 +108,15 @@ export type Database = {
           id?: string
           language?: string
           name?: string
+          onboarded_at?: string | null
+          onboarding_assets?: string[]
+          onboarding_brokers?: string[]
+          onboarding_experience?: string | null
+          onboarding_goal?: string | null
+          onboarding_pain?: string | null
+          onboarding_skipped?: boolean
+          onboarding_style?: string | null
+          onboarding_uses_ict?: boolean
           starting_balance?: number
           updated_at?: string
         }
