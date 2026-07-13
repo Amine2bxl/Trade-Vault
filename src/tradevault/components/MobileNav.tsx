@@ -19,6 +19,8 @@ import {
 import { Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useHasTradeDraft } from "../utils/persistence";
 
 interface MobileNavProps {
   page: Page;
@@ -28,6 +30,8 @@ interface MobileNavProps {
 
 export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps) {
   const { t } = useT();
+  const { user } = useAuth();
+  const hasDraft = useHasTradeDraft(user?.id);
   const [moreOpen, setMoreOpen] = useState(false);
 
   // Symmetric 2 + FAB + 2 layout. Two primary tabs each side of the central
@@ -97,10 +101,14 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
             <div className="flex justify-center items-center">
               <button
                 onClick={onAddTrade}
-                aria-label="Add trade"
-                className="fab-button text-white -mt-7"
+                aria-label={hasDraft ? t("trade.draftBadge") : "Add trade"}
+                className="fab-button relative text-white -mt-7"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
+                {/* "In progress" dot when a trade draft is waiting */}
+                {hasDraft && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#080a0d] shadow-[0_0_8px_rgba(251,191,36,0.7)] animate-pulse" />
+                )}
               </button>
             </div>
             {rightItems.map((it) =>

@@ -29,6 +29,13 @@ import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
+import {
+  tradeDraftKey,
+  readJSON,
+  writeJSON,
+  removeKey,
+  type TradeDraft,
+} from "../utils/persistence";
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -85,31 +92,45 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     };
   }, [userId]);
 
-  const [form, setForm] = useState({
-    ...defaultForm,
-    ...(trade
-      ? {
-          date: trade.date,
-          symbol: trade.symbol,
-          direction: trade.direction,
-          riskAmount: String(trade.riskAmount),
-          rMultiple: String(trade.rMultiple),
-          pnl: trade.pnl,
-          strategy: trade.strategy,
-          mistakes: trade.mistakes,
-          setupQuality: trade.setupQuality,
-          notes: trade.notes,
-          screenshots: trade.screenshots,
-          entryTime: trade.entryTime,
-          exitTime: trade.exitTime,
-          confluences: trade.confluences,
-          confidence: trade.confidence,
-          mae: trade.mae != null ? String(trade.mae) : "",
-          mfe: trade.mfe != null ? String(trade.mfe) : "",
-          slippage: trade.slippage != null ? String(trade.slippage) : "",
-        }
-      : {}),
+  // Draft memory: a NEW trade restores from the auto-saved draft (text fields
+  // only — screenshots can't outlive the modal). Editing an existing trade never
+  // touches the draft. `draftRestored` drives the "brouillon" badge in the header.
+  const draftKey = tradeDraftKey(userId);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [form, setForm] = useState(() => {
+    if (trade) {
+      return {
+        ...defaultForm,
+        date: trade.date,
+        symbol: trade.symbol,
+        direction: trade.direction,
+        riskAmount: String(trade.riskAmount),
+        rMultiple: String(trade.rMultiple),
+        pnl: trade.pnl,
+        strategy: trade.strategy,
+        mistakes: trade.mistakes,
+        setupQuality: trade.setupQuality,
+        notes: trade.notes,
+        screenshots: trade.screenshots,
+        entryTime: trade.entryTime,
+        exitTime: trade.exitTime,
+        confluences: trade.confluences,
+        confidence: trade.confidence,
+        mae: trade.mae != null ? String(trade.mae) : "",
+        mfe: trade.mfe != null ? String(trade.mfe) : "",
+        slippage: trade.slippage != null ? String(trade.slippage) : "",
+      };
+    }
+    const saved = readJSON<TradeDraft | null>(draftKey, null);
+    if (saved) return { ...defaultForm, ...saved, screenshots: [] as string[] };
+    return { ...defaultForm };
   });
+
+  // Flag the restored-draft badge on first mount (post-state, avoids SSR mismatch).
+  useEffect(() => {
+    if (!trade && readJSON<TradeDraft | null>(draftKey, null)) setDraftRestored(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [showCalc, setShowCalc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -198,6 +219,35 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return () => document.removeEventListener("paste", onPaste);
   }, [handleScreenshotUpload]);
 
+  // Auto-save the in-progress trade as a draft (debounced), so a half-written
+  // entry survives closing the modal, switching pages, or coming back later.
+  // Only for NEW trades, only once something meaningful is entered, and never
+  // the screenshots (their storage lifecycle can't outlive the modal).
+  useEffect(() => {
+    if (trade) return;
+    const meaningful =
+      form.symbol.trim() !== "" ||
+      form.riskAmount !== "" ||
+      form.rMultiple !== "" ||
+      form.notes.trim() !== "" ||
+      form.mistakes.length > 0 ||
+      form.confluences.length > 0;
+    if (!meaningful) return;
+    const id = setTimeout(() => {
+      const { screenshots: _omit, ...rest } = form;
+      void _omit;
+      writeJSON(draftKey, rest);
+      setDraftRestored(true);
+    }, 500);
+    return () => clearTimeout(id);
+  }, [form, trade, draftKey]);
+
+  const discardDraft = () => {
+    removeKey(draftKey);
+    setDraftRestored(false);
+    setForm({ ...defaultForm });
+  };
+
   const removeScreenshot = (idx: number) => {
     const removed = form.screenshots[idx];
     // Only delete the file immediately if it was uploaded in this session —
@@ -240,6 +290,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     const rm = isBE ? 0 : parseFloat(form.rMultiple) || 0;
     const risk = riskDollar;
     savedRef.current = true;
+    // Trade committed — the draft has served its purpose.
+    if (!trade) removeKey(draftKey);
     // Pre-existing screenshots the user removed in this session: their files
     // are no longer referenced once the trade saves — delete them now.
     if (trade) {
@@ -307,9 +359,22 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           )}
         />
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-          <h2 className="text-lg font-bold text-white">
-            {trade ? t("trade.editTitle") : t("trade.newTitle")}
-          </h2>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <h2 className="text-lg font-bold text-white shrink-0">
+              {trade ? t("trade.editTitle") : t("trade.newTitle")}
+            </h2>
+            {!trade && draftRestored && (
+              <button
+                onClick={discardDraft}
+                title={t("trade.discardDraft")}
+                className="group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold uppercase tracking-wide transition-all hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse group-hover:bg-red-400" />
+                {t("trade.draftBadge")}
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"

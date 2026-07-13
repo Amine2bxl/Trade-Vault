@@ -176,6 +176,7 @@ const en = {
   'assistant.micUnsupported': 'Voice input is not supported in this browser.',
   'assistant.thinking': 'Thinking…',
   'assistant.open': 'Open AI coach',
+  'assistant.clear': 'Clear conversation',
   'assistant.close': 'Close',
 
   // Dashboard
@@ -188,6 +189,9 @@ const en = {
   'dashboard.profitFactor': 'Profit Factor',
   'dashboard.maxDrawdown': 'Max Drawdown',
   'dashboard.peakToTrough': 'Peak-to-trough',
+  'dashboard.tradingDays': 'Trading days',
+  'dashboard.avgPerDay': 'Avg / day',
+  'dashboard.longShort': 'Long / Short',
   'dashboard.equityCurve': 'Equity Curve',
   'dashboard.avgWin': 'Avg Win',
   'dashboard.avgLoss': 'Avg Loss',
@@ -404,6 +408,8 @@ const en = {
   'trade.mfeHint': 'Best profit during the trade',
   'trade.slippage': 'Slippage',
   'trade.fillRequired': 'Fill symbol, risk and R to save',
+  'trade.draftBadge': 'Draft',
+  'trade.discardDraft': 'Discard draft',
 
   // Trade detail v2
   'tradeDetail.macroHint': 'High-impact macro event that day',
@@ -483,7 +489,19 @@ const en = {
 
   // Seasonality
   'seasonality.title': 'Seasonality',
-  'seasonality.subtitle': 'When you actually make money — patterns hiding in your own journal',
+  'seasonality.subtitle': 'Seasonal tendencies across markets — and in your own journal',
+  'seasonality.tabAssets': 'Assets',
+  'seasonality.tabJournal': 'My Journal',
+  'seasonality.assetDisclaimer': 'Historical seasonal averages (multi-year) — an indicative bias, not a live feed or a forecast. Not investment advice.',
+  'seasonality.thisMonth': 'This month',
+  'seasonality.win': 'win',
+  'seasonality.annualBias': 'Annual bias',
+  'seasonality.years': 'yrs',
+  'seasonality.monthlyBias': 'Average monthly return',
+  'seasonality.monthlyBiasSub': 'Mean % move per calendar month; current month highlighted',
+  'seasonality.avgReturn': 'Avg return',
+  'seasonality.heatmapAll': 'All months heatmap',
+  'seasonality.heatmapAllSub': 'Average % return — tap a symbol to focus it',
   'seasonality.monthly': 'Monthly performance',
   'seasonality.monthlySub': 'Average P&L per calendar month, all years combined',
   'seasonality.heatmap': 'Year × month heatmap',

@@ -7,7 +7,9 @@
 const ORGANIC_EASING = 'cubic-bezier(0.16,1,0.3,1)';
 
 export const CHART_ANIMATION = {
-  animationDuration: 1100,
+  // Slightly longer than the CSS draw-reveal (1.35s) so recharts' own line growth
+  // settles just as the wipe completes — one continuous, natural motion.
+  animationDuration: 1300,
   // react-smooth (recharts' animation engine) accepts any cubic-bezier string at
   // runtime; its TS union only lists the 5 named presets, so we cast past that.
   animationEasing: ORGANIC_EASING as unknown as 'ease-out',

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -9,18 +9,390 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { CalendarRange, TrendingUp, TrendingDown, Clock, CalendarDays } from "lucide-react";
+import {
+  CalendarRange,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  CalendarDays,
+  Info,
+  Sparkles,
+  Layers,
+} from "lucide-react";
 import { Trade } from "../types";
 import { formatPnl } from "../utils/tradeCalcs";
 import { CHART_ANIMATION, tooltipStyle } from "../utils/chartTheme";
+import {
+  ASSET_SEASONALITY,
+  CATEGORY_LABELS,
+  MONTHS_SHORT,
+  computeSeasonalStats,
+  type AssetCategory,
+  type SeasonalAsset,
+} from "../utils/assetSeasonality";
 import { useT } from "../i18n/LanguageContext";
 import { Skeleton } from "../components/Skeleton";
+import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
+import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
 
 interface SeasonalityProps {
   trades: Trade[];
   tradesLoading?: boolean;
 }
+
+type Tab = "assets" | "journal";
+
+export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
+  const { t } = useT();
+  const { user } = useAuth();
+  const tabKey = nsKey(user?.id, "seasonality.tab");
+  const savedTab = usePersistedValue<Tab>(tabKey, "assets");
+  const tab: Tab = savedTab === "journal" ? "journal" : "assets";
+  const setTab = (v: Tab) => writeJSON(tabKey, v);
+
+  return (
+    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+      <div className="mb-4 md:mb-5 animate-fade-in-up stagger-0">
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+          {t("seasonality.title")}
+        </h1>
+        <p className="text-xs md:text-sm text-slate-500 mt-1">{t("seasonality.subtitle")}</p>
+      </div>
+
+      {/* Tab switcher */}
+      <div className="inline-flex p-1 rounded-2xl bg-white/[0.03] border border-white/[0.07] mb-5 animate-fade-in-up stagger-1">
+        {(
+          [
+            ["assets", t("seasonality.tabAssets")],
+            ["journal", t("seasonality.tabJournal")],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={cn(
+              "h-9 px-4 md:px-5 rounded-xl text-xs font-bold transition-all",
+              tab === id
+                ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20"
+                : "text-slate-500 hover:text-slate-300",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "assets" ? (
+        <AssetSeasonality />
+      ) : (
+        <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+ * Asset seasonal tendencies (curated historical dataset)
+ * ============================================================ */
+
+function AssetSeasonality() {
+  const { t, lang } = useT();
+  const { user } = useAuth();
+  const catKey = nsKey(user?.id, "seasonality.cat");
+  const symKey = nsKey(user?.id, "seasonality.sym");
+  const savedCat = usePersistedValue<AssetCategory>(catKey, "indices");
+  const category: AssetCategory = (Object.keys(CATEGORY_LABELS) as AssetCategory[]).includes(
+    savedCat,
+  )
+    ? savedCat
+    : "indices";
+  const inCategory = useMemo(
+    () => ASSET_SEASONALITY.filter((a) => a.category === category),
+    [category],
+  );
+
+  const savedSym = usePersistedValue<string>(symKey, "");
+  const asset: SeasonalAsset = inCategory.find((a) => a.symbol === savedSym) ?? inCategory[0];
+
+  const currentMonth = new Date().getMonth();
+  const monthLabel = (m: number) =>
+    new Date(2026, m, 1).toLocaleDateString(lang, { month: "long" });
+
+  const chartData = useMemo(
+    () =>
+      asset.monthlyAvg.map((avg, i) => ({
+        month: MONTHS_SHORT[i],
+        avg,
+        win: asset.monthlyWin[i],
+        current: i === currentMonth,
+      })),
+    [asset, currentMonth],
+  );
+
+  const stats = useMemo(() => computeSeasonalStats(asset, currentMonth), [asset, currentMonth]);
+
+  const setCategory = (c: AssetCategory) => {
+    writeJSON(catKey, c);
+    writeJSON(symKey, "");
+  };
+  const setSymbol = (s: string) => writeJSON(symKey, s);
+
+  return (
+    <div className="animate-fade-in">
+      {/* Disclaimer */}
+      <div className="glass rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5 border border-cyan-500/10">
+        <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
+        <p className="text-[11px] leading-relaxed text-slate-400">
+          {t("seasonality.assetDisclaimer")}
+        </p>
+      </div>
+
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={cn(
+              "h-8 px-3 rounded-lg border text-[11px] font-semibold transition-all",
+              category === c
+                ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
+                : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12]",
+            )}
+          >
+            {CATEGORY_LABELS[c]}
+          </button>
+        ))}
+      </div>
+
+      {/* Asset selector */}
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        {inCategory.map((a) => (
+          <button
+            key={a.symbol}
+            onClick={() => setSymbol(a.symbol)}
+            className={cn(
+              "h-9 px-3.5 rounded-xl border text-xs font-bold transition-all",
+              a.symbol === asset.symbol
+                ? "bg-white/[0.06] border-cyan-500/30 text-white shadow-sm"
+                : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300",
+            )}
+          >
+            {a.symbol}{" "}
+            <span className="hidden sm:inline text-slate-500 font-medium">· {a.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Highlight cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <HighlightCard
+          icon={<Sparkles className="w-4 h-4" />}
+          label={t("seasonality.thisMonth")}
+          value={monthLabel(currentMonth)}
+          sub={`${stats.currentMonthAvg >= 0 ? "+" : ""}${stats.currentMonthAvg.toFixed(1)}% · ${stats.currentMonthWin}% ${t("seasonality.win")}`}
+          positive={stats.currentMonthAvg >= 0}
+        />
+        <HighlightCard
+          icon={<TrendingUp className="w-4 h-4" />}
+          label={t("seasonality.bestMonth")}
+          value={monthLabel(stats.bestMonth.month)}
+          sub={`+${stats.bestMonth.avg.toFixed(1)}%`}
+          positive
+        />
+        <HighlightCard
+          icon={<TrendingDown className="w-4 h-4" />}
+          label={t("seasonality.worstMonth")}
+          value={monthLabel(stats.worstMonth.month)}
+          sub={`${stats.worstMonth.avg.toFixed(1)}%`}
+          positive={false}
+        />
+        <HighlightCard
+          icon={<CalendarRange className="w-4 h-4" />}
+          label={t("seasonality.annualBias")}
+          value={`${stats.annualAvg >= 0 ? "+" : ""}${stats.annualAvg.toFixed(1)}%`}
+          sub={`${asset.years} ${t("seasonality.years")}`}
+          positive={stats.annualAvg >= 0}
+        />
+      </div>
+
+      {/* Monthly avg return chart */}
+      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">
+              {asset.name} — {t("seasonality.monthlyBias")}
+            </h3>
+            <p className="text-[10px] text-slate-500">{t("seasonality.monthlyBiasSub")}</p>
+          </div>
+          <span className="text-[10px] font-bold text-slate-500 tabular-nums shrink-0">
+            {asset.years} {t("seasonality.years")}
+          </span>
+        </div>
+        <div className="h-60 md:h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "#64748b", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                interval={0}
+              />
+              <YAxis
+                tick={{ fill: "#64748b", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                width={40}
+                tickFormatter={(v: number) => `${v}%`}
+              />
+              <Tooltip
+                {...tooltipStyle}
+                formatter={
+                  ((value: unknown, _n: unknown, item: unknown) => {
+                    const win = (item as { payload?: { win?: number } })?.payload?.win;
+                    return [
+                      `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(1)}%  ·  ${win}% ${t("seasonality.win")}`,
+                      t("seasonality.avgReturn"),
+                    ];
+                  }) as never
+                }
+              />
+              <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
+              <Bar dataKey="avg" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+                {chartData.map((d, i) => (
+                  <Cell
+                    key={i}
+                    fill={d.avg >= 0 ? "var(--tv-accent)" : "#ef4444"}
+                    fillOpacity={d.current ? 1 : 0.7}
+                    stroke={d.current ? "var(--tv-highlight)" : "transparent"}
+                    strokeWidth={d.current ? 1.5 : 0}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        {/* Win-rate strip */}
+        <div className="mt-3 pt-3 border-t border-white/[0.05] grid grid-cols-12 gap-1">
+          {chartData.map((d, i) => (
+            <div key={i} className="text-center">
+              <div className="text-[8px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
+              <div
+                className={cn(
+                  "text-[9px] font-bold tabular-nums",
+                  d.win >= 60
+                    ? "text-emerald-400"
+                    : d.win >= 50
+                      ? "text-slate-300"
+                      : "text-red-400/80",
+                )}
+              >
+                {d.win}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Category heatmap */}
+      <div className="glass rounded-3xl p-4 md:p-6 card-premium">
+        <div className="flex items-center gap-2 mb-4">
+          <Layers className="w-4 h-4 text-cyan-400/70" />
+          <div>
+            <h3 className="text-sm font-semibold text-white">
+              {CATEGORY_LABELS[category]} — {t("seasonality.heatmapAll")}
+            </h3>
+            <p className="text-[10px] text-slate-500">{t("seasonality.heatmapAllSub")}</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto -mx-1 px-1">
+          <div className="min-w-[620px]">
+            <div
+              className="grid gap-1"
+              style={{ gridTemplateColumns: "5rem repeat(12, minmax(0,1fr))" }}
+            >
+              <div />
+              {MONTHS_SHORT.map((m, i) => (
+                <div
+                  key={m}
+                  className={cn(
+                    "text-center text-[9px] font-bold uppercase tracking-wide pb-1",
+                    i === currentMonth ? "text-cyan-300" : "text-slate-500",
+                  )}
+                >
+                  {m}
+                </div>
+              ))}
+              {inCategory.map((a) => (
+                <AssetHeatRow
+                  key={a.symbol}
+                  asset={a}
+                  currentMonth={currentMonth}
+                  selected={a.symbol === asset.symbol}
+                  onSelect={() => setSymbol(a.symbol)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AssetHeatRow({
+  asset,
+  currentMonth,
+  selected,
+  onSelect,
+}: {
+  asset: SeasonalAsset;
+  currentMonth: number;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const max = Math.max(...asset.monthlyAvg.map(Math.abs), 0.1);
+  return (
+    <>
+      <button
+        onClick={onSelect}
+        className={cn(
+          "flex items-center text-[10px] font-bold tabular-nums truncate pr-1 transition-colors",
+          selected ? "text-cyan-300" : "text-slate-400 hover:text-white",
+        )}
+      >
+        {asset.symbol}
+      </button>
+      {asset.monthlyAvg.map((v, i) => {
+        const intensity = Math.min(Math.abs(v) / max, 1);
+        const bg =
+          v >= 0
+            ? `rgba(var(--tv-accent-rgb), ${0.1 + intensity * 0.6})`
+            : `rgba(239,68,68, ${0.1 + intensity * 0.55})`;
+        return (
+          <div
+            key={i}
+            title={`${asset.symbol} ${MONTHS_SHORT[i]}: ${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
+            className={cn(
+              "h-8 rounded-md flex items-center justify-center text-[8px] font-bold tabular-nums cursor-default transition-transform hover:scale-[1.08]",
+              i === currentMonth && "ring-1 ring-cyan-400/50",
+            )}
+            style={{ background: bg, color: "#f1f5f9" }}
+          >
+            {v >= 0 ? "+" : ""}
+            {v.toFixed(1)}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/* ============================================================
+ * Personal seasonality — patterns from the user's own journal
+ * ============================================================ */
 
 const MONTH_KEYS = [
   "Jan",
@@ -37,22 +409,18 @@ const MONTH_KEYS = [
   "Dec",
 ];
 
-export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
+function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
   const { t, lang } = useT();
 
   const monthLabel = (m: number) =>
     new Date(2026, m, 1).toLocaleDateString(lang, { month: "short" });
   const weekdayLabel = (dow: number) =>
-    new Date(2026, 1, 2 + dow).toLocaleDateString(lang, { weekday: "short" }); // 2026-02-02 is a Monday
+    new Date(2026, 1, 2 + dow).toLocaleDateString(lang, { weekday: "short" });
 
   const data = useMemo(() => {
-    // Monthly aggregate (all years) -------------------------------------------------
     const byMonth = Array.from({ length: 12 }, () => ({ pnl: 0, count: 0, wins: 0 }));
-    // Year × month heatmap ----------------------------------------------------------
     const byYearMonth = new Map<number, number[]>();
-    // Weekday -----------------------------------------------------------------------
     const byDow = Array.from({ length: 7 }, () => ({ pnl: 0, count: 0 }));
-    // Entry hour ---------------------------------------------------------------------
     const byHour = new Map<number, { pnl: number; count: number }>();
 
     for (const tr of trades) {
@@ -92,7 +460,6 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
     const years = [...byYearMonth.entries()].sort((a, b) => b[0] - a[0]);
     const heatMax = Math.max(1, ...years.flatMap(([, arr]) => arr.map(Math.abs)));
 
-    // Mon→Fri first, then weekend if traded
     const dowOrder = [1, 2, 3, 4, 5, 6, 0].filter((d) => byDow[d].count > 0 || (d >= 1 && d <= 5));
     const weekdays = dowOrder.map((d) => ({
       day: weekdayLabel(d),
@@ -116,17 +483,12 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
     const bestHour = hours.length ? hours.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : null;
 
     return { monthly, years, heatMax, weekdays, hours, best, worst, bestDay, bestHour };
-    // monthLabel/weekdayLabel depend only on lang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trades, lang]);
 
   if (tradesLoading) {
     return (
-      <div className="p-4 md:p-8 max-w-[1400px] mx-auto" aria-busy="true">
-        <div className="mb-6 space-y-2">
-          <Skeleton className="h-8 w-56" />
-          <Skeleton className="h-4 w-80" />
-        </div>
+      <div className="animate-fade-in" aria-busy="true">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24 rounded-2xl" />
@@ -143,20 +505,12 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
 
   if (trades.length < 5) {
     return (
-      <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
-        <div className="mb-6 animate-fade-in-up">
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-            {t("seasonality.title")}
-          </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">{t("seasonality.subtitle")}</p>
+      <div className="glass rounded-3xl p-14 text-center animate-fade-in">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
+          <CalendarRange className="w-7 h-7 text-cyan-400" />
         </div>
-        <div className="glass rounded-3xl p-14 text-center animate-fade-in-up stagger-1">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
-            <CalendarRange className="w-7 h-7 text-cyan-400" />
-          </div>
-          <h3 className="text-base font-bold text-white mb-1.5">{t("seasonality.empty")}</h3>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("seasonality.emptySub")}</p>
-        </div>
+        <h3 className="text-base font-bold text-white mb-1.5">{t("seasonality.empty")}</h3>
+        <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("seasonality.emptySub")}</p>
       </div>
     );
   }
@@ -164,16 +518,8 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
   const { monthly, years, heatMax, weekdays, hours, best, worst, bestDay, bestHour } = data;
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
-      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {t("seasonality.title")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">{t("seasonality.subtitle")}</p>
-      </div>
-
-      {/* Highlight cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5 animate-fade-in-up stagger-1">
+    <div className="animate-fade-in">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <HighlightCard
           icon={<TrendingUp className="w-4 h-4" />}
           label={t("seasonality.bestMonth")}
@@ -204,8 +550,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
         />
       </div>
 
-      {/* Monthly aggregate */}
-      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5 animate-fade-in-up stagger-2">
+      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5">
         <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.monthly")}</h3>
         <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.monthlySub")}</p>
         <div className="h-56 md:h-64">
@@ -255,8 +600,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
         </div>
       </div>
 
-      {/* Year × month heatmap */}
-      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5 animate-fade-in-up stagger-3">
+      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5">
         <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.heatmap")}</h3>
         <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.heatmapSub")}</p>
         <div className="overflow-x-auto -mx-1 px-1">
@@ -283,8 +627,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
-        {/* Weekday */}
-        <div className="glass rounded-3xl p-4 md:p-6 card-premium animate-fade-in-up stagger-4">
+        <div className="glass rounded-3xl p-4 md:p-6 card-premium">
           <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.weekday")}</h3>
           <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.weekdaySub")}</p>
           <div className="h-48">
@@ -327,8 +670,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
           </div>
         </div>
 
-        {/* Hour of day */}
-        <div className="glass rounded-3xl p-4 md:p-6 card-premium animate-fade-in-up stagger-5">
+        <div className="glass rounded-3xl p-4 md:p-6 card-premium">
           <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.hourly")}</h3>
           <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.hourlySub")}</p>
           <div className="h-48">

@@ -331,12 +331,26 @@ input[type="number"] { -moz-appearance: textfield; }
   -webkit-backdrop-filter: blur(30px);
   border: 1px solid rgba(45, 62, 74, 0.5);
 }
-.card-premium { transition: all 0.3s cubic-bezier(0.16,1,0.3,1); }
+/* Premium card hover — transition only the properties that change (never `all`,
+ * which would also animate layout). A layered shadow lifts the card while a
+ * hairline accent ring + a faint white top-edge highlight give the subtle glow
+ * of a physical, backlit surface. */
+.card-premium {
+  transition:
+    transform 0.35s cubic-bezier(0.16,1,0.3,1),
+    box-shadow 0.35s cubic-bezier(0.16,1,0.3,1),
+    border-color 0.35s cubic-bezier(0.16,1,0.3,1);
+  will-change: transform;
+}
 @media (hover: hover) {
   .card-premium:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(var(--tv-accent-rgb),0.08);
-    border-color: rgba(var(--tv-accent-rgb),0.15);
+    transform: translateY(-3px);
+    box-shadow:
+      0 12px 36px -6px rgba(0,0,0,0.45),
+      0 0 0 1px rgba(var(--tv-accent-rgb),0.16),
+      0 0 22px -4px rgba(var(--tv-accent-rgb),0.18),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    border-color: rgba(var(--tv-accent-rgb),0.22);
   }
 }
 
@@ -364,16 +378,24 @@ input[type="number"] { -moz-appearance: textfield; }
   filter: drop-shadow(0 0 3px rgba(var(--tv-accent-rgb), 0.35));
 }
 
-/* Equity curve "draw in" reveal — the plotted area wipes on left→right on
- * mount / data change, on top of recharts' own line growth, for a hand-drawn
- * feel. Scoped to the area layer so axes/grid don't wipe with it. */
+/* Equity curve "draw in" reveal — the plotted area wipes left→right on mount /
+ * data change, on top of recharts' own line growth, for a hand-drawn feel. A
+ * paired fade softens the leading edge so the curve appears to be *drawn* rather
+ * than uncovered. Scoped to the area/line layers so axes/grid don't wipe. */
 @keyframes drawReveal {
   from { clip-path: inset(0 100% 0 0); }
   to   { clip-path: inset(0 0 0 0); }
 }
+@keyframes drawFadeIn {
+  from { opacity: 0; }
+  40%  { opacity: 1; }
+  to   { opacity: 1; }
+}
 .chart-draw .recharts-area,
 .chart-draw .recharts-line {
-  animation: drawReveal 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation:
+    drawReveal 1.35s cubic-bezier(0.22, 1, 0.36, 1) both,
+    drawFadeIn 0.7s ease-out both;
 }
 @media (prefers-reduced-motion: reduce) {
   .chart-draw .recharts-area,
