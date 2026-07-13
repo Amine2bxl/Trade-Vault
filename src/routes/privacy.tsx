@@ -52,7 +52,7 @@ function PrivacyPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-2">Contact</h2>
-            <p>Questions about this policy: <a href="mailto:support@tradevault.app" className="text-blue-400 hover:text-blue-300">support@tradevault.app</a></p>
+            <p>Questions about this policy: <a href="mailto:tradevault@outlook.fr" className="text-blue-400 hover:text-blue-300">tradevault@outlook.fr</a></p>
           </section>
         </div>
       </div>

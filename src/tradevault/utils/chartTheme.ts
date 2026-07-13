@@ -15,6 +15,23 @@ export const CHART_ANIMATION = {
   animationEasing: ORGANIC_EASING as unknown as 'ease-out',
 };
 
+// Dedicated, more cinematic reveal for the equity curves — a longer draw with a
+// gentle late settle, kicked off after a short beat so the wipe reads as a
+// deliberate "drawing" motion rather than an instant pop.
+export const EQUITY_ANIMATION = {
+  animationDuration: 1700,
+  animationBegin: 90,
+  animationEasing: 'cubic-bezier(0.22,1,0.36,1)' as unknown as 'ease-out',
+};
+
+// Shared equity-line look so Dashboard + Analytics curves match: a rounded,
+// dynamic stroke with a soft accent drop-shadow for a professional, alive feel.
+export const EQUITY_LINE = {
+  strokeWidth: 3,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
 // Hover cursor shared by every chart. TradingView-style: a single hairline-thin,
 // solid guide in the active theme accent — deliberately faint so the glowing
 // marker dot (glowActiveDot) is the star of the hover, not a loud dashed line.

@@ -138,7 +138,7 @@ export const BUILTIN_THEMES: ThemeDef[] = [
   { id: 'graphite', name: 'Graphite', builtin: true, primary: '#64748b', secondary: '#94a3b8', highlight: '#cbd5e1' },
 ];
 
-export const DEFAULT_THEME_ID = 'jarvis';
+export const DEFAULT_THEME_ID = 'midnight';
 
 // ---- persistence (localStorage; per device, restored before paint) -----
 

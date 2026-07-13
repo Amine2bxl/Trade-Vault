@@ -32,6 +32,7 @@ import {
 import { computeStats } from "./utils/tradeCalcs";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AuthModal from "./components/AuthModal";
+import CursorGlow from "./components/CursorGlow";
 import { PageSkeleton } from "./components/Skeleton";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
@@ -198,6 +199,7 @@ function AppContent() {
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
     // scrolls inside <main>, so the sidebar rail never moves on any page.
     <div className="relative flex h-dvh text-white overflow-hidden">
+      <CursorGlow />
       {/* Ambient background glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div

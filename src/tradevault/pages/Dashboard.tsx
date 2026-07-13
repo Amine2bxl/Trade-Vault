@@ -44,6 +44,8 @@ import {
 import { cn } from "../utils/cn";
 import {
   CHART_ANIMATION,
+  EQUITY_ANIMATION,
+  EQUITY_LINE,
   tooltipStyle,
   glowActiveDot,
   equityYDomain,
@@ -430,14 +432,14 @@ export default function Dashboard({
                       type="natural"
                       dataKey="equity"
                       stroke="url(#eqStroke)"
-                      strokeWidth={2.5}
                       fill="url(#eqGrad)"
                       dot={false}
                       activeDot={glowActiveDot("var(--tv-highlight)")}
                       style={{
-                        filter: "drop-shadow(0 2px 6px rgba(var(--tv-highlight-rgb),0.35))",
+                        filter: "drop-shadow(0 3px 8px rgba(var(--tv-highlight-rgb),0.4))",
                       }}
-                      {...CHART_ANIMATION}
+                      {...EQUITY_LINE}
+                      {...EQUITY_ANIMATION}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

@@ -195,20 +195,52 @@
  * pre-paint bootstrap in __root) override these on :root at runtime. Defining
  * them here means SSR / no-JS still renders the default identity with no flash. */
 :root {
-  --tv-primary-h: 215.2;
-  --tv-primary-c: 0.898;
-  --tv-secondary-h: 182.5;
-  --tv-secondary-c: 0.879;
-  --tv-accent: #06b6d4;
-  --tv-accent-2: #14b8a6;
-  --tv-highlight: #22d3ee;
-  --tv-accent-rgb: 6 182 212;
-  --tv-accent-2-rgb: 20 184 166;
-  --tv-highlight-rgb: 34 211 238;
+  --tv-primary-h: 277.1;
+  --tv-primary-c: 1.300;
+  --tv-secondary-h: 292.7;
+  --tv-secondary-c: 1.300;
+  --tv-accent: #6366f1;
+  --tv-accent-2: #8b5cf6;
+  --tv-highlight: #a5b4fc;
+  --tv-accent-rgb: 99 102 241;
+  --tv-accent-2-rgb: 139 92 246;
+  --tv-highlight-rgb: 165 180 252;
 }
 
 html {
   background: #05070a;
+}
+
+/* Ambient cursor glow — blurred radial that trails the pointer, retinted by
+   the active theme. Fixed, behind all content, never intercepts input. */
+.cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* Above the whole UI but click-through: additively lights up whatever it
+     passes over, so the halo is always visible on the dark surfaces. */
+  z-index: 9998;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  transition: opacity 0.4s ease;
+  /* Tight, bright core fading through the theme accent — a real halo hugging
+     the cursor, retinted live by the active theme. */
+  background: radial-gradient(
+    circle,
+    rgba(var(--tv-highlight-rgb), 0.55) 0%,
+    rgba(var(--tv-accent-rgb), 0.30) 32%,
+    rgba(var(--tv-accent-rgb), 0.10) 58%,
+    transparent 74%
+  );
+  filter: blur(12px);
+}
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor-glow { display: none; }
 }
 
 body {
@@ -345,13 +377,22 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (hover: hover) {
   .card-premium:hover {
     transform: translateY(-3px);
+    /* No white ring — a soft, theme-tinted glow + a whisper of accent on the
+       top edge reads as backlit glass, not a harsh outline. */
     box-shadow:
-      0 12px 36px -6px rgba(0,0,0,0.45),
-      0 0 0 1px rgba(var(--tv-accent-rgb),0.16),
-      0 0 22px -4px rgba(var(--tv-accent-rgb),0.18),
-      inset 0 1px 0 rgba(255,255,255,0.06);
-    border-color: rgba(var(--tv-accent-rgb),0.22);
+      0 18px 44px -14px rgba(0,0,0,0.55),
+      0 6px 26px -10px rgba(var(--tv-accent-rgb),0.28),
+      inset 0 1px 0 rgba(var(--tv-highlight-rgb),0.10);
+    border-color: rgba(var(--tv-accent-rgb),0.30);
   }
+}
+
+/* Premium sheen: a faint theme-tinted top edge on glass panels for depth. Pure
+   box-shadow (no layout impact), so it layers safely over any card. */
+.glass, .glass-strong {
+  box-shadow:
+    inset 0 1px 0 rgba(var(--tv-highlight-rgb), 0.05),
+    0 18px 48px -24px rgba(0, 0, 0, 0.6);
 }
 
 .recharts-tooltip-wrapper {
@@ -394,8 +435,8 @@ input[type="number"] { -moz-appearance: textfield; }
 .chart-draw .recharts-area,
 .chart-draw .recharts-line {
   animation:
-    drawReveal 1.35s cubic-bezier(0.22, 1, 0.36, 1) both,
-    drawFadeIn 0.7s ease-out both;
+    drawReveal 1.7s cubic-bezier(0.22, 1, 0.36, 1) both,
+    drawFadeIn 0.8s ease-out both;
 }
 @media (prefers-reduced-motion: reduce) {
   .chart-draw .recharts-area,

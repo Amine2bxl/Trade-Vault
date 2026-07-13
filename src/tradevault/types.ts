@@ -108,4 +108,4 @@ export const LANGUAGES = [
   { code: 'hi', label: 'हिन्दी' },
 ] as const;
 
-export const SUPPORT_EMAIL = 'support@tradevault.app';
+export const SUPPORT_EMAIL = 'tradevault@outlook.fr';

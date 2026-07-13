@@ -901,26 +901,40 @@
 .jchk-voice-widget {
   position: fixed;
   left: 50%;
-  bottom: 26px;
-  transform: translateX(-50%) translateY(90px);
+  bottom: 28px;
+  transform: translateX(-50%) translateY(90px) scale(0.96);
   z-index: 75;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 22px;
+  gap: 15px;
+  padding: 12px 22px 12px 16px;
   min-width: 300px;
   max-width: 560px;
-  background: rgba(5, 18, 32, 0.88);
-  border: 1px solid rgba(34, 211, 238, 0.45);
-  border-radius: 12px;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 0 34px rgba(34, 211, 238, 0.16), 0 14px 44px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(34, 211, 238, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(8, 24, 40, 0.94), rgba(4, 14, 26, 0.96));
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 18px;
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  box-shadow:
+    0 0 40px rgba(34, 211, 238, 0.18),
+    0 18px 50px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(34, 211, 238, 0.14);
   opacity: 0;
-  transition: opacity 0.4s var(--jk-ease), transform 0.45s var(--jk-ease);
+  transition: opacity 0.4s var(--jk-ease), transform 0.5s var(--jk-ease);
   pointer-events: none;
 }
-.jchk-voice-widget.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* Gradient hairline along the top edge for a crafted, premium finish. */
+.jchk-voice-widget::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: 18px 18px 0 0;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.7), transparent);
+}
+.jchk-voice-widget.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 .jchk-voice-widget .jk-vw-core {
   width: 26px; height: 26px;
   border-radius: 50%;
@@ -1005,8 +1019,35 @@
 
 /* ══ CUSTOMIZATION PANEL ══ */
 .jchk .jk-config-panel { padding: 1.4rem; margin-bottom: 2.2rem; animation: jk-fadeUp 0.35s ease both; }
-.jchk .jk-cfg-section { margin-bottom: 20px; }
-.jchk .jk-cfg-title { font-family: var(--jk-disp); font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--jk-cyan); margin-bottom: 10px; }
+/* Each config group reads as its own softly-inset card for clearer scanning. */
+.jchk .jk-cfg-section {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.1);
+  background: rgba(3, 11, 20, 0.4);
+}
+.jchk .jk-cfg-section:last-of-type { margin-bottom: 16px; }
+.jchk .jk-cfg-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--jk-disp);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--jk-cyan);
+  margin-bottom: 12px;
+}
+.jchk .jk-cfg-title::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(var(--jk-cyan), var(--jk-teal));
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
 .jchk .jk-cfg-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
 .jchk .jk-cfg-row .jk-input { flex: 1; }
 .jchk .jk-cfg-col { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
@@ -1120,5 +1161,7 @@
   .jchk .jk-patience { grid-template-columns: 1fr; text-align: center; justify-items: center; }
   .jchk .jk-lock-title { font-size: 28px; }
   .jchk-shell { padding: 1.4rem 1rem 8rem; }
-  .jchk-voice-widget { bottom: 90px; min-width: 0; width: calc(100% - 24px); }
+  /* Sit clearly above the mobile bottom nav (≈90px + safe area). */
+  .jchk-voice-widget { bottom: calc(env(safe-area-inset-bottom, 0px) + 112px); min-width: 0; width: calc(100% - 24px); padding: 11px 16px; }
+  .jchk-voice-widget .jk-vw-text { font-size: 11px; }
 }

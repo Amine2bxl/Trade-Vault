@@ -151,7 +151,7 @@ export const sendPushToSelf = createServerFn({ method: 'POST' })
     const vapidPublic = process.env.VAPID_PUBLIC_KEY ||
       'BDkC7QUwB0PLYU3Go24FEBGER2FTvqkBZIcExhsymEny5yBDPtNmrkyxGwU3NZ0N_ikK_pGa7quP3vhC2kTW3lU';
     const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-    const subject = process.env.VAPID_SUBJECT || 'mailto:support@tradevault.app';
+    const subject = process.env.VAPID_SUBJECT || 'mailto:tradevault@outlook.fr';
     if (!vapidPrivate) throw new Error('VAPID_PRIVATE_KEY not configured');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

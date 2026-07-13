@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Info } from 'lucide-react';
 import { Trade, isBreakEven } from '../types';
 import { computeStats, formatPnl, formatPct, formatShortDate } from '../utils/tradeCalcs';
 import { computeQuantStats, getSession, statsByHour, winRateOf, TradingSession } from '../utils/quantStats';
@@ -7,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 import { useT } from '../i18n/LanguageContext';
-import { CHART_ANIMATION, tooltipStyle, glowActiveDot, equityYDomain, EQUITY_X_PADDING } from '../utils/chartTheme';
+import { CHART_ANIMATION, EQUITY_ANIMATION, EQUITY_LINE, tooltipStyle, glowActiveDot, equityYDomain, EQUITY_X_PADDING } from '../utils/chartTheme';
 
 interface AnalyticsProps { trades: Trade[]; }
 const LOCALE_MAP: Record<string, string> = {
@@ -127,15 +128,19 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Quant metrics grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-fade-in-up stagger-1">
           {[
-            { label: t('quant.expectancy'), value: formatPnl(quant.expectancy), sub: `${quant.expectancyR >= 0 ? '+' : ''}${quant.expectancyR.toFixed(2)}R`, good: quant.expectancy >= 0 },
-            { label: 'Sharpe', value: quant.sharpe !== null ? quant.sharpe.toFixed(2) : '—', sub: quant.sharpe === null ? t('quant.needTenDays') : t('quant.annualized'), good: (quant.sharpe ?? 0) >= 1 },
-            { label: 'Sortino', value: quant.sortino !== null ? (quant.sortino >= 99 ? '99+' : quant.sortino.toFixed(2)) : '—', sub: quant.sortino === null ? t('quant.needTenDays') : t('quant.annualized'), good: (quant.sortino ?? 0) >= 1.5 },
-            { label: 'Kelly', value: quant.kelly !== null ? `${(quant.kelly * 100).toFixed(1)}%` : '—', sub: t('quant.kellyHint'), good: (quant.kelly ?? 0) > 0 },
-            { label: t('quant.consistency'), value: quant.consistencyScore !== null ? `${quant.consistencyScore.toFixed(0)}/100` : '—', sub: quant.bestDayShare !== null ? `${t('quant.bestDay')} ${(quant.bestDayShare * 100).toFixed(0)}%` : '—', good: (quant.consistencyScore ?? 0) >= 60 },
+            { label: t('dashboard.avgRR'), value: `${stats.avgRR >= 0 ? '' : ''}${stats.avgRR.toFixed(2)}R`, sub: t('quant.avgRRSub'), good: stats.avgRR >= 2, info: t('quant.infoAvgRR') },
+            { label: t('quant.expectancy'), value: formatPnl(quant.expectancy), sub: `${quant.expectancyR >= 0 ? '+' : ''}${quant.expectancyR.toFixed(2)}R`, good: quant.expectancy >= 0, info: t('quant.infoExpectancy') },
+            { label: 'Sharpe', value: quant.sharpe !== null ? quant.sharpe.toFixed(2) : '—', sub: quant.sharpe === null ? t('quant.needTenDays') : t('quant.annualized'), good: (quant.sharpe ?? 0) >= 1, info: t('quant.infoSharpe') },
+            { label: 'Sortino', value: quant.sortino !== null ? (quant.sortino >= 99 ? '99+' : quant.sortino.toFixed(2)) : '—', sub: quant.sortino === null ? t('quant.needTenDays') : t('quant.annualized'), good: (quant.sortino ?? 0) >= 1.5, info: t('quant.infoSortino') },
+            { label: 'Kelly', value: quant.kelly !== null ? `${(quant.kelly * 100).toFixed(1)}%` : '—', sub: t('quant.kellyHint'), good: (quant.kelly ?? 0) > 0, info: t('quant.infoKelly') },
+            { label: t('quant.consistency'), value: quant.consistencyScore !== null ? `${quant.consistencyScore.toFixed(0)}/100` : '—', sub: quant.bestDayShare !== null ? `${t('quant.bestDay')} ${(quant.bestDayShare * 100).toFixed(0)}%` : '—', good: (quant.consistencyScore ?? 0) >= 60, info: t('quant.infoConsistency') },
             { label: t('quant.recovery'), value: quant.recoveryDays === null ? '—' : quant.recoveryDays === -1 ? t('quant.inDrawdown') : `${quant.recoveryDays}${t('quant.daysShort')}`, sub: t('quant.recoverySub'), good: quant.recoveryDays !== -1 },
           ].map((m, i) => (
-            <div key={i} className="glass rounded-2xl p-3.5 card-premium">
-              <div className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold mb-1.5">{m.label}</div>
+            <div key={i} className="group relative glass rounded-2xl p-3.5 card-premium">
+              <div className="flex items-center gap-1 mb-1.5">
+                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">{m.label}</span>
+                {'info' in m && m.info && <InfoTip text={m.info} />}
+              </div>
               <div className={cn('text-base md:text-lg font-bold tabular-nums', m.good ? 'text-emerald-400' : 'text-amber-400')}>{m.value}</div>
               <div className="text-[9px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
             </div>
@@ -228,16 +233,20 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 <AreaChart data={stats.equityCurve} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
                   <defs>
                     <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--tv-accent)" stopOpacity={0.45} />
+                      <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.42} />
                       <stop offset="55%" stopColor="var(--tv-accent)" stopOpacity={0.12} />
                       <stop offset="100%" stopColor="var(--tv-accent)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="eqGStroke" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="var(--tv-accent)" />
+                      <stop offset="100%" stopColor="var(--tv-highlight)" />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="date" padding={EQUITY_X_PADDING} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => { const p = v.split('-'); return `${p[1]}/${p[0].slice(2)}`; }} axisLine={false} tickLine={false} />
                   <YAxis domain={equityYDomain} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
                   <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, t('analytics.equityCurve')])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="natural" dataKey="equity" stroke="var(--tv-accent)" strokeWidth={2.5} fill="url(#eqG)" dot={false} activeDot={glowActiveDot('var(--tv-accent)')} style={{ filter: 'drop-shadow(0 2px 6px rgba(var(--tv-accent-rgb),0.35))' }} {...CHART_ANIMATION} />
+                  <Area type="natural" dataKey="equity" stroke="url(#eqGStroke)" fill="url(#eqG)" dot={false} activeDot={glowActiveDot('var(--tv-highlight)')} style={{ filter: 'drop-shadow(0 3px 8px rgba(var(--tv-accent-rgb),0.4))' }} {...EQUITY_LINE} {...EQUITY_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -372,5 +381,21 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Small info affordance: a hoverable/focusable icon that reveals a plain-language
+ *  explanation of a metric. Native `title` covers touch / no-hover as a fallback. */
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="relative inline-flex shrink-0 group/tip align-middle" tabIndex={0} title={text}>
+      <Info className="w-3 h-3 text-slate-600 hover:text-slate-300 focus:text-slate-300 transition-colors cursor-help" />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-52 -translate-x-1/2 rounded-xl border border-white/10 bg-[#0c1220] px-3 py-2 text-[10.5px] font-normal normal-case leading-snug tracking-normal text-slate-300 opacity-0 shadow-xl shadow-black/50 transition-opacity duration-150 group-hover/tip:opacity-100 group-focus/tip:opacity-100"
+      >
+        {text}
+      </span>
+    </span>
   );
 }

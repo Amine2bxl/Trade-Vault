@@ -336,7 +336,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // reuses the same skin but stays auto-height for multiline notes.
   const fieldBase =
     "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all";
-  const inputClass = cn(fieldBase, "h-11");
+  // Mobile: compact 36px controls so every top field matches the confluence
+  // chip height (equal, symmetric bubbles). Desktop keeps the roomier 44px.
+  const inputClass = cn(fieldBase, "h-9 sm:h-11 text-xs sm:text-sm");
   const textareaClass = cn(fieldBase, "py-2.5");
   const labelClass =
     "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -424,7 +426,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         }))
                       }
                       className={cn(
-                        "w-full h-11 flex items-center justify-center rounded-xl text-sm font-semibold transition-all border",
+                        "w-full h-9 sm:h-11 flex items-center justify-center rounded-xl text-xs sm:text-sm font-semibold transition-all border",
                         form.direction === dir
                           ? activeClass
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
@@ -720,7 +722,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   <button
                     onClick={() => toggleConfluence(c)}
                     className={cn(
-                      "w-full px-3 py-2 rounded-xl text-xs font-medium transition-all border text-center truncate",
+                      "w-full h-9 flex items-center justify-center px-3 rounded-xl text-xs font-medium transition-all border text-center truncate",
                       form.confluences.includes(c)
                         ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
                         : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600",

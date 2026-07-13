@@ -178,6 +178,13 @@ const fr: Dict = {
   'quant.inDrawdown': 'en drawdown',
   'quant.daysShort': 'j',
   'quant.recoverySub': 'du drawdown au nouveau sommet',
+  'quant.avgRRSub': 'ratio gain/risque moyen visé',
+  'quant.infoAvgRR': "En moyenne, combien de dollars tu vises pour chaque dollar risqué. 2R = viser 2 $ pour 1 $ risqué.",
+  'quant.infoExpectancy': "Ce que rapporte un trade moyen, gains et pertes confondus. Positif = ton système gagne de l'argent sur la durée.",
+  'quant.infoSharpe': "Le rendement comparé à l'ampleur des secousses. Plus c'est haut, plus les gains sont réguliers. Au-dessus de 1 c'est bien, au-dessus de 2 excellent.",
+  'quant.infoSortino': "Comme le Sharpe, mais ne compte que les baisses — il ignore la volatilité à la hausse. Récompense les systèmes qui limitent les pertes.",
+  'quant.infoKelly': "La part du compte que les maths suggèrent de risquer par trade pour croître le plus vite. La plupart n'en utilisent qu'une fraction par prudence.",
+  'quant.infoConsistency': "À quel point ton profit est réparti régulièrement sur les jours. 100 = stable ; un score bas = un seul jour de chance porte l'essentiel des gains.",
 
   'analytics.setupTable': 'Performance par setup',
   'analytics.setupCol': 'Setup',

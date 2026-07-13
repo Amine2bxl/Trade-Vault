@@ -381,6 +381,14 @@ const en = {
   'quant.inDrawdown': 'in drawdown',
   'quant.daysShort': 'd',
   'quant.recoverySub': 'drawdown to new high',
+  'quant.avgRRSub': 'avg planned reward-to-risk',
+  // Plain-language metric explanations (info tooltips)
+  'quant.infoAvgRR': 'On average, how many dollars you aim to win for every dollar you risk. 2R means targeting $2 for every $1 at risk.',
+  'quant.infoExpectancy': 'What you earn on an average trade, wins and losses blended together. Positive = your system makes money over time.',
+  'quant.infoSharpe': 'Return compared to how bumpy the ride is. Higher is smoother, steadier gains. Above 1 is good, above 2 is excellent.',
+  'quant.infoSortino': 'Like Sharpe, but only counts the losing swings — it ignores upside volatility. Rewards systems that limit the downside.',
+  'quant.infoKelly': 'The share of your account math suggests risking per trade to grow fastest. Most traders use a fraction of it to stay safe.',
+  'quant.infoConsistency': 'How evenly your profit is spread across days. 100 = steady; a low score means one lucky day carries most of your gains.',
 
   // Analytics v2
   'analytics.setupTable': 'Performance by setup',

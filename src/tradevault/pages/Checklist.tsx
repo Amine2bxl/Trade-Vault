@@ -45,10 +45,11 @@ const emptyDay = (n: number): DayState => ({
 
 /* ══ Voice lines (JARVIS) ══ */
 type Tone = "calm" | "firm" | "alert";
+// Deeper, more measured delivery = a more premium, composed JARVIS.
 const TONES: Record<Tone, { rate: number; pitch: number }> = {
-  calm: { rate: 0.93, pitch: 0.96 },
-  firm: { rate: 1.0, pitch: 0.92 },
-  alert: { rate: 1.08, pitch: 0.88 },
+  calm: { rate: 0.9, pitch: 0.88 },
+  firm: { rate: 0.96, pitch: 0.84 },
+  alert: { rate: 1.04, pitch: 0.8 },
 };
 const LINES: Record<string, { tone: Tone; fr: string[]; en: string[] }> = {
   activate: {
@@ -597,21 +598,26 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     vwHideT.current = setTimeout(() => setVoice((v) => ({ ...v, show: false })), 1100);
   }, []);
 
-  const pickVoice = useCallback(() => {
-    const vl = langRef.current === "fr" ? "fr" : "en";
+  const pickVoice = useCallback((forceVl?: "fr" | "en") => {
+    const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
     let best: SpeechSynthesisVoice | null = null;
     let bestScore = -999;
     voicesRef.current.forEach((v) => {
       if (!v.lang.startsWith(vl)) return;
       let s = 0;
       const n = v.name;
-      if (/natural/i.test(n)) s += 9;
+      // Prefer modern neural / cloud voices — they sound dramatically more
+      // premium than the legacy built-ins.
+      if (/neural|natural/i.test(n)) s += 12;
+      if (/premium|enhanced|multilingual/i.test(n)) s += 5;
       if (/online/i.test(n)) s += 4;
       if (/google/i.test(n)) s += 6;
+      if (/microsoft/i.test(n)) s += 3;
       if (vl === "fr" && /paul|henri|guillaume|claude|thomas|r[ée]my|denise/i.test(n)) s += 3;
       if (vl !== "fr" && /ryan|george|daniel|thomas|uk english male|mark\b/i.test(n)) s += 3;
       if (vl !== "fr" && v.lang === "en-GB") s += 2;
-      if (/hortense|julie|zira|hazel|susan|linda|female|amélie|caroline/i.test(n)) s -= 3;
+      // Deep male timbre suits the composed JARVIS delivery.
+      if (/hortense|julie|zira|hazel|susan|linda|female|am[ée]lie|caroline|eloise/i.test(n)) s -= 4;
       if (s > bestScore) {
         best = v;
         bestScore = s;
@@ -621,7 +627,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, []);
 
   const speak = useCallback(
-    (txt: string, tone: Tone) => {
+    (txt: string, tone: Tone, forceVl?: "fr" | "en") => {
       if (!audioOnRef.current) return;
       if (!("speechSynthesis" in window)) {
         showVoiceWidget(txt);
@@ -633,11 +639,12 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         radioClick();
         const u = new SpeechSynthesisUtterance(txt);
         const tn = TONES[tone] || TONES.calm;
-        u.lang = langRef.current === "fr" ? "fr-FR" : "en-GB";
+        const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
+        u.lang = vl === "fr" ? "fr-FR" : "en-GB";
         u.rate = tn.rate;
         u.pitch = tn.pitch;
         u.volume = 0.9;
-        const v = pickVoice();
+        const v = pickVoice(forceVl);
         if (v) u.voice = v;
         u.onstart = () => {
           showVoiceWidget(txt);
@@ -669,10 +676,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   );
 
   const say = useCallback(
-    (k: keyof typeof LINES) => {
+    (k: keyof typeof LINES, forceVl?: "fr" | "en") => {
       const o = LINES[k];
       if (!o) return;
-      const vl = langRef.current === "fr" ? "fr" : "en";
+      const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
       const arr = o[vl] || o.en;
       const h = new Date().getHours();
       const greet =
@@ -686,10 +693,22 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               ? "Good afternoon"
               : "Good evening";
       const txt = arr[Math.floor(Math.random() * arr.length)].replace("%G", greet);
-      speak(txt, o.tone);
+      speak(txt, o.tone, forceVl);
     },
     [speak],
   );
+
+  /* First interaction anywhere in the checklist auto-starts the JARVIS voice,
+     speaking directly in the language chosen in the app settings. Once/mount. */
+  const autoStartedRef = useRef(false);
+  const autoStartAudio = useCallback(() => {
+    if (autoStartedRef.current || audioOnRef.current) return;
+    autoStartedRef.current = true;
+    setAudioOn(true);
+    audioOnRef.current = true;
+    powerUp();
+    setTimeout(() => say("activate"), 750);
+  }, [powerUp, say]);
 
   /* ══ Canvas particle field — fixed, covers the whole viewport ══ */
   useEffect(() => {
@@ -1163,7 +1182,12 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const tzOptions = useMemo(getTimeZoneOptions, []);
 
   return (
-    <div className={cn("jchk", editMode && "edit-mode")} ref={wrapRef} onMouseOver={onHover}>
+    <div
+      className={cn("jchk", editMode && "edit-mode")}
+      ref={wrapRef}
+      onMouseOver={onHover}
+      onPointerDown={autoStartAudio}
+    >
       <canvas ref={canvasRef} className="jchk-canvas" />
       <div className="jchk-scanline" />
       <div key={flash} className={cn("jchk-hud-flash", flash > 0 && "go")} />
