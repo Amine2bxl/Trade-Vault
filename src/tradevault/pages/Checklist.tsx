@@ -3,6 +3,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
+import { loadOnboarding, type OnboardingData } from "../store";
+import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
   type ChkItem,
@@ -336,6 +338,62 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const [displayScore, setDisplayScore] = useState(0);
   const [quickAdd, setQuickAdd] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [onb, setOnb] = useState<OnboardingData | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
+  const WIZ_KEY = `tv-chk-wizard-${uid}`;
+
+  /* Guided setup: adapt the checklist to the trader's onboarding profile.
+     First-time-ever visitors (config never touched, wizard never dismissed)
+     get the friendly wizard opened for them, pre-filled from their answers. */
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (!active) return;
+        setOnb(o);
+        const wizDone = (() => {
+          try { return !!localStorage.getItem(WIZ_KEY); } catch { return false; }
+        })();
+        if (!touchedRef.current && !wizDone) setShowWizard(true);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Best-fit preset + sensible guardrail defaults, derived from onboarding.
+  const wizardDefaults = useMemo(() => {
+    const o = onb;
+    const style = o?.style;
+    const rec =
+      o?.usesIct ? "ict"
+        : style === "swing" || style === "position" ? "swing"
+          : o?.goal === "prop_challenge" || o?.experience === "funded" ? "prop"
+            : "simple";
+    const toggles: WizardToggles = {
+      oneTrade: o?.pain === "overtrading" || o?.goal === "discipline",
+      news: style === "swing" || style === "position" || o?.pain === "risk",
+      rr: o?.goal === "prop_challenge" || style === "swing" || style === "position",
+      dd: o?.experience === "funded" || o?.goal === "prop_challenge" || o?.pain === "risk",
+    };
+    const primary = o?.assets?.[0];
+    const time =
+      primary === "forex" ? { startTime: "08:00", timeZone: "Europe/London" }
+        : primary === "futures" || primary === "stocks" || primary === "options"
+          ? { startTime: "09:30", timeZone: "America/New_York" }
+          : { startTime: config.startTime, timeZone: config.timeZone };
+    return { rec, toggles, time };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onb]);
+
+  const applyWizard = (r: WizardResult) => {
+    markTouched();
+    setConfig((c) => ({ ...c, items: r.items, startTime: r.startTime, timeZone: r.timeZone }));
+    setDay((d) => ({ ...d, checked: new Array(r.items.length).fill(false) }));
+    try { localStorage.setItem(WIZ_KEY, "1"); } catch { /* noop */ }
+    setShowWizard(false);
+  };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -1259,6 +1317,12 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
           <div className="jk-card jk-config-panel">
+            <button
+              className="jk-guided-btn"
+              onClick={() => setShowWizard(true)}
+            >
+              ✨ {lang === "fr" ? "Configuration guidée (facile)" : "Guided setup (easy)"}
+            </button>
             <div className="jk-cfg-section">
               <div className="jk-cfg-title">{t("chk.cfgSession")}</div>
               <div className="jk-session-config-row">
@@ -1977,6 +2041,21 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {showWizard && (
+        <ChecklistWizard
+          lang={lang}
+          templates={templates}
+          recommendedId={wizardDefaults.rec}
+          defaultToggles={wizardDefaults.toggles}
+          defaultTime={wizardDefaults.time}
+          onApply={applyWizard}
+          onClose={() => {
+            try { localStorage.setItem(WIZ_KEY, "1"); } catch { /* noop */ }
+            setShowWizard(false);
+          }}
+        />
       )}
     </div>
   );

@@ -12,6 +12,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<string | null>;
   requestPasswordReset: (email: string) => Promise<string | null>;
   updatePassword: (newPassword: string) => Promise<string | null>;
+  deleteAccount: () => Promise<string | null>;
   logout: () => Promise<void>;
 }
 
@@ -104,6 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
+  // Permanent, irreversible: the edge function wipes storage, every row, and
+  // the auth account itself. On success we sign the (now-deleted) session out.
+  const deleteAccount = useCallback(async (): Promise<string | null> => {
+    const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+    if (error) return error.message ?? 'Account deletion failed';
+    if (data && (data as { error?: string }).error) return (data as { error: string }).error;
+    await supabase.auth.signOut().catch(() => {});
+    setUser(null);
+    return null;
+  }, []);
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -111,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, loading, login, signup, loginWithGoogle, requestPasswordReset, updatePassword, logout }}
+      value={{ user, isAuthenticated: !!user, loading, login, signup, loginWithGoogle, requestPasswordReset, updatePassword, deleteAccount, logout }}
     >
       {children}
     </AuthContext.Provider>

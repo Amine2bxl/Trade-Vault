@@ -10,6 +10,8 @@ import {
   SlidersHorizontal,
   ChevronRight,
   Search,
+  UserX,
+  AlertTriangle,
 } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
 import { loadLanguage, saveLanguage, loadStartingBalance, saveStartingBalance } from "../store";
@@ -26,12 +28,13 @@ interface SettingsProps {
 }
 
 export default function Settings({ trades, onDeleteAll, onOpenImport }: SettingsProps) {
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const { t, setLang } = useT();
   const [language, setLanguage] = useState("en");
   const [startingEquity, setStartingEquity] = useState("25000");
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Search: each section declares its searchable text; non-matching sections hide.
   const sections = useMemo(() => {
@@ -56,7 +59,15 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
         "export",
         "import",
       ),
-      danger: match(t("settings.dangerZone"), t("profile.deleteAllTrades"), "delete", "supprimer"),
+      danger: match(
+        t("settings.dangerZone"),
+        t("profile.deleteAllTrades"),
+        t("settings.deleteAccount"),
+        "delete",
+        "supprimer",
+        "account",
+        "compte",
+      ),
     };
   }, [query, t]);
   const anyVisible = sections.prefs || sections.notifs || sections.data || sections.danger;
@@ -246,8 +257,104 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
           </span>
           <Trash2 className="w-4 h-4 shrink-0" />
         </button>
+
+        <button
+          onClick={() => setDeleteOpen(true)}
+          className="w-full flex items-center justify-between px-4 py-3 rounded-xl border bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/20 transition"
+        >
+          <span className="text-left">
+            <span className="block text-sm font-medium">{t("settings.deleteAccount")}</span>
+            <span className="block text-[10px] opacity-70 mt-0.5">
+              {t("settings.deleteAccountSub")}
+            </span>
+          </span>
+          <UserX className="w-4 h-4 shrink-0" />
+        </button>
       </div>
       )}
+
+      {deleteOpen && <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />}
+    </div>
+  );
+}
+
+function DeleteAccountModal({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void;
+  onConfirm: () => Promise<string | null>;
+}) {
+  const { t } = useT();
+  const [confirmText, setConfirmText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const armed = confirmText.trim().toUpperCase() === "DELETE";
+
+  const handleDelete = async () => {
+    if (!armed || busy) return;
+    setBusy(true);
+    setError(null);
+    const err = await onConfirm();
+    if (err) {
+      setError(t("settings.deleteAccountFailed"));
+      setBusy(false);
+      return;
+    }
+    // Success: the AuthContext cleared the session, which unmounts this screen.
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="glass-strong rounded-3xl p-6 max-w-md w-full border border-red-500/20 animate-slide-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">
+          <AlertTriangle className="w-6 h-6 text-red-400" />
+        </div>
+        <h2 className="text-lg font-bold text-white mb-1.5">{t("settings.deleteAccountTitle")}</h2>
+        <p className="text-sm text-slate-400 mb-5">{t("settings.deleteAccountBody")}</p>
+
+        <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+          {t("settings.deleteAccountConfirm")}
+        </label>
+        <input
+          type="text"
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          autoFocus
+          placeholder="DELETE"
+          className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-red-500/40 mb-4"
+        />
+
+        {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+
+        <div className="flex gap-2.5">
+          <button
+            onClick={onClose}
+            disabled={busy}
+            className="flex-1 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium text-slate-300 hover:bg-white/[0.08] transition"
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!armed || busy}
+            className={cn(
+              "flex-1 h-11 rounded-xl text-sm font-bold transition",
+              armed && !busy
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "bg-red-500/30 text-red-200/60 cursor-not-allowed",
+            )}
+          >
+            {busy ? t("settings.deleting") : t("settings.deleteAccountCta")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
