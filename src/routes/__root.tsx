@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
+import { lockZoom } from "../lib/lock-zoom";
 
 function NotFoundComponent() {
   return (
@@ -133,6 +134,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => lockZoom(), []);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;

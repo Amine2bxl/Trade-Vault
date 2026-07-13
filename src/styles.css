@@ -209,6 +209,26 @@
 
 html {
   background: #05070a;
+  /* App-like: allow scroll panning but kill pinch-zoom and double-tap zoom. */
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Native-app feel: no accidental text selection, no iOS long-press callout.
+   Text-bearing inputs/editables opt back in so typing and copy still work. */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea,
+select,
+[contenteditable="true"],
+.select-text {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Ambient cursor glow — blurred radial that trails the pointer, retinted by
