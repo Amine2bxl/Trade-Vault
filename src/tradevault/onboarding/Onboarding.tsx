@@ -5,58 +5,21 @@ import {
   Sprout, Dumbbell, ShieldCheck, Trophy,
   Target, Flag, Briefcase, Coins, Brain,
   Repeat, Flame, Shield, NotebookPen, Activity,
-  Globe, Check, ArrowLeft, SkipForward, Sparkles, Rocket, BookOpen,
+  Check, ArrowLeft, SkipForward, Sparkles, Rocket, BookOpen, Globe,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, saveConfluences, type OnboardingData } from "../store";
+import { oc, fmt, type OnboardingCopy } from "./onboardingCopy";
 import logoSrc from "@/assets/tradevault-logo.png";
 
 type StepKey =
-  | "welcome" | "assets" | "style" | "ict" | "experience"
+  | "language" | "welcome" | "assets" | "style" | "ict" | "experience"
   | "goal" | "pain" | "brokers" | "reveal";
 
 interface Choice { id: string; label: string; desc?: string; icon?: LucideIcon }
-
-const ASSETS: Choice[] = [
-  { id: "futures", label: "Futures", icon: BarChart3 },
-  { id: "forex", label: "Forex", icon: DollarSign },
-  { id: "stocks", label: "Stocks", icon: TrendingUp },
-  { id: "options", label: "Options", icon: Layers },
-  { id: "crypto", label: "Crypto", icon: Bitcoin },
-];
-
-const STYLES: Choice[] = [
-  { id: "scalper", label: "Scalper", desc: "In and out. Seconds to minutes.", icon: Zap },
-  { id: "day", label: "Day Trader", desc: "Flat by the close. No overnight risk.", icon: Sun },
-  { id: "swing", label: "Swing", desc: "Days to weeks. Riding the bigger move.", icon: Waves },
-  { id: "position", label: "Position", desc: "Weeks to months. Macro conviction.", icon: Mountain },
-];
-
-const EXPERIENCE: Choice[] = [
-  { id: "new", label: "Just started", desc: "Under a year", icon: Sprout },
-  { id: "intermediate", label: "Getting reps in", desc: "1–3 years", icon: Dumbbell },
-  { id: "seasoned", label: "Seasoned", desc: "3 years+", icon: ShieldCheck },
-  { id: "funded", label: "Funded / Prop", desc: "Trading allocated capital", icon: Trophy },
-];
-
-const GOALS: Choice[] = [
-  { id: "consistency", label: "Get consistent", desc: "Stop giving back the winners.", icon: Target },
-  { id: "prop_challenge", label: "Pass a prop challenge", desc: "Hit the target, respect the rules.", icon: Flag },
-  { id: "full_time", label: "Go full-time", desc: "Replace the paycheck.", icon: Briefcase },
-  { id: "side_income", label: "Side income", desc: "Stack extra, low stress.", icon: Coins },
-  { id: "discipline", label: "Build discipline", desc: "Master the mind, not just the charts.", icon: Brain },
-];
-
-const PAINS: Choice[] = [
-  { id: "consistency", label: "Consistency", desc: "Green week, red week, repeat.", icon: Repeat },
-  { id: "emotion", label: "Emotional control", desc: "Revenge trades, FOMO, tilt.", icon: Flame },
-  { id: "risk", label: "Risk management", desc: "One trade wrecks the month.", icon: Shield },
-  { id: "journaling", label: "Journaling", desc: "I don't log, so I don't learn.", icon: NotebookPen },
-  { id: "overtrading", label: "Overtrading", desc: "Can't sit on my hands.", icon: Activity },
-];
 
 const BROKERS_BY_ASSET: Record<string, string[]> = {
   futures: ["Tradovate", "NinjaTrader", "Rithmic", "Topstep", "Apex", "AMP"],
@@ -74,57 +37,87 @@ const ICT_CONFLUENCES = [
   "Optimal trade entry", "Imbalance", "Premium/Discount", "Equal highs/lows",
 ];
 
-// The reveal sentence assembled from the answers, so it reads like it was
-// written about this specific trader.
-function identitySentence(d: OnboardingData): string {
-  const style = d.style ? STYLES.find((s) => s.id === d.style)?.label.toLowerCase() : null;
-  const asset = d.assets[0] ? ASSETS.find((a) => a.id === d.assets[0])?.label.toLowerCase() : null;
-  const goalPhrase: Record<string, string> = {
-    consistency: "hunting consistency",
-    prop_challenge: "chasing the payout",
-    full_time: "going full-time",
-    side_income: "stacking on the side",
-    discipline: "building discipline",
-  };
-  const who = [style, asset].filter(Boolean).join(" ") || "trader";
-  const tail = d.goal ? goalPhrase[d.goal] ?? "" : "";
-  return `Built for a ${who}${style || asset ? " trader" : ""}${tail ? " " + tail : ""}.`;
-}
+// id → copy-key maps, so translated labels drive both the cards and the reveal.
+const ASSET_KEYS: Record<string, keyof OnboardingCopy> = {
+  futures: "aFutures", forex: "aForex", stocks: "aStocks", options: "aOptions", crypto: "aCrypto",
+};
+const PAIN_KEYS: Record<string, keyof OnboardingCopy> = {
+  consistency: "pCons", emotion: "pEmo", risk: "pRisk", journaling: "pJour", overtrading: "pOver",
+};
+const MISSION_KEYS: Record<string, keyof OnboardingCopy> = {
+  consistency: "missionCons", prop_challenge: "missionProp", full_time: "missionFull",
+  side_income: "missionSide", discipline: "missionDisc",
+};
 
 export default function Onboarding({ userId, onDone }: { userId: string; onDone: () => void }) {
   const { lang, setLang } = useT();
+  const c = oc(lang);
   const [data, setData] = useState<OnboardingData>({
     goal: null, assets: [], style: null, experience: null,
     usesIct: false, brokers: [], pain: null, onboardedAt: null, skipped: false,
   });
   const [idx, setIdx] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
 
-  // ICT micro-step only surfaces for the community that actually uses it:
-  // fast intraday futures/forex/crypto traders.
+  const ASSETS: Choice[] = [
+    { id: "futures", label: c.aFutures, icon: BarChart3 },
+    { id: "forex", label: c.aForex, icon: DollarSign },
+    { id: "stocks", label: c.aStocks, icon: TrendingUp },
+    { id: "options", label: c.aOptions, icon: Layers },
+    { id: "crypto", label: c.aCrypto, icon: Bitcoin },
+  ];
+  const STYLES: Choice[] = [
+    { id: "scalper", label: c.sScalper, desc: c.sScalperD, icon: Zap },
+    { id: "day", label: c.sDay, desc: c.sDayD, icon: Sun },
+    { id: "swing", label: c.sSwing, desc: c.sSwingD, icon: Waves },
+    { id: "position", label: c.sPos, desc: c.sPosD, icon: Mountain },
+  ];
+  const EXPERIENCE: Choice[] = [
+    { id: "new", label: c.eNew, desc: c.eNewD, icon: Sprout },
+    { id: "intermediate", label: c.eInt, desc: c.eIntD, icon: Dumbbell },
+    { id: "seasoned", label: c.eSea, desc: c.eSeaD, icon: ShieldCheck },
+    { id: "funded", label: c.eFund, desc: c.eFundD, icon: Trophy },
+  ];
+  const GOALS: Choice[] = [
+    { id: "consistency", label: c.gCons, desc: c.gConsD, icon: Target },
+    { id: "prop_challenge", label: c.gProp, desc: c.gPropD, icon: Flag },
+    { id: "full_time", label: c.gFull, desc: c.gFullD, icon: Briefcase },
+    { id: "side_income", label: c.gSide, desc: c.gSideD, icon: Coins },
+    { id: "discipline", label: c.gDisc, desc: c.gDiscD, icon: Brain },
+  ];
+  const PAINS: Choice[] = [
+    { id: "consistency", label: c.pCons, desc: c.pConsD, icon: Repeat },
+    { id: "emotion", label: c.pEmo, desc: c.pEmoD, icon: Flame },
+    { id: "risk", label: c.pRisk, desc: c.pRiskD, icon: Shield },
+    { id: "journaling", label: c.pJour, desc: c.pJourD, icon: NotebookPen },
+    { id: "overtrading", label: c.pOver, desc: c.pOverD, icon: Activity },
+  ];
+
   const showIct =
     (data.assets.includes("futures") || data.assets.includes("forex") || data.assets.includes("crypto")) &&
     (data.style === "scalper" || data.style === "day");
 
   const steps: StepKey[] = useMemo(() => {
-    const s: StepKey[] = ["welcome", "assets", "style"];
+    const s: StepKey[] = ["language", "welcome", "assets", "style"];
     if (showIct) s.push("ict");
     s.push("experience", "goal", "pain", "brokers", "reveal");
     return s;
   }, [showIct]);
 
   const step = steps[Math.min(idx, steps.length - 1)];
-  const dataStepCount = steps.length - 2; // exclude welcome + reveal
-  const dataStepNo = Math.max(0, Math.min(idx, dataStepCount)); // 0 on welcome
-  const progress = step === "welcome" ? 0.12 : step === "reveal" ? 1 : dataStepNo / dataStepCount;
+  const firstData = steps.indexOf("assets");
+  const lastData = steps.indexOf("brokers");
+  const progress =
+    step === "reveal" ? 1
+      : idx < firstData ? 0.08
+        : (idx - firstData + 1) / (lastData - firstData + 1);
 
   const next = useCallback(() => setIdx((i) => Math.min(i + 1, steps.length - 1)), [steps.length]);
   const back = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
 
   const pick = useCallback((patch: Partial<OnboardingData>, advance = true) => {
     setData((d) => ({ ...d, ...patch }));
-    if (advance) setTimeout(next, 160); // brief highlight before advancing
+    if (advance) setTimeout(next, 160);
   }, [next]);
 
   const toggleInArray = useCallback((key: "assets" | "brokers", value: string) => {
@@ -145,11 +138,12 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
     } catch (e) {
       console.error("Failed to save onboarding", e);
     } finally {
-      onDone(); // never trap the user in the flow, even if the write failed
+      onDone();
     }
   }, [data, userId, onDone]);
 
   const langs = Object.entries(LANG_NAMES) as [Lang, string][];
+  const assetNames = data.assets.map((a) => c[ASSET_KEYS[a]]).join(", ");
 
   return (
     <div className="relative h-dvh w-full overflow-hidden"
@@ -157,7 +151,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
       <div className="auth-orb w-[500px] h-[500px] bg-cyan-600 -top-40 -left-40" style={{ animationDelay: "0s" }} />
       <div className="auth-orb w-[400px] h-[400px] bg-teal-600 -bottom-32 -right-32" style={{ animationDelay: "-5s" }} />
 
-      {/* Top bar: back · progress · language · skip */}
+      {/* Top bar: back · progress · skip */}
       <div className="relative z-20 flex items-center gap-3 px-4 pt-4 md:px-6 max-w-2xl mx-auto w-full">
         {idx > 0 && step !== "reveal" ? (
           <button onClick={back} aria-label="Back"
@@ -171,29 +165,10 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
             style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
 
-        <div className="relative shrink-0">
-          <button onClick={() => setLangOpen((v) => !v)}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs font-medium">
-            <Globe className="w-4 h-4" /> {lang.toUpperCase()}
-          </button>
-          {langOpen && (
-            <div className="absolute right-0 mt-2 w-40 max-h-64 overflow-y-auto glass-strong rounded-xl p-1 z-30 animate-fade-in">
-              {langs.map(([code, name]) => (
-                <button key={code}
-                  onClick={() => { setLang(code); setLangOpen(false); }}
-                  className={cn("w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
-                    code === lang ? "bg-cyan-500/20 text-cyan-300" : "text-slate-300 hover:bg-white/[0.06]")}>
-                  {name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {step !== "reveal" && (
+        {step !== "reveal" && step !== "language" && (
           <button onClick={() => finish(true)} disabled={saving}
             className="shrink-0 flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors">
-            Skip <SkipForward className="w-3.5 h-3.5" />
+            {c.skip} <SkipForward className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
@@ -202,6 +177,32 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
       <div className="relative z-10 h-[calc(100%-3.5rem)] flex items-center justify-center px-4 py-4 overflow-y-auto">
         <div key={step} className="w-full max-w-lg animate-fade-in-up">
 
+          {step === "language" && (
+            <div>
+              <div className="flex justify-center mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-cyan-300" />
+                </div>
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-1.5">{c.langTitle}</h2>
+              <p className="text-sm text-slate-400 text-center mb-6">{c.langSub}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {langs.map(([code, name]) => (
+                  <button key={code}
+                    onClick={() => { setLang(code); setTimeout(next, 160); }}
+                    className={cn("rounded-2xl p-3.5 border text-center transition-all",
+                      code === lang
+                        ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
+                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]")}>
+                    <span className={cn("text-sm font-semibold", code === lang ? "text-white" : "text-slate-300")}>
+                      {name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {step === "welcome" && (
             <div className="text-center">
               <div className="relative w-16 h-16 mx-auto mb-5">
@@ -209,16 +210,13 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
                 <img src={logoSrc} alt="TradeVault" width={64} height={64}
                   className="relative w-16 h-16 rounded-2xl drop-shadow-[0_0_14px_rgba(6,182,212,0.5)]" />
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Welcome to TradeVault</h1>
-              <p className="text-sm text-slate-400 max-w-sm mx-auto mb-7">
-                Your trading journal, built to find your edge. Log every trade, see what's
-                actually working, and fix the leaks — before they cost you.
-              </p>
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{c.welcomeTitle}</h1>
+              <p className="text-sm text-slate-400 max-w-sm mx-auto mb-7">{c.welcomeSub}</p>
               <div className="grid gap-3 text-left mb-7">
                 {[
-                  { icon: BookOpen, t: "Journal every trade", d: "Entries, exits, screenshots, mistakes — one clean log." },
-                  { icon: BarChart3, t: "See your real edge", d: "Win rate, R-multiples, and analytics that don't lie." },
-                  { icon: Sparkles, t: "AI insights + checklist", d: "Spot patterns and lock in your process before the bell." },
+                  { icon: BookOpen, t: c.feat1T, d: c.feat1D },
+                  { icon: BarChart3, t: c.feat2T, d: c.feat2D },
+                  { icon: Sparkles, t: c.feat3T, d: c.feat3D },
                 ].map(({ icon: Icon, t, d }) => (
                   <div key={t} className="glass rounded-2xl p-3.5 flex gap-3 items-start">
                     <div className="w-9 h-9 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
@@ -233,89 +231,88 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
               </div>
               <button onClick={next}
                 className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all">
-                Set it up — takes 30 seconds
+                {c.welcomeCta}
               </button>
               <button onClick={() => finish(true)} disabled={saving}
                 className="mt-3 text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                Skip, I'll explore on my own
+                {c.welcomeSkip}
               </button>
             </div>
           )}
 
           {step === "assets" && (
-            <StepShell title="What do you trade?" sub="Pick all that apply. We'll talk in your units.">
+            <StepShell title={c.assetsTitle} sub={c.assetsSub}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {ASSETS.map((c) => (
-                  <ChipCard key={c.id} choice={c} active={data.assets.includes(c.id)}
-                    onClick={() => toggleInArray("assets", c.id)} />
+                {ASSETS.map((ch) => (
+                  <ChipCard key={ch.id} choice={ch} active={data.assets.includes(ch.id)}
+                    onClick={() => toggleInArray("assets", ch.id)} />
                 ))}
               </div>
-              <ContinueBtn disabled={data.assets.length === 0} onClick={next} />
+              <ContinueBtn disabled={data.assets.length === 0} onClick={next} label={c.cont} />
             </StepShell>
           )}
 
           {step === "style" && (
-            <StepShell title="How do you trade it?" sub="Your bread and butter.">
+            <StepShell title={c.styleTitle} sub={c.styleSub}>
               <div className="grid gap-2.5">
-                {STYLES.map((c) => (
-                  <RowCard key={c.id} choice={c} active={data.style === c.id}
-                    onClick={() => pick({ style: c.id })} />
+                {STYLES.map((ch) => (
+                  <RowCard key={ch.id} choice={ch} active={data.style === ch.id}
+                    onClick={() => pick({ style: ch.id })} />
                 ))}
               </div>
             </StepShell>
           )}
 
           {step === "ict" && (
-            <StepShell title="Do you trade ICT / SMC concepts?" sub="Order blocks, liquidity, FVGs, killzones.">
+            <StepShell title={c.ictTitle} sub={c.ictSub}>
               <div className="grid grid-cols-2 gap-2.5">
-                <ChipCard choice={{ id: "yes", label: "Yes, that's me", icon: Check }}
+                <ChipCard choice={{ id: "yes", label: c.ictYes, icon: Check }}
                   active={data.usesIct} onClick={() => pick({ usesIct: true })} />
-                <ChipCard choice={{ id: "no", label: "Not really", icon: Layers }}
+                <ChipCard choice={{ id: "no", label: c.ictNo, icon: Layers }}
                   active={false} onClick={() => pick({ usesIct: false })} />
               </div>
             </StepShell>
           )}
 
           {step === "experience" && (
-            <StepShell title="How long you been at this?" sub="No judgment — this just tunes what we show you.">
+            <StepShell title={c.expTitle} sub={c.expSub}>
               <div className="grid gap-2.5">
-                {EXPERIENCE.map((c) => (
-                  <RowCard key={c.id} choice={c} active={data.experience === c.id}
-                    onClick={() => pick({ experience: c.id })} />
+                {EXPERIENCE.map((ch) => (
+                  <RowCard key={ch.id} choice={ch} active={data.experience === ch.id}
+                    onClick={() => pick({ experience: ch.id })} />
                 ))}
               </div>
             </StepShell>
           )}
 
           {step === "goal" && (
-            <StepShell title="What's the mission right now?" sub="The real reason you opened this journal.">
+            <StepShell title={c.goalTitle} sub={c.goalSub}>
               <div className="grid gap-2.5">
-                {GOALS.map((c) => (
-                  <RowCard key={c.id} choice={c} active={data.goal === c.id}
-                    onClick={() => pick({ goal: c.id })} />
+                {GOALS.map((ch) => (
+                  <RowCard key={ch.id} choice={ch} active={data.goal === ch.id}
+                    onClick={() => pick({ goal: ch.id })} />
                 ))}
               </div>
             </StepShell>
           )}
 
           {step === "pain" && (
-            <StepShell title="What's costing you the most?" sub="Be honest — this is where we start.">
+            <StepShell title={c.painTitle} sub={c.painSub}>
               <div className="grid gap-2.5">
-                {PAINS.map((c) => (
-                  <RowCard key={c.id} choice={c} active={data.pain === c.id}
-                    onClick={() => pick({ pain: c.id })} />
+                {PAINS.map((ch) => (
+                  <RowCard key={ch.id} choice={ch} active={data.pain === ch.id}
+                    onClick={() => pick({ pain: ch.id })} />
                 ))}
               </div>
             </StepShell>
           )}
 
           {step === "brokers" && (
-            <StepShell title="Where do you execute?" sub="For one-tap CSV import later. No login now — just the name.">
+            <StepShell title={c.brokersTitle} sub={c.brokersSub}>
               <div className="flex flex-wrap gap-2 justify-center">
                 {(data.assets.length ? data.assets : ["futures"])
                   .flatMap((a) => BROKERS_BY_ASSET[a] ?? [])
                   .filter((b, i, arr) => arr.indexOf(b) === i)
-                  .concat("Other")
                   .map((b) => (
                     <button key={b} onClick={() => toggleInArray("brokers", b)}
                       className={cn("px-3.5 py-2 rounded-full text-sm font-medium border transition-all",
@@ -326,7 +323,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
                     </button>
                   ))}
               </div>
-              <ContinueBtn label={data.brokers.length ? "Continue" : "Skip, I'll add later"} onClick={next} />
+              <ContinueBtn label={data.brokers.length ? c.cont : c.skipAdd} onClick={next} />
             </StepShell>
           )}
 
@@ -335,20 +332,18 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
                 <Rocket className="w-7 h-7 text-white" />
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-1.5">Your vault's ready.</h1>
-              <p className="text-cyan-300 font-medium mb-6">{identitySentence(data)}</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-1.5">{c.revealTitle}</h1>
+              {data.goal && <p className="text-cyan-300 font-medium mb-6">{c[MISSION_KEYS[data.goal]]}</p>}
 
               <div className="glass rounded-2xl p-4 text-left space-y-2.5 mb-6">
-                <RevealLine ok text={`Journal set up for ${data.assets.length
-                  ? data.assets.map((a) => ASSETS.find((x) => x.id === a)?.label).join(", ")
-                  : "your markets"}`} />
+                <RevealLine text={fmt(c.revealJournal, { assets: assetNames || c.yourMarkets })} />
                 {data.pain && (
-                  <RevealLine ok text={`We'll start with your biggest leak: ${PAINS.find((p) => p.id === data.pain)?.label.toLowerCase()}`} />
+                  <RevealLine text={fmt(c.revealPain, { pain: c[PAIN_KEYS[data.pain]] })} />
                 )}
-                {data.usesIct && <RevealLine ok text="ICT / SMC confluence checklist loaded" />}
-                <RevealLine ok text={`Language set to ${LANG_NAMES[lang]}`} />
+                {data.usesIct && <RevealLine text={c.revealIct} />}
+                <RevealLine text={fmt(c.revealLang, { lang: LANG_NAMES[lang] })} />
                 {data.brokers.length > 0 && (
-                  <RevealLine ok text={`${data.brokers.join(", ")} import ready in Settings`} />
+                  <RevealLine text={fmt(c.revealBrokers, { brokers: data.brokers.join(", ") })} />
                 )}
               </div>
 
@@ -356,7 +351,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
                 className={cn("w-full py-3.5 rounded-xl text-sm font-bold transition-all",
                   saving ? "bg-cyan-500/50 text-cyan-200 cursor-wait"
                     : "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20")}>
-                {saving ? "Setting up…" : "Enter TradeVault →"}
+                {saving ? c.revealSaving : c.revealCta}
               </button>
             </div>
           )}
@@ -412,7 +407,7 @@ function RowCard({ choice, active, onClick }: { choice: Choice; active: boolean;
   );
 }
 
-function ContinueBtn({ onClick, disabled, label = "Continue" }: { onClick: () => void; disabled?: boolean; label?: string }) {
+function ContinueBtn({ onClick, disabled, label }: { onClick: () => void; disabled?: boolean; label: string }) {
   return (
     <button onClick={onClick} disabled={disabled}
       className={cn("w-full mt-6 py-3.5 rounded-xl text-sm font-bold transition-all",
@@ -423,11 +418,10 @@ function ContinueBtn({ onClick, disabled, label = "Continue" }: { onClick: () =>
   );
 }
 
-function RevealLine({ text, ok }: { text: string; ok?: boolean }) {
+function RevealLine({ text }: { text: string }) {
   return (
     <div className="flex items-start gap-2.5">
-      <div className={cn("w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-        ok ? "bg-emerald-500/20" : "bg-white/[0.06]")}>
+      <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-emerald-500/20">
         <Check className="w-3 h-3 text-emerald-400" />
       </div>
       <span className="text-sm text-slate-300">{text}</span>
