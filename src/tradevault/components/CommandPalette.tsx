@@ -6,6 +6,7 @@ import {
   Calendar,
   BarChart3,
   AlertTriangle,
+  ClipboardCheck,
   Target,
   Sparkles,
   User,
@@ -60,6 +61,11 @@ export default function CommandPalette({
   const NAV: { page: Page; label: string; icon: React.ReactNode }[] = [
     { page: "dashboard", label: t("nav.dashboard"), icon: <LayoutDashboard className="w-4 h-4" /> },
     { page: "journal", label: t("nav.journal"), icon: <BookOpen className="w-4 h-4" /> },
+    {
+      page: "checklist",
+      label: t("nav.checklist"),
+      icon: <ClipboardCheck className="w-4 h-4" />,
+    },
     { page: "calendar", label: t("nav.calendar"), icon: <Calendar className="w-4 h-4" /> },
     { page: "analytics", label: t("nav.analytics"), icon: <BarChart3 className="w-4 h-4" /> },
     { page: "mistakes", label: t("nav.mistakes"), icon: <AlertTriangle className="w-4 h-4" /> },

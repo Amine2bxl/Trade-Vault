@@ -4,6 +4,7 @@ import {
   Calendar,
   BarChart3,
   AlertTriangle,
+  ClipboardCheck,
   LogOut,
   User,
   Sparkles,
@@ -44,6 +45,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       items: [
         { id: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
         { id: "journal", label: t("nav.journal"), icon: BookOpen },
+        { id: "checklist", label: t("nav.checklist"), icon: ClipboardCheck },
         { id: "calculator", label: t("nav.calculator"), icon: Calculator },
         { id: "missed", label: t("nav.missed"), icon: Target },
       ],

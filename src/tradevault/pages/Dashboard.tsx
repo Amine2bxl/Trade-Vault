@@ -14,6 +14,8 @@ import {
   CalendarDays,
   Gauge,
   Scale,
+  ClipboardCheck,
+  ChevronRight,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -53,6 +55,7 @@ interface DashboardProps {
   trades: Trade[];
   onAddTrade: () => void;
   tradesLoading?: boolean;
+  onOpenChecklist?: () => void;
 }
 
 type Period = "7d" | "30d" | "ytd" | "all";
@@ -75,7 +78,12 @@ function periodCutoff(period: Period): string | null {
   return null;
 }
 
-export default function Dashboard({ trades, onAddTrade, tradesLoading }: DashboardProps) {
+export default function Dashboard({
+  trades,
+  onAddTrade,
+  tradesLoading,
+  onOpenChecklist,
+}: DashboardProps) {
   const { t } = useT();
   const { user } = useAuth();
   const hasDraft = useHasTradeDraft(user?.id);
@@ -147,6 +155,21 @@ export default function Dashboard({ trades, onAddTrade, tradesLoading }: Dashboa
   const baseline = startingBalance + pnlBefore;
   const periodPct = baseline > 0 ? stats.totalPnl / baseline : null;
 
+  // Pre-market checklist status (written by the Checklist page in localStorage)
+  const chkStatus = useMemo(() => {
+    if (!user) return null;
+    try {
+      const key = `tv-chk-${user.id}-${new Date().toISOString().slice(0, 10)}`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return { locked: false, n: 0, total: 0 };
+      const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
+      const arr = Array.isArray(p.checked) ? p.checked : [];
+      return { locked: !!p.locked, n: arr.filter(Boolean).length, total: arr.length };
+    } catch {
+      return null;
+    }
+  }, [user?.id]);
+
   const getGreeting = () => {
     const h = new Date().getHours();
     if (h < 5) return t("dashboard.greetingStillUp");
@@ -184,6 +207,43 @@ export default function Dashboard({ trades, onAddTrade, tradesLoading }: Dashboa
           )}
         </button>
       </div>
+
+      {/* Pre-market checklist synergy card */}
+      {onOpenChecklist && chkStatus && (
+        <button
+          onClick={onOpenChecklist}
+          className={cn(
+            "w-full flex items-center gap-3 mb-4 md:mb-6 px-4 py-3 rounded-2xl border text-left transition-all animate-fade-in-up stagger-1 hover:-translate-y-0.5",
+            chkStatus.locked
+              ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/10"
+              : "bg-cyan-500/[0.05] border-cyan-500/15 hover:bg-cyan-500/[0.09]",
+          )}
+        >
+          <div
+            className={cn(
+              "w-9 h-9 rounded-xl border flex items-center justify-center shrink-0",
+              chkStatus.locked
+                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
+            )}
+          >
+            <ClipboardCheck className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-white">{t("chk.dashTitle")}</div>
+            <div className="text-[11px] text-slate-400 truncate">
+              {chkStatus.locked
+                ? t("chk.dashLocked")
+                : chkStatus.total > 0
+                  ? `${chkStatus.n}/${chkStatus.total} ${t("chk.dashChecked")}`
+                  : t("chk.dashStart")}
+            </div>
+          </div>
+          <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-cyan-400 shrink-0">
+            {t("chk.dashCta")} <ChevronRight className="w-3.5 h-3.5" />
+          </span>
+        </button>
+      )}
 
       {trades.length === 0 ? (
         /* ── Empty state: first-run experience ── */

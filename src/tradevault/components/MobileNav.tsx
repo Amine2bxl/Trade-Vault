@@ -9,6 +9,7 @@ import {
   Plus,
   Target,
   AlertTriangle,
+  ClipboardCheck,
   MoreHorizontal,
   X,
   Newspaper,
@@ -42,6 +43,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
   ];
   const rightItems = [{ id: "analytics" as Page, label: t("nav.analytics"), icon: BarChart3 }];
   const moreItems = [
+    { id: "checklist" as Page, label: t("nav.checklist"), icon: ClipboardCheck },
     { id: "calendar" as Page, label: t("nav.calendar"), icon: Calendar },
     { id: "missed" as Page, label: t("nav.missed"), icon: Target },
     { id: "mistakes" as Page, label: t("nav.mistakes"), icon: AlertTriangle },

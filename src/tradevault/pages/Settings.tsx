@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Globe,
   DollarSign,
@@ -9,6 +9,7 @@ import {
   Database,
   SlidersHorizontal,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
 import { loadLanguage, saveLanguage, loadStartingBalance, saveStartingBalance } from "../store";
@@ -30,6 +31,35 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
   const [language, setLanguage] = useState("en");
   const [startingEquity, setStartingEquity] = useState("25000");
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  // Search: each section declares its searchable text; non-matching sections hide.
+  const sections = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const match = (...texts: string[]) =>
+      !q || texts.some((s) => s.toLowerCase().includes(q));
+    return {
+      prefs: match(
+        t("settings.preferences"),
+        t("profile.language"),
+        t("profile.startingEquity"),
+        "language",
+        "langue",
+        "equity",
+      ),
+      notifs: match(t("push.title"), t("push.enable"), "push", "notification"),
+      data: match(
+        t("settings.data"),
+        t("settings.exportCsv"),
+        t("settings.importCsv"),
+        "csv",
+        "export",
+        "import",
+      ),
+      danger: match(t("settings.dangerZone"), t("profile.deleteAllTrades"), "delete", "supprimer"),
+    };
+  }, [query, t]);
+  const anyVisible = sections.prefs || sections.notifs || sections.data || sections.danger;
 
   useEffect(() => {
     if (!user) return;
@@ -89,7 +119,24 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
         <p className="text-xs md:text-sm text-slate-500 mt-1">{t("settings.subtitle")}</p>
       </div>
 
+      {/* Search */}
+      <div className="relative animate-fade-in-up stagger-1">
+        <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("settings.search")}
+          className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
+        />
+      </div>
+
+      {!anyVisible && (
+        <p className="text-sm text-slate-500 text-center py-8">{t("settings.noResults")}</p>
+      )}
+
       {/* Preferences */}
+      {sections.prefs && (
       <div className="glass-strong rounded-3xl p-6 space-y-4 animate-fade-in-up stagger-1">
         <SectionHeading
           icon={<SlidersHorizontal className="w-4 h-4" />}
@@ -141,13 +188,17 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
           <p className="text-[10px] text-slate-600 mt-1.5">{t("profile.startingEquityHint")}</p>
         </label>
       </div>
+      )}
 
       {/* Notifications */}
+      {sections.notifs && (
       <div className="animate-fade-in-up stagger-2">
         <PushNotificationSettings />
       </div>
+      )}
 
       {/* Data */}
+      {sections.data && (
       <div className="glass-strong rounded-3xl p-6 space-y-3 animate-fade-in-up stagger-3">
         <SectionHeading
           icon={<Database className="w-4 h-4" />}
@@ -169,8 +220,10 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
           onClick={onOpenImport}
         />
       </div>
+      )}
 
       {/* Danger zone */}
+      {sections.danger && (
       <div className="glass-strong rounded-3xl p-6 space-y-3 border border-red-500/10 animate-fade-in-up stagger-4">
         <h2 className="text-sm font-semibold text-red-400/90 uppercase tracking-wider">
           {t("settings.dangerZone")}
@@ -194,6 +247,7 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
           <Trash2 className="w-4 h-4 shrink-0" />
         </button>
       </div>
+      )}
     </div>
   );
 }

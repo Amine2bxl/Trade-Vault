@@ -6,6 +6,7 @@ import TradeModal from "./components/TradeModal";
 // (and its heavy deps: recharts, react-markdown) loads on demand.
 import Dashboard from "./pages/Dashboard";
 const Journal = lazy(() => import("./pages/Journal"));
+const Checklist = lazy(() => import("./pages/Checklist"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Mistakes = lazy(() => import("./pages/Mistakes"));
@@ -213,7 +214,12 @@ function AppContent() {
         <div key={page} className="animate-fade-in">
           <Suspense fallback={<PageSkeleton />}>
             {page === "dashboard" && (
-              <Dashboard trades={trades} onAddTrade={handleAdd} tradesLoading={tradesLoading} />
+              <Dashboard
+                trades={trades}
+                onAddTrade={handleAdd}
+                tradesLoading={tradesLoading}
+                onOpenChecklist={() => setPage("checklist")}
+              />
             )}
             {page === "journal" && (
               <Journal
@@ -225,6 +231,7 @@ function AppContent() {
                 onOpenMissed={() => setPage("missed")}
               />
             )}
+            {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
             {page === "calendar" && <CalendarPage trades={trades} />}
             {page === "analytics" && <Analytics trades={trades} />}
             {page === "mistakes" && <Mistakes trades={trades} />}

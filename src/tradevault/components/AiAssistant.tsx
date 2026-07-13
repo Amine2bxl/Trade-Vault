@@ -103,6 +103,19 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
     [loading, trades, lang],
   );
 
+  // Other pages (e.g. the pre-market Checklist) can open the coach with a
+  // ready-made prompt via a window event — keeps pages decoupled.
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
+      if (!prompt) return;
+      setOpen(true);
+      ask(prompt);
+    };
+    window.addEventListener("tv:ask-coach", onAsk);
+    return () => window.removeEventListener("tv:ask-coach", onAsk);
+  }, [ask]);
+
   const toggleMic = useCallback(() => {
     if (!SpeechRecognitionCtor) return;
     if (listening) {

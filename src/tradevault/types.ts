@@ -1,4 +1,4 @@
-export type Page = 'dashboard' | 'journal' | 'calendar' | 'analytics' | 'mistakes' | 'missed' | 'insights' | 'profile' | 'news' | 'seasonality' | 'calculator' | 'settings';
+export type Page = 'dashboard' | 'journal' | 'checklist' | 'calendar' | 'analytics' | 'mistakes' | 'missed' | 'insights' | 'profile' | 'news' | 'seasonality' | 'calculator' | 'settings';
 
 export type TradeDirection = 'long' | 'short' | 'be';
 
