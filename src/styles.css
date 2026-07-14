@@ -215,6 +215,36 @@ html {
   text-size-adjust: 100%;
 }
 
+/* ══ Onboarding premium motion ══ */
+@keyframes onbInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+/* Staggered entrance for a group of cards/chips. */
+.onb-in > * { opacity: 0; animation: onbInUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.onb-in > *:nth-child(1) { animation-delay: 0.05s; }
+.onb-in > *:nth-child(2) { animation-delay: 0.11s; }
+.onb-in > *:nth-child(3) { animation-delay: 0.17s; }
+.onb-in > *:nth-child(4) { animation-delay: 0.23s; }
+.onb-in > *:nth-child(5) { animation-delay: 0.29s; }
+.onb-in > *:nth-child(6) { animation-delay: 0.35s; }
+.onb-in > *:nth-child(7) { animation-delay: 0.41s; }
+.onb-in > *:nth-child(8) { animation-delay: 0.47s; }
+.onb-in > *:nth-child(9) { animation-delay: 0.53s; }
+.onb-in > *:nth-child(10) { animation-delay: 0.59s; }
+.onb-in > *:nth-child(11) { animation-delay: 0.65s; }
+.onb-in > *:nth-child(12) { animation-delay: 0.71s; }
+/* Tactile press feedback on selectable cards. */
+.onb-card { transition: transform 0.16s cubic-bezier(0.16,1,0.3,1), border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease; will-change: transform; }
+.onb-card:hover { transform: translateY(-2px); }
+.onb-card:active { transform: scale(0.975); }
+/* Soft shimmer travelling along the progress bar. */
+@keyframes onbShimmer { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+.onb-progress-shimmer { animation: onbShimmer 2.2s ease-in-out infinite; }
+/* Reveal: logo halo pulse + sequential lines handled inline. */
+@keyframes onbHalo { 0%,100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.08); } }
+.onb-halo { animation: onbHalo 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .onb-in > *, .onb-progress-shimmer, .onb-halo { animation: none; opacity: 1; }
+}
+
 /* ══ Branded error identity (404 / 500) ══ */
 .err-code {
   position: relative;

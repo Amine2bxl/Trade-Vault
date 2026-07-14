@@ -161,8 +161,10 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
         ) : <span className="w-5" />}
 
         <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500"
-            style={{ width: `${Math.round(progress * 100)}%` }} />
+          <div className="relative h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700 ease-out"
+            style={{ width: `${Math.round(progress * 100)}%` }}>
+            <div className="onb-progress-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+          </div>
         </div>
 
         {step !== "reveal" && step !== "language" && (
@@ -186,11 +188,11 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-1.5">{c.langTitle}</h2>
               <p className="text-sm text-slate-400 text-center mb-6">{c.langSub}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 onb-in">
                 {langs.map(([code, name]) => (
                   <button key={code}
                     onClick={() => { setLang(code); setTimeout(next, 160); }}
-                    className={cn("rounded-2xl p-3.5 border text-center transition-all",
+                    className={cn("onb-card rounded-2xl p-3.5 border text-center",
                       code === lang
                         ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
                         : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]")}>
@@ -206,7 +208,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
           {step === "welcome" && (
             <div className="text-center">
               <div className="relative w-16 h-16 mx-auto mb-5">
-                <div className="absolute inset-0 rounded-2xl bg-cyan-500/40 blur-xl opacity-70" />
+                <div className="onb-halo absolute inset-0 rounded-2xl bg-cyan-500/40 blur-xl" />
                 <img src={logoSrc} alt="TradeVault" width={64} height={64}
                   className="relative w-16 h-16 rounded-2xl drop-shadow-[0_0_14px_rgba(6,182,212,0.5)]" />
               </div>
@@ -242,7 +244,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
 
           {step === "assets" && (
             <StepShell title={c.assetsTitle} sub={c.assetsSub}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 onb-in">
                 {ASSETS.map((ch) => (
                   <ChipCard key={ch.id} choice={ch} active={data.assets.includes(ch.id)}
                     onClick={() => toggleInArray("assets", ch.id)} />
@@ -254,7 +256,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
 
           {step === "style" && (
             <StepShell title={c.styleTitle} sub={c.styleSub}>
-              <div className="grid gap-2.5">
+              <div className="grid gap-2.5 onb-in">
                 {STYLES.map((ch) => (
                   <RowCard key={ch.id} choice={ch} active={data.style === ch.id}
                     onClick={() => pick({ style: ch.id })} />
@@ -265,7 +267,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
 
           {step === "ict" && (
             <StepShell title={c.ictTitle} sub={c.ictSub}>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2.5 onb-in">
                 <ChipCard choice={{ id: "yes", label: c.ictYes, icon: Check }}
                   active={data.usesIct} onClick={() => pick({ usesIct: true })} />
                 <ChipCard choice={{ id: "no", label: c.ictNo, icon: Layers }}
@@ -276,7 +278,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
 
           {step === "experience" && (
             <StepShell title={c.expTitle} sub={c.expSub}>
-              <div className="grid gap-2.5">
+              <div className="grid gap-2.5 onb-in">
                 {EXPERIENCE.map((ch) => (
                   <RowCard key={ch.id} choice={ch} active={data.experience === ch.id}
                     onClick={() => pick({ experience: ch.id })} />
@@ -287,7 +289,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
 
           {step === "goal" && (
             <StepShell title={c.goalTitle} sub={c.goalSub}>
-              <div className="grid gap-2.5">
+              <div className="grid gap-2.5 onb-in">
                 {GOALS.map((ch) => (
                   <RowCard key={ch.id} choice={ch} active={data.goal === ch.id}
                     onClick={() => pick({ goal: ch.id })} />
@@ -298,7 +300,7 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
 
           {step === "pain" && (
             <StepShell title={c.painTitle} sub={c.painSub}>
-              <div className="grid gap-2.5">
+              <div className="grid gap-2.5 onb-in">
                 {PAINS.map((ch) => (
                   <RowCard key={ch.id} choice={ch} active={data.pain === ch.id}
                     onClick={() => pick({ pain: ch.id })} />
@@ -327,34 +329,40 @@ export default function Onboarding({ userId, onDone }: { userId: string; onDone:
             </StepShell>
           )}
 
-          {step === "reveal" && (
+          {step === "reveal" && (() => {
+            const lines = [
+              fmt(c.revealJournal, { assets: assetNames || c.yourMarkets }),
+              data.pain ? fmt(c.revealPain, { pain: c[PAIN_KEYS[data.pain]] }) : null,
+              data.usesIct ? c.revealIct : null,
+              fmt(c.revealLang, { lang: LANG_NAMES[lang] }),
+              data.brokers.length > 0 ? fmt(c.revealBrokers, { brokers: data.brokers.join(", ") }) : null,
+            ].filter(Boolean) as string[];
+            return (
             <div className="text-center">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                <Rocket className="w-7 h-7 text-white" />
+              <div className="relative w-16 h-16 mx-auto mb-4">
+                <div className="onb-halo absolute inset-0 rounded-2xl bg-cyan-500/50 blur-xl" />
+                <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                  <Rocket className="w-8 h-8 text-white" />
+                </div>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-1.5">{c.revealTitle}</h1>
               {data.goal && <p className="text-cyan-300 font-medium mb-6">{c[MISSION_KEYS[data.goal]]}</p>}
 
               <div className="glass rounded-2xl p-4 text-left space-y-2.5 mb-6">
-                <RevealLine text={fmt(c.revealJournal, { assets: assetNames || c.yourMarkets })} />
-                {data.pain && (
-                  <RevealLine text={fmt(c.revealPain, { pain: c[PAIN_KEYS[data.pain]] })} />
-                )}
-                {data.usesIct && <RevealLine text={c.revealIct} />}
-                <RevealLine text={fmt(c.revealLang, { lang: LANG_NAMES[lang] })} />
-                {data.brokers.length > 0 && (
-                  <RevealLine text={fmt(c.revealBrokers, { brokers: data.brokers.join(", ") })} />
-                )}
+                {lines.map((line, i) => (
+                  <RevealLine key={i} text={line} delay={0.15 + i * 0.14} />
+                ))}
               </div>
 
               <button onClick={() => finish(false)} disabled={saving}
-                className={cn("w-full py-3.5 rounded-xl text-sm font-bold transition-all",
+                className={cn("w-full py-3.5 rounded-xl text-sm font-bold transition-all hover:brightness-110",
                   saving ? "bg-cyan-500/50 text-cyan-200 cursor-wait"
-                    : "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20")}>
+                    : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20")}>
                 {saving ? c.revealSaving : c.revealCta}
               </button>
             </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -375,7 +383,7 @@ function ChipCard({ choice, active, onClick }: { choice: Choice; active: boolean
   const Icon = choice.icon;
   return (
     <button onClick={onClick}
-      className={cn("relative flex flex-col items-center justify-center gap-2 rounded-2xl p-4 border transition-all",
+      className={cn("onb-card relative flex flex-col items-center justify-center gap-2 rounded-2xl p-4 border",
         active ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
           : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]")}>
       {active && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-cyan-300" />}
@@ -389,7 +397,7 @@ function RowCard({ choice, active, onClick }: { choice: Choice; active: boolean;
   const Icon = choice.icon;
   return (
     <button onClick={onClick}
-      className={cn("flex items-center gap-3.5 rounded-2xl p-3.5 border text-left transition-all",
+      className={cn("onb-card flex items-center gap-3.5 rounded-2xl p-3.5 border text-left",
         active ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
           : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]")}>
       {Icon && (
@@ -418,9 +426,12 @@ function ContinueBtn({ onClick, disabled, label }: { onClick: () => void; disabl
   );
 }
 
-function RevealLine({ text }: { text: string }) {
+function RevealLine({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
-    <div className="flex items-start gap-2.5">
+    <div
+      className="flex items-start gap-2.5"
+      style={{ opacity: 0, animation: `onbInUp 0.5s cubic-bezier(0.16,1,0.3,1) ${delay}s forwards` }}
+    >
       <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-emerald-500/20">
         <Check className="w-3 h-3 text-emerald-400" />
       </div>
