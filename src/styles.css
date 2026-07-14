@@ -215,6 +215,41 @@ html {
   text-size-adjust: 100%;
 }
 
+/* ══ Branded error identity (404 / 500) ══ */
+.err-code {
+  position: relative;
+  font-weight: 800;
+  font-size: clamp(5rem, 22vw, 9rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(180deg, #fff, #64748b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.err-code::before,
+.err-code::after {
+  content: attr(data-code);
+  position: absolute;
+  inset: 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  mix-blend-mode: screen;
+}
+.err-code::before { background: linear-gradient(180deg, #22d3ee, #0891b2); animation: errG1 3s steps(2) infinite; }
+.err-code::after { background: linear-gradient(180deg, #f43f5e, #be123c); animation: errG2 3.4s steps(2) infinite; }
+@keyframes errG1 { 0%,92%,100%{opacity:0;transform:translate(0)} 94%{opacity:.5;transform:translate(-3px,1px)} 96%{transform:translate(2px,-1px)} }
+@keyframes errG2 { 0%,90%,100%{opacity:0;transform:translate(0)} 93%{opacity:.4;transform:translate(3px,-1px)} 97%{transform:translate(-2px,1px)} }
+.err-spark { width: 200px; max-width: 60%; height: 44px; margin: 0 auto 1.5rem; display: block; opacity: 0.9; }
+.err-spark path { stroke-dasharray: 400; stroke-dashoffset: 400; animation: errDraw 2.2s ease forwards 0.3s; }
+@keyframes errDraw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .err-code::before, .err-code::after { animation: none; }
+  .err-spark path { animation: none; stroke-dashoffset: 0; }
+}
+
 /* Native-app feel: no accidental text selection, no iOS long-press callout.
    Text-bearing inputs/editables opt back in so typing and copy still work. */
 body {
