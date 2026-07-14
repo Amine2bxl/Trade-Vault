@@ -18,7 +18,13 @@ function typeLabel(type: AccountType, fr: boolean): string {
   return fr ? m[type][0] : m[type][1];
 }
 
-export default function AccountSwitcher({ compact }: { compact?: boolean }) {
+export default function AccountSwitcher({
+  compact,
+  variant = "bar",
+}: {
+  compact?: boolean;
+  variant?: "bar" | "fab";
+}) {
   const { accounts, activeAccount, switchAccount } = useAccounts();
   const { lang } = useT();
   const fr = lang === "fr";
@@ -27,6 +33,114 @@ export default function AccountSwitcher({ compact }: { compact?: boolean }) {
 
   if (!activeAccount) return null;
   const ActiveIcon = TYPE_ICON[activeAccount.type];
+
+  // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
+  // that opens a premium bottom sheet of tappable account cards — one tap to
+  // switch sub-accounts. Original layout, no dropdown crowding the top bar.
+  if (variant === "fab") {
+    return (
+      <>
+        <button
+          onClick={() => setOpen(true)}
+          aria-label={fr ? "Changer de compte" : "Switch account"}
+          className="md:hidden fixed z-40 bottom-24 left-4 w-11 h-11 rounded-full flex items-center justify-center border backdrop-blur-md shadow-md active:scale-95 transition-transform"
+          style={{
+            background: `${activeAccount.color}26`,
+            borderColor: `${activeAccount.color}66`,
+            color: activeAccount.color,
+          }}
+        >
+          <ActiveIcon className="w-5 h-5" />
+          <span
+            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#0a0f1e] border border-white/15 flex items-center justify-center"
+          >
+            <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
+          </span>
+        </button>
+
+        {open && (
+          <div
+            className="md:hidden fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setOpen(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full glass-strong rounded-t-3xl border-t border-white/[0.08] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] animate-slide-up"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                <div>
+                  <h2 className="text-sm font-bold text-white">{fr ? "Comptes" : "Accounts"}</h2>
+                  <p className="text-[11px] text-slate-500">
+                    {fr ? "Change de sous-compte en un tap" : "Switch sub-account in one tap"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label={fr ? "Fermer" : "Close"}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 p-4 max-h-[55vh] overflow-y-auto">
+                {accounts.map((a) => {
+                  const Icon = TYPE_ICON[a.type];
+                  const active = a.id === activeAccount.id;
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => {
+                        switchAccount(a.id);
+                        setOpen(false);
+                      }}
+                      className={cn(
+                        "relative flex flex-col gap-2 rounded-2xl p-3.5 border text-left transition-all active:scale-[0.97]",
+                        active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.05]",
+                      )}
+                      style={active ? { borderColor: `${a.color}80`, boxShadow: `0 0 0 1px ${a.color}40` } : undefined}
+                    >
+                      <span
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: `${a.color}22`, color: a.color }}
+                      >
+                        <Icon className="w-4.5 h-4.5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-white truncate">{a.name}</span>
+                        <span className="block text-[10px] text-slate-500 truncate">{typeLabel(a.type, fr)}</span>
+                      </span>
+                      {active && (
+                        <span
+                          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ background: a.color }}
+                        >
+                          <Check className="w-3 h-3 text-[#0a0f1e]" strokeWidth={3} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => {
+                    setCreateOpen(true);
+                    setOpen(false);
+                  }}
+                  className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition-all active:scale-[0.97] min-h-[92px]"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span className="text-xs font-semibold text-center">{fr ? "Nouveau" : "New account"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {createOpen && <CreateAccountModal fr={fr} onClose={() => setCreateOpen(false)} />}
+      </>
+    );
+  }
 
   return (
     <div className="relative">

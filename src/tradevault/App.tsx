@@ -256,10 +256,6 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
-        {/* Mobile account switcher — available on every page */}
-        <div className="md:hidden sticky top-0 z-40 px-4 pt-3 pb-2 bg-[#060810]/80 backdrop-blur-xl">
-          <AccountSwitcher compact />
-        </div>
         <div key={page} className="animate-fade-in">
           <Suspense fallback={<PageSkeleton />}>
             {page === "dashboard" && (
@@ -302,6 +298,8 @@ function AppContent() {
           </Suspense>
         </div>
       </main>
+      {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}
+      <AccountSwitcher variant="fab" />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
       <Suspense fallback={null}>
         <AiAssistant trades={trades} />

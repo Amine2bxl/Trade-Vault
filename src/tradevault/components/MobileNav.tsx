@@ -101,7 +101,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
         aria-label={t("nav.profile")}
         aria-current={page === "profile" ? "page" : undefined}
         className={cn(
-          "md:hidden fixed z-40 bottom-24 left-4 w-11 h-11 rounded-full flex items-center justify-center border backdrop-blur-md shadow-md transition-transform active:scale-95",
+          "md:hidden fixed z-40 bottom-[148px] left-4 w-11 h-11 rounded-full flex items-center justify-center border backdrop-blur-md shadow-md transition-transform active:scale-95",
           page === "profile"
             ? "bg-cyan-500/20 border-cyan-400/40 text-cyan-200 shadow-cyan-500/20"
             : "bg-white/[0.06] border-white/[0.12] text-slate-300 hover:bg-white/[0.1]",
