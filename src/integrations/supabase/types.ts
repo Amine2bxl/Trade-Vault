@@ -14,8 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          color: string
+          created_at: string
+          currency: string
+          id: string
+          is_default: boolean
+          name: string
+          starting_balance: number
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          starting_balance?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          starting_balance?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       missed_opportunities: {
         Row: {
+          account_id: string | null
           created_at: string
           estimated_r: number
           id: string
@@ -30,6 +70,7 @@ export type Database = {
           what_happened: string
         }
         Insert: {
+          account_id?: string | null
           created_at?: string
           estimated_r?: number
           id?: string
@@ -44,6 +85,7 @@ export type Database = {
           what_happened?: string
         }
         Update: {
+          account_id?: string | null
           created_at?: string
           estimated_r?: number
           id?: string
@@ -62,6 +104,7 @@ export type Database = {
       profiles: {
         Row: {
           account_balance: number
+          active_account_id: string | null
           confluences: string[]
           created_at: string
           email: string
@@ -82,6 +125,7 @@ export type Database = {
         }
         Insert: {
           account_balance?: number
+          active_account_id?: string | null
           confluences?: string[]
           created_at?: string
           email?: string
@@ -102,6 +146,7 @@ export type Database = {
         }
         Update: {
           account_balance?: number
+          active_account_id?: string | null
           confluences?: string[]
           created_at?: string
           email?: string
@@ -154,6 +199,7 @@ export type Database = {
       }
       trades: {
         Row: {
+          account_id: string | null
           confidence: number
           confluences: string[]
           created_at: string
@@ -178,6 +224,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_id?: string | null
           confidence?: number
           confluences?: string[]
           created_at?: string
@@ -202,6 +249,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          account_id?: string | null
           confidence?: number
           confluences?: string[]
           created_at?: string

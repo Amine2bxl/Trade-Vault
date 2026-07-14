@@ -20,6 +20,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
 import logoSrc from "@/assets/tradevault-logo.png";
 import { useT } from "../i18n/LanguageContext";
+import AccountSwitcher from "./AccountSwitcher";
 
 interface SidebarProps {
   page: Page;
@@ -100,6 +101,11 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
             {t("nav.journal")}
           </p>
         </div>
+      </div>
+
+      {/* Active account switcher — available on every page */}
+      <div className="px-3 pt-3 shrink-0">
+        <AccountSwitcher />
       </div>
 
       {/* Navigation — scrolls internally, never moves the rail */}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Plus, Target, Trash2, Pencil, Eye, X, Save, ImagePlus, Loader2, ChevronDown, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAccounts } from '../contexts/AccountContext';
 import { MissedOpportunity } from '../types';
 import {
   loadMissedOpportunities,
@@ -36,6 +37,7 @@ function emptyMissed(): MissedOpportunity {
 
 export default function MissedOpportunities() {
   const { user } = useAuth();
+  const { activeId } = useAccounts();
   const { t } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -83,7 +85,7 @@ export default function MissedOpportunities() {
       .catch((e) => console.error(e))
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [user?.id]);
+  }, [user?.id, activeId]);
 
   const handleSave = useCallback(async (m: MissedOpportunity) => {
     if (!user) return;

@@ -5,6 +5,7 @@ import { computeStats, formatPnl, formatPct, formatShortDate } from '../utils/tr
 import { computeQuantStats, getSession, statsByHour, winRateOf, TradingSession } from '../utils/quantStats';
 import { loadStartingBalance } from '../store';
 import { useAuth } from '../contexts/AuthContext';
+import { useAccounts } from '../contexts/AccountContext';
 import { cn } from '../utils/cn';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 import { useT } from '../i18n/LanguageContext';
@@ -19,6 +20,7 @@ const LOCALE_MAP: Record<string, string> = {
 export default function Analytics({ trades }: AnalyticsProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
+  const { activeId } = useAccounts();
   const locale = LOCALE_MAP[lang] || 'en-US';
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const [startingBalance, setStartingBalance] = useState(0);
@@ -27,7 +29,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
     let active = true;
     loadStartingBalance(user.id).then((b) => { if (active) setStartingBalance(b); }).catch(() => {});
     return () => { active = false; };
-  }, [user?.id]);
+  }, [user?.id, activeId]);
   const DAY_NAMES = useMemo(() => Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2023, 0, 1 + i))), [locale]);
   const MONTH_NAMES_SHORT = useMemo(() => Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(2000, i, 1))), [locale]);
   const stats = computeStats(trades);

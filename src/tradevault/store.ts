@@ -14,9 +14,121 @@ export function generateId(): string {
   });
 }
 
+// ── Sub-accounts ──
+export type AccountType = 'personal' | 'prop' | 'demo' | 'live';
+export interface Account {
+  id: string;
+  name: string;
+  type: AccountType;
+  startingBalance: number;
+  currency: string;
+  color: string;
+  isDefault: boolean;
+}
+
+// The active account is ambient module state so every trade/missed/balance
+// query scopes to it without threading an id through every call site. The
+// AccountContext keeps it in sync and triggers re-fetches on switch.
+let _activeAccountId: string | null = null;
+export function setActiveAccountId(id: string | null): void {
+  _activeAccountId = id;
+}
+export function getActiveAccountId(): string | null {
+  return _activeAccountId;
+}
+
+interface AccountRow {
+  id: string;
+  name: string;
+  type: string;
+  starting_balance: number;
+  currency: string;
+  color: string;
+  is_default: boolean;
+}
+function rowToAccount(r: AccountRow): Account {
+  return {
+    id: r.id,
+    name: r.name,
+    type: (r.type as AccountType) ?? 'personal',
+    startingBalance: Number(r.starting_balance),
+    currency: r.currency ?? 'USD',
+    color: r.color ?? '#22d3ee',
+    isDefault: !!r.is_default,
+  };
+}
+
+export async function loadAccounts(userId: string): Promise<Account[]> {
+  const { data, error } = await supabase
+    .from('accounts')
+    .select('id, name, type, starting_balance, currency, color, is_default')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((r) => rowToAccount(r as AccountRow));
+}
+
+export async function createAccount(
+  userId: string,
+  input: { name: string; type: AccountType; startingBalance: number; currency?: string; color?: string },
+): Promise<Account> {
+  const { data, error } = await supabase
+    .from('accounts')
+    .insert({
+      user_id: userId,
+      name: input.name,
+      type: input.type,
+      starting_balance: input.startingBalance,
+      currency: input.currency ?? 'USD',
+      color: input.color ?? '#22d3ee',
+      is_default: false,
+    })
+    .select('id, name, type, starting_balance, currency, color, is_default')
+    .single();
+  if (error) throw error;
+  return rowToAccount(data as AccountRow);
+}
+
+export async function updateAccount(
+  userId: string,
+  id: string,
+  patch: Partial<{ name: string; type: AccountType; startingBalance: number; currency: string; color: string }>,
+): Promise<void> {
+  const row: Record<string, unknown> = {};
+  if (patch.name !== undefined) row.name = patch.name;
+  if (patch.type !== undefined) row.type = patch.type;
+  if (patch.startingBalance !== undefined) row.starting_balance = patch.startingBalance;
+  if (patch.currency !== undefined) row.currency = patch.currency;
+  if (patch.color !== undefined) row.color = patch.color;
+  const { error } = await supabase.from('accounts').update(row as never).eq('id', id).eq('user_id', userId);
+  if (error) throw error;
+}
+
+// Deletes an account and (via FK cascade) all its trades/missed opportunities.
+export async function deleteAccount(userId: string, id: string): Promise<void> {
+  const { error } = await supabase.from('accounts').delete().eq('id', id).eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function loadActiveAccountId(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('active_account_id')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.active_account_id as string | null) ?? null;
+}
+
+export async function saveActiveAccountId(userId: string, id: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ active_account_id: id }).eq('id', userId);
+  if (error) throw error;
+}
+
 interface TradeRow {
   id: string;
   user_id?: string;
+  account_id?: string | null;
   trade_date: string;
   symbol: string;
   direction: string;
@@ -70,6 +182,7 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
   return {
     id: t.id,
     user_id: userId,
+    account_id: _activeAccountId ?? null,
     trade_date: t.date,
     symbol: t.symbol,
     direction: t.direction,
@@ -93,11 +206,9 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
 
 // ── Trades ──
 export async function loadUserTrades(userId: string): Promise<Trade[]> {
-  const { data, error } = await supabase
-    .from('trades')
-    .select('*')
-    .eq('user_id', userId)
-    .order('trade_date', { ascending: false });
+  let q = supabase.from('trades').select('*').eq('user_id', userId);
+  if (_activeAccountId) q = q.eq('account_id', _activeAccountId);
+  const { data, error } = await q.order('trade_date', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((r: TradeRow) => rowToTrade(r));
 }
@@ -137,15 +248,14 @@ export async function deleteTrade(userId: string, id: string): Promise<void> {
   await removeScreenshotFiles(storagePathsOf(data?.screenshots));
 }
 
+// Scoped to the active account: "delete all" only clears the current account.
 export async function deleteAllTrades(userId: string): Promise<void> {
-  const { data } = await supabase
-    .from('trades')
-    .select('screenshots')
-    .eq('user_id', userId);
-  const { error } = await supabase
-    .from('trades')
-    .delete()
-    .eq('user_id', userId);
+  let selectQ = supabase.from('trades').select('screenshots').eq('user_id', userId);
+  if (_activeAccountId) selectQ = selectQ.eq('account_id', _activeAccountId);
+  const { data } = await selectQ;
+  let delQ = supabase.from('trades').delete().eq('user_id', userId);
+  if (_activeAccountId) delQ = delQ.eq('account_id', _activeAccountId);
+  const { error } = await delQ;
   if (error) throw error;
   const all = (data ?? []).flatMap((r: { screenshots: string[] }) => storagePathsOf(r.screenshots));
   await removeScreenshotFiles(all);
@@ -192,7 +302,18 @@ export async function saveAccountBalance(userId: string, balance: number): Promi
 }
 
 // ── Starting balance (account equity baseline) ──
+// Per active account (falls back to the profile baseline when no account set).
 export async function loadStartingBalance(userId: string): Promise<number> {
+  if (_activeAccountId) {
+    const { data, error } = await supabase
+      .from('accounts')
+      .select('starting_balance')
+      .eq('id', _activeAccountId)
+      .maybeSingle();
+    if (error) throw error;
+    const bal = data?.starting_balance as number | undefined;
+    if (typeof bal === 'number') return bal;
+  }
   const { data, error } = await supabase
     .from('profiles')
     .select('starting_balance')
@@ -204,6 +325,15 @@ export async function loadStartingBalance(userId: string): Promise<number> {
 }
 
 export async function saveStartingBalance(userId: string, balance: number): Promise<void> {
+  if (_activeAccountId) {
+    const { error } = await supabase
+      .from('accounts')
+      .update({ starting_balance: balance })
+      .eq('id', _activeAccountId)
+      .eq('user_id', userId);
+    if (error) throw error;
+    return;
+  }
   const { error } = await supabase
     .from('profiles')
     .update({ starting_balance: balance })
@@ -312,6 +442,7 @@ export async function saveOnboarding(
 interface MissedRow {
   id: string;
   user_id?: string;
+  account_id?: string | null;
   opportunity_date: string;
   symbol: string;
   reason_not_taken: string;
@@ -340,6 +471,7 @@ function missedToRow(m: MissedOpportunity, userId: string): MissedRow {
   return {
     id: m.id,
     user_id: userId,
+    account_id: _activeAccountId ?? null,
     opportunity_date: m.date,
     symbol: m.symbol,
     reason_not_taken: m.reasonNotTaken,
@@ -352,11 +484,9 @@ function missedToRow(m: MissedOpportunity, userId: string): MissedRow {
 }
 
 export async function loadMissedOpportunities(userId: string): Promise<MissedOpportunity[]> {
-  const { data, error } = await supabase
-    .from('missed_opportunities')
-    .select('*')
-    .eq('user_id', userId)
-    .order('opportunity_date', { ascending: false });
+  let q = supabase.from('missed_opportunities').select('*').eq('user_id', userId);
+  if (_activeAccountId) q = q.eq('account_id', _activeAccountId);
+  const { data, error } = await q.order('opportunity_date', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((r: MissedRow) => rowToMissed(r));
 }

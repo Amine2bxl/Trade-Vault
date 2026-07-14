@@ -29,6 +29,7 @@ import {
 import { computeQuantStats } from "../utils/quantStats";
 import { loadStartingBalance } from "../store";
 import { useAuth } from "../contexts/AuthContext";
+import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import StatsCard from "../components/StatsCard";
 import { PageSkeleton } from "../components/Skeleton";
@@ -88,6 +89,7 @@ export default function Dashboard({
 }: DashboardProps) {
   const { t } = useT();
   const { user } = useAuth();
+  const { activeId } = useAccounts();
   const hasDraft = useHasTradeDraft(user?.id);
   const [period, setPeriod] = useState<Period>(() => {
     try {
@@ -110,7 +112,7 @@ export default function Dashboard({
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [user?.id, activeId]);
 
   const changePeriod = (p: Period) => {
     setPeriod(p);

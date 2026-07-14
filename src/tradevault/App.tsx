@@ -33,8 +33,10 @@ import {
 } from "./store";
 import { computeStats } from "./utils/tradeCalcs";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import AuthModal from "./components/AuthModal";
 import CursorGlow from "./components/CursorGlow";
+import AccountSwitcher from "./components/AccountSwitcher";
 import { PageSkeleton } from "./components/Skeleton";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
@@ -43,6 +45,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
+  const { activeId, ready: accountsReady } = useAccounts();
   const { t } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -91,7 +94,9 @@ function AppContent() {
 
   useEffect(() => {
     let active = true;
-    if (user) {
+    // Wait until the active account is resolved so trades are scoped to it
+    // from the first load (never a merged cross-account flash).
+    if (user && accountsReady) {
       const userId = user.id;
       setTradesLoading(true);
       loadUserTrades(userId)
@@ -119,7 +124,7 @@ function AppContent() {
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [user?.id, activeId, accountsReady]);
 
   const stats = computeStats(trades);
 
@@ -251,6 +256,10 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
+        {/* Mobile account switcher — available on every page */}
+        <div className="md:hidden sticky top-0 z-40 px-4 pt-3 pb-2 bg-[#060810]/80 backdrop-blur-xl">
+          <AccountSwitcher compact />
+        </div>
         <div key={page} className="animate-fade-in">
           <Suspense fallback={<PageSkeleton />}>
             {page === "dashboard" && (
@@ -335,13 +344,15 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <LanguageProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              <AppContent />
-            </ConfirmProvider>
-          </ToastProvider>
-        </LanguageProvider>
+        <AccountProvider>
+          <LanguageProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                <AppContent />
+              </ConfirmProvider>
+            </ToastProvider>
+          </LanguageProvider>
+        </AccountProvider>
       </AuthProvider>
     </ThemeProvider>
   );

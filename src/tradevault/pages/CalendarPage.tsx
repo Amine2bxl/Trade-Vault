@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import { Trade, MissedOpportunity } from '../types';
 import { loadMissedOpportunities } from '../store';
 import { useAuth } from '../contexts/AuthContext';
+import { useAccounts } from '../contexts/AccountContext';
 
 import { cn } from '../utils/cn';
 import TradeDetailModal from '../components/TradeDetailModal';
@@ -19,6 +20,7 @@ const LOCALE_MAP: Record<string, string> = {
 
 export default function CalendarPage({ trades }: CalendarPageProps) {
   const { user } = useAuth();
+  const { activeId } = useAccounts();
   const { t, lang } = useT();
   const locale = LOCALE_MAP[lang] || 'en-US';
   const MONTHS = useMemo(() => Array.from({ length: 12 }, (_, i) => new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(2000, i, 1))), [locale]);
@@ -36,7 +38,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
       .then((d) => { if (active) setMissed(d); })
       .catch(() => {});
     return () => { active = false; };
-  }, [user?.id]);
+  }, [user?.id, activeId]);
 
   const missedByDate = useMemo(() => {
     const map: Record<string, MissedOpportunity[]> = {};
