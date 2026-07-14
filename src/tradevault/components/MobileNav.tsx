@@ -52,7 +52,6 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     { id: "news" as Page, label: t("nav.news"), icon: Newspaper },
     { id: "seasonality" as Page, label: t("nav.seasonality"), icon: CalendarRange },
     { id: "settings" as Page, label: t("nav.settings"), icon: SettingsIcon },
-    { id: "profile" as Page, label: t("nav.profile"), icon: User },
   ];
   const isMoreActive = moreItems.some((m) => m.id === page);
 
@@ -94,6 +93,23 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
 
   return (
     <>
+      {/* Discreet profile access — a small floating button in the bottom-left,
+          mirroring the AI Coach button on the right. Mobile only; on desktop the
+          sidebar already exposes the profile. */}
+      <button
+        onClick={() => setPage("profile")}
+        aria-label={t("nav.profile")}
+        aria-current={page === "profile" ? "page" : undefined}
+        className={cn(
+          "md:hidden fixed z-40 bottom-24 left-4 w-11 h-11 rounded-full flex items-center justify-center border backdrop-blur-md shadow-md transition-transform active:scale-95",
+          page === "profile"
+            ? "bg-cyan-500/20 border-cyan-400/40 text-cyan-200 shadow-cyan-500/20"
+            : "bg-white/[0.06] border-white/[0.12] text-slate-300 hover:bg-white/[0.1]",
+        )}
+      >
+        <User className="w-5 h-5" strokeWidth={page === "profile" ? 2.4 : 2} />
+      </button>
+
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
         <div className="bottom-nav-shell">
           <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2 gap-1">

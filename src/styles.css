@@ -213,6 +213,12 @@ html {
   touch-action: pan-x pan-y;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Native-app feel: the page itself never scrolls sideways. Wide content
+     (tables, charts) scrolls inside its own overflow-x-auto container. */
+  overflow-x: hidden;
+}
+body {
+  overflow-x: hidden;
 }
 
 /* ══ Onboarding premium motion ══ */
@@ -361,6 +367,10 @@ body {
     padding-top: env(safe-area-inset-top, 0px);
     /* Floating dock: pill height + its 10px bottom gap + safe-area inset. */
     padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    /* Clamp the scroll container to the viewport so no child can drag the
+       whole page sideways on Analytics/tables. */
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 }
 
