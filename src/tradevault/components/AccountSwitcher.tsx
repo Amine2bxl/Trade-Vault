@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Building2, FlaskConical, Zap, Check, ChevronDown, Plus, X } from "lucide-react";
+import { User, Building2, FlaskConical, Zap, Check, ChevronDown, Plus, X, Pencil } from "lucide-react";
 import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
@@ -25,11 +25,28 @@ export default function AccountSwitcher({
   compact?: boolean;
   variant?: "bar" | "fab";
 }) {
-  const { accounts, activeAccount, switchAccount } = useAccounts();
+  const { accounts, activeAccount, switchAccount, editAccount } = useAccounts();
   const { lang } = useT();
   const fr = lang === "fr";
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+
+  const startRename = (a: Account) => {
+    setEditingId(a.id);
+    setDraftName(a.name);
+  };
+  const commitRename = async (id: string) => {
+    const name = draftName.trim();
+    setEditingId(null);
+    if (!name || name === accounts.find((a) => a.id === id)?.name) return;
+    try {
+      await editAccount(id, { name });
+    } catch (e) {
+      console.error("Failed to rename account", e);
+    }
+  };
 
   if (!activeAccount) return null;
   const ActiveIcon = TYPE_ICON[activeAccount.type];
@@ -87,29 +104,87 @@ export default function AccountSwitcher({
                 {accounts.map((a) => {
                   const Icon = TYPE_ICON[a.type];
                   const active = a.id === activeAccount.id;
+                  const editing = editingId === a.id;
+
+                  if (editing) {
+                    return (
+                      <div
+                        key={a.id}
+                        className="relative flex flex-col gap-2 rounded-2xl p-3.5 border bg-white/[0.06]"
+                        style={{ borderColor: `${a.color}80` }}
+                      >
+                        <span
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${a.color}22`, color: a.color }}
+                        >
+                          <Icon className="w-4.5 h-4.5" />
+                        </span>
+                        <input
+                          value={draftName}
+                          onChange={(e) => setDraftName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitRename(a.id);
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          autoFocus
+                          maxLength={40}
+                          className="w-full bg-white/[0.06] border border-white/15 rounded-lg px-2 py-1 text-sm font-bold text-white focus:outline-none focus:border-cyan-500/50"
+                        />
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => commitRename(a.id)}
+                            className="flex-1 h-7 rounded-lg bg-cyan-500/20 text-cyan-200 text-xs font-bold flex items-center justify-center gap-1 hover:bg-cyan-500/30"
+                          >
+                            <Check className="w-3.5 h-3.5" /> {fr ? "OK" : "OK"}
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400 flex items-center justify-center hover:bg-white/[0.1]"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <button
+                    <div
                       key={a.id}
-                      onClick={() => {
-                        switchAccount(a.id);
-                        setOpen(false);
-                      }}
                       className={cn(
-                        "relative flex flex-col gap-2 rounded-2xl p-3.5 border text-left transition-all active:scale-[0.97]",
-                        active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.05]",
+                        "relative flex flex-col gap-2 rounded-2xl p-3.5 border transition-all",
+                        active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06]",
                       )}
                       style={active ? { borderColor: `${a.color}80`, boxShadow: `0 0 0 1px ${a.color}40` } : undefined}
                     >
-                      <span
-                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ background: `${a.color}22`, color: a.color }}
+                      <button
+                        onClick={() => {
+                          switchAccount(a.id);
+                          setOpen(false);
+                        }}
+                        className="flex flex-col gap-2 text-left active:scale-[0.97] transition-transform"
                       >
-                        <Icon className="w-4.5 h-4.5" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-bold text-white truncate">{a.name}</span>
-                        <span className="block text-[10px] text-slate-500 truncate">{typeLabel(a.type, fr)}</span>
-                      </span>
+                        <span
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${a.color}22`, color: a.color }}
+                        >
+                          <Icon className="w-4.5 h-4.5" />
+                        </span>
+                        <span className="min-w-0 pr-6">
+                          <span className="block text-sm font-bold text-white truncate">{a.name}</span>
+                          <span className="block text-[10px] text-slate-500 truncate">{typeLabel(a.type, fr)}</span>
+                        </span>
+                      </button>
+
+                      {/* Rename affordance */}
+                      <button
+                        onClick={() => startRename(a)}
+                        aria-label={fr ? "Renommer" : "Rename"}
+                        className="absolute bottom-2.5 right-2.5 w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
                       {active && (
                         <span
                           className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
@@ -118,7 +193,7 @@ export default function AccountSwitcher({
                           <Check className="w-3 h-3 text-[#0a0f1e]" strokeWidth={3} />
                         </span>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
 

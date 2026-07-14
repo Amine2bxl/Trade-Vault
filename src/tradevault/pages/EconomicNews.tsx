@@ -28,8 +28,11 @@ const CURRENCY_FLAG: Record<Currency, string> = {
   EUR: "🇪🇺",
   GBP: "🇬🇧",
   JPY: "🇯🇵",
+  CHF: "🇨🇭",
   CAD: "🇨🇦",
   AUD: "🇦🇺",
+  NZD: "🇳🇿",
+  CNY: "🇨🇳",
 };
 
 const IMPACTS: ImpactLevel[] = ["high", "medium", "low"];
