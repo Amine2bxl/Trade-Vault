@@ -30,9 +30,9 @@ export default function Insights({ trades }: InsightsProps) {
     setAnswer('');
     try {
       const res = await askTradingInsight({ data: { question: query, trades: toInsightTradesPayload(trades), language: lang } });
-      setAnswer(res.answer || 'No response.');
+      setAnswer(res.answer || t('ai.noResponse'));
     } catch (e: any) {
-      setError(e?.message || 'Something went wrong.');
+      setError(e?.message || t('ai.genericError'));
     } finally {
       setLoading(false);
     }

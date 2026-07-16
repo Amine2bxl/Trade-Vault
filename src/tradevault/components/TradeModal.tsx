@@ -321,6 +321,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       mae: form.mae === "" ? null : parseFloat(form.mae) || 0,
       mfe: form.mfe === "" ? null : parseFloat(form.mfe) || 0,
       slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
+      // Any save through the form makes the trade "real" — demo badge drops.
+      isExample: false,
     });
   };
 
@@ -379,6 +381,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </div>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -532,7 +535,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 }}
                 className="flex-1 bg-transparent text-sm text-white focus:outline-none"
               />
-              <span className="text-xs text-slate-600">→ ${riskDollar.toFixed(2)} risk</span>
+              <span className="text-xs text-slate-600">→ ${riskDollar.toFixed(2)} {t("dashboard.riskSuffix")}</span>
             </div>
           )}
 
@@ -732,7 +735,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   </button>
                   <button
                     onClick={() => removeConfluence(c)}
-                    aria-label="Remove"
+                    aria-label={t("common.remove")}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#0c1018] border border-white/10 flex items-center justify-center text-slate-500 hover:text-red-400 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                   >
                     <X className="w-2.5 h-2.5" />
@@ -785,6 +788,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               ))}
               <button
                 onClick={() => setShowAllMistakes(!showAllMistakes)}
+                aria-label={showAllMistakes ? t("common.showLess") : t("common.showMore")}
                 className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 px-2 py-1.5"
               >
                 {showAllMistakes ? (
@@ -829,7 +833,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   </button>
                   <button
                     onClick={() => removeScreenshot(i)}
-                    className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={t("common.remove")}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500/80 rounded-full flex items-center justify-center opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   >
                     <X className="w-3 h-3 text-white" />
                   </button>

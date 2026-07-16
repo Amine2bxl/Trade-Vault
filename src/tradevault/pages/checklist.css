@@ -255,6 +255,22 @@
   border-color: rgba(34, 211, 238, 0.35);
   animation: jk-glow-cyan 2.5s infinite;
 }
+.jchk .jk-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--jk-disp);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--jk-amber);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  animation: jk-fadeUp 0.4s ease both;
+}
 .jchk .jk-toggle {
   display: inline-flex;
   align-items: center;
@@ -1160,6 +1176,12 @@
 
 @media (max-width: 640px) {
   .jchk .jk-checklist, .jchk .jk-sigs, .jchk .jk-mantras, .jchk .jk-motiv-opts, .jchk .jk-brief-row { grid-template-columns: 1fr; }
+  /* Pre-session speed: every tappable control clears the 44px touch minimum
+     and hover-only motion is dropped (no hover on touch). */
+  .jchk .jk-ci { min-height: 44px; padding: 14px; }
+  .jchk .jk-ci:hover, .jchk .jk-mopt:hover, .jchk .jk-fseg:hover { transform: none; }
+  .jchk .jk-mopt, .jchk .jk-fseg, .jchk .jk-toggle, .jchk .jk-btn, .jchk .jk-assume-btn { min-height: 44px; }
+  .jchk .jk-lock-go, .jchk .jk-lock-back, .jchk .jk-cd-cancel { min-height: 48px; }
   .jchk .jk-mantra.full { grid-column: auto; }
   .jchk .jk-cycle-steps { flex-direction: column; gap: 12px; }
   .jchk .jk-cstep::after { display: none; }

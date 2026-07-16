@@ -43,13 +43,14 @@ const IMPACT_STYLE: Record<ImpactLevel, { dot: string; text: string; ring: strin
   low: { dot: "bg-slate-400", text: "text-slate-300", ring: "border-slate-500/25", bg: "bg-white/[0.04]" },
 };
 
-function bilingual(fr: string, en: string, isFr: boolean) {
-  return isFr ? fr : en;
-}
+const LOCALE_MAP: Record<string, string> = {
+  en: "en-US", es: "es-ES", pt: "pt-PT", fr: "fr-FR", de: "de-DE", it: "it-IT",
+  nl: "nl-NL", ru: "ru-RU", zh: "zh-CN", ja: "ja-JP", ar: "ar-SA", hi: "hi-IN",
+};
 
 export default function EconomicNews() {
   const { t, lang } = useT();
-  const isFr = lang === "fr";
+  const locale = LOCALE_MAP[lang] || "en-US";
 
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [events, setEvents] = useState<EconomicEvent[]>([]);
@@ -121,13 +122,13 @@ export default function EconomicNews() {
 
   const weekLabel = useMemo(() => {
     const end = addDays(weekStart, 6);
-    const fmt = new Intl.DateTimeFormat(isFr ? "fr-FR" : "en-US", { day: "numeric", month: "short" });
+    const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
     return `${fmt.format(weekStart)} – ${fmt.format(end)}`;
-  }, [weekStart, isFr]);
+  }, [weekStart, locale]);
 
   const dayFmt = useMemo(
-    () => new Intl.DateTimeFormat(isFr ? "fr-FR" : "en-US", { weekday: "long", day: "numeric", month: "short" }),
-    [isFr],
+    () => new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "short" }),
+    [locale],
   );
 
   const isThisWeek = isoDate(weekStart) === isoDate(startOfWeek(new Date()));
@@ -140,20 +141,14 @@ export default function EconomicNews() {
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
             {t("news.title")}
           </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
-            {bilingual(
-              "Événements macro à venir — impact, devise et horaires dans ton fuseau.",
-              "Upcoming macro events — impact, currency and times in your timezone.",
-              isFr,
-            )}
-          </p>
+          <p className="text-xs md:text-sm text-slate-500 mt-1">{t("news.subtitle")}</p>
         </div>
         <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold">
           <span className="relative flex w-2 h-2">
             <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
             <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
           </span>
-          {bilingual("En direct", "Live", isFr)}
+          {t("news.live")}
         </span>
       </div>
 
@@ -161,7 +156,7 @@ export default function EconomicNews() {
       <div className="glass rounded-2xl p-2.5 mb-3 flex items-center justify-between gap-2 animate-fade-in-up stagger-1">
         <button
           onClick={() => setWeekStart((w) => addDays(w, -7))}
-          aria-label={bilingual("Semaine précédente", "Previous week", isFr)}
+          aria-label={t("news.prevWeek")}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -176,13 +171,13 @@ export default function EconomicNews() {
               onClick={() => setWeekStart(startOfWeek(new Date()))}
               className="text-[10px] font-semibold text-cyan-400 hover:text-cyan-300 transition"
             >
-              {bilingual("Revenir à cette semaine", "Back to this week", isFr)}
+              {t("news.backToWeek")}
             </button>
           )}
         </div>
         <button
           onClick={() => setWeekStart((w) => addDays(w, 7))}
-          aria-label={bilingual("Semaine suivante", "Next week", isFr)}
+          aria-label={t("news.nextWeek")}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
         >
           <ChevronRight className="w-4 h-4" />
@@ -197,13 +192,13 @@ export default function EconomicNews() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={bilingual("Rechercher un événement…", "Search an event…", isFr)}
+            placeholder={t("news.searchPlaceholder")}
             className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-9 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              aria-label={bilingual("Effacer", "Clear", isFr)}
+              aria-label={t("news.clear")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.06]"
             >
               <X className="w-3.5 h-3.5" />
@@ -220,7 +215,7 @@ export default function EconomicNews() {
           )}
         >
           <SlidersHorizontal className="w-4 h-4" />
-          <span className="hidden sm:inline">{bilingual("Filtres", "Filters", isFr)}</span>
+          <span className="hidden sm:inline">{t("news.filters")}</span>
           {activeFilterCount > 0 && (
             <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-cyan-500 text-[10px] font-bold text-white flex items-center justify-center">
               {activeFilterCount}
@@ -234,7 +229,7 @@ export default function EconomicNews() {
         <div className="glass rounded-2xl p-4 mb-3 space-y-4 animate-fade-in-up">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
-              {bilingual("Devise", "Currency", isFr)}
+              {t("news.currency")}
             </div>
             <div className="flex flex-wrap gap-2">
               {CURRENCIES.map((c) => {
@@ -259,16 +254,16 @@ export default function EconomicNews() {
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
-              {bilingual("Impact", "Impact", isFr)}
+              {t("news.impact")}
             </div>
             <div className="flex flex-wrap gap-2">
               {IMPACTS.map((i) => {
                 const on = impactFilter.has(i);
                 const s = IMPACT_STYLE[i];
                 const label = {
-                  high: bilingual("Élevé", "High", isFr),
-                  medium: bilingual("Moyen", "Medium", isFr),
-                  low: bilingual("Faible", "Low", isFr),
+                  high: t("news.impactHigh"),
+                  medium: t("news.impactMedium"),
+                  low: t("news.impactLow"),
                 }[i];
                 return (
                   <button
@@ -291,7 +286,7 @@ export default function EconomicNews() {
               onClick={clearFilters}
               className="text-xs font-semibold text-slate-400 hover:text-white transition"
             >
-              {bilingual("Réinitialiser les filtres", "Clear all filters", isFr)}
+              {t("news.clearFilters")}
             </button>
           )}
         </div>
@@ -301,11 +296,7 @@ export default function EconomicNews() {
       <div className="glass rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5 animate-fade-in-up stagger-2 border border-cyan-500/10">
         <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed text-slate-400">
-          {bilingual(
-            "Horaires convertis dans ton fuseau. Les événements marqués « approx. » suivent un calendrier récurrent — vérifie la date exacte auprès de la source officielle.",
-            "Times shown in your local timezone. Events tagged “approx.” follow a recurring schedule — confirm exact dates with the official source.",
-            isFr,
-          )}
+{t("news.notice")}
         </p>
       </div>
 
@@ -318,7 +309,7 @@ export default function EconomicNews() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="glass rounded-2xl p-10 text-center text-slate-500 text-sm">
-          {bilingual("Aucun événement pour ces filtres.", "No events match these filters.", isFr)}
+          {t("news.noEvents")}
         </div>
       ) : (
         <div className="space-y-4">
@@ -339,7 +330,7 @@ export default function EconomicNews() {
                   </span>
                   {isToday && (
                     <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
-                      {bilingual("Aujourd'hui", "Today", isFr)}
+{t("news.today")}
                     </span>
                   )}
                   <div className="flex-1 h-px bg-white/[0.05]" />
@@ -367,7 +358,7 @@ export default function EconomicNews() {
                             <div className="text-sm font-bold text-white tabular-nums">{time}</div>
                             {e.approximate && (
                               <div className="text-[8px] text-slate-600 uppercase font-semibold">
-                                {bilingual("approx.", "approx.", isFr)}
+                                {t("news.approx")}
                               </div>
                             )}
                           </div>

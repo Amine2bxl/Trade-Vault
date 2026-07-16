@@ -183,13 +183,13 @@ export default function MissedOpportunities() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => setViewing(m)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10">
+                    <button onClick={() => setViewing(m)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-11 h-11 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10">
                       <Eye className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setEditing(m)} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10">
+                    <button onClick={() => setEditing(m)} aria-label={t('common.edit')} title={t('common.edit')} className="w-11 h-11 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => handleDelete(m.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10">
+                    <button onClick={() => handleDelete(m.id)} aria-label={t('common.delete')} title={t('common.delete')} className="w-11 h-11 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -249,6 +249,7 @@ function Field({ label, value, tone }: { label: string; value: string; tone: 're
 }
 
 export function ScreenshotsView({ paths, onRemove, size = 'sm' }: { paths: string[]; onRemove?: (p: string) => void; size?: 'sm' | 'lg' }) {
+  const { t } = useT();
   // Batched + cached signed-URL resolution shared with the trade modals.
   const urls = useScreenshotUrls(paths);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -263,7 +264,7 @@ export function ScreenshotsView({ paths, onRemove, size = 'sm' }: { paths: strin
               <button type="button" onClick={() => setLightboxIndex(resolvedUrls.indexOf(urls[p]))} className="block w-full h-full">
                 <img src={urls[p]} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <span className={cn('opacity-0 group-hover:opacity-100 transition-opacity text-white font-semibold bg-black/50 rounded-md backdrop-blur-sm', size === 'lg' ? 'text-xs px-2.5 py-1' : 'text-[10px] px-1.5 py-0.5')}>View</span>
+                  <span className={cn('opacity-0 group-hover:opacity-100 transition-opacity text-white font-semibold bg-black/50 rounded-md backdrop-blur-sm', size === 'lg' ? 'text-xs px-2.5 py-1' : 'text-[10px] px-1.5 py-0.5')}>{t('common.view')}</span>
                 </div>
                 {size === 'lg' && (
                   <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm">{i + 1}/{paths.length}</span>
@@ -279,7 +280,7 @@ export function ScreenshotsView({ paths, onRemove, size = 'sm' }: { paths: strin
                 type="button"
                 onClick={() => onRemove(p)}
                 className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/70 hover:bg-red-500/80 text-white flex items-center justify-center backdrop-blur"
-                aria-label="Remove"
+                aria-label={t('common.remove')}
               >
                 <X className="w-3.5 h-3.5" />
               </button>

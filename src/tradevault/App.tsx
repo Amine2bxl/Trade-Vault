@@ -17,11 +17,13 @@ const EconomicNews = lazy(() => import("./pages/EconomicNews"));
 const Seasonality = lazy(() => import("./pages/Seasonality"));
 const LotSizeCalculator = lazy(() => import("./pages/LotSizeCalculator"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Reports = lazy(() => import("./pages/Reports"));
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
 const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
 import TradeDetailModal from "./components/TradeDetailModal";
+import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, Page } from "./types";
 import {
   loadUserTrades,
@@ -32,9 +34,11 @@ import {
   loadOnboarding,
 } from "./store";
 import { computeStats } from "./utils/tradeCalcs";
+import { buildDemoTrades } from "./utils/demoTrades";
+import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
-import AuthModal from "./components/AuthModal";
+import Landing from "./pages/Landing";
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { PageSkeleton } from "./components/Skeleton";
@@ -60,6 +64,13 @@ function AppContent() {
   // First-run gate: 'loading' until we know, 'needed' shows onboarding, 'done'
   // lets the app render. `onboarded_at` on the profile is the source of truth.
   const [onboarding, setOnboarding] = useState<"loading" | "needed" | "done">("loading");
+
+  // Deep link from the monthly-report push notification: /?report=YYYY-MM
+  // opens the Reports page directly (the page itself expands that month).
+  useEffect(() => {
+    const m = new URLSearchParams(window.location.search).get("report");
+    if (m && /^\d{4}-\d{2}$/.test(m)) setPage("reports");
+  }, []);
 
   // Cmd/Ctrl+K toggles the command palette
   useEffect(() => {
@@ -197,6 +208,31 @@ function AppContent() {
     setEditingTrade(null);
   }, []);
 
+  // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
+  // seeds three example trades so Dashboard/Analytics light up instantly.
+  const handleOnboardingDone = useCallback(
+    async (action?: OnboardingAction) => {
+      setOnboarding("done");
+      if (!user) return;
+      if (action === "import") {
+        setImportOpen(true);
+        return;
+      }
+      if (action === "demo") {
+        const demo = buildDemoTrades(t("journal.exampleNote"));
+        setTrades((prev) => [...demo, ...prev]);
+        try {
+          for (const tr of demo) await upsertTrade(user.id, tr);
+          toast(t("journal.demoInserted"), "success");
+        } catch (e) {
+          console.error("Failed to insert demo trades", e);
+          toast(t("app.saveTradeFailed"), "error");
+        }
+      }
+    },
+    [user, t, toast],
+  );
+
   // CSV import: persist each row, keep the ones that made it
   const handleImportTrades = useCallback(
     async (imported: Trade[]): Promise<number> => {
@@ -222,7 +258,9 @@ function AppContent() {
     );
   }
 
-  if (!isAuthenticated) return <AuthModal />;
+  // Signed-out visitors get the public landing page (its CTAs open the auth
+  // screen). Signed-in users fall through straight into the product.
+  if (!isAuthenticated) return <Landing />;
 
   if (onboarding === "loading") {
     return (
@@ -232,8 +270,14 @@ function AppContent() {
 
   if (onboarding === "needed" && user) {
     return (
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-slate-400">Loading…</div>}>
-        <Onboarding userId={user.id} onDone={() => setOnboarding("done")} />
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center text-slate-400">
+            Loading…
+          </div>
+        }
+      >
+        <Onboarding userId={user.id} onDone={handleOnboardingDone} />
       </Suspense>
     );
   }
@@ -292,14 +336,18 @@ function AppContent() {
                 trades={trades}
                 onDeleteAll={handleDeleteAll}
                 onOpenImport={() => setImportOpen(true)}
+                onOpenReports={() => setPage("reports")}
               />
             )}
+            {page === "reports" && <Reports />}
             {page === "profile" && <Profile trades={trades} />}
           </Suspense>
         </div>
       </main>
       {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}
       <AccountSwitcher variant="fab" />
+      {/* Discreet review nudge — self-gating, never during an active flow */}
+      <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
       <Suspense fallback={null}>
         <AiAssistant trades={trades} />

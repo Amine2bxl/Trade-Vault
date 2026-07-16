@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, BookOpen, BarChart3, Sparkles, Target } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, BookOpen, BarChart3, Sparkles, Target, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useT } from '../i18n/LanguageContext';
 import { cn } from '../utils/cn';
@@ -15,11 +15,18 @@ function useFeatures() {
   ];
 }
 
-export default function AuthModal() {
+interface AuthModalProps {
+  /** Tab shown on mount — the landing "start free" CTA opens straight on signup. */
+  initialMode?: 'login' | 'signup';
+  /** When set, shows a back affordance returning to the public landing page. */
+  onBack?: () => void;
+}
+
+export default function AuthModal({ initialMode = 'login', onBack }: AuthModalProps) {
   const { t } = useT();
   const FEATURES = useFeatures();
   const { login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -70,6 +77,15 @@ export default function AuthModal() {
       <div className="auth-orb w-[500px] h-[500px] bg-cyan-600 -top-40 -left-40" style={{ animationDelay: '0s' }} />
       <div className="auth-orb w-[400px] h-[400px] bg-teal-600 -bottom-32 -right-32" style={{ animationDelay: '-5s' }} />
       <div className="auth-orb w-[300px] h-[300px] bg-cyan-600 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '-10s' }} />
+
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute z-20 top-[max(1rem,env(safe-area-inset-top))] left-4 md:top-6 md:left-6 flex items-center gap-1.5 px-3 h-11 rounded-xl glass border border-white/[0.08] text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" /> {t('landing.back')}
+        </button>
+      )}
 
       <div className="relative z-10 h-full flex items-center justify-center px-4 py-4 md:py-6 overflow-hidden">
         <div className="w-full max-w-5xl h-full md:h-auto md:max-h-full grid md:grid-cols-2 gap-8 md:gap-16 md:items-center">
@@ -167,6 +183,8 @@ export default function AuthModal() {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder={t('auth.fullName')}
+                  autoComplete="name"
+                  required
                   className={inputClass}
                 />
               </div>
@@ -178,6 +196,8 @@ export default function AuthModal() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={t('auth.emailAddress')}
+                autoComplete="email"
+                required
                 className={inputClass}
               />
             </div>
@@ -188,12 +208,16 @@ export default function AuthModal() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder={t('auth.password')}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                required
+                minLength={6}
                 className={cn(inputClass, 'pr-11')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                aria-label={showPassword ? t('common.showLess') : t('common.view')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 w-11 h-11 -mr-2 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>

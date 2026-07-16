@@ -147,6 +147,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-bold text-white truncate">{trade.symbol}</span>
                     <span className={cn('text-[9px] font-bold px-1.5 py-0.5 rounded leading-none', directionBadgeClass(trade.direction))}>{directionLabel(trade.direction)}</span>
+                    {trade.isExample && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">{t('journal.exampleBadge')}</span>}
                   </div>
                   <div className="text-[10px] text-slate-500 truncate">{trade.strategy} · {formatShortDate(trade.date)}</div>
                 </div>
@@ -156,8 +157,8 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
                 </div>
               </button>
               <div className="flex items-center shrink-0 -mr-1">
-                <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                <button onClick={() => onDelete(trade.id)} aria-label={t('common.delete')} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={() => onEdit(trade)} aria-label={t('common.edit')} className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => onDelete(trade.id)} aria-label={t('common.delete')} className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
           </div>
@@ -200,7 +201,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
             ) : shown.map((trade, i) => { const be = isBreakEven(trade); return (
                 <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setViewingIdx(i)}>
                   <td className="px-5 py-3 text-sm text-slate-300">{formatShortDate(trade.date)}</td>
-                  <td className="px-5 py-3"><span className="text-sm font-bold text-white">{trade.symbol}</span></td>
+                  <td className="px-5 py-3"><span className="text-sm font-bold text-white">{trade.symbol}</span>{trade.isExample && <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">{t('journal.exampleBadge')}</span>}</td>
                   <td className="px-5 py-3 text-sm text-slate-400">{trade.strategy}</td>
                   <td className="px-5 py-3"><span className={cn('text-sm font-bold', be ? 'text-slate-300' : trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(trade.pnl)}</span></td>
                   <td className="px-5 py-3"><span className={cn('text-sm font-bold', be ? 'text-slate-300' : trade.rMultiple >= 0 ? 'text-emerald-400' : 'text-red-400')}>{trade.rMultiple.toFixed(2)}R</span></td>

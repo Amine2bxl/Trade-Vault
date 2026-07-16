@@ -12,6 +12,7 @@ import {
   Search,
   UserX,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
 import { loadLanguage, saveLanguage, loadStartingBalance, saveStartingBalance } from "../store";
@@ -25,9 +26,10 @@ interface SettingsProps {
   trades: Trade[];
   onDeleteAll: () => void;
   onOpenImport: () => void;
+  onOpenReports: () => void;
 }
 
-export default function Settings({ trades, onDeleteAll, onOpenImport }: SettingsProps) {
+export default function Settings({ trades, onDeleteAll, onOpenImport, onOpenReports }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
   const { t, setLang } = useT();
   const [language, setLanguage] = useState("en");
@@ -55,9 +57,12 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
         t("settings.data"),
         t("settings.exportCsv"),
         t("settings.importCsv"),
+        t("settings.reports"),
         "csv",
         "export",
         "import",
+        "report",
+        "rapport",
       ),
       danger: match(
         t("settings.dangerZone"),
@@ -229,6 +234,12 @@ export default function Settings({ trades, onDeleteAll, onOpenImport }: Settings
           label={t("settings.importCsv")}
           sub={t("settings.importCsvSub")}
           onClick={onOpenImport}
+        />
+        <ActionRow
+          icon={<FileText className="w-4 h-4" />}
+          label={t("settings.reports")}
+          sub={t("settings.reportsSub")}
+          onClick={onOpenReports}
         />
       </div>
       )}

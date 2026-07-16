@@ -126,12 +126,12 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
       {/* Calendar */}
       <div className="glass rounded-2xl md:rounded-3xl overflow-hidden animate-fade-in-up stagger-5">
         <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-5 border-b border-white/[0.06]">
-          <button onClick={prevMonth} className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={prevMonth} aria-label={t('common.previous')} className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"><ChevronLeft className="w-5 h-5" /></button>
           <div className="flex items-center gap-2">
             <h3 className="text-base md:text-lg font-bold text-white">{MONTHS[month]} '{String(year).slice(-2)}</h3>
             <button onClick={goToday} className="text-[10px] md:text-xs text-cyan-400 hover:text-cyan-300 font-semibold px-2 md:px-3 py-1 rounded-lg hover:bg-cyan-500/10 transition-all active:scale-95">{t('calendar.today')}</button>
           </div>
-          <button onClick={nextMonth} className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"><ChevronRight className="w-5 h-5" /></button>
+          <button onClick={nextMonth} aria-label={t('common.next')} className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"><ChevronRight className="w-5 h-5" /></button>
         </div>
         <div className="grid grid-cols-7 border-b border-white/[0.06]">
           {DAYS.map((d, i) => <div key={d + i} className={cn('py-2 md:py-3 text-center text-[8px] md:text-[10px] font-bold uppercase tracking-widest', i >= 5 ? 'text-slate-700' : 'text-slate-500')}>{d}</div>)}

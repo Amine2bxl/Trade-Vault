@@ -40,6 +40,14 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Raw HTTP endpoints (no file-route support in this router version).
+      // The Vercel cron hits this path on the 1st of each month.
+      const { pathname } = new URL(request.url);
+      if (pathname === "/api/cron/monthly-reports") {
+        const { handleMonthlyReportsCron } = await import("./lib/monthly-reports.server");
+        return await handleMonthlyReportsCron(request);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

@@ -10,19 +10,21 @@ import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from '../utils/chartThem
 
 interface MistakesProps { trades: Trade[]; embedded?: boolean; }
 
-const MISTAKE_TIPS: Record<string, string> = {
-  'No stop loss': 'Always set a stop loss before entering. Risk management is non-negotiable. Place your stop and size your position before clicking buy.',
-  'Overtrading': 'Set a max of 3-5 trades per day. Quality over quantity. If you\'ve hit your limit, close the platform.',
-  'Revenge trade': 'After a loss, step away for 15 minutes. Take deep breaths. The market will be there tomorrow.',
-  'FOMO entry': 'Wait for your setup. Missing a trade costs $0. Entering badly can cost everything.',
-  'Premature exit': 'Trust your plan. Move your stop to breakeven instead of closing. Let the trade work.',
-  'Holding too long': 'Set clear profit targets before entering. When price hits your target — exit.',
-  'Size too large': 'Risk no more than 1-2% per trade. If you\'re sweating, your size is too big.',
-  'Ignored plan': 'Write your plan before the market opens. Follow it mechanically.',
-  'Chased entry': 'Wait for pullbacks. If price already moved 2R without you, let it go.',
-  'Averaged down': 'Cut losers, don\'t add to them. Adding doubles your risk.',
-  'Ignored market conditions': 'Check SPY/QQQ trend and sector strength before trading.',
-  'Low liquidity': 'Only trade stocks with avg volume > 1M shares.',
+// Mistake names are stored data (fixed English presets); their coaching tips
+// live in the i18n dicts so the advice follows the app language.
+const MISTAKE_TIP_KEYS: Record<string, string> = {
+  'No stop loss': 'mistakes.tipNoStop',
+  'Overtrading': 'mistakes.tipOvertrading',
+  'Revenge trade': 'mistakes.tipRevenge',
+  'FOMO entry': 'mistakes.tipFomo',
+  'Premature exit': 'mistakes.tipPrematureExit',
+  'Holding too long': 'mistakes.tipHolding',
+  'Size too large': 'mistakes.tipSize',
+  'Ignored plan': 'mistakes.tipIgnoredPlan',
+  'Chased entry': 'mistakes.tipChased',
+  'Averaged down': 'mistakes.tipAveraged',
+  'Ignored market conditions': 'mistakes.tipConditions',
+  'Low liquidity': 'mistakes.tipLiquidity',
 };
 
 const SEV_STYLE: Record<Severity, { text: string; bg: string; bar: string; dot: string }> = {
@@ -222,7 +224,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       <span className={cn('text-[8px] font-bold px-1 py-0.5 rounded uppercase', SEV_STYLE[m.severity].bg, SEV_STYLE[m.severity].text)}>{t(`mistakes.sev_${m.severity}` as never)}</span>
                       <span className={cn('text-[10px] md:text-xs font-bold', SEV_STYLE[m.severity].text)}>{m.mistake}</span>
                     </div>
-                    <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">{MISTAKE_TIPS[m.mistake] || t('mistakes.defaultTip')}</p>
+                    <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">{MISTAKE_TIP_KEYS[m.mistake] ? t(MISTAKE_TIP_KEYS[m.mistake] as never) : t('mistakes.defaultTip')}</p>
                     <div className="mt-1.5 text-[9px] text-slate-600">{m.count}× · {formatPnl(m.totalPnl)}</div>
                   </div>
                 ))}

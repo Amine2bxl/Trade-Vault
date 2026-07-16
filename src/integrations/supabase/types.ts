@@ -53,6 +53,33 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_reports: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          report: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          report: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          report?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       missed_opportunities: {
         Row: {
           account_id: string | null
@@ -121,6 +148,8 @@ export type Database = {
           onboarding_style: string | null
           onboarding_uses_ict: boolean
           starting_balance: number
+          trustpilot_prompted_at: string | null
+          trustpilot_status: string | null
           updated_at: string
         }
         Insert: {
@@ -142,6 +171,8 @@ export type Database = {
           onboarding_style?: string | null
           onboarding_uses_ict?: boolean
           starting_balance?: number
+          trustpilot_prompted_at?: string | null
+          trustpilot_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -163,6 +194,8 @@ export type Database = {
           onboarding_style?: string | null
           onboarding_uses_ict?: boolean
           starting_balance?: number
+          trustpilot_prompted_at?: string | null
+          trustpilot_status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -207,6 +240,7 @@ export type Database = {
           entry_time: string
           exit_time: string
           id: string
+          is_example: boolean
           mae: number | null
           mfe: number | null
           mistakes: string[]
@@ -232,6 +266,7 @@ export type Database = {
           entry_time?: string
           exit_time?: string
           id?: string
+          is_example?: boolean
           mae?: number | null
           mfe?: number | null
           mistakes?: string[]
@@ -257,6 +292,7 @@ export type Database = {
           entry_time?: string
           exit_time?: string
           id?: string
+          is_example?: boolean
           mae?: number | null
           mfe?: number | null
           mistakes?: string[]

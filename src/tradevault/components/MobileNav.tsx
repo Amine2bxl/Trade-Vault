@@ -103,7 +103,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
             <div className="flex justify-center items-center">
               <button
                 onClick={onAddTrade}
-                aria-label={hasDraft ? t("trade.draftBadge") : "Add trade"}
+                aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
                 className="fab-button relative text-white -mt-7"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
@@ -140,7 +140,8 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               <h2 className="text-sm font-bold text-white">{t("nav.more")}</h2>
               <button
                 onClick={() => setMoreOpen(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
+                aria-label={t("common.close")}
+                className="w-11 h-11 -m-1.5 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
               >
                 <X className="w-4 h-4" />
               </button>

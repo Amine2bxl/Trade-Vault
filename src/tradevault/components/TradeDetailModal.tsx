@@ -79,19 +79,19 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
             <div className="flex items-center gap-2 md:gap-4">
               {onNavigate && (
                 <div className="flex items-center gap-1">
-                  <button onClick={() => onNavigate(-1)} disabled={!hasPrev} aria-label="Previous trade"
+                  <button onClick={() => onNavigate(-1)} disabled={!hasPrev} aria-label={t('common.previous')}
                     className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-colors', hasPrev ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-700 cursor-not-allowed')}>
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   {positionLabel && <span className="text-[10px] text-slate-500 tabular-nums min-w-[36px] text-center">{positionLabel}</span>}
-                  <button onClick={() => onNavigate(1)} disabled={!hasNext} aria-label="Next trade"
+                  <button onClick={() => onNavigate(1)} disabled={!hasNext} aria-label={t('common.next')}
                     className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-colors', hasNext ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-700 cursor-not-allowed')}>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               )}
               <div className={cn('text-2xl font-bold', dayPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(dayPnl)}</div>
-              <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={onClose} aria-label={t('common.close')} className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"><X className="w-5 h-5" /></button>
             </div>
           </div>
         </div>

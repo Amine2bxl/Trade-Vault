@@ -90,17 +90,17 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         const res = await askTradingInsight({
           data: { question: query, trades: toInsightTradesPayload(trades), language: lang },
         });
-        setMessages((prev) => [...prev, { role: "assistant", text: res.answer || "No response." }]);
+        setMessages((prev) => [...prev, { role: "assistant", text: res.answer || t("ai.noResponse") }]);
       } catch (e: any) {
         setMessages((prev) => [
           ...prev,
-          { role: "error", text: e?.message || "Something went wrong." },
+          { role: "error", text: e?.message || t("ai.genericError") },
         ]);
       } finally {
         setLoading(false);
       }
     },
-    [loading, trades, lang],
+    [loading, trades, lang, t],
   );
 
   // Other pages (e.g. the pre-market Checklist) can open the coach with a
@@ -174,6 +174,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
             )}
             <button
               onClick={() => setOpen(false)}
+              aria-label={t("common.close")}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors shrink-0"
             >
               <X className="w-4 h-4" />
@@ -226,7 +227,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
                 <button
                   type="button"
                   onClick={toggleMic}
-                  aria-label="Voice input"
+                  aria-label={t("common.voiceInput")}
                   className={cn(
                     "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
                     listening
@@ -251,7 +252,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
               <button
                 onClick={() => ask(question)}
                 disabled={loading || !question.trim()}
-                aria-label="Send"
+                aria-label={t("common.send")}
                 className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white shrink-0 transition-all"
               >
                 {loading ? (

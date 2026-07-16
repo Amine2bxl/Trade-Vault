@@ -951,6 +951,29 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     else canvasStateRef.current("neutral");
   }, [day.locked, allGates, day.fomo]);
 
+  /* ══ Completion streak (gamification) ══
+     Consecutive WEEKDAYS with a locked checklist, read from the per-day
+     localStorage entries. Today counts once locked; weekends never break
+     the chain (markets are closed). */
+  const streak = useMemo(() => {
+    let count = day.locked ? 1 : 0;
+    const d = new Date();
+    for (let guard = 0; guard < 730; guard++) {
+      d.setDate(d.getDate() - 1);
+      if (d.getDay() === 0 || d.getDay() === 6) continue;
+      try {
+        const raw = localStorage.getItem(`tv-chk-${uid}-${d.toISOString().slice(0, 10)}`);
+        if (!raw) break;
+        const p = JSON.parse(raw) as { locked?: boolean };
+        if (!p.locked) break;
+        count++;
+      } catch {
+        break;
+      }
+    }
+    return count;
+  }, [uid, day.locked]);
+
   /* patience timer + ranks */
   const elapsedMs = Math.max(0, now - day.t0);
   const mins = elapsedMs / 60000;
@@ -1284,6 +1307,11 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             <span className={cn("jk-ready-pill", (allGates || day.locked) && "ok")}>
               {day.locked ? t("chk.locked") : allGates ? t("chk.ready") : t("chk.standby")}
             </span>
+            {streak > 0 && (
+              <span className="jk-streak" title={t("chk.streakHint")}>
+                🔥 {streak} {t("chk.streakSuffix")}
+              </span>
+            )}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
               <button className={cn("jk-toggle", audioOn && "on")} onClick={toggleAudio}>
                 <svg viewBox="0 0 24 24">
@@ -1321,7 +1349,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               className="jk-guided-btn"
               onClick={() => setShowWizard(true)}
             >
-              ✨ {lang === "fr" ? "Configuration guidée (facile)" : "Guided setup (easy)"}
+              ✨ {t("chk.guidedSetup")}
             </button>
             <div className="jk-cfg-section">
               <div className="jk-cfg-title">{t("chk.cfgSession")}</div>

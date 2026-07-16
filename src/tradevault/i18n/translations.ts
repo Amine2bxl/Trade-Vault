@@ -481,20 +481,6 @@ const en = {
 
   // Economic news
   'news.title': 'Economic News',
-  'news.subtitle': 'The macro releases that move your markets, in your local time',
-  'news.thisWeek': 'This week',
-  'news.today': 'Today',
-  'news.indicative': 'Indicative schedule — recurring release patterns, not a live feed. Always confirm exact times with your broker before news trades.',
-  'news.impact': 'Impact',
-  'news.allCurrencies': 'All',
-  'news.approx': 'approx.',
-  'news.noEvents': 'No events match these filters',
-  'news.noEventsSub': 'Try clearing the currency or impact filters.',
-  'news.clearFilters': 'Clear filters',
-  'news.high': 'High',
-  'news.medium': 'Medium',
-  'news.low': 'Low',
-  'news.localTime': 'Times shown in your local timezone',
 
   // Seasonality
   'seasonality.title': 'Seasonality',
@@ -672,6 +658,165 @@ const en = {
   'chk.dashChecked': 'checked',
   'chk.dashStart': 'Start your pre-market routine before entering a trade',
   'chk.dashCta': 'Open',
+  'chk.guidedSetup': 'Guided setup (easy)',
+  'chk.streakSuffix': 'day streak',
+  'chk.streakHint': 'Consecutive weekdays with a locked pre-market checklist. Weekends never break the chain.',
+
+  // Generic a11y / actions
+  'common.remove': 'Remove',
+  'common.send': 'Send',
+  'common.voiceInput': 'Voice input',
+  'common.previous': 'Previous',
+  'common.next': 'Next',
+  'common.showMore': 'Show more',
+  'common.showLess': 'Show less',
+
+  // AI generic
+  'ai.noResponse': 'No response.',
+  'ai.genericError': 'Something went wrong. Please try again.',
+
+  // Economic news
+  'news.subtitle': 'Upcoming macro events — impact, currency and times in your timezone.',
+  'news.live': 'Live',
+  'news.prevWeek': 'Previous week',
+  'news.nextWeek': 'Next week',
+  'news.backToWeek': 'Back to this week',
+  'news.searchPlaceholder': 'Search an event…',
+  'news.clear': 'Clear',
+  'news.filters': 'Filters',
+  'news.currency': 'Currency',
+  'news.impact': 'Impact',
+  'news.impactHigh': 'High',
+  'news.impactMedium': 'Medium',
+  'news.impactLow': 'Low',
+  'news.clearFilters': 'Clear all filters',
+  'news.notice':
+    'Times shown in your local timezone. Events tagged “approx.” follow a recurring schedule — confirm exact dates with the official source.',
+  'news.today': 'Today',
+  'news.noEvents': 'No events match these filters.',
+  'news.approx': 'approx.',
+
+  // Accounts (switcher)
+  'account.switch': 'Switch account',
+  'account.title': 'Accounts',
+  'account.subtitle': 'Switch sub-account in one tap',
+  'account.rename': 'Rename',
+  'account.new': 'New account',
+  'account.newShort': 'New',
+  'account.name': 'Name',
+  'account.namePlaceholder': 'e.g. FTMO 100K',
+  'account.type': 'Type',
+  'account.startingBalance': 'Starting balance',
+  'account.creating': 'Creating…',
+  'account.create': 'Create account',
+  'account.typePersonal': 'Personal',
+  'account.typeProp': 'Prop Firm',
+  'account.typeDemo': 'Demo',
+  'account.typeLive': 'Live',
+
+  // Mistake coaching tips
+  'mistakes.tipNoStop':
+    'Always set a stop loss before entering. Risk management is non-negotiable. Place your stop and size your position before clicking buy.',
+  'mistakes.tipOvertrading':
+    "Set a max of 3-5 trades per day. Quality over quantity. If you've hit your limit, close the platform.",
+  'mistakes.tipRevenge':
+    'After a loss, step away for 15 minutes. Take deep breaths. The market will be there tomorrow.',
+  'mistakes.tipFomo':
+    'Wait for your setup. Missing a trade costs $0. Entering badly can cost everything.',
+  'mistakes.tipPrematureExit':
+    'Trust your plan. Move your stop to breakeven instead of closing. Let the trade work.',
+  'mistakes.tipHolding':
+    'Set clear profit targets before entering. When price hits your target — exit.',
+  'mistakes.tipSize':
+    "Risk no more than 1-2% per trade. If you're sweating, your size is too big.",
+  'mistakes.tipIgnoredPlan': 'Write your plan before the market opens. Follow it mechanically.',
+  'mistakes.tipChased': 'Wait for pullbacks. If price already moved 2R without you, let it go.',
+  'mistakes.tipAveraged': "Cut losers, don't add to them. Adding doubles your risk.",
+  'mistakes.tipConditions': 'Check SPY/QQQ trend and sector strength before trading.',
+  'mistakes.tipLiquidity': 'Only trade stocks with avg volume > 1M shares.',
+
+  // Public landing page
+  'landing.back': 'Back',
+  'landing.signIn': 'Sign in',
+  'landing.ctaPrimary': 'Start for free',
+  'landing.ctaSecondary': 'See features',
+  'landing.heroBadge': 'Data-driven trading journal',
+  'landing.heroTitle1': 'Trade with data.',
+  'landing.heroTitle2': 'Not with feelings.',
+  'landing.heroSubtitle':
+    'TradeVault turns every trade you log into quant-grade analytics, AI coaching and discipline tools — so your edge stops being a guess.',
+  'landing.heroNote': 'Free — no credit card required',
+  'landing.mockEquity': 'Equity curve',
+  'landing.mockWinRate': 'Win rate',
+  'landing.mockProfitFactor': 'Profit factor',
+  'landing.featuresTitle': 'Everything a serious trader needs',
+  'landing.featuresSubtitle': 'One journal, every angle of your performance.',
+  'landing.featJournalTitle': 'Trading journal',
+  'landing.featJournalDesc': 'Log entries, exits, screenshots, confluences and mistakes in seconds.',
+  'landing.featAnalyticsTitle': 'Quant analytics',
+  'landing.featAnalyticsDesc': 'Sharpe, Sortino, Kelly, expectancy, drawdown — computed from your real trades.',
+  'landing.featCoachTitle': 'AI Coach',
+  'landing.featCoachDesc': 'Ask anything about your trading history and get instant, personal answers.',
+  'landing.featNewsTitle': 'Economic calendar',
+  'landing.featNewsDesc': 'High-impact macro events in your timezone, filtered by currency.',
+  'landing.featChecklistTitle': 'Pre-market checklist',
+  'landing.featChecklistDesc': 'A guided discipline protocol before every session. No checklist, no trade.',
+  'landing.featMistakesTitle': 'Mistake tracking',
+  'landing.featMistakesDesc': 'See what each recurring error costs you — and how to fix it.',
+  'landing.socialTitle': 'Trusted by traders',
+  'landing.socialSubtitle': 'Reviews from the TradeVault community.',
+  'landing.socialPlaceholder': 'Trustpilot reviews coming soon — be one of the first to rate us.',
+  'landing.pricingTitle': 'Simple pricing',
+  'landing.pricingSubtitle': 'Everything is free while we build with our early community.',
+  'landing.pricingPlan': 'Early access',
+  'landing.pricingPrice': 'Free',
+  'landing.pricingPeriod': 'during early access',
+  'landing.pricingFeat1': 'Unlimited trades & accounts',
+  'landing.pricingFeat2': 'Full quant analytics & AI Coach',
+  'landing.pricingFeat3': 'Economic calendar & push alerts',
+  'landing.pricingFeat4': 'CSV import / export — your data stays yours',
+  'landing.pricingCta': 'Create my free account',
+  'landing.footerTerms': 'Terms of Service',
+  'landing.footerPrivacy': 'Privacy Policy',
+  'landing.footerTagline': 'The data-driven trading journal.',
+
+  // Monthly reports
+  'reports.title': 'Monthly Reports',
+  'reports.subtitle': 'Your performance, month by month — generated automatically',
+  'reports.empty': 'No reports yet',
+  'reports.emptySub':
+    'Reports are generated automatically at the start of each month. You can also generate last month now.',
+  'reports.generate': "Generate last month's report",
+  'reports.generating': 'Generating…',
+  'reports.generated': 'Report generated!',
+  'reports.noTradesForMonth': 'No trades found for that month — nothing to report.',
+  'reports.generateFailed': 'Could not generate the report. Try again.',
+  'reports.weekly': 'Weekly P&L',
+  'reports.week': 'Week',
+  'reports.bestSetups': 'Best setups',
+  'reports.worstSetups': 'Worst setups',
+  'reports.mistakes': 'Costliest mistakes',
+  'reports.mom': 'vs previous month',
+  'reports.aiSummary': 'AI Coach debrief',
+  'reports.maxDrawdown': 'Max drawdown',
+  'reports.profitFactor': 'Profit factor',
+  'reports.hide': 'Hide details',
+  'reports.show': 'View report',
+  'settings.reports': 'Monthly reports',
+  'settings.reportsSub': 'Performance history, generated every month',
+
+  // Trustpilot review prompt
+  'trustpilot.title': 'Enjoying TradeVault?',
+  'trustpilot.body':
+    'A quick Trustpilot review helps other traders find us — and keeps everything free.',
+  'trustpilot.cta': 'Leave a review',
+  'trustpilot.never': 'No thanks',
+
+  // Demo / example trades
+  'journal.exampleBadge': 'Example',
+  'journal.exampleNote':
+    'Example trade inserted by the demo — edit or delete it whenever you like.',
+  'journal.demoInserted': 'Demo trades added — explore your Dashboard and Analytics!',
 };
 
 // The English dict above is the source of truth and the runtime fallback —

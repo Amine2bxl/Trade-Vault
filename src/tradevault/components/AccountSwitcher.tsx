@@ -8,15 +8,12 @@ import type { Account, AccountType } from "../store";
 const TYPE_ICON: Record<AccountType, typeof User> = {
   personal: User, prop: Building2, demo: FlaskConical, live: Zap,
 };
-function typeLabel(type: AccountType, fr: boolean): string {
-  const m: Record<AccountType, [string, string]> = {
-    personal: ["Personnel", "Personal"],
-    prop: ["Prop Firm", "Prop Firm"],
-    demo: ["Démo", "Demo"],
-    live: ["Live", "Live"],
-  };
-  return fr ? m[type][0] : m[type][1];
-}
+const TYPE_LABEL_KEY = {
+  personal: "account.typePersonal",
+  prop: "account.typeProp",
+  demo: "account.typeDemo",
+  live: "account.typeLive",
+} as const;
 
 export default function AccountSwitcher({
   compact,
@@ -26,8 +23,7 @@ export default function AccountSwitcher({
   variant?: "bar" | "fab";
 }) {
   const { accounts, activeAccount, switchAccount, editAccount } = useAccounts();
-  const { lang } = useT();
-  const fr = lang === "fr";
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -59,7 +55,7 @@ export default function AccountSwitcher({
       <>
         <button
           onClick={() => setOpen(true)}
-          aria-label={fr ? "Changer de compte" : "Switch account"}
+          aria-label={t("account.switch")}
           className="md:hidden fixed z-40 bottom-24 left-4 w-11 h-11 rounded-full flex items-center justify-center border backdrop-blur-md shadow-md active:scale-95 transition-transform"
           style={{
             background: `${activeAccount.color}26`,
@@ -86,14 +82,14 @@ export default function AccountSwitcher({
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
                 <div>
-                  <h2 className="text-sm font-bold text-white">{fr ? "Comptes" : "Accounts"}</h2>
+                  <h2 className="text-sm font-bold text-white">{t("account.title")}</h2>
                   <p className="text-[11px] text-slate-500">
-                    {fr ? "Change de sous-compte en un tap" : "Switch sub-account in one tap"}
+                    {t("account.subtitle")}
                   </p>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
-                  aria-label={fr ? "Fermer" : "Close"}
+                  aria-label={t("common.close")}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
                 >
                   <X className="w-4 h-4" />
@@ -135,10 +131,11 @@ export default function AccountSwitcher({
                             onClick={() => commitRename(a.id)}
                             className="flex-1 h-7 rounded-lg bg-cyan-500/20 text-cyan-200 text-xs font-bold flex items-center justify-center gap-1 hover:bg-cyan-500/30"
                           >
-                            <Check className="w-3.5 h-3.5" /> {fr ? "OK" : "OK"}
+                            <Check className="w-3.5 h-3.5" /> OK
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
+                            aria-label={t("common.cancel")}
                             className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400 flex items-center justify-center hover:bg-white/[0.1]"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -172,14 +169,14 @@ export default function AccountSwitcher({
                         </span>
                         <span className="min-w-0 pr-6">
                           <span className="block text-sm font-bold text-white truncate">{a.name}</span>
-                          <span className="block text-[10px] text-slate-500 truncate">{typeLabel(a.type, fr)}</span>
+                          <span className="block text-[10px] text-slate-500 truncate">{t(TYPE_LABEL_KEY[a.type])}</span>
                         </span>
                       </button>
 
                       {/* Rename affordance */}
                       <button
                         onClick={() => startRename(a)}
-                        aria-label={fr ? "Renommer" : "Rename"}
+                        aria-label={t("account.rename")}
                         className="absolute bottom-2.5 right-2.5 w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -205,14 +202,14 @@ export default function AccountSwitcher({
                   className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition-all active:scale-[0.97] min-h-[92px]"
                 >
                   <Plus className="w-5 h-5" />
-                  <span className="text-xs font-semibold text-center">{fr ? "Nouveau" : "New account"}</span>
+                  <span className="text-xs font-semibold text-center">{t("account.newShort")}</span>
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {createOpen && <CreateAccountModal fr={fr} onClose={() => setCreateOpen(false)} />}
+        {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
       </>
     );
   }
@@ -235,7 +232,7 @@ export default function AccountSwitcher({
         </span>
         <span className="flex-1 min-w-0 text-left">
           <span className="block text-sm font-semibold text-white truncate">{activeAccount.name}</span>
-          <span className="block text-[10px] text-slate-500 truncate">{typeLabel(activeAccount.type, fr)}</span>
+          <span className="block text-[10px] text-slate-500 truncate">{t(TYPE_LABEL_KEY[activeAccount.type])}</span>
         </span>
         <ChevronDown className={cn("w-4 h-4 text-slate-500 shrink-0 transition-transform", open && "rotate-180")} />
       </button>
@@ -245,7 +242,7 @@ export default function AccountSwitcher({
           <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
           <div className="absolute left-0 right-0 mt-2 z-[61] glass-strong rounded-2xl p-1.5 shadow-2xl shadow-black/50 animate-fade-in max-h-[60vh] overflow-y-auto">
             <div className="px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
-              {fr ? "Comptes" : "Accounts"}
+              {t("account.title")}
             </div>
             {accounts.map((a) => {
               const Icon = TYPE_ICON[a.type];
@@ -267,7 +264,7 @@ export default function AccountSwitcher({
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className={cn("block text-sm font-medium truncate", active ? "text-white" : "text-slate-300")}>{a.name}</span>
-                    <span className="block text-[10px] text-slate-500">{typeLabel(a.type, fr)}</span>
+                    <span className="block text-[10px] text-slate-500">{t(TYPE_LABEL_KEY[a.type])}</span>
                   </span>
                   {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
                 </button>
@@ -281,19 +278,20 @@ export default function AccountSwitcher({
               <span className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
                 <Plus className="w-4 h-4" />
               </span>
-              <span className="text-sm font-semibold">{fr ? "Nouveau compte" : "New account"}</span>
+              <span className="text-sm font-semibold">{t("account.new")}</span>
             </button>
           </div>
         </>
       )}
 
-      {createOpen && <CreateAccountModal fr={fr} onClose={() => setCreateOpen(false)} />}
+      {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
     </div>
   );
 }
 
-function CreateAccountModal({ fr, onClose }: { fr: boolean; onClose: () => void }) {
+function CreateAccountModal({ onClose }: { onClose: () => void }) {
   const { addAccount } = useAccounts();
+  const { t } = useT();
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("prop");
   const [balance, setBalance] = useState("50000");
@@ -318,25 +316,25 @@ function CreateAccountModal({ fr, onClose }: { fr: boolean; onClose: () => void 
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="glass-strong rounded-3xl p-6 max-w-sm w-full animate-slide-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-white">{fr ? "Nouveau compte" : "New account"}</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+          <h2 className="text-lg font-bold text-white">{t("account.new")}</h2>
+          <button onClick={onClose} aria-label={t("common.close")} className="text-slate-500 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-          {fr ? "Nom" : "Name"}
+          {t("account.name")}
         </label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus
-          placeholder={fr ? "ex. FTMO 100K" : "e.g. FTMO 100K"}
+          placeholder={t("account.namePlaceholder")}
           className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 mb-4"
         />
 
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-          {fr ? "Type" : "Type"}
+          {t("account.type")}
         </label>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {types.map((tp) => {
@@ -351,14 +349,14 @@ function CreateAccountModal({ fr, onClose }: { fr: boolean; onClose: () => void 
                   active ? "bg-cyan-500/15 border-cyan-400/50 text-white" : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
                 )}
               >
-                <Icon className="w-4 h-4" /> {typeLabel(tp, fr)}
+                <Icon className="w-4 h-4" /> {t(TYPE_LABEL_KEY[tp])}
               </button>
             );
           })}
         </div>
 
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-          {fr ? "Solde de départ" : "Starting balance"}
+          {t("account.startingBalance")}
         </label>
         <div className="relative mb-5">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
@@ -381,7 +379,7 @@ function CreateAccountModal({ fr, onClose }: { fr: boolean; onClose: () => void 
               : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
           )}
         >
-          {busy ? (fr ? "Création…" : "Creating…") : (fr ? "Créer le compte" : "Create account")}
+          {busy ? t("account.creating") : t("account.create")}
         </button>
       </div>
     </div>

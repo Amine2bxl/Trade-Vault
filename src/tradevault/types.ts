@@ -1,6 +1,20 @@
-export type Page = 'dashboard' | 'journal' | 'checklist' | 'calendar' | 'analytics' | 'mistakes' | 'missed' | 'insights' | 'profile' | 'news' | 'seasonality' | 'calculator' | 'settings';
+export type Page =
+  | "dashboard"
+  | "journal"
+  | "checklist"
+  | "calendar"
+  | "analytics"
+  | "mistakes"
+  | "missed"
+  | "insights"
+  | "profile"
+  | "news"
+  | "seasonality"
+  | "calculator"
+  | "settings"
+  | "reports";
 
-export type TradeDirection = 'long' | 'short' | 'be';
+export type TradeDirection = "long" | "short" | "be";
 
 export interface Trade {
   id: string;
@@ -25,6 +39,8 @@ export interface Trade {
   mfe?: number | null;
   /** Slippage in $ (optional, mostly populated by broker imports) */
   slippage?: number | null;
+  /** Demo trade inserted by onboarding — badged "Example" until the user edits it */
+  isExample?: boolean;
 }
 
 export interface User {
@@ -45,7 +61,7 @@ export interface TradeStats {
   profitFactor: number;
   maxDrawdown: number;
   currentStreak: number;
-  currentStreakType: 'win' | 'loss' | 'be' | 'none';
+  currentStreakType: "win" | "loss" | "be" | "none";
   bestTrade: Trade | null;
   worstTrade: Trade | null;
   avgRR: number;
@@ -57,28 +73,57 @@ export interface TradeStats {
 }
 
 export function isBreakEven(t: Trade): boolean {
-  return t.direction === 'be';
+  return t.direction === "be";
 }
 
 export const STRATEGIES = [
-  'Scalping', 'Momentum', 'Reversal', 'Breakout',
-  'Trend Following', 'VWAP Play', 'Gap Fill', 'Range Trading',
+  "Scalping",
+  "Momentum",
+  "Reversal",
+  "Breakout",
+  "Trend Following",
+  "VWAP Play",
+  "Gap Fill",
+  "Range Trading",
   // ICT setups
-  'Silver Bullet', 'Judas Swing', 'FVG Entry', 'Order Block',
-  'Liquidity Sweep', 'Breaker Block', 'Power of 3',
-  'Other',
+  "Silver Bullet",
+  "Judas Swing",
+  "FVG Entry",
+  "Order Block",
+  "Liquidity Sweep",
+  "Breaker Block",
+  "Power of 3",
+  "Other",
 ] as const;
 
 export const MISTAKE_OPTIONS = [
-  'No stop loss', 'Overtrading', 'Revenge trade', 'FOMO entry',
-  'Premature exit', 'Holding too long', 'Size too large', 'Ignored plan',
-  'Chased entry', 'Averaged down', 'Ignored market conditions', 'Low liquidity',
+  "No stop loss",
+  "Overtrading",
+  "Revenge trade",
+  "FOMO entry",
+  "Premature exit",
+  "Holding too long",
+  "Size too large",
+  "Ignored plan",
+  "Chased entry",
+  "Averaged down",
+  "Ignored market conditions",
+  "Low liquidity",
 ] as const;
 
 export const DEFAULT_CONFLUENCES = [
-  'Support/Resistance', 'Trend line', 'Fibonacci', 'VWAP',
-  'EMA alignment', 'Volume confirmation', 'Market structure', 'Order block',
-  'Supply/Demand zone', 'Liquidity sweep', 'Divergence', 'Break of structure',
+  "Support/Resistance",
+  "Trend line",
+  "Fibonacci",
+  "VWAP",
+  "EMA alignment",
+  "Volume confirmation",
+  "Market structure",
+  "Order block",
+  "Supply/Demand zone",
+  "Liquidity sweep",
+  "Divergence",
+  "Break of structure",
 ];
 
 export interface MissedOpportunity {
@@ -94,18 +139,22 @@ export interface MissedOpportunity {
 }
 
 export const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'es', label: 'Español' },
-  { code: 'pt', label: 'Português' },
-  { code: 'fr', label: 'Français' },
-  { code: 'de', label: 'Deutsch' },
-  { code: 'it', label: 'Italiano' },
-  { code: 'nl', label: 'Nederlands' },
-  { code: 'ru', label: 'Русский' },
-  { code: 'zh', label: '中文' },
-  { code: 'ja', label: '日本語' },
-  { code: 'ar', label: 'العربية' },
-  { code: 'hi', label: 'हिन्दी' },
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "pt", label: "Português" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "it", label: "Italiano" },
+  { code: "nl", label: "Nederlands" },
+  { code: "ru", label: "Русский" },
+  { code: "zh", label: "中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ar", label: "العربية" },
+  { code: "hi", label: "हिन्दी" },
 ] as const;
 
-export const SUPPORT_EMAIL = 'tradevault@outlook.fr';
+export const SUPPORT_EMAIL = "tradevault@outlook.fr";
+
+// Public review page. The domain must match the one verified via the
+// trustpilot-one-time-domain-verification-id meta tag in __root.tsx.
+export const TRUSTPILOT_REVIEW_URL = "https://www.trustpilot.com/evaluate/tradevault.cc";

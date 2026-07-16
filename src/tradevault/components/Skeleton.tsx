@@ -1,4 +1,5 @@
 import { cn } from '../utils/cn';
+import { useT } from '../i18n/LanguageContext';
 
 /** Shimmering placeholder block used while data loads. */
 export function Skeleton({ className }: { className?: string }) {
@@ -7,8 +8,9 @@ export function Skeleton({ className }: { className?: string }) {
 
 /** Full-page skeleton matching the dashboard layout (hero + stat cards + list). */
 export function PageSkeleton() {
+  const { t } = useT();
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto" aria-busy="true" aria-label="Loading">
+    <div className="p-4 md:p-8 max-w-[1400px] mx-auto" aria-busy="true" aria-label={t('common.loading')}>
       <div className="mb-6 md:mb-8 space-y-2">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-8 w-52" />
