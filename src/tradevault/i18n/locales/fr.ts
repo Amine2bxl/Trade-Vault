@@ -500,10 +500,10 @@ const fr: Dict = {
   'landing.ctaPrimary': 'Commencer gratuitement',
   'landing.ctaSecondary': 'Voir les fonctionnalités',
   'landing.heroBadge': 'Journal de trading piloté par la data',
-  'landing.heroTitle1': 'Trade avec des données.',
-  'landing.heroTitle2': 'Pas avec des émotions.',
+  'landing.heroTitle1': 'Arrête de trader tes émotions.',
+  'landing.heroTitle2': 'Commence à trader avec des données.',
   'landing.heroSubtitle':
-    "TradeVault transforme chaque trade enregistré en analytics quantitatives, coaching IA et outils de discipline — pour que ton edge ne soit plus une intuition.",
+    "Enregistre tes trades, laisse l'IA les analyser, et comprends enfin pourquoi tu perds — et comment l'arrêter.",
   'landing.heroNote': 'Gratuit — sans carte bancaire',
   'landing.mockEquity': 'Courbe de capital',
   'landing.mockWinRate': 'Taux de réussite',
@@ -554,6 +554,65 @@ const fr: Dict = {
   'landing.step3Desc': 'Suis la checklist pré-marché, agis sur ton rapport mensuel, et laisse la discipline composer.',
   'landing.finalTitle': 'Prêt à trader avec un edge ?',
   'landing.finalSubtitle': 'Rejoins la communauté early. Gratuit, sans carte bancaire, données privées.',
+
+  // Landing v2 — inspirée de focuspips
+  'landing.heroCta': 'Analyser mes trades — gratuit',
+  'landing.heroTrust': "Gratuit pendant l'accès anticipé · Accès immédiat",
+  'landing.ratingText': 'Adopté par les traders disciplinés',
+  'landing.compareTitle': "Tout ce qu'un tableur ne sait pas faire",
+  'landing.compareSubtitle':
+    'Un seul journal qui calcule, coache et te garde discipliné — automatiquement.',
+  'landing.compareCapability': 'Fonctionnalité',
+  'landing.compareUs': 'TradeVault',
+  'landing.compareSheet': 'Tableur / Notion',
+  'landing.compareOther': 'Autres journaux',
+  'landing.compareRow1': 'Métriques quant calculées automatiquement (Sharpe, Sortino, expectancy)',
+  'landing.compareRow2': 'Coach IA conversationnel sur tes propres trades',
+  'landing.compareRow3': 'Checklist de discipline pré-marché',
+  'landing.compareRow4': 'Calendrier économique dans ton fuseau',
+  'landing.compareRow5': 'Analyse du coût des erreurs',
+  'landing.compareRow6': "Gratuit pendant l'accès anticipé",
+  'landing.showcaseTitle': 'Des trades bruts aux vraies décisions',
+  'landing.showcaseSubtitle': 'Chaque écran répond à une question : que devrais-je changer ?',
+  'landing.showcase1Title': 'Un dashboard qui dit la vérité',
+  'landing.showcase1Desc':
+    "Courbe de capital, win rate, profit factor et drawdown — calculés en direct sur tes vrais trades, pas à l'instinct.",
+  'landing.showcase2Title': 'Chaque trade est une donnée. Exploite-la.',
+  'landing.showcase2Desc':
+    "Entrées, sorties, screenshots, confluences et erreurs en quelques secondes. Rien de ce que tu as fait n'est perdu.",
+  'landing.showcase3Title': "Les meilleurs traders exécutent un plan",
+  'landing.showcase3Desc':
+    'Lance la checklist pré-marché avant chaque session. Pas de checklist, pas de trade — la discipline devient une habitude.',
+  'landing.coachBadge': 'Coach IA',
+  'landing.coachTitle': 'Le coach qui lit vraiment tes trades',
+  'landing.coachSubtitle': 'Demande pourquoi tu perds. Obtiens une réponse claire, appuyée sur tes données.',
+  'landing.coachQuestion': 'Quels sont les éléments qui me font perdre ?',
+  'landing.coachIntro': "J'ai trouvé trois schémas dans ton historique :",
+  'landing.coachP1': 'Revenge trading après une perte',
+  'landing.coachP1Val': '-2 410 $',
+  'landing.coachP2': 'EURUSD est ta pire paire',
+  'landing.coachP2Val': '-566 $',
+  'landing.coachP3': 'Tu décroches entre 16h et 17h UTC',
+  'landing.coachP3Val': '-1 180 $',
+  'landing.coachOutro': 'Trois schémas. Une correction chacun. Voilà ton edge.',
+  'landing.faqTitle': 'Vos questions, nos réponses',
+  'landing.faqSubtitle': 'Tout ce que tu dois savoir avant de commencer.',
+  'landing.faqQ1': 'Comment importer mes trades ?',
+  'landing.faqA1':
+    "Importe un CSV depuis ton broker ou un autre journal, ou saisis tes trades en un geste. Les trades de démo te permettent d'explorer tout de suite.",
+  'landing.faqQ2': "C'est vraiment gratuit ?",
+  'landing.faqA2':
+    "Oui — tout est gratuit pendant l'accès anticipé. Sans carte bancaire, sans piège d'essai.",
+  'landing.faqQ3': 'Quels marchés sont pris en charge ?',
+  'landing.faqA3': 'Forex, futures, indices, crypto et actions — tout ce que tu peux enregistrer comme trade.',
+  'landing.faqQ4': 'Mes données sont-elles privées ?',
+  'landing.faqA4':
+    'Ton journal est à toi. Stocké en sécurité, exportable en CSV à tout moment, jamais revendu.',
+  'landing.faqQ5': 'Que fait le Coach IA ?',
+  'landing.faqA5':
+    'Il analyse ton historique réel et répond à tes questions sur tes schémas, tes erreurs et tes meilleurs setups.',
+  'landing.riskDisclaimer':
+    "TradeVault fournit des outils de recherche, d'analyse et de formation. Ce n'est pas un conseil en investissement et ne garantit aucun résultat. Le trading comporte un risque de perte.",
 
   // Rapports mensuels
   'reports.title': 'Rapports mensuels',

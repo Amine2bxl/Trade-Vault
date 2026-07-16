@@ -741,10 +741,10 @@ const en = {
   'landing.ctaPrimary': 'Start for free',
   'landing.ctaSecondary': 'See features',
   'landing.heroBadge': 'Data-driven trading journal',
-  'landing.heroTitle1': 'Trade with data.',
-  'landing.heroTitle2': 'Not with feelings.',
+  'landing.heroTitle1': 'Stop trading your emotions.',
+  'landing.heroTitle2': 'Start trading with data.',
   'landing.heroSubtitle':
-    'TradeVault turns every trade you log into quant-grade analytics, AI coaching and discipline tools — so your edge stops being a guess.',
+    'Log your trades, let AI analyze them, and finally understand why you lose — and how to stop.',
   'landing.heroNote': 'Free — no credit card required',
   'landing.mockEquity': 'Equity curve',
   'landing.mockWinRate': 'Win rate',
@@ -795,6 +795,65 @@ const en = {
   'landing.step3Desc': 'Follow the pre-market checklist, act on your monthly report, and let discipline compound.',
   'landing.finalTitle': 'Ready to trade with an edge?',
   'landing.finalSubtitle': 'Join the early community. Free, no credit card, your data stays private.',
+
+  // Public landing v2 — focuspips-inspired sections
+  'landing.heroCta': 'Analyze my trades — free',
+  'landing.heroTrust': 'Free during early access · Instant access',
+  'landing.ratingText': 'Loved by disciplined traders',
+  'landing.compareTitle': "Everything a spreadsheet can't do",
+  'landing.compareSubtitle':
+    'One journal that computes, coaches and keeps you disciplined — automatically.',
+  'landing.compareCapability': 'Capability',
+  'landing.compareUs': 'TradeVault',
+  'landing.compareSheet': 'Spreadsheet / Notion',
+  'landing.compareOther': 'Other journals',
+  'landing.compareRow1': 'Auto-computed quant metrics (Sharpe, Sortino, expectancy)',
+  'landing.compareRow2': 'Conversational AI coach on your own trades',
+  'landing.compareRow3': 'Pre-market discipline checklist',
+  'landing.compareRow4': 'Economic calendar in your timezone',
+  'landing.compareRow5': 'Mistake cost analysis',
+  'landing.compareRow6': 'Free during early access',
+  'landing.showcaseTitle': 'From raw trades to real decisions',
+  'landing.showcaseSubtitle': 'Every screen answers one question: what should I do differently?',
+  'landing.showcase1Title': 'A dashboard that tells the truth',
+  'landing.showcase1Desc':
+    'Equity curve, win rate, profit factor and drawdown — computed live from your real trades, not a gut feeling.',
+  'landing.showcase2Title': 'Every trade is data. Use it.',
+  'landing.showcase2Desc':
+    'Log entries, exits, screenshots, confluences and mistakes in seconds. Nothing you did is ever lost.',
+  'landing.showcase3Title': 'The best traders execute a plan',
+  'landing.showcase3Desc':
+    'Run the pre-market checklist before every session. No checklist, no trade — discipline becomes a habit.',
+  'landing.coachBadge': 'AI Coach',
+  'landing.coachTitle': 'The coach that actually reads your trades',
+  'landing.coachSubtitle': 'Ask why you lose. Get a straight answer, backed by your own data.',
+  'landing.coachQuestion': 'What is making me lose money?',
+  'landing.coachIntro': 'I found three patterns in your history:',
+  'landing.coachP1': 'Revenge trading after a loss',
+  'landing.coachP1Val': '-$2,410',
+  'landing.coachP2': 'EURUSD is your worst pair',
+  'landing.coachP2Val': '-$566',
+  'landing.coachP3': 'You fade between 16:00–17:00 UTC',
+  'landing.coachP3Val': '-$1,180',
+  'landing.coachOutro': "Three patterns. One fix each. That's your edge.",
+  'landing.faqTitle': 'Questions, answered',
+  'landing.faqSubtitle': 'Everything you need to know before you start.',
+  'landing.faqQ1': 'How do I get my trades in?',
+  'landing.faqA1':
+    'Import a CSV from your broker or another journal, or log trades one tap at a time. Demo trades let you explore instantly.',
+  'landing.faqQ2': 'Is it really free?',
+  'landing.faqA2':
+    'Yes — everything is free during early access. No credit card, no trial trap.',
+  'landing.faqQ3': 'Which markets are supported?',
+  'landing.faqA3': 'Forex, futures, indices, crypto and stocks — anything you can log as a trade.',
+  'landing.faqQ4': 'Is my data private?',
+  'landing.faqA4':
+    'Your journal is yours. Stored securely, exportable to CSV anytime, never sold.',
+  'landing.faqQ5': 'What does the AI Coach do?',
+  'landing.faqA5':
+    'It analyzes your real history and answers questions about your patterns, mistakes and best setups.',
+  'landing.riskDisclaimer':
+    'TradeVault provides research, analytics and educational tools. It is not investment advice and does not guarantee results. Trading involves risk of loss.',
 
   // Monthly reports
   'reports.title': 'Monthly Reports',
