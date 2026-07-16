@@ -70,7 +70,7 @@ export default function AuthModal({ initialMode = 'login', onBack }: AuthModalPr
   const inputClass = 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all';
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden"
+    <div className="relative min-h-dvh w-full overflow-x-hidden"
       style={{ background: 'linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)' }}>
 
       {/* Decorative orbs */}
@@ -87,8 +87,8 @@ export default function AuthModal({ initialMode = 'login', onBack }: AuthModalPr
         </button>
       )}
 
-      <div className="relative z-10 h-full flex items-center justify-center px-4 py-4 md:py-6 overflow-hidden">
-        <div className="w-full max-w-5xl h-full md:h-auto md:max-h-full grid md:grid-cols-2 gap-8 md:gap-16 md:items-center">
+      <div className="relative z-10 min-h-dvh flex items-center justify-center px-4 py-16 md:py-6">
+        <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 md:gap-16 md:items-center">
 
           {/* Marketing / product intro — desktop only, so the mobile card always fits
               within one screen height without needing to scroll. */}
@@ -120,8 +120,8 @@ export default function AuthModal({ initialMode = 'login', onBack }: AuthModalPr
           </div>
 
           {/* Auth card */}
-          <div className="w-full max-w-md mx-auto h-full md:h-auto flex flex-col justify-center animate-slide-in overflow-y-auto">
-        <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/40 my-auto">
+          <div className="w-full max-w-md mx-auto flex flex-col justify-center animate-slide-in">
+        <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/40">
           {/* Logo */}
           <div className="text-center mb-8 md:hidden">
             <div className="relative w-14 h-14 mx-auto mb-4">

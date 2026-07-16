@@ -9,6 +9,12 @@ import {
   Sparkles,
   Check,
   Star,
+  Timer,
+  Gauge,
+  Shield,
+  Upload,
+  LineChart,
+  Repeat,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import AuthModal from "../components/AuthModal";
@@ -201,6 +207,23 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Stats strip ── */}
+      <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-6 pb-14 md:pb-20">
+        <div className="grid grid-cols-3 gap-3 md:gap-5">
+          {[
+            { icon: Timer, value: t("landing.statTradesValue"), label: t("landing.statTrades") },
+            { icon: Gauge, value: t("landing.statMetricsValue"), label: t("landing.statMetrics") },
+            { icon: Shield, value: t("landing.statPrivateValue"), label: t("landing.statPrivate") },
+          ].map(({ icon: Icon, value, label }) => (
+            <div key={label} className="glass rounded-2xl p-4 md:p-5 text-center card-premium">
+              <Icon className="w-5 h-5 mx-auto mb-2 text-cyan-400" />
+              <div className="text-2xl md:text-3xl font-bold text-white tabular-nums">{value}</div>
+              <div className="text-[11px] md:text-xs text-slate-500 leading-snug mt-1">{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Features ── */}
       <section
         id="features"
@@ -222,6 +245,32 @@ export default function Landing() {
               </div>
               <h3 className="text-sm font-bold text-white mb-1.5">{title}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 pb-16 md:pb-24">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-2xl md:text-4xl font-bold mb-2">{t("landing.stepsTitle")}</h2>
+          <p className="text-sm md:text-base text-slate-500">{t("landing.stepsSubtitle")}</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4 md:gap-5">
+          {[
+            { icon: Upload, title: t("landing.step1Title"), desc: t("landing.step1Desc") },
+            { icon: LineChart, title: t("landing.step2Title"), desc: t("landing.step2Desc") },
+            { icon: Repeat, title: t("landing.step3Title"), desc: t("landing.step3Desc") },
+          ].map(({ icon: Icon, title, desc }, i) => (
+            <div key={title} className="relative glass rounded-2xl p-6 card-premium">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 text-white font-bold flex items-center justify-center text-sm shrink-0">
+                  {i + 1}
+                </span>
+                <Icon className="w-5 h-5 text-cyan-400" />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1.5">{title}</h3>
+              <p className="text-xs md:text-sm text-slate-500 leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -283,6 +332,25 @@ export default function Landing() {
           >
             {t("landing.pricingCta")} <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
+      <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-6 pb-16 md:pb-24">
+        <div className="relative glass-strong rounded-3xl p-8 md:p-12 text-center card-premium overflow-hidden">
+          <div className="pointer-events-none absolute -inset-10 bg-cyan-500/10 blur-3xl" />
+          <div className="relative">
+            <h2 className="text-2xl md:text-4xl font-bold mb-2">{t("landing.finalTitle")}</h2>
+            <p className="text-sm md:text-base text-slate-400 mb-6 max-w-lg mx-auto">
+              {t("landing.finalSubtitle")}
+            </p>
+            <button
+              onClick={() => setAuth("signup")}
+              className="h-12 px-7 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all inline-flex items-center gap-2"
+            >
+              {t("landing.ctaPrimary")} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </section>
 
