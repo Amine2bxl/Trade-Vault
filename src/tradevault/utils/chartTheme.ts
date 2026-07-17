@@ -47,7 +47,7 @@ export const crosshairCursor = {
 export const tooltipStyle = {
   contentStyle: {
     background: 'rgba(17,24,39,0.96)',
-    border: '1px solid rgba(var(--tv-accent-rgb),0.18)',
+    border: '1px solid rgb(var(--tv-accent-rgb) / 0.18)',
     borderRadius: '12px',
     fontSize: 11,
     boxShadow: '0 8px 24px rgba(0,0,0,0.35)',

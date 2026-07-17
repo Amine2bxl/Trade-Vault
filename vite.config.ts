@@ -14,7 +14,9 @@ export default defineConfig({
   },
   // Hard-pin the deploy target to Vercel now that the project runs outside Lovable
   // (Lovable's builder otherwise defaults to the cloudflare-module preset).
+  // NITRO_PRESET escape hatch: `npm run preview` builds a locally runnable
+  // node-server bundle (.output/) — the Vercel deploy is unaffected.
   nitro: {
-    preset: "vercel",
+    preset: process.env.NITRO_PRESET || "vercel",
   },
 });

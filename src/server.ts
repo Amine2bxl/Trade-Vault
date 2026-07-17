@@ -49,7 +49,19 @@ export default {
       }
       if (pathname === "/api/cron/lifecycle-emails") {
         const { handleLifecycleCron } = await import("./lib/lifecycle-emails.server");
-        return await handleLifecycleCron(request);
+        // Same daily tick also drives the weekly goal-plan push reminders
+        // (Mondays only — the handler itself gates the day). Best-effort:
+        // a reminder failure must never block the email run.
+        const response = await handleLifecycleCron(request);
+        if (response.ok) {
+          try {
+            const { handleGoalRemindersCron } = await import("./lib/goal-reminders.server");
+            await handleGoalRemindersCron(request);
+          } catch (e) {
+            console.error("[goal-reminders] cron failed", e);
+          }
+        }
+        return response;
       }
       if (pathname === "/api/emails/welcome" && request.method === "POST") {
         const { handleWelcomeEmail } = await import("./lib/lifecycle-emails.server");

@@ -4,6 +4,8 @@ const ru: Dict = {
   'nav.dashboard': 'Панель', 'nav.journal': 'Журнал', 'nav.missed': 'Упущенные сетапы',
   'nav.calendar': 'Календарь', 'nav.analytics': 'Аналитика', 'nav.mistakes': 'Ошибки',
   'nav.insights': 'ИИ-аналитика', 'nav.profile': 'Профиль', 'nav.home': 'Главная', 'nav.ai': 'ИИ',
+  'nav.goals': 'Цели', 'nav.groupPlan': 'План', 'nav.tradingPlan': 'Торговый план',
+  'nav.reports': 'Месячные отчёты', 'nav.appearance': 'Оформление', 'nav.subscription': 'Подписка',
   'common.save': 'Сохранить', 'common.cancel': 'Отмена', 'common.delete': 'Удалить',
   'common.edit': 'Изменить', 'common.add': 'Добавить', 'common.view': 'Просмотр', 'common.loading': 'Загрузка…',
   'common.saved': 'сохранено', 'common.signOut': 'Выйти', 'common.close': 'Закрыть',

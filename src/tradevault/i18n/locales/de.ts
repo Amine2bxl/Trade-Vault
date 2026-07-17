@@ -4,6 +4,8 @@ const de: Dict = {
   'nav.dashboard': 'Übersicht', 'nav.journal': 'Journal', 'nav.missed': 'Verpasste Setups',
   'nav.calendar': 'Kalender', 'nav.analytics': 'Analyse', 'nav.mistakes': 'Fehler',
   'nav.insights': 'KI Insights', 'nav.profile': 'Profil', 'nav.home': 'Start', 'nav.ai': 'KI',
+  'nav.goals': 'Ziele', 'nav.groupPlan': 'Plan', 'nav.tradingPlan': 'Trading-Plan',
+  'nav.reports': 'Monatsberichte', 'nav.appearance': 'Darstellung', 'nav.subscription': 'Abonnement',
   'common.save': 'Speichern', 'common.cancel': 'Abbrechen', 'common.delete': 'Löschen',
   'common.edit': 'Bearbeiten', 'common.add': 'Hinzufügen', 'common.view': 'Ansehen', 'common.loading': 'Lädt…',
   'common.saved': 'gespeichert', 'common.signOut': 'Abmelden', 'common.close': 'Schließen',

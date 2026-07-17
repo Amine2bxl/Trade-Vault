@@ -369,7 +369,7 @@ function AssetHeatRow({
         const intensity = Math.min(Math.abs(v) / max, 1);
         const bg =
           v >= 0
-            ? `rgba(var(--tv-accent-rgb), ${0.1 + intensity * 0.6})`
+            ? `rgb(var(--tv-accent-rgb) / ${0.1 + intensity * 0.6})`
             : `rgba(239,68,68, ${0.1 + intensity * 0.55})`;
         return (
           <div
@@ -729,7 +729,7 @@ function YearRow({ year, values, heatMax }: { year: number; values: number[]; he
           v === 0
             ? "rgba(100,116,139,0.08)"
             : v > 0
-              ? `rgba(var(--tv-accent-rgb), ${0.12 + intensity * 0.55})`
+              ? `rgb(var(--tv-accent-rgb) / ${0.12 + intensity * 0.55})`
               : `rgba(239,68,68, ${0.12 + intensity * 0.5})`;
         return (
           <div

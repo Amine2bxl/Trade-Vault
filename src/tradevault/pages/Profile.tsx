@@ -12,9 +12,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
-import ThemeSettings from "../components/ThemeSettings";
 import SubscriptionSection from "../components/SubscriptionSection";
-import TradingRulesSection from "../components/TradingRulesSection";
 
 interface ProfileProps {
   trades: Trade[];
@@ -69,14 +67,9 @@ export default function Profile({ trades }: ProfileProps) {
         />
       </div>
 
-      {/* Subscription management — upgrade, card change, cancel */}
+      {/* Subscription management — upgrade, card change, cancel.
+          (Trading rules now live on the Trading Plan page; themes on Appearance.) */}
       <SubscriptionSection />
-
-      {/* Personal trading rules — checked on every trade save (anti-bias push) */}
-      <TradingRulesSection />
-
-      {/* Appearance / themes */}
-      <ThemeSettings />
 
       {/* Contact / Support */}
       <div className="glass-strong rounded-3xl p-6 space-y-3">

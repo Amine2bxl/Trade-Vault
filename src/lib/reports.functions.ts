@@ -10,6 +10,9 @@ import { generateReportForUser } from "./monthly-reports.server";
 const Input = z.object({
   /** YYYY-MM; must be the current or a past month */
   month: z.string().regex(/^\d{4}-\d{2}$/),
+  /** false = skip the Gemini summary (used by the CSV-import backfill, where
+   *  many months are generated in a row and speed beats prose). */
+  withAi: z.boolean().optional(),
 });
 
 export const generateMyMonthlyReport = createServerFn({ method: "POST" })
@@ -21,6 +24,8 @@ export const generateMyMonthlyReport = createServerFn({ method: "POST" })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = context.supabase as any;
-    const report = await generateReportForUser(sb, context.userId, data.month);
+    const report = await generateReportForUser(sb, context.userId, data.month, {
+      withAi: data.withAi !== false,
+    });
     return { report };
   });

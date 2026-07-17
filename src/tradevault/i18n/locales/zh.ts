@@ -4,6 +4,8 @@ const zh: Dict = {
   'nav.dashboard': '仪表板', 'nav.journal': '日志', 'nav.missed': '错过的机会',
   'nav.calendar': '日历', 'nav.analytics': '分析', 'nav.mistakes': '错误',
   'nav.insights': 'AI 洞察', 'nav.profile': '资料', 'nav.home': '首页', 'nav.ai': 'AI',
+  'nav.goals': '目标', 'nav.groupPlan': '计划', 'nav.tradingPlan': '交易计划',
+  'nav.reports': '月度报告', 'nav.appearance': '外观', 'nav.subscription': '订阅',
   'common.save': '保存', 'common.cancel': '取消', 'common.delete': '删除',
   'common.edit': '编辑', 'common.add': '添加', 'common.view': '查看', 'common.loading': '加载中…',
   'common.saved': '已保存', 'common.signOut': '退出登录', 'common.close': '关闭',

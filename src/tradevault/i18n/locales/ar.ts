@@ -4,6 +4,8 @@ const ar: Dict = {
   'nav.dashboard': 'لوحة التحكم', 'nav.journal': 'السجل', 'nav.missed': 'الإعدادات الفائتة',
   'nav.calendar': 'التقويم', 'nav.analytics': 'التحليلات', 'nav.mistakes': 'الأخطاء',
   'nav.insights': 'رؤى الذكاء الاصطناعي', 'nav.profile': 'الملف الشخصي', 'nav.home': 'الرئيسية', 'nav.ai': 'الذكاء الاصطناعي',
+  'nav.goals': 'الأهداف', 'nav.groupPlan': 'الخطة', 'nav.tradingPlan': 'خطة التداول',
+  'nav.reports': 'التقارير الشهرية', 'nav.appearance': 'المظهر', 'nav.subscription': 'الاشتراك',
   'common.save': 'حفظ', 'common.cancel': 'إلغاء', 'common.delete': 'حذف',
   'common.edit': 'تعديل', 'common.add': 'إضافة', 'common.view': 'عرض', 'common.loading': 'جارٍ التحميل…',
   'common.saved': 'تم الحفظ', 'common.signOut': 'تسجيل الخروج', 'common.close': 'إغلاق',

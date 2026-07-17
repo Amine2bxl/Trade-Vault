@@ -13,7 +13,10 @@ export type Page =
   | "calculator"
   | "settings"
   | "reports"
-  | "goals";
+  | "goals"
+  | "tradingplan"
+  | "appearance"
+  | "subscription";
 
 export type TradeDirection = "long" | "short" | "be";
 

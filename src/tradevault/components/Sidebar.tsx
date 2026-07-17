@@ -13,6 +13,10 @@ import {
   CalendarRange,
   Calculator,
   Settings as SettingsIcon,
+  Map,
+  FileText,
+  Palette,
+  CreditCard,
 } from "lucide-react";
 import { Page } from "../types";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
@@ -55,10 +59,21 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       label: t("nav.groupAnalysis"),
       items: [
         { id: "analytics", label: t("nav.analytics"), icon: BarChart3 },
-        { id: "goals", label: t("nav.goals"), icon: Target },
         { id: "insights", label: t("nav.insights"), icon: Sparkles },
         { id: "mistakes", label: t("nav.mistakes"), icon: AlertTriangle },
         { id: "calendar", label: t("nav.calendar"), icon: Calendar },
+      ],
+    },
+    {
+      // Plan — everything about the trader's roadmap and long-term tracking:
+      // written trading plan, goals, monthly reports, personalization, billing.
+      label: t("nav.groupPlan"),
+      items: [
+        { id: "tradingplan", label: t("nav.tradingPlan"), icon: Map },
+        { id: "goals", label: t("nav.goals"), icon: Target },
+        { id: "reports", label: t("nav.reports"), icon: FileText },
+        { id: "appearance", label: t("nav.appearance"), icon: Palette },
+        { id: "subscription", label: t("nav.subscription"), icon: CreditCard },
       ],
     },
     {
@@ -81,7 +96,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
     // h-dvh + sticky top-0: the rail is always exactly viewport-height and never
     // moves with page scroll — content scrolls in <main>, nav scrolls internally
     // if it ever overflows. Identical position and alignment on every page.
-    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 bg-[#080a0d]/85 border-r border-white/[0.05] flex-col shrink-0 backdrop-blur-xl">
+    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 bg-[#08111e]/85 border-r border-white/[0.05] flex-col shrink-0 backdrop-blur-xl">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/[0.05] flex items-center gap-3 shrink-0">
         <div className="relative shrink-0">

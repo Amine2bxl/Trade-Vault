@@ -262,7 +262,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <YAxis domain={equityYDomain} tick={{ fill: '#475569', fontSize: 10 }} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
                   <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
                   <Tooltip {...tooltipStyle} formatter={((value: any) => [`$${Number(value).toFixed(2)}`, t('analytics.equityCurve')])} labelFormatter={(v) => formatShortDate(v)} />
-                  <Area type="natural" dataKey="equity" stroke="url(#eqGStroke)" fill="url(#eqG)" dot={false} activeDot={glowActiveDot('var(--tv-highlight)')} style={{ filter: 'drop-shadow(0 3px 8px rgba(var(--tv-accent-rgb),0.4))' }} {...EQUITY_LINE} {...EQUITY_ANIMATION} />
+                  <Area type="natural" dataKey="equity" stroke="url(#eqGStroke)" fill="url(#eqG)" dot={false} activeDot={glowActiveDot('var(--tv-highlight)')} style={{ filter: 'drop-shadow(0 3px 8px rgb(var(--tv-accent-rgb) / 0.4))' }} {...EQUITY_LINE} {...EQUITY_ANIMATION} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

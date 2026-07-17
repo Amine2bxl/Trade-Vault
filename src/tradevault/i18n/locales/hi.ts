@@ -4,6 +4,8 @@ const hi: Dict = {
   'nav.dashboard': 'डैशबोर्ड', 'nav.journal': 'जर्नल', 'nav.missed': 'छूटे सेटअप',
   'nav.calendar': 'कैलेंडर', 'nav.analytics': 'विश्लेषण', 'nav.mistakes': 'गलतियाँ',
   'nav.insights': 'AI इनसाइट्स', 'nav.profile': 'प्रोफाइल', 'nav.home': 'होम', 'nav.ai': 'AI',
+  'nav.goals': 'लक्ष्य', 'nav.groupPlan': 'योजना', 'nav.tradingPlan': 'ट्रेडिंग योजना',
+  'nav.reports': 'मासिक रिपोर्ट', 'nav.appearance': 'रूप-रंग', 'nav.subscription': 'सदस्यता',
   'common.save': 'सहेजें', 'common.cancel': 'रद्द करें', 'common.delete': 'हटाएं',
   'common.edit': 'संपादित करें', 'common.add': 'जोड़ें', 'common.view': 'देखें', 'common.loading': 'लोड हो रहा है…',
   'common.saved': 'सहेजा गया', 'common.signOut': 'साइन आउट', 'common.close': 'बंद करें',

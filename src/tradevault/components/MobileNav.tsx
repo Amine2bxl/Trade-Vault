@@ -16,6 +16,10 @@ import {
   CalendarRange,
   Calculator,
   Settings as SettingsIcon,
+  Map,
+  FileText,
+  Palette,
+  CreditCard,
 } from "lucide-react";
 import { Page } from "../types";
 import { cn } from "../utils/cn";
@@ -59,10 +63,19 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     {
       label: t("nav.groupAnalysis"),
       items: [
-        { id: "goals" as Page, label: t("nav.goals"), icon: Target },
         { id: "insights" as Page, label: t("nav.insights"), icon: Sparkles },
         { id: "mistakes" as Page, label: t("nav.mistakes"), icon: AlertTriangle },
         { id: "calendar" as Page, label: t("nav.calendar"), icon: Calendar },
+      ],
+    },
+    {
+      label: t("nav.groupPlan"),
+      items: [
+        { id: "tradingplan" as Page, label: t("nav.tradingPlan"), icon: Map },
+        { id: "goals" as Page, label: t("nav.goals"), icon: Target },
+        { id: "reports" as Page, label: t("nav.reports"), icon: FileText },
+        { id: "appearance" as Page, label: t("nav.appearance"), icon: Palette },
+        { id: "subscription" as Page, label: t("nav.subscription"), icon: CreditCard },
       ],
     },
     {
@@ -136,7 +149,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
                 {/* "In progress" dot when a trade draft is waiting */}
                 {hasDraft && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#080a0d] shadow-[0_0_8px_rgba(251,191,36,0.7)] animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#060d16] shadow-[0_0_8px_rgba(251,191,36,0.7)] animate-pulse" />
                 )}
               </button>
             </div>

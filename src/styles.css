@@ -210,7 +210,9 @@
 }
 
 html {
-  background: #05070a;
+  /* Deep navy — the landing page's base (#060d16), shared by the whole app
+     so marketing site and product read as ONE surface. */
+  background: #060d16;
   /* App-like: allow scroll panning but kill pinch-zoom and double-tap zoom. */
   touch-action: pan-x pan-y;
   -webkit-text-size-adjust: 100%;
@@ -314,41 +316,41 @@ select,
   position: fixed;
   top: 0;
   left: 0;
-  /* Above the whole UI but click-through: additively lights up whatever it
-     passes over, so the halo is always visible on the dark surfaces. */
   z-index: 9998;
-  width: 170px;
-  height: 170px;
+  /* SAME glow as the landing page (.landing-cursor-glow): a wide, whisper-soft
+     halo — not a bright spotlight — retinted live by the active theme. */
+  width: 320px;
+  height: 320px;
   border-radius: 50%;
   pointer-events: none;
   opacity: 0;
-  mix-blend-mode: screen;
   will-change: transform, opacity;
-  transition: opacity 0.4s ease;
-  /* Tight, bright core fading through the theme accent — a real halo hugging
-     the cursor, retinted live by the active theme. */
+  transition: opacity 0.35s ease;
   background: radial-gradient(
     circle,
-    rgba(var(--tv-highlight-rgb), 0.55) 0%,
-    rgba(var(--tv-accent-rgb), 0.30) 32%,
-    rgba(var(--tv-accent-rgb), 0.10) 58%,
-    transparent 74%
+    rgb(var(--tv-highlight-rgb) / 0.045) 0%,
+    rgba(99, 102, 241, 0.02) 45%,
+    transparent 72%
   );
-  filter: blur(12px);
+  filter: blur(6px);
 }
 @media (pointer: coarse), (prefers-reduced-motion: reduce) {
   .cursor-glow { display: none; }
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* Landing kit fonts everywhere: Manrope body (+ Sora display below) — one
+     typographic identity across marketing site and product. */
+  font-family: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-weight: 400;
   font-size: 15px;
   line-height: 1.55;
-  /* Deep near-black terminal backdrop with a faint cyan-tinted vignette */
+  /* Same deep-navy mesh as the landing hero (hero-mesh): soft cyan/sky
+     ellipses over #060d16 — no more near-black backdrop. */
   background:
-    radial-gradient(1200px 800px at 78% -8%, rgba(var(--tv-accent-rgb), 0.06), transparent 60%),
-    linear-gradient(160deg, #05070a 0%, #060a0f 55%, #05080c 100%);
+    radial-gradient(ellipse 70% 50% at 70% -8%, rgb(var(--tv-accent-rgb) / 0.075) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 0% 85%, rgba(14, 165, 233, 0.055) 0%, transparent 60%),
+    #060d16;
   background-attachment: fixed;
   color: #e2e8f0;
   min-height: 100vh;
@@ -380,17 +382,17 @@ body {
   }
 }
 
-/* Display family — Space Grotesk gives headings a distinct, modern, quant-terminal
- * identity that reads apart from the Inter body without shouting. */
+/* Display family — Sora, exactly like the landing page headings, so titles
+ * carry the same voice on both sides of the sign-in wall. */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Sora', 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Sora', 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   letter-spacing: -0.02em;
   font-weight: 700;
   line-height: 1.18;
 }
 
 .font-display {
-  font-family: 'Sora', 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Sora', 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   letter-spacing: -0.025em;
   font-weight: 700;
 }
@@ -402,8 +404,8 @@ h1, h2, h3, h4, h5, h6 {
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(var(--tv-accent-rgb), 0.5); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(var(--tv-accent-rgb), 0.8); }
+::-webkit-scrollbar-thumb { background: rgb(var(--tv-accent-rgb) / 0.5); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--tv-accent-rgb) / 0.8); }
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -426,8 +428,8 @@ input[type="number"] { -moz-appearance: textfield; }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(var(--tv-accent-rgb), 0.08); }
-  50% { box-shadow: 0 0 40px rgba(var(--tv-accent-rgb), 0.18); }
+  0%, 100% { box-shadow: 0 0 20px rgb(var(--tv-accent-rgb) / 0.08); }
+  50% { box-shadow: 0 0 40px rgb(var(--tv-accent-rgb) / 0.18); }
 }
 @keyframes orb-float {
   0%, 100% { transform: translate(0, 0); }
@@ -452,17 +454,17 @@ input[type="number"] { -moz-appearance: textfield; }
 .stagger-7 { animation-delay: 420ms; }
 
 .glass {
-  /* Neutral graphite panel (was navy slate) with a hairline cyan edge */
-  background: linear-gradient(135deg, rgba(17, 22, 30, 0.72) 0%, rgba(13, 17, 24, 0.44) 100%);
+  /* Deep-navy glass — same blue family as the landing cards (#0a1625/#0b1727) */
+  background: linear-gradient(135deg, rgba(13, 24, 40, 0.72) 0%, rgba(10, 19, 32, 0.44) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(45, 62, 74, 0.28);
+  border: 1px solid rgba(56, 84, 116, 0.28);
 }
 .glass-strong {
-  background: linear-gradient(135deg, rgba(8, 11, 15, 0.99) 0%, rgba(6, 9, 12, 0.98) 100%);
+  background: linear-gradient(135deg, rgba(10, 20, 34, 0.99) 0%, rgba(8, 15, 26, 0.98) 100%);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(45, 62, 74, 0.5);
+  border: 1px solid rgba(56, 84, 116, 0.5);
 }
 /* Premium card hover — transition only the properties that change (never `all`,
  * which would also animate layout). A layered shadow lifts the card while a
@@ -482,9 +484,9 @@ input[type="number"] { -moz-appearance: textfield; }
        top edge reads as backlit glass, not a harsh outline. */
     box-shadow:
       0 18px 44px -14px rgba(0,0,0,0.55),
-      0 6px 26px -10px rgba(var(--tv-accent-rgb),0.28),
-      inset 0 1px 0 rgba(var(--tv-highlight-rgb),0.10);
-    border-color: rgba(var(--tv-accent-rgb),0.30);
+      0 6px 26px -10px rgb(var(--tv-accent-rgb) / 0.28),
+      inset 0 1px 0 rgb(var(--tv-highlight-rgb) / 0.10);
+    border-color: rgb(var(--tv-accent-rgb) / 0.30);
   }
 }
 
@@ -492,7 +494,7 @@ input[type="number"] { -moz-appearance: textfield; }
    box-shadow (no layout impact), so it layers safely over any card. */
 .glass, .glass-strong {
   box-shadow:
-    inset 0 1px 0 rgba(var(--tv-highlight-rgb), 0.05),
+    inset 0 1px 0 rgb(var(--tv-highlight-rgb) / 0.05),
     0 18px 48px -24px rgba(0, 0, 0, 0.6);
 }
 
@@ -517,7 +519,7 @@ input[type="number"] { -moz-appearance: textfield; }
  * barely-there hairline with a whisper of accent glow, so the hover reads as
  * the discreet glowing marker dot, not a loud line. */
 .recharts-tooltip-cursor {
-  filter: drop-shadow(0 0 3px rgba(var(--tv-accent-rgb), 0.35));
+  filter: drop-shadow(0 0 3px rgb(var(--tv-accent-rgb) / 0.35));
 }
 
 /* Equity curve "draw in" reveal — the plotted area wipes left→right on mount /
@@ -552,7 +554,7 @@ input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 18px; height: 18px; border-radius: 50%;
   background: var(--tv-accent); cursor: pointer;
-  box-shadow: 0 0 10px rgba(var(--tv-accent-rgb),0.4);
+  box-shadow: 0 0 10px rgb(var(--tv-accent-rgb) / 0.4);
 }
 
 .auth-orb {
@@ -574,8 +576,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .bottom-nav-shell {
   border-radius: 26px;
-  background: linear-gradient(180deg, rgba(14, 19, 27, 0.86) 0%, rgba(7, 10, 14, 0.94) 100%);
-  border: 1px solid rgba(var(--tv-accent-rgb), 0.10);
+  background: linear-gradient(180deg, rgba(12, 22, 37, 0.86) 0%, rgba(7, 13, 22, 0.94) 100%);
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.10);
   box-shadow:
     0 10px 34px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset,
@@ -602,7 +604,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .bottom-nav-bar-active {
   transform: translateX(-50%) scaleX(1);
-  box-shadow: 0 0 10px rgba(var(--tv-highlight-rgb), 0.7);
+  box-shadow: 0 0 10px rgb(var(--tv-highlight-rgb) / 0.7);
 }
 
 /* Icon sits on a pill that fills with a soft accent glow when active */
@@ -612,21 +614,21 @@ input[type="range"]::-webkit-slider-thumb {
   transition: background 0.22s ease, box-shadow 0.22s ease, transform 0.22s cubic-bezier(0.16,1,0.3,1);
 }
 .bottom-nav-icon-active {
-  background: rgba(var(--tv-accent-rgb), 0.14);
-  box-shadow: inset 0 0 0 1px rgba(var(--tv-highlight-rgb), 0.18), 0 0 14px rgba(var(--tv-accent-rgb), 0.18);
+  background: rgb(var(--tv-accent-rgb) / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(var(--tv-highlight-rgb) / 0.18), 0 0 14px rgb(var(--tv-accent-rgb) / 0.18);
   transform: translateY(-1px);
 }
 
 @keyframes fabBreathe {
-  0%, 100% { box-shadow: 0 4px 20px rgba(var(--tv-accent-rgb), 0.4); }
-  50% { box-shadow: 0 4px 30px rgba(var(--tv-accent-rgb), 0.7); }
+  0%, 100% { box-shadow: 0 4px 20px rgb(var(--tv-accent-rgb) / 0.4); }
+  50% { box-shadow: 0 4px 30px rgb(var(--tv-accent-rgb) / 0.7); }
 }
 .fab-button {
   width: 54px; height: 54px; border-radius: 18px;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--tv-accent), var(--tv-accent-2));
-  box-shadow: 0 4px 20px rgba(var(--tv-accent-rgb), 0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-  border: 1px solid rgba(var(--tv-highlight-rgb), 0.35);
+  box-shadow: 0 4px 20px rgb(var(--tv-accent-rgb) / 0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+  border: 1px solid rgb(var(--tv-highlight-rgb) / 0.35);
   transition: transform 0.2s cubic-bezier(0.16,1,0.3,1);
   animation: fabBreathe 3.2s ease-in-out infinite;
 }

@@ -271,7 +271,7 @@ export default function Dashboard({
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ filter: "drop-shadow(0 0 6px rgba(var(--tv-highlight-rgb),0.5))" }}
+              style={{ filter: "drop-shadow(0 0 6px rgb(var(--tv-highlight-rgb) / 0.5))" }}
             />
             <path
               d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
@@ -283,7 +283,7 @@ export default function Dashboard({
               cy="14"
               r="3.5"
               fill="var(--tv-highlight)"
-              style={{ filter: "drop-shadow(0 0 5px rgba(var(--tv-highlight-rgb),0.9))" }}
+              style={{ filter: "drop-shadow(0 0 5px rgb(var(--tv-highlight-rgb) / 0.9))" }}
             />
           </svg>
           <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
@@ -438,7 +438,7 @@ export default function Dashboard({
                       dot={false}
                       activeDot={glowActiveDot("var(--tv-highlight)")}
                       style={{
-                        filter: "drop-shadow(0 3px 8px rgba(var(--tv-highlight-rgb),0.4))",
+                        filter: "drop-shadow(0 3px 8px rgb(var(--tv-highlight-rgb) / 0.4))",
                       }}
                       {...EQUITY_LINE}
                       {...EQUITY_ANIMATION}

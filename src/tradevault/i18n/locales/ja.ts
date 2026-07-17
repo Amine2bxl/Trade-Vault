@@ -4,6 +4,8 @@ const ja: Dict = {
   'nav.dashboard': 'ダッシュボード', 'nav.journal': 'ジャーナル', 'nav.missed': '逃したセットアップ',
   'nav.calendar': 'カレンダー', 'nav.analytics': '分析', 'nav.mistakes': 'ミス',
   'nav.insights': 'AIインサイト', 'nav.profile': 'プロフィール', 'nav.home': 'ホーム', 'nav.ai': 'AI',
+  'nav.goals': '目標', 'nav.groupPlan': 'プラン', 'nav.tradingPlan': 'トレーディングプラン',
+  'nav.reports': '月次レポート', 'nav.appearance': '外観', 'nav.subscription': 'サブスクリプション',
   'common.save': '保存', 'common.cancel': 'キャンセル', 'common.delete': '削除',
   'common.edit': '編集', 'common.add': '追加', 'common.view': '表示', 'common.loading': '読み込み中…',
   'common.saved': '保存済み', 'common.signOut': 'ログアウト', 'common.close': '閉じる',

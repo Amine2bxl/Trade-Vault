@@ -32,6 +32,36 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_plans: {
+        Row: {
+          created_at: string
+          goals: Json
+          horizon_months: number
+          started_at: string
+          tasks_done: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          goals?: Json
+          horizon_months?: number
+          started_at?: string
+          tasks_done?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          goals?: Json
+          horizon_months?: number
+          started_at?: string
+          tasks_done?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       six_month_goals: {
         Row: {
           created_at: string
@@ -239,6 +269,7 @@ export type Database = {
           onboarding_pain: string | null
           onboarding_monthly_target: number | null
           trading_rules: Json
+          trading_plan: Json
           onboarding_skipped: boolean
           onboarding_style: string | null
           onboarding_uses_ict: boolean
@@ -264,6 +295,7 @@ export type Database = {
           onboarding_pain?: string | null
           onboarding_monthly_target?: number | null
           trading_rules?: Json
+          trading_plan?: Json
           onboarding_skipped?: boolean
           onboarding_style?: string | null
           onboarding_uses_ict?: boolean
@@ -289,6 +321,7 @@ export type Database = {
           onboarding_pain?: string | null
           onboarding_monthly_target?: number | null
           trading_rules?: Json
+          trading_plan?: Json
           onboarding_skipped?: boolean
           onboarding_style?: string | null
           onboarding_uses_ict?: boolean

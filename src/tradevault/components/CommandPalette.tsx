@@ -18,6 +18,10 @@ import {
   CalendarRange,
   Calculator,
   Settings as SettingsIcon,
+  Map,
+  FileText,
+  Palette,
+  CreditCard,
 } from "lucide-react";
 import { Trade, Page } from "../types";
 import { formatPnl, formatShortDate } from "../utils/tradeCalcs";
@@ -72,6 +76,15 @@ export default function CommandPalette({
     { page: "missed", label: t("nav.missed"), icon: <Target className="w-4 h-4" /> },
     { page: "insights", label: t("nav.insights"), icon: <Sparkles className="w-4 h-4" /> },
     { page: "calculator", label: t("nav.calculator"), icon: <Calculator className="w-4 h-4" /> },
+    { page: "tradingplan", label: t("nav.tradingPlan"), icon: <Map className="w-4 h-4" /> },
+    { page: "goals", label: t("nav.goals"), icon: <Target className="w-4 h-4" /> },
+    { page: "reports", label: t("nav.reports"), icon: <FileText className="w-4 h-4" /> },
+    { page: "appearance", label: t("nav.appearance"), icon: <Palette className="w-4 h-4" /> },
+    {
+      page: "subscription",
+      label: t("nav.subscription"),
+      icon: <CreditCard className="w-4 h-4" />,
+    },
     { page: "news", label: t("nav.news"), icon: <Newspaper className="w-4 h-4" /> },
     {
       page: "seasonality",

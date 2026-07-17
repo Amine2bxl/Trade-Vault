@@ -208,6 +208,9 @@ export function SkeletonForPage({ page }: { page: Page }) {
     case "settings":
     case "calculator":
     case "goals":
+    case "tradingplan":
+    case "appearance":
+    case "subscription":
       return <CardsSkeleton />;
     default:
       return <PageSkeleton />;

@@ -4,6 +4,8 @@ const nl: Dict = {
   'nav.dashboard': 'Dashboard', 'nav.journal': 'Logboek', 'nav.missed': 'Gemiste setups',
   'nav.calendar': 'Kalender', 'nav.analytics': 'Analyse', 'nav.mistakes': 'Fouten',
   'nav.insights': 'AI Insights', 'nav.profile': 'Profiel', 'nav.home': 'Start', 'nav.ai': 'AI',
+  'nav.goals': 'Doelen', 'nav.groupPlan': 'Plan', 'nav.tradingPlan': 'Tradingplan',
+  'nav.reports': 'Maandrapporten', 'nav.appearance': 'Weergave', 'nav.subscription': 'Abonnement',
   'common.save': 'Opslaan', 'common.cancel': 'Annuleren', 'common.delete': 'Verwijderen',
   'common.edit': 'Bewerken', 'common.add': 'Toevoegen', 'common.view': 'Bekijken', 'common.loading': 'Laden…',
   'common.saved': 'opgeslagen', 'common.signOut': 'Uitloggen', 'common.close': 'Sluiten',

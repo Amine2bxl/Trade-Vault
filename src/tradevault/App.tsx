@@ -20,6 +20,9 @@ const LotSizeCalculator = lazy(() => import("./pages/LotSizeCalculator"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Goals = lazy(() => import("./pages/Goals"));
+const TradingPlan = lazy(() => import("./pages/TradingPlan"));
+const Appearance = lazy(() => import("./pages/Appearance"));
+const Subscription = lazy(() => import("./pages/Subscription"));
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
@@ -35,7 +38,9 @@ import {
   migrateLegacyTradeScreenshots,
   loadOnboarding,
   loadStartingBalance,
+  loadMonthlyReports,
 } from "./store";
+import { generateMyMonthlyReport } from "@/lib/reports.functions";
 import { computeStats } from "./utils/tradeCalcs";
 import { loadTradingRules, checkTradeAgainstRules, type TradingRule } from "./utils/tradingRules";
 import { sendPushToSelf } from "@/lib/push.functions";
@@ -160,7 +165,9 @@ function AppContent() {
   useEffect(() => {
     if (!user) return;
     loadTradingRules(user.id)
-      .then((r) => { rulesRef.current = r; })
+      .then((r) => {
+        rulesRef.current = r;
+      })
       .catch(() => {});
     // Profile's rules editor broadcasts changes so the checker never goes stale.
     const onUpdate = (e: Event) => {
@@ -291,6 +298,7 @@ function AppContent() {
   );
 
   // CSV import: persist each row, keep the ones that made it
+  const generateReport = useServerFn(generateMyMonthlyReport);
   const handleImportTrades = useCallback(
     async (imported: Trade[]): Promise<number> => {
       if (!user) return 0;
@@ -303,10 +311,41 @@ function AppContent() {
           console.error("Failed to import trade", e);
         }
       }
-      if (saved.length > 0) setTrades((prev) => [...saved, ...prev]);
+      if (saved.length > 0) {
+        setTrades((prev) => [...saved, ...prev]);
+        // Backfill: a multi-month CSV history should come with its monthly
+        // reports. Generate every past month that has trades but no report
+        // yet — in-app only, never emailed. Fire-and-forget so the import
+        // modal closes instantly.
+        void (async () => {
+          try {
+            const nowMonth = new Date().toISOString().slice(0, 7);
+            const months = [...new Set(saved.map((tr) => tr.date.slice(0, 7)))]
+              .filter((m) => /^\d{4}-\d{2}$/.test(m) && m < nowMonth)
+              .sort();
+            if (months.length === 0) return;
+            const existing = new Set((await loadMonthlyReports(user.id)).map((r) => r.month));
+            const missing = months.filter((m) => !existing.has(m));
+            let generated = 0;
+            for (const month of missing) {
+              try {
+                const res = await generateReport({ data: { month, withAi: false } });
+                if (res.report) generated++;
+              } catch (e) {
+                console.error("Report backfill failed for", month, e);
+              }
+            }
+            if (generated > 0) {
+              toast(t("reports.backfilled").replace("{n}", String(generated)), "success");
+            }
+          } catch (e) {
+            console.error("Report backfill failed", e);
+          }
+        })();
+      }
       return saved.length;
     },
-    [user],
+    [user, generateReport, t, toast],
   );
 
   if (loading) {
@@ -402,6 +441,9 @@ function AppContent() {
             )}
             {page === "reports" && <Reports />}
             {page === "goals" && <Goals trades={trades} />}
+            {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+            {page === "appearance" && <Appearance />}
+            {page === "subscription" && <Subscription />}
             {page === "profile" && <Profile trades={trades} />}
           </Suspense>
         </div>

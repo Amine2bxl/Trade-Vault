@@ -38,10 +38,10 @@ export default function CursorGlow() {
     };
 
     const tick = () => {
-      // Tight follow so the halo sits *around* the cursor, with just enough
-      // easing to feel liquid rather than glued.
-      cx += (tx - cx) * 0.3;
-      cy += (ty - cy) * 0.3;
+      // Same easing factor as the landing page's glow (0.16) so the halo
+      // trails identically on both sides of the sign-in wall.
+      cx += (tx - cx) * 0.16;
+      cy += (ty - cy) * 0.16;
       el.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
       raf = requestAnimationFrame(tick);
     };
