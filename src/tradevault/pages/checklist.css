@@ -22,9 +22,13 @@
   --jk-t3: #3d5a75;
   --jk-r: 14px;
   --jk-rs: 9px;
-  --jk-disp: 'Rajdhani', sans-serif;
-  --jk-num: 'Orbitron', sans-serif;
-  --jk-mono: 'JetBrains Mono', monospace;
+  /* Unified with the landing/app kit: Sora (display) + Manrope (body/numbers).
+     The former HUD fonts (Rajdhani/Orbitron/JetBrains Mono) were never loaded
+     and silently fell back to system fonts — this makes the checklist carry the
+     exact same voice as the rest of the site. */
+  --jk-disp: 'Sora', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --jk-num: 'Sora', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --jk-mono: 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;
   --jk-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   color: var(--jk-t1);
