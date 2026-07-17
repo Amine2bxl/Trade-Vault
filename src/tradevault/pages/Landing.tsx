@@ -6,7 +6,6 @@ import {
   useState,
 } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import TrustpilotWidget, { TRUSTPILOT_BUSINESS_UNIT_ID } from "../components/TrustpilotWidget";
 import logoSrc from "@/assets/tradevault-logo.png";
 
 /**
@@ -246,106 +245,6 @@ function useSpot() {
   };
 }
 
-/* ─────────────────────────── JARVIS CHECKLIST ─────────────────────────── */
-function JarvisChecklist() {
-  const [done, setDone] = useState<boolean[]>([true, true, true, false, false]);
-  const spot = useSpot();
-  const items = [
-    "Analyser le biais du marché (H4 / D1)",
-    "Consulter le calendrier économique du jour",
-    "Définir mon risque maximum de la session",
-    "Repérer 2 setups A+ à surveiller",
-    "Respirer. Aucune urgence à trader.",
-  ];
-  const doneCount = done.filter(Boolean).length;
-  const pct = Math.round((doneCount / items.length) * 100);
-  const toggle = (i: number) => setDone((d) => d.map((v, idx) => (idx === i ? !v : v)));
-
-  return (
-    <div className="relative mx-auto w-full max-w-[420px]">
-      <div className="hud-ring inset-0 -m-6" aria-hidden="true" />
-      <div className="hud-ring reverse inset-0 -m-12" aria-hidden="true" />
-      <div onPointerMove={spot} className="spot hud-panel relative overflow-hidden rounded-2xl border border-cyan-400/25 bg-[#081120]/92 shadow-[0_30px_90px_rgba(0,0,0,.5)] backdrop-blur-xl">
-        <div className="scan-line" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
-        <div className="relative flex items-center justify-between gap-3 border-b border-white/[.07] px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="relative h-11 w-11 shrink-0">
-              <svg viewBox="0 0 44 44" className="-rotate-90">
-                <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(148,163,184,.16)" strokeWidth="3.5" />
-                <circle cx="22" cy="22" r="18" fill="none" stroke="#22d3ee" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={`${pct * 1.13} 200`} style={{ transition: "stroke-dasharray .4s cubic-bezier(.22,1,.36,1)" }} />
-              </svg>
-              <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-cyan-300">{doneCount}/{items.length}</span>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white">Checklist Pré-Market</p>
-              <p className="text-[10px] text-cyan-300/80">Protocole de discipline · style HUD</p>
-            </div>
-          </div>
-          <span className="flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-[10px] font-bold text-amber-300">
-            <Icon n="flame" cls="h-3 w-3" />12 jours
-          </span>
-        </div>
-        <div className="relative space-y-2 px-5 py-5">
-          {items.map((label, i) => (
-            <button key={label} onClick={() => toggle(i)} className={`check-item flex w-full items-center gap-3 rounded-lg border border-white/[.07] bg-white/[.02] px-3 py-2.5 text-left ${done[i] ? "done" : ""}`}>
-              <span className={`check-box grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 border-white/20 ${done[i] ? "text-[#03131b]" : "text-transparent"}`}>
-                <Icon n="check" cls="h-3 w-3" />
-              </span>
-              <span className={`text-xs leading-5 ${done[i] ? "text-slate-300" : "text-slate-400"}`}>{label}</span>
-            </button>
-          ))}
-        </div>
-        <div className="relative flex items-center gap-2 border-t border-white/[.07] px-5 py-3.5">
-          <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" /></span>
-          <p className="text-[10px] text-slate-500">{pct === 100 ? "Discipline activée. Bonne session." : `${pct}% complété — termine avant l'ouverture.`}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────── ROI CALCULATOR ─────────────────────────── */
-function RoiCalc({ onCta }: { onCta: () => void }) {
-  const [sl, setSl] = useState(150);
-  const [rt, setRt] = useState(3);
-  const spot = useSpot();
-  const yearly = Math.round(rt * sl * 52);
-  return (
-    <div onPointerMove={spot} className="spot glass-card p-6 sm:p-8">
-      <div className="flex items-center gap-2.5 mb-5">
-        <div className="feat-icon"><Icon n="chart" cls="h-5 w-5" /></div>
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[.13em] text-emerald-400">Simulateur concret</p>
-          <p className="font-display text-lg font-bold text-white">Le coût réel de l'indiscipline</p>
-        </div>
-      </div>
-      <div className="space-y-5">
-        <div>
-          <div className="flex justify-between text-xs font-semibold mb-2">
-            <span className="text-slate-400">Stop-loss moyen</span>
-            <span className="text-cyan-300">{sl} €</span>
-          </div>
-          <input type="range" min={20} max={1500} step={10} value={sl} onChange={(e) => setSl(+e.target.value)} aria-label="Stop-loss moyen" />
-        </div>
-        <div>
-          <div className="flex justify-between text-xs font-semibold mb-2">
-            <span className="text-slate-400">Trades hors-plan / semaine</span>
-            <span className="text-cyan-300">{rt}</span>
-          </div>
-          <input type="range" min={1} max={12} step={1} value={rt} onChange={(e) => setRt(+e.target.value)} aria-label="Trades hors-plan par semaine" />
-        </div>
-      </div>
-      <div className="mt-6 rounded-xl border border-emerald-400/20 bg-emerald-400/[.06] px-5 py-4">
-        <p className="text-xs font-semibold text-slate-400 mb-1">Coût annuel estimé de ces trades</p>
-        <p className="font-display text-3xl font-extrabold text-emerald-400 tracking-tight">{yearly.toLocaleString("fr-FR")} €<span className="text-sm font-semibold text-slate-500 ml-1">/ an</span></p>
-        <p className="mt-1 text-[11px] text-slate-500">En repérant ces trades avant qu'ils partent, avec la checklist et le suivi des erreurs.</p>
-      </div>
-      <button onClick={onCta} className="btn-primary w-full mt-5">Reprendre le contrôle <Icon n="arrow" cls="h-4 w-4" /></button>
-    </div>
-  );
-}
-
 /* ─────────────────────────── AUTH MODAL (real auth, popup over landing) ─────────────────────────── */
 function AuthModal({ onClose, initialMode = "signup", plan }: { onClose: () => void; initialMode?: "login" | "signup"; plan?: string }) {
   const { login, signup, loginWithGoogle, loginWithDiscord, requestPasswordReset } = useAuth();
@@ -493,48 +392,38 @@ function AuthModal({ onClose, initialMode = "signup", plan }: { onClose: () => v
 }
 
 /* ─────────────────────────── DATA ─────────────────────────── */
-const PROBLEMS = [
-  { n: "err" as IName, t: "Ils répètent leurs erreurs", d: "Sans mémoire structurée, la même erreur revient 50 fois. Chaque répétition coûte de l'argent — invisible dans un carnet Excel." },
-  { n: "eye" as IName, t: "Ils oublient leurs anciens trades", d: "Impossible de progresser sur ce qu'on ne revoit jamais. Les leçons du passé s'évaporent dès la clôture." },
-  { n: "heart" as IName, t: "Ils tradent sous émotion", d: "Peur, FOMO, revenge trading. Les décisions émotionnelles détruisent plus de comptes que les mauvais setups." },
-  { n: "compass" as IName, t: "Ils ignorent pourquoi ils perdent", d: "Sans data, la perte reste un mystère. On change de stratégie au hasard au lieu de corriger le vrai problème." },
-  { n: "layers" as IName, t: "Ils n'ont aucun système", d: "Pas de routine, pas de checklist, pas de règles. Le trading devient un jeu de hasard émotionnel plutôt qu'un métier." },
-  { n: "trend" as IName, t: "Ils stagnent depuis des mois", d: "Toujours le même niveau, les mêmes montagnes russes. Sans feedback structuré, la progression est bloquée." },
+type Feat = { n: IName; t: string; d: string };
+
+/* The 3 pains that actually kill accounts — kept tight so the visitor
+   recognises themselves in seconds, then moves on to the solution. */
+const PROBLEMS: Feat[] = [
+  { n: "err", t: "Tu répètes les mêmes erreurs", d: "Sans mémoire structurée, la même erreur revient — et coûte cher à chaque fois." },
+  { n: "heart", t: "Tu trades sous émotion", d: "FOMO, revenge trading, sizing au feeling. L'émotion détruit plus de comptes que les mauvais setups." },
+  { n: "compass", t: "Tu ne sais pas pourquoi tu perds", d: "Pas de data, pas de diagnostic. Tu changes de stratégie au hasard au lieu de corriger le vrai problème." },
 ];
 
+/* Coach IA sub-benefits — outcomes, not features. */
 const AIS = [
-  { n: "brain" as IName, t: "Assistant IA", d: "Pose une question en langage naturel sur tes trades. Il te répond en s'appuyant sur TON historique réel — pas sur des généralités toutes faites.", c: "text-cyan-300" },
-  { n: "radar" as IName, t: "Insights automatiques", d: "Dès que ton historique grandit, TradeVault détecte tes schémas récurrents (heures, setups, erreurs) et te les remonte avant que tu ne les répètes.", c: "text-violet-300" },
-  { n: "calendar" as IName, t: "Rapports mensuels", d: "Un récapitulatif clair de ta performance, généré automatiquement chaque mois. Zéro tableur à remplir un dimanche soir.", c: "text-amber-300" },
+  { n: "brain" as IName, t: "Des réponses sur TES trades", d: "Pose ta question en français. Le coach répond à partir de ton historique réel — jamais des généralités.", c: "text-cyan-300" },
+  { n: "radar" as IName, t: "Tes schémas, détectés seuls", d: "Heures, setups, erreurs récurrentes : l'IA les repère et t'alerte avant que tu les répètes.", c: "text-violet-300" },
+  { n: "err" as IName, t: "Tes biais, mis à nu", d: "Overtrading après une perte, sizing qui dérape… le coach nomme ce qui te coûte de l'argent.", c: "text-amber-300" },
 ];
 
-const FEATURES = [
-  { n: "chart" as IName, t: "Dashboard en temps réel" },
-  { n: "document" as IName, t: "Journal de trading rapide" },
-  { n: "calendar" as IName, t: "Calendrier économique" },
-  { n: "trend" as IName, t: "Analytics quantitatives" },
-  { n: "err" as IName, t: "Suivi des erreurs" },
-  { n: "eye" as IName, t: "Setups manqués" },
-  { n: "target" as IName, t: "Calculateur de position" },
-  { n: "upload" as IName, t: "Import CSV automatique" },
-];
-
-const COMPARE = [
-  ["Dimanche soir, bilan de la semaine", "Ouvre un Excel à moitié rempli, abandonne après 10 minutes", "Le rapport mensuel est déjà généré automatiquement, prêt à lire"],
-  ["Juste après un trade perdant", "Ferme l'appli, la frustration reste sans réponse", "Le trade est tagué et l'erreur ajoutée au suivi des erreurs"],
-  ["Un setup repéré mais jamais pris", "« J'aurais dû » oublié en 5 minutes, la leçon jamais tirée", "Le setup manqué est loggé et analysé pour la prochaine fois"],
-  ["Calcul de la taille de position", "Approximation au feeling, en plein trade", "Calculateur de position intégré, taille exacte en secondes"],
-  ["Juste avant l'ouverture du marché", "Se jette sur le premier trade qui passe", "Checklist pré-market complétée, discipline activée"],
-  ["Une question sur sa performance", "Rouvre un tableur et recalcule tout à la main", "La pose à l'Assistant IA, réponse immédiate sur ses vrais trades"],
+/* Benefit-driven feature grid — the strongest pages framed as results. */
+const FEATURES: Feat[] = [
+  { n: "document", t: "Journal en 20 secondes", d: "Chaque trade capturé : prix, captures d'écran, émotion, note. Ta mémoire de trader, enfin fiable." },
+  { n: "trend", t: "Des analytics qui disent vrai", d: "Sharpe, expectancy, profit factor, drawdown… 20+ métriques pro qui montrent où tu gagnes réellement." },
+  { n: "shield", t: "La discipline avant chaque trade", d: "Ta checklist pré-market façon cockpit — validée avant de risquer un centime, streak à la clé." },
+  { n: "layers", t: "Rapports mensuels automatiques", d: "Ton bilan de perf prêt chaque mois, sans ouvrir un tableur. Le progrès visible noir sur blanc." },
+  { n: "bell", t: "Calendrier économique intégré", d: "Les annonces à fort impact avant l'ouverture — fini de se faire piéger par une news surprise." },
+  { n: "upload", t: "Import de ton historique en 1 clic", d: "Glisse ton CSV (MT4/MT5, cTrader, IB, TradingView…) : des années de trades analysées en secondes." },
 ];
 
 const FAQS: [string, string][] = [
-  ["En quoi TradeVault est différent d'un simple journal ?", "Un journal enregistre. TradeVault comprend. C'est un coach IA qui analyse tes données réelles, détecte tes schémas, t'alerte sur tes biais émotionnels et te guide vers une vraie progression — comme un mentor privé disponible 24h/24."],
-  ["Comment fonctionne le Coach IA ?", "Il analyse tes setups, erreurs, horaires, tailles de position et états émotionnels. Puis il répond à tes questions et te donne un diagnostic précis qu'aucun modèle générique ne pourrait produire — car il connaît TON trading."],
-  ["L'essai gratuit est-il vraiment sans engagement ?", "Oui. 14 jours d'accès Premium complet, sans carte bancaire demandée. Tu peux annuler en 1 clic à tout moment. Aucun prélèvement surprise, aucun risque."],
-  ["Mes données de trading sont-elles sécurisées ?", "Totalement. Cryptage en transit et au repos, sauvegardes cloud automatiques, paiements sécurisés par Stripe. Nous ne demandons jamais l'accès direct à ton compte de courtage."],
-  ["Puis-je importer mon historique existant ?", "Oui, en quelques secondes. Importe un CSV depuis ton courtier ou ton ancien journal, TradeVault structure tout automatiquement. Tu peux vérifier avant de sauvegarder."],
-  ["Que se passe-t-il si j'annule ?", "Tu gardes l'accès jusqu'à la fin de ta période. Tes données restent exportables gratuitement. Aucune pénalité, aucune question."],
+  ["En quoi c'est mieux qu'un simple journal ?", "Un journal enregistre. TradeVault comprend : il analyse tes données, détecte tes schémas et te dit quoi corriger — comme un mentor privé disponible 24h/24."],
+  ["L'essai gratuit est-il vraiment sans engagement ?", "Oui. 14 jours d'accès Premium complet, sans carte bancaire. Annulation en 1 clic à tout moment. Zéro risque, zéro prélèvement surprise."],
+  ["Mes données de trading sont-elles sécurisées ?", "Totalement. Chiffrées en transit et au repos, sauvegardes cloud, paiements sécurisés par Stripe. On ne touche jamais à ton compte de courtage."],
+  ["Puis-je importer mon historique existant ?", "Oui, en quelques secondes. Importe un CSV depuis ton courtier ou ton ancien journal, TradeVault structure tout automatiquement avant sauvegarde."],
 ];
 
 /* ─────────────────────────── SECTION TITLE ─────────────────────────── */
@@ -551,12 +440,9 @@ function SectionHead({ tag, title, sub, center = true }: { tag: string; title: R
 /* Nav items — order MUST mirror the on-page scroll order of the anchors.
    Every landing section is reachable from the bar. */
 const NAV: [string, string][] = [
-  ["Fonctionnement", "how"],
-  ["Checklist", "checklist"],
+  ["Problème", "problem"],
   ["Coach IA", "ai"],
   ["Fonctionnalités", "features"],
-  ["Calculateur", "calculator"],
-  ["Avis", "trustpilot"],
   ["Tarifs", "pricing"],
   ["FAQ", "faq"],
 ];
@@ -603,13 +489,18 @@ export default function Landing() {
       {/* ── NAV ── */}
       <header className={`fixed inset-x-0 top-0 z-50 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 10 ? "bg-[#060d16]/85 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/40"}`}>
         <div className="scroll-bar absolute inset-x-0 top-0 h-[2px]" style={{ transform: `scaleX(${pct})` }} />
-        <div className="mx-auto flex h-[66px] max-w-[1280px] items-center gap-4 px-5 lg:px-8">
-          {/* Left zone — equal width to the right zone so the centered nav is symmetric. */}
-          <div className="flex flex-1 items-center">
+        {/* Three-track layout: the logo (left) and actions (right) keep their
+            natural width, while the nav is absolutely centered on the header —
+            so it stays perfectly symmetric and never collides with either side,
+            whatever their content width. */}
+        <div className="relative mx-auto flex h-[66px] max-w-[1600px] items-center justify-between gap-4 px-5 lg:px-8">
+          {/* Left zone — logo, natural width. */}
+          <div className="flex items-center">
             <Logo />
           </div>
-          {/* Center — every section, perfectly centered between two equal zones. */}
-          <nav className="hidden shrink-0 items-center gap-0.5 rounded-full border border-white/[.08] bg-white/[.03] p-1 backdrop-blur-md xl:flex">
+          {/* Center — every section, dead-centered on the header via absolute
+              positioning (immune to the left/right zone widths). */}
+          <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-white/[.03] p-1 backdrop-blur-md xl:flex">
             {NAV.map(([l, id]) => {
               const on = activeSec === id;
               const isTp = id === "trustpilot";
@@ -617,7 +508,7 @@ export default function Landing() {
                 <button
                   key={id}
                   onClick={() => go(id)}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-all duration-200 ${
+                  className={`flex items-center gap-1 rounded-full px-2 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     on
                       ? "bg-cyan-400/[.12] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.25)]"
                       : isTp
@@ -631,11 +522,17 @@ export default function Landing() {
               );
             })}
           </nav>
-          {/* Right zone — same flex-1 width as the left. */}
-          <div className="flex flex-1 items-center justify-end gap-2.5">
-            <div className="hidden items-center gap-2.5 xl:flex">
-              <button onClick={() => open("login")} className="btn-ghost px-5 text-sm">Se connecter</button>
-              <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-5 text-sm">Essai gratuit <Icon n="arrow" cls="h-4 w-4" /></button>
+          {/* Right zone — actions, natural width; mirrors the left visually. */}
+          <div className="flex items-center justify-end gap-2.5">
+            <div className="hidden items-center gap-2 xl:flex">
+              {/* Below 2xl the centered 8-item nav needs the horizontal room, so
+                  the secondary "Se connecter" only appears once there's space.
+                  Wrapped because `.btn-ghost` sets its own display and would win
+                  over the `hidden` utility otherwise. */}
+              <div className="hidden 2xl:block">
+                <button onClick={() => open("login")} className="btn-ghost px-3.5 text-[13px]">Se connecter</button>
+              </div>
+              <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-4 text-[13px]">Essai gratuit <Icon n="arrow" cls="h-4 w-4" /></button>
             </div>
             <button onClick={() => setMenu(!menu)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] bg-white/[.03] text-slate-200 xl:hidden" aria-label="Menu"><Icon n={menu ? "close" : "menu"} cls="h-5 w-5" /></button>
           </div>
@@ -701,9 +598,9 @@ export default function Landing() {
                 </div>
               ))}
             </div>
-            <button onClick={() => go("trustpilot")} className="reveal mx-auto mt-5 flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-300 transition">
-              <span className="grid h-4.5 w-4.5 place-items-center rounded-[3px] bg-[#00b67a]"><Icon n="star" cls="h-3 w-3 text-white fill-white" /></span>
-              Avis Trustpilot ouverts — sois parmi les premiers <Icon n="arrow" cls="h-3.5 w-3.5" />
+            <button onClick={() => go("ai")} className="reveal mx-auto mt-5 flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-cyan-300 transition">
+              <Icon n="brain" cls="h-4 w-4 text-cyan-300" />
+              Vois comment le Coach IA analyse tes trades <Icon n="arrow" cls="h-3.5 w-3.5" />
             </button>
           </div>
         </section>
@@ -711,7 +608,7 @@ export default function Landing() {
         {/* ── PROBLÈME ── */}
         <section id="problem" className="relative border-t border-white/[.06] py-20 lg:py-24">
           <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag="Le vrai problème" title={<>90% des traders perdent.<br /><span className="text-slate-500">Pas par manque de stratégie.</span></>} sub="Le vrai tueur de comptes, ce n'est pas le marché. C'est l'absence de système, de mémoire et de feedback. Reconnais-tu ces symptômes ?" />
+            <SectionHead tag="Le vrai problème" title={<>Ce n'est pas ta stratégie<br /><span className="text-slate-500">qui te fait perdre.</span></>} sub="Le vrai tueur de comptes, c'est l'absence de système, de mémoire et de feedback. Trois symptômes que tu connais sûrement :" />
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {PROBLEMS.map((p, i) => (
                 <article key={p.t} onPointerMove={spot} className="reveal spot rounded-xl border border-red-400/12 bg-red-400/[.03] p-6 transition-colors hover:border-red-400/25" style={{ transitionDelay: `${i * 60}ms` }}>
@@ -724,77 +621,11 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ── SOLUTION ── */}
-        <section className="section-mesh relative border-t border-white/[.06] py-20 lg:py-24">
-          <div className="mx-auto max-w-[900px] px-5 text-center lg:px-8">
-            <div className="reveal">
-              <div className="tag-label inline-flex mb-5">La solution</div>
-              <h2 className="font-display text-[clamp(1.9rem,4vw,3.1rem)] font-extrabold tracking-[-0.045em] leading-[1.08]">
-                <span className="text-white">Et si une IA</span> <span className="text-gradient">connaissait ton trading</span> <span className="text-white">mieux que toi ?</span>
-              </h2>
-              <p className="mt-6 text-lg leading-8 text-slate-400 max-w-2xl mx-auto">
-                TradeVault transforme chaque trade en leçon exploitable. Il se souvient de tout, calcule tout, détecte tout — et te parle comme un mentor qui aurait étudié chacune de tes décisions.
-              </p>
-            </div>
-            <div className="reveal mt-12 grid gap-4 sm:grid-cols-3" style={{ transitionDelay: "120ms" }}>
-              {[["Désorganisé", "Discipliné", "target"], ["Émotionnel", "Basé sur la data", "chart"], ["Seul", "Accompagné 24h/24", "brain"]].map(([from, to, ic]) => (
-                <div key={to} className="rounded-xl border border-white/[.08] bg-white/[.02] p-6">
-                  <div className="feat-icon mx-auto mb-4"><Icon n={ic as IName} cls="h-5 w-5" /></div>
-                  <p className="text-sm text-slate-500 line-through decoration-red-400/50">{from}</p>
-                  <div className="my-1.5 flex justify-center text-cyan-400"><Icon n="chevron" cls="h-4 w-4 rotate-180" /></div>
-                  <p className="font-display text-base font-bold text-white">{to}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── COMMENT ÇA FONCTIONNE ── */}
-        <section id="how" className="relative border-t border-white/[.06] py-20 lg:py-24">
-          <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag="Comment ça marche" title="Opérationnel en moins de 2 minutes" sub="Aucune galère de configuration. Importe, laisse l'IA analyser, progresse." />
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[["Importe ou saisis", "Connecte ton historique CSV ou ajoute tes trades en un geste. Teste immédiatement avec des trades de démo.", "upload"], ["L'IA analyse tout", "Le Coach IA décortique tes patterns, ta psychologie et tes stats en temps réel — automatiquement.", "brain"], ["Progresse chaque semaine", "Applique le plan de ton coach, suis ta checklist, et laisse la discipline composer tes résultats.", "trend"]].map(([t, d, ic], i) => (
-                <div key={t} onPointerMove={spot} className="reveal spot glass-card p-6 relative" style={{ transitionDelay: `${i * 90}ms` }}>
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="step-num">{i + 1}</div>
-                    <div className="feat-icon"><Icon n={ic as IName} cls="h-5 w-5" /></div>
-                  </div>
-                  <h3 className="font-display text-base font-bold text-white">{t}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">{d}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── CHECKLIST JARVIS ── */}
-        <section id="checklist" className="section-mesh relative border-t border-white/[.06] overflow-hidden py-20 lg:py-28">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-5 lg:grid-cols-2 lg:gap-16 lg:px-8">
-            <div className="reveal order-2 text-center lg:order-1 lg:text-left">
-              <div className="tag-label inline-flex mb-5">Discipline avant l'ouverture</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.6vw,2.85rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.08]">
-                Ta checklist pré-market,<br /><span className="text-gradient">version HUD.</span>
-              </h2>
-              <p className="mt-5 text-slate-400 leading-7">Fini les post-it et les routines oubliées. Une interface futuriste qui rend ta préparation aussi rigoureuse qu'un cockpit — et qui garde le score de ta régularité, jour après jour.</p>
-              <div className="mt-7 space-y-3">
-                {["Chaque étape validée avant de risquer un centime", "Streak de discipline visible en un coup d'œil", "Une routine qui devient un réflexe, pas une corvée"].map((t) => (
-                  <div key={t} className="flex items-center gap-3 text-sm text-slate-300 justify-center lg:justify-start"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cyan-400/12 text-cyan-300"><Icon n="check" cls="h-3 w-3" /></span>{t}</div>
-                ))}
-              </div>
-              <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary mt-8 px-6 py-3.5">Activer ma checklist <Icon n="arrow" cls="h-4 w-4" /></button>
-            </div>
-            <div className="reveal order-1 lg:order-2" style={{ transitionDelay: "100ms" }}>
-              <JarvisChecklist />
-            </div>
-          </div>
-        </section>
-
         {/* ── SECTION IA (cœur) ── */}
         <section id="ai" className="relative border-t border-white/[.06] overflow-hidden py-20 lg:py-28">
           <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 55% 45% at 50% 30%,rgba(34,211,238,.08),transparent 60%)" }} />
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag="Le cœur du produit" title={<>Pas une couche IA de plus. <span className="text-gradient">Une IA qui connaît vraiment tes trades.</span></>} sub="L'assistant lit ton historique réel — pas des généralités de marché. Plus tu loggues, plus ses réponses deviennent précises." />
+            <SectionHead tag="La solution" title={<>Un coach IA qui connaît <span className="text-gradient">chacun de tes trades.</span></>} sub="TradeVault lit ton historique réel — pas des généralités de marché. Il détecte ce qui te coûte de l'argent et te dit exactement quoi corriger." />
 
             <div className="reveal grid items-center gap-10 lg:grid-cols-2 lg:gap-14 mb-16">
               <AIConversation />
@@ -826,147 +657,21 @@ export default function Landing() {
         {/* ── FEATURES ── */}
         <section id="features" className="section-mesh relative border-t border-white/[.06] py-20 lg:py-24">
           <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag="Fonctionnalités" title="Tout ce qu'il faut à un trader sérieux" sub="Un écosystème complet — pas juste un carnet. Chaque outil est conçu pour créer de la valeur mesurable." />
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+            <SectionHead tag="Fonctionnalités" title={<>Tout ce qu'il faut pour <span className="text-gradient">progresser</span>. Rien d'inutile.</>} sub="Chaque outil est là pour une seule raison : te faire prendre de meilleures décisions, trade après trade." />
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((f, i) => (
-                <div key={f.t} onPointerMove={spot} className="reveal spot glass-card flex items-center gap-3 p-4" style={{ transitionDelay: `${i * 40}ms` }}>
-                  <div className="feat-icon h-9 w-9"><Icon n={f.n} cls="h-4.5 w-4.5" /></div>
-                  <p className="text-sm font-semibold text-slate-200 leading-tight">{f.t}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── IMPORT AUTO ── */}
-        <section className="relative border-t border-white/[.06] py-20 lg:py-24">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-5 lg:grid-cols-2 lg:gap-16 lg:px-8">
-            <div className="reveal order-2 lg:order-1">
-              <div className="relative rounded-2xl border border-white/10 bg-[#0a1625]/90 p-6 shadow-[0_24px_64px_rgba(0,0,0,.4)] backdrop-blur-xl">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-                <div className="rounded-xl border-2 border-dashed border-cyan-400/30 bg-cyan-400/[.04] p-8 text-center">
-                  <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-cyan-400/10 text-cyan-300"><Icon n="upload" cls="h-6 w-6" /></div>
-                  <p className="text-sm font-semibold text-white">Glisse ton fichier CSV ici</p>
-                  <p className="mt-1 text-xs text-slate-500">MT4/MT5, cTrader, Interactive Brokers, TradingView…</p>
-                </div>
-                <div className="mt-4 space-y-2">
-                  {[["historique_2025.csv", "248 trades importés", "text-emerald-400"], ["Analyse IA en cours…", "détection des patterns", "text-cyan-300"]].map(([f, s, c]) => (
-                    <div key={f} className="flex items-center justify-between rounded-lg border border-white/[.06] bg-white/[.02] px-3 py-2.5">
-                      <div className="flex items-center gap-2.5"><Icon n="document" cls="h-4 w-4 text-slate-500" /><span className="text-xs font-medium text-slate-300">{f}</span></div>
-                      <span className={`text-[11px] font-semibold ${c}`}>{s}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="reveal order-1 lg:order-2 text-center lg:text-left" style={{ transitionDelay: "100ms" }}>
-              <div className="tag-label inline-flex mb-5">Import automatique</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.8rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.1]">Tout ton historique.<br /><span className="text-gradient">Analysé en secondes.</span></h2>
-              <p className="mt-5 text-slate-400 leading-7">Importe des années de trades en un glisser-déposer. TradeVault structure, calcule et analyse tout automatiquement — dès la première seconde, ton coach IA a de quoi travailler.</p>
-              <div className="mt-7 space-y-3">
-                {["Compatible avec tous les grands courtiers", "Détection automatique des colonnes", "Analyse IA instantanée après import"].map((t) => (
-                  <div key={t} className="flex items-center gap-3 text-sm text-slate-300 justify-center lg:justify-start"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-400/12 text-emerald-400"><Icon n="check" cls="h-3 w-3" /></span>{t}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── COMPARATIF ── */}
-        <section className="section-mesh relative border-t border-white/[.06] py-20 lg:py-24">
-          <div className="mx-auto max-w-[1000px] px-5 lg:px-8">
-            <SectionHead tag="Une même journée, deux trajectoires" title={<>Le même trader. <span className="text-gradient">Sans</span> puis <span className="text-gradient">avec</span> TradeVault.</>} sub="Pas de théorie — juste les 6 moments qui font la différence entre stagner et progresser." />
-
-            <div className="reveal space-y-3 sm:hidden">
-              {COMPARE.map(([label, without, wth]) => (
-                <div key={label} className="rounded-xl border border-white/[.08] bg-white/[.02] p-4">
-                  <p className="mb-3 text-sm font-bold text-white">{label}</p>
-                  <div className="mb-2 flex items-start gap-2 rounded-lg bg-red-400/[.04] p-2.5">
-                    <Icon n="x" cls="h-4 w-4 mt-0.5 shrink-0 text-red-400/70" />
-                    <p className="text-xs leading-5 text-slate-500">{without}</p>
-                  </div>
-                  <div className="flex items-start gap-2 rounded-lg border border-cyan-400/15 bg-cyan-400/[.05] p-2.5">
-                    <Icon n="check" cls="h-4 w-4 mt-0.5 shrink-0 text-emerald-400" />
-                    <p className="text-xs leading-5 text-slate-200">{wth}</p>
-                  </div>
-                </div>
+                <article key={f.t} onPointerMove={spot} className="reveal spot glass-card group flex flex-col p-6 transition-colors hover:border-cyan-400/25" style={{ transitionDelay: `${(i % 3) * 60}ms` }}>
+                  <div className="feat-icon h-11 w-11 mb-5 transition-transform group-hover:scale-105"><Icon n={f.n} cls="h-5 w-5" /></div>
+                  <h3 className="font-display text-base font-bold text-white leading-tight">{f.t}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">{f.d}</p>
+                </article>
               ))}
             </div>
 
-            <div className="reveal hidden overflow-hidden rounded-2xl border border-white/[.08] sm:block">
-              <div className="grid grid-cols-[1.2fr_1fr_1fr] bg-white/[.02] text-xs font-bold uppercase tracking-wider">
-                <div className="p-4 text-slate-500"></div>
-                <div className="p-4 text-center text-slate-400 border-l border-white/[.06]">Sans TradeVault</div>
-                <div className="p-4 text-center text-cyan-300 border-l border-cyan-400/20 bg-cyan-400/[.05]">Avec TradeVault</div>
-              </div>
-              {COMPARE.map(([label, without, wth], i) => (
-                <div key={label} className={`grid grid-cols-[1.2fr_1fr_1fr] text-sm ${i % 2 ? "bg-white/[.015]" : ""}`}>
-                  <div className="p-4 font-semibold text-slate-200">{label}</div>
-                  <div className="flex items-start gap-2 p-4 text-slate-500 border-l border-white/[.06]"><Icon n="x" cls="h-4 w-4 mt-0.5 shrink-0 text-red-400/70" /><span className="text-xs leading-5">{without}</span></div>
-                  <div className="flex items-start gap-2 p-4 text-slate-200 border-l border-cyan-400/20 bg-cyan-400/[.04]"><Icon n="check" cls="h-4 w-4 mt-0.5 shrink-0 text-emerald-400" /><span className="text-xs leading-5">{wth}</span></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── ROI CALCULATOR ── */}
-        <section id="calculator" className="relative border-t border-white/[.06] bg-[#070e18] py-20 lg:py-24">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-5 lg:grid-cols-2 lg:gap-16 lg:px-8">
-            <div className="reveal text-center lg:text-left">
-              <div className="tag-label inline-flex mb-5">Mets un chiffre dessus</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.6vw,2.85rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.08]">Ton indiscipline a un prix.<br />Calcule-le.</h2>
-              <p className="mt-5 text-slate-400 leading-7">Pas de théorie : ajuste les curseurs avec tes propres chiffres et regarde ce qu'un trade hors-plan par semaine te coûte vraiment sur un an.</p>
-              <div className="mt-7 space-y-3">
-                {["Basé sur ton stop-loss moyen réel", "Projection annuelle honnête, sans arrondi optimiste", "Le meilleur argument pour rester discipliné"].map((t) => (
-                  <div key={t} className="flex items-center gap-3 text-sm text-slate-300 justify-center lg:justify-start"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-400/12 text-emerald-400"><Icon n="check" cls="h-3 w-3" /></span>{t}</div>
-                ))}
-              </div>
-            </div>
-            <div className="reveal" style={{ transitionDelay: "100ms" }}>
-              <RoiCalc onCta={() => open("signup", "Essai Premium 14 jours")} />
-            </div>
-          </div>
-        </section>
-
-        {/* ── TRUSTPILOT ── */}
-        <section id="trustpilot" className="relative border-t border-white/[.06] py-20 lg:py-24">
-          <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag="Transparence totale" title="On construit TradeVault avec nos premiers traders." sub="TradeVault est en accès anticipé. Pas de faux avis, pas de chiffres gonflés — juste une réputation qu'on préfère mériter, un trader à la fois." />
-            <div className="reveal mx-auto grid max-w-[1000px] gap-4 md:grid-cols-[1fr_1.3fr]">
-              <div onPointerMove={spot} className="spot glass-card flex flex-col items-center justify-center p-8 text-center">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#00b67a]"><Icon n="star" cls="h-5 w-5 text-white fill-white" /></div>
-                  <span className="font-display text-lg font-extrabold text-white">Trustpilot</span>
-                </div>
-                {/* Live TrustBox (global score + real review count) once the
-                    business unit id is configured; static invite until then. */}
-                {TRUSTPILOT_BUSINESS_UNIT_ID ? (
-                  <TrustpilotWidget className="mb-4 w-full" />
-                ) : (
-                  <div className="flex gap-1 mb-4">
-                    {[0, 1, 2, 3, 4].map((i) => <span key={i} className="grid h-7 w-7 place-items-center rounded-[3px] bg-[#00b67a]"><Icon n="star" cls="h-4 w-4 text-white fill-white" /></span>)}
-                  </div>
-                )}
-                <p className="text-sm font-bold text-slate-200">Sois parmi les tout premiers à laisser un avis.</p>
-                <p className="mt-2 text-xs leading-6 text-slate-500">Ton retour façonne directement la feuille de route du produit.</p>
-                <a href="https://www.trustpilot.com/review/tradevaultt.vercel.app" target="_blank" rel="noreferrer" className="btn-ghost mt-6 w-full">Voir sur Trustpilot <Icon n="arrow" cls="h-4 w-4" /></a>
-              </div>
-              <div onPointerMove={spot} className="spot glass-card flex flex-col justify-center p-8">
-                <h3 className="font-display text-lg font-bold text-white">Pourquoi on ne met pas de faux témoignages ici</h3>
-                <div className="mt-5 space-y-4">
-                  {[
-                    ["Accès anticipé, assumé", "Le produit est jeune. On préfère te le dire plutôt que d'inventer 2 000 utilisateurs fantômes."],
-                    ["Tes avis, notre roadmap", "Chaque retour Trustpilot est lu et discuté avant chaque mise à jour du produit."],
-                    ["Zéro engagement pour tester", "14 jours d'essai gratuit, sans carte bancaire — le meilleur avis, c'est le tien."],
-                  ].map(([t, d]) => (
-                    <div key={t} className="flex gap-3">
-                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-cyan-400/12 text-cyan-300"><Icon n="check" cls="h-3.5 w-3.5" /></span>
-                      <div><p className="text-sm font-semibold text-slate-200">{t}</p><p className="mt-0.5 text-xs leading-5 text-slate-500">{d}</p></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="reveal mt-10 text-center">
+              <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-7 py-3.5">Tout débloquer gratuitement <Icon n="arrow" cls="h-4 w-4" /></button>
+              <p className="mt-3 text-xs text-slate-600">14 jours Premium · sans carte bancaire</p>
             </div>
           </div>
         </section>
