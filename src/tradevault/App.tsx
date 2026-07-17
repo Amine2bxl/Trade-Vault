@@ -1,467 +1,133 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import Sidebar from "./components/Sidebar";
-import MobileNav from "./components/MobileNav";
-import TradeModal from "./components/TradeModal";
-// Dashboard is the landing page — keep it in the main chunk. Every other page
-// (and its heavy deps: recharts, react-markdown) loads on demand.
-import Dashboard from "./pages/Dashboard";
-const Journal = lazy(() => import("./pages/Journal"));
-const Checklist = lazy(() => import("./pages/Checklist"));
-const CalendarPage = lazy(() => import("./pages/CalendarPage"));
-const Analytics = lazy(() => import("./pages/Analytics"));
-const Mistakes = lazy(() => import("./pages/Mistakes"));
-const Insights = lazy(() => import("./pages/Insights"));
-const Profile = lazy(() => import("./pages/Profile"));
-const MissedOpportunities = lazy(() => import("./pages/MissedOpportunities"));
-const EconomicNews = lazy(() => import("./pages/EconomicNews"));
-const Seasonality = lazy(() => import("./pages/Seasonality"));
-const LotSizeCalculator = lazy(() => import("./pages/LotSizeCalculator"));
-const Settings = lazy(() => import("./pages/Settings"));
-const Reports = lazy(() => import("./pages/Reports"));
-const Goals = lazy(() => import("./pages/Goals"));
-const AiAssistant = lazy(() => import("./components/AiAssistant"));
-const Onboarding = lazy(() => import("./onboarding/Onboarding"));
-const CommandPalette = lazy(() => import("./components/CommandPalette"));
-const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
-import TradeDetailModal from "./components/TradeDetailModal";
-import TrustpilotPrompt from "./components/TrustpilotPrompt";
-import { Trade, Page } from "./types";
-import {
-  loadUserTrades,
-  upsertTrade,
-  deleteTrade,
-  deleteAllTrades,
-  migrateLegacyTradeScreenshots,
-  loadOnboarding,
-  loadStartingBalance,
-} from "./store";
-import { computeStats } from "./utils/tradeCalcs";
-import { loadTradingRules, checkTradeAgainstRules, type TradingRule } from "./utils/tradingRules";
-import { sendPushToSelf } from "@/lib/push.functions";
-import { buildDemoTrades } from "./utils/demoTrades";
-import type { OnboardingAction } from "./onboarding/Onboarding";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { AccountProvider, useAccounts } from "./contexts/AccountContext";
-import Landing from "./pages/Landing";
-import CursorGlow from "./components/CursorGlow";
-import AccountSwitcher from "./components/AccountSwitcher";
-import PushOnboardingBanner from "./components/PushOnboardingBanner";
-import { SkeletonForPage } from "./components/Skeleton";
-import { LanguageProvider, useT } from "./i18n/LanguageContext";
-import { ToastProvider, useToast } from "./contexts/ToastContext";
-import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { useState, useCallback, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
+import MobileNav from './components/MobileNav';
+import TradeModal from './components/TradeModal';
+import AuthModal from './components/AuthModal';
+import CursorGlow from './components/CursorGlow';
+import Dashboard from './pages/Dashboard';
+import Journal from './pages/Journal';
+import CalendarPage from './pages/CalendarPage';
+import Analytics from './pages/Analytics';
+import Mistakes from './pages/Mistakes';
+import MissedOpportunities from './pages/MissedOpportunities';
+import Insights from './pages/Insights';
+import Profile from './pages/Profile';
+import Goals from './pages/Goals';
+import TradingPlanPage from './pages/TradingPlan';
+import MonthlyReports from './pages/MonthlyReports';
+import AppearancePage from './pages/Appearance';
+import SubscriptionPage from './pages/Subscription';
+import Settings from './pages/Settings';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LanguageProvider } from './i18n/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AccountProvider, useAccounts } from './contexts/AccountContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
+import { useT } from './i18n/LanguageContext';
+import { Page, Trade } from './types';
+import { useTradeStore } from './hooks/useTradeStore';
+import { saveTrade, deleteTrade, deleteAllTrades, createTrade, loadTrade } from './store';
+import { toast } from 'sonner';
+import { Toaster } from 'sonner';
+import { useAppShortcuts } from './hooks/useAppShortcuts';
+import { useGlobalTradeShortcuts } from './hooks/useGlobalTradeShortcuts';
+import { usePushNotifications } from './hooks/usePushNotifications';
+import { subscribeForPush, checkRuleViolations } from './pushRules';
+import { CommandPalette } from './components/CommandPalette';
+import AIChatWidget from './components/AIChatWidget';
+import { loadTradingPlan, loadGoals } from './store';
+import { DEFAULT_GOALS, DEFAULT_TRADING_PLAN } from './planning';
 
 function AppContent() {
-  const { user, isAuthenticated, loading } = useAuth();
-  const { activeId, ready: accountsReady } = useAccounts();
+  const { user, loading: authLoading } = useAuth();
+  const { activeId } = useAccounts();
   const { t } = useT();
-  const { toast } = useToast();
-  const confirm = useConfirm();
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [tradesLoading, setTradesLoading] = useState(false);
-  const [page, setPage] = useState<Page>("dashboard");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [page, setPage] = useState<Page>('dashboard');
+  const [showAuth, setShowAuth] = useState(false);
+  const [showTrade, setShowTrade] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-  const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
-  // First-run gate: 'loading' until we know, 'needed' shows onboarding, 'done'
-  // lets the app render. `onboarded_at` on the profile is the source of truth.
-  const [onboarding, setOnboarding] = useState<"loading" | "needed" | "done">("loading");
+  const { trades, setTrades, loading } = useTradeStore();
+  const [goals, setGoals] = useState(DEFAULT_GOALS);
+  const [plan, setPlan] = useState(DEFAULT_TRADING_PLAN);
+  const [themePanel, setThemePanel] = useState(false);
 
-  // Deep link from the monthly-report push notification: /?report=YYYY-MM
-  // opens the Reports page directly (the page itself expands that month).
-  useEffect(() => {
-    const m = new URLSearchParams(window.location.search).get("report");
-    if (m && /^\d{4}-\d{2}$/.test(m)) setPage("reports");
-  }, []);
-
-  // Deep link from lifecycle emails: /?upgrade=1&promo=VAULT20 lands on the
-  // profile page, where the subscription section reads the promo param.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("upgrade")) setPage("profile");
-  }, []);
-
-  // Cmd/Ctrl+K toggles the command palette
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setPaletteOpen((v) => !v);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setOnboarding("loading");
-      return;
-    }
-    let active = true;
-    loadOnboarding(user.id)
-      .then((o) => {
-        if (active) setOnboarding(o.onboardedAt ? "done" : "needed");
-      })
-      .catch(() => {
-        // If the check fails, don't block the app — fall through to it.
-        if (active) setOnboarding("done");
-      });
-    return () => {
-      active = false;
-    };
-  }, [user?.id]);
-
-  useEffect(() => {
-    let active = true;
-    // Wait until the active account is resolved so trades are scoped to it
-    // from the first load (never a merged cross-account flash).
-    if (user && accountsReady) {
-      const userId = user.id;
-      setTradesLoading(true);
-      loadUserTrades(userId)
-        .then((loaded) => {
-          if (!active) return;
-          setTrades(loaded);
-          // One-time background migration: trades that still carry inline
-          // base64 screenshots get their images moved to Storage. Each
-          // migrated trade is swapped into state so the UI stays in sync.
-          migrateLegacyTradeScreenshots(userId, loaded, (migrated) => {
-            if (active) setTrades((prev) => prev.map((t) => (t.id === migrated.id ? migrated : t)));
-          })
-            .then((n) => {
-              if (n > 0) console.info(`[migrate] moved screenshots of ${n} trade(s) to Storage`);
-            })
-            .catch(() => {});
-        })
-        .catch((e) => console.error("Failed to load trades", e))
-        .finally(() => {
-          if (active) setTradesLoading(false);
-        });
-    } else {
-      setTrades([]);
-    }
-    return () => {
-      active = false;
-    };
-  }, [user?.id, activeId, accountsReady]);
-
-  const stats = computeStats(trades);
-
-  // Optimistic writes: the UI updates instantly and rolls back to the previous
-  // snapshot if the request fails, so saving never blocks the workflow.
-  // Anti-bias engine: the trader's own rules, checked on every save. Loaded
-  // once per user into a ref so saving a trade never waits on a rules fetch.
-  const sendPush = useServerFn(sendPushToSelf);
-  const rulesRef = useRef<TradingRule[]>([]);
   useEffect(() => {
     if (!user) return;
-    loadTradingRules(user.id)
-      .then((r) => { rulesRef.current = r; })
-      .catch(() => {});
-    // Profile's rules editor broadcasts changes so the checker never goes stale.
-    const onUpdate = (e: Event) => {
-      rulesRef.current = (e as CustomEvent<TradingRule[]>).detail ?? [];
-    };
-    window.addEventListener("tv-rules-updated", onUpdate);
-    return () => window.removeEventListener("tv-rules-updated", onUpdate);
+    Promise.all([loadGoals(user.id), loadTradingPlan(user.id)]).then(([nextGoals, nextPlan]) => {
+      setGoals(nextGoals.length ? nextGoals : DEFAULT_GOALS);
+      setPlan(nextPlan);
+    }).catch(() => {});
+  }, [user, activeId]);
+
+  useAppShortcuts(setPage, () => setShowTrade(true));
+  useGlobalTradeShortcuts(() => setShowTrade(true));
+  useEffect(() => {
+    if (!user || !('Notification' in window) || Notification.permission !== 'granted') return;
+    subscribeForPush().catch(() => {});
   }, [user]);
 
-  const handleSave = useCallback(
-    async (trade: Trade) => {
-      if (!user) return;
-      setModalOpen(false);
-      setEditingTrade(null);
-      let snapshot: Trade[] = [];
-      setTrades((prev) => {
-        snapshot = prev;
-        const exists = prev.find((t) => t.id === trade.id);
-        return exists ? prev.map((t) => (t.id === trade.id ? trade : t)) : [trade, ...prev];
-      });
-      try {
-        await upsertTrade(user.id, trade);
-      } catch (e) {
-        console.error("Failed to save trade", e);
-        setTrades(snapshot);
-        toast(t("app.saveTradeFailed"), "error");
-        return;
-      }
+  const handleSave = useCallback(async (trade: Trade) => {
+    if (!user) return;
+    try {
+      const normalized = { ...trade, userId: user.id, accountId: activeId };
+      const saved = await saveTrade(normalized);
+      setTrades(prev => editingTrade ? prev.map(x => x.id === saved.id ? saved : x) : [saved, ...prev]);
+      setShowTrade(false); setEditingTrade(null);
+      toast.success(t('common.saved'));
+      checkRuleViolations(saved).then((violations) => violations.forEach((v) => toast.warning(`${t('rules.pushTitle')}: ${v}`))).catch(() => {});
+    } catch (e) { console.error('Failed to save trade', e); toast.error(t('app.saveTradeFailed')); }
+  }, [user, activeId, editingTrade, setTrades, t]);
 
-      // Instant rule check — kind but firm feedback, in-app + push. Only for
-      // brand-new trades (edits don't re-trigger the coaching).
-      const isNew = !snapshot.some((tr) => tr.id === trade.id);
-      const rules = rulesRef.current;
-      if (isNew && rules.some((r) => r.enabled && r.kind !== "custom")) {
-        void (async () => {
-          try {
-            const balance =
-              (await loadStartingBalance(user.id).catch(() => 0)) +
-              snapshot.reduce((s, tr) => s + tr.pnl, 0);
-            const sameDay = snapshot.filter((tr) => tr.date === trade.date && tr.id !== trade.id);
-            const violations = checkTradeAgainstRules(trade, rules, {
-              sameDayTrades: sameDay,
-              accountBalance: balance,
-            });
-            for (const v of violations) {
-              toast(v.message, "error");
-              await sendPush({
-                data: { title: t("rules.pushTitle"), body: v.message, url: "/" },
-              }).catch(() => {});
-            }
-          } catch (e) {
-            console.error("Rule check failed", e);
-          }
-        })();
-      }
-    },
-    [user, t, toast],
-  );
-
-  const handleDelete = useCallback(
-    async (id: string) => {
-      if (!user) return;
-      if (!(await confirm(t("app.confirmDeleteTrade"), { danger: true }))) return;
-      let snapshot: Trade[] = [];
-      setTrades((prev) => {
-        snapshot = prev;
-        return prev.filter((t) => t.id !== id);
-      });
-      try {
-        await deleteTrade(user.id, id);
-      } catch (e) {
-        console.error("Failed to delete trade", e);
-        setTrades(snapshot);
-        toast(t("app.saveTradeFailed"), "error");
-      }
-    },
-    [user, t, confirm, toast],
-  );
-
+  const handleDelete = useCallback(async (id: string) => {
+    if (!user) return;
+    await deleteTrade(id, user.id); setTrades(prev => prev.filter(t => t.id !== id));
+  }, [user, setTrades]);
   const handleDeleteAll = useCallback(async () => {
     if (!user) return;
-    if (!(await confirm(t("app.confirmDeleteAllTrades"), { danger: true }))) return;
-    try {
-      await deleteAllTrades(user.id);
-      setTrades([]);
-    } catch (e) {
-      console.error("Failed to delete trades", e);
-      toast(t("app.saveTradeFailed"), "error");
+    await deleteAllTrades(user.id); setTrades([]);
+  }, [user, setTrades]);
+  const handleEdit = useCallback(async (id: string) => {
+    const full = await loadTrade(id); if (full) { setEditingTrade(full); setShowTrade(true); }
+  }, []);
+
+  if (authLoading) return <div className="min-h-screen bg-[#060810] flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" /></div>;
+  if (!user) return <AuthModal open={showAuth} onOpenChange={setShowAuth} />;
+
+  const shared = { trades, onEdit: handleEdit, onDelete: handleDelete, onAdd: () => { setEditingTrade(null); setShowTrade(true); } };
+  const settings = { trades, onDeleteAll: handleDeleteAll, onOpenImport: () => setPage('journal'), onOpenReports: () => setPage('monthly-reports') };
+  const pageContent = (() => {
+    switch (page) {
+      case 'dashboard': return <Dashboard {...shared} />;
+      case 'journal': return <Journal {...shared} />;
+      case 'calendar': return <CalendarPage {...shared} />;
+      case 'analytics': return <Analytics trades={trades} />;
+      case 'mistakes': return <Mistakes trades={trades} />;
+      case 'missed': return <MissedOpportunities />;
+      case 'insights': return <Insights trades={trades} />;
+      case 'goals': return <Goals trades={trades} goals={goals} onGoalsChange={setGoals} />;
+      case 'trading-plan': return <TradingPlanPage plan={plan} onPlanChange={setPlan} />;
+      case 'monthly-reports': return <MonthlyReports trades={trades} />;
+      case 'appearance': return <AppearancePage />;
+      case 'subscription': return <SubscriptionPage />;
+      case 'settings': return <Settings {...settings} onOpenReports={() => setPage('monthly-reports')} />;
+      case 'profile': return <Profile />;
+      default: return <Dashboard {...shared} />;
     }
-  }, [user, t, confirm, toast]);
-
-  const handleEdit = useCallback((trade: Trade) => {
-    setEditingTrade(trade);
-    setModalOpen(true);
-  }, []);
-  const handleAdd = useCallback(() => {
-    setEditingTrade(null);
-    setModalOpen(true);
-  }, []);
-  const handleCloseModal = useCallback(() => {
-    setModalOpen(false);
-    setEditingTrade(null);
-  }, []);
-
-  // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
-  // seeds three example trades so Dashboard/Analytics light up instantly.
-  const handleOnboardingDone = useCallback(
-    async (action?: OnboardingAction) => {
-      setOnboarding("done");
-      if (!user) return;
-      if (action === "import") {
-        setImportOpen(true);
-        return;
-      }
-      if (action === "demo") {
-        const demo = buildDemoTrades(t("journal.exampleNote"));
-        setTrades((prev) => [...demo, ...prev]);
-        try {
-          for (const tr of demo) await upsertTrade(user.id, tr);
-          toast(t("journal.demoInserted"), "success");
-        } catch (e) {
-          console.error("Failed to insert demo trades", e);
-          toast(t("app.saveTradeFailed"), "error");
-        }
-      }
-    },
-    [user, t, toast],
-  );
-
-  // CSV import: persist each row, keep the ones that made it
-  const handleImportTrades = useCallback(
-    async (imported: Trade[]): Promise<number> => {
-      if (!user) return 0;
-      const saved: Trade[] = [];
-      for (const tr of imported) {
-        try {
-          await upsertTrade(user.id, tr);
-          saved.push(tr);
-        } catch (e) {
-          console.error("Failed to import trade", e);
-        }
-      }
-      if (saved.length > 0) setTrades((prev) => [...saved, ...prev]);
-      return saved.length;
-    },
-    [user],
-  );
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-slate-400">Loading…</div>
-    );
-  }
-
-  // Signed-out visitors get the public landing page (its CTAs open the auth
-  // screen). Signed-in users fall through straight into the product.
-  if (!isAuthenticated) return <Landing />;
-
-  if (onboarding === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-slate-400">Loading…</div>
-    );
-  }
-
-  if (onboarding === "needed" && user) {
-    return (
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center text-slate-400">
-            Loading…
-          </div>
-        }
-      >
-        <Onboarding userId={user.id} onDone={handleOnboardingDone} />
-      </Suspense>
-    );
-  }
-
+  })();
   return (
-    // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
-    // scrolls inside <main>, so the sidebar rail never moves on any page.
-    <div className="relative flex h-dvh text-white overflow-hidden">
+    <ConfirmProvider>
       <CursorGlow />
-      {/* Ambient background glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          className="auth-orb w-[600px] h-[600px] bg-cyan-600 -top-64 -right-64"
-          style={{ animationDelay: "0s" }}
-        />
-        <div
-          className="auth-orb w-[500px] h-[500px] bg-teal-600 top-1/2 -left-64"
-          style={{ animationDelay: "-7s" }}
-        />
+      <div className="min-h-screen bg-[#060810] text-foreground flex">
+        <Sidebar page={page} setPage={setPage} totalPnl={0} winRate={0} />
+        <main className="flex-1 min-w-0 pb-20 md:pb-0">{pageContent}</main>
+        <MobileNav page={page} setPage={setPage} onAdd={() => setShowTrade(true)} />
+        <AIChatWidget trades={trades} />
       </div>
-      <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
-      <main className="app-main relative flex-1 overflow-y-auto">
-        {/* One-click push opt-in — dashboard only, so it never nags mid-flow */}
-        {page === "dashboard" && user && <PushOnboardingBanner userId={user.id} />}
-        <div key={page} className="animate-fade-in">
-          {/* Contextual skeleton: the loading frame mimics the destination
-              page's real layout (chart grid, trade list, calendar…). */}
-          <Suspense fallback={<SkeletonForPage page={page} />}>
-            {page === "dashboard" && (
-              <Dashboard
-                trades={trades}
-                onAddTrade={handleAdd}
-                tradesLoading={tradesLoading}
-                onOpenChecklist={() => setPage("checklist")}
-              />
-            )}
-            {page === "journal" && (
-              <Journal
-                trades={trades}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onDeleteAll={handleDeleteAll}
-                onAdd={handleAdd}
-                onOpenMissed={() => setPage("missed")}
-              />
-            )}
-            {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
-            {page === "calendar" && <CalendarPage trades={trades} />}
-            {page === "analytics" && <Analytics trades={trades} />}
-            {page === "mistakes" && <Mistakes trades={trades} />}
-            {page === "missed" && <MissedOpportunities />}
-            {page === "insights" && <Insights trades={trades} />}
-            {page === "news" && <EconomicNews />}
-            {page === "seasonality" && (
-              <Seasonality trades={trades} tradesLoading={tradesLoading} />
-            )}
-            {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
-            {page === "settings" && (
-              <Settings
-                trades={trades}
-                onDeleteAll={handleDeleteAll}
-                onOpenImport={() => setImportOpen(true)}
-                onOpenReports={() => setPage("reports")}
-              />
-            )}
-            {page === "reports" && <Reports />}
-            {page === "goals" && <Goals trades={trades} />}
-            {page === "profile" && <Profile trades={trades} />}
-          </Suspense>
-        </div>
-      </main>
-      {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}
-      <AccountSwitcher variant="fab" />
-      {/* Discreet review nudge — self-gating, never during an active flow */}
-      <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
-      <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
-      <Suspense fallback={null}>
-        <AiAssistant trades={trades} />
-      </Suspense>
-      {modalOpen && (
-        <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
-      )}
-      <Suspense fallback={null}>
-        {paletteOpen && (
-          <CommandPalette
-            open={paletteOpen}
-            onClose={() => setPaletteOpen(false)}
-            trades={trades}
-            setPage={setPage}
-            onAddTrade={handleAdd}
-            onOpenImport={() => setImportOpen(true)}
-            onViewTrade={setViewingTrade}
-          />
-        )}
-        {importOpen && (
-          <ImportCsvModal
-            existing={trades}
-            onClose={() => setImportOpen(false)}
-            onImport={handleImportTrades}
-          />
-        )}
-      </Suspense>
-      {viewingTrade && (
-        <TradeDetailModal
-          trades={[viewingTrade]}
-          date={viewingTrade.date}
-          onClose={() => setViewingTrade(null)}
-        />
-      )}
-    </div>
+      {showTrade && <TradeModal trade={editingTrade} onClose={() => { setShowTrade(false); setEditingTrade(null); }} onSave={handleSave} />}
+      <CommandPalette page={page} setPage={setPage} onAdd={() => setShowTrade(true)} />
+      <Toaster position="top-right" theme="dark" />
+    </ConfirmProvider>
   );
 }
 
-export default function App() {
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AccountProvider>
-          <LanguageProvider>
-            <ToastProvider>
-              <ConfirmProvider>
-                <AppContent />
-              </ConfirmProvider>
-            </ToastProvider>
-          </LanguageProvider>
-        </AccountProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  );
-}
+export default function App() { return <AuthProvider><LanguageProvider><ThemeProvider><AccountProvider><AppContent /></AccountProvider></ThemeProvider></LanguageProvider></AuthProvider>; }
