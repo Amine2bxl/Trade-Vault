@@ -47,6 +47,34 @@ export default {
         const { handleMonthlyReportsCron } = await import("./lib/monthly-reports.server");
         return await handleMonthlyReportsCron(request);
       }
+      if (pathname === "/api/cron/lifecycle-emails") {
+        const { handleLifecycleCron } = await import("./lib/lifecycle-emails.server");
+        return await handleLifecycleCron(request);
+      }
+      if (pathname === "/api/emails/welcome" && request.method === "POST") {
+        const { handleWelcomeEmail } = await import("./lib/lifecycle-emails.server");
+        return await handleWelcomeEmail(request);
+      }
+      if (pathname === "/api/billing/checkout" && request.method === "POST") {
+        const { handleCheckout } = await import("./lib/billing.server");
+        return await handleCheckout(request);
+      }
+      if (pathname === "/api/billing/portal" && request.method === "POST") {
+        const { handlePortal } = await import("./lib/billing.server");
+        return await handlePortal(request);
+      }
+      if (pathname === "/api/stripe/webhook" && request.method === "POST") {
+        const { handleStripeWebhook } = await import("./lib/billing.server");
+        return await handleStripeWebhook(request);
+      }
+      if (pathname === "/api/crypto/checkout" && request.method === "POST") {
+        const { handleCryptoCheckout } = await import("./lib/crypto-pay.server");
+        return await handleCryptoCheckout(request);
+      }
+      if (pathname === "/api/crypto/webhook" && request.method === "POST") {
+        const { handleCryptoWebhook } = await import("./lib/crypto-pay.server");
+        return await handleCryptoWebhook(request);
+      }
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

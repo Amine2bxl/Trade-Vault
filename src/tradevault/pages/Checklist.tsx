@@ -4,6 +4,7 @@ import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
+import { personalizedItems } from "../utils/adaptiveChecklist";
 import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
@@ -2078,6 +2079,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           recommendedId={wizardDefaults.rec}
           defaultToggles={wizardDefaults.toggles}
           defaultTime={wizardDefaults.time}
+          personalItems={personalizedItems(onb, lang)}
           onApply={applyWizard}
           onClose={() => {
             try { localStorage.setItem(WIZ_KEY, "1"); } catch { /* noop */ }

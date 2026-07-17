@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import ThemeSettings from "../components/ThemeSettings";
+import SubscriptionSection from "../components/SubscriptionSection";
+import TradingRulesSection from "../components/TradingRulesSection";
 
 interface ProfileProps {
   trades: Trade[];
@@ -66,6 +68,12 @@ export default function Profile({ trades }: ProfileProps) {
           accent="text-cyan-400"
         />
       </div>
+
+      {/* Subscription management — upgrade, card change, cancel */}
+      <SubscriptionSection />
+
+      {/* Personal trading rules — checked on every trade save (anti-bias push) */}
+      <TradingRulesSection />
 
       {/* Appearance / themes */}
       <ThemeSettings />

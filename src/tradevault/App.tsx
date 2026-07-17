@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import Sidebar from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
 import TradeModal from "./components/TradeModal";
@@ -18,6 +19,7 @@ const Seasonality = lazy(() => import("./pages/Seasonality"));
 const LotSizeCalculator = lazy(() => import("./pages/LotSizeCalculator"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Reports = lazy(() => import("./pages/Reports"));
+const Goals = lazy(() => import("./pages/Goals"));
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
@@ -32,8 +34,11 @@ import {
   deleteAllTrades,
   migrateLegacyTradeScreenshots,
   loadOnboarding,
+  loadStartingBalance,
 } from "./store";
 import { computeStats } from "./utils/tradeCalcs";
+import { loadTradingRules, checkTradeAgainstRules, type TradingRule } from "./utils/tradingRules";
+import { sendPushToSelf } from "@/lib/push.functions";
 import { buildDemoTrades } from "./utils/demoTrades";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -41,7 +46,8 @@ import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import Landing from "./pages/Landing";
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
-import { PageSkeleton } from "./components/Skeleton";
+import PushOnboardingBanner from "./components/PushOnboardingBanner";
+import { SkeletonForPage } from "./components/Skeleton";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
@@ -70,6 +76,12 @@ function AppContent() {
   useEffect(() => {
     const m = new URLSearchParams(window.location.search).get("report");
     if (m && /^\d{4}-\d{2}$/.test(m)) setPage("reports");
+  }, []);
+
+  // Deep link from lifecycle emails: /?upgrade=1&promo=VAULT20 lands on the
+  // profile page, where the subscription section reads the promo param.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("upgrade")) setPage("profile");
   }, []);
 
   // Cmd/Ctrl+K toggles the command palette
@@ -141,6 +153,23 @@ function AppContent() {
 
   // Optimistic writes: the UI updates instantly and rolls back to the previous
   // snapshot if the request fails, so saving never blocks the workflow.
+  // Anti-bias engine: the trader's own rules, checked on every save. Loaded
+  // once per user into a ref so saving a trade never waits on a rules fetch.
+  const sendPush = useServerFn(sendPushToSelf);
+  const rulesRef = useRef<TradingRule[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    loadTradingRules(user.id)
+      .then((r) => { rulesRef.current = r; })
+      .catch(() => {});
+    // Profile's rules editor broadcasts changes so the checker never goes stale.
+    const onUpdate = (e: Event) => {
+      rulesRef.current = (e as CustomEvent<TradingRule[]>).detail ?? [];
+    };
+    window.addEventListener("tv-rules-updated", onUpdate);
+    return () => window.removeEventListener("tv-rules-updated", onUpdate);
+  }, [user]);
+
   const handleSave = useCallback(
     async (trade: Trade) => {
       if (!user) return;
@@ -158,6 +187,34 @@ function AppContent() {
         console.error("Failed to save trade", e);
         setTrades(snapshot);
         toast(t("app.saveTradeFailed"), "error");
+        return;
+      }
+
+      // Instant rule check — kind but firm feedback, in-app + push. Only for
+      // brand-new trades (edits don't re-trigger the coaching).
+      const isNew = !snapshot.some((tr) => tr.id === trade.id);
+      const rules = rulesRef.current;
+      if (isNew && rules.some((r) => r.enabled && r.kind !== "custom")) {
+        void (async () => {
+          try {
+            const balance =
+              (await loadStartingBalance(user.id).catch(() => 0)) +
+              snapshot.reduce((s, tr) => s + tr.pnl, 0);
+            const sameDay = snapshot.filter((tr) => tr.date === trade.date && tr.id !== trade.id);
+            const violations = checkTradeAgainstRules(trade, rules, {
+              sameDayTrades: sameDay,
+              accountBalance: balance,
+            });
+            for (const v of violations) {
+              toast(v.message, "error");
+              await sendPush({
+                data: { title: t("rules.pushTitle"), body: v.message, url: "/" },
+              }).catch(() => {});
+            }
+          } catch (e) {
+            console.error("Rule check failed", e);
+          }
+        })();
       }
     },
     [user, t, toast],
@@ -300,8 +357,12 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
+        {/* One-click push opt-in — dashboard only, so it never nags mid-flow */}
+        {page === "dashboard" && user && <PushOnboardingBanner userId={user.id} />}
         <div key={page} className="animate-fade-in">
-          <Suspense fallback={<PageSkeleton />}>
+          {/* Contextual skeleton: the loading frame mimics the destination
+              page's real layout (chart grid, trade list, calendar…). */}
+          <Suspense fallback={<SkeletonForPage page={page} />}>
             {page === "dashboard" && (
               <Dashboard
                 trades={trades}
@@ -340,6 +401,7 @@ function AppContent() {
               />
             )}
             {page === "reports" && <Reports />}
+            {page === "goals" && <Goals trades={trades} />}
             {page === "profile" && <Profile trades={trades} />}
           </Suspense>
         </div>

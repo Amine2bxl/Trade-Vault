@@ -1,5 +1,18 @@
 import { useState } from "react";
-import { User, Building2, FlaskConical, Zap, Check, ChevronDown, Plus, X, Pencil } from "lucide-react";
+import {
+  User,
+  Building2,
+  FlaskConical,
+  Zap,
+  Check,
+  ChevronDown,
+  Plus,
+  X,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  Layers,
+} from "lucide-react";
 import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
@@ -22,12 +35,13 @@ export default function AccountSwitcher({
   compact?: boolean;
   variant?: "bar" | "fab";
 }) {
-  const { accounts, activeAccount, switchAccount, editAccount } = useAccounts();
+  const { accounts, activeAccount, switchAccount, editAccount, removeAccount } = useAccounts();
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [deleting, setDeleting] = useState<Account | null>(null);
 
   const startRename = (a: Account) => {
     setEditingId(a.id);
@@ -53,21 +67,34 @@ export default function AccountSwitcher({
   if (variant === "fab") {
     return (
       <>
+        {/* Big thumb-zone FAB: pinned bottom-left above the dock, sized and
+            haloed so switching sub-accounts is a one-thumb, zero-hunt action. */}
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 bottom-24 left-4 w-11 h-11 rounded-full flex items-center justify-center border backdrop-blur-md shadow-md active:scale-95 transition-transform"
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-14 pl-2.5 pr-3.5 rounded-full flex items-center gap-2 border-2 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.45)] active:scale-95 transition-transform"
           style={{
-            background: `${activeAccount.color}26`,
-            borderColor: `${activeAccount.color}66`,
-            color: activeAccount.color,
+            background: `linear-gradient(135deg, ${activeAccount.color}33, ${activeAccount.color}14)`,
+            borderColor: `${activeAccount.color}99`,
+            boxShadow: `0 8px 24px rgba(0,0,0,0.45), 0 0 18px ${activeAccount.color}40`,
           }}
         >
-          <ActiveIcon className="w-5 h-5" />
           <span
-            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#0a0f1e] border border-white/15 flex items-center justify-center"
+            className="relative w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: `${activeAccount.color}2e`, color: activeAccount.color }}
           >
-            <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
+            <ActiveIcon className="w-5 h-5" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#0a0f1e] border border-white/15 flex items-center justify-center">
+              <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
+            </span>
+          </span>
+          <span className="min-w-0 max-w-[96px] text-left">
+            <span className="block text-[8px] uppercase tracking-[0.14em] font-bold leading-none mb-0.5 flex items-center gap-1" style={{ color: `${activeAccount.color}cc` }}>
+              <Layers className="w-2.5 h-2.5" /> {t("account.fabLabel")}
+            </span>
+            <span className="block text-xs font-bold text-white truncate leading-tight">
+              {activeAccount.name}
+            </span>
           </span>
         </button>
 
@@ -173,14 +200,25 @@ export default function AccountSwitcher({
                         </span>
                       </button>
 
-                      {/* Rename affordance */}
-                      <button
-                        onClick={() => startRename(a)}
-                        aria-label={t("account.rename")}
-                        className="absolute bottom-2.5 right-2.5 w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Rename + delete affordances */}
+                      <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1">
+                        {accounts.length > 1 && (
+                          <button
+                            onClick={() => setDeleting(a)}
+                            aria-label={t("account.delete")}
+                            className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => startRename(a)}
+                          aria-label={t("account.rename")}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
 
                       {active && (
                         <span
@@ -210,6 +248,20 @@ export default function AccountSwitcher({
         )}
 
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+        {deleting && (
+          <DeleteAccountModal
+            account={deleting}
+            onConfirm={async () => {
+              try {
+                await removeAccount(deleting.id);
+              } catch (e) {
+                console.error("Failed to delete account", e);
+              }
+              setDeleting(null);
+            }}
+            onClose={() => setDeleting(null)}
+          />
+        )}
       </>
     );
   }
@@ -248,26 +300,39 @@ export default function AccountSwitcher({
               const Icon = TYPE_ICON[a.type];
               const active = a.id === activeAccount.id;
               return (
-                <button
+                <div
                   key={a.id}
-                  onClick={() => { switchAccount(a.id); setOpen(false); }}
                   className={cn(
-                    "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors text-left",
+                    "group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors",
                     active ? "bg-cyan-500/15" : "hover:bg-white/[0.06]",
                   )}
                 >
-                  <span
-                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: `${a.color}22`, color: a.color }}
+                  <button
+                    onClick={() => { switchAccount(a.id); setOpen(false); }}
+                    className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
                   >
-                    <Icon className="w-3.5 h-3.5" />
-                  </span>
-                  <span className="flex-1 min-w-0">
-                    <span className={cn("block text-sm font-medium truncate", active ? "text-white" : "text-slate-300")}>{a.name}</span>
-                    <span className="block text-[10px] text-slate-500">{t(TYPE_LABEL_KEY[a.type])}</span>
-                  </span>
+                    <span
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: `${a.color}22`, color: a.color }}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className={cn("block text-sm font-medium truncate", active ? "text-white" : "text-slate-300")}>{a.name}</span>
+                      <span className="block text-[10px] text-slate-500">{t(TYPE_LABEL_KEY[a.type])}</span>
+                    </span>
+                  </button>
+                  {accounts.length > 1 && (
+                    <button
+                      onClick={() => { setDeleting(a); setOpen(false); }}
+                      aria-label={t("account.delete")}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
-                </button>
+                </div>
               );
             })}
             <div className="h-px bg-white/[0.06] my-1.5 mx-1" />
@@ -285,6 +350,102 @@ export default function AccountSwitcher({
       )}
 
       {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+      {deleting && (
+        <DeleteAccountModal
+          account={deleting}
+          onConfirm={async () => {
+            try {
+              await removeAccount(deleting.id);
+            } catch (e) {
+              console.error("Failed to delete account", e);
+            }
+            setDeleting(null);
+          }}
+          onClose={() => setDeleting(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Two-step destructive confirmation: a first "I understand" gate, then the
+ *  actual red delete — trades and history go with the account (FK cascade). */
+function DeleteAccountModal({
+  account,
+  onConfirm,
+  onClose,
+}: {
+  account: Account;
+  onConfirm: () => Promise<void>;
+  onClose: () => void;
+}) {
+  const { t } = useT();
+  const [step, setStep] = useState<1 | 2>(1);
+  const [busy, setBusy] = useState(false);
+  const Icon = TYPE_ICON[account.type];
+
+  return (
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="glass-strong rounded-3xl p-6 max-w-sm w-full animate-slide-in border border-red-500/20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-red-400" />
+          </div>
+        </div>
+
+        <h2 className="text-lg font-bold text-white text-center mb-1">
+          {step === 1 ? t("account.deleteTitle") : t("account.deleteTitle2")}
+        </h2>
+
+        <div className="flex items-center justify-center gap-2 my-3">
+          <span
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{ background: `${account.color}22`, color: account.color }}
+          >
+            <Icon className="w-3.5 h-3.5" />
+          </span>
+          <span className="text-sm font-bold text-white">{account.name}</span>
+        </div>
+
+        <p className="text-sm text-slate-400 text-center mb-5 leading-relaxed">
+          {step === 1 ? t("account.deleteWarn1") : t("account.deleteWarn2")}
+        </p>
+
+        <div className="grid gap-2">
+          {step === 1 ? (
+            <button
+              onClick={() => setStep(2)}
+              className="w-full h-11 rounded-xl text-sm font-bold bg-white/[0.06] border border-white/[0.1] text-slate-200 hover:bg-white/[0.1] transition-all"
+            >
+              {t("account.deleteStep1Cta")}
+            </button>
+          ) : (
+            <button
+              onClick={async () => {
+                if (busy) return;
+                setBusy(true);
+                await onConfirm();
+              }}
+              disabled={busy}
+              className="w-full h-11 rounded-xl text-sm font-bold bg-red-500/90 hover:bg-red-500 text-white shadow-lg shadow-red-500/25 transition-all disabled:opacity-60"
+            >
+              {busy ? t("common.loading") : t("account.deleteStep2Cta")}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="w-full h-11 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all"
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -314,7 +475,9 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="glass-strong rounded-3xl p-6 max-w-sm w-full animate-slide-in" onClick={(e) => e.stopPropagation()}>
+      {/* Mobile: stacked form. Desktop: one clean horizontal row — name |
+          type | balance | create — like a spreadsheet line, zero scrolling. */}
+      <div className="glass-strong rounded-3xl p-6 w-full max-w-sm md:max-w-3xl animate-slide-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-white">{t("account.new")}</h2>
           <button onClick={onClose} aria-label={t("common.close")} className="text-slate-500 hover:text-white transition-colors">
@@ -322,65 +485,75 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-          {t("account.name")}
-        </label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoFocus
-          placeholder={t("account.namePlaceholder")}
-          className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 mb-4"
-        />
+        <div className="grid gap-4 md:grid-cols-[1.2fr_auto_0.7fr_auto] md:items-end">
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+              {t("account.name")}
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && create()}
+              autoFocus
+              placeholder={t("account.namePlaceholder")}
+              className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
+            />
+          </div>
 
-        <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-          {t("account.type")}
-        </label>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {types.map((tp) => {
-            const Icon = TYPE_ICON[tp];
-            const active = type === tp;
-            return (
-              <button
-                key={tp}
-                onClick={() => setType(tp)}
-                className={cn(
-                  "flex items-center gap-2 rounded-xl px-3 py-2.5 border text-sm font-medium transition-all",
-                  active ? "bg-cyan-500/15 border-cyan-400/50 text-white" : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
-                )}
-              >
-                <Icon className="w-4 h-4" /> {t(TYPE_LABEL_KEY[tp])}
-              </button>
-            );
-          })}
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+              {t("account.type")}
+            </label>
+            <div className="grid grid-cols-2 md:flex gap-2">
+              {types.map((tp) => {
+                const Icon = TYPE_ICON[tp];
+                const active = type === tp;
+                return (
+                  <button
+                    key={tp}
+                    onClick={() => setType(tp)}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl px-3 h-11 border text-sm font-medium transition-all whitespace-nowrap",
+                      active ? "bg-cyan-500/15 border-cyan-400/50 text-white" : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+                    )}
+                  >
+                    <Icon className="w-4 h-4" /> {t(TYPE_LABEL_KEY[tp])}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+              {t("account.startingBalance")}
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={balance}
+                onChange={(e) => setBalance(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && create()}
+                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-7 pr-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={create}
+            disabled={!name.trim() || busy}
+            className={cn(
+              "h-11 px-5 rounded-xl text-sm font-bold transition-all whitespace-nowrap",
+              name.trim() && !busy
+                ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:brightness-110"
+                : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
+            )}
+          >
+            {busy ? t("account.creating") : t("account.create")}
+          </button>
         </div>
-
-        <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-          {t("account.startingBalance")}
-        </label>
-        <div className="relative mb-5">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            value={balance}
-            onChange={(e) => setBalance(e.target.value)}
-            className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-7 pr-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
-          />
-        </div>
-
-        <button
-          onClick={create}
-          disabled={!name.trim() || busy}
-          className={cn(
-            "w-full h-11 rounded-xl text-sm font-bold transition-all",
-            name.trim() && !busy
-              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:brightness-110"
-              : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
-          )}
-        >
-          {busy ? t("account.creating") : t("account.create")}
-        </button>
       </div>
     </div>
   );

@@ -54,6 +54,7 @@ export default function ChecklistWizard({
   recommendedId,
   defaultToggles,
   defaultTime,
+  personalItems = [],
   onApply,
   onClose,
 }: {
@@ -62,6 +63,8 @@ export default function ChecklistWizard({
   recommendedId: string;
   defaultToggles: WizardToggles;
   defaultTime: { startTime: string; timeZone: string };
+  /** Adaptive rules from the onboarding profile — appended to any preset. */
+  personalItems?: ChkItem[];
   onApply: (r: WizardResult) => void;
   onClose: () => void;
 }) {
@@ -80,6 +83,10 @@ export default function ChecklistWizard({
     (Object.keys(toggles) as (keyof WizardToggles)[]).forEach((k) => {
       if (toggles[k] && !items.some((it) => it.title === addons[k].title)) items.push(addons[k]);
     });
+    // Adaptive rules derived from onboarding (weakness, style, monthly target).
+    for (const it of personalItems) {
+      if (!items.some((x) => x.title === it.title)) items.push(structuredClone(it));
+    }
     onApply({ items, startTime: time.startTime, timeZone: time.timeZone });
   };
 

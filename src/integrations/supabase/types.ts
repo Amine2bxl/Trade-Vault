@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_log: {
+        Row: {
+          email_key: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          email_key: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          email_key?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      six_month_goals: {
+        Row: {
+          created_at: string
+          kind: string
+          start_value: number
+          started_at: string
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          start_value: number
+          started_at?: string
+          target_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          start_value?: number
+          started_at?: string
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          crypto_charge_id: string | null
+          current_period_end: string | null
+          plan: string
+          source: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          crypto_charge_id?: string | null
+          current_period_end?: string | null
+          plan?: string
+          source?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          crypto_charge_id?: string | null
+          current_period_end?: string | null
+          plan?: string
+          source?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       accounts: {
         Row: {
           color: string
@@ -144,6 +237,8 @@ export type Database = {
           onboarding_experience: string | null
           onboarding_goal: string | null
           onboarding_pain: string | null
+          onboarding_monthly_target: number | null
+          trading_rules: Json
           onboarding_skipped: boolean
           onboarding_style: string | null
           onboarding_uses_ict: boolean
@@ -167,6 +262,8 @@ export type Database = {
           onboarding_experience?: string | null
           onboarding_goal?: string | null
           onboarding_pain?: string | null
+          onboarding_monthly_target?: number | null
+          trading_rules?: Json
           onboarding_skipped?: boolean
           onboarding_style?: string | null
           onboarding_uses_ict?: boolean
@@ -190,6 +287,8 @@ export type Database = {
           onboarding_experience?: string | null
           onboarding_goal?: string | null
           onboarding_pain?: string | null
+          onboarding_monthly_target?: number | null
+          trading_rules?: Json
           onboarding_skipped?: boolean
           onboarding_style?: string | null
           onboarding_uses_ict?: boolean

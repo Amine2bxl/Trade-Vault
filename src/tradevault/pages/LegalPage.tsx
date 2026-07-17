@@ -33,9 +33,16 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
   return (
     <div
       dir={dir}
-      className="relative min-h-dvh text-slate-300 overflow-x-hidden"
-      style={{ background: "linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)" }}
+      className="relative min-h-dvh bg-[#060d16] text-slate-300 overflow-x-clip selection:bg-cyan-400 selection:text-slate-950"
     >
+      {/* Same ambient mesh as the landing — one visual identity site-wide. */}
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 55% at 60% -10%,rgba(6,182,212,.09),transparent 60%),radial-gradient(ellipse 55% 45% at 95% 55%,rgba(99,102,241,.07),transparent 55%)",
+        }}
+      />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="auth-orb w-[420px] h-[420px] bg-cyan-600 -top-40 -right-32" />
         <div className="auth-orb w-[320px] h-[320px] bg-teal-600 bottom-10 -left-32" style={{ animationDelay: "-7s" }} />

@@ -107,8 +107,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
       <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0"><h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">{t('analytics.title')}</h1><p className="text-xs md:text-sm text-slate-500 mt-1">{t('analytics.subtitle')}</p></div>
 
       <div className="space-y-4 md:space-y-6">
-        {/* Profit Factor */}
-        <div className={cn('glass rounded-2xl p-4 md:p-6 card-premium animate-fade-in-up stagger-1 border', profitFactorData.isProfitable ? 'border-emerald-500/15' : 'border-red-500/15')}>
+        {/* Profit Factor — desktop hero card. On mobile it collapses into a
+            standard tile inside the metrics grid below (same size as Win
+            Rate / PnL), so the stats read as one uniform, scroll-light grid. */}
+        <div className={cn('hidden md:block glass rounded-2xl p-4 md:p-6 card-premium animate-fade-in-up stagger-1 border', profitFactorData.isProfitable ? 'border-emerald-500/15' : 'border-red-500/15')}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div><h3 className="text-sm font-semibold text-white mb-0.5">{t('analytics.profitFactor')}</h3><p className="text-[10px] text-slate-500">{t('analytics.profitsOverLosses')}</p></div>
             <div className="flex items-center gap-3 md:gap-6 flex-wrap">
@@ -129,6 +131,18 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
         {/* Quant metrics grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-fade-in-up stagger-1">
+          {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
+          <div className="md:hidden group relative glass rounded-2xl p-3.5 card-premium">
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">{t('analytics.profitFactor')}</span>
+            </div>
+            <div className={cn('text-base font-bold tabular-nums', profitFactorData.isProfitable ? 'text-emerald-400' : 'text-red-400')}>
+              {profitFactorData.profitFactor >= 99 ? '99+' : profitFactorData.profitFactor.toFixed(2)}
+            </div>
+            <div className="text-[9px] text-slate-600 mt-0.5 truncate">
+              {profitFactorData.isProfitable ? `✓ ${t('analytics.profitable')}` : `✗ ${t('analytics.losing')}`}
+            </div>
+          </div>
           {[
             { label: t('dashboard.avgRR'), value: `${stats.avgRR >= 0 ? '' : ''}${stats.avgRR.toFixed(2)}R`, sub: t('quant.avgRRSub'), good: stats.avgRR >= 2, info: t('quant.infoAvgRR') },
             { label: t('quant.expectancy'), value: formatPnl(quant.expectancy), sub: `${quant.expectancyR >= 0 ? '+' : ''}${quant.expectancyR.toFixed(2)}R`, good: quant.expectancy >= 0, info: t('quant.infoExpectancy') },

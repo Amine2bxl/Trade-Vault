@@ -9,6 +9,8 @@ import {
   Upload,
   PlayCircle,
   Loader2,
+  Compass,
+  Target,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -20,7 +22,7 @@ import logoSrc from "@/assets/tradevault-logo.png";
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;
 
-type StepKey = "language" | "welcome" | "start";
+type StepKey = "language" | "welcome" | "profile" | "start";
 
 const EMPTY: OnboardingData = {
   goal: null,
@@ -30,15 +32,17 @@ const EMPTY: OnboardingData = {
   usesIct: false,
   brokers: [],
   pain: null,
+  monthlyTarget: null,
   onboardedAt: null,
   skipped: false,
 };
 
 /**
- * Deliberately minimal onboarding (aha moment < 2 min): pick a language, one
- * welcome screen, then straight to filling the journal — CSV import first,
- * demo trades as the no-data fallback. All profiling questions were removed;
- * the pre-market checklist wizard self-configures with safe defaults instead.
+ * Minimal onboarding (aha moment < 2 min): language, welcome, then ONE
+ * profiling screen with the 3 questions that drive the adaptive checklist
+ * (style · biggest weakness · realistic monthly target), then straight to
+ * filling the journal — CSV import first, demo trades as fallback. Every
+ * profile question is skippable; safe defaults keep everything working.
  */
 export default function Onboarding({
   userId,
@@ -51,8 +55,12 @@ export default function Onboarding({
   const c = oc(lang);
   const [idx, setIdx] = useState(0);
   const [saving, setSaving] = useState<OnboardingAction | "fresh" | null>(null);
+  // The 3 profiling answers (all optional — skipping keeps safe defaults).
+  const [style, setStyle] = useState<string | null>(null);
+  const [pain, setPain] = useState<string | null>(null);
+  const [target, setTarget] = useState("");
 
-  const steps: StepKey[] = ["language", "welcome", "start"];
+  const steps: StepKey[] = ["language", "welcome", "profile", "start"];
   const step = steps[Math.min(idx, steps.length - 1)];
   const progress = (idx + 1) / steps.length;
 
@@ -63,15 +71,17 @@ export default function Onboarding({
     async (action: OnboardingAction) => {
       if (saving) return;
       setSaving(action ?? "fresh");
+      const parsed = parseFloat(target.replace(",", "."));
+      const monthlyTarget = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 100) : null;
       try {
-        await saveOnboarding(userId, EMPTY, { skipped: false });
+        await saveOnboarding(userId, { ...EMPTY, style, pain, monthlyTarget }, { skipped: false });
       } catch (e) {
         console.error("Failed to save onboarding", e);
       } finally {
         onDone(action);
       }
     },
-    [saving, userId, onDone],
+    [saving, userId, onDone, style, pain, target],
   );
 
   const langs = Object.entries(LANG_NAMES) as [Lang, string][];
@@ -200,6 +210,120 @@ export default function Onboarding({
                 className="mt-3 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
               >
                 {c.welcomeSkip}
+              </button>
+            </div>
+          )}
+
+          {step === "profile" && (
+            <div>
+              <div className="flex justify-center mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 flex items-center justify-center">
+                  <Compass className="w-6 h-6 text-cyan-300" />
+                </div>
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-1.5">
+                {c.styleTitle}
+              </h2>
+              <p className="text-sm text-slate-400 text-center mb-4">{c.styleSub}</p>
+              <div className="grid grid-cols-3 gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["scalping", c.sScalper, c.sScalperD],
+                    ["daytrading", c.sDay, c.sDayD],
+                    ["swing", c.sSwing, c.sSwingD],
+                  ] as const
+                ).map(([id, label, desc]) => (
+                  <button
+                    key={id}
+                    onClick={() => setStyle(style === id ? null : id)}
+                    className={cn(
+                      "onb-card rounded-2xl p-3 border text-center",
+                      style === id
+                        ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
+                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "text-sm font-bold",
+                        style === id ? "text-white" : "text-slate-300",
+                      )}
+                    >
+                      {label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 leading-tight">{desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <h2 className="text-base font-bold text-white text-center mb-1">{c.painTitle}</h2>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.painSub}</p>
+              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["emotions", c.pEmo, c.pEmoD],
+                    ["consistency", c.pCons, c.pConsD],
+                    ["overtrading", c.pOver, c.pOverD],
+                    ["risk", c.pRisk, c.pRiskD],
+                    ["journaling", c.pJour, c.pJourD],
+                  ] as const
+                ).map(([id, label, desc]) => (
+                  <button
+                    key={id}
+                    onClick={() => setPain(pain === id ? null : id)}
+                    className={cn(
+                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
+                      pain === id
+                        ? "bg-cyan-500/15 border-cyan-400/50"
+                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "text-[13px] font-semibold",
+                        pain === id ? "text-white" : "text-slate-300",
+                      )}
+                    >
+                      {label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 justify-center mb-1">
+                <Target className="w-4 h-4 text-cyan-300" />
+                <h2 className="text-base font-bold text-white text-center">{c.targetTitle}</h2>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.targetSub}</p>
+              <div className="relative max-w-[200px] mx-auto mb-7">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="3"
+                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-10 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                  %
+                </span>
+              </div>
+
+              <button
+                onClick={next}
+                className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
+              >
+                {c.cont}
+              </button>
+              <button
+                onClick={next}
+                className="w-full mt-2.5 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {c.skip}
               </button>
             </div>
           )}

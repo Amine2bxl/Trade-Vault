@@ -384,6 +384,8 @@ export interface OnboardingData {
   usesIct: boolean;
   brokers: string[];
   pain: string | null;
+  /** Realistic monthly performance target in % (onboarding Q3). */
+  monthlyTarget: number | null;
   onboardedAt: string | null;
   skipped: boolean;
 }
@@ -396,6 +398,7 @@ const EMPTY_ONBOARDING: OnboardingData = {
   usesIct: false,
   brokers: [],
   pain: null,
+  monthlyTarget: null,
   onboardedAt: null,
   skipped: false,
 };
@@ -408,6 +411,7 @@ interface OnboardingRow {
   onboarding_uses_ict: boolean | null;
   onboarding_brokers: string[] | null;
   onboarding_pain: string | null;
+  onboarding_monthly_target: number | null;
   onboarded_at: string | null;
   onboarding_skipped: boolean | null;
 }
@@ -416,7 +420,7 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "onboarding_goal, onboarding_assets, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_brokers, onboarding_pain, onboarded_at, onboarding_skipped",
+      "onboarding_goal, onboarding_assets, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_brokers, onboarding_pain, onboarding_monthly_target, onboarded_at, onboarding_skipped",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -431,6 +435,7 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
     usesIct: !!r.onboarding_uses_ict,
     brokers: r.onboarding_brokers ?? [],
     pain: r.onboarding_pain ?? null,
+    monthlyTarget: r.onboarding_monthly_target !== null ? Number(r.onboarding_monthly_target) : null,
     onboardedAt: r.onboarded_at ?? null,
     skipped: !!r.onboarding_skipped,
   };
@@ -453,11 +458,28 @@ export async function saveOnboarding(
       onboarding_uses_ict: d.usesIct,
       onboarding_brokers: d.brokers,
       onboarding_pain: d.pain,
+      onboarding_monthly_target: d.monthlyTarget,
       onboarding_skipped: opts.skipped ?? false,
       onboarded_at: new Date().toISOString(),
     })
     .eq("id", userId);
   if (error) throw error;
+
+  // J+0 welcome email, personalized from the answers just saved. Fire and
+  // forget: the server dedupes via email_log, a failure never blocks the app.
+  void (async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      await fetch("/api/emails/welcome", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      });
+    } catch {
+      // best-effort — the user experience never depends on the email
+    }
+  })();
 }
 
 // ── Trustpilot review prompt state (stored on profile) ──

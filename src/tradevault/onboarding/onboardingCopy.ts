@@ -100,6 +100,9 @@ export interface OnboardingCopy {
   startDemoD?: string;
   startFresh?: string;
   startWorking?: string;
+  // Profile step Q3 — realistic monthly target (optional per locale).
+  targetTitle?: string;
+  targetSub?: string;
 }
 
 const en: OnboardingCopy = {
@@ -200,6 +203,8 @@ const en: OnboardingCopy = {
     "We drop in 3 realistic sample trades (marked “Example”) so you can explore everything instantly.",
   startFresh: "Start from zero — I'll log my first trade myself",
   startWorking: "Preparing your vault…",
+  targetTitle: "Realistic monthly target?",
+  targetSub: "In % — it anchors your daily checklist. Honest beats heroic.",
 };
 
 const fr: OnboardingCopy = {
@@ -300,6 +305,8 @@ const fr: OnboardingCopy = {
     "On insère 3 trades d'exemple réalistes (marqués « Exemple ») pour tout explorer instantanément.",
   startFresh: "Partir de zéro — je note mon premier trade moi-même",
   startWorking: "Préparation de ton vault…",
+  targetTitle: "Objectif mensuel réaliste ?",
+  targetSub: "En % — il ancre ta checklist quotidienne. Honnête vaut mieux qu'héroïque.",
 };
 
 const es: OnboardingCopy = {

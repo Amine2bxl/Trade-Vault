@@ -12,7 +12,8 @@ export type Page =
   | "seasonality"
   | "calculator"
   | "settings"
-  | "reports";
+  | "reports"
+  | "goals";
 
 export type TradeDirection = "long" | "short" | "be";
 

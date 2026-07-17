@@ -42,18 +42,45 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     { id: "journal" as Page, label: t("nav.journal"), icon: BookOpen },
   ];
   const rightItems = [{ id: "analytics" as Page, label: t("nav.analytics"), icon: BarChart3 }];
-  const moreItems = [
-    { id: "checklist" as Page, label: t("nav.checklist"), icon: ClipboardCheck },
-    { id: "calendar" as Page, label: t("nav.calendar"), icon: Calendar },
-    { id: "missed" as Page, label: t("nav.missed"), icon: Target },
-    { id: "mistakes" as Page, label: t("nav.mistakes"), icon: AlertTriangle },
-    { id: "insights" as Page, label: t("nav.insights"), icon: Sparkles },
-    { id: "calculator" as Page, label: t("nav.calculator"), icon: Calculator },
-    { id: "news" as Page, label: t("nav.news"), icon: Newspaper },
-    { id: "seasonality" as Page, label: t("nav.seasonality"), icon: CalendarRange },
-    { id: "settings" as Page, label: t("nav.settings"), icon: SettingsIcon },
-    { id: "profile" as Page, label: t("nav.profile"), icon: User },
+  // The "more" sheet mirrors the desktop sidebar's categories so nothing has
+  // to be hunted: routine first, then analysis, then data, then account.
+  const moreGroups: {
+    label: string;
+    items: { id: Page; label: string; icon: typeof LayoutDashboard }[];
+  }[] = [
+    {
+      label: t("nav.groupMain"),
+      items: [
+        { id: "checklist" as Page, label: t("nav.checklist"), icon: ClipboardCheck },
+        { id: "calculator" as Page, label: t("nav.calculator"), icon: Calculator },
+        { id: "missed" as Page, label: t("nav.missed"), icon: Target },
+      ],
+    },
+    {
+      label: t("nav.groupAnalysis"),
+      items: [
+        { id: "goals" as Page, label: t("nav.goals"), icon: Target },
+        { id: "insights" as Page, label: t("nav.insights"), icon: Sparkles },
+        { id: "mistakes" as Page, label: t("nav.mistakes"), icon: AlertTriangle },
+        { id: "calendar" as Page, label: t("nav.calendar"), icon: Calendar },
+      ],
+    },
+    {
+      label: t("nav.groupData"),
+      items: [
+        { id: "news" as Page, label: t("nav.news"), icon: Newspaper },
+        { id: "seasonality" as Page, label: t("nav.seasonality"), icon: CalendarRange },
+      ],
+    },
+    {
+      label: t("nav.groupSystem"),
+      items: [
+        { id: "settings" as Page, label: t("nav.settings"), icon: SettingsIcon },
+        { id: "profile" as Page, label: t("nav.profile"), icon: User },
+      ],
+    },
   ];
+  const moreItems = moreGroups.flatMap((g) => g.items);
   const isMoreActive = moreItems.some((m) => m.id === page);
 
   const renderItem = ({
@@ -146,26 +173,35 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2 p-4">
-              {moreItems.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => {
-                    setPage(id);
-                    setMoreOpen(false);
-                  }}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-2 rounded-2xl p-4 border transition-all",
-                    page === id
-                      ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
-                      : "bg-white/[0.03] border-white/[0.06] text-slate-400",
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[11px] font-semibold text-center leading-tight">
-                    {label}
-                  </span>
-                </button>
+            <div className="p-4 pt-2 max-h-[70dvh] overflow-y-auto">
+              {moreGroups.map((g) => (
+                <div key={g.label} className="mb-1.5">
+                  <div className="px-1 pt-2 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+                    {g.label}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {g.items.map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          setPage(id);
+                          setMoreOpen(false);
+                        }}
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border transition-all",
+                          page === id
+                            ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
+                            : "bg-white/[0.03] border-white/[0.06] text-slate-400",
+                        )}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="text-[11px] font-semibold text-center leading-tight">
+                          {label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

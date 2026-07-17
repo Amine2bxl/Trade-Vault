@@ -216,11 +216,15 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   /* Native-app feel: the page itself never scrolls sideways. Wide content
-     (tables, charts) scrolls inside its own overflow-x-auto container. */
-  overflow-x: hidden;
+     (tables, charts) scrolls inside its own overflow-x-auto container.
+     `clip` (not `hidden`): hidden promotes <body> to a scroll container that
+     swallows wheel/touch events, breaking vertical scroll on long pages
+     (landing, privacy, terms). clip hides overflow WITHOUT creating a
+     scroller, so <html> stays the one true scroll root. */
+  overflow-x: clip;
 }
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ══ Onboarding premium motion ══ */

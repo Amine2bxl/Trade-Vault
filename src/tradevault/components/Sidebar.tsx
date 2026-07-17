@@ -55,6 +55,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       label: t("nav.groupAnalysis"),
       items: [
         { id: "analytics", label: t("nav.analytics"), icon: BarChart3 },
+        { id: "goals", label: t("nav.goals"), icon: Target },
         { id: "insights", label: t("nav.insights"), icon: Sparkles },
         { id: "mistakes", label: t("nav.mistakes"), icon: AlertTriangle },
         { id: "calendar", label: t("nav.calendar"), icon: Calendar },
