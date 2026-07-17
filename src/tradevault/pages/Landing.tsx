@@ -508,15 +508,56 @@ const AIS = [
   { n: "calendar" as IName, t: "Rapports mensuels", d: "Un récapitulatif clair de ta performance, généré automatiquement chaque mois. Zéro tableur à remplir un dimanche soir.", c: "text-amber-300" },
 ];
 
-const FEATURES = [
-  { n: "chart" as IName, t: "Dashboard en temps réel" },
-  { n: "document" as IName, t: "Journal de trading rapide" },
-  { n: "calendar" as IName, t: "Calendrier économique" },
-  { n: "trend" as IName, t: "Analytics quantitatives" },
-  { n: "err" as IName, t: "Suivi des erreurs" },
-  { n: "eye" as IName, t: "Setups manqués" },
-  { n: "target" as IName, t: "Calculateur de position" },
-  { n: "upload" as IName, t: "Import CSV automatique" },
+/* The real product surface, mirrored from the app sidebar (post-login). Each
+   group matches a section of the in-app navigation so the landing shows exactly
+   what a trader gets once signed in — no vague promises, the actual pages. */
+type Feat = { n: IName; t: string; d: string };
+const FEATURE_GROUPS: { group: string; items: Feat[] }[] = [
+  {
+    group: "Au quotidien",
+    items: [
+      { n: "chart", t: "Dashboard", d: "Ta courbe de capital, ton PnL et tes stats clés en temps réel, dès l'ouverture." },
+      { n: "document", t: "Journal de trading", d: "Logge un trade en quelques secondes : entrée, sortie, captures, émotions, notes." },
+      { n: "shield", t: "Checklist pré-market", d: "Ton protocole de discipline à valider avant chaque session — streak à la clé." },
+      { n: "target", t: "Calculateur de position", d: "La taille exacte à risquer selon ton stop et ton capital, en un instant." },
+      { n: "eye", t: "Setups manqués", d: "Garde une trace des trades que tu n'as pas pris pour en tirer la leçon." },
+    ],
+  },
+  {
+    group: "Analyse & IA",
+    items: [
+      { n: "trend", t: "Analytics quantitatives", d: "Sharpe, Sortino, expectancy, profit factor… plus de 20 métriques pro." },
+      { n: "radar", t: "Insights automatiques", d: "L'IA détecte tes schémas récurrents (heures, setups, erreurs) et t'alerte." },
+      { n: "err", t: "Suivi des erreurs", d: "Catalogue tes erreurs types et mesure leur coût réel sur ton compte." },
+      { n: "calendar", t: "Calendrier de trading", d: "Ton PnL jour par jour sur un calendrier — repère tes cycles gagnants." },
+    ],
+  },
+  {
+    group: "Pilotage & progression",
+    items: [
+      { n: "compass", t: "Plan de trading", d: "Rédige et garde ton plan sous les yeux : règles, setups, gestion du risque." },
+      { n: "flame", t: "Objectifs", d: "Fixe des objectifs mesurables et suis ta progression, semaine après semaine." },
+      { n: "layers", t: "Rapports mensuels", d: "Un bilan clair de ta performance, généré automatiquement chaque mois." },
+    ],
+  },
+  {
+    group: "Données de marché",
+    items: [
+      { n: "bell", t: "Calendrier économique", d: "Les annonces à fort impact du jour, pour ne jamais trader à l'aveugle." },
+      { n: "calendar", t: "Saisonnalité", d: "Les tendances historiques par mois et par jour pour anticiper le marché." },
+    ],
+  },
+];
+
+/* Cross-cutting capabilities available on every page — shown as a compact strip. */
+const FEATURE_EXTRAS: { n: IName; t: string }[] = [
+  { n: "brain", t: "Assistant IA 24h/24" },
+  { n: "upload", t: "Import CSV automatique" },
+  { n: "layers", t: "Comptes multiples" },
+  { n: "zap", t: "Palette de commandes ⌘K" },
+  { n: "bell", t: "Notifications push" },
+  { n: "sparkle", t: "Thèmes personnalisés" },
+  { n: "download", t: "Données exportables" },
 ];
 
 const COMPARE = [
@@ -603,13 +644,18 @@ export default function Landing() {
       {/* ── NAV ── */}
       <header className={`fixed inset-x-0 top-0 z-50 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 10 ? "bg-[#060d16]/85 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/40"}`}>
         <div className="scroll-bar absolute inset-x-0 top-0 h-[2px]" style={{ transform: `scaleX(${pct})` }} />
-        <div className="mx-auto flex h-[66px] max-w-[1280px] items-center gap-4 px-5 lg:px-8">
-          {/* Left zone — equal width to the right zone so the centered nav is symmetric. */}
-          <div className="flex flex-1 items-center">
+        {/* Three-track layout: the logo (left) and actions (right) keep their
+            natural width, while the nav is absolutely centered on the header —
+            so it stays perfectly symmetric and never collides with either side,
+            whatever their content width. */}
+        <div className="relative mx-auto flex h-[66px] max-w-[1600px] items-center justify-between gap-4 px-5 lg:px-8">
+          {/* Left zone — logo, natural width. */}
+          <div className="flex items-center">
             <Logo />
           </div>
-          {/* Center — every section, perfectly centered between two equal zones. */}
-          <nav className="hidden shrink-0 items-center gap-0.5 rounded-full border border-white/[.08] bg-white/[.03] p-1 backdrop-blur-md xl:flex">
+          {/* Center — every section, dead-centered on the header via absolute
+              positioning (immune to the left/right zone widths). */}
+          <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-white/[.03] p-1 backdrop-blur-md xl:flex">
             {NAV.map(([l, id]) => {
               const on = activeSec === id;
               const isTp = id === "trustpilot";
@@ -617,7 +663,7 @@ export default function Landing() {
                 <button
                   key={id}
                   onClick={() => go(id)}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-all duration-200 ${
+                  className={`flex items-center gap-1 rounded-full px-2 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     on
                       ? "bg-cyan-400/[.12] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.25)]"
                       : isTp
@@ -631,11 +677,17 @@ export default function Landing() {
               );
             })}
           </nav>
-          {/* Right zone — same flex-1 width as the left. */}
-          <div className="flex flex-1 items-center justify-end gap-2.5">
-            <div className="hidden items-center gap-2.5 xl:flex">
-              <button onClick={() => open("login")} className="btn-ghost px-5 text-sm">Se connecter</button>
-              <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-5 text-sm">Essai gratuit <Icon n="arrow" cls="h-4 w-4" /></button>
+          {/* Right zone — actions, natural width; mirrors the left visually. */}
+          <div className="flex items-center justify-end gap-2.5">
+            <div className="hidden items-center gap-2 xl:flex">
+              {/* Below 2xl the centered 8-item nav needs the horizontal room, so
+                  the secondary "Se connecter" only appears once there's space.
+                  Wrapped because `.btn-ghost` sets its own display and would win
+                  over the `hidden` utility otherwise. */}
+              <div className="hidden 2xl:block">
+                <button onClick={() => open("login")} className="btn-ghost px-3.5 text-[13px]">Se connecter</button>
+              </div>
+              <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-4 text-[13px]">Essai gratuit <Icon n="arrow" cls="h-4 w-4" /></button>
             </div>
             <button onClick={() => setMenu(!menu)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] bg-white/[.03] text-slate-200 xl:hidden" aria-label="Menu"><Icon n={menu ? "close" : "menu"} cls="h-5 w-5" /></button>
           </div>
@@ -826,14 +878,44 @@ export default function Landing() {
         {/* ── FEATURES ── */}
         <section id="features" className="section-mesh relative border-t border-white/[.06] py-20 lg:py-24">
           <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag="Fonctionnalités" title="Tout ce qu'il faut à un trader sérieux" sub="Un écosystème complet — pas juste un carnet. Chaque outil est conçu pour créer de la valeur mesurable." />
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-              {FEATURES.map((f, i) => (
-                <div key={f.t} onPointerMove={spot} className="reveal spot glass-card flex items-center gap-3 p-4" style={{ transitionDelay: `${i * 40}ms` }}>
-                  <div className="feat-icon h-9 w-9"><Icon n={f.n} cls="h-4.5 w-4.5" /></div>
-                  <p className="text-sm font-semibold text-slate-200 leading-tight">{f.t}</p>
+            <SectionHead tag="Fonctionnalités" title="Tout ton espace de trading, une fois connecté" sub="Ce n'est pas une promesse marketing : voici exactement les pages qui t'attendent dans l'app, réparties comme dans ton menu de navigation." />
+
+            <div className="space-y-10">
+              {FEATURE_GROUPS.map((grp, gi) => (
+                <div key={grp.group} className="reveal" style={{ transitionDelay: `${gi * 60}ms` }}>
+                  <div className="mb-4 flex items-center gap-3">
+                    <h3 className="text-[11px] font-bold uppercase tracking-[.18em] text-cyan-300/90">{grp.group}</h3>
+                    <div className="h-px flex-1 bg-gradient-to-r from-cyan-400/20 to-transparent" />
+                    <span className="text-[11px] font-semibold text-slate-600">{grp.items.length} outils</span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {grp.items.map((f) => (
+                      <article key={f.t} onPointerMove={spot} className="spot glass-card group flex flex-col p-5 transition-colors hover:border-cyan-400/25">
+                        <div className="feat-icon h-10 w-10 mb-4 transition-transform group-hover:scale-105"><Icon n={f.n} cls="h-5 w-5" /></div>
+                        <p className="font-display text-[15px] font-bold text-white leading-tight">{f.t}</p>
+                        <p className="mt-1.5 text-[13px] leading-6 text-slate-400">{f.d}</p>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               ))}
+            </div>
+
+            {/* Cross-cutting capabilities — present on every page. */}
+            <div className="reveal mt-12 rounded-2xl border border-white/[.07] bg-white/[.02] p-6 backdrop-blur-md sm:p-7">
+              <p className="mb-4 text-center text-[11px] font-bold uppercase tracking-[.16em] text-slate-500">Et sur chaque page</p>
+              <div className="flex flex-wrap justify-center gap-2.5">
+                {FEATURE_EXTRAS.map((f) => (
+                  <span key={f.t} className="inline-flex items-center gap-2 rounded-full border border-white/[.08] bg-white/[.03] px-3.5 py-2 text-[13px] font-semibold text-slate-200">
+                    <Icon n={f.n} cls="h-4 w-4 text-cyan-300" />
+                    {f.t}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="reveal mt-10 text-center">
+              <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-6 py-3.5">Explorer tout ça gratuitement <Icon n="arrow" cls="h-4 w-4" /></button>
             </div>
           </div>
         </section>
