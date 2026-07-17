@@ -14,12 +14,17 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
     <meta charset="utf-8" />
     <title>${code} · TradeVault</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700&display=swap" />
     <style>
-      :root { --bg:#060810; --accent:#22d3ee; --accent2:#14b8a6; }
+      :root { --bg:#060810; --accent:#22d3ee; --accent2:#14b8a6;
+        --font-body:'Manrope','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+        --font-display:'Sora','Manrope',system-ui,-apple-system,sans-serif; }
       * { box-sizing: border-box; }
       html,body { margin:0; height:100%; }
       body {
-        font: 15px/1.6 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font: 15px/1.6 var(--font-body); letter-spacing:-.01em;
         color:#e2e8f0; background:
           radial-gradient(1000px 700px at 80% -10%, rgba(34,211,238,.08), transparent 60%),
           linear-gradient(160deg,#05070a 0%,#0a0f1e 55%,#05080c 100%);
@@ -33,6 +38,7 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
       .card { position:relative; z-index:1; text-align:center; max-width:32rem; width:100%; animation:rise .6s cubic-bezier(.16,1,.3,1) both; }
       @keyframes rise { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
       .code {
+        font-family:var(--font-display);
         font-weight:800; font-size:clamp(5rem,22vw,9rem); line-height:1; letter-spacing:-.04em;
         background:linear-gradient(180deg,#fff,#64748b); -webkit-background-clip:text; background-clip:text; color:transparent;
         position:relative; margin-bottom:.5rem;
@@ -48,7 +54,7 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
       svg.spark { width:200px; max-width:60%; height:44px; margin:0 auto 1.5rem; display:block; opacity:.9; }
       svg.spark path { stroke-dasharray:400; stroke-dashoffset:400; animation:draw 2.2s ease forwards .3s; }
       @keyframes draw { to { stroke-dashoffset:0; } }
-      h1 { font-size:1.35rem; font-weight:700; color:#fff; margin:0 0 .5rem; letter-spacing:-.02em; }
+      h1 { font-family:var(--font-display); font-size:1.35rem; font-weight:700; color:#fff; margin:0 0 .5rem; letter-spacing:-.02em; }
       p { color:#94a3b8; margin:0 auto 1.75rem; max-width:26rem; font-size:.9rem; }
       .actions { display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap; }
       a,button { font:inherit; font-weight:600; font-size:.875rem; padding:.7rem 1.25rem; border-radius:.75rem; cursor:pointer; text-decoration:none; border:1px solid transparent; transition:all .2s ease; }
@@ -58,7 +64,7 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
       .secondary:hover { background:rgba(255,255,255,.08); }
       .brand { display:flex; align-items:center; justify-content:center; gap:.5rem; margin-bottom:2rem; opacity:.85; }
       .brand .dot { width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 0 12px rgba(34,211,238,.6); }
-      .brand span { font-weight:700; letter-spacing:-.01em; color:#fff; font-size:.95rem; }
+      .brand span { font-family:var(--font-display); font-weight:700; letter-spacing:-.01em; color:#fff; font-size:.95rem; }
     </style>
   </head>
   <body>
