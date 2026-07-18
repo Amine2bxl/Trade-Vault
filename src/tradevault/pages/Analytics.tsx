@@ -118,7 +118,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <div className="text-lg text-slate-600">÷</div>
               <div className="text-center"><div className="text-[9px] md:text-[10px] text-slate-500">{t('analytics.losses')}</div><div className="text-sm md:text-lg font-bold text-red-400">{formatPnl(-profitFactorData.totalLosses)}</div></div>
               <div className="text-lg text-slate-600">=</div>
-              <div className="text-center"><div className="text-[9px] md:text-[10px] text-slate-500">{t('analytics.factor')}</div><div className={cn('text-2xl md:text-3xl font-bold', profitFactorData.isProfitable ? 'text-emerald-400' : 'text-red-400')}>{profitFactorData.profitFactor >= 99 ? '99+' : profitFactorData.profitFactor.toFixed(2)}</div></div>
+              <div className="text-center"><div className="text-[9px] md:text-[10px] text-slate-500">{t('analytics.factor')}</div><div className={cn('font-display text-2xl md:text-3xl font-extrabold tabular-nums', profitFactorData.isProfitable ? 'text-emerald-400' : 'text-red-400')}>{profitFactorData.profitFactor >= 99 ? '99+' : profitFactorData.profitFactor.toFixed(2)}</div></div>
               <span className={cn('px-3 py-1.5 rounded-xl text-[10px] md:text-xs font-bold', profitFactorData.isProfitable ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20')}>
                 {profitFactorData.isProfitable ? `✓ ${t('analytics.profitable')}` : `✗ ${t('analytics.losing')}`}
               </span>
@@ -157,7 +157,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">{m.label}</span>
                 {'info' in m && m.info && <InfoTip text={m.info} />}
               </div>
-              <div className={cn('text-base md:text-lg font-bold tabular-nums', m.good ? 'text-emerald-400' : 'text-amber-400')}>{m.value}</div>
+              <div className={cn('font-display text-base md:text-lg font-extrabold tabular-nums', m.good ? 'text-emerald-400' : 'text-amber-400')}>{m.value}</div>
               <div className="text-[9px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
             </div>
           ))}
@@ -305,7 +305,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="text-center mt-1"><div className="text-xl md:text-2xl font-bold text-white">{formatPct(stats.winRate)}</div><div className="text-[10px] text-slate-500">{t('analytics.winRateLabel')}</div></div>
+            <div className="text-center mt-1"><div className="font-display text-xl md:text-2xl font-extrabold text-white tabular-nums">{formatPct(stats.winRate)}</div><div className="text-[10px] text-slate-500">{t('analytics.winRateLabel')}</div></div>
           </div>
         </div>
 

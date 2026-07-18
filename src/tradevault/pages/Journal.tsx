@@ -206,7 +206,7 @@ export default function Journal({ trades, onEdit, onDelete, onDeleteAll, onAdd, 
                   <td className="px-5 py-3"><span className={cn('text-sm font-bold', be ? 'text-slate-300' : trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(trade.pnl)}</span></td>
                   <td className="px-5 py-3"><span className={cn('text-sm font-bold', be ? 'text-slate-300' : trade.rMultiple >= 0 ? 'text-emerald-400' : 'text-red-400')}>{trade.rMultiple.toFixed(2)}R</span></td>
                   <td className="px-5 py-3"><span className={cn('text-[10px] font-bold px-2 py-1 rounded-lg', directionBadgeClass(trade.direction))}>{directionLabel(trade.direction)}</span></td>
-                  <td className="px-5 py-3 text-sm text-slate-400">${trade.riskAmount.toFixed(0)}</td>
+                  <td className="px-5 py-3 text-sm font-semibold text-slate-300 tabular-nums">${trade.riskAmount.toFixed(0)}</td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setViewingIdx(i)} aria-label={t('missed.preview')} title={t('missed.preview')} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Eye className="w-3.5 h-3.5" /></button>

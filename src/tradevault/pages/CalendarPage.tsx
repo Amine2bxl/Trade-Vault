@@ -118,7 +118,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
         ].map(card => (
           <div key={card.label} className={cn('glass rounded-xl md:rounded-2xl p-2.5 md:p-4 card-premium animate-fade-in-up', `stagger-${card.delay}`)}>
             <div className="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-0.5 md:mb-1">{card.label}</div>
-            <div className={cn('text-sm md:text-xl font-bold tabular-nums', card.color)}>{card.value}</div>
+            <div className={cn('font-display text-sm md:text-xl font-extrabold tabular-nums', card.color)}>{card.value}</div>
           </div>
         ))}
       </div>

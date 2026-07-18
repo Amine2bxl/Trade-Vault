@@ -225,7 +225,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       <span className={cn('text-[10px] md:text-xs font-bold', SEV_STYLE[m.severity].text)}>{m.mistake}</span>
                     </div>
                     <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">{MISTAKE_TIP_KEYS[m.mistake] ? t(MISTAKE_TIP_KEYS[m.mistake] as never) : t('mistakes.defaultTip')}</p>
-                    <div className="mt-1.5 text-[9px] text-slate-600">{m.count}× · {formatPnl(m.totalPnl)}</div>
+                    <div className="mt-1.5 text-[9px] text-slate-600"><span className="font-bold text-slate-400">{m.count}×</span> · <span className={cn('font-bold', m.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(m.totalPnl)}</span></div>
                   </div>
                 ))}
               </div>
