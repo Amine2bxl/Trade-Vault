@@ -33,7 +33,23 @@ export default tseslint.config(
         },
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      "@typescript-eslint/no-unused-vars": "off",
+      // Re-enabled (progressive): unused code and imports are surfaced again
+      // as warnings. Kept at "warn" for now so the existing debt is visible
+      // without breaking the build; a dedicated cleanup sprint promotes this
+      // to "error". An underscore prefix (_unused) is the escape hatch.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+      // Tracked debt, not a hard gate yet: surfaces every `any` cast as a
+      // warning so the type-safety erosion is visible and can be resolved
+      // progressively without breaking the build.
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
   eslintPluginPrettier,
