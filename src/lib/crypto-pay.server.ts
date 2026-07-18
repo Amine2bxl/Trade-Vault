@@ -1,4 +1,10 @@
-import { serviceClient, userFromRequest, type PaidPlan } from "./billing.server";
+import {
+  markWebhookProcessed,
+  serviceClient,
+  timingSafeEqualHex,
+  userFromRequest,
+  type PaidPlan,
+} from "./billing.server";
 
 // Crypto payments via Coinbase Commerce (self-custody / onchain checkout —
 // funds settle to the merchant wallet, no intermediary). Accepts USDC, USDT,
@@ -78,7 +84,7 @@ async function verifyCommerceSignature(payload: string, header: string | null): 
   );
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
   const expected = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  return expected === header;
+  return timingSafeEqualHex(expected, header);
 }
 
 export async function handleCryptoWebhook(request: Request): Promise<Response> {
@@ -90,6 +96,11 @@ export async function handleCryptoWebhook(request: Request): Promise<Response> {
 
   const event = JSON.parse(payload).event;
   if (event?.type !== "charge:confirmed") return json({ received: true });
+
+  // Drop duplicate deliveries before extending the paid period.
+  if (await markWebhookProcessed(sb, "coinbase", event?.id)) {
+    return json({ received: true, deduped: true });
+  }
 
   const charge = event.data;
   const userId: string | undefined = charge?.metadata?.user_id;

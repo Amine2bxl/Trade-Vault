@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireProAccess } from "@/lib/require-pro";
 import { resolveProvider, type AIMessage } from "@/modules/core/ai-provider";
 import { contextBlocks, languageName } from "@/modules/ai/context";
 
@@ -30,10 +30,11 @@ const InsightInput = z.object({
 });
 
 export const askTradingInsight = createServerFn({ method: "POST" })
-  // Auth required: without this the endpoint is publicly callable and every
-  // call spends AI quota. The client attaches the Bearer token globally
-  // (see src/integrations/supabase/auth-attacher.ts registered in start.ts).
-  .middleware([requireSupabaseAuth])
+  // Pro-gated + rate-limited: without this the endpoint spends AI quota for
+  // any authenticated user, including expired trials. `requireProAccess`
+  // chains the auth middleware, so the Bearer token (attached globally via
+  // src/integrations/supabase/auth-attacher.ts) is still required first.
+  .middleware([requireProAccess])
   .inputValidator((input: unknown) => InsightInput.parse(input))
   .handler(async ({ data }) => {
     const targetLanguage = languageName(data.language);

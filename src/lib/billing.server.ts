@@ -50,6 +50,31 @@ export async function userFromRequest(
   return { id: data.user.id, email: data.user.email };
 }
 
+/** Idempotency guard for signed webhooks. Records `(provider, event_id)` and
+ *  reports whether this event was seen before. Providers retry deliveries, so
+ *  without this a valid, re-delivered event would re-run its state change.
+ *  Fails OPEN (returns "not seen") on any infra error or a missing id, so a
+ *  transient DB issue never drops a real payment event. */
+export async function markWebhookProcessed(
+  sb: AnyClient,
+  provider: string,
+  eventId: string | null | undefined,
+): Promise<boolean> {
+  if (!eventId) return false;
+  try {
+    const { error } = await sb
+      .from("processed_webhook_events")
+      .insert({ provider, event_id: eventId });
+    if (!error) return false; // freshly inserted → new event
+    if ((error as { code?: string }).code === "23505") return true; // unique_violation → duplicate
+    console.error("[webhook] idempotency insert failed, processing anyway", error);
+    return false;
+  } catch (e) {
+    console.error("[webhook] idempotency check threw, processing anyway", e);
+    return false;
+  }
+}
+
 async function stripe(
   path: string,
   params: Record<string, string>,
@@ -202,6 +227,17 @@ export async function handlePortal(request: Request): Promise<Response> {
 // Signature-verified (HMAC-SHA256 over `t.payload`, per Stripe's scheme —
 // webcrypto, no SDK). Subscription lifecycle events project onto our row.
 
+/** Constant-time equality for two same-length hex digests. Avoids the early
+ *  return of `===`, so a forged signature cannot be recovered byte-by-byte via
+ *  response-timing. Length is compared first (both are fixed 64-char SHA-256
+ *  hex, so this leaks nothing useful). Shared with the crypto webhook. */
+export function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
+
 async function hmacSha256Hex(secret: string, message: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -226,7 +262,7 @@ async function verifyStripeSignature(payload: string, header: string | null): Pr
   // 5-minute tolerance against replay.
   if (Math.abs(Date.now() / 1000 - Number(t)) > 300) return false;
   const expected = await hmacSha256Hex(secret, `${t}.${payload}`);
-  return expected === v1;
+  return timingSafeEqualHex(expected, v1);
 }
 
 function planFromStripeSub(sub: any): PaidPlan {
@@ -246,6 +282,11 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
   const event = JSON.parse(payload);
   const type: string = event.type;
   const obj = event.data.object;
+
+  // Drop duplicate deliveries before touching subscription state.
+  if (await markWebhookProcessed(sb, "stripe", event.id)) {
+    return json({ received: true, deduped: true });
+  }
 
   try {
     if (
