@@ -42,8 +42,10 @@ import {
 } from "./store";
 import { generateMyMonthlyReport } from "@/lib/reports.functions";
 import { computeStats } from "./utils/tradeCalcs";
-import { loadTradingRules, checkTradeAgainstRules, type TradingRule } from "./utils/tradingRules";
+import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
 import { sendPushToSelf } from "@/lib/push.functions";
+import { AutomationEngine } from "@/modules/automation";
+import { NotificationEngine, persistNotification } from "@/modules/notifications";
 import { buildDemoTrades } from "./utils/demoTrades";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -162,6 +164,17 @@ function AppContent() {
   // once per user into a ref so saving a trade never waits on a rules fetch.
   const sendPush = useServerFn(sendPushToSelf);
   const rulesRef = useRef<TradingRule[]>([]);
+
+  // Bootstrap the Notification Engine with this runtime's delivery adapters.
+  // Engines never import React contexts or server fns — they get them here.
+  useEffect(() => {
+    NotificationEngine.configure(user?.id ?? null, {
+      toast: (message, type) => toast(message, type),
+      push: (payload) => sendPush({ data: payload }),
+      persist: persistNotification,
+    });
+  }, [user?.id, toast, sendPush]);
+
   useEffect(() => {
     if (!user) return;
     loadTradingRules(user.id)
@@ -197,34 +210,24 @@ function AppContent() {
         return;
       }
 
-      // Instant rule check — kind but firm feedback, in-app + push. Only for
-      // brand-new trades (edits don't re-trigger the coaching).
+      // All post-save side effects (analysis, discipline, notifications, AI
+      // hooks) run through the Automation Engine — no business logic here.
       const isNew = !snapshot.some((tr) => tr.id === trade.id);
-      const rules = rulesRef.current;
-      if (isNew && rules.some((r) => r.enabled && r.kind !== "custom")) {
-        void (async () => {
-          try {
-            const balance =
-              (await loadStartingBalance(user.id).catch(() => 0)) +
-              snapshot.reduce((s, tr) => s + tr.pnl, 0);
-            const sameDay = snapshot.filter((tr) => tr.date === trade.date && tr.id !== trade.id);
-            const violations = checkTradeAgainstRules(trade, rules, {
-              sameDayTrades: sameDay,
-              accountBalance: balance,
-            });
-            for (const v of violations) {
-              toast(v.message, "error");
-              await sendPush({
-                data: { title: t("rules.pushTitle"), body: v.message, url: "/" },
-              }).catch(() => {});
-            }
-          } catch (e) {
-            console.error("Rule check failed", e);
-          }
-        })();
-      }
+      void (async () => {
+        const balance =
+          (await loadStartingBalance(user.id).catch(() => 0)) +
+          snapshot.reduce((s, tr) => s + tr.pnl, 0);
+        await AutomationEngine.tradeSaved({
+          userId: user.id,
+          trade,
+          previousTrades: snapshot,
+          isNew,
+          accountBalance: balance,
+          rules: rulesRef.current,
+        });
+      })();
     },
-    [user, t, toast],
+    [user],
   );
 
   const handleDelete = useCallback(
@@ -238,6 +241,7 @@ function AppContent() {
       });
       try {
         await deleteTrade(user.id, id);
+        AutomationEngine.tradeDeleted(user.id, id);
       } catch (e) {
         console.error("Failed to delete trade", e);
         setTrades(snapshot);

@@ -90,7 +90,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                   </button>
                 </div>
               )}
-              <div className={cn('text-2xl font-bold', dayPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(dayPnl)}</div>
+              <div className={cn('font-display text-2xl font-extrabold tabular-nums', dayPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(dayPnl)}</div>
               <button onClick={onClose} aria-label={t('common.close')} className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"><X className="w-5 h-5" /></button>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function TradeDetailModal({ trades, date, onClose, missed = [], o
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={cn('text-xl font-bold', be ? 'text-slate-300' : trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(trade.pnl)}</div>
+                  <div className={cn('font-display text-xl font-extrabold tabular-nums', be ? 'text-slate-300' : trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>{formatPnl(trade.pnl)}</div>
                 </div>
               </div>
 

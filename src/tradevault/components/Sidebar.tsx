@@ -170,7 +170,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
             <span className="text-[10px] text-slate-500">{t("stats.totalPnl")}</span>
             <span
               className={cn(
-                "text-sm font-bold tabular-nums",
+                "font-display text-sm font-extrabold tabular-nums",
                 totalPnl >= 0 ? "text-emerald-400" : "text-red-400",
               )}
             >
@@ -179,7 +179,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-slate-500">{t("stats.winRate")}</span>
-            <span className="text-sm font-bold text-white tabular-nums">{formatPct(winRate)}</span>
+            <span className="font-display text-sm font-extrabold text-white tabular-nums">{formatPct(winRate)}</span>
           </div>
           <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
             <div

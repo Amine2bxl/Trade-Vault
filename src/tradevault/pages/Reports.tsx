@@ -225,7 +225,7 @@ function ReportCard({
         </div>
         <div
           className={cn(
-            "text-base md:text-lg font-bold tabular-nums shrink-0",
+            "font-display text-base md:text-lg font-extrabold tabular-nums shrink-0",
             gain ? "text-emerald-400" : "text-red-400",
           )}
         >
@@ -423,7 +423,7 @@ function Kpi({
       </div>
       <div
         className={cn(
-          "text-base font-bold tabular-nums",
+          "font-display text-base font-extrabold tabular-nums",
           neutral ? "text-white" : good ? "text-emerald-400" : "text-amber-400",
         )}
       >
