@@ -49,8 +49,9 @@ begin
 end;
 $$;
 
--- Only signed-in users may call it; never anon or the public role.
-revoke all on function public.consume_ai_quota(int, int) from public;
+-- Only signed-in users may call it; never anon or the public role. `anon` is
+-- revoked explicitly (not just via PUBLIC) so it can never reach the RPC.
+revoke all on function public.consume_ai_quota(int, int) from public, anon;
 grant execute on function public.consume_ai_quota(int, int) to authenticated;
 
 -- ============ WEBHOOK IDEMPOTENCY ============
