@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireProAccess } from "@/lib/require-pro";
 import { resolveProvider, type AIMessage } from "@/modules/core/ai-provider";
 import { contextBlocks, languageName } from "@/modules/ai/context";
 
@@ -81,7 +81,7 @@ function buildMessages(
 const ChatInput = z.object({ question: z.string().min(1).max(500), context: UserContext });
 
 export const aiChat = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireProAccess])
   .inputValidator((input: unknown) => ChatInput.parse(input))
   .handler(async ({ data }) => {
     const messages = buildMessages(
@@ -98,7 +98,7 @@ export const aiChat = createServerFn({ method: "POST" })
 const BriefInput = z.object({ context: UserContext, date: z.string().max(10) });
 
 export const aiGenerateDailyBrief = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireProAccess])
   .inputValidator((input: unknown) => BriefInput.parse(input))
   .handler(async ({ data }) => {
     const messages = buildMessages(
@@ -115,7 +115,7 @@ export const aiGenerateDailyBrief = createServerFn({ method: "POST" })
 const ReviewInput = z.object({ context: UserContext, weekLabel: z.string().max(20) });
 
 export const aiGenerateWeeklyReview = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireProAccess])
   .inputValidator((input: unknown) => ReviewInput.parse(input))
   .handler(async ({ data }) => {
     const messages = buildMessages(
@@ -137,7 +137,7 @@ const AnalyzeInput = z.object({
 });
 
 export const aiAnalyzeTrade = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireProAccess])
   .inputValidator((input: unknown) => AnalyzeInput.parse(input))
   .handler(async ({ data }) => {
     const messages = buildMessages(
@@ -152,7 +152,7 @@ export const aiAnalyzeTrade = createServerFn({ method: "POST" })
 // ── AI.detectPatterns ────────────────────────────────────────────────────────
 
 export const aiDetectPatterns = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireProAccess])
   .inputValidator((input: unknown) => z.object({ context: UserContext }).parse(input))
   .handler(async ({ data }) => {
     const messages = buildMessages(
@@ -179,7 +179,7 @@ export const aiDetectPatterns = createServerFn({ method: "POST" })
 // ── AI.generateLessons ───────────────────────────────────────────────────────
 
 export const aiGenerateLessons = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireProAccess])
   .inputValidator((input: unknown) => z.object({ context: UserContext }).parse(input))
   .handler(async ({ data }) => {
     const messages = buildMessages(
