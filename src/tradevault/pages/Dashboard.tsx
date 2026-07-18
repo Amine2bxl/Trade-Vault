@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import {
   Plus,
   TrendingUp,
@@ -33,26 +33,13 @@ import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import StatsCard from "../components/StatsCard";
 import { PageSkeleton } from "../components/Skeleton";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from "recharts";
 import { cn } from "../utils/cn";
-import {
-  CHART_ANIMATION,
-  EQUITY_ANIMATION,
-  EQUITY_LINE,
-  tooltipStyle,
-  glowActiveDot,
-  equityYDomain,
-  EQUITY_X_PADDING,
-} from "../utils/chartTheme";
 import { useT } from "../i18n/LanguageContext";
+
+// recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
+// (landing page), but the equity chart — below the fold — is code-split so it
+// no longer weighs on the initial bundle.
+const EquityChart = lazy(() => import("../components/EquityChart"));
 
 interface DashboardProps {
   trades: Trade[];
@@ -389,62 +376,11 @@ export default function Dashboard({
             </div>
             {stats.equityCurve.length > 0 ? (
               <div className="h-56 md:h-80 chart-organic chart-draw">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={stats.equityCurve}
-                    margin={{ top: 12, right: 8, bottom: 0, left: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.4} />
-                        <stop offset="55%" stopColor="var(--tv-accent)" stopOpacity={0.12} />
-                        <stop offset="100%" stopColor="var(--tv-accent)" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="eqStroke" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="var(--tv-accent)" />
-                        <stop offset="100%" stopColor="var(--tv-highlight)" />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey="date"
-                      padding={EQUITY_X_PADDING}
-                      tick={{ fill: "#475569", fontSize: 10 }}
-                      tickFormatter={(v) => {
-                        const p = v.split("-");
-                        return `${p[1]}/${p[0].slice(2)}`;
-                      }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={equityYDomain}
-                      tick={{ fill: "#475569", fontSize: 10 }}
-                      tickFormatter={(v) => `$${v}`}
-                      axisLine={false}
-                      tickLine={false}
-                      width={45}
-                    />
-                    <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
-                    <Tooltip
-                      {...tooltipStyle}
-                      formatter={(value: any) => [`$${Number(value).toFixed(2)}`, "Equity"]}
-                      labelFormatter={(v) => formatShortDate(v)}
-                    />
-                    <Area
-                      type="natural"
-                      dataKey="equity"
-                      stroke="url(#eqStroke)"
-                      fill="url(#eqGrad)"
-                      dot={false}
-                      activeDot={glowActiveDot("var(--tv-highlight)")}
-                      style={{
-                        filter: "drop-shadow(0 3px 8px rgb(var(--tv-highlight-rgb) / 0.4))",
-                      }}
-                      {...EQUITY_LINE}
-                      {...EQUITY_ANIMATION}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <Suspense
+                  fallback={<div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />}
+                >
+                  <EquityChart data={stats.equityCurve} />
+                </Suspense>
               </div>
             ) : (
               <div className="h-56 md:h-80 flex items-center justify-center text-slate-600 text-sm">
