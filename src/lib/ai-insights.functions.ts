@@ -1,6 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveProvider, type AIMessage } from "@/modules/core/ai-provider";
+import { contextBlocks, languageName } from "@/modules/ai/context";
+
+/**
+ * Legacy endpoint kept for the AI assistant UI — now a thin wrapper over
+ * the AI Provider layer (modules/core/ai-provider). Prefer the richer
+ * AI Core services in src/lib/ai.functions.ts for new features.
+ */
 
 const TradeSummary = z.object({
   date: z.string().max(10),
@@ -23,31 +31,14 @@ const InsightInput = z.object({
 
 export const askTradingInsight = createServerFn({ method: "POST" })
   // Auth required: without this the endpoint is publicly callable and every
-  // call spends Gemini quota. The client attaches the Bearer token globally
+  // call spends AI quota. The client attaches the Bearer token globally
   // (see src/integrations/supabase/auth-attacher.ts registered in start.ts).
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InsightInput.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("AI coach is not configured yet. Add a GEMINI_API_KEY to enable this feature.");
-    }
+    const targetLanguage = languageName(data.language);
 
-    const language = data.language || 'en';
-    const LANG_NAMES: Record<string, string> = {
-      en: 'English', es: 'Spanish', pt: 'Portuguese', fr: 'French', de: 'German',
-      it: 'Italian', nl: 'Dutch', ru: 'Russian', zh: 'Chinese', ja: 'Japanese',
-      ar: 'Arabic', hi: 'Hindi',
-    };
-    const targetLanguage = LANG_NAMES[language] || 'English';
-
-    const tradesContext =
-      data.trades.length === 0
-        ? "The user has no trades logged yet."
-        : `Here are the user's ${data.trades.length} most recent trades (JSON):\n${JSON.stringify(data.trades, null, 1)}`;
-
-    const systemPrompt =
-              `You are an elite quantitative trading performance coach with 20+ years of experience mentoring prop traders. You analyze a trader's actual journal data and deliver sharp, candid, evidence-based feedback. Every claim you make MUST cite specific numbers from the data (win rate, avg R, $ amounts, symbol, day of week, mistake tag). Never generalize. Never invent numbers. If the data is thin, say so and ask for what to log.
+    const systemPrompt = `You are an elite quantitative trading performance coach with 20+ years of experience mentoring prop traders. You analyze a trader's actual journal data and deliver sharp, candid, evidence-based feedback. Every claim you make MUST cite specific numbers from the data (win rate, avg R, $ amounts, symbol, day of week, mistake tag). Never generalize. Never invent numbers. If the data is thin, say so and ask for what to log.
 
 COMPUTE these before writing:
 - Win rate = wins / (wins + losses), excluding break-even
@@ -84,34 +75,14 @@ One bold sentence summarizing the verdict.
 
 Rules: Use **bold** for key numbers. Keep paragraphs short. No fluff. No generic advice. If the trader has no data, say so clearly and suggest what to log first.`;
 
-    const res = await fetch(
-      // API key goes in a header, not the query string, so it never lands in
-      // URL-based access logs.
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
+    const messages: AIMessage[] = [
+      { role: "system", content: systemPrompt },
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: `${tradesContext}\n\nQuestion: ${data.question}` }],
-            },
-          ],
-          generationConfig: { maxOutputTokens: 4096 },
-        }),
-      }
-    );
+        role: "user",
+        content: `${contextBlocks({ trades: data.trades })}\n\nQuestion: ${data.question}`,
+      },
+    ];
 
-    if (!res.ok) {
-      const text = await res.text();
-      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-      if (res.status === 402 || res.status === 403) throw new Error("AI credits exhausted. Please add credits to continue.");
-      throw new Error(`AI request failed: ${text.slice(0, 200)}`);
-    }
-
-    const json = await res.json();
-    const content: string = json?.candidates?.[0]?.content?.parts?.map((p: any) => p.text ?? '').join('') ?? "";
-    return { answer: content };
+    const res = await resolveProvider().complete({ messages, maxTokens: 4096 });
+    return { answer: res.text };
   });
