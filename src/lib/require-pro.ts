@@ -17,6 +17,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const RATE_LIMIT_PER_HOUR = Number(process.env.AI_RATE_LIMIT_PER_HOUR ?? "60");
 
+// Monetization switch. While the product is in free early access, entitlement
+// enforcement stays OFF: every authenticated user gets full AI access. The
+// rate limit below still runs (it is abuse/cost protection, not a paywall).
+// Flip AI_REQUIRE_PRO="true" — one env var, zero code change — to turn on paid
+// gating when subscriptions launch.
+const REQUIRE_PRO = process.env.AI_REQUIRE_PRO === "true";
+
 /** Thrown when the caller has no active plan or trial. Surfaces to the client
  *  so the UI can prompt an upgrade. */
 export class ProRequiredError extends Error {
@@ -52,19 +59,23 @@ export const requireProAccess = createMiddleware({ type: "function" })
   .server(async ({ next, context }) => {
     const { supabase, userId } = context;
 
-    // 1) Entitlement — the caller reads their own row under RLS.
-    try {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("status, trial_ends_at")
-        .eq("user_id", userId)
-        .maybeSingle();
-      // On a read error we fail open (transient infra); we deny only when the
-      // row was read successfully and is not an active entitlement.
-      if (!error && !isEntitled(data)) throw new ProRequiredError();
-    } catch (e) {
-      if (e instanceof ProRequiredError) throw e;
-      // Unexpected failure → fail open rather than block a legitimate user.
+    // 1) Entitlement — enforced only when monetization is switched on. During
+    //    free early access this whole block is skipped, so every signed-in
+    //    user has full AI access.
+    if (REQUIRE_PRO) {
+      try {
+        const { data, error } = await supabase
+          .from("subscriptions")
+          .select("status, trial_ends_at")
+          .eq("user_id", userId)
+          .maybeSingle();
+        // On a read error we fail open (transient infra); we deny only when the
+        // row was read successfully and is not an active entitlement.
+        if (!error && !isEntitled(data)) throw new ProRequiredError();
+      } catch (e) {
+        if (e instanceof ProRequiredError) throw e;
+        // Unexpected failure → fail open rather than block a legitimate user.
+      }
     }
 
     // 2) Rate limit — atomic fixed-window counter in Postgres.
