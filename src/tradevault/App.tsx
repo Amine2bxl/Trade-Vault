@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -41,7 +41,7 @@ import {
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { generateMyMonthlyReport } from "@/lib/reports.functions";
-import { computeStats } from "./utils/tradeCalcs";
+import { useTradeStats } from "./hooks/useTradeStats";
 import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
 import { sendPushToSelf } from "@/lib/push.functions";
 import { AutomationEngine } from "@/modules/automation";
@@ -138,7 +138,7 @@ function AppContent() {
 
   // Stats are derived from the trade list — memoized so they recompute only
   // when trades actually change, not on every render of the shell.
-  const stats = useMemo(() => computeStats(trades), [trades]);
+  const stats = useTradeStats(trades);
 
   // Optimistic writes: the UI updates instantly and rolls back to the previous
   // snapshot if the request fails, so saving never blocks the workflow.
