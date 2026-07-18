@@ -4,7 +4,7 @@
 -- the SQL function reports whether the caller is still within the limit.
 -- 100% additive: new objects only, no existing table/data touched.
 
-create table public.ai_rate_limits (
+create table if not exists public.ai_rate_limits (
   user_id      uuid not null references auth.users(id) on delete cascade,
   window_start timestamptz not null,
   count        int not null default 0,
@@ -57,7 +57,7 @@ grant execute on function public.consume_ai_quota(int, int) to authenticated;
 -- Dedupe guard for signed payment webhooks. Providers (Stripe, Coinbase
 -- Commerce) retry deliveries, so a valid event can arrive more than once; the
 -- (provider, event_id) primary key makes re-processing a no-op.
-create table public.processed_webhook_events (
+create table if not exists public.processed_webhook_events (
   provider     text not null,
   event_id     text not null,
   processed_at timestamptz not null default now(),
