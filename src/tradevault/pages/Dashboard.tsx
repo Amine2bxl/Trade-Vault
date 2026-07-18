@@ -336,7 +336,7 @@ export default function Dashboard({
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <span
                     className={cn(
-                      "text-3xl md:text-4xl font-bold tabular-nums tracking-tight",
+                      "font-display text-3xl md:text-4xl font-extrabold tabular-nums tracking-tight",
                       gain ? "text-emerald-400" : "text-red-400",
                     )}
                     style={{
@@ -705,7 +705,7 @@ function MiniStat({
       </div>
       <div
         className={cn(
-          "text-sm md:text-base font-bold tabular-nums truncate",
+          "font-display text-sm md:text-base font-extrabold tabular-nums truncate",
           accent || "text-white",
         )}
       >

@@ -34,7 +34,7 @@ export default function StatsCard({ title, value, subtitle, icon, trend, delay =
       </div>
       <div
         className={cn(
-          'relative text-base md:text-lg font-bold tracking-tight tabular-nums leading-none',
+          'font-display relative text-lg md:text-xl font-extrabold tracking-tight tabular-nums leading-none',
           trend === 'up' ? 'text-emerald-400' :
           trend === 'down' ? 'text-red-400' :
           'text-white'
