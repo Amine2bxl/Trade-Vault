@@ -409,15 +409,109 @@ const AIS = [
   { n: "err" as IName, t: "Tes biais, mis à nu", d: "Overtrading après une perte, sizing qui dérape… le coach nomme ce qui te coûte de l'argent.", c: "text-amber-300" },
 ];
 
-/* Benefit-driven feature grid — the strongest pages framed as results. */
-const FEATURES: Feat[] = [
-  { n: "document", t: "Journal en 20 secondes", d: "Chaque trade capturé : prix, captures d'écran, émotion, note. Ta mémoire de trader, enfin fiable." },
-  { n: "trend", t: "Des analytics qui disent vrai", d: "Sharpe, expectancy, profit factor, drawdown… 20+ métriques pro qui montrent où tu gagnes réellement." },
-  { n: "shield", t: "La discipline avant chaque trade", d: "Ta checklist pré-market façon cockpit — validée avant de risquer un centime, streak à la clé." },
-  { n: "layers", t: "Rapports mensuels automatiques", d: "Ton bilan de perf prêt chaque mois, sans ouvrir un tableur. Le progrès visible noir sur blanc." },
-  { n: "bell", t: "Calendrier économique intégré", d: "Les annonces à fort impact avant l'ouverture — fini de se faire piéger par une news surprise." },
-  { n: "upload", t: "Import de ton historique en 1 clic", d: "Glisse ton CSV (MT4/MT5, cTrader, IB, TradingView…) : des années de trades analysées en secondes." },
+/* Benefit-driven feature grid — the strongest pages framed as results. Each
+   card ends with a live-looking mini preview of the real in-app component
+   (same visual language as the product) rendered by FeaturePreview below. */
+type FeatKind = "journal" | "analytics" | "checklist" | "reports" | "news" | "import";
+const FEATURES: (Feat & { k: FeatKind })[] = [
+  { k: "journal", n: "document", t: "Journal en 20 secondes", d: "Prix, captures, émotion, note — ta mémoire de trader, enfin fiable." },
+  { k: "analytics", n: "trend", t: "Analytics qui disent vrai", d: "20+ métriques pro qui montrent où tu gagnes réellement." },
+  { k: "checklist", n: "shield", t: "Discipline avant chaque trade", d: "Checklist pré-market validée avant de risquer un centime." },
+  { k: "reports", n: "layers", t: "Rapports mensuels automatiques", d: "Ton bilan de perf prêt chaque mois, sans tableur." },
+  { k: "news", n: "bell", t: "Calendrier économique intégré", d: "Les annonces à fort impact, avant qu'elles te piègent." },
+  { k: "import", n: "upload", t: "Import CSV en 1 clic", d: "MT4/MT5, cTrader, IB, TradingView — des années analysées en secondes." },
 ];
+
+/* Mini live previews — faithful, compact recreations of the app's own
+   components (same colors, radii, type) so each card shows the real thing. */
+function FeaturePreview({ k }: { k: FeatKind }) {
+  const wrap = "pointer-events-none select-none";
+  if (k === "journal")
+    return (
+      <div className={`${wrap} space-y-1.5`} aria-hidden="true">
+        <div className="flex items-center gap-2.5 rounded-lg border border-white/[.07] bg-white/[.02] px-3 py-2">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-emerald-400/10"><Icon n="trend" cls="h-3.5 w-3.5 text-emerald-400" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-white">NQ</span>
+              <span className="rounded bg-emerald-400/15 px-1 py-px text-[8px] font-bold text-emerald-400">LONG</span>
+              <span className="truncate text-[9px] text-slate-600">Silver Bullet</span>
+            </div>
+            <div className="text-[9px] text-slate-600">10:03 · 2R · 150 $ de risque</div>
+          </div>
+          <span className="font-display text-xs font-extrabold text-emerald-400">+300 $</span>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-lg border border-white/[.05] bg-white/[.01] px-3 py-1.5 opacity-50">
+          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-red-400/10"><Icon n="chevron" cls="h-3 w-3 text-red-400" /></span>
+          <span className="text-[10px] font-bold text-white">EU</span>
+          <span className="rounded bg-red-400/15 px-1 py-px text-[8px] font-bold text-red-400">SHORT</span>
+          <span className="ml-auto font-display text-[11px] font-extrabold text-red-400">−80 $</span>
+        </div>
+      </div>
+    );
+  if (k === "analytics")
+    return (
+      <div className={`${wrap} grid grid-cols-3 gap-1.5`} aria-hidden="true">
+        {[["Sharpe", "1.84"], ["Profit F.", "2.31"], ["Win rate", "64%"]].map(([l, v]) => (
+          <div key={l} className="rounded-lg border border-white/[.07] bg-white/[.02] px-1.5 py-2 text-center">
+            <div className="text-[8px] font-semibold uppercase tracking-wider text-slate-500">{l}</div>
+            <div className="font-display mt-0.5 text-sm font-extrabold text-cyan-300">{v}</div>
+          </div>
+        ))}
+      </div>
+    );
+  if (k === "checklist")
+    return (
+      <div className={`${wrap} space-y-1.5`} aria-hidden="true">
+        {[["Biais H4 / D1 analysé", true], ["Risque max de la session défini", true], ["2 setups A+ repérés", false]].map(([label, done]) => (
+          <div key={label as string} className="flex items-center gap-2 rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5">
+            <span className={`grid h-3.5 w-3.5 shrink-0 place-items-center rounded ${done ? "bg-cyan-400 text-[#03131b]" : "border border-white/20 text-transparent"}`}>
+              <Icon n="check" cls="h-2.5 w-2.5" />
+            </span>
+            <span className={`text-[10px] ${done ? "text-slate-300" : "text-slate-500"}`}>{label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  if (k === "reports")
+    return (
+      <div className={wrap} aria-hidden="true">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-bold text-white">Rapport · Octobre</span>
+          <span className="font-display text-xs font-extrabold text-emerald-400">+1 240 $</span>
+        </div>
+        <div className="flex h-10 items-end gap-1">
+          {[35, 55, 30, 70, 45, 85, 25, 60, 40, 90, 50, 75].map((h, i) => (
+            <span key={i} className={`flex-1 rounded-sm ${i === 6 ? "bg-red-400/50" : "bg-gradient-to-t from-cyan-500/30 to-cyan-400/70"}`} style={{ height: `${h}%` }} />
+          ))}
+        </div>
+      </div>
+    );
+  if (k === "news")
+    return (
+      <div className={`${wrap} space-y-1.5`} aria-hidden="true">
+        {[["14:30", "NFP · USD", "FORT", "text-red-400 bg-red-400/15"], ["20:00", "FOMC · USD", "FORT", "text-red-400 bg-red-400/15"], ["11:00", "CPI · EUR", "MOYEN", "text-amber-300 bg-amber-400/15"]].map(([h, ev, imp, c]) => (
+          <div key={ev} className="flex items-center gap-2.5 rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5">
+            <span className="text-[9px] font-bold tabular-nums text-slate-500">{h}</span>
+            <span className="flex-1 text-[10px] font-semibold text-slate-200">{ev}</span>
+            <span className={`rounded px-1.5 py-px text-[8px] font-bold ${c}`}>{imp}</span>
+          </div>
+        ))}
+      </div>
+    );
+  // import
+  return (
+    <div className={wrap} aria-hidden="true">
+      <div className="rounded-lg border-2 border-dashed border-cyan-400/30 bg-cyan-400/[.04] px-3 py-2.5 text-center">
+        <span className="text-[10px] font-semibold text-slate-300">historique_2025.csv</span>
+      </div>
+      <div className="mt-1.5 flex items-center justify-between px-0.5 text-[9px]">
+        <span className="text-slate-500">248 trades détectés</span>
+        <span className="flex items-center gap-1 font-bold text-emerald-400"><Icon n="check" cls="h-2.5 w-2.5" />Analyse IA lancée</span>
+      </div>
+    </div>
+  );
+}
 
 const FAQS: [string, string][] = [
   ["En quoi c'est mieux qu'un simple journal ?", "Un journal enregistre. TradeVault comprend : il analyse tes données, détecte tes schémas et te dit quoi corriger — comme un mentor privé disponible 24h/24."],
@@ -478,7 +572,22 @@ export default function Landing() {
   }, []);
 
   const open = (mode: "login" | "signup", plan?: string) => { setMenu(false); setAuthMode(mode); setAuthPlan(plan); setAuth(true); };
-  const go = (id: string) => { setMenu(false); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); };
+  // Nav clicks land the section visually centered in the viewport (below the
+  // fixed 66px header). Sections taller than the viewport align to the top
+  // instead — centering those would hide their heading.
+  const go = (id: string) => {
+    setMenu(false);
+    const el = document.getElementById(id);
+    if (!el) return;
+    const header = 66;
+    const r = el.getBoundingClientRect();
+    const room = window.innerHeight - header;
+    const top =
+      r.height < room
+        ? window.scrollY + r.top - header - (room - r.height) / 2
+        : window.scrollY + r.top - header - 16;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  };
   const onHeroMove = (e: RPointerEvent<HTMLElement>) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`); e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`); };
 
   return (
@@ -583,6 +692,21 @@ export default function Landing() {
                   <span key={t} className="flex items-center gap-1.5 text-xs text-slate-500"><Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />{t}</span>
                 ))}
               </div>
+              {/* Trustpilot proof — visible on the very first screen, honest early-access framing */}
+              <a
+                href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
+                target="_blank"
+                rel="noreferrer"
+                className="fade-up d4 mt-4 inline-flex items-center gap-2.5 rounded-full border border-white/[.08] bg-white/[.03] py-1.5 pl-2 pr-3.5 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]"
+              >
+                <span className="flex gap-0.5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <span key={i} className="grid h-4 w-4 place-items-center rounded-[2px] bg-[#00b67a]"><Icon n="star" cls="h-2.5 w-2.5 text-white fill-white" /></span>
+                  ))}
+                </span>
+                <span className="text-xs font-semibold text-slate-300">Avis vérifiés sur <span className="text-white font-bold">Trustpilot</span></span>
+                <Icon n="arrow" cls="h-3 w-3 text-slate-500" />
+              </a>
             </div>
             <div className="fade-up d2 w-full max-w-[440px] mx-auto lg:mx-0 lg:ml-auto lg:mt-0 mt-6">
               <HeroDashboard />
@@ -661,10 +785,18 @@ export default function Landing() {
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((f, i) => (
-                <article key={f.t} onPointerMove={spot} className="reveal spot glass-card group flex flex-col p-6 transition-colors hover:border-cyan-400/25" style={{ transitionDelay: `${(i % 3) * 60}ms` }}>
-                  <div className="feat-icon h-11 w-11 mb-5 transition-transform group-hover:scale-105"><Icon n={f.n} cls="h-5 w-5" /></div>
-                  <h3 className="font-display text-base font-bold text-white leading-tight">{f.t}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">{f.d}</p>
+                <article key={f.t} onPointerMove={spot} className="reveal spot glass-card group flex flex-col overflow-hidden transition-colors hover:border-cyan-400/25" style={{ transitionDelay: `${(i % 3) * 60}ms` }}>
+                  <div className="p-5 pb-4">
+                    <div className="mb-2 flex items-center gap-3">
+                      <div className="feat-icon h-9 w-9 shrink-0 transition-transform group-hover:scale-105"><Icon n={f.n} cls="h-4.5 w-4.5" /></div>
+                      <h3 className="font-display text-[15px] font-bold text-white leading-tight">{f.t}</h3>
+                    </div>
+                    <p className="text-[13px] leading-6 text-slate-400">{f.d}</p>
+                  </div>
+                  {/* Real-component preview — the actual thing you get, not an illustration */}
+                  <div className="mt-auto border-t border-white/[.06] bg-[#081120]/60 px-4 pt-3.5 pb-4">
+                    <FeaturePreview k={f.k} />
+                  </div>
                 </article>
               ))}
             </div>
