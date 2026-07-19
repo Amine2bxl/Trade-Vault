@@ -2,7 +2,7 @@ import type { AIProvider, AIRequest, AIResponse } from "./types";
 
 /**
  * Google Gemini provider. Server-side only — reads GEMINI_API_KEY.
- * Mirrors the REST mechanics previously inlined in ai-insights.functions.
+ * Mirrors the REST mechanics of the legacy inlined insights endpoint.
  */
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
