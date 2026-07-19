@@ -36,6 +36,16 @@ export interface DomainEvents {
 
   // ── Time-based ─────────────────────────────────────────────────────
   DailyReset: { userId: string; date: string };
+
+  // ── AI Operating System ────────────────────────────────────────────
+  // Payloads use primitive types on purpose: the core event bus must not
+  // depend on the modules/ai layer (dependency points ai → core, never back).
+  AgentRunStarted: { userId: string; runId: string; agent: string; intent: string };
+  AgentRunCompleted: { userId: string; runId: string; agent: string; status: "ok" | "error" };
+  AiJobEnqueued: { userId: string; jobId: string; kind: string };
+  AiJobCompleted: { userId: string; jobId: string; kind: string; status: "done" | "failed" };
+  DocumentIndexed: { userId: string; source: string; sourceId: string };
+  AiNotificationRequested: { userId: string; agent: string; message: string };
 }
 
 export type DomainEventName = keyof DomainEvents;
