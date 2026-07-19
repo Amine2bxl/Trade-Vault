@@ -27,7 +27,7 @@ import type { Trade } from "../types";
 import { computeStats } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
 import { loadStartingBalance } from "../store";
-import { sendPushToSelf } from "@/lib/push.functions";
+import { sendPushToSelf } from "@/backend/push.functions";
 import {
   HORIZON,
   type GoalDef,

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireProAccess } from "@/lib/require-pro";
+import { requireProAccess } from "@/backend/require-pro";
 import { resolveProvider, type AIMessage } from "@/modules/core/ai-provider";
 import { contextBlocks, languageName } from "@/modules/ai/context";
 

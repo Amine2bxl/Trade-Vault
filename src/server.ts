@@ -1,7 +1,7 @@
-import "./lib/error-capture";
+import "./shared/error-capture";
 
-import { consumeLastCapturedError } from "./lib/error-capture";
-import { renderErrorPage } from "./lib/error-page";
+import { consumeLastCapturedError } from "./shared/error-capture";
+import { renderErrorPage } from "./shared/error-page";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -44,18 +44,18 @@ export default {
       // The Vercel cron hits this path on the 1st of each month.
       const { pathname } = new URL(request.url);
       if (pathname === "/api/cron/monthly-reports") {
-        const { handleMonthlyReportsCron } = await import("./lib/monthly-reports.server");
+        const { handleMonthlyReportsCron } = await import("./backend/monthly-reports.server");
         return await handleMonthlyReportsCron(request);
       }
       if (pathname === "/api/cron/lifecycle-emails") {
-        const { handleLifecycleCron } = await import("./lib/lifecycle-emails.server");
+        const { handleLifecycleCron } = await import("./backend/lifecycle-emails.server");
         // Same daily tick also drives the weekly goal-plan push reminders
         // (Mondays only — the handler itself gates the day). Best-effort:
         // a reminder failure must never block the email run.
         const response = await handleLifecycleCron(request);
         if (response.ok) {
           try {
-            const { handleGoalRemindersCron } = await import("./lib/goal-reminders.server");
+            const { handleGoalRemindersCron } = await import("./backend/goal-reminders.server");
             await handleGoalRemindersCron(request);
           } catch (e) {
             console.error("[goal-reminders] cron failed", e);
@@ -64,27 +64,27 @@ export default {
         return response;
       }
       if (pathname === "/api/emails/welcome" && request.method === "POST") {
-        const { handleWelcomeEmail } = await import("./lib/lifecycle-emails.server");
+        const { handleWelcomeEmail } = await import("./backend/lifecycle-emails.server");
         return await handleWelcomeEmail(request);
       }
       if (pathname === "/api/billing/checkout" && request.method === "POST") {
-        const { handleCheckout } = await import("./lib/billing.server");
+        const { handleCheckout } = await import("./backend/billing.server");
         return await handleCheckout(request);
       }
       if (pathname === "/api/billing/portal" && request.method === "POST") {
-        const { handlePortal } = await import("./lib/billing.server");
+        const { handlePortal } = await import("./backend/billing.server");
         return await handlePortal(request);
       }
       if (pathname === "/api/stripe/webhook" && request.method === "POST") {
-        const { handleStripeWebhook } = await import("./lib/billing.server");
+        const { handleStripeWebhook } = await import("./backend/billing.server");
         return await handleStripeWebhook(request);
       }
       if (pathname === "/api/crypto/checkout" && request.method === "POST") {
-        const { handleCryptoCheckout } = await import("./lib/crypto-pay.server");
+        const { handleCryptoCheckout } = await import("./backend/crypto-pay.server");
         return await handleCryptoCheckout(request);
       }
       if (pathname === "/api/crypto/webhook" && request.method === "POST") {
-        const { handleCryptoWebhook } = await import("./lib/crypto-pay.server");
+        const { handleCryptoWebhook } = await import("./backend/crypto-pay.server");
         return await handleCryptoWebhook(request);
       }
 

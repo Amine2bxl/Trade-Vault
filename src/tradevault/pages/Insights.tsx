@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, Send, Loader2 } from 'lucide-react';
 import { Trade } from '../types';
-import { aiChat } from '@/lib/ai.functions';
+import { aiChat } from '@/backend/ai.functions';
 import { buildCoachContext } from '../utils/aiContext';
 import { cn } from '../utils/cn';
 import { useT } from '../i18n/LanguageContext';

@@ -40,10 +40,10 @@ import {
   loadMonthlyReports,
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
-import { generateMyMonthlyReport } from "@/lib/reports.functions";
+import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { useTradeStats } from "./hooks/useTradeStats";
 import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
-import { sendPushToSelf } from "@/lib/push.functions";
+import { sendPushToSelf } from "@/backend/push.functions";
 import { AutomationEngine } from "@/modules/automation";
 import { NotificationEngine, persistNotification } from "@/modules/notifications";
 import { buildDemoTrades } from "./utils/demoTrades";

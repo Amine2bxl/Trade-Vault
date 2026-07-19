@@ -9,8 +9,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportAppError } from "../lib/error-reporting";
-import { lockZoom } from "../lib/lock-zoom";
+import { reportAppError } from "../shared/error-reporting";
+import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../tradevault/components/ErrorScreen";
 
 function NotFoundComponent() {

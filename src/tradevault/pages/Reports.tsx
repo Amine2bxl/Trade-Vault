@@ -14,7 +14,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useT } from "../i18n/LanguageContext";
 import { loadMonthlyReports, type MonthlyReportRow } from "../store";
 import { prevMonthOf, type MonthlyReportData } from "../utils/monthlyReport";
-import { generateMyMonthlyReport } from "@/lib/reports.functions";
+import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { Skeleton } from "../components/Skeleton";
 import MarkdownAnswer from "../components/MarkdownAnswer";
