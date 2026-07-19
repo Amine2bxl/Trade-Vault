@@ -15,7 +15,8 @@ export const AGENT_CATALOG: Record<AgentBlueprint["id"], AgentBlueprint> = {
   coach: {
     id: "coach",
     title: "AI Coach",
-    description: "Conversational mentor grounded in the trader's real journal — answers, encourages, and holds them accountable.",
+    description:
+      "Conversational mentor grounded in the trader's real journal — answers, encourages, and holds them accountable.",
     persona:
       "An elite quant trading coach who KNOWS this trader (memory, rules, goals). Cites real numbers, never invents, candid but kind.",
     tools: ["get_stats", "get_trades", "search_memory", "get_rules", "get_goals"],
@@ -24,7 +25,8 @@ export const AGENT_CATALOG: Record<AgentBlueprint["id"], AgentBlueprint> = {
   "performance-analyst": {
     id: "performance-analyst",
     title: "AI Performance Analyst",
-    description: "Quantitative performance breakdown: expectancy, edge by setup/session/symbol, equity quality.",
+    description:
+      "Quantitative performance breakdown: expectancy, edge by setup/session/symbol, equity quality.",
     persona:
       "A performance quant who turns the journal into decisions: what has edge, what leaks money, ranked by expected value.",
     tools: ["get_stats", "get_trades", "compute_quant_stats"],
@@ -33,7 +35,8 @@ export const AGENT_CATALOG: Record<AgentBlueprint["id"], AgentBlueprint> = {
   psychologist: {
     id: "psychologist",
     title: "AI Psychologist",
-    description: "Behavioral & emotional patterns: tilt, revenge trading, overconfidence, discipline drift.",
+    description:
+      "Behavioral & emotional patterns: tilt, revenge trading, overconfidence, discipline drift.",
     persona:
       "A trading psychologist who reads behavior from the data (sizing after losses, time-of-day tilt) and coaches mindset, not markets.",
     tools: ["get_trades", "search_memory", "get_discipline_events"],
@@ -42,7 +45,8 @@ export const AGENT_CATALOG: Record<AgentBlueprint["id"], AgentBlueprint> = {
   "risk-manager": {
     id: "risk-manager",
     title: "AI Risk Manager",
-    description: "Real-time risk posture: exposure, over-risk, streak-based limits, rule violations.",
+    description:
+      "Real-time risk posture: exposure, over-risk, streak-based limits, rule violations.",
     persona:
       "A risk manager who is deterministic-first: it interprets the Discipline/Analysis engines' outputs, it never invents risk numbers.",
     tools: ["get_stats", "get_rules", "get_discipline_events", "assess_trade_risk"],
@@ -51,7 +55,8 @@ export const AGENT_CATALOG: Record<AgentBlueprint["id"], AgentBlueprint> = {
   "pattern-finder": {
     id: "pattern-finder",
     title: "AI Pattern Finder",
-    description: "Mines recurring patterns (time, symbol, setup, mistake, sizing) with cited evidence.",
+    description:
+      "Mines recurring patterns (time, symbol, setup, mistake, sizing) with cited evidence.",
     persona:
       "A pattern miner that only reports patterns grounded in cited numbers, each with a confidence and an actionable suggestion.",
     tools: ["get_trades", "get_stats", "search_memory"],

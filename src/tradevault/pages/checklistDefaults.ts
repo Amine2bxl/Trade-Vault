@@ -213,7 +213,7 @@ const EN: Omit<ChkConfig, "startTime" | "timeZone" | "countdown"> = {
     },
     {
       title: "Clear draw on liquidity identified",
-      desc: "Net liquidity direction on HTF. No \"maybe\". Yes or no.",
+      desc: 'Net liquidity direction on HTF. No "maybe". Yes or no.',
     },
     {
       title: "Setup quality ≥ 4 confirmed",
@@ -241,7 +241,7 @@ const EN: Omit<ChkConfig, "startTime" | "timeZone" | "countdown"> = {
     {
       text: "Price is moving fast, I don't want to miss the move.",
       ok: false,
-      msg: "INTERFERENCE DETECTED — FOMO. The move you \"missed\" was not yours. The next A+ setup will be. Close the chart for 5 minutes.",
+      msg: 'INTERFERENCE DETECTED — FOMO. The move you "missed" was not yours. The next A+ setup will be. Close the chart for 5 minutes.',
     },
     {
       text: "I want to recover my loss / finish green today.",
@@ -256,7 +256,7 @@ const EN: Omit<ChkConfig, "startTime" | "timeZone" | "countdown"> = {
     {
       text: "It feels right — intuition, gut feeling.",
       ok: false,
-      msg: "INTERFERENCE DETECTED — EMOTIONAL INTUITION. Your \"feeling\" is statistically your worst advisor. Criteria, nothing but criteria.",
+      msg: 'INTERFERENCE DETECTED — EMOTIONAL INTUITION. Your "feeling" is statistically your worst advisor. Criteria, nothing but criteria.',
     },
   ],
   fomo: [
@@ -279,23 +279,23 @@ const EN: Omit<ChkConfig, "startTime" | "timeZone" | "countdown"> = {
   ],
   mantras: [
     {
-      text: "\"A missed trade is preserved mental capital.\"",
+      text: '"A missed trade is preserved mental capital."',
       why: "Every skipped trade that wasn't A+ = money saved.",
     },
     {
-      text: "\"The urge to trade is an alarm signal, not an entry signal.\"",
+      text: '"The urge to trade is an alarm signal, not an entry signal."',
       why: "If you feel urgency → it's FOMO. Close the chart.",
     },
     {
-      text: "\"I don't execute to win. I execute my process.\"",
+      text: '"I don\'t execute to win. I execute my process."',
       why: "The result is a consequence, not a verdict on your worth.",
     },
     {
-      text: "\"Structure first. SL second. Contracts last.\"",
+      text: '"Structure first. SL second. Contracts last."',
       why: "The order of these 3 steps determines the quality of the trade.",
     },
     {
-      text: "\"My edge is proven. I just have to wait for it.\"",
+      text: '"My edge is proven. I just have to wait for it."',
       why: "The edge exists. The only job is the wait.",
     },
   ],
@@ -319,7 +319,7 @@ const EN: Omit<ChkConfig, "startTime" | "timeZone" | "countdown"> = {
     "Say the entry reason out loud before clicking.",
     "Zero charts before the start time. Mental preparation first.",
     "Write down your emotional state before AND after the trade.",
-    "If price leaves without you: write \"the market owes me nothing\" and close.",
+    'If price leaves without you: write "the market owes me nothing" and close.',
   ],
   signalsGo: [
     "Start time confirmed",
@@ -334,7 +334,7 @@ const EN: Omit<ChkConfig, "startTime" | "timeZone" | "countdown"> = {
     "You already took a loss",
     "You feel FOMO",
     "Before the start time",
-    "\"Urge\" to trade",
+    '"Urge" to trade',
     "Setup ≤ 3",
   ],
   signalsWait: [
@@ -348,7 +348,7 @@ const EN: Omit<ChkConfig, "startTime" | "timeZone" | "countdown"> = {
   cycle: [
     { label: "Analysis OK", text: "Good pre-market read", type: "ok" },
     { label: "Tension rises", text: "Price moves without you", type: "warn" },
-    { label: "Rationalizing", text: "\"It's so clear…\"", type: "warn" },
+    { label: "Rationalizing", text: '"It\'s so clear…"', type: "warn" },
     { label: "Off-plan entry", text: "Too early, tight SL", type: "bad" },
     { label: "Stopped out", text: "Price continues after", type: "bad" },
     { label: "Lucid journal", text: "You know why. Back to 1.", type: "ok" },
@@ -381,33 +381,72 @@ export function templatesFor(lang: string): ChkTemplate[] {
         id: "simple",
         name: "Essentiel — 3 critères",
         items: [
-          { title: "Mon setup exact est présent", desc: "Tous les critères de mon plan, sans exception." },
-          { title: "SL sur structure, taille calculée", desc: "Le risque est défini avant l'entrée, pas après." },
-          { title: "Je suis calme et je suis le plan", desc: "Aucune urgence, aucune émotion aux commandes." },
+          {
+            title: "Mon setup exact est présent",
+            desc: "Tous les critères de mon plan, sans exception.",
+          },
+          {
+            title: "SL sur structure, taille calculée",
+            desc: "Le risque est défini avant l'entrée, pas après.",
+          },
+          {
+            title: "Je suis calme et je suis le plan",
+            desc: "Aucune urgence, aucune émotion aux commandes.",
+          },
         ],
       },
       {
         id: "swing",
         name: "Swing Trader",
         items: [
-          { title: "Biais HTF confirmé (D/W)", desc: "La structure daily et weekly pointent dans la même direction." },
-          { title: "Prix dans ma zone d'intérêt", desc: "Zone marquée à l'avance — pas dessinée après coup." },
-          { title: "Pas de news majeure sous 24h", desc: "FOMC, NFP, CPI : je connais le calendrier." },
+          {
+            title: "Biais HTF confirmé (D/W)",
+            desc: "La structure daily et weekly pointent dans la même direction.",
+          },
+          {
+            title: "Prix dans ma zone d'intérêt",
+            desc: "Zone marquée à l'avance — pas dessinée après coup.",
+          },
+          {
+            title: "Pas de news majeure sous 24h",
+            desc: "FOMC, NFP, CPI : je connais le calendrier.",
+          },
           { title: "Plan d'entrée écrit", desc: "Entrée, SL, TP écrits AVANT de cliquer." },
           { title: "R:R ≥ 3", desc: "Sinon le trade ne paie pas son risque sur la durée." },
-          { title: "Alerte posée, chart fermé", desc: "Le marché me préviendra. Pas besoin de fixer l'écran." },
+          {
+            title: "Alerte posée, chart fermé",
+            desc: "Le marché me préviendra. Pas besoin de fixer l'écran.",
+          },
         ],
       },
       {
         id: "prop",
         name: "Prop Firm — Risque",
         items: [
-          { title: "Drawdown journalier vérifié", desc: "Je connais ma marge restante exacte avant d'entrer." },
-          { title: "Risque ≤ 0.5% du compte", desc: "Taille calculée depuis le SL, jamais l'inverse." },
-          { title: "Pas de news rouge dans 15 min", desc: "Spread et slippage tuent les comptes fundés." },
-          { title: "Max 2 trades aujourd'hui", desc: "Au-delà, c'est de l'overtrading statistique." },
-          { title: "Journal à jour", desc: "Le trade précédent est loggé avant d'en prendre un nouveau." },
-          { title: "Perte acceptée à l'avance", desc: "Je peux perdre ce trade sans que ça change mon état." },
+          {
+            title: "Drawdown journalier vérifié",
+            desc: "Je connais ma marge restante exacte avant d'entrer.",
+          },
+          {
+            title: "Risque ≤ 0.5% du compte",
+            desc: "Taille calculée depuis le SL, jamais l'inverse.",
+          },
+          {
+            title: "Pas de news rouge dans 15 min",
+            desc: "Spread et slippage tuent les comptes fundés.",
+          },
+          {
+            title: "Max 2 trades aujourd'hui",
+            desc: "Au-delà, c'est de l'overtrading statistique.",
+          },
+          {
+            title: "Journal à jour",
+            desc: "Le trade précédent est loggé avant d'en prendre un nouveau.",
+          },
+          {
+            title: "Perte acceptée à l'avance",
+            desc: "Je peux perdre ce trade sans que ça change mon état.",
+          },
         ],
       },
     ];
@@ -419,32 +458,53 @@ export function templatesFor(lang: string): ChkTemplate[] {
       name: "Essential — 3 checks",
       items: [
         { title: "My exact setup is present", desc: "Every criterion of my plan, no exceptions." },
-        { title: "SL on structure, size computed", desc: "Risk is defined before the entry, not after." },
-        { title: "I am calm and following the plan", desc: "No urgency, no emotion at the controls." },
+        {
+          title: "SL on structure, size computed",
+          desc: "Risk is defined before the entry, not after.",
+        },
+        {
+          title: "I am calm and following the plan",
+          desc: "No urgency, no emotion at the controls.",
+        },
       ],
     },
     {
       id: "swing",
       name: "Swing Trader",
       items: [
-        { title: "HTF bias confirmed (D/W)", desc: "Daily and weekly structure point the same way." },
-        { title: "Price inside my zone of interest", desc: "Zone marked in advance — not drawn after the fact." },
+        {
+          title: "HTF bias confirmed (D/W)",
+          desc: "Daily and weekly structure point the same way.",
+        },
+        {
+          title: "Price inside my zone of interest",
+          desc: "Zone marked in advance — not drawn after the fact.",
+        },
         { title: "No major news within 24h", desc: "FOMC, NFP, CPI: I know the calendar." },
         { title: "Written entry plan", desc: "Entry, SL, TP written BEFORE clicking." },
         { title: "R:R ≥ 3", desc: "Otherwise the trade doesn't pay for its risk long-term." },
-        { title: "Alert set, chart closed", desc: "The market will notify me. No screen-staring needed." },
+        {
+          title: "Alert set, chart closed",
+          desc: "The market will notify me. No screen-staring needed.",
+        },
       ],
     },
     {
       id: "prop",
       name: "Prop Firm — Risk",
       items: [
-        { title: "Daily drawdown checked", desc: "I know my exact remaining margin before entering." },
+        {
+          title: "Daily drawdown checked",
+          desc: "I know my exact remaining margin before entering.",
+        },
         { title: "Risk ≤ 0.5% of account", desc: "Size computed from the SL, never the reverse." },
         { title: "No red news within 15 min", desc: "Spread and slippage kill funded accounts." },
         { title: "Max 2 trades today", desc: "Beyond that it's statistical overtrading." },
         { title: "Journal up to date", desc: "Previous trade logged before taking a new one." },
-        { title: "Loss accepted in advance", desc: "I can lose this trade without it changing my state." },
+        {
+          title: "Loss accepted in advance",
+          desc: "I can lose this trade without it changing my state.",
+        },
       ],
     },
   ];

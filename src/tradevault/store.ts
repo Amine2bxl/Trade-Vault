@@ -435,7 +435,8 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
     usesIct: !!r.onboarding_uses_ict,
     brokers: r.onboarding_brokers ?? [],
     pain: r.onboarding_pain ?? null,
-    monthlyTarget: r.onboarding_monthly_target !== null ? Number(r.onboarding_monthly_target) : null,
+    monthlyTarget:
+      r.onboarding_monthly_target !== null ? Number(r.onboarding_monthly_target) : null,
     onboardedAt: r.onboarded_at ?? null,
     skipped: !!r.onboarding_skipped,
   };

@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
-import { User } from '../types';
-import { supabase } from '@/integrations/supabase/client';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { User } from "../types";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
   user: User | null;
@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
 
@@ -30,9 +30,9 @@ function mapUser(u: SupabaseUser): User {
   const name =
     (meta.name as string) ||
     (meta.full_name as string) ||
-    (u.email ? u.email.split('@')[0] : '') ||
-    'Trader';
-  return { id: u.id, email: u.email ?? '', name };
+    (u.email ? u.email.split("@")[0] : "") ||
+    "Trader";
+  return { id: u.id, email: u.email ?? "", name };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
-    if (!email || !password) return 'Please fill in all fields';
+    if (!email || !password) return "Please fill in all fields";
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return error.message;
     return null;
@@ -62,9 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(
     async (name: string, email: string, password: string): Promise<string | null> => {
-      if (!name || !email || !password) return 'Please fill in all fields';
-      if (password.length < 6) return 'Password must be at least 6 characters';
-      if (!email.includes('@')) return 'Please enter a valid email';
+      if (!name || !email || !password) return "Please fill in all fields";
+      if (password.length < 6) return "Password must be at least 6 characters";
+      if (!email.includes("@")) return "Please enter a valid email";
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -81,28 +81,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = useCallback(async (): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: window.location.origin,
       },
     });
-    if (error) return error.message ?? 'Google sign-in failed';
+    if (error) return error.message ?? "Google sign-in failed";
     return null;
   }, []);
 
   const loginWithDiscord = useCallback(async (): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'discord',
+      provider: "discord",
       options: {
         redirectTo: window.location.origin,
       },
     });
-    if (error) return error.message ?? 'Discord sign-in failed';
+    if (error) return error.message ?? "Discord sign-in failed";
     return null;
   }, []);
 
   const requestPasswordReset = useCallback(async (email: string): Promise<string | null> => {
-    if (!email) return 'Please enter your email';
+    if (!email) return "Please enter your email";
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updatePassword = useCallback(async (newPassword: string): Promise<string | null> => {
-    if (!newPassword || newPassword.length < 6) return 'Password must be at least 6 characters';
+    if (!newPassword || newPassword.length < 6) return "Password must be at least 6 characters";
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return error.message;
     return null;
@@ -120,8 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Permanent, irreversible: the edge function wipes storage, every row, and
   // the auth account itself. On success we sign the (now-deleted) session out.
   const deleteAccount = useCallback(async (): Promise<string | null> => {
-    const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
-    if (error) return error.message ?? 'Account deletion failed';
+    const { data, error } = await supabase.functions.invoke("delete-account", { method: "POST" });
+    if (error) return error.message ?? "Account deletion failed";
     if (data && (data as { error?: string }).error) return (data as { error: string }).error;
     await supabase.auth.signOut().catch(() => {});
     setUser(null);
@@ -135,7 +135,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, loading, login, signup, loginWithGoogle, loginWithDiscord, requestPasswordReset, updatePassword, deleteAccount, logout }}
+      value={{
+        user,
+        isAuthenticated: !!user,
+        loading,
+        login,
+        signup,
+        loginWithGoogle,
+        loginWithDiscord,
+        requestPasswordReset,
+        updatePassword,
+        deleteAccount,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

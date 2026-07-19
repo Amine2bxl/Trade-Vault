@@ -519,8 +519,26 @@ const CENTRAL_BANKS: CentralBank[] = [
     etMinute: 15,
     note: "European Central Bank rate decision, press conference 30 min later. Top-tier EUR event.",
     dates: {
-      2025: [[0, 30], [2, 6], [3, 17], [5, 5], [6, 24], [8, 11], [9, 30], [11, 18]],
-      2026: [[0, 29], [2, 12], [3, 16], [5, 4], [6, 16], [8, 10], [9, 29], [11, 17]],
+      2025: [
+        [0, 30],
+        [2, 6],
+        [3, 17],
+        [5, 5],
+        [6, 24],
+        [8, 11],
+        [9, 30],
+        [11, 18],
+      ],
+      2026: [
+        [0, 29],
+        [2, 12],
+        [3, 16],
+        [5, 4],
+        [6, 16],
+        [8, 10],
+        [9, 29],
+        [11, 17],
+      ],
     },
   },
   {
@@ -530,8 +548,26 @@ const CENTRAL_BANKS: CentralBank[] = [
     etMinute: 0,
     note: "Bank of England Bank Rate + MPC vote split. Drives GBP and gilt yields.",
     dates: {
-      2025: [[1, 6], [2, 20], [4, 8], [5, 19], [7, 7], [8, 18], [10, 6], [11, 18]],
-      2026: [[1, 5], [2, 19], [4, 7], [5, 18], [7, 6], [8, 17], [10, 5], [11, 17]],
+      2025: [
+        [1, 6],
+        [2, 20],
+        [4, 8],
+        [5, 19],
+        [7, 7],
+        [8, 18],
+        [10, 6],
+        [11, 18],
+      ],
+      2026: [
+        [1, 5],
+        [2, 19],
+        [4, 7],
+        [5, 18],
+        [7, 6],
+        [8, 17],
+        [10, 5],
+        [11, 17],
+      ],
     },
   },
   {
@@ -541,8 +577,26 @@ const CENTRAL_BANKS: CentralBank[] = [
     etMinute: 0,
     note: "Bank of Japan policy decision (released Tokyo). Large JPY moves on any policy-normalisation hint.",
     dates: {
-      2025: [[0, 24], [2, 19], [3, 30], [5, 17], [6, 31], [8, 19], [9, 30], [11, 19]],
-      2026: [[0, 23], [2, 18], [3, 28], [5, 16], [6, 29], [8, 18], [9, 29], [11, 18]],
+      2025: [
+        [0, 24],
+        [2, 19],
+        [3, 30],
+        [5, 17],
+        [6, 31],
+        [8, 19],
+        [9, 30],
+        [11, 19],
+      ],
+      2026: [
+        [0, 23],
+        [2, 18],
+        [3, 28],
+        [5, 16],
+        [6, 29],
+        [8, 18],
+        [9, 29],
+        [11, 18],
+      ],
     },
   },
   {
@@ -552,8 +606,26 @@ const CENTRAL_BANKS: CentralBank[] = [
     etMinute: 45,
     note: "Bank of Canada rate decision. Primary CAD driver alongside Canada CPI.",
     dates: {
-      2025: [[0, 29], [2, 12], [3, 16], [5, 4], [6, 30], [8, 17], [9, 29], [11, 10]],
-      2026: [[0, 28], [2, 11], [3, 15], [5, 3], [6, 29], [8, 16], [9, 28], [11, 9]],
+      2025: [
+        [0, 29],
+        [2, 12],
+        [3, 16],
+        [5, 4],
+        [6, 30],
+        [8, 17],
+        [9, 29],
+        [11, 10],
+      ],
+      2026: [
+        [0, 28],
+        [2, 11],
+        [3, 15],
+        [5, 3],
+        [6, 29],
+        [8, 16],
+        [9, 28],
+        [11, 9],
+      ],
     },
   },
   {
@@ -563,8 +635,26 @@ const CENTRAL_BANKS: CentralBank[] = [
     etMinute: 30,
     note: "Reserve Bank of Australia decision (released Sydney). Moves AUD and, by proxy, NZD.",
     dates: {
-      2025: [[1, 18], [3, 1], [4, 20], [6, 8], [7, 12], [8, 30], [10, 4], [11, 9]],
-      2026: [[1, 3], [2, 17], [4, 5], [5, 16], [7, 11], [8, 29], [10, 3], [11, 8]],
+      2025: [
+        [1, 18],
+        [3, 1],
+        [4, 20],
+        [6, 8],
+        [7, 12],
+        [8, 30],
+        [10, 4],
+        [11, 9],
+      ],
+      2026: [
+        [1, 3],
+        [2, 17],
+        [4, 5],
+        [5, 16],
+        [7, 11],
+        [8, 29],
+        [10, 3],
+        [11, 8],
+      ],
     },
   },
   {
@@ -574,8 +664,24 @@ const CENTRAL_BANKS: CentralBank[] = [
     etMinute: 0,
     note: "Reserve Bank of New Zealand decision (released Wellington). Sharp NZD reactions.",
     dates: {
-      2025: [[1, 18], [3, 8], [4, 27], [6, 8], [7, 19], [9, 7], [10, 25]],
-      2026: [[1, 24], [3, 14], [4, 26], [6, 7], [7, 18], [9, 6], [10, 24]],
+      2025: [
+        [1, 18],
+        [3, 8],
+        [4, 27],
+        [6, 8],
+        [7, 19],
+        [9, 7],
+        [10, 25],
+      ],
+      2026: [
+        [1, 24],
+        [3, 14],
+        [4, 26],
+        [6, 7],
+        [7, 18],
+        [9, 6],
+        [10, 24],
+      ],
     },
   },
   {
@@ -585,8 +691,18 @@ const CENTRAL_BANKS: CentralBank[] = [
     etMinute: 30,
     note: "Swiss National Bank quarterly decision. Franc-sensitive; watch for intervention language.",
     dates: {
-      2025: [[2, 20], [5, 19], [8, 25], [11, 11]],
-      2026: [[2, 19], [5, 18], [8, 24], [11, 10]],
+      2025: [
+        [2, 20],
+        [5, 19],
+        [8, 25],
+        [11, 11],
+      ],
+      2026: [
+        [2, 19],
+        [5, 18],
+        [8, 24],
+        [11, 10],
+      ],
     },
   },
 ];
@@ -619,7 +735,10 @@ function centralBankEventsForWeek(weekStart: Date): EconomicEvent[] {
 
 export const builtinScheduleProvider: EventProvider = {
   async getEventsForWeek(weekStart: Date): Promise<EconomicEvent[]> {
-    const events: EconomicEvent[] = [...fomcEventsForWeek(weekStart), ...centralBankEventsForWeek(weekStart)];
+    const events: EconomicEvent[] = [
+      ...fomcEventsForWeek(weekStart),
+      ...centralBankEventsForWeek(weekStart),
+    ];
     const weekEnd = addDays(weekStart, 7);
 
     // Monthly rules: evaluate the months the week touches.
@@ -683,4 +802,14 @@ export function getEventsForWeek(weekStart: Date): Promise<EconomicEvent[]> {
   return activeProvider.getEventsForWeek(weekStart);
 }
 
-export const CURRENCIES: Currency[] = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "CNY"];
+export const CURRENCIES: Currency[] = [
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "CHF",
+  "CAD",
+  "AUD",
+  "NZD",
+  "CNY",
+];

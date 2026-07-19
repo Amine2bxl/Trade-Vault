@@ -19,7 +19,10 @@ import { cn } from "../utils/cn";
 import type { Account, AccountType } from "../store";
 
 const TYPE_ICON: Record<AccountType, typeof User> = {
-  personal: User, prop: Building2, demo: FlaskConical, live: Zap,
+  personal: User,
+  prop: Building2,
+  demo: FlaskConical,
+  live: Zap,
 };
 const TYPE_LABEL_KEY = {
   personal: "account.typePersonal",
@@ -89,7 +92,10 @@ export default function AccountSwitcher({
             </span>
           </span>
           <span className="min-w-0 max-w-[96px] text-left">
-            <span className="block text-[8px] uppercase tracking-[0.14em] font-bold leading-none mb-0.5 flex items-center gap-1" style={{ color: `${activeAccount.color}cc` }}>
+            <span
+              className="block text-[8px] uppercase tracking-[0.14em] font-bold leading-none mb-0.5 flex items-center gap-1"
+              style={{ color: `${activeAccount.color}cc` }}
+            >
               <Layers className="w-2.5 h-2.5" /> {t("account.fabLabel")}
             </span>
             <span className="block text-xs font-bold text-white truncate leading-tight">
@@ -110,9 +116,7 @@ export default function AccountSwitcher({
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
                 <div>
                   <h2 className="text-sm font-bold text-white">{t("account.title")}</h2>
-                  <p className="text-[11px] text-slate-500">
-                    {t("account.subtitle")}
-                  </p>
+                  <p className="text-[11px] text-slate-500">{t("account.subtitle")}</p>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
@@ -179,7 +183,11 @@ export default function AccountSwitcher({
                         "relative flex flex-col gap-2 rounded-2xl p-3.5 border transition-all",
                         active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06]",
                       )}
-                      style={active ? { borderColor: `${a.color}80`, boxShadow: `0 0 0 1px ${a.color}40` } : undefined}
+                      style={
+                        active
+                          ? { borderColor: `${a.color}80`, boxShadow: `0 0 0 1px ${a.color}40` }
+                          : undefined
+                      }
                     >
                       <button
                         onClick={() => {
@@ -195,8 +203,12 @@ export default function AccountSwitcher({
                           <Icon className="w-4.5 h-4.5" />
                         </span>
                         <span className="min-w-0 pr-6">
-                          <span className="block text-sm font-bold text-white truncate">{a.name}</span>
-                          <span className="block text-[10px] text-slate-500 truncate">{t(TYPE_LABEL_KEY[a.type])}</span>
+                          <span className="block text-sm font-bold text-white truncate">
+                            {a.name}
+                          </span>
+                          <span className="block text-[10px] text-slate-500 truncate">
+                            {t(TYPE_LABEL_KEY[a.type])}
+                          </span>
                         </span>
                       </button>
 
@@ -283,10 +295,19 @@ export default function AccountSwitcher({
           <ActiveIcon className="w-4 h-4" />
         </span>
         <span className="flex-1 min-w-0 text-left">
-          <span className="block text-sm font-semibold text-white truncate">{activeAccount.name}</span>
-          <span className="block text-[10px] text-slate-500 truncate">{t(TYPE_LABEL_KEY[activeAccount.type])}</span>
+          <span className="block text-sm font-semibold text-white truncate">
+            {activeAccount.name}
+          </span>
+          <span className="block text-[10px] text-slate-500 truncate">
+            {t(TYPE_LABEL_KEY[activeAccount.type])}
+          </span>
         </span>
-        <ChevronDown className={cn("w-4 h-4 text-slate-500 shrink-0 transition-transform", open && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 text-slate-500 shrink-0 transition-transform",
+            open && "rotate-180",
+          )}
+        />
       </button>
 
       {open && (
@@ -308,7 +329,10 @@ export default function AccountSwitcher({
                   )}
                 >
                   <button
-                    onClick={() => { switchAccount(a.id); setOpen(false); }}
+                    onClick={() => {
+                      switchAccount(a.id);
+                      setOpen(false);
+                    }}
                     className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
                   >
                     <span
@@ -318,13 +342,25 @@ export default function AccountSwitcher({
                       <Icon className="w-3.5 h-3.5" />
                     </span>
                     <span className="flex-1 min-w-0">
-                      <span className={cn("block text-sm font-medium truncate", active ? "text-white" : "text-slate-300")}>{a.name}</span>
-                      <span className="block text-[10px] text-slate-500">{t(TYPE_LABEL_KEY[a.type])}</span>
+                      <span
+                        className={cn(
+                          "block text-sm font-medium truncate",
+                          active ? "text-white" : "text-slate-300",
+                        )}
+                      >
+                        {a.name}
+                      </span>
+                      <span className="block text-[10px] text-slate-500">
+                        {t(TYPE_LABEL_KEY[a.type])}
+                      </span>
                     </span>
                   </button>
                   {accounts.length > 1 && (
                     <button
-                      onClick={() => { setDeleting(a); setOpen(false); }}
+                      onClick={() => {
+                        setDeleting(a);
+                        setOpen(false);
+                      }}
                       aria-label={t("account.delete")}
                       className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
                     >
@@ -337,7 +373,10 @@ export default function AccountSwitcher({
             })}
             <div className="h-px bg-white/[0.06] my-1.5 mx-1" />
             <button
-              onClick={() => { setCreateOpen(true); setOpen(false); }}
+              onClick={() => {
+                setCreateOpen(true);
+                setOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-cyan-300 hover:bg-cyan-500/10 transition-colors"
             >
               <span className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
@@ -474,13 +513,23 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
       {/* Mobile: stacked form. Desktop: one clean horizontal row — name |
           type | balance | create — like a spreadsheet line, zero scrolling. */}
-      <div className="glass-strong rounded-3xl p-6 w-full max-w-sm md:max-w-3xl animate-slide-in" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="glass-strong rounded-3xl p-6 w-full max-w-sm md:max-w-3xl animate-slide-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-white">{t("account.new")}</h2>
-          <button onClick={onClose} aria-label={t("common.close")} className="text-slate-500 hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            aria-label={t("common.close")}
+            className="text-slate-500 hover:text-white transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -514,7 +563,9 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
                     onClick={() => setType(tp)}
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-xl px-3 h-11 border text-sm font-medium transition-all whitespace-nowrap",
-                      active ? "bg-cyan-500/15 border-cyan-400/50 text-white" : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+                      active
+                        ? "bg-cyan-500/15 border-cyan-400/50 text-white"
+                        : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
                     )}
                   >
                     <Icon className="w-4 h-4" /> {t(TYPE_LABEL_KEY[tp])}
@@ -529,7 +580,9 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
               {t("account.startingBalance")}
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                $
+              </span>
               <input
                 type="number"
                 inputMode="decimal"

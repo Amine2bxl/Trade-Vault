@@ -1,10 +1,15 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { cn } from '../utils/cn';
-import { useT } from '../i18n/LanguageContext';
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { AlertTriangle } from "lucide-react";
+import { cn } from "../utils/cn";
+import { useT } from "../i18n/LanguageContext";
 
-interface ConfirmOptions { danger?: boolean }
-interface PendingConfirm { message: string; danger: boolean }
+interface ConfirmOptions {
+  danger?: boolean;
+}
+interface PendingConfirm {
+  message: string;
+  danger: boolean;
+}
 
 type ConfirmFn = (message: string, options?: ConfirmOptions) => Promise<boolean>;
 const ConfirmCtx = createContext<ConfirmFn | null>(null);
@@ -16,7 +21,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   const confirm = useCallback<ConfirmFn>((message, options) => {
     setPending({ message, danger: !!options?.danger });
-    return new Promise<boolean>((resolve) => { resolver.current = resolve; });
+    return new Promise<boolean>((resolve) => {
+      resolver.current = resolve;
+    });
   }, []);
 
   const settle = (result: boolean) => {
@@ -29,15 +36,20 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     <ConfirmCtx.Provider value={confirm}>
       {children}
       {pending && (
-        <div className="fixed inset-0 z-[110] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => settle(false)}>
+        <div
+          className="fixed inset-0 z-[110] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => settle(false)}
+        >
           <div
             onClick={(e) => e.stopPropagation()}
             className="w-full md:max-w-sm md:rounded-3xl rounded-t-3xl glass-strong border border-white/10 p-6 animate-slide-up md:animate-slide-in"
           >
-            <div className={cn(
-              'w-11 h-11 rounded-2xl flex items-center justify-center mb-4',
-              pending.danger ? 'bg-red-500/15 text-red-400' : 'bg-cyan-500/15 text-cyan-400'
-            )}>
+            <div
+              className={cn(
+                "w-11 h-11 rounded-2xl flex items-center justify-center mb-4",
+                pending.danger ? "bg-red-500/15 text-red-400" : "bg-cyan-500/15 text-cyan-400",
+              )}
+            >
               <AlertTriangle className="w-5 h-5" />
             </div>
             <p className="text-sm text-slate-200 leading-relaxed mb-6">{pending.message}</p>
@@ -46,18 +58,18 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 onClick={() => settle(false)}
                 className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
               >
-                {t('common.cancel')}
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => settle(true)}
                 className={cn(
-                  'px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg',
+                  "px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg",
                   pending.danger
-                    ? 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-400 hover:to-rose-400 shadow-red-500/20'
-                    : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-cyan-500/20'
+                    ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-400 hover:to-rose-400 shadow-red-500/20"
+                    : "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-cyan-500/20",
                 )}
               >
-                {t('common.confirm')}
+                {t("common.confirm")}
               </button>
             </div>
           </div>
@@ -69,6 +81,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
 export function useConfirm() {
   const ctx = useContext(ConfirmCtx);
-  if (!ctx) throw new Error('useConfirm must be used within ConfirmProvider');
+  if (!ctx) throw new Error("useConfirm must be used within ConfirmProvider");
   return ctx;
 }

@@ -165,11 +165,11 @@
 
 ## Phasage recommandé
 
-| Phase | Blocs | Logique |
-|---|---|---|
-| 1 — Fondations | 0, 3, 1 | Design system + multicompte (migration la plus structurante) + landing (acquisition) |
-| 2 — Activation | 2, 4, 8 | Onboarding, sidebar catégorisée, calculateur (valeur quotidienne immédiate) |
-| 3 — Data | 7, 10, 11 | Calendrier éco, COT/saisonnalité, IA proactive |
-| 4 — Signature | 12, 9, 5, 6 | Thèmes full-surface, classement, Ctrl+K étendu, curseur HUD |
+| Phase          | Blocs       | Logique                                                                              |
+| -------------- | ----------- | ------------------------------------------------------------------------------------ |
+| 1 — Fondations | 0, 3, 1     | Design system + multicompte (migration la plus structurante) + landing (acquisition) |
+| 2 — Activation | 2, 4, 8     | Onboarding, sidebar catégorisée, calculateur (valeur quotidienne immédiate)          |
+| 3 — Data       | 7, 10, 11   | Calendrier éco, COT/saisonnalité, IA proactive                                       |
+| 4 — Signature  | 12, 9, 5, 6 | Thèmes full-surface, classement, Ctrl+K étendu, curseur HUD                          |
 
 **Décisions à trancher avant Phase 3** : source de données du calendrier économique (licite, coût, couverture) ; périmètre privacy du classement (opt-in, pseudonymes, par compte ou agrégé).

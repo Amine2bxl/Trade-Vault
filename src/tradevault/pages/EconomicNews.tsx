@@ -39,13 +39,33 @@ const IMPACTS: ImpactLevel[] = ["high", "medium", "low"];
 
 const IMPACT_STYLE: Record<ImpactLevel, { dot: string; text: string; ring: string; bg: string }> = {
   high: { dot: "bg-red-400", text: "text-red-300", ring: "border-red-500/30", bg: "bg-red-500/10" },
-  medium: { dot: "bg-amber-400", text: "text-amber-300", ring: "border-amber-500/30", bg: "bg-amber-500/10" },
-  low: { dot: "bg-slate-400", text: "text-slate-300", ring: "border-slate-500/25", bg: "bg-white/[0.04]" },
+  medium: {
+    dot: "bg-amber-400",
+    text: "text-amber-300",
+    ring: "border-amber-500/30",
+    bg: "bg-amber-500/10",
+  },
+  low: {
+    dot: "bg-slate-400",
+    text: "text-slate-300",
+    ring: "border-slate-500/25",
+    bg: "bg-white/[0.04]",
+  },
 };
 
 const LOCALE_MAP: Record<string, string> = {
-  en: "en-US", es: "es-ES", pt: "pt-PT", fr: "fr-FR", de: "de-DE", it: "it-IT",
-  nl: "nl-NL", ru: "ru-RU", zh: "zh-CN", ja: "ja-JP", ar: "ar-SA", hi: "hi-IN",
+  en: "en-US",
+  es: "es-ES",
+  pt: "pt-PT",
+  fr: "fr-FR",
+  de: "de-DE",
+  it: "it-IT",
+  nl: "nl-NL",
+  ru: "ru-RU",
+  zh: "zh-CN",
+  ja: "ja-JP",
+  ar: "ar-SA",
+  hi: "hi-IN",
 };
 
 export default function EconomicNews() {
@@ -104,7 +124,8 @@ export default function EconomicNews() {
     return events.filter((e) => {
       if (currencyFilter.size > 0 && !currencyFilter.has(e.currency)) return false;
       if (impactFilter.size > 0 && !impactFilter.has(e.impact)) return false;
-      if (q && !e.name.toLowerCase().includes(q) && !e.currency.toLowerCase().includes(q)) return false;
+      if (q && !e.name.toLowerCase().includes(q) && !e.currency.toLowerCase().includes(q))
+        return false;
       return true;
     });
   }, [events, currencyFilter, impactFilter, search]);
@@ -271,7 +292,9 @@ export default function EconomicNews() {
                     onClick={() => toggleImpact(i)}
                     className={cn(
                       "h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold border transition",
-                      on ? cn(s.bg, s.ring, s.text) : "bg-white/[0.03] border-white/[0.07] text-slate-400 hover:bg-white/[0.06]",
+                      on
+                        ? cn(s.bg, s.ring, s.text)
+                        : "bg-white/[0.03] border-white/[0.07] text-slate-400 hover:bg-white/[0.06]",
                     )}
                   >
                     <span className={cn("w-2 h-2 rounded-full", s.dot)} />
@@ -295,9 +318,7 @@ export default function EconomicNews() {
       {/* Indicative-times notice */}
       <div className="glass rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5 animate-fade-in-up stagger-2 border border-cyan-500/10">
         <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
-        <p className="text-[11px] leading-relaxed text-slate-400">
-{t("news.notice")}
-        </p>
+        <p className="text-[11px] leading-relaxed text-slate-400">{t("news.notice")}</p>
       </div>
 
       {/* Days */}
@@ -330,7 +351,7 @@ export default function EconomicNews() {
                   </span>
                   {isToday && (
                     <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
-{t("news.today")}
+                      {t("news.today")}
                     </span>
                   )}
                   <div className="flex-1 h-px bg-white/[0.05]" />

@@ -354,12 +354,18 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         if (!active) return;
         setOnb(o);
         const wizDone = (() => {
-          try { return !!localStorage.getItem(WIZ_KEY); } catch { return false; }
+          try {
+            return !!localStorage.getItem(WIZ_KEY);
+          } catch {
+            return false;
+          }
         })();
         if (!touchedRef.current && !wizDone) setShowWizard(true);
       })
       .catch(() => {});
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -367,11 +373,13 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const wizardDefaults = useMemo(() => {
     const o = onb;
     const style = o?.style;
-    const rec =
-      o?.usesIct ? "ict"
-        : style === "swing" || style === "position" ? "swing"
-          : o?.goal === "prop_challenge" || o?.experience === "funded" ? "prop"
-            : "simple";
+    const rec = o?.usesIct
+      ? "ict"
+      : style === "swing" || style === "position"
+        ? "swing"
+        : o?.goal === "prop_challenge" || o?.experience === "funded"
+          ? "prop"
+          : "simple";
     const toggles: WizardToggles = {
       oneTrade: o?.pain === "overtrading" || o?.goal === "discipline",
       news: style === "swing" || style === "position" || o?.pain === "risk",
@@ -380,7 +388,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     };
     const primary = o?.assets?.[0];
     const time =
-      primary === "forex" ? { startTime: "08:00", timeZone: "Europe/London" }
+      primary === "forex"
+        ? { startTime: "08:00", timeZone: "Europe/London" }
         : primary === "futures" || primary === "stocks" || primary === "options"
           ? { startTime: "09:30", timeZone: "America/New_York" }
           : { startTime: config.startTime, timeZone: config.timeZone };
@@ -392,7 +401,11 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     markTouched();
     setConfig((c) => ({ ...c, items: r.items, startTime: r.startTime, timeZone: r.timeZone }));
     setDay((d) => ({ ...d, checked: new Array(r.items.length).fill(false) }));
-    try { localStorage.setItem(WIZ_KEY, "1"); } catch { /* noop */ }
+    try {
+      localStorage.setItem(WIZ_KEY, "1");
+    } catch {
+      /* noop */
+    }
     setShowWizard(false);
   };
 
@@ -720,12 +733,15 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         };
         showVoiceWidget(txt);
         setTimeout(() => speechSynthesis.speak(u), 140);
-        setTimeout(() => {
-          if (!speechSynthesis.speaking) {
-            commOff();
-            hideVoiceWidget();
-          }
-        }, txt.length * 90 + 3000);
+        setTimeout(
+          () => {
+            if (!speechSynthesis.speaking) {
+              commOff();
+              hideVoiceWidget();
+            }
+          },
+          txt.length * 90 + 3000,
+        );
       } catch {
         commOff();
         hideVoiceWidget();
@@ -1207,8 +1223,19 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     type QA = { id: string; icon: string; label: string; kind?: string; run: () => void };
     const A: QA[] = [];
     if (day.locked) {
-      A.push({ id: "add", icon: "add", label: t("chk.actAddTrade"), kind: "primary", run: onAddTrade });
-      A.push({ id: "journal", icon: "journal", label: t("chk.actJournal"), run: () => setPage("journal") });
+      A.push({
+        id: "add",
+        icon: "add",
+        label: t("chk.actAddTrade"),
+        kind: "primary",
+        run: onAddTrade,
+      });
+      A.push({
+        id: "journal",
+        icon: "journal",
+        label: t("chk.actJournal"),
+        run: () => setPage("journal"),
+      });
     } else if (interference) {
       A.push({
         id: "center",
@@ -1217,7 +1244,12 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         kind: "danger",
         run: () => askCoach(coach.interference),
       });
-      A.push({ id: "mist", icon: "mistakes", label: t("chk.actMistakes"), run: () => setPage("mistakes") });
+      A.push({
+        id: "mist",
+        icon: "mistakes",
+        label: t("chk.actMistakes"),
+        run: () => setPage("mistakes"),
+      });
     } else if (day.fomo === 3) {
       A.push({
         id: "fomo",
@@ -1226,10 +1258,25 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         kind: "danger",
         run: () => askCoach(coach.fomo),
       });
-      A.push({ id: "mist", icon: "mistakes", label: t("chk.actMistakes"), run: () => setPage("mistakes") });
+      A.push({
+        id: "mist",
+        icon: "mistakes",
+        label: t("chk.actMistakes"),
+        run: () => setPage("mistakes"),
+      });
     } else {
-      A.push({ id: "ana", icon: "analytics", label: t("chk.actAnalytics"), run: () => setPage("analytics") });
-      A.push({ id: "mist", icon: "mistakes", label: t("chk.actMistakes"), run: () => setPage("mistakes") });
+      A.push({
+        id: "ana",
+        icon: "analytics",
+        label: t("chk.actAnalytics"),
+        run: () => setPage("analytics"),
+      });
+      A.push({
+        id: "mist",
+        icon: "mistakes",
+        label: t("chk.actMistakes"),
+        run: () => setPage("mistakes"),
+      });
     }
     A.push({
       id: "err",
@@ -1238,7 +1285,13 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       kind: day.locked ? undefined : "primary",
       run: () => askCoach(coach.errors),
     });
-    A.push({ id: "reset", icon: "reset", label: t("chk.actNewSession"), kind: "reset", run: resetAll });
+    A.push({
+      id: "reset",
+      icon: "reset",
+      label: t("chk.actNewSession"),
+      kind: "reset",
+      run: resetAll,
+    });
     return A;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day.locked, interference, day.fomo, t, coach, onAddTrade, setPage, askCoach]);
@@ -1298,7 +1351,14 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           </div>
           <div className="jk-header-right">
             <div className="jk-clock-badge">
-              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v6l4 2" />
               </svg>
@@ -1332,7 +1392,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                   {t("chk.editor")} : {editMode ? "on" : "off"}
                 </span>
               </button>
-              <button className={cn("jk-toggle", showConfig && "on")} onClick={() => setShowConfig((v) => !v)}>
+              <button
+                className={cn("jk-toggle", showConfig && "on")}
+                onClick={() => setShowConfig((v) => !v)}
+              >
                 <svg viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
@@ -1346,10 +1409,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
           <div className="jk-card jk-config-panel">
-            <button
-              className="jk-guided-btn"
-              onClick={() => setShowWizard(true)}
-            >
+            <button className="jk-guided-btn" onClick={() => setShowWizard(true)}>
               ✨ {t("chk.guidedSetup")}
             </button>
             <div className="jk-cfg-section">
@@ -1649,10 +1709,26 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           <div className="jk-reactor">
             <svg viewBox="0 0 200 200">
               <g className="jk-ring-ticks">
-                <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(34,211,238,.25)" strokeWidth="2" strokeDasharray="2 10" />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="94"
+                  fill="none"
+                  stroke="rgba(34,211,238,.25)"
+                  strokeWidth="2"
+                  strokeDasharray="2 10"
+                />
               </g>
               <g className="jk-ring-ticks2">
-                <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(34,211,238,.15)" strokeWidth="1" strokeDasharray="14 8" />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="86"
+                  fill="none"
+                  stroke="rgba(34,211,238,.15)"
+                  strokeWidth="1"
+                  strokeDasharray="14 8"
+                />
               </g>
               <circle className="jk-ring-track" cx="100" cy="100" r="74" />
               <circle
@@ -1667,7 +1743,15 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               <g className="jk-ring-comet">
                 <circle cx="100" cy="100" r="80" pathLength="100" strokeDasharray="10 90" />
               </g>
-              <circle className="jk-core" cx="100" cy="100" r="52" fill="rgba(34,211,238,.06)" stroke="rgba(34,211,238,.3)" strokeWidth="1" />
+              <circle
+                className="jk-core"
+                cx="100"
+                cy="100"
+                r="52"
+                fill="rgba(34,211,238,.06)"
+                stroke="rgba(34,211,238,.3)"
+                strokeWidth="1"
+              />
               <text className="jk-score-num" x="100" y="108" textAnchor="middle">
                 {Math.round(displayScore)}
               </text>
@@ -1690,8 +1774,14 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 <span className="jk-ri-name">{t("chk.barMental")}</span>
                 <div className="jk-ri-track">
                   <div
-                    className={cn("jk-ri-fill", parts.mental < 0 ? "bad" : day.fomo === 2 && "warn")}
-                    style={{ width: parts.mental < 0 ? "100%" : `${(Math.max(0, parts.mental) / 15) * 100}%` }}
+                    className={cn(
+                      "jk-ri-fill",
+                      parts.mental < 0 ? "bad" : day.fomo === 2 && "warn",
+                    )}
+                    style={{
+                      width:
+                        parts.mental < 0 ? "100%" : `${(Math.max(0, parts.mental) / 15) * 100}%`,
+                    }}
                   />
                 </div>
                 <span className="jk-ri-val">{parts.mental}/15</span>
@@ -1701,7 +1791,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 <div className="jk-ri-track">
                   <div
                     className={cn("jk-ri-fill", parts.motiv < 0 && "bad")}
-                    style={{ width: parts.motiv < 0 ? "100%" : `${(Math.max(0, parts.motiv) / 15) * 100}%` }}
+                    style={{
+                      width: parts.motiv < 0 ? "100%" : `${(Math.max(0, parts.motiv) / 15) * 100}%`,
+                    }}
                   />
                 </div>
                 <span className="jk-ri-val">{parts.motiv}/15</span>
@@ -1736,11 +1828,19 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               <div className="jk-ci-head">
                 <div className="jk-ci-box" />
                 <div className="jk-ci-title">
-                  <Ed value={it.title} editable={editMode} onCommit={(v) => patchItem(i, { title: v })} />
+                  <Ed
+                    value={it.title}
+                    editable={editMode}
+                    onCommit={(v) => patchItem(i, { title: v })}
+                  />
                 </div>
               </div>
               <div className="jk-ci-desc">
-                <Ed value={it.desc} editable={editMode} onCommit={(v) => patchItem(i, { desc: v })} />
+                <Ed
+                  value={it.desc}
+                  editable={editMode}
+                  onCommit={(v) => patchItem(i, { desc: v })}
+                />
               </div>
             </div>
           ))}
@@ -1759,15 +1859,27 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 className={cn("jk-mopt", day.motiv === i && (m.ok ? "sel-ok" : "sel-bad"))}
                 onClick={() => setMotiv(i)}
               >
-                <Ed value={m.text} editable={editMode} onCommit={(v) => patchMotiv(i, { text: v })} />
+                <Ed
+                  value={m.text}
+                  editable={editMode}
+                  onCommit={(v) => patchMotiv(i, { text: v })}
+                />
               </div>
             ))}
           </div>
-          <div className={cn("jk-motiv-msg", day.motiv >= 0 && (config.motivs[day.motiv]?.ok ? "ok" : "bad"))}>
+          <div
+            className={cn(
+              "jk-motiv-msg",
+              day.motiv >= 0 && (config.motivs[day.motiv]?.ok ? "ok" : "bad"),
+            )}
+          >
             {day.motiv >= 0 ? config.motivs[day.motiv]?.msg : t("chk.motivDefault")}
           </div>
           {interference && (
-            <button className="jk-btn danger jk-inline-coach" onClick={() => askCoach(coach.interference)}>
+            <button
+              className="jk-btn danger jk-inline-coach"
+              onClick={() => askCoach(coach.interference)}
+            >
               {QA_ICONS.coach}
               {t("chk.actCoachCenter")}
             </button>
@@ -1786,10 +1898,18 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           <div className="jk-fomo-label">{t("chk.fomoQuestion")}</div>
           <div className="jk-fomo-track">
             {config.fomo.map((f, i) => (
-              <div key={i} className={cn("jk-fseg", `s${i}`, day.fomo === i && "active")} onClick={() => setFomo(i)}>
+              <div
+                key={i}
+                className={cn("jk-fseg", `s${i}`, day.fomo === i && "active")}
+                onClick={() => setFomo(i)}
+              >
                 <span className="jk-fseg-icon">{FOMO_ICONS[i]}</span>
                 <span className="jk-fseg-label">
-                  <Ed value={f.label} editable={editMode} onCommit={(v) => patchFomo(i, { label: v })} />
+                  <Ed
+                    value={f.label}
+                    editable={editMode}
+                    onCommit={(v) => patchFomo(i, { label: v })}
+                  />
                 </span>
               </div>
             ))}
@@ -1875,7 +1995,11 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             ))}
           </div>
           <div className="jk-cycle-alert">
-            <Ed value={config.cycleAlert} editable={editMode} onCommit={(v) => patch({ cycleAlert: v })} />
+            <Ed
+              value={config.cycleAlert}
+              editable={editMode}
+              onCommit={(v) => patch({ cycleAlert: v })}
+            />
           </div>
         </div>
 
@@ -1888,13 +2012,27 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         </div>
         <div className="jk-mantras">
           {config.mantras.map((m, i) => (
-            <div key={i} className={cn("jk-mantra", i === config.mantras.length - 1 && config.mantras.length % 2 === 1 && "full")}>
+            <div
+              key={i}
+              className={cn(
+                "jk-mantra",
+                i === config.mantras.length - 1 && config.mantras.length % 2 === 1 && "full",
+              )}
+            >
               <div className="jk-m-num">{pad(i + 1)}</div>
               <div className="jk-m-text">
-                <Ed value={m.text} editable={editMode} onCommit={(v) => patchMantra(i, { text: v })} />
+                <Ed
+                  value={m.text}
+                  editable={editMode}
+                  onCommit={(v) => patchMantra(i, { text: v })}
+                />
               </div>
               <div className="jk-m-why">
-                <Ed value={m.why} editable={editMode} onCommit={(v) => patchMantra(i, { why: v })} />
+                <Ed
+                  value={m.why}
+                  editable={editMode}
+                  onCommit={(v) => patchMantra(i, { why: v })}
+                />
               </div>
             </div>
           ))}
@@ -1996,7 +2134,13 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       <div className={cn("jchk-voice-widget", voice.show && "show", voice.speaking && "speaking")}>
         <div className="jk-vw-core" />
         <div className="jk-vw-bars">
-          <span /><span /><span /><span /><span /><span /><span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
         </div>
         <div className="jk-vw-meta">
           <div className="jk-vw-label">JARVIS</div>
@@ -2041,14 +2185,56 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             <div className="jk-lock-reactor">
               <svg viewBox="0 0 200 200">
                 <g className="jk-ring-ticks">
-                  <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(34,211,238,.35)" strokeWidth="2" strokeDasharray="2 10" />
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="94"
+                    fill="none"
+                    stroke="rgba(34,211,238,.35)"
+                    strokeWidth="2"
+                    strokeDasharray="2 10"
+                  />
                 </g>
                 <g className="jk-ring-ticks2">
-                  <circle cx="100" cy="100" r="84" fill="none" stroke="rgba(34,211,238,.2)" strokeWidth="1" strokeDasharray="14 8" />
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="84"
+                    fill="none"
+                    stroke="rgba(34,211,238,.2)"
+                    strokeWidth="1"
+                    strokeDasharray="14 8"
+                  />
                 </g>
-                <circle cx="100" cy="100" r="70" fill="none" stroke="#22d3ee" strokeWidth="4" style={{ filter: "drop-shadow(0 0 12px rgba(34,211,238,.7))" }} />
-                <circle className="jk-core" cx="100" cy="100" r="48" fill="rgba(34,211,238,.12)" stroke="rgba(34,211,238,.5)" strokeWidth="1" />
-                <text x="100" y="112" textAnchor="middle" style={{ fontFamily: "var(--jk-num)", fontSize: 26, fontWeight: 600, fill: "#22d3ee" }}>
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="70"
+                  fill="none"
+                  stroke="#22d3ee"
+                  strokeWidth="4"
+                  style={{ filter: "drop-shadow(0 0 12px rgba(34,211,238,.7))" }}
+                />
+                <circle
+                  className="jk-core"
+                  cx="100"
+                  cy="100"
+                  r="48"
+                  fill="rgba(34,211,238,.12)"
+                  stroke="rgba(34,211,238,.5)"
+                  strokeWidth="1"
+                />
+                <text
+                  x="100"
+                  y="112"
+                  textAnchor="middle"
+                  style={{
+                    fontFamily: "var(--jk-num)",
+                    fontSize: 26,
+                    fontWeight: 600,
+                    fill: "#22d3ee",
+                  }}
+                >
                   100
                 </text>
               </svg>
@@ -2082,7 +2268,11 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           personalItems={personalizedItems(onb, lang)}
           onApply={applyWizard}
           onClose={() => {
-            try { localStorage.setItem(WIZ_KEY, "1"); } catch { /* noop */ }
+            try {
+              localStorage.setItem(WIZ_KEY, "1");
+            } catch {
+              /* noop */
+            }
             setShowWizard(false);
           }}
         />

@@ -110,7 +110,10 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
           language: lang,
         });
         const res = await aiChat({ data: { question: query, context } });
-        setMessages((prev) => [...prev, { role: "assistant", text: res.answer || t("ai.noResponse") }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: res.answer || t("ai.noResponse") },
+        ]);
       } catch (e: any) {
         setMessages((prev) => [
           ...prev,

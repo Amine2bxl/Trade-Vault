@@ -66,18 +66,18 @@ Chaque dossier `★` est un point d'extension autonome. La couche `tradevault/`
 
 ## 3. Les briques (contrats)
 
-| Système | Rôle | Interface clé | Extension |
-|---|---|---|---|
-| **AI Router** | Décide quel agent traite une intention, orchestre RAG + tools | `AIRouter.route()` | `INTENT_AGENT` (config) |
-| **Agents** | Coach, Performance Analyst, Psychologist, Risk Manager, Pattern Finder | `AgentDefinition.run()` | `registerAgent()` |
-| **AI Memory** | Épisodique (faits/leçons) + sémantique (RAG) | `remember()` / `Retriever` | `ai_memory`, `ai_embeddings` |
-| **Tool Calling** | Capacités que le modèle peut invoquer | `ToolDefinition.execute()` | `registerTool()` |
-| **RAG** | Indexe et retrouve les artefacts du trader | `EmbeddingProvider` + `Retriever` | provider d'embeddings |
-| **Background Jobs** | Brief nocturne, review hebdo, embeddings, scans | `JobHandler.run()` | `registerJobHandler()` |
-| **MCP** | Bridge outils externes ↔ outils locaux | `McpClientAdapter` / `McpServerExposer` | `source: "mcp"` |
-| **Notifications IA** | Canal `ai_message` du Notification Engine (existant) | event `AiNotificationRequested` | listener |
-| **Daily Brief / Weekly Review** | Rapports générés | `JobKind` + `ai_reports` (existant) | job handler |
-| **Télémétrie** | Audit coût/latence/modèle | `TelemetryRecorder.record()` | `ai_agent_runs` |
+| Système                         | Rôle                                                                   | Interface clé                           | Extension                    |
+| ------------------------------- | ---------------------------------------------------------------------- | --------------------------------------- | ---------------------------- |
+| **AI Router**                   | Décide quel agent traite une intention, orchestre RAG + tools          | `AIRouter.route()`                      | `INTENT_AGENT` (config)      |
+| **Agents**                      | Coach, Performance Analyst, Psychologist, Risk Manager, Pattern Finder | `AgentDefinition.run()`                 | `registerAgent()`            |
+| **AI Memory**                   | Épisodique (faits/leçons) + sémantique (RAG)                           | `remember()` / `Retriever`              | `ai_memory`, `ai_embeddings` |
+| **Tool Calling**                | Capacités que le modèle peut invoquer                                  | `ToolDefinition.execute()`              | `registerTool()`             |
+| **RAG**                         | Indexe et retrouve les artefacts du trader                             | `EmbeddingProvider` + `Retriever`       | provider d'embeddings        |
+| **Background Jobs**             | Brief nocturne, review hebdo, embeddings, scans                        | `JobHandler.run()`                      | `registerJobHandler()`       |
+| **MCP**                         | Bridge outils externes ↔ outils locaux                                 | `McpClientAdapter` / `McpServerExposer` | `source: "mcp"`              |
+| **Notifications IA**            | Canal `ai_message` du Notification Engine (existant)                   | event `AiNotificationRequested`         | listener                     |
+| **Daily Brief / Weekly Review** | Rapports générés                                                       | `JobKind` + `ai_reports` (existant)     | job handler                  |
+| **Télémétrie**                  | Audit coût/latence/modèle                                              | `TelemetryRecorder.record()`            | `ai_agent_runs`              |
 
 Les cinq **agents** sont déjà décrits **déclarativement** dans
 `agents/catalog.ts` (titre, persona, outils autorisés, format de sortie) — une
@@ -85,14 +85,14 @@ source de vérité produit/technique, sans aucune logique IA.
 
 ## 4. Modèles de données (migration additive)
 
-| Table | Rôle | RLS |
-|---|---|---|
-| `ai_embeddings` | Vecteurs (pgvector) des artefacts du trader pour la RAG | select owner ; écriture serveur |
-| `ai_jobs` | File de tâches asynchrones (statut, payload, retry) | select owner ; opérations serveur |
-| `ai_agent_runs` | Journal d'audit de chaque invocation d'agent | select owner ; écriture serveur |
-| `ai_memory` *(existant)* | Mémoire épisodique (profil/faits/leçons/conv.) | owner-only |
-| `ai_reports` *(existant)* | Briefs quotidiens / reviews hebdo | owner-only |
-| `notifications` *(existant)* | Inbox + canal `ai_message` | owner-only |
+| Table                        | Rôle                                                    | RLS                               |
+| ---------------------------- | ------------------------------------------------------- | --------------------------------- |
+| `ai_embeddings`              | Vecteurs (pgvector) des artefacts du trader pour la RAG | select owner ; écriture serveur   |
+| `ai_jobs`                    | File de tâches asynchrones (statut, payload, retry)     | select owner ; opérations serveur |
+| `ai_agent_runs`              | Journal d'audit de chaque invocation d'agent            | select owner ; écriture serveur   |
+| `ai_memory` _(existant)_     | Mémoire épisodique (profil/faits/leçons/conv.)          | owner-only                        |
+| `ai_reports` _(existant)_    | Briefs quotidiens / reviews hebdo                       | owner-only                        |
+| `notifications` _(existant)_ | Inbox + canal `ai_message`                              | owner-only                        |
 
 > `vector(1536)` est le **seul nombre couplé au modèle** d'embeddings ;
 > changer de provider = ajuster cette dimension + le provider.
@@ -154,11 +154,11 @@ Aucune de ces étapes ne modifie un agent ou un moteur existant.
 
 ## 7. Choix d'architecture & avantages
 
-- **Registres partout (agents/tools/jobs/providers)** → *open/closed* : ouvert
+- **Registres partout (agents/tools/jobs/providers)** → _open/closed_ : ouvert
   à l'extension, fermé à la modification. Chaque système IA est isolé et
   testable seul. C'est la garantie « ajout indépendant ».
-- **Router séparé des agents** → on fait évoluer le *quoi* (intentions,
-  arbitrage de modèle, A/B) sans toucher au *comment* (agents).
+- **Router séparé des agents** → on fait évoluer le _quoi_ (intentions,
+  arbitrage de modèle, A/B) sans toucher au _comment_ (agents).
 - **Tool Calling comme abstraction unique** → local et MCP passent par le même
   contrat : MCP devient un détail d'intégration, pas une bifurcation d'archi.
   Les outils sont **permissionnés** (`sideEffect`) et **audités**.

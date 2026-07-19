@@ -29,7 +29,12 @@ interface SettingsProps {
   onOpenReports: () => void;
 }
 
-export default function Settings({ trades, onDeleteAll, onOpenImport, onOpenReports }: SettingsProps) {
+export default function Settings({
+  trades,
+  onDeleteAll,
+  onOpenImport,
+  onOpenReports,
+}: SettingsProps) {
   const { user, deleteAccount } = useAuth();
   const { t, setLang } = useT();
   const [language, setLanguage] = useState("en");
@@ -41,8 +46,7 @@ export default function Settings({ trades, onDeleteAll, onOpenImport, onOpenRepo
   // Search: each section declares its searchable text; non-matching sections hide.
   const sections = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const match = (...texts: string[]) =>
-      !q || texts.some((s) => s.toLowerCase().includes(q));
+    const match = (...texts: string[]) => !q || texts.some((s) => s.toLowerCase().includes(q));
     return {
       prefs: match(
         t("settings.preferences"),
@@ -153,138 +157,140 @@ export default function Settings({ trades, onDeleteAll, onOpenImport, onOpenRepo
 
       {/* Preferences */}
       {sections.prefs && (
-      <div className="glass-strong rounded-3xl p-6 space-y-4 animate-fade-in-up stagger-1">
-        <SectionHeading
-          icon={<SlidersHorizontal className="w-4 h-4" />}
-          title={t("settings.preferences")}
-        />
+        <div className="glass-strong rounded-3xl p-6 space-y-4 animate-fade-in-up stagger-1">
+          <SectionHeading
+            icon={<SlidersHorizontal className="w-4 h-4" />}
+            title={t("settings.preferences")}
+          />
 
-        <label className="block">
-          <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-            <span className="flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
+          <label className="block">
+            <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+              <span className="flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
+              </span>
+              {savedFlash === "lang" && <SavedBadge label={t("common.saved")} />}
             </span>
-            {savedFlash === "lang" && <SavedBadge label={t("common.saved")} />}
-          </span>
-          <select
-            value={language}
-            onChange={(e) => handleLanguage(e.target.value)}
-            className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code} className="bg-[#0a0f1e]">
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <select
+              value={language}
+              onChange={(e) => handleLanguage(e.target.value)}
+              className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code} className="bg-[#0a0f1e]">
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="block">
-          <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-            <span className="flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
+          <label className="block">
+            <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+              <span className="flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
+              </span>
+              {savedFlash === "eq" && <SavedBadge label={t("common.saved")} />}
             </span>
-            {savedFlash === "eq" && <SavedBadge label={t("common.saved")} />}
-          </span>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-              $
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={startingEquity}
-              onChange={(e) => setStartingEquity(e.target.value)}
-              onBlur={handleEquityBlur}
-              min={0}
-              step={100}
-              className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-7 pr-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
-            />
-          </div>
-          <p className="text-[10px] text-slate-600 mt-1.5">{t("profile.startingEquityHint")}</p>
-        </label>
-      </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                $
+              </span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={startingEquity}
+                onChange={(e) => setStartingEquity(e.target.value)}
+                onBlur={handleEquityBlur}
+                min={0}
+                step={100}
+                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-7 pr-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+              />
+            </div>
+            <p className="text-[10px] text-slate-600 mt-1.5">{t("profile.startingEquityHint")}</p>
+          </label>
+        </div>
       )}
 
       {/* Notifications */}
       {sections.notifs && (
-      <div className="animate-fade-in-up stagger-2">
-        <PushNotificationSettings />
-      </div>
+        <div className="animate-fade-in-up stagger-2">
+          <PushNotificationSettings />
+        </div>
       )}
 
       {/* Data */}
       {sections.data && (
-      <div className="glass-strong rounded-3xl p-6 space-y-3 animate-fade-in-up stagger-3">
-        <SectionHeading
-          icon={<Database className="w-4 h-4" />}
-          title={t("settings.data")}
-          sub={t("settings.dataSub")}
-        />
+        <div className="glass-strong rounded-3xl p-6 space-y-3 animate-fade-in-up stagger-3">
+          <SectionHeading
+            icon={<Database className="w-4 h-4" />}
+            title={t("settings.data")}
+            sub={t("settings.dataSub")}
+          />
 
-        <ActionRow
-          icon={<Download className="w-4 h-4" />}
-          label={t("settings.exportCsv")}
-          sub={`${t("settings.exportCsvSub")} · ${trades.length} ${t("common.trades")}`}
-          onClick={() => exportTradesCSV(trades)}
-          disabled={trades.length === 0}
-        />
-        <ActionRow
-          icon={<Upload className="w-4 h-4" />}
-          label={t("settings.importCsv")}
-          sub={t("settings.importCsvSub")}
-          onClick={onOpenImport}
-        />
-        <ActionRow
-          icon={<FileText className="w-4 h-4" />}
-          label={t("settings.reports")}
-          sub={t("settings.reportsSub")}
-          onClick={onOpenReports}
-        />
-      </div>
+          <ActionRow
+            icon={<Download className="w-4 h-4" />}
+            label={t("settings.exportCsv")}
+            sub={`${t("settings.exportCsvSub")} · ${trades.length} ${t("common.trades")}`}
+            onClick={() => exportTradesCSV(trades)}
+            disabled={trades.length === 0}
+          />
+          <ActionRow
+            icon={<Upload className="w-4 h-4" />}
+            label={t("settings.importCsv")}
+            sub={t("settings.importCsvSub")}
+            onClick={onOpenImport}
+          />
+          <ActionRow
+            icon={<FileText className="w-4 h-4" />}
+            label={t("settings.reports")}
+            sub={t("settings.reportsSub")}
+            onClick={onOpenReports}
+          />
+        </div>
       )}
 
       {/* Danger zone */}
       {sections.danger && (
-      <div className="glass-strong rounded-3xl p-6 space-y-3 border border-red-500/10 animate-fade-in-up stagger-4">
-        <h2 className="text-sm font-semibold text-red-400/90 uppercase tracking-wider">
-          {t("settings.dangerZone")}
-        </h2>
-        <button
-          onClick={onDeleteAll}
-          disabled={trades.length === 0}
-          className={cn(
-            "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition",
-            trades.length === 0
-              ? "bg-white/[0.02] border-white/[0.05] text-slate-600 cursor-not-allowed"
-              : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15",
-          )}
-        >
-          <span className="text-left">
-            <span className="block text-sm font-medium">{t("profile.deleteAllTrades")}</span>
-            <span className="block text-[10px] opacity-70 mt-0.5">
-              {t("settings.deleteAllSub")}
+        <div className="glass-strong rounded-3xl p-6 space-y-3 border border-red-500/10 animate-fade-in-up stagger-4">
+          <h2 className="text-sm font-semibold text-red-400/90 uppercase tracking-wider">
+            {t("settings.dangerZone")}
+          </h2>
+          <button
+            onClick={onDeleteAll}
+            disabled={trades.length === 0}
+            className={cn(
+              "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition",
+              trades.length === 0
+                ? "bg-white/[0.02] border-white/[0.05] text-slate-600 cursor-not-allowed"
+                : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15",
+            )}
+          >
+            <span className="text-left">
+              <span className="block text-sm font-medium">{t("profile.deleteAllTrades")}</span>
+              <span className="block text-[10px] opacity-70 mt-0.5">
+                {t("settings.deleteAllSub")}
+              </span>
             </span>
-          </span>
-          <Trash2 className="w-4 h-4 shrink-0" />
-        </button>
+            <Trash2 className="w-4 h-4 shrink-0" />
+          </button>
 
-        <button
-          onClick={() => setDeleteOpen(true)}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-xl border bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/20 transition"
-        >
-          <span className="text-left">
-            <span className="block text-sm font-medium">{t("settings.deleteAccount")}</span>
-            <span className="block text-[10px] opacity-70 mt-0.5">
-              {t("settings.deleteAccountSub")}
+          <button
+            onClick={() => setDeleteOpen(true)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/20 transition"
+          >
+            <span className="text-left">
+              <span className="block text-sm font-medium">{t("settings.deleteAccount")}</span>
+              <span className="block text-[10px] opacity-70 mt-0.5">
+                {t("settings.deleteAccountSub")}
+              </span>
             </span>
-          </span>
-          <UserX className="w-4 h-4 shrink-0" />
-        </button>
-      </div>
+            <UserX className="w-4 h-4 shrink-0" />
+          </button>
+        </div>
       )}
 
-      {deleteOpen && <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />}
+      {deleteOpen && (
+        <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />
+      )}
     </div>
   );
 }

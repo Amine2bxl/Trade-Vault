@@ -377,7 +377,9 @@ export default function Dashboard({
             {stats.equityCurve.length > 0 ? (
               <div className="h-56 md:h-80 chart-organic chart-draw">
                 <Suspense
-                  fallback={<div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />}
+                  fallback={
+                    <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
+                  }
                 >
                   <EquityChart data={stats.equityCurve} />
                 </Suspense>

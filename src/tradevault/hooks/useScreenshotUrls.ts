@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { getScreenshotUrls } from '../store';
+import { useEffect, useState } from "react";
+import { getScreenshotUrls } from "../store";
 
 // Module-level cache: signed URLs live 1h, a session rarely needs longer.
 const urlCache = new Map<string, string>();
@@ -19,7 +19,7 @@ export function useScreenshotUrls(paths: string[]): Record<string, string> {
     return initial;
   });
 
-  const key = paths.join('|');
+  const key = paths.join("|");
   useEffect(() => {
     let cancelled = false;
     const missing = paths.filter((p) => !urlCache.has(p));
@@ -30,7 +30,10 @@ export function useScreenshotUrls(paths: string[]): Record<string, string> {
         let changed = false;
         for (const p of paths) {
           const hit = urlCache.get(p);
-          if (hit && next[p] !== hit) { next[p] = hit; changed = true; }
+          if (hit && next[p] !== hit) {
+            next[p] = hit;
+            changed = true;
+          }
         }
         return changed ? next : prev;
       });
@@ -42,8 +45,12 @@ export function useScreenshotUrls(paths: string[]): Record<string, string> {
         for (const [p, u] of Object.entries(resolved)) urlCache.set(p, u);
         setUrls((prev) => ({ ...prev, ...resolved }));
       })
-      .catch(() => { /* transient network failure — placeholders stay */ });
-    return () => { cancelled = true; };
+      .catch(() => {
+        /* transient network failure — placeholders stay */
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
