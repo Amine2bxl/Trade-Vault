@@ -20,7 +20,7 @@ export {
   aiAnalyzeTrade,
   aiDetectPatterns,
   aiGenerateLessons,
-} from "@/lib/ai.functions";
+} from "@/backend/ai.functions";
 
 export { loadMemory, remember, forget } from "./memory";
 export type { MemoryKind, MemoryEntry } from "./memory";
@@ -34,7 +34,7 @@ import {
   aiAnalyzeTrade,
   aiDetectPatterns,
   aiGenerateLessons,
-} from "@/lib/ai.functions";
+} from "@/backend/ai.functions";
 
 export const AI = {
   chat: aiChat,

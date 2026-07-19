@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
 import { Trade } from "../types";
-import { aiChat } from "@/lib/ai.functions";
+import { aiChat } from "@/backend/ai.functions";
 import { buildCoachContext, seedProfileMemory } from "../utils/aiContext";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";

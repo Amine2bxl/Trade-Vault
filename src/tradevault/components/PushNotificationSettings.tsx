@@ -3,7 +3,7 @@ import { Bell, BellOff, Smartphone, AlertCircle, Loader2, Send } from 'lucide-re
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { sendPushToSelf } from '@/lib/push.functions';
+import { sendPushToSelf } from '@/backend/push.functions';
 import { useT } from '../i18n/LanguageContext';
 
 export function PushNotificationSettings() {
