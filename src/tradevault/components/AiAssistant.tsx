@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
 import { Trade } from "../types";
-import { toInsightTradesPayload } from "../utils/tradeCalcs";
-import { askTradingInsight } from "@/lib/ai-insights.functions";
+import { aiChat } from "@/lib/ai.functions";
+import { buildCoachContext, seedProfileMemory } from "../utils/aiContext";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -79,17 +79,37 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
+  // Seed the coach's long-term memory from the onboarding profile the first
+  // time it's opened for this user, so it already "knows" them. Idempotent and
+  // best-effort (see seedProfileMemory) — runs once per signed-in user.
+  const seededRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open || !user?.id || seededRef.current === user.id) return;
+    seededRef.current = user.id;
+    void seedProfileMemory(user.id);
+  }, [open, user?.id]);
+
   const ask = useCallback(
     async (q: string) => {
       const query = q.trim();
       if (!query || loading) return;
+      // Capture the thread BEFORE this turn — it becomes the conversation the
+      // coach sees, giving true multi-turn continuity (the legacy endpoint sent
+      // none). Errors are excluded; they aren't part of the dialogue.
+      const priorTurns = messages
+        .filter((m) => m.role !== "error")
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.text }));
       setMessages((prev) => [...prev, { role: "user", text: query }]);
       setQuestion("");
       setLoading(true);
       try {
-        const res = await askTradingInsight({
-          data: { question: query, trades: toInsightTradesPayload(trades), language: lang },
+        const context = await buildCoachContext({
+          userId: user?.id,
+          trades,
+          conversation: priorTurns,
+          language: lang,
         });
+        const res = await aiChat({ data: { question: query, context } });
         setMessages((prev) => [...prev, { role: "assistant", text: res.answer || t("ai.noResponse") }]);
       } catch (e: any) {
         setMessages((prev) => [
@@ -100,7 +120,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         setLoading(false);
       }
     },
-    [loading, trades, lang, t],
+    [loading, messages, trades, lang, t, user?.id],
   );
 
   // Other pages (e.g. the pre-market Checklist) can open the coach with a

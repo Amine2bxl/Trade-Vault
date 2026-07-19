@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Sparkles, Send, Loader2 } from 'lucide-react';
 import { Trade } from '../types';
-import { toInsightTradesPayload } from '../utils/tradeCalcs';
-import { askTradingInsight } from '@/lib/ai-insights.functions';
+import { aiChat } from '@/lib/ai.functions';
+import { buildCoachContext } from '../utils/aiContext';
 import { cn } from '../utils/cn';
 import { useT } from '../i18n/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import MarkdownAnswer from '../components/MarkdownAnswer';
 
 interface InsightsProps { trades: Trade[]; }
 
 export default function Insights({ trades }: InsightsProps) {
   const { t, lang } = useT();
+  const { user } = useAuth();
   const QUICK_PROMPTS = [
     { label: t('insights.quick.winLoss'), q: 'Analyze my win/loss patterns. What separates my winning trades from my losing ones?' },
     { label: t('insights.quick.days'), q: 'Which days of the week are my best and worst performing? Why?' },
@@ -29,7 +31,8 @@ export default function Insights({ trades }: InsightsProps) {
     setError('');
     setAnswer('');
     try {
-      const res = await askTradingInsight({ data: { question: query, trades: toInsightTradesPayload(trades), language: lang } });
+      const context = await buildCoachContext({ userId: user?.id, trades, language: lang });
+      const res = await aiChat({ data: { question: query, context } });
       setAnswer(res.answer || t('ai.noResponse'));
     } catch (e: any) {
       setError(e?.message || t('ai.genericError'));
