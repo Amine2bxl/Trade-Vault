@@ -45,7 +45,10 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
       />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="auth-orb w-[420px] h-[420px] bg-cyan-600 -top-40 -right-32" />
-        <div className="auth-orb w-[320px] h-[320px] bg-teal-600 bottom-10 -left-32" style={{ animationDelay: "-7s" }} />
+        <div
+          className="auth-orb w-[320px] h-[320px] bg-teal-600 bottom-10 -left-32"
+          style={{ animationDelay: "-7s" }}
+        />
       </div>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 md:px-6 py-10 md:py-16 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)]">
@@ -59,7 +62,9 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
         <header className="mt-6 mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{doc.title}</h1>
           <p className="text-xs text-slate-500 mb-4">{doc.updated}</p>
-          <p className="text-sm md:text-base text-slate-400 leading-relaxed max-w-2xl">{doc.intro}</p>
+          <p className="text-sm md:text-base text-slate-400 leading-relaxed max-w-2xl">
+            {doc.intro}
+          </p>
         </header>
 
         {/* Table of contents */}
@@ -74,7 +79,9 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
                   href={`#sec-${i}`}
                   className="text-sm text-slate-400 hover:text-white transition-colors inline-flex items-baseline gap-2"
                 >
-                  <span className="text-cyan-500/70 tabular-nums text-xs">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="text-cyan-500/70 tabular-nums text-xs">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
                   {b.h}
                 </a>
               </li>
@@ -99,7 +106,10 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
               {b.list && (
                 <ul className="mt-1 space-y-1.5">
                   {b.list.map((li) => (
-                    <li key={li} className="flex items-start gap-2.5 text-sm text-slate-400 leading-relaxed">
+                    <li
+                      key={li}
+                      className="flex items-start gap-2.5 text-sm text-slate-400 leading-relaxed"
+                    >
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-500/60 mt-2 shrink-0" />
                       {li}
                     </li>

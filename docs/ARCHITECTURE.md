@@ -67,6 +67,7 @@ flowchart TB
 ```
 
 ### 1. AI Core (`modules/ai` + `lib/ai.functions.ts`)
+
 - **Services** : `AI.chat`, `AI.generateDailyBrief`, `AI.generateWeeklyReview`,
   `AI.analyzeTrade`, `AI.detectPatterns`, `AI.generateLessons`.
 - **Contexte complet** (`AIUserContext`) : trades, stats précalculées, objectifs,
@@ -79,6 +80,7 @@ flowchart TB
   événements (brief du matin, review hebdo, analyse post-trade).
 
 ### 2. Trade Analysis Engine (`modules/trading/analysis`)
+
 - `analyzeTrade(trade, ctx)` → `TradeAnalysis` : `riskPct`, `rrScore`,
   `setupScore`, `disciplineScore`, `executionScore` (MAE/MFE/slippage),
   score composite 0-100, grade A-F, flags typés.
@@ -86,6 +88,7 @@ flowchart TB
 - L'IA consomme cet objet (elle interprète, ne recalcule jamais).
 
 ### 3. Discipline Engine (`modules/discipline`)
+
 - Source de vérité unique : les règles écrites par le trader
   (`profiles.trading_rules`, évaluées par `checkTradeAgainstRules`).
 - Émet `DISCIPLINE_WARNING` (règle souple), `DISCIPLINE_LIMIT_REACHED`
@@ -94,6 +97,7 @@ flowchart TB
 - Aucune page n'évalue une règle elle-même.
 
 ### 4. Automation Engine (`modules/automation`)
+
 - Pipeline ordonné d'étapes nommées, isolées en erreur :
   `validate(10) → analyze(20) → discipline(30) → [futures étapes]`.
 - `registerStep({name, order, run})` : toute nouvelle automatisation est un
@@ -102,6 +106,7 @@ flowchart TB
   persistance (fire-and-forget, l'optimistic UI n'attend jamais).
 
 ### 5. Notification Engine (`modules/notifications`)
+
 - Entonnoir unique : `NotificationEngine.notify(userId, input)` → canaux
   `toast` / `push` / `dashboard` (persistée) / `ai_message`.
 - Les canaux sont des **adapters injectés** au bootstrap (`configure()`),
@@ -127,6 +132,7 @@ flowchart TB
 ## Flux de données
 
 **Sauvegarde d'un trade**
+
 ```
 UI (optimistic) → upsertTrade (DB) → AutomationEngine.tradeSaved
   → émet TradeCreated/Updated
@@ -136,6 +142,7 @@ UI (optimistic) → upsertTrade (DB) → AutomationEngine.tradeSaved
 ```
 
 **Question au coach IA**
+
 ```
 UI → AI.chat (server fn, auth requise)
   → AIUserContext (trades + stats + règles + mémoire + conversation)
@@ -147,13 +154,13 @@ UI → AI.chat (server fn, auth requise)
 
 100 % additive — aucune table existante modifiée, aucune donnée cassée.
 
-| Table | Rôle | Moteur |
-|---|---|---|
-| `notifications` | inbox dashboard + trace des alertes | Notifications |
-| `ai_memory` | mémoire long terme (profile/fact/lesson/conversation) | AI Core |
-| `ai_reports` | briefs quotidiens, reviews hebdo, analyses (unique par période) | AI Core |
-| `user_preferences` | préférences JSONB extensibles | tous |
-| `habits` | habitudes suivies (streaks) | Discipline/AI |
+| Table              | Rôle                                                            | Moteur        |
+| ------------------ | --------------------------------------------------------------- | ------------- |
+| `notifications`    | inbox dashboard + trace des alertes                             | Notifications |
+| `ai_memory`        | mémoire long terme (profile/fact/lesson/conversation)           | AI Core       |
+| `ai_reports`       | briefs quotidiens, reviews hebdo, analyses (unique par période) | AI Core       |
+| `user_preferences` | préférences JSONB extensibles                                   | tous          |
+| `habits`           | habitudes suivies (streaks)                                     | Discipline/AI |
 
 RLS owner-only sur chaque table (patron identique aux migrations existantes).
 

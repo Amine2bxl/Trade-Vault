@@ -75,9 +75,7 @@ function AppContent() {
   const setTrades = useCallback(
     (updater: Trade[] | ((prev: Trade[]) => Trade[])) => {
       queryClient.setQueryData<Trade[]>(tradesQueryKey(user?.id, activeId), (prev) =>
-        typeof updater === "function"
-          ? (updater as (p: Trade[]) => Trade[])(prev ?? [])
-          : updater,
+        typeof updater === "function" ? (updater as (p: Trade[]) => Trade[])(prev ?? []) : updater,
       );
     },
     [queryClient, user?.id, activeId],

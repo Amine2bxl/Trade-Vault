@@ -33,7 +33,10 @@ Deno.serve(async (req) => {
     const userClient = createClient(url, anon, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: uErr } = await userClient.auth.getUser(token);
+    const {
+      data: { user },
+      error: uErr,
+    } = await userClient.auth.getUser(token);
     if (uErr || !user) return json({ error: "Unauthorized" }, 401);
     const uid = user.id;
 

@@ -15,19 +15,19 @@
 
 ## Ce qui est un contrat en attente (zéro importeur, volontairement)
 
-| Sous-dossier | Rôle | État |
-|---|---|---|
-| `agents/` | Catalogue déclaratif des systèmes IA (coach, performance-analyst, psychologist, risk-manager, pattern-finder) : rôle, persona, outils autorisés. **Blueprints, pas d'implémentation.** | Métadonnées ; `run()` à fournir |
-| `router/` | Routage intention → agent. Le routage explicite est déterministe ; la classification en texte libre est un stub qui lève une erreur claire (elle nécessite un appel modèle). | Partiel (explicite ok) |
-| `tools/` | Contrats des outils que les agents peuvent appeler (`get_stats`, `get_trades`, `search_memory`…). | Types seuls |
-| `jobs/` | Contrats des jobs proactifs (insights, weekly review) — le déclencheur de la rétention. | Types seuls |
-| `rag/` | Contrats de récupération (embeddings) pour ancrer les réponses. | Types seuls |
-| `mcp/` | Contrats d'outils externes (Model Context Protocol). | Types seuls |
+| Sous-dossier | Rôle                                                                                                                                                                                   | État                            |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `agents/`    | Catalogue déclaratif des systèmes IA (coach, performance-analyst, psychologist, risk-manager, pattern-finder) : rôle, persona, outils autorisés. **Blueprints, pas d'implémentation.** | Métadonnées ; `run()` à fournir |
+| `router/`    | Routage intention → agent. Le routage explicite est déterministe ; la classification en texte libre est un stub qui lève une erreur claire (elle nécessite un appel modèle).           | Partiel (explicite ok)          |
+| `tools/`     | Contrats des outils que les agents peuvent appeler (`get_stats`, `get_trades`, `search_memory`…).                                                                                      | Types seuls                     |
+| `jobs/`      | Contrats des jobs proactifs (insights, weekly review) — le déclencheur de la rétention.                                                                                                | Types seuls                     |
+| `rag/`       | Contrats de récupération (embeddings) pour ancrer les réponses.                                                                                                                        | Types seuls                     |
+| `mcp/`       | Contrats d'outils externes (Model Context Protocol).                                                                                                                                   | Types seuls                     |
 
 ## Règle d'or (rappel de la charte)
 
 Les **moteurs restent purs** : ici, aucune logique IA exécutée, aucun IO. L'IA
-*interprète* les scores produits par les moteurs (`modules/trading/analysis`,
+_interprète_ les scores produits par les moteurs (`modules/trading/analysis`,
 `modules/discipline`), elle ne les recalcule jamais. Implémenter un système =
 fournir un `run()` pour son blueprint et l'enregistrer via `agents/registry.ts`,
 **sans éditer** les contrats existants (extension par plug-in).

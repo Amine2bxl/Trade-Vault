@@ -23,8 +23,14 @@ export default function ErrorScreen({
           "radial-gradient(1000px 700px at 80% -10%, rgba(34,211,238,.08), transparent 60%), linear-gradient(160deg,#05070a 0%,#0a0f1e 55%,#05080c 100%)",
       }}
     >
-      <div className="auth-orb w-[460px] h-[460px] bg-cyan-600 -top-40 -left-36" style={{ animationDelay: "0s" }} />
-      <div className="auth-orb w-[380px] h-[380px] bg-teal-600 -bottom-36 -right-32" style={{ animationDelay: "-6s" }} />
+      <div
+        className="auth-orb w-[460px] h-[460px] bg-cyan-600 -top-40 -left-36"
+        style={{ animationDelay: "0s" }}
+      />
+      <div
+        className="auth-orb w-[380px] h-[380px] bg-teal-600 -bottom-36 -right-32"
+        style={{ animationDelay: "-6s" }}
+      />
 
       <div className="relative z-10 text-center max-w-lg w-full animate-fade-in-up">
         <div className="flex items-center justify-center gap-2 mb-8 opacity-85">

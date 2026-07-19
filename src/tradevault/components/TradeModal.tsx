@@ -535,7 +535,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 }}
                 className="flex-1 bg-transparent text-sm text-white focus:outline-none"
               />
-              <span className="text-xs text-slate-600">→ ${riskDollar.toFixed(2)} {t("dashboard.riskSuffix")}</span>
+              <span className="text-xs text-slate-600">
+                → ${riskDollar.toFixed(2)} {t("dashboard.riskSuffix")}
+              </span>
             </div>
           )}
 

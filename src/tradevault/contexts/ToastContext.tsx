@@ -1,11 +1,17 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
-import { cn } from '../utils/cn';
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { CheckCircle2, XCircle, Info, X } from "lucide-react";
+import { cn } from "../utils/cn";
 
-type ToastType = 'success' | 'error' | 'info';
-interface ToastItem { id: number; message: string; type: ToastType }
+type ToastType = "success" | "error" | "info";
+interface ToastItem {
+  id: number;
+  message: string;
+  type: ToastType;
+}
 
-interface Ctx { toast: (message: string, type?: ToastType) => void }
+interface Ctx {
+  toast: (message: string, type?: ToastType) => void;
+}
 const ToastCtx = createContext<Ctx | null>(null);
 
 const ICONS: Record<ToastType, ReactNode> = {
@@ -14,9 +20,9 @@ const ICONS: Record<ToastType, ReactNode> = {
   info: <Info className="w-4 h-4 text-cyan-400 shrink-0" />,
 };
 const ACCENT: Record<ToastType, string> = {
-  success: 'border-emerald-500/20 shadow-emerald-500/10',
-  error: 'border-red-500/20 shadow-red-500/10',
-  info: 'border-cyan-500/20 shadow-cyan-500/10',
+  success: "border-emerald-500/20 shadow-emerald-500/10",
+  error: "border-red-500/20 shadow-red-500/10",
+  info: "border-cyan-500/20 shadow-cyan-500/10",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -27,11 +33,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const toast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = nextId.current++;
-    setItems((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => remove(id), 4000);
-  }, [remove]);
+  const toast = useCallback(
+    (message: string, type: ToastType = "info") => {
+      const id = nextId.current++;
+      setItems((prev) => [...prev, { id, message, type }]);
+      setTimeout(() => remove(id), 4000);
+    },
+    [remove],
+  );
 
   return (
     <ToastCtx.Provider value={{ toast }}>
@@ -42,13 +51,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             role="status"
             className={cn(
-              'pointer-events-auto flex items-center gap-2.5 max-w-sm w-full md:w-auto glass-strong rounded-2xl px-4 py-3 shadow-2xl border animate-slide-up',
-              ACCENT[t.type]
+              "pointer-events-auto flex items-center gap-2.5 max-w-sm w-full md:w-auto glass-strong rounded-2xl px-4 py-3 shadow-2xl border animate-slide-up",
+              ACCENT[t.type],
             )}
           >
             {ICONS[t.type]}
             <span className="text-sm text-slate-200 flex-1">{t.message}</span>
-            <button onClick={() => remove(t.id)} className="text-slate-500 hover:text-white transition-colors shrink-0">
+            <button
+              onClick={() => remove(t.id)}
+              className="text-slate-500 hover:text-white transition-colors shrink-0"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -60,6 +72,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export function useToast() {
   const ctx = useContext(ToastCtx);
-  if (!ctx) throw new Error('useToast must be used within ToastProvider');
+  if (!ctx) throw new Error("useToast must be used within ToastProvider");
   return ctx;
 }
