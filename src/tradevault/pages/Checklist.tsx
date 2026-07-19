@@ -16,9 +16,22 @@ import {
   templatesFor,
   ranksFor,
   coachPromptsFor,
-  localTimeZone,
 } from "./checklistDefaults";
 import "./checklist.css";
+
+import { type Tone, TONES, LINES } from "./checklist/voice";
+import {
+  FOMO_ICONS,
+  FOMO_CLASSES,
+  pad,
+  getTimeInZone,
+  parseTimeToMinutes,
+  isWindowOpen,
+  getTimeZoneOptions,
+  dayOfYear,
+  todayKey,
+  hydrateConfig,
+} from "./checklist/helpers";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -45,167 +58,6 @@ const emptyDay = (n: number): DayState => ({
   notes: "",
   t0: Date.now(),
 });
-
-/* ══ Voice lines (JARVIS) ══ */
-type Tone = "calm" | "firm" | "alert";
-// Deeper, more measured delivery = a more premium, composed JARVIS.
-const TONES: Record<Tone, { rate: number; pitch: number }> = {
-  calm: { rate: 0.9, pitch: 0.88 },
-  firm: { rate: 0.96, pitch: 0.84 },
-  alert: { rate: 1.04, pitch: 0.8 },
-};
-const LINES: Record<string, { tone: Tone; fr: string[]; en: string[] }> = {
-  activate: {
-    tone: "calm",
-    fr: [
-      "%G. Systèmes en ligne. Mon protocole est actif.",
-      "%G. Tout est nominal. Je surveille.",
-      "Systèmes en ligne. Personne ne trade sans mon accord.",
-    ],
-    en: [
-      "%G, sir. Systems online. My protocol is active.",
-      "%G. All nominal. I am watching.",
-      "Systems online. Nobody trades without my clearance.",
-    ],
-  },
-  checkDone: {
-    tone: "firm",
-    fr: ["Checklist complète. Validé.", "Tout est coché. C'est propre."],
-    en: ["Checklist complete. Confirmed.", "All boxes ticked. Clean."],
-  },
-  discipline: {
-    tone: "calm",
-    fr: [
-      "Tout est vert. Discipline vérifiée.",
-      "Vérification terminée. Tu es prêt.",
-      "Paramètres alignés. Je t'autorise à continuer.",
-    ],
-    en: [
-      "All green. Discipline verified.",
-      "Verification done. You are ready.",
-      "Parameters aligned. You may proceed.",
-    ],
-  },
-  initiate: {
-    tone: "firm",
-    fr: ["Séquence de verrouillage lancée.", "Verrouillage. Dernière vérification."],
-    en: ["Locking sequence engaged.", "Locking. Final check."],
-  },
-  lock: {
-    tone: "firm",
-    fr: [
-      "Edge confirmé. Exécution mécanique. Rien d'autre.",
-      "Edge verrouillé. Le plan décide. Pas toi.",
-    ],
-    en: [
-      "Edge confirmed. Mechanical execution. Nothing else.",
-      "Edge locked. The plan decides. Not you.",
-    ],
-  },
-  interference: {
-    tone: "alert",
-    fr: [
-      "Interférence émotionnelle. Ferme ce chart.",
-      "Non. C'est exactement comme ça qu'on détruit un compte.",
-      "Tes émotions veulent trader. Refusé.",
-    ],
-    en: [
-      "Emotional interference. Close the chart.",
-      "No. This is exactly how accounts die.",
-      "Your emotions want to trade. Denied.",
-    ],
-  },
-  patience: {
-    tone: "calm",
-    fr: ["Protocole patience amélioré. Mode sniper.", "Bonne rétention. Mon edge travaille."],
-    en: ["Patience protocol upgraded. Sniper mode.", "Good restraint. My edge is working."],
-  },
-  editor: {
-    tone: "firm",
-    fr: ["Mode éditeur activé.", "Accès configuration accordé."],
-    en: ["Editor mode engaged.", "Configuration access granted."],
-  },
-};
-
-const FOMO_ICONS = ["◎", "◈", "◉", "⬤"];
-const FOMO_CLASSES = ["s-calm", "s-focus", "s-imp", "s-fomo"];
-
-/* ══ Helpers ══ */
-const pad = (n: number) => String(n).padStart(2, "0");
-
-function getTimeInZone(date: Date, timeZone: string) {
-  try {
-    const fmt = new Intl.DateTimeFormat("en-CA", {
-      hour12: false,
-      timeZone,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    const map: Record<string, string> = {};
-    fmt.formatToParts(date).forEach((p) => {
-      map[p.type] = p.value;
-    });
-    return { hour: +map.hour, minute: +map.minute };
-  } catch {
-    const d = new Date(date.toLocaleString("en-US", { timeZone }));
-    return { hour: d.getHours(), minute: d.getMinutes() };
-  }
-}
-function parseTimeToMinutes(v: string) {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(v || "");
-  return m ? +m[1] * 60 + +m[2] : 0;
-}
-function isWindowOpen(cfg: ChkConfig, date = new Date()) {
-  const parts = getTimeInZone(date, cfg.timeZone);
-  return parts.hour * 60 + parts.minute >= parseTimeToMinutes(cfg.startTime);
-}
-function getTimeZoneOptions(): string[] {
-  let zones: string[] = [];
-  try {
-    const intl = Intl as unknown as { supportedValuesOf?: (k: string) => string[] };
-    if (typeof intl.supportedValuesOf === "function") zones = intl.supportedValuesOf("timeZone");
-  } catch {
-    /* fall through */
-  }
-  if (!zones.length) {
-    zones = [
-      "UTC",
-      "Europe/Paris",
-      "Europe/London",
-      "America/New_York",
-      "America/Los_Angeles",
-      "Asia/Tokyo",
-      "Asia/Dubai",
-      "Australia/Sydney",
-    ];
-  }
-  const local = localTimeZone();
-  if (!zones.includes(local)) zones.unshift(local);
-  return [...new Set(zones)].sort();
-}
-function dayOfYear() {
-  const d = new Date();
-  const s = new Date(d.getFullYear(), 0, 0);
-  return Math.floor((d.getTime() - s.getTime()) / 864e5);
-}
-const todayKey = () => new Date().toISOString().slice(0, 10);
-
-/* Merge stored config with defaults so new fields never break old saves */
-function hydrateConfig(raw: string | null, lang: string): ChkConfig {
-  const def = defaultConfigFor(lang);
-  if (!raw) return def;
-  try {
-    const p = JSON.parse(raw) as Partial<ChkConfig>;
-    return {
-      ...def,
-      ...p,
-      fomo: Array.isArray(p.fomo) && p.fomo.length === 4 ? p.fomo : def.fomo,
-    };
-  } catch {
-    return def;
-  }
-}
 
 /* Editable span — commits its text on blur (used by inline edit mode) */
 function Ed({
