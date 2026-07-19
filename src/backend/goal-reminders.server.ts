@@ -27,7 +27,7 @@ function monthIndex(startedAt: string, horizon: number, now: Date): number {
   return Math.max(0, Math.min(horizon - 1, months));
 }
 
-/** Mirror of tasksForMonth's count (src/tradevault/utils/goalPlan.ts):
+/** Mirror of tasksForMonth's count (src/app/utils/goalPlan.ts):
  *  2 tasks per measured goal, 1 per custom goal, +1 generic. */
 function expectedTaskCount(goals: GoalRow[]): number {
   let n = 1; // generic

@@ -1,4 +1,4 @@
-import type { Trade } from "@/tradevault/types";
+import type { Trade } from "@/app/types";
 import type { TradeAnalysis } from "@/modules/trading/analysis";
 import type { DisciplineViolation, TradingRule } from "@/modules/discipline";
 

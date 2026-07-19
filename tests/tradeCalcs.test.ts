@@ -4,8 +4,8 @@ import {
   formatPnl,
   formatPct,
   getDuration,
-} from "../src/tradevault/utils/tradeCalcs";
-import type { Trade } from "../src/tradevault/types";
+} from "../src/app/utils/tradeCalcs";
+import type { Trade } from "../src/app/types";
 
 function mkTrade(over: Partial<Trade>): Trade {
   return {

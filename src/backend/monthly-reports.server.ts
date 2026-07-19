@@ -1,11 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Trade } from "@/tradevault/types";
+import type { Trade } from "@/app/types";
 import {
   buildMonthlyReport,
   monthRange,
   prevMonthOf,
   type MonthlyReportData,
-} from "@/tradevault/utils/monthlyReport";
+} from "@/app/utils/monthlyReport";
 import { sendWebPush, type PushSubRow } from "./push-crypto.server";
 
 // Monthly report generation core — used by the Vercel cron (service role,

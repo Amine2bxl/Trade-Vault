@@ -1,4 +1,4 @@
-import type { Trade } from "@/tradevault/types";
+import type { Trade } from "@/app/types";
 import type { AnalysisContext, AnalysisFlag, AnalysisGrade, TradeAnalysis } from "./types";
 
 /**

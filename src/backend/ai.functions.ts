@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireProAccess } from "@/backend/require-pro";
-import { resolveProvider, type AIMessage } from "@/modules/core/ai-provider";
+import { resolveProvider, type AIMessage } from "@/modules/ai-provider";
 import { contextBlocks, languageName } from "@/modules/ai/context";
 
 /**
@@ -11,7 +11,7 @@ import { contextBlocks, languageName } from "@/modules/ai/context";
  *   validated context → grounded prompt → resolveProvider().complete()
  *
  * No vendor names anywhere below this comment: swapping models is an
- * env-var change (see modules/core/ai-provider).
+ * env-var change (see modules/ai-provider).
  */
 
 // ── Shared schemas ───────────────────────────────────────────────────────────
