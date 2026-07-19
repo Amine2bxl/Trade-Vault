@@ -1,4 +1,4 @@
-import { db } from "@/modules/core/db";
+import { supabase } from "@/integrations/supabase/client";
 import { generateId } from "@/tradevault/store";
 
 /**
@@ -26,7 +26,7 @@ export async function loadMemory(
   kinds: MemoryKind[] = ["profile", "fact", "lesson"],
   limit = 40,
 ): Promise<MemoryEntry[]> {
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("ai_memory")
     .select("id, kind, content, created_at")
     .eq("user_id", userId)
@@ -34,7 +34,7 @@ export async function loadMemory(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []).map((r: Record<string, string>) => ({
+  return (data ?? []).map((r) => ({
     id: r.id,
     kind: r.kind as MemoryKind,
     content: r.content,
@@ -43,7 +43,7 @@ export async function loadMemory(
 }
 
 export async function remember(userId: string, kind: MemoryKind, content: string): Promise<void> {
-  const { error } = await db.from("ai_memory").insert({
+  const { error } = await supabase.from("ai_memory").insert({
     id: generateId(),
     user_id: userId,
     kind,
@@ -53,6 +53,6 @@ export async function remember(userId: string, kind: MemoryKind, content: string
 }
 
 export async function forget(userId: string, id: string): Promise<void> {
-  const { error } = await db.from("ai_memory").delete().eq("id", id).eq("user_id", userId);
+  const { error } = await supabase.from("ai_memory").delete().eq("id", id).eq("user_id", userId);
   if (error) throw error;
 }
