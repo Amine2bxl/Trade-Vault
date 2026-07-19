@@ -1,5 +1,5 @@
-import { generateId } from "@/tradevault/store";
-import { events } from "@/modules/core/events";
+import { generateId } from "@/app/store";
+import { events } from "@/modules/events";
 import type { AppNotification, NotificationAdapters, NotificationInput } from "./types";
 
 /**

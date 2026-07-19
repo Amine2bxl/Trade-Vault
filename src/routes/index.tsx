@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
-import App from "@/tradevault/App";
+import App from "@/app/App";
 
 const SEO_TITLE = "TradeVault — The Data-Driven Trading Journal";
 const SEO_DESCRIPTION =

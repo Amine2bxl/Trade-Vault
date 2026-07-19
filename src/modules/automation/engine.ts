@@ -1,4 +1,4 @@
-import { events } from "@/modules/core/events";
+import { events } from "@/modules/events";
 import { analyzeTrade } from "@/modules/trading/analysis";
 import { DisciplineEngine } from "@/modules/discipline";
 import type { AutomationContext, AutomationStep } from "./types";

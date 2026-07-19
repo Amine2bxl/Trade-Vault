@@ -1,7 +1,7 @@
-import type { Trade } from "@/tradevault/types";
-import { checkTradeAgainstRules } from "@/tradevault/utils/tradingRules";
+import type { Trade } from "@/app/types";
+import { checkTradeAgainstRules } from "@/app/utils/tradingRules";
 // (Trade import used in public method signatures below.)
-import { events } from "@/modules/core/events";
+import { events } from "@/modules/events";
 import type { DisciplineContext, DisciplineSummary, DisciplineViolation } from "./types";
 
 /**

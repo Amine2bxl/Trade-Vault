@@ -7,8 +7,8 @@ import {
   statsByHour,
   dayHourMatrix,
   winRateOf,
-} from "../src/tradevault/utils/quantStats";
-import type { Trade } from "../src/tradevault/types";
+} from "../src/app/utils/quantStats";
+import type { Trade } from "../src/app/types";
 
 function mkTrade(over: Partial<Trade>): Trade {
   return {
