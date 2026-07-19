@@ -1,4 +1,4 @@
-import { db } from "@/modules/core/db";
+import { supabase } from "@/integrations/supabase/client";
 import type { AppNotification } from "./types";
 
 /**
@@ -8,7 +8,7 @@ import type { AppNotification } from "./types";
  */
 
 export async function persistNotification(n: AppNotification): Promise<void> {
-  const { error } = await db.from("notifications").insert({
+  const { error } = await supabase.from("notifications").insert({
     id: n.id,
     user_id: n.userId,
     kind: n.kind,
@@ -24,7 +24,7 @@ export async function persistNotification(n: AppNotification): Promise<void> {
 }
 
 export async function loadNotifications(userId: string, limit = 50): Promise<AppNotification[]> {
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("notifications")
     .select("*")
     .eq("user_id", userId)
@@ -34,11 +34,11 @@ export async function loadNotifications(userId: string, limit = 50): Promise<App
   return (data ?? []).map((r) => ({
     id: r.id,
     userId: r.user_id,
-    kind: r.kind,
+    kind: r.kind as AppNotification["kind"],
     title: r.title,
     body: r.body,
     url: r.url ?? undefined,
-    severity: r.severity,
+    severity: r.severity as AppNotification["severity"],
     channels: ["dashboard"],
     createdAt: r.created_at,
     readAt: r.read_at,
@@ -47,7 +47,7 @@ export async function loadNotifications(userId: string, limit = 50): Promise<App
 }
 
 export async function markNotificationRead(userId: string, id: string): Promise<void> {
-  const { error } = await db
+  const { error } = await supabase
     .from("notifications")
     .update({ read_at: new Date().toISOString() })
     .eq("id", id)
