@@ -44,3 +44,37 @@ export const AI = {
   detectPatterns: aiDetectPatterns,
   generateLessons: aiGenerateLessons,
 } as const;
+
+// ── AI Operating System foundation ───────────────────────────────────────────
+// Contracts + registries only — NO agent, tool, retriever, or job is
+// implemented yet. See docs/AI-ARCHITECTURE.md for the design and data flows.
+export { AGENT_CATALOG, AGENT_IDS } from "./agents/catalog";
+export { registerAgent, getAgent, listReadyAgents, isAgentReady } from "./agents/registry";
+export type {
+  AgentId,
+  AgentBlueprint,
+  AgentDefinition,
+  AgentRequest,
+  AgentResult,
+} from "./agents/types";
+
+export { registerTool, getTool, toolManifest } from "./tools/types";
+export type { ToolDefinition, ToolCall, ToolResult, ToolContext, ToolName } from "./tools/types";
+
+export { defaultRouter } from "./router/router";
+export { INTENT_AGENT } from "./router/types";
+export type { AIRouter, AiIntent, RoutingRequest, RoutingDecision } from "./router/types";
+
+export type {
+  EmbeddingProvider,
+  Retriever,
+  RagDocument,
+  RetrievedChunk,
+  EmbeddingSource,
+} from "./rag/types";
+
+export { registerJobHandler, getJobHandler } from "./jobs/types";
+export type { AiJob, JobKind, JobStatus, JobHandler, JobQueue } from "./jobs/types";
+
+export type { McpClientAdapter, McpServerExposer, McpServerConfig } from "./mcp/types";
+export type { AgentRun, TelemetryRecorder } from "./telemetry";
