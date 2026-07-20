@@ -29,6 +29,7 @@ import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
+import { Modal } from "@/shared/ui";
 import {
   tradeDraftKey,
   readJSON,
@@ -346,9 +347,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative glass-strong rounded-t-3xl md:rounded-3xl w-full md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50">
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
+      >
         {/* Dynamic accent: green when the entry is a gain, red when a loss */}
         <div
           className={cn(
@@ -985,7 +989,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             {trade ? t("trade.updateTrade") : t("trade.saveTrade")}
           </button>
         </div>
-      </div>
+      </Modal>
 
       {lightboxIndex !== null && (
         <Lightbox
@@ -995,6 +999,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           onIndexChange={setLightboxIndex}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -13,6 +13,7 @@ import { MissedOpportunity } from "../types";
 import { cn } from "../utils/cn";
 import { ScreenshotsView } from "../pages/MissedOpportunities";
 import { useT } from "../i18n/LanguageContext";
+import { Modal } from "@/shared/ui";
 
 interface MissedSetupDetailModalProps {
   missed: MissedOpportunity;
@@ -133,9 +134,12 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-      <div className="relative glass-strong rounded-t-3xl md:rounded-3xl max-w-2xl w-full max-h-[94vh] md:max-h-[88vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50 flex flex-col">
+    <Modal
+      open
+      onClose={onClose}
+      backdropClassName="bg-black/70 backdrop-blur-md"
+      className="max-w-2xl max-h-[94vh] md:max-h-[88vh] overflow-hidden flex flex-col"
+    >
         <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mt-2 md:hidden shrink-0" />
 
         {/* Header */}
@@ -230,7 +234,6 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
