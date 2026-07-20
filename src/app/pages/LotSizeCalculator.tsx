@@ -5,6 +5,7 @@ import { loadAccountBalance, saveAccountBalance } from "../store";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
+import { FIELD_BASE } from "@/shared/ui";
 
 interface LotSizeCalculatorProps {
   onAddTrade: () => void;
@@ -112,8 +113,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
     }
   };
 
-  const inputClass =
-    "w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all";
+  const inputClass = cn(FIELD_BASE, "h-11");
   const labelClass =
     "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
   const hasResult =

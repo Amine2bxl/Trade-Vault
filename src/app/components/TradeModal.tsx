@@ -29,7 +29,7 @@ import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
-import { Modal } from "@/shared/ui";
+import { Modal, FIELD_BASE } from "@/shared/ui";
 import {
   tradeDraftKey,
   readJSON,
@@ -337,8 +337,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // single control height (h-11 / 44px touch target) so text, number, date, time
   // and select inputs line up pixel-perfect across every row; `textareaClass`
   // reuses the same skin but stays auto-height for multiline notes.
-  const fieldBase =
-    "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all";
+  const fieldBase = FIELD_BASE;
   // Mobile: compact 36px controls so every top field matches the confluence
   // chip height (equal, symmetric bubbles). Desktop keeps the roomier 44px.
   const inputClass = cn(fieldBase, "h-9 sm:h-11 text-xs sm:text-sm");
