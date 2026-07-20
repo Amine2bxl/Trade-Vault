@@ -29,6 +29,7 @@ import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
+import { Modal, FIELD_BASE } from "@/shared/ui";
 import {
   tradeDraftKey,
   readJSON,
@@ -336,8 +337,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // single control height (h-11 / 44px touch target) so text, number, date, time
   // and select inputs line up pixel-perfect across every row; `textareaClass`
   // reuses the same skin but stays auto-height for multiline notes.
-  const fieldBase =
-    "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all";
+  const fieldBase = FIELD_BASE;
   // Mobile: compact 36px controls so every top field matches the confluence
   // chip height (equal, symmetric bubbles). Desktop keeps the roomier 44px.
   const inputClass = cn(fieldBase, "h-9 sm:h-11 text-xs sm:text-sm");
@@ -346,9 +346,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative glass-strong rounded-t-3xl md:rounded-3xl w-full md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50">
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
+      >
         {/* Dynamic accent: green when the entry is a gain, red when a loss */}
         <div
           className={cn(
@@ -985,7 +988,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             {trade ? t("trade.updateTrade") : t("trade.saveTrade")}
           </button>
         </div>
-      </div>
+      </Modal>
 
       {lightboxIndex !== null && (
         <Lightbox
@@ -995,6 +998,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           onIndexChange={setLightboxIndex}
         />
       )}
-    </div>
+    </>
   );
 }

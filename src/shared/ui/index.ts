@@ -13,6 +13,10 @@
 
 export { cn } from "./cn";
 
+// Design tokens — the centralized landing theme (typography, color, surface,
+// motion). The single reference every primitive and future screen builds on.
+export { tokens, font, color, accentVar, surface, radius, motion } from "./tokens";
+
 export { Display, Heading, Text, Label } from "./Typography";
 
 export { Button } from "./Button";
