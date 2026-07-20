@@ -25,6 +25,8 @@ export interface AIUserContext {
   stats?: Record<string, number | string | null>;
   /** Active goals and their progress. */
   goals?: { kind: string; target: number; current: number }[];
+  /** Recurring mistakes with how often they occur and their net cost. */
+  mistakes?: { name: string; count: number; totalPnl: number }[];
   /** The trader's own written rules. */
   rules?: { kind: string; text: string; enabled: boolean }[];
   /** Long-term memory entries (profile facts, recurring lessons). */
@@ -75,6 +77,13 @@ export function contextBlocks(ctx: AIUserContext): string {
     blocks.push(
       `ACTIVE GOALS:\n${ctx.goals
         .map((g) => `- ${g.kind}: ${g.current} → target ${g.target}`)
+        .join("\n")}`,
+    );
+  }
+  if (ctx.mistakes?.length) {
+    blocks.push(
+      `RECURRING MISTAKES (name · times · net P&L — trust these numbers):\n${ctx.mistakes
+        .map((m) => `- ${m.name}: ${m.count}×, net ${m.totalPnl}`)
         .join("\n")}`,
     );
   }

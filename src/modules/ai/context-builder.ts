@@ -15,6 +15,7 @@ import {
 export const CONTEXT_CAPS = {
   trades: 500,
   goals: 10,
+  mistakes: 40,
   rules: 30,
   memory: 60,
   memoryContent: 2000,
@@ -23,6 +24,7 @@ export const CONTEXT_CAPS = {
 } as const;
 
 type Goal = NonNullable<AIUserContext["goals"]>[number];
+type Mistake = NonNullable<AIUserContext["mistakes"]>[number];
 type Rule = NonNullable<AIUserContext["rules"]>[number];
 type Memory = NonNullable<AIUserContext["memory"]>[number];
 type Turn = NonNullable<AIUserContext["conversation"]>[number];
@@ -42,6 +44,11 @@ export class ContextBuilder {
 
   withGoals(goals: Goal[]): this {
     this.ctx.goals = goals.slice(0, CONTEXT_CAPS.goals);
+    return this;
+  }
+
+  withMistakes(mistakes: Mistake[]): this {
+    this.ctx.mistakes = mistakes.slice(0, CONTEXT_CAPS.mistakes);
     return this;
   }
 
