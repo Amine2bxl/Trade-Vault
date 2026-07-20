@@ -4,6 +4,18 @@ Source unique des primitives visuelles de TradeVault. Chaque primitive
 **enveloppe les styles/tokens déjà utilisés** dans le produit → adoption
 **drop-in, sans régression ni changement de rendu**.
 
+> **L'âme & le squelette du projet.** Ce dossier centralise le **thème de la
+> landing** — polices **Manrope/Sora**, accents **cyan/teal**, surfaces **glass /
+> deep-navy `#060d16`**, langage d'animation (easing `cubic-bezier(0.16,1,0.3,1)`,
+> `animate-slide-up/-in/-fade-in-up`). C'est la **base unique** : toute nouvelle UI
+> se construit sur `tokens.ts` + ces primitives, jamais sur des valeurs brutes.
+> Les tokens **pointent** vers le CSS de `src/styles.css` (variables + classes) —
+> ils ne redéfinissent rien, donc aucun changement de rendu.
+>
+> **Règle** : une nouvelle vue n'utilise que `tokens` (`font`, `color`, `surface`,
+> `motion`) + les primitives ci-dessous. Pas de police, couleur, ombre ou
+> animation ad-hoc — on étend le système, on ne le contourne pas.
+
 > **Invariant** : `shared/ui` n'importe **jamais** `app/`. Ce sont des primitives
 > feuilles → le sens des dépendances (`app → shared`) est préservé. Le serveur
 > (`server.ts`) n'importe pas ce dossier.
