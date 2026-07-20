@@ -1,32 +1,59 @@
 /**
- * Default AI Router (foundation).
+ * AI Router — resolves a request to a routing decision (which agent, which
+ * model hint, whether to retrieve). Explicit intents route deterministically
+ * via INTENT_AGENT (config); free-text is handed to an optional, injectable
+ * classifier, falling back to a default intent when none is provided.
  *
- * - Explicit intents route deterministically via INTENT_AGENT (config).
- * - Free-text classification is intentionally NOT implemented yet: it needs a
- *   model call, which is an AI feature. The stub throws a clear error so the
- *   wiring is obvious when someone implements it.
- *
- * The orchestration loop (retrieve → agent.run → execute tool calls → loop)
- * is described in docs/AI-ARCHITECTURE.md and lives in the runtime, not here.
+ * The classifier is a seam, not a hardcoded model call, so intent inference can
+ * be added/swapped without touching the router. No agent is executed here —
+ * routing only. Business agents are supplied elsewhere.
  */
-import type { AIRouter, RoutingDecision, RoutingRequest } from "./types";
+import type { AgentId } from "../agents/types";
+import type { AIRouter, AiIntent, RoutingDecision, RoutingRequest } from "./types";
 import { INTENT_AGENT } from "./types";
 
-export const defaultRouter: AIRouter = {
-  async route(req: RoutingRequest): Promise<RoutingDecision> {
-    if (req.intent) {
-      const agent = INTENT_AGENT[req.intent];
-      return {
-        agent,
-        intent: req.intent,
-        useRetrieval: req.intent === "chat" || req.intent === "psychology_check",
-        reason: "explicit-intent",
-      };
-    }
-    // Foundation: no free-text intent classification yet.
-    throw new Error(
-      "AIRouter: free-text intent classification is not implemented yet. " +
-        "Pass an explicit `intent` for now.",
-    );
-  },
-};
+/** Intents that benefit from RAG retrieval before the agent runs. */
+const RETRIEVAL_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(["chat", "psychology_check"]);
+
+export interface RouterOptions {
+  /** Optional free-text → intent classifier (e.g. a small model call). */
+  classify?: (req: RoutingRequest) => Promise<AiIntent | undefined>;
+  /** Used when no explicit intent and the classifier is absent/undecided. */
+  fallbackIntent?: AiIntent;
+  /** Optional per-intent model hint the provider layer MAY honor. */
+  selectModel?: (intent: AiIntent, req: RoutingRequest) => string | undefined;
+}
+
+function decide(
+  intent: AiIntent,
+  req: RoutingRequest,
+  opts: RouterOptions,
+  reason: string,
+): RoutingDecision {
+  const agent: AgentId = INTENT_AGENT[intent];
+  return {
+    agent,
+    intent,
+    useRetrieval: RETRIEVAL_INTENTS.has(intent),
+    ...(opts.selectModel && { model: opts.selectModel(intent, req) }),
+    reason,
+  };
+}
+
+/** Build a router with the given policy. */
+export function createRouter(opts: RouterOptions = {}): AIRouter {
+  const fallback = opts.fallbackIntent ?? "chat";
+  return {
+    async route(req: RoutingRequest): Promise<RoutingDecision> {
+      if (req.intent) return decide(req.intent, req, opts, "explicit-intent");
+      if (opts.classify) {
+        const inferred = await opts.classify(req);
+        if (inferred) return decide(inferred, req, opts, "classified");
+      }
+      return decide(fallback, req, opts, "fallback");
+    },
+  };
+}
+
+/** Default router: deterministic on explicit intent, falls back to `chat`. */
+export const defaultRouter: AIRouter = createRouter();
