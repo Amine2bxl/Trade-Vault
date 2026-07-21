@@ -36,6 +36,15 @@ const CoachAsk = z.object({
     .array(z.object({ kind: z.string().max(40), target: z.number(), current: z.number() }))
     .max(10)
     .optional(),
+  rules: z
+    .array(z.object({ kind: z.string().max(40), text: z.string().max(300), enabled: z.boolean() }))
+    .max(30)
+    .optional(),
+  memory: z
+    .array(z.object({ kind: z.string().max(40), content: z.string().max(2000) }))
+    .max(60)
+    .optional(),
+  behavior: z.array(z.string().max(300)).max(16).optional(),
   conversation: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
     .max(20)

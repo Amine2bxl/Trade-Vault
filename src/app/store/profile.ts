@@ -99,6 +99,8 @@ export async function saveLanguage(userId: string, language: string): Promise<vo
 
 // ── Onboarding (stored on profile) ──
 export interface OnboardingData {
+  /** prop | real | learning — the trader's current situation (onboarding V2). */
+  situation?: string | null;
   goal: string | null;
   assets: string[];
   style: string | null;
@@ -113,6 +115,7 @@ export interface OnboardingData {
 }
 
 const EMPTY_ONBOARDING: OnboardingData = {
+  situation: null,
   goal: null,
   assets: [],
   style: null,
@@ -126,6 +129,7 @@ const EMPTY_ONBOARDING: OnboardingData = {
 };
 
 interface OnboardingRow {
+  onboarding_situation: string | null;
   onboarding_goal: string | null;
   onboarding_assets: string[] | null;
   onboarding_style: string | null;
@@ -142,7 +146,7 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "onboarding_goal, onboarding_assets, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_brokers, onboarding_pain, onboarding_monthly_target, onboarded_at, onboarding_skipped",
+      "onboarding_situation, onboarding_goal, onboarding_assets, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_brokers, onboarding_pain, onboarding_monthly_target, onboarded_at, onboarding_skipped",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -150,6 +154,7 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
   if (!data) return { ...EMPTY_ONBOARDING };
   const r = data as OnboardingRow;
   return {
+    situation: r.onboarding_situation ?? null,
     goal: r.onboarding_goal ?? null,
     assets: r.onboarding_assets ?? [],
     style: r.onboarding_style ?? null,
@@ -174,6 +179,7 @@ export async function saveOnboarding(
   const { error } = await supabase
     .from("profiles")
     .update({
+      onboarding_situation: d.situation ?? null,
       onboarding_goal: d.goal,
       onboarding_assets: d.assets,
       onboarding_style: d.style,

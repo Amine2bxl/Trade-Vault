@@ -328,6 +328,11 @@ const en = {
   "analytics.symbolPerformance": "Symbol Performance",
 
   // Mistakes
+  "mistakes.costTitle": "Cost of my mistakes — this month",
+  "mistakes.costPrevMonth": "previous month:",
+  "mistakes.costWorstPrefix": "Most expensive this month:",
+  "mistakes.costWorstSuffix": "on those trades.",
+  "mistakes.costBasis": "Net P&L of mistake-tagged trades. Computed from your journal — tag your mistakes to sharpen it.",
   "mistakes.title": "Mistakes Tracker",
   "mistakes.subtitle": "Identify and eliminate costly errors",
   "mistakes.noTrades": "Add trades to track mistakes",
@@ -744,6 +749,21 @@ const en = {
   "chk.cfgOpensAt": "Opens at",
   "chk.process": "Process ✓",
   "chk.msgPlaceholder": "JARVIS message",
+  // First coach message after onboarding (deterministic, no AI call)
+  "ai.welcomeWithTrades":
+    "Welcome to your vault 👋 I'm your coach — I can already see **{n} trades** loaded. Ask me anything about them: your win rate, your most expensive mistake, your best day… I only ever use YOUR real numbers.",
+  "ai.welcomeFresh":
+    "Welcome to your vault 👋 I'm your coach. Log your first trade (or import your history) and I'll start finding what's really costing you money — always from YOUR real numbers, never guesses.",
+
+  // Discipline Score v1 (Dashboard card)
+  "discipline.title": "Discipline",
+  "discipline.basis": "checklist + journal",
+  "discipline.checklist": "Checklist",
+  "discipline.journal": "Journal",
+  "discipline.neutral": "No activity today",
+  "discipline.streak": "Streak:",
+  "discipline.days": "days",
+
   "chk.dashTitle": "Pre-market checklist",
   "chk.dashLocked": "Edge locked — discipline verified",
   "chk.dashChecked": "checked",

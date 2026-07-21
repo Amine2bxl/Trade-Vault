@@ -29,6 +29,8 @@ export interface AIUserContext {
   mistakes?: { name: string; count: number; totalPnl: number }[];
   /** The trader's own written rules. */
   rules?: { kind: string; text: string; enabled: boolean }[];
+  /** Deterministic behavioral findings (significant only), one line each. */
+  behavior?: string[];
   /** Long-term memory entries (profile facts, recurring lessons). */
   memory?: { kind: string; content: string }[];
   /** Recent conversation turns for chat continuity. */
@@ -77,6 +79,13 @@ export function contextBlocks(ctx: AIUserContext): string {
     blocks.push(
       `ACTIVE GOALS:\n${ctx.goals
         .map((g) => `- ${g.kind}: ${g.current} → target ${g.target}`)
+        .join("\n")}`,
+    );
+  }
+  if (ctx.behavior?.length) {
+    blocks.push(
+      `BEHAVIORAL PATTERNS (deterministic, statistically significant — trust these numbers):\n${ctx.behavior
+        .map((line) => `- ${line}`)
         .join("\n")}`,
     );
   }

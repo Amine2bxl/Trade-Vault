@@ -32,6 +32,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import StatsCard from "../components/StatsCard";
+import DisciplineCard from "../components/DisciplineCard";
 import { PageSkeleton } from "../components/Skeleton";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -198,6 +199,9 @@ export default function Dashboard({
           )}
         </button>
       </div>
+
+      {/* Discipline Score v1 + streak (pure engine, PnL-independent) */}
+      {user && <DisciplineCard userId={user.id} trades={trades} />}
 
       {/* Pre-market checklist synergy card */}
       {onOpenChecklist && chkStatus && (

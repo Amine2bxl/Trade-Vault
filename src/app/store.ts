@@ -47,6 +47,11 @@ export {
 } from "./store/profile";
 export { type MonthlyReportRow, loadMonthlyReports } from "./store/reports";
 export {
+  type DisciplineDayRow,
+  loadDisciplineDays,
+  saveDisciplineDay,
+} from "./store/discipline";
+export {
   uploadScreenshot,
   uploadMissedScreenshot,
   getScreenshotUrl,

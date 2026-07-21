@@ -19,6 +19,8 @@ export const CONTEXT_CAPS = {
   rules: 30,
   memory: 60,
   memoryContent: 2000,
+  behavior: 16,
+  behaviorLine: 300,
   conversation: 20,
   conversationContent: 8000,
 } as const;
@@ -62,6 +64,13 @@ export class ContextBuilder {
       kind: m.kind,
       content: m.content.slice(0, CONTEXT_CAPS.memoryContent),
     }));
+    return this;
+  }
+
+  withBehavior(lines: string[]): this {
+    this.ctx.behavior = lines
+      .slice(0, CONTEXT_CAPS.behavior)
+      .map((l) => l.slice(0, CONTEXT_CAPS.behaviorLine));
     return this;
   }
 

@@ -4,6 +4,7 @@ import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
+import { track } from "../utils/analytics";
 import { personalizedItems } from "../utils/adaptiveChecklist";
 import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
 import {
@@ -48,6 +49,8 @@ interface DayState {
   locked: boolean;
   notes: string;
   t0: number;
+  /** ISO timestamp of the FIRST time the checklist hit 100% (discipline score). */
+  completedAt?: string | null;
 }
 const emptyDay = (n: number): DayState => ({
   checked: new Array(n).fill(false),
@@ -57,6 +60,7 @@ const emptyDay = (n: number): DayState => ({
   locked: false,
   notes: "",
   t0: Date.now(),
+  completedAt: null,
 });
 
 /* Editable span — commits its text on blur (used by inline edit mode) */
@@ -747,6 +751,14 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const winOpen = isWindowOpen(config, new Date(now));
   const nChecked = checked.filter(Boolean).length;
   const nItems = Math.max(1, config.items.length);
+
+  /* First time the list hits 100% today: stamp it (feeds the Discipline
+     Score — "checklist before the first trade") and emit the funnel event. */
+  useEffect(() => {
+    if (config.items.length === 0 || nChecked < config.items.length || day.completedAt) return;
+    setDay((d) => (d.completedAt ? d : { ...d, completedAt: new Date().toISOString() }));
+    track("checklist_completed");
+  }, [nChecked, config.items.length, day.completedAt]);
   const parts = useMemo(() => {
     const check = Math.round((nChecked / nItems) * 60);
     const mental =

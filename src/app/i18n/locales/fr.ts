@@ -272,6 +272,11 @@ const fr: Dict = {
   "analytics.pnlByStrategy": "P&L par stratégie",
   "analytics.pnlDistribution": "Distribution du P&L",
   "analytics.symbolPerformance": "Performance par symbole",
+  "mistakes.costTitle": "Le coût de mes erreurs — ce mois-ci",
+  "mistakes.costPrevMonth": "mois précédent :",
+  "mistakes.costWorstPrefix": "La plus chère ce mois-ci :",
+  "mistakes.costWorstSuffix": "sur ces trades.",
+  "mistakes.costBasis": "P&L net des trades avec erreur taguée. Calculé depuis ton journal — tague tes erreurs pour l'affiner.",
   "mistakes.title": "Suivi des erreurs",
   "mistakes.subtitle": "Identifiez et éliminez les erreurs coûteuses",
   "mistakes.noTrades": "Ajoutez des trades pour suivre les erreurs",
@@ -669,6 +674,19 @@ const fr: Dict = {
   "chk.cfgOpensAt": "Ouverture à",
   "chk.process": "Process ✓",
   "chk.msgPlaceholder": "Message JARVIS",
+  "ai.welcomeWithTrades":
+    "Bienvenue dans ton vault 👋 Je suis ton coach — je vois déjà **{n} trades** chargés. Pose-moi n'importe quelle question : ton taux de réussite, ton erreur la plus chère, ton meilleur jour… Je n'utilise que TES vrais chiffres.",
+  "ai.welcomeFresh":
+    "Bienvenue dans ton vault 👋 Je suis ton coach. Enregistre ton premier trade (ou importe ton historique) et je commencerai à trouver ce qui te coûte vraiment de l'argent — toujours à partir de TES vrais chiffres, jamais d'inventions.",
+
+  "discipline.title": "Discipline",
+  "discipline.basis": "checklist + journal",
+  "discipline.checklist": "Checklist",
+  "discipline.journal": "Journal",
+  "discipline.neutral": "Pas d'activité aujourd'hui",
+  "discipline.streak": "Série :",
+  "discipline.days": "jours",
+
   "chk.dashTitle": "Checklist pré-market",
   "chk.dashLocked": "Edge verrouillé — discipline vérifiée",
   "chk.dashChecked": "cochés",
