@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import { Trade } from "../types";
-import { aiChat } from "@/backend/ai.functions";
-import { buildCoachContext } from "../utils/aiContext";
+import { askCoach } from "@/backend/coach.functions";
+import { buildCoachV1Payload } from "../utils/aiContext";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -45,8 +45,8 @@ export default function Insights({ trades }: InsightsProps) {
     setError("");
     setAnswer("");
     try {
-      const context = await buildCoachContext({ userId: user?.id, trades, language: lang });
-      const res = await aiChat({ data: { question: query, context } });
+      const payload = buildCoachV1Payload({ trades, language: lang });
+      const res = await askCoach({ data: { question: query, ...payload } });
       setAnswer(res.answer || t("ai.noResponse"));
     } catch (e: any) {
       setError(e?.message || t("ai.genericError"));

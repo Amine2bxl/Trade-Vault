@@ -81,6 +81,46 @@ export async function buildCoachContext(opts: {
  * "knows" the trader from the very first message — deterministic, zero AI cost,
  * idempotent (only writes if no profile memory exists yet). Best-effort.
  */
+/** Input shape for the AI Coach V1 server function (`askCoach`). */
+export interface CoachV1Payload {
+  stats?: Record<string, number | string | null>;
+  trades?: ReturnType<typeof toInsightTradesPayload>;
+  mistakes?: { name: string; count: number; totalPnl: number }[];
+  conversation?: { role: "user" | "assistant"; content: string }[];
+  language?: string;
+}
+
+/**
+ * Build the grounded payload for AI Coach V1 — stats, trades, recurring
+ * mistakes (derived from the same deterministic engine), the running
+ * conversation and the language. No long-term memory (V1 scope): synchronous,
+ * no DB read, so it never blocks the coach.
+ */
+export function buildCoachV1Payload(opts: {
+  trades: Trade[];
+  conversation?: CoachTurn[];
+  language?: string;
+  maxTurns?: number;
+}): CoachV1Payload {
+  const { trades, conversation = [], language, maxTurns = 16 } = opts;
+  const stats = trades.length ? computeStats(trades) : null;
+  const mistakes = stats
+    ? Object.entries(stats.mistakeStats)
+        .map(([name, v]) => ({ name, count: v.count, totalPnl: round(v.totalPnl) }))
+        .sort((a, b) => a.totalPnl - b.totalPnl)
+        .slice(0, 40)
+    : [];
+  return {
+    trades: toInsightTradesPayload(trades),
+    stats: trades.length ? compactStats(trades) : undefined,
+    mistakes: mistakes.length ? mistakes : undefined,
+    conversation: conversation
+      .slice(-maxTurns)
+      .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),
+    language,
+  };
+}
+
 export async function seedProfileMemory(userId: string): Promise<void> {
   try {
     const existing = await loadMemory(userId, ["profile"], 1);
