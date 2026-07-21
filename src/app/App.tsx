@@ -270,29 +270,52 @@ function AppContent() {
     setEditingTrade(null);
   }, []);
 
-  // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
-  // seeds three example trades so Dashboard/Analytics light up instantly.
+  // Demo seeding is shared between the onboarding "demo" branch and the
+  // import fallback (US-2.3: the first wow never fails).
+  const seedDemoTrades = useCallback(async () => {
+    if (!user) return;
+    const demo = buildDemoTrades(t("journal.exampleNote"));
+    setTrades((prev) => [...demo, ...prev]);
+    try {
+      for (const tr of demo) await upsertTrade(user.id, tr);
+      toast(t("journal.demoInserted"), "success");
+    } catch (e) {
+      console.error("Failed to insert demo trades", e);
+      toast(t("app.saveTradeFailed"), "error");
+    }
+  }, [user, t, toast, setTrades]);
+
+  /** Arms the deterministic first coach message shown right after onboarding. */
+  const armCoachWelcome = useCallback(() => {
+    if (!user) return;
+    try {
+      localStorage.setItem(`tv-coach-welcome-${user.id}`, "1");
+    } catch {
+      /* storage unavailable — the welcome is best-effort */
+    }
+  }, [user]);
+
+  // True while the CSV modal was opened FROM onboarding: closing it without a
+  // successful import falls back to demo data instead of an empty vault.
+  const onboardingImportRef = useRef(false);
+
+  // Onboarding hand-off: "demo" (default) seeds three example trades so
+  // Dashboard/Analytics light up instantly; "import" opens the CSV modal.
   const handleOnboardingDone = useCallback(
     async (action?: OnboardingAction) => {
       setOnboarding("done");
       if (!user) return;
       if (action === "import") {
+        onboardingImportRef.current = true;
         setImportOpen(true);
         return;
       }
       if (action === "demo") {
-        const demo = buildDemoTrades(t("journal.exampleNote"));
-        setTrades((prev) => [...demo, ...prev]);
-        try {
-          for (const tr of demo) await upsertTrade(user.id, tr);
-          toast(t("journal.demoInserted"), "success");
-        } catch (e) {
-          console.error("Failed to insert demo trades", e);
-          toast(t("app.saveTradeFailed"), "error");
-        }
+        await seedDemoTrades();
+        armCoachWelcome();
       }
     },
-    [user, t, toast],
+    [user, seedDemoTrades, armCoachWelcome],
   );
 
   // CSV import: persist each row, keep the ones that made it
@@ -472,7 +495,17 @@ function AppContent() {
         {importOpen && (
           <ImportCsvModal
             existing={trades}
-            onClose={() => setImportOpen(false)}
+            onClose={() => {
+              setImportOpen(false);
+              // Onboarding import abandoned/failed with an empty vault →
+              // automatic demo fallback (US-2.3), then the coach welcome.
+              if (onboardingImportRef.current) {
+                onboardingImportRef.current = false;
+                const hasReal = trades.some((tr) => !tr.isExample);
+                if (!hasReal) void seedDemoTrades();
+                armCoachWelcome();
+              }
+            }}
             onImport={handleImportTrades}
           />
         )}

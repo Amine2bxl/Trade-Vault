@@ -11,6 +11,7 @@ import {
 import { Trade } from "../types";
 import { formatPnl } from "../utils/tradeCalcs";
 import { computeBehavioral, Severity } from "../utils/behavioral";
+import MistakeCostCard from "../components/MistakeCostCard";
 import { cn } from "../utils/cn";
 import {
   BarChart,
@@ -155,6 +156,9 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
       </div>
 
       <div className="space-y-4 md:space-y-6">
+        {/* ── Cost of mistakes, this month (deterministic behavior engine) ── */}
+        <MistakeCostCard trades={trades} />
+
         {/* ── Discipline score + summary KPIs ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Discipline dial */}

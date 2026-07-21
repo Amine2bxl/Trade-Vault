@@ -5,6 +5,7 @@ import { loadMemory, remember } from "@/modules/ai/memory";
 import { loadOnboarding, loadStartingBalance } from "../store";
 import { loadTradingRules } from "./tradingRules";
 import { loadGoalPlan, currentGoalValue, type MeasureCtx } from "./goalPlan";
+import { analyzeBehavior, toBehaviorLines } from "@/modules/trading/behavior";
 import type { AIUserContext } from "@/modules/ai/context";
 
 /**
@@ -98,6 +99,7 @@ export interface CoachV2Payload extends CoachV1Payload {
   memory?: { kind: string; content: string }[];
   rules?: { kind: string; text: string; enabled: boolean }[];
   goals?: { kind: string; target: number; current: number }[];
+  behavior?: string[];
 }
 
 /**
@@ -141,6 +143,9 @@ export async function seedProfileMemory(userId: string): Promise<void> {
     // nothing (dead branches removed with Sprint 1 task 1.4).
     const onb = await loadOnboarding(userId);
     const parts: string[] = [];
+    if (onb.situation === "prop") parts.push("currently in a prop-firm challenge");
+    else if (onb.situation === "real") parts.push("trades their own real account");
+    else if (onb.situation === "learning") parts.push("still learning (demo stage)");
     if (onb.style) parts.push(`style: ${onb.style}`);
     if (onb.pain) parts.push(`main weakness to watch: ${onb.pain}`);
     if (typeof onb.monthlyTarget === "number") parts.push(`monthly target: ${onb.monthlyTarget}%`);
@@ -167,6 +172,12 @@ export async function buildCoachV2Payload(opts: {
 }): Promise<CoachV2Payload> {
   const base: CoachV2Payload = buildCoachV1Payload(opts);
   const { userId, trades } = opts;
+
+  // Behavioral patterns: pure and synchronous (significant findings only) —
+  // computed here so both coach surfaces confront the trader with them.
+  const behaviorLines = toBehaviorLines(analyzeBehavior(trades));
+  if (behaviorLines.length) base.behavior = behaviorLines;
+
   if (!userId) return base;
 
   const [memory, rules, goals] = await Promise.all([

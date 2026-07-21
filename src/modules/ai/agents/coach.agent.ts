@@ -37,6 +37,8 @@ export interface CoachInput {
   goals?: { kind: string; target: number; current: number }[];
   /** The trader's own written rules (from their Trading Plan). */
   rules?: { kind: string; text: string; enabled: boolean }[];
+  /** Deterministic behavioral findings (significant only), one line each. */
+  behavior?: string[];
   /** Long-term memory entries (profile, facts, lessons). */
   memory?: { kind: string; content: string }[];
   /** Recent conversation turns (in-request only — NOT persisted). */
@@ -55,6 +57,8 @@ export function coachIdentity(lang: string): string {
     `when the data shows progress. Kind but firm, never complacent.\n` +
     `- Recommend AT MOST 2 concrete actions per answer — one is better.\n` +
     `- Keep hammering the trader's #1 declared weakness when relevant.\n` +
+    `- When BEHAVIORAL PATTERNS are present, confront the most expensive one ` +
+    `first — that is where the money leaks.\n` +
     `- When useful, end with ONE short follow-up question that moves the ` +
     `coaching forward. Never more than one.\n` +
     `- Do not draw conclusions from fewer than 10 relevant trades — say the ` +
@@ -66,8 +70,8 @@ export function coachIdentity(lang: string): string {
 /** The non-negotiable "never invent" contract. */
 export const ANTI_HALLUCINATION =
   "STRICT DATA RULE: your only sources are the LONG-TERM MEMORY, THE TRADER'S " +
-  "OWN RULES, ACTIVE GOALS, RECURRING MISTAKES, PRECOMPUTED STATS and RECENT " +
-  "TRADES blocks below. Never invent or estimate a number, name or date that " +
+  "OWN RULES, ACTIVE GOALS, BEHAVIORAL PATTERNS, RECURRING MISTAKES, " +
+  "PRECOMPUTED STATS and RECENT TRADES blocks below. Never invent or estimate a number, name or date that " +
   "is not present there. If the data needed to answer is missing or too thin, " +
   "say so explicitly instead of guessing. You analyze the trader's past data " +
   "only — you never predict the market or give financial advice.";
@@ -100,6 +104,7 @@ export function buildCoachMessages(input: CoachInput) {
   const builder = createContextBuilder().withLanguage(input.language);
   if (input.memory) builder.withMemory(input.memory);
   if (input.rules) builder.withRules(input.rules);
+  if (input.behavior) builder.withBehavior(input.behavior);
   if (input.goals) builder.withGoals(input.goals);
   if (input.stats) builder.withStats(input.stats);
   if (input.trades) builder.withTrades(input.trades);

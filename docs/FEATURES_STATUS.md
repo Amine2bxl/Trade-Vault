@@ -10,10 +10,13 @@
 > Priorités : P0 (bloque crédibilité/lancement) · P1 (fort ROI) ·
 > P2 (important, non urgent) · P3 (fond/opportuniste) · — (socle, hors grille).
 
-Dernière mise à jour : 2026-07-21 (Sprint 1 du backlog 90 jours : Coach V2
-Phase 1 — mémoire/règles/objectifs injectés + format adaptatif ; Discipline
-Score v1 + streak (table `discipline_days`) ; analytics produit first-party.
-Voir `BACKLOG_90_DAYS.md`).
+Dernière mise à jour : 2026-07-21 (Sprints 1–2 du backlog 90 jours. S1 :
+Coach V2 Phase 1, Discipline Score v1 + streak, analytics first-party. S2 :
+moteur comportemental `modules/trading/behavior` (post-perte/revenge,
+overtrading, timing, adhérence — significativité obligatoire), « coût de mes
+erreurs » mensuel (carte Mistakes + bloc BEHAVIORAL PATTERNS injecté au
+coach), Onboarding V2 (situation prop-firm, écran miroir, démo par défaut +
+fallback, 1ᵉʳ message coach déterministe). Voir `BACKLOG_90_DAYS.md`).
 
 ---
 

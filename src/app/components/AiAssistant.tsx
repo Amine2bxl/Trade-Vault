@@ -90,6 +90,27 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
     void seedProfileMemory(user.id);
   }, [open, user?.id]);
 
+  // First coach message right after onboarding (US-2.3): deterministic (zero
+  // AI cost, can never fail or hallucinate), anchored on the loaded trades.
+  // The flag is armed by App.tsx when the demo/import hand-off completes.
+  useEffect(() => {
+    if (!user?.id || messages.length > 0) return;
+    const flagKey = `tv-coach-welcome-${user.id}`;
+    try {
+      if (localStorage.getItem(flagKey) !== "1") return;
+      localStorage.removeItem(flagKey);
+    } catch {
+      return;
+    }
+    const n = trades.length;
+    const welcome =
+      n > 0 ? t("ai.welcomeWithTrades").replace("{n}", String(n)) : t("ai.welcomeFresh");
+    setMessages([{ role: "assistant", text: welcome }]);
+    setOpen(true);
+    void seedProfileMemory(user.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, trades.length]);
+
   const ask = useCallback(
     async (q: string) => {
       const query = q.trim();

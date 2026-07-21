@@ -385,6 +385,7 @@ export type Database = {
           onboarding_monthly_target: number | null;
           onboarding_pain: string | null;
           onboarding_skipped: boolean;
+          onboarding_situation: string | null;
           onboarding_style: string | null;
           onboarding_uses_ict: boolean;
           starting_balance: number;
@@ -411,6 +412,7 @@ export type Database = {
           onboarding_monthly_target?: number | null;
           onboarding_pain?: string | null;
           onboarding_skipped?: boolean;
+          onboarding_situation?: string | null;
           onboarding_style?: string | null;
           onboarding_uses_ict?: boolean;
           starting_balance?: number;
@@ -437,6 +439,7 @@ export type Database = {
           onboarding_monthly_target?: number | null;
           onboarding_pain?: string | null;
           onboarding_skipped?: boolean;
+          onboarding_situation?: string | null;
           onboarding_style?: string | null;
           onboarding_uses_ict?: boolean;
           starting_balance?: number;

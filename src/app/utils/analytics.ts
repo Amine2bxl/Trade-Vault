@@ -20,6 +20,7 @@ const OPTOUT_KEY = "tv-analytics-optout";
 export type AnalyticsEvent =
   | "session_start"
   | "signup"
+  | "onboarding_step"
   | "onboarding_completed"
   | "first_trade_logged"
   | "trade_logged"
