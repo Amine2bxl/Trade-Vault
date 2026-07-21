@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
 import { Trade } from "../types";
-import { aiChat } from "@/backend/ai.functions";
-import { buildCoachContext, seedProfileMemory } from "../utils/aiContext";
+import { askCoach } from "@/backend/coach.functions";
+import { buildCoachV1Payload, seedProfileMemory } from "../utils/aiContext";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -103,13 +103,12 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       setQuestion("");
       setLoading(true);
       try {
-        const context = await buildCoachContext({
-          userId: user?.id,
+        const payload = buildCoachV1Payload({
           trades,
           conversation: priorTurns,
           language: lang,
         });
-        const res = await aiChat({ data: { question: query, context } });
+        const res = await askCoach({ data: { question: query, ...payload } });
         setMessages((prev) => [
           ...prev,
           { role: "assistant", text: res.answer || t("ai.noResponse") },
