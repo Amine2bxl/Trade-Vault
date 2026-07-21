@@ -16,6 +16,7 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, type OnboardingData } from "../store";
+import { track } from "../utils/analytics";
 import { oc } from "./onboardingCopy";
 import logoSrc from "@/assets/tradevault-logo.png";
 
@@ -78,6 +79,7 @@ export default function Onboarding({
       } catch (e) {
         console.error("Failed to save onboarding", e);
       } finally {
+        track("onboarding_completed", { action: action ?? "fresh" });
         onDone(action);
       }
     },

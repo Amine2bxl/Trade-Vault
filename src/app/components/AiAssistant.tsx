@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
 import { Trade } from "../types";
 import { askCoach } from "@/backend/coach.functions";
-import { buildCoachV1Payload, seedProfileMemory } from "../utils/aiContext";
+import { buildCoachV2Payload, seedProfileMemory } from "../utils/aiContext";
+import { track } from "../utils/analytics";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -103,11 +104,13 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       setQuestion("");
       setLoading(true);
       try {
-        const payload = buildCoachV1Payload({
+        const payload = await buildCoachV2Payload({
+          userId: user?.id,
           trades,
           conversation: priorTurns,
           language: lang,
         });
+        track("coach_message_sent", { surface: "assistant" });
         const res = await askCoach({ data: { question: query, ...payload } });
         setMessages((prev) => [
           ...prev,

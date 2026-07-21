@@ -1,19 +1,20 @@
 /**
- * AI Coach — agent V1.
+ * AI Coach — agent V2 Phase 1.
  *
- * The first usable TradeVault agent: answers the trader's questions using ONLY
- * their real data (stats, trades, recurring mistakes, goals). It interprets the
- * deterministic numbers the engines already computed — it never invents them.
+ * Answers the trader's questions using ONLY their real data (stats, trades,
+ * recurring mistakes, goals, own rules and long-term memory). It interprets
+ * the deterministic numbers the engines already computed — it never invents
+ * or recomputes them.
  *
- * Scope of V1 (intentionally minimal):
- *   - read stats · read trades · read mistakes · read goals · answer questions
- *   - NO long-term memory (ai_memory is not read or written here)
- *   - NO proactivity (no jobs, no notifications)
- *   - NO secondary agents
+ * V2 Phase 1 additions over V1:
+ *   - the coach KNOWS the trader: long-term memory, own rules, active goals
+ *   - coaching doctrine: confront with numbers, at most 2 actions, one
+ *     follow-up question, hammer the #1 declared weakness
+ *   - adaptive format: short conversational answer by default, the full
+ *     structured report only when the trader asks for a review (deterministic
+ *     keyword detection — never decided by the model)
  *
- * Built entirely on the platform infra (context builder → prompt builder →
- * provider service → response formatter). Pure logic: the provider is resolved
- * (or injected via opts), so this is unit-testable without network.
+ * Still out of scope (later phases): memory writes, proactivity, other agents.
  */
 import { generate, type GenerateOptions } from "../provider-service";
 import { buildPrompt, type ConversationTurn } from "../prompt-builder";
@@ -34,47 +35,80 @@ export interface CoachInput {
   mistakes?: { name: string; count: number; totalPnl: number }[];
   /** Active goals and progress. */
   goals?: { kind: string; target: number; current: number }[];
+  /** The trader's own written rules (from their Trading Plan). */
+  rules?: { kind: string; text: string; enabled: boolean }[];
+  /** Long-term memory entries (profile, facts, lessons). */
+  memory?: { kind: string; content: string }[];
   /** Recent conversation turns (in-request only — NOT persisted). */
   conversation?: ConversationTurn[];
 }
 
-/** Persona — the coach knows this trader and must ground every claim. */
+/** Persona — a coach who knows this trader, not a report generator. */
 export function coachIdentity(lang: string): string {
   return (
-    `You are TradeVault's resident trading performance coach — an elite quant ` +
-    `mentor who KNOWS this trader. Every claim MUST cite specific numbers from ` +
-    `the data provided below. Be candid, concrete and kind-but-firm. ` +
+    `You are TradeVault's resident trading performance coach — an elite mentor ` +
+    `who KNOWS this trader personally (their profile, weaknesses and rules are ` +
+    `in LONG-TERM MEMORY and THE TRADER'S OWN RULES below — use them by name).\n` +
+    `COACHING DOCTRINE:\n` +
+    `- Every claim MUST cite specific numbers from the data provided.\n` +
+    `- Confront honestly when the data shows an expensive behavior; encourage ` +
+    `when the data shows progress. Kind but firm, never complacent.\n` +
+    `- Recommend AT MOST 2 concrete actions per answer — one is better.\n` +
+    `- Keep hammering the trader's #1 declared weakness when relevant.\n` +
+    `- When useful, end with ONE short follow-up question that moves the ` +
+    `coaching forward. Never more than one.\n` +
+    `- Do not draw conclusions from fewer than 10 relevant trades — say the ` +
+    `sample is too thin instead.\n` +
     `Write the ENTIRE response in ${lang}.`
   );
 }
 
 /** The non-negotiable "never invent" contract. */
 export const ANTI_HALLUCINATION =
-  "STRICT DATA RULE: your only sources are the RECENT TRADES, RECURRING MISTAKES, " +
-  "ACTIVE GOALS and PRECOMPUTED STATS blocks below. Never invent or estimate a " +
-  "number, name or date that is not present there. If the data needed to answer " +
-  "is missing or too thin, say so explicitly instead of guessing. You analyze the " +
-  "trader's past data only — you never predict the market or give financial advice.";
+  "STRICT DATA RULE: your only sources are the LONG-TERM MEMORY, THE TRADER'S " +
+  "OWN RULES, ACTIVE GOALS, RECURRING MISTAKES, PRECOMPUTED STATS and RECENT " +
+  "TRADES blocks below. Never invent or estimate a number, name or date that " +
+  "is not present there. If the data needed to answer is missing or too thin, " +
+  "say so explicitly instead of guessing. You analyze the trader's past data " +
+  "only — you never predict the market or give financial advice.";
 
-const CHAT_FORMAT =
-  "Respond in GitHub-flavored Markdown with: ## 🎯 Key Takeaways (3-5 bullets with " +
-  "real numbers), ## 📊 Stats Snapshot (compact table), ## ✅ Strengths, " +
-  "## ⚠️ Weaknesses, ## 🧭 Action Plan (numbered, measurable), ## 💡 Bottom Line " +
-  "(one bold sentence). Omit a section only if truly not applicable. Use **bold** " +
-  "for key numbers. No fluff.";
+/** Default voice: a coach talking, not a report. */
+const CONVERSATIONAL_FORMAT =
+  "Answer like a coach in conversation: GitHub-flavored Markdown, short " +
+  "paragraphs or a few bullets, under ~150 words unless the question truly " +
+  "needs more. Use **bold** for key numbers. No section headers, no tables, " +
+  "no fluff.";
+
+/** Full review — only when the trader explicitly asks for one. */
+const REVIEW_FORMAT =
+  "The trader asked for a full review. Respond in GitHub-flavored Markdown " +
+  "with: ## 🎯 Key Takeaways (3-5 bullets with real numbers), ## 📊 Stats " +
+  "Snapshot (compact table), ## ✅ Strengths, ## ⚠️ Weaknesses, ## 🧭 Action " +
+  "Plan (max 2 items, measurable), ## 💡 Bottom Line (one bold sentence). " +
+  "Omit a section only if truly not applicable. Use **bold** for key numbers.";
+
+/** Deterministic review-intent detection (EN/FR + common variants). No AI. */
+const REVIEW_INTENT =
+  /\b(full review|complete review|full analysis|complete analysis|deep dive|audit|breakdown|bilan(?:\s+complet)?|analyse\s+(?:compl[eè]te|globale|d[ée]taill[ée]e)|rapport(?:\s+complet)?|fais\s+le\s+point|vue\s+d'ensemble)\b/i;
+
+export function isReviewIntent(question: string): boolean {
+  return REVIEW_INTENT.test(question);
+}
 
 /** Assemble the grounded prompt from the trader's real data. Pure & testable. */
 export function buildCoachMessages(input: CoachInput) {
   const builder = createContextBuilder().withLanguage(input.language);
+  if (input.memory) builder.withMemory(input.memory);
+  if (input.rules) builder.withRules(input.rules);
+  if (input.goals) builder.withGoals(input.goals);
   if (input.stats) builder.withStats(input.stats);
   if (input.trades) builder.withTrades(input.trades);
   if (input.mistakes) builder.withMistakes(input.mistakes);
-  if (input.goals) builder.withGoals(input.goals);
 
   const lang = languageName(input.language);
   return buildPrompt({
     identity: `${coachIdentity(lang)}\n\n${ANTI_HALLUCINATION}`,
-    outputFormat: CHAT_FORMAT,
+    outputFormat: isReviewIntent(input.question) ? REVIEW_FORMAT : CONVERSATIONAL_FORMAT,
     contextBlocks: builder.blocks(),
     conversation: input.conversation,
     userTurn: `Question: ${input.question}`,

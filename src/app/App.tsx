@@ -43,6 +43,7 @@ import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { useTradeStats } from "./hooks/useTradeStats";
 import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
+import { identifyAnalytics, track } from "./utils/analytics";
 import { sendPushToSelf } from "@/backend/push.functions";
 import { AutomationEngine } from "@/modules/automation";
 import { NotificationEngine, persistNotification } from "@/modules/notifications";
@@ -114,6 +115,12 @@ function AppContent() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Analytics: identify the (pseudonymous) user and mark the session start.
+  useEffect(() => {
+    identifyAnalytics(user?.id ?? null);
+    if (user?.id) track("session_start");
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -193,6 +200,13 @@ function AppContent() {
       // All post-save side effects (analysis, discipline, notifications, AI
       // hooks) run through the Automation Engine — no business logic here.
       const isNew = !snapshot.some((tr) => tr.id === trade.id);
+      if (isNew) {
+        track(
+          snapshot.filter((tr) => !tr.isExample).length === 0
+            ? "first_trade_logged"
+            : "trade_logged",
+        );
+      }
       void (async () => {
         const balance =
           (await loadStartingBalance(user.id).catch(() => 0)) +

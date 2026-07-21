@@ -744,6 +744,15 @@ const en = {
   "chk.cfgOpensAt": "Opens at",
   "chk.process": "Process ✓",
   "chk.msgPlaceholder": "JARVIS message",
+  // Discipline Score v1 (Dashboard card)
+  "discipline.title": "Discipline",
+  "discipline.basis": "checklist + journal",
+  "discipline.checklist": "Checklist",
+  "discipline.journal": "Journal",
+  "discipline.neutral": "No activity today",
+  "discipline.streak": "Streak:",
+  "discipline.days": "days",
+
   "chk.dashTitle": "Pre-market checklist",
   "chk.dashLocked": "Edge locked — discipline verified",
   "chk.dashChecked": "checked",

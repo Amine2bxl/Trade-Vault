@@ -116,6 +116,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      discipline_days: {
+        Row: {
+          checklist_done_at: string | null;
+          created_at: string;
+          date: string;
+          journal_complete: boolean;
+          score: number;
+          trade_count: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          checklist_done_at?: string | null;
+          created_at?: string;
+          date: string;
+          journal_complete?: boolean;
+          score: number;
+          trade_count?: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          checklist_done_at?: string | null;
+          created_at?: string;
+          date?: string;
+          journal_complete?: boolean;
+          score?: number;
+          trade_count?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       email_log: {
         Row: {
           email_key: string;
