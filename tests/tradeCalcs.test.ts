@@ -1,10 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import {
-  computeStats,
-  formatPnl,
-  formatPct,
-  getDuration,
-} from "../src/app/utils/tradeCalcs";
+import { computeStats, formatPnl, formatPct, getDuration } from "../src/app/utils/tradeCalcs";
 import type { Trade } from "../src/app/types";
 
 function mkTrade(over: Partial<Trade>): Trade {

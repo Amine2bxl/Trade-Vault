@@ -5,11 +5,7 @@
  * grounded serialization. Pure and business-agnostic: it shapes whatever data
  * a caller provides, it never fetches or knows what a "coach" is.
  */
-import {
-  contextBlocks,
-  type AITradeSummary,
-  type AIUserContext,
-} from "./context";
+import { contextBlocks, type AITradeSummary, type AIUserContext } from "./context";
 
 /** Caps mirror the server-side Zod limits in `backend/ai.functions.ts`. */
 export const CONTEXT_CAPS = {

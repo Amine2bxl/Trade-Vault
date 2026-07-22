@@ -25,6 +25,7 @@ import {
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
 import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from "../utils/chartTheme";
+import { EmptyState, PageHeader } from "@/shared/ui";
 
 interface MistakesProps {
   trades: Trade[];
@@ -122,10 +123,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
     if (embedded) return null;
     return (
       <div className="p-4 md:p-8">
-        <h1 className="text-xl md:text-2xl font-bold text-white mb-2">{t("mistakes.title")}</h1>
-        <div className="glass rounded-2xl p-10 text-center text-slate-600">
-          {t("mistakes.noTrades")}
-        </div>
+        <PageHeader className="mb-2 md:mb-2" title={t("mistakes.title")} />
+        <EmptyState title={t("mistakes.noTrades")} />
       </div>
     );
   }
@@ -147,12 +146,11 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
   return (
     <div className={cn(embedded ? "pt-2" : "p-4 md:p-8 max-w-[1400px] mx-auto")}>
-      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {t("mistakes.title")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">{t("mistakes.subtitle")}</p>
-      </div>
+      <PageHeader
+        className="stagger-0"
+        title={t("mistakes.title")}
+        subtitle={t("mistakes.subtitle")}
+      />
 
       <div className="space-y-4 md:space-y-6">
         {/* ── Discipline score + summary KPIs ── */}

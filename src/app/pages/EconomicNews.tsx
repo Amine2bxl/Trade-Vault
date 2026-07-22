@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
+import { PageHeader } from "@/shared/ui";
 import {
   getEventsForWeek,
   startOfWeek,
@@ -104,13 +105,15 @@ export default function EconomicNews() {
   const toggleCurrency = (c: Currency) =>
     setCurrencyFilter((prev) => {
       const next = new Set(prev);
-      next.has(c) ? next.delete(c) : next.add(c);
+      if (next.has(c)) next.delete(c);
+      else next.add(c);
       return next;
     });
   const toggleImpact = (i: ImpactLevel) =>
     setImpactFilter((prev) => {
       const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
       return next;
     });
   const clearFilters = () => {
@@ -157,21 +160,20 @@ export default function EconomicNews() {
   return (
     <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
       {/* Header */}
-      <div className="mb-4 animate-fade-in-up stagger-0 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-            {t("news.title")}
-          </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">{t("news.subtitle")}</p>
-        </div>
-        <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold">
-          <span className="relative flex w-2 h-2">
-            <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-            <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
+      <PageHeader
+        className="mb-4 stagger-0"
+        title={t("news.title")}
+        subtitle={t("news.subtitle")}
+        actions={
+          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold shrink-0">
+            <span className="relative flex w-2 h-2">
+              <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+              <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
+            </span>
+            {t("news.live")}
           </span>
-          {t("news.live")}
-        </span>
-      </div>
+        }
+      />
 
       {/* Week navigator */}
       <div className="glass rounded-2xl p-2.5 mb-3 flex items-center justify-between gap-2 animate-fade-in-up stagger-1">

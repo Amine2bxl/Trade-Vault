@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Check, Sparkles, Shield, Zap, Crown, Clock } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
+import { PageHeader } from "@/shared/ui";
 
 // Subscription — VISUAL PLACEHOLDER ONLY. No Stripe, no checkout, no billing
 // logic on purpose: this page previews the future plans while payments keep
@@ -32,14 +33,11 @@ export default function Subscription() {
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-5">
-      <div className="mb-1 animate-fade-in-up">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {tr("Abonnement", "Subscription")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">
-          {tr("Aperçu des formules TradeVault Pro.", "Preview of the TradeVault Pro plans.")}
-        </p>
-      </div>
+      <PageHeader
+        className="mb-1 md:mb-1"
+        title={tr("Abonnement", "Subscription")}
+        subtitle={tr("Aperçu des formules TradeVault Pro.", "Preview of the TradeVault Pro plans.")}
+      />
 
       {/* Hero */}
       <div className="relative glass-strong rounded-3xl p-6 md:p-8 overflow-hidden animate-fade-in-up stagger-1">

@@ -29,6 +29,7 @@ import {
 // monthly tasks, checkable and persisted, with push reminders.
 
 import { GoalPicker, PlanView } from "./goals/views";
+import { PageHeader } from "@/shared/ui";
 
 export default function Goals({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
@@ -215,17 +216,14 @@ export default function Goals({ trades }: { trades: Trade[] }) {
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
-      <div className="mb-6 animate-fade-in-up">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {tr("Objectifs", "Goals")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">
-          {tr(
-            "Choisis tes objectifs — TradeVault génère ton plan d'action mensuel, concret et progressif.",
-            "Pick your goals — TradeVault generates your concrete, progressive monthly action plan.",
-          )}
-        </p>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title={tr("Objectifs", "Goals")}
+        subtitle={tr(
+          "Choisis tes objectifs — TradeVault génère ton plan d'action mensuel, concret et progressif.",
+          "Pick your goals — TradeVault generates your concrete, progressive monthly action plan.",
+        )}
+      />
 
       {!plan ? (
         <GoalPicker ctx={ctx} fr={fr} busy={busy} onGenerate={generate} />

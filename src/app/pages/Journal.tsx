@@ -25,6 +25,7 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
+import { PageHeader } from "@/shared/ui";
 
 interface JournalProps {
   trades: Trade[];
@@ -82,7 +83,9 @@ export default function Journal({
         FILTERS_STORAGE_KEY,
         JSON.stringify({ strategyFilter, resultFilter, sortKey, sortDir } satisfies StoredFilters),
       );
-    } catch {}
+    } catch {
+      /* best-effort persistence — ignore */
+    }
   }, [strategyFilter, resultFilter, sortKey, sortDir]);
 
   useEffect(() => {
@@ -144,38 +147,35 @@ export default function Journal({
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-3 md:mb-6">
-        <div className="animate-fade-in-up stagger-0 min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent truncate">
-            {t("journal.title")}
-          </h1>
-          <p className="text-[11px] md:text-sm text-slate-500 mt-0.5 md:mt-1">
-            {filtered.length} {t("common.trades")}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 md:gap-3 animate-fade-in-up stagger-1 shrink-0">
-          <button
-            onClick={() => exportTradesCSV(trades)}
-            className="flex items-center gap-1.5 md:gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
-          >
-            <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span className="hidden md:inline">{t("common.exportCsv")}</span>
-          </button>
-          <button
-            onClick={onDeleteAll}
-            className="flex items-center gap-1.5 md:gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
-          >
-            <Trash className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span className="hidden md:inline">{t("common.deleteAll")}</span>
-          </button>
-          <button
-            onClick={onAdd}
-            className="hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5"
-          >
-            <Plus className="w-4 h-4" /> {t("common.addTrade")}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        className="mb-3 md:mb-6 items-center stagger-0"
+        title={t("journal.title")}
+        subtitle={`${filtered.length} ${t("common.trades")}`}
+        actions={
+          <div className="flex items-center gap-1.5 md:gap-3 animate-fade-in-up stagger-1 shrink-0">
+            <button
+              onClick={() => exportTradesCSV(trades)}
+              className="flex items-center gap-1.5 md:gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
+            >
+              <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden md:inline">{t("common.exportCsv")}</span>
+            </button>
+            <button
+              onClick={onDeleteAll}
+              className="flex items-center gap-1.5 md:gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
+            >
+              <Trash className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="hidden md:inline">{t("common.deleteAll")}</span>
+            </button>
+            <button
+              onClick={onAdd}
+              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5"
+            >
+              <Plus className="w-4 h-4" /> {t("common.addTrade")}
+            </button>
+          </div>
+        }
+      />
 
       {/* Result filter pill group + Missed Setups shortcut */}
       <div className="flex items-center gap-1.5 mb-3 md:mb-5">

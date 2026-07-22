@@ -31,6 +31,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
+import { EmptyState, PageHeader } from "@/shared/ui";
 import {
   CHART_ANIMATION,
   EQUITY_ANIMATION,
@@ -282,21 +283,18 @@ export default function Analytics({ trades }: AnalyticsProps) {
   if (trades.length === 0)
     return (
       <div className="p-4 md:p-8">
-        <h1 className="text-xl md:text-2xl font-bold text-white mb-2">{t("analytics.title")}</h1>
-        <div className="glass rounded-2xl p-10 text-center text-slate-600">
-          {t("analytics.noTrades")}
-        </div>
+        <PageHeader className="mb-2 md:mb-2" title={t("analytics.title")} />
+        <EmptyState title={t("analytics.noTrades")} />
       </div>
     );
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
-      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {t("analytics.title")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">{t("analytics.subtitle")}</p>
-      </div>
+      <PageHeader
+        className="stagger-0"
+        title={t("analytics.title")}
+        subtitle={t("analytics.subtitle")}
+      />
 
       <div className="space-y-4 md:space-y-6">
         {/* Profit Factor — desktop hero card. On mobile it collapses into a

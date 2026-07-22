@@ -21,6 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { PushNotificationSettings } from "../components/PushNotificationSettings";
 import { cn } from "../utils/cn";
+import { PageHeader } from "@/shared/ui";
 
 interface SettingsProps {
   trades: Trade[];
@@ -132,12 +133,11 @@ export default function Settings({
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-      <div className="animate-fade-in-up stagger-0">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {t("settings.title")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">{t("settings.subtitle")}</p>
-      </div>
+      <PageHeader
+        className="mb-0 md:mb-0 stagger-0"
+        title={t("settings.title")}
+        subtitle={t("settings.subtitle")}
+      />
 
       {/* Search */}
       <div className="relative animate-fade-in-up stagger-1">

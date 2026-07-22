@@ -1,6 +1,5 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+/**
+ * Alias kept for existing imports — the canonical `cn` lives in the design
+ * system (`shared/ui/cn`). One implementation, one behaviour everywhere.
+ */
+export { cn } from "@/shared/ui/cn";

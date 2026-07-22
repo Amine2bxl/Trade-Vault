@@ -10,7 +10,7 @@
 > Priorités : P0 (bloque crédibilité/lancement) · P1 (fort ROI) ·
 > P2 (important, non urgent) · P3 (fond/opportuniste) · — (socle, hors grille).
 
-Dernière mise à jour : 2026-07-21 (post AI Coach V1, PR #59/#60).
+Dernière mise à jour : 2026-07-22 (audit pré-Sprint 3 : DS consolidé — PageHeader/SectionHeader/EmptyState/Metric, purge tokens shadcn morts, lint 0 erreur).
 
 ---
 
@@ -67,7 +67,7 @@ Dernière mise à jour : 2026-07-21 (post AI Coach V1, PR #59/#60).
 | Fonctionnalité | Statut | Priorité | Dépendances | Description |
 | --- | --- | --- | --- | --- |
 | Coach IA « complet » (P0 #1, reste) | 🟡 | **P0** | Coach V1 ✅, `ai_memory` ✅ | Reste à livrer : injection de la mémoire long terme dans le coach (V2), fil de conversation en DB (cross-device — aujourd'hui localStorage par appareil), mémorisation active des leçons/engagements. |
-| Adoption du Design System | 🟡 | P3 (fond) | `shared/ui` ✅ | Modals + Inputs migrés (byte-identical). Reste : Cards, Badges, boutons restants, modals lourdes (TradeDetailModal swipe, MissedOpportunities, AuthModal/landing, MobileNav). Un lot = un build vert. |
+| Adoption du Design System | 🟡 | P3 (fond) | `shared/ui` ✅ | Modals + Inputs migrés (byte-identical). Nouveau : `PageHeader`/`SectionHeader`/`EmptyState`/`Metric` livrés et adoptés (Dashboard, Analytics, Mistakes, Goals, Settings, Seasonality, Subscription, Appearance, LotSizeCalculator) ; tokens shadcn morts purgés de `styles.css` ; `cn` dédupliqué. Reste : Cards, Badges, boutons restants, modals lourdes, headers Journal/Calendar/News/Reports/Insights. Un lot = un build vert. |
 | Restructuration du dépôt | 🟡 | P2 #23 | Issues #46, #49 | Phases 1/3/4 faites (code mort, types Supabase, frontière serveur). Reste : pruning deps (bloqué egress registry, #46) et UI par `features/` (au fil des lots, #49). |
 | Dette typographique / tokens morts | 🟡 | P3 | `DESIGN-SYSTEM.md` | ~300 tailles arbitraires (`text-[10px]`…), anciens tokens shadcn oklch à purger. Résorption opportuniste, jamais en urgence. |
 

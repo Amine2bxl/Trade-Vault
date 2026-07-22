@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { PageHeader, useEffect, useMemo, useState } from "react";
 import { Calculator, Copy, Check, Wallet, Percent, Crosshair, Plus, Info } from "lucide-react";
 import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "../utils/positionCalc";
 import { loadAccountBalance, saveAccountBalance } from "../store";
@@ -121,12 +121,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
 
   return (
     <div className="p-4 md:p-8 max-w-[860px] mx-auto">
-      <div className="mb-4 md:mb-6 animate-fade-in-up stagger-0">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {t("calc.title")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">{t("calc.subtitle")}</p>
-      </div>
+      <PageHeader className="stagger-0" title={t("calc.title")} subtitle={t("calc.subtitle")} />
 
       {/* Mode toggle */}
       <div className="inline-flex p-1 rounded-2xl bg-white/[0.03] border border-white/[0.07] mb-5 animate-fade-in-up stagger-1">
