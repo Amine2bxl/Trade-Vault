@@ -11,6 +11,7 @@ export function PageHeader({
   title,
   subtitle,
   eyebrow,
+  icon,
   actions,
   className,
 }: {
@@ -18,6 +19,8 @@ export function PageHeader({
   subtitle?: ReactNode;
   /** Optional small accent line above the title (greeting, breadcrumb). */
   eyebrow?: ReactNode;
+  /** Optional icon rendered inline, just before the title text. */
+  icon?: ReactNode;
   /** Right-aligned actions (primary CTA, filters). */
   actions?: ReactNode;
   className?: string;
@@ -31,9 +34,12 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {eyebrow}
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {title}
-        </h1>
+        <div className="flex items-center gap-2">
+          {icon}
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+            {title}
+          </h1>
+        </div>
         {subtitle && <p className="text-xs md:text-sm text-slate-500 mt-1">{subtitle}</p>}
       </div>
       {actions}

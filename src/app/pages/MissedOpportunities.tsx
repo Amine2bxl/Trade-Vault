@@ -32,6 +32,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import Lightbox from "../components/Lightbox";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
+import { PageHeader } from "@/shared/ui";
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -162,36 +163,34 @@ export default function MissedOpportunities() {
 
   return (
     <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-4 md:mb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-amber-400" />
-            <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-              {t("missed.title")}
-            </h1>
-          </div>
-          <p className="text-[11px] md:text-sm text-slate-500 mt-0.5">{t("missed.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {items.length > 0 && (
+      <PageHeader
+        className="items-center"
+        icon={<Target className="w-5 h-5 text-amber-400" />}
+        title={t("missed.title")}
+        subtitle={t("missed.subtitle")}
+        actions={
+          <div className="flex items-center gap-2 shrink-0">
+            {items.length > 0 && (
+              <button
+                onClick={exportCsv}
+                className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-200 px-3 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition"
+                title={t("missed.exportCsv")}
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">{t("missed.exportCsv")}</span>
+              </button>
+            )}
             <button
-              onClick={exportCsv}
-              className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-200 px-3 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition"
-              title={t("missed.exportCsv")}
+              onClick={() => setEditing(emptyMissed())}
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold shadow-lg shadow-amber-500/20"
             >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">{t("missed.exportCsv")}</span>
+              <Plus className="w-4 h-4" />{" "}
+              <span className="hidden sm:inline">{t("missed.log")}</span>
+              <span className="sm:hidden">{t("missed.logShort")}</span>
             </button>
-          )}
-          <button
-            onClick={() => setEditing(emptyMissed())}
-            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold shadow-lg shadow-amber-500/20"
-          >
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">{t("missed.log")}</span>
-            <span className="sm:hidden">{t("missed.logShort")}</span>
-          </button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {loading ? (
         <div className="glass rounded-2xl p-10 text-center text-slate-500 text-sm">

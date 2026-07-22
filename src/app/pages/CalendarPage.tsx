@@ -10,6 +10,7 @@ import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import MissedOpportunities from "./MissedOpportunities";
 import { useT } from "../i18n/LanguageContext";
+import { PageHeader } from "@/shared/ui";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -194,14 +195,11 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
 
   return (
     <div className="p-3 md:p-8 max-w-[1400px] mx-auto">
-      <div className="mb-3 md:mb-6 animate-fade-in-up stagger-0">
-        <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {t("calendar.title")}
-        </h1>
-        <p className="text-[11px] md:text-sm text-slate-500 mt-0.5 md:mt-1">
-          {t("calendar.subtitle")}
-        </p>
-      </div>
+      <PageHeader
+        className="mb-3 md:mb-6 stagger-0"
+        title={t("calendar.title")}
+        subtitle={t("calendar.subtitle")}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-4 mb-3 md:mb-6">

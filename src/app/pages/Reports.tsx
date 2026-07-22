@@ -19,6 +19,7 @@ import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { Skeleton } from "../components/Skeleton";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 import { cn } from "../utils/cn";
+import { PageHeader } from "@/shared/ui";
 
 const LOCALE_MAP: Record<string, string> = {
   en: "en-US",
@@ -100,30 +101,30 @@ export default function Reports() {
 
   return (
     <div className="p-4 md:p-8 max-w-[900px] mx-auto">
-      <div className="flex items-center justify-between gap-3 mb-4 md:mb-6">
-        <div className="animate-fade-in-up stagger-0">
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-            {t("reports.title")}
-          </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">{t("reports.subtitle")}</p>
-        </div>
-        {!hasLastMonth && !loading && (
-          <button
-            onClick={generate}
-            disabled={generating}
-            className="shrink-0 flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-60 animate-fade-in-up stagger-1"
-          >
-            {generating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">
-              {generating ? t("reports.generating") : t("reports.generate")}
-            </span>
-          </button>
-        )}
-      </div>
+      <PageHeader
+        className="stagger-0"
+        title={t("reports.title")}
+        subtitle={t("reports.subtitle")}
+        actions={
+          !hasLastMonth &&
+          !loading && (
+            <button
+              onClick={generate}
+              disabled={generating}
+              className="shrink-0 flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-60 animate-fade-in-up stagger-1"
+            >
+              {generating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {generating ? t("reports.generating") : t("reports.generate")}
+              </span>
+            </button>
+          )
+        }
+      />
 
       {loading ? (
         <div className="space-y-3" aria-busy="true">

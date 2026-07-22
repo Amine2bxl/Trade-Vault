@@ -27,6 +27,7 @@ import {
   type TradingPlanData,
 } from "../utils/tradingPlan";
 import TradingRulesSection from "../components/TradingRulesSection";
+import { PageHeader } from "@/shared/ui";
 
 // Trading Plan — the trader's written constitution. Every field autosaves
 // (debounced) to profiles.trading_plan; the completion ring fills as the
@@ -101,20 +102,15 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4">
       {/* Header + completion */}
-      <div className="mb-2 animate-fade-in-up flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-            {tr("Plan de trading", "Trading Plan")}
-          </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
-            {tr(
-              "Ta constitution de trader — écrite une fois, relue chaque jour.",
-              "Your trader's constitution — written once, re-read every day.",
-            )}
-          </p>
-        </div>
-        <CompletionRing value={completion} label={tr("complet", "complete")} />
-      </div>
+      <PageHeader
+        className="mb-2 items-center"
+        title={tr("Plan de trading", "Trading Plan")}
+        subtitle={tr(
+          "Ta constitution de trader — écrite une fois, relue chaque jour.",
+          "Your trader's constitution — written once, re-read every day.",
+        )}
+        actions={<CompletionRing value={completion} label={tr("complet", "complete")} />}
+      />
 
       {/* Autosave indicator */}
       <div className="h-4 -mt-2 text-right text-[10px] font-semibold uppercase tracking-wider">
