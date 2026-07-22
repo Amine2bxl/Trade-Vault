@@ -130,6 +130,29 @@ function RootComponent() {
 
   useEffect(() => lockZoom(), []);
 
+  // Stale lazy-chunk guard. Pages are code-split; after a new deploy the old
+  // build's chunk hashes 404, so anyone who had the app open across a release
+  // gets "Failed to fetch dynamically imported module" when they open a page —
+  // which surfaces as the 500 error screen. Vite dispatches `vite:preloadError`
+  // for exactly this; we swallow it and reload once (rate-limited so a genuinely
+  // missing chunk can't loop) to pull the fresh manifest instead of crashing.
+  useEffect(() => {
+    const onPreloadError = (e: Event) => {
+      e.preventDefault();
+      const KEY = "tv-chunk-reload-at";
+      const last = Number(sessionStorage.getItem(KEY) || 0);
+      if (Date.now() - last > 10_000) {
+        sessionStorage.setItem(KEY, String(Date.now()));
+        window.location.reload();
+      } else {
+        // Reloading didn't fix it — let the error boundary show, don't loop.
+        reportAppError(e, { boundary: "vite_preload_error_persistent" });
+      }
+    };
+    window.addEventListener("vite:preloadError", onPreloadError);
+    return () => window.removeEventListener("vite:preloadError", onPreloadError);
+  }, []);
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const register = () => {
