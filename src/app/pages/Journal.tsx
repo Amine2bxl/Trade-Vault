@@ -82,7 +82,9 @@ export default function Journal({
         FILTERS_STORAGE_KEY,
         JSON.stringify({ strategyFilter, resultFilter, sortKey, sortDir } satisfies StoredFilters),
       );
-    } catch {}
+    } catch {
+      /* best-effort persistence — ignore */
+    }
   }, [strategyFilter, resultFilter, sortKey, sortDir]);
 
   useEffect(() => {

@@ -35,4 +35,9 @@ export type { ModalSize } from "./Modal";
 export { Badge } from "./Badge";
 export type { BadgeVariant } from "./Badge";
 
+export { PageHeader, SectionHeader } from "./PageHeader";
+export { EmptyState } from "./EmptyState";
+export { Metric } from "./Metric";
+export type { MetricProps } from "./Metric";
+
 export { ChartContainer } from "./Chart";

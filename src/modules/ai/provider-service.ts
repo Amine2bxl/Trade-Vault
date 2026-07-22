@@ -87,7 +87,7 @@ export async function generate(req: AIRequest, opts: GenerateOptions = {}): Prom
   const provider = opts.provider ?? resolveProvider();
   const maxRetries = opts.retries ?? 1;
   let attempt = 0;
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     try {
       return await callOnce(provider, req, opts.onUsage);
@@ -118,10 +118,7 @@ export interface ToolLoopOptions extends GenerateOptions {
  * repeat until the model answers or `maxIterations` is hit (then one final
  * tool-free call forces a text answer). Provider-agnostic.
  */
-export async function runWithTools(
-  req: AIRequest,
-  opts: ToolLoopOptions,
-): Promise<AIResponse> {
+export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promise<AIResponse> {
   const provider = opts.provider ?? resolveToolCapableProvider();
   const manifest = toProviderTools(opts.tools);
   const maxIterations = opts.maxIterations ?? 4;
@@ -141,8 +138,5 @@ export async function runWithTools(
   }
 
   // Budget exhausted — force a final answer without tools.
-  return generate(
-    { ...req, messages },
-    { provider, onUsage: opts.onUsage, retries: opts.retries },
-  );
+  return generate({ ...req, messages }, { provider, onUsage: opts.onUsage, retries: opts.retries });
 }

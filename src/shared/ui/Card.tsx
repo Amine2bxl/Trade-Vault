@@ -35,11 +35,7 @@ export function Card({
   );
 }
 
-export function CardHeader({
-  className,
-  children,
-  ...rest
-}: HTMLAttributes<HTMLDivElement>) {
+export function CardHeader({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn("flex items-center justify-between gap-3 p-5 pb-0", className)} {...rest}>
       {children}

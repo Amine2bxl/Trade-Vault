@@ -128,9 +128,9 @@ export function oklchToHex(L: number, C: number, H: number): string {
   const l = l_ ** 3,
     m = m_ ** 3,
     s = s_ ** 3;
-  let r = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
-  let g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
-  let bl = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+  const r = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const bl = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
   const toGamma = (c: number) => {
     const x = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
     return Math.round(clamp(x, 0, 1) * 255);
@@ -234,7 +234,9 @@ export function saveThemeStore(store: ThemeStore, activeVars: ThemeVars) {
     // Persist the resolved vars separately so the pre-paint bootstrap script
     // can apply them without any color math.
     localStorage.setItem(VARS_KEY, JSON.stringify(activeVars));
-  } catch {}
+  } catch {
+    /* best-effort persistence — ignore */
+  }
 }
 
 export function allThemes(store: ThemeStore): ThemeDef[] {

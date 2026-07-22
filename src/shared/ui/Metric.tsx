@@ -1,23 +1,22 @@
-import { cn } from "../utils/cn";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
+import { cn } from "./cn";
 
-interface StatsCardProps {
+/**
+ * Metric — the KPI tile (label / big tabular number / optional context line),
+ * previously `app/components/StatsCard`. Trend drives the semantic colour
+ * (profit/loss/accent) of the value, icon and hover glow.
+ */
+export interface MetricProps {
   title: string;
   value: string;
   subtitle?: string;
   icon?: ReactNode;
   trend?: "up" | "down" | "neutral";
+  /** Entrance stagger delay in ms. */
   delay?: number;
 }
 
-export default function StatsCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  trend,
-  delay = 0,
-}: StatsCardProps) {
+export function Metric({ title, value, subtitle, icon, trend, delay = 0 }: MetricProps) {
   return (
     <div
       className="group relative glass rounded-xl md:rounded-2xl p-3 md:p-3.5 card-premium animate-fade-in-up overflow-hidden"

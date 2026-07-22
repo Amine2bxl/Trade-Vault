@@ -140,100 +140,97 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
       backdropClassName="bg-black/70 backdrop-blur-md"
       className="max-w-2xl max-h-[94vh] md:max-h-[88vh] overflow-hidden flex flex-col"
     >
-        <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mt-2 md:hidden shrink-0" />
+      <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mt-2 md:hidden shrink-0" />
 
-        {/* Header */}
-        <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden shrink-0">
-          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl" />
-          <div className="relative flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 md:gap-3.5 min-w-0">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                <Target className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-base md:text-xl font-bold text-white tracking-tight truncate leading-tight">
-                  {missed.symbol || t("tradeDetail.missedSetup")}
-                </h2>
-                <p className="text-[11px] md:text-xs text-slate-500 mt-0.5 truncate">{dateStr}</p>
-              </div>
+      {/* Header */}
+      <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden shrink-0">
+        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl" />
+        <div className="relative flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 md:gap-3.5 min-w-0">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+              <Target className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {missed.estimatedR > 0 && (
-                <span className="flex items-center gap-1 text-[11px] md:text-xs px-2 md:px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-bold whitespace-nowrap">
-                  <TrendingUp className="w-3 h-3 md:w-3.5 md:h-3.5" />+
-                  {missed.estimatedR.toFixed(1)}
-                  {t("missed.rMissed")}
-                </span>
-              )}
-              <button
-                onClick={onClose}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="min-w-0">
+              <h2 className="text-base md:text-xl font-bold text-white tracking-tight truncate leading-tight">
+                {missed.symbol || t("tradeDetail.missedSetup")}
+              </h2>
+              <p className="text-[11px] md:text-xs text-slate-500 mt-0.5 truncate">{dateStr}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {missed.estimatedR > 0 && (
+              <span className="flex items-center gap-1 text-[11px] md:text-xs px-2 md:px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-bold whitespace-nowrap">
+                <TrendingUp className="w-3 h-3 md:w-3.5 md:h-3.5" />+{missed.estimatedR.toFixed(1)}
+                {t("missed.rMissed")}
+              </span>
+            )}
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Body */}
-        <div className="overflow-y-auto flex-1 p-3.5 md:p-7 space-y-3 md:space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] md:pb-7">
-          <Section
-            tone="red"
-            icon={Quote}
-            label={t("missed.card.why")}
-            empty={!missed.reasonNotTaken}
-          >
-            {body("reasonNotTaken")}
-          </Section>
+      {/* Body */}
+      <div className="overflow-y-auto flex-1 p-3.5 md:p-7 space-y-3 md:space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] md:pb-7">
+        <Section
+          tone="red"
+          icon={Quote}
+          label={t("missed.card.why")}
+          empty={!missed.reasonNotTaken}
+        >
+          {body("reasonNotTaken")}
+        </Section>
 
-          <Section
-            tone="amber"
-            icon={Activity}
-            label={t("missed.card.what")}
-            empty={!missed.whatHappened}
-          >
-            {body("whatHappened")}
-          </Section>
+        <Section
+          tone="amber"
+          icon={Activity}
+          label={t("missed.card.what")}
+          empty={!missed.whatHappened}
+        >
+          {body("whatHappened")}
+        </Section>
 
-          {/* Lesson learned — key takeaway, strongest visual weight */}
-          <Section
-            tone="blue"
-            icon={Lightbulb}
-            label={t("missed.card.lesson")}
-            big
-            empty={!missed.lessonLearned}
-          >
-            <p className="text-sm md:text-[15px] text-slate-100 leading-relaxed whitespace-pre-wrap font-medium">
-              {missed.lessonLearned || (
-                <span className="text-slate-600 italic font-normal">
-                  {t("missed.nothingNoted")}
-                </span>
-              )}
-            </p>
-          </Section>
+        {/* Lesson learned — key takeaway, strongest visual weight */}
+        <Section
+          tone="blue"
+          icon={Lightbulb}
+          label={t("missed.card.lesson")}
+          big
+          empty={!missed.lessonLearned}
+        >
+          <p className="text-sm md:text-[15px] text-slate-100 leading-relaxed whitespace-pre-wrap font-medium">
+            {missed.lessonLearned || (
+              <span className="text-slate-600 italic font-normal">{t("missed.nothingNoted")}</span>
+            )}
+          </p>
+        </Section>
 
-          <Section
-            tone="emerald"
-            icon={Compass}
-            label={t("missed.card.next")}
-            empty={!missed.nextTimePlan}
-          >
-            {body("nextTimePlan")}
-          </Section>
+        <Section
+          tone="emerald"
+          icon={Compass}
+          label={t("missed.card.next")}
+          empty={!missed.nextTimePlan}
+        >
+          {body("nextTimePlan")}
+        </Section>
 
-          {shots.length > 0 && (
-            <div className="pt-1">
-              <div className="flex items-center gap-2 mb-2.5 md:mb-3">
-                <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">
-                  {t("tradeDetail.chartScreenshots")}
-                </span>
-                <span className="text-[10px] text-slate-700 font-semibold">· {shots.length}</span>
-              </div>
-              <ScreenshotsView paths={shots} size="lg" />
+        {shots.length > 0 && (
+          <div className="pt-1">
+            <div className="flex items-center gap-2 mb-2.5 md:mb-3">
+              <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">
+                {t("tradeDetail.chartScreenshots")}
+              </span>
+              <span className="text-[10px] text-slate-700 font-semibold">· {shots.length}</span>
             </div>
-          )}
-        </div>
+            <ScreenshotsView paths={shots} size="lg" />
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }

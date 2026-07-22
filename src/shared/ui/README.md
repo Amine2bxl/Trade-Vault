@@ -38,6 +38,9 @@ import { Button, Card, Modal, Field, Input, Badge, Table, Heading, Text } from "
 | **Modals** | `Modal` (`open`, `onClose`, `size`, `labelledBy`) | overlay existant + `Esc`/scroll-lock/`aria-modal` |
 | **Badges** | `Badge` (neutral/profit/loss/warning/accent) | tints sémantiques déjà utilisés |
 | **Charts** | `ChartContainer` + re-export recharts | thème dans `app/utils/chartTheme` (inchangé) |
+| **Page structure** | `PageHeader` (title/subtitle/eyebrow/actions), `SectionHeader` | le h1 gradient + sous-titre dupliqué sur ~15 pages |
+| **Empty states** | `EmptyState` (icon/title/description/action) | bloc `glass rounded-2xl p-10 text-center` |
+| **Metrics** | `Metric` (KPI tile, ex-`StatsCard`) | tuile KPI du Dashboard (glow par trend) |
 
 ## Adoption (non destructive, par lots)
 

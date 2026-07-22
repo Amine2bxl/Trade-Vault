@@ -23,7 +23,7 @@ function detectDelimiter(firstLine: string): string {
 }
 
 function parseCsv(text: string): { headers: string[]; rows: string[][] } {
-  const clean = text.replace(/^﻿/, "");
+  const clean = text.replace(/^\uFEFF/, "");
   const delim = detectDelimiter(clean.split(/\r?\n/, 1)[0] ?? "");
   const rows: string[][] = [];
   let cur: string[] = [],

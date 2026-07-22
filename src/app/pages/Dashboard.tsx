@@ -31,7 +31,7 @@ import { loadStartingBalance } from "../store";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import StatsCard from "../components/StatsCard";
+import { Metric, PageHeader } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -105,7 +105,9 @@ export default function Dashboard({
     setPeriod(p);
     try {
       localStorage.setItem(PERIOD_STORAGE_KEY, p);
-    } catch {}
+    } catch {
+      /* best-effort persistence — ignore */
+    }
   };
 
   const cutoff = periodCutoff(period);
@@ -175,29 +177,30 @@ export default function Dashboard({
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
-      <div className="flex items-center justify-between mb-4 md:mb-6">
-        <div className="animate-fade-in-up stagger-0">
+      <PageHeader
+        className="items-center stagger-0"
+        eyebrow={
           <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-1">
             <Sparkles className="w-3.5 h-3.5" />
             <span>{getGreeting()}</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-            {t("dashboard.title")}
-          </h1>
-        </div>
-        <button
-          onClick={onAddTrade}
-          className="relative hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 animate-fade-in-up stagger-1"
-        >
-          <Plus className="w-4 h-4" /> {t("common.addTrade")}
-          {hasDraft && (
-            <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />{" "}
-              {t("trade.draftBadge")}
-            </span>
-          )}
-        </button>
-      </div>
+        }
+        title={t("dashboard.title")}
+        actions={
+          <button
+            onClick={onAddTrade}
+            className="relative hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 animate-fade-in-up stagger-1"
+          >
+            <Plus className="w-4 h-4" /> {t("common.addTrade")}
+            {hasDraft && (
+              <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />{" "}
+                {t("trade.draftBadge")}
+              </span>
+            )}
+          </button>
+        }
+      />
 
       {/* Pre-market checklist synergy card */}
       {onOpenChecklist && chkStatus && (
@@ -418,7 +421,7 @@ export default function Dashboard({
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-            <StatsCard
+            <Metric
               title={t("stats.winRate")}
               value={formatPct(stats.winRate)}
               subtitle={`${stats.wins}W / ${stats.losses}L${stats.breakEven > 0 ? ` / ${stats.breakEven}BE` : ""}`}
@@ -426,7 +429,7 @@ export default function Dashboard({
               trend={stats.winRate >= 0.5 ? "up" : "down"}
               delay={0}
             />
-            <StatsCard
+            <Metric
               title={t("dashboard.profitFactor")}
               value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
               subtitle={`${t("dashboard.avgRR")} ${stats.avgRR.toFixed(2)}`}
@@ -434,7 +437,7 @@ export default function Dashboard({
               trend={stats.profitFactor >= 1.5 ? "up" : stats.profitFactor < 1 ? "down" : "neutral"}
               delay={60}
             />
-            <StatsCard
+            <Metric
               title={t("quant.expectancy")}
               value={formatPnl(quant.expectancy)}
               subtitle={`${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R / trade`}
@@ -448,7 +451,7 @@ export default function Dashboard({
               trend={quant.expectancy >= 0 ? "up" : "down"}
               delay={120}
             />
-            <StatsCard
+            <Metric
               title={t("dashboard.maxDrawdown")}
               value={formatPnl(-stats.maxDrawdown)}
               subtitle={

@@ -1,9 +1,4 @@
-import type {
-  HTMLAttributes,
-  TdHTMLAttributes,
-  ThHTMLAttributes,
-  ReactNode,
-} from "react";
+import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes, ReactNode } from "react";
 import { cn } from "./cn";
 
 /**

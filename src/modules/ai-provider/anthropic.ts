@@ -1,10 +1,4 @@
-import type {
-  AIProvider,
-  AIRequest,
-  AIResponse,
-  FinishReason,
-  ProviderToolCall,
-} from "./types";
+import type { AIProvider, AIRequest, AIResponse, FinishReason, ProviderToolCall } from "./types";
 
 /**
  * Anthropic Claude provider. Activates when ANTHROPIC_API_KEY is set and

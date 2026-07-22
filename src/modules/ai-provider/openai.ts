@@ -1,10 +1,4 @@
-import type {
-  AIProvider,
-  AIRequest,
-  AIResponse,
-  FinishReason,
-  ProviderToolCall,
-} from "./types";
+import type { AIProvider, AIRequest, AIResponse, FinishReason, ProviderToolCall } from "./types";
 
 /**
  * OpenAI-compatible provider. Talks the Chat Completions API, so it works with

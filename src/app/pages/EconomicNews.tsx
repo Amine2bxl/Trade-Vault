@@ -104,13 +104,15 @@ export default function EconomicNews() {
   const toggleCurrency = (c: Currency) =>
     setCurrencyFilter((prev) => {
       const next = new Set(prev);
-      next.has(c) ? next.delete(c) : next.add(c);
+      if (next.has(c)) next.delete(c);
+      else next.add(c);
       return next;
     });
   const toggleImpact = (i: ImpactLevel) =>
     setImpactFilter((prev) => {
       const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
       return next;
     });
   const clearFilters = () => {

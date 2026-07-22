@@ -35,6 +35,7 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
+import { PageHeader } from "@/shared/ui";
 
 interface SeasonalityProps {
   trades: Trade[];
@@ -53,12 +54,11 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
-      <div className="mb-4 md:mb-5 animate-fade-in-up stagger-0">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          {t("seasonality.title")}
-        </h1>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">{t("seasonality.subtitle")}</p>
-      </div>
+      <PageHeader
+        className="mb-4 md:mb-5 stagger-0"
+        title={t("seasonality.title")}
+        subtitle={t("seasonality.subtitle")}
+      />
 
       {/* Tab switcher */}
       <div className="inline-flex p-1 rounded-2xl bg-white/[0.03] border border-white/[0.07] mb-5 animate-fade-in-up stagger-1">

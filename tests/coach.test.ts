@@ -57,10 +57,7 @@ test("runCoach returns the provider's answer via the injected provider", async (
       return { text: "## 💡 Bottom Line\n**Cut overtrading.**", provider: "fake", model: "m" };
     },
   };
-  const res = await runCoach(
-    { question: "help", stats: { winRate: 0.5 } },
-    { provider: fake },
-  );
+  const res = await runCoach({ question: "help", stats: { winRate: 0.5 } }, { provider: fake });
   expect(res.text).toContain("Bottom Line");
   expect(res.provider).toBe("fake");
 });

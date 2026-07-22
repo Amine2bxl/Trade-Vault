@@ -35,17 +35,8 @@ export {
 } from "./provider-service";
 
 // Context Builder
-export {
-  ContextBuilder,
-  createContextBuilder,
-  CONTEXT_CAPS,
-} from "./context-builder";
-export {
-  contextBlocks,
-  languageName,
-  type AIUserContext,
-  type AITradeSummary,
-} from "./context";
+export { ContextBuilder, createContextBuilder, CONTEXT_CAPS } from "./context-builder";
+export { contextBlocks, languageName, type AIUserContext, type AITradeSummary } from "./context";
 
 // Prompt Builder
 export { buildPrompt, type PromptSpec, type ConversationTurn } from "./prompt-builder";
