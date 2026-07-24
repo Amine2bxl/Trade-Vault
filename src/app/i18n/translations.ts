@@ -301,6 +301,12 @@ const en = {
 
   // Calendar
   "calendar.title": "Calendar",
+  "calendar.week": "Week",
+  "calendar.legendHeat": "Intensity = day size",
+  "calendar.trade": "trade",
+  "calendar.trades": "trades",
+  "calendar.day": "day",
+  "calendar.days": "days",
   "calendar.subtitle": "Daily performance overview",
   "calendar.monthlyPnl": "Monthly P&L",
   "calendar.tradingDays": "Trading Days",
