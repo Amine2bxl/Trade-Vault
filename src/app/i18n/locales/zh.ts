@@ -2,6 +2,11 @@ import type { Dict } from "../translations";
 
 const zh: Dict = {
   "nav.dashboard": "仪表板",
+  "nav.groupBefore": "交易前",
+  "nav.groupDuring": "交易中",
+  "nav.groupAfter": "交易后",
+  "nav.groupAi": "AI 与分析",
+  "nav.groupAccount": "账户",
   "nav.journal": "日志",
   "nav.missed": "错过的机会",
   "nav.calendar": "日历",
@@ -12,7 +17,6 @@ const zh: Dict = {
   "nav.home": "首页",
   "nav.ai": "AI",
   "nav.goals": "目标",
-  "nav.groupPlan": "计划",
   "nav.tradingPlan": "交易计划",
   "nav.reports": "月度报告",
   "nav.appearance": "外观",

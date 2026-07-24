@@ -2,6 +2,11 @@ import type { Dict } from "../translations";
 
 const ja: Dict = {
   "nav.dashboard": "ダッシュボード",
+  "nav.groupBefore": "取引前",
+  "nav.groupDuring": "取引中",
+  "nav.groupAfter": "取引後",
+  "nav.groupAi": "AIと分析",
+  "nav.groupAccount": "アカウント",
   "nav.journal": "ジャーナル",
   "nav.missed": "逃したセットアップ",
   "nav.calendar": "カレンダー",
@@ -12,7 +17,6 @@ const ja: Dict = {
   "nav.home": "ホーム",
   "nav.ai": "AI",
   "nav.goals": "目標",
-  "nav.groupPlan": "プラン",
   "nav.tradingPlan": "トレーディングプラン",
   "nav.reports": "月次レポート",
   "nav.appearance": "外観",

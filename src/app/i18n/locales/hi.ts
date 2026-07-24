@@ -2,6 +2,11 @@ import type { Dict } from "../translations";
 
 const hi: Dict = {
   "nav.dashboard": "डैशबोर्ड",
+  "nav.groupBefore": "ट्रेडिंग से पहले",
+  "nav.groupDuring": "ट्रेडिंग के दौरान",
+  "nav.groupAfter": "ट्रेडिंग के बाद",
+  "nav.groupAi": "AI और विश्लेषण",
+  "nav.groupAccount": "खाता",
   "nav.journal": "जर्नल",
   "nav.missed": "छूटे सेटअप",
   "nav.calendar": "कैलेंडर",
@@ -12,7 +17,6 @@ const hi: Dict = {
   "nav.home": "होम",
   "nav.ai": "AI",
   "nav.goals": "लक्ष्य",
-  "nav.groupPlan": "योजना",
   "nav.tradingPlan": "ट्रेडिंग योजना",
   "nav.reports": "मासिक रिपोर्ट",
   "nav.appearance": "रूप-रंग",

@@ -2,6 +2,11 @@ import type { Dict } from "../translations";
 
 const it: Dict = {
   "nav.dashboard": "Dashboard",
+  "nav.groupBefore": "Prima del trading",
+  "nav.groupDuring": "Durante",
+  "nav.groupAfter": "Dopo",
+  "nav.groupAi": "IA e analisi",
+  "nav.groupAccount": "Account",
   "nav.journal": "Diario",
   "nav.missed": "Setup persi",
   "nav.calendar": "Calendario",
@@ -12,7 +17,6 @@ const it: Dict = {
   "nav.home": "Home",
   "nav.ai": "IA",
   "nav.goals": "Obiettivi",
-  "nav.groupPlan": "Piano",
   "nav.tradingPlan": "Piano di trading",
   "nav.reports": "Report mensili",
   "nav.appearance": "Aspetto",

@@ -2,6 +2,11 @@ import type { Dict } from "../translations";
 
 const fr: Dict = {
   "nav.dashboard": "Tableau de bord",
+  "nav.groupBefore": "Avant de trader",
+  "nav.groupDuring": "Pendant",
+  "nav.groupAfter": "Après",
+  "nav.groupAi": "IA & Analyse",
+  "nav.groupAccount": "Compte",
   "nav.journal": "Journal",
   "nav.missed": "Setups manqués",
   "nav.calendar": "Calendrier",
@@ -13,7 +18,6 @@ const fr: Dict = {
   "nav.ai": "IA",
   "nav.more": "Plus",
   "nav.goals": "Objectifs",
-  "nav.groupPlan": "Plan",
   "nav.tradingPlan": "Plan de trading",
   "nav.reports": "Rapports mensuels",
   "nav.appearance": "Apparence",
@@ -485,11 +489,6 @@ const fr: Dict = {
   "mistakes.goalIntro": "Élimine",
   "mistakes.goalMid": "cette semaine pour monter la discipline vers",
   "mistakes.goalEnd": ".",
-
-  "nav.groupMain": "Principal",
-  "nav.groupAnalysis": "Analyse",
-  "nav.groupData": "Data",
-  "nav.groupSystem": "Système",
   "nav.news": "News éco",
   "nav.seasonality": "Saisonnalité",
   "nav.calculator": "Calculateur de lots",
