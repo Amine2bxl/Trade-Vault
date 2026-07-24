@@ -34,6 +34,12 @@ export interface CoachInput {
   mistakes?: { name: string; count: number; totalPnl: number }[];
   /** Active goals and progress. */
   goals?: { kind: string; target: number; current: number }[];
+  /**
+   * Who this trader is, from their onboarding (style, market, experience,
+   * declared weakness, goal, target). Injected on EVERY call so the coaching
+   * is never generic — the coach opens already knowing them.
+   */
+  profile?: string;
   /** Recent conversation turns (in-request only — NOT persisted). */
   conversation?: ConversationTurn[];
 }
@@ -44,6 +50,9 @@ export function coachIdentity(lang: string): string {
     `You are TradeVault's resident trading performance coach — an elite quant ` +
     `mentor who KNOWS this trader. Every claim MUST cite specific numbers from ` +
     `the data provided below. Be candid, concrete and kind-but-firm. ` +
+    `When a trader profile is provided, speak to THAT trader: name their ` +
+    `declared weakness, their goal and their style explicitly instead of giving ` +
+    `advice that would fit anyone. Never open with generic pleasantries. ` +
     `Write the ENTIRE response in ${lang}.`
   );
 }
@@ -70,6 +79,9 @@ export function buildCoachMessages(input: CoachInput) {
   if (input.trades) builder.withTrades(input.trades);
   if (input.mistakes) builder.withMistakes(input.mistakes);
   if (input.goals) builder.withGoals(input.goals);
+  // The trader's own declared profile rides in the long-term-memory block —
+  // same semantics ("facts you already know"), no new context plumbing.
+  if (input.profile) builder.withMemory([{ kind: "profile", content: input.profile }]);
 
   const lang = languageName(input.language);
   return buildPrompt({

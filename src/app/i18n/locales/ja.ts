@@ -2,6 +2,8 @@ import type { Dict } from "../translations";
 
 const ja: Dict = {
   "nav.dashboard": "ダッシュボード",
+  "chk.cfgItemOn": "有効 — 今日カウント",
+  "chk.cfgItemOff": "無効 — 今日は非表示",
   "error.pageTitle": "このセクションで問題が発生しました",
   "error.pageBody": "このページの読み込みに失敗しました。データは安全です。",
   "error.retry": "再試行",

@@ -7,7 +7,16 @@
 export interface ChkItem {
   title: string;
   desc: string;
+  /**
+   * Off-days it without deleting it. Optional so every previously stored
+   * config keeps working (undefined === enabled). Disabled items are hidden
+   * from the daily run and ignored by the gates.
+   */
+  enabled?: boolean;
 }
+
+/** An item counts for the daily run unless it was explicitly disabled. */
+export const isItemOn = (it: ChkItem): boolean => it.enabled !== false;
 export interface MotivOpt {
   text: string;
   ok: boolean; // true = process-driven motivation (the only valid one)

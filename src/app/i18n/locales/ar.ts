@@ -2,6 +2,8 @@ import type { Dict } from "../translations";
 
 const ar: Dict = {
   "nav.dashboard": "لوحة التحكم",
+  "chk.cfgItemOn": "مفعّل — يُحتسب اليوم",
+  "chk.cfgItemOff": "معطّل — مخفي اليوم",
   "error.pageTitle": "واجه هذا القسم مشكلة",
   "error.pageBody": "تعذّر تحميل هذه الصفحة. بياناتك آمنة.",
   "error.retry": "إعادة المحاولة",

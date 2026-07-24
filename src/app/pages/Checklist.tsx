@@ -4,6 +4,7 @@ import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
+import { ttsSpeak } from "@/backend/tts.functions";
 import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
@@ -14,6 +15,7 @@ import {
   defaultConfigFor,
   templatesFor,
   generateChecklist,
+  isItemOn,
   ranksFor,
   coachPromptsFor,
 } from "./checklistDefaults";
@@ -553,7 +555,51 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     return best;
   }, []);
 
-  const speak = useCallback(
+  /* The product's ONE voice: a hosted, deep/calm/charismatic English voice that
+     sounds identical on every OS and browser. When it isn't configured
+     (no API key) we fall back to the locked-down browser voice below.
+     `ttsAvailable` is remembered per session so we try the network once. */
+  const ttsAvailableRef = useRef<boolean | null>(null);
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
+
+  const speakHosted = useCallback(
+    async (txt: string): Promise<boolean> => {
+      if (ttsAvailableRef.current === false) return false;
+      try {
+        const res = await ttsSpeak({ data: { text: txt } });
+        if (!res.available || !("audio" in res) || !res.audio) {
+          ttsAvailableRef.current = false;
+          return false;
+        }
+        ttsAvailableRef.current = true;
+        audioElRef.current?.pause();
+        const el = new Audio(res.audio);
+        audioElRef.current = el;
+        el.volume = 0.95;
+        showVoiceWidget(txt);
+        commOn();
+        el.onended = () => {
+          radioClick();
+          commOff();
+          hideVoiceWidget();
+        };
+        el.onerror = () => {
+          commOff();
+          hideVoiceWidget();
+        };
+        await el.play();
+        return true;
+      } catch {
+        // Network/autoplay refusal → fall back to the browser voice.
+        ttsAvailableRef.current = false;
+        commOff();
+        return false;
+      }
+    },
+    [showVoiceWidget, hideVoiceWidget, commOn, commOff, radioClick],
+  );
+
+  const speakBrowser = useCallback(
     (txt: string, tone: Tone) => {
       if (!audioOnRef.current) return;
       if (!("speechSynthesis" in window)) {
@@ -603,6 +649,22 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       }
     },
     [radioClick, commOn, commOff, pickVoice, showVoiceWidget, hideVoiceWidget],
+  );
+
+  const speak = useCallback(
+    (txt: string, tone: Tone) => {
+      if (!audioOnRef.current) return;
+      // Hosted voice first — identical everywhere. Browser voice is the fallback.
+      if (ttsAvailableRef.current !== false) {
+        void speakHosted(txt).then((ok) => {
+          if (ok || !("speechSynthesis" in window)) return;
+          speakBrowser(txt, tone);
+        });
+        return;
+      }
+      speakBrowser(txt, tone);
+    },
+    [speakHosted, speakBrowser],
   );
 
   const say = useCallback(
@@ -740,8 +802,15 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
   /* ══ Derived scoring ══ */
   const winOpen = isWindowOpen(config, new Date(now));
-  const nChecked = checked.filter(Boolean).length;
-  const nItems = Math.max(1, config.items.length);
+  // Only enabled items take part in the daily run — a disabled item is neither
+  // shown, counted, nor able to block the lock.
+  const activeIdx = useMemo(
+    () => config.items.map((it, i) => (isItemOn(it) ? i : -1)).filter((i) => i >= 0),
+    [config.items],
+  );
+  const nChecked = activeIdx.filter((i) => checked[i]).length;
+  const nActive = activeIdx.length;
+  const nItems = Math.max(1, nActive);
   const parts = useMemo(() => {
     const check = Math.round((nChecked / nItems) * 60);
     const mental =
@@ -759,13 +828,13 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, [nChecked, nItems, day.fomo, day.motiv, config.motivs, winOpen]);
   const gates = useMemo(
     () => ({
-      check: nChecked === config.items.length && config.items.length > 0,
+      check: nChecked === nActive && nActive > 0,
       mental: day.fomo === 0 || day.fomo === 1,
       motiv: day.motiv >= 0 && !!config.motivs[day.motiv]?.ok,
       win: winOpen,
       assume: day.assume,
     }),
-    [nChecked, config.items.length, day.fomo, day.motiv, config.motivs, winOpen],
+    [nChecked, nActive, day.fomo, day.motiv, config.motivs, winOpen],
   );
   const allGates = gates.check && gates.mental && gates.motiv && gates.win && gates.assume;
   const interference = day.motiv >= 0 && !config.motivs[day.motiv]?.ok;
@@ -1315,45 +1384,63 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
             <div className="jk-cfg-section">
               <div className="jk-cfg-title">
-                {t("chk.cfgChecklist")} ({config.items.length})
+                {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
               </div>
               <div className="jk-cfg-hint">{t("chk.cfgDragHint")}</div>
-              {config.items.map((it, i) => (
-                <div
-                  className={cn("jk-cfg-row draggable", dragIdx === i && "dragging")}
-                  key={i}
-                  draggable
-                  onDragStart={() => setDragIdx(i)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => dropItem(i)}
-                  onDragEnd={() => setDragIdx(null)}
-                >
-                  <span className="jk-drag" title="Drag">
-                    ⋮⋮
-                  </span>
-                  <div className="jk-cfg-col">
-                    <input
-                      className="jk-input"
-                      value={it.title}
-                      onChange={(e) => patchItem(i, { title: e.target.value })}
-                    />
-                    <input
-                      className="jk-input"
-                      value={it.desc}
-                      onChange={(e) => patchItem(i, { desc: e.target.value })}
-                    />
-                  </div>
-                  <button
-                    className="jk-cfg-del"
-                    onClick={() => {
-                      markTouched();
-                      setConfig((c) => ({ ...c, items: c.items.filter((_, k) => k !== i) }));
-                    }}
+              {config.items.map((it, i) => {
+                const on = isItemOn(it);
+                return (
+                  <div
+                    className={cn(
+                      "jk-cfg-row draggable",
+                      dragIdx === i && "dragging",
+                      !on && "off",
+                    )}
+                    key={i}
+                    draggable
+                    onDragStart={() => setDragIdx(i)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => dropItem(i)}
+                    onDragEnd={() => setDragIdx(null)}
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    <span className="jk-drag" title="Drag">
+                      ⋮⋮
+                    </span>
+                    {/* Enable / disable — keeps the item but takes it out of the
+                      daily run (and out of the gates). */}
+                    <button
+                      className={cn("jk-cfg-toggle", on && "on")}
+                      role="switch"
+                      aria-checked={on}
+                      title={on ? t("chk.cfgItemOn") : t("chk.cfgItemOff")}
+                      onClick={() => patchItem(i, { enabled: !on })}
+                    >
+                      <span className="jk-cfg-knob" />
+                    </button>
+                    <div className="jk-cfg-col">
+                      <input
+                        className="jk-input"
+                        value={it.title}
+                        onChange={(e) => patchItem(i, { title: e.target.value })}
+                      />
+                      <input
+                        className="jk-input"
+                        value={it.desc}
+                        onChange={(e) => patchItem(i, { desc: e.target.value })}
+                      />
+                    </div>
+                    <button
+                      className="jk-cfg-del"
+                      onClick={() => {
+                        markTouched();
+                        setConfig((c) => ({ ...c, items: c.items.filter((_, k) => k !== i) }));
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
               <input
                 className="jk-input jk-quick-add"
                 placeholder={t("chk.cfgQuickAdd")}
@@ -1664,33 +1751,35 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           {t("chk.secChecklist")}
         </div>
         <div className="jk-checklist">
-          {config.items.map((it, i) => (
-            <div
-              key={i}
-              className={cn("jk-ci", checked[i] && "done")}
-              style={{ animationDelay: `${0.05 * (i + 1)}s` }}
-              onClick={() => toggleItem(i)}
-            >
-              <div className="jk-scan-bar" />
-              <div className="jk-ci-head">
-                <div className="jk-ci-box" />
-                <div className="jk-ci-title">
+          {config.items.map((it, i) =>
+            !isItemOn(it) ? null : (
+              <div
+                key={i}
+                className={cn("jk-ci", checked[i] && "done")}
+                style={{ animationDelay: `${0.05 * (i + 1)}s` }}
+                onClick={() => toggleItem(i)}
+              >
+                <div className="jk-scan-bar" />
+                <div className="jk-ci-head">
+                  <div className="jk-ci-box" />
+                  <div className="jk-ci-title">
+                    <Ed
+                      value={it.title}
+                      editable={editMode}
+                      onCommit={(v) => patchItem(i, { title: v })}
+                    />
+                  </div>
+                </div>
+                <div className="jk-ci-desc">
                   <Ed
-                    value={it.title}
+                    value={it.desc}
                     editable={editMode}
-                    onCommit={(v) => patchItem(i, { title: v })}
+                    onCommit={(v) => patchItem(i, { desc: v })}
                   />
                 </div>
               </div>
-              <div className="jk-ci-desc">
-                <Ed
-                  value={it.desc}
-                  editable={editMode}
-                  onCommit={(v) => patchItem(i, { desc: v })}
-                />
-              </div>
-            </div>
-          ))}
+            ),
+          )}
         </div>
 
         {/* ══ MOTIVATION ══ */}

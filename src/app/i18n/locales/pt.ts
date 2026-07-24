@@ -2,6 +2,8 @@ import type { Dict } from "../translations";
 
 const pt: Dict = {
   "nav.dashboard": "Painel",
+  "chk.cfgItemOn": "Ativo — conta hoje",
+  "chk.cfgItemOff": "Inativo — oculto hoje",
   "error.pageTitle": "Esta secção encontrou um problema",
   "error.pageBody": "Falha ao carregar esta página. Os teus dados estão seguros.",
   "error.retry": "Tentar de novo",

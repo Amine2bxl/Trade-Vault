@@ -667,6 +667,8 @@ const en = {
 
   // Pre-market checklist
   "chk.voice": "JARVIS voice",
+  "chk.cfgItemOn": "Active — counts today",
+  "chk.cfgItemOff": "Off — hidden today",
   "chk.editor": "Editor",
   "chk.customize": "Customize",
   "chk.standby": "Standby",

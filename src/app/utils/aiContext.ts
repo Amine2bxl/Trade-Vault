@@ -1,7 +1,7 @@
 import type { Trade } from "../types";
 import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { loadMemory, remember } from "@/modules/ai/memory";
-import { loadOnboarding } from "../store";
+import { loadOnboarding, type OnboardingData } from "../store";
 import type { AIUserContext } from "@/modules/ai/context";
 
 /**
@@ -87,7 +87,30 @@ export interface CoachV1Payload {
   trades?: ReturnType<typeof toInsightTradesPayload>;
   mistakes?: { name: string; count: number; totalPnl: number }[];
   conversation?: { role: "user" | "assistant"; content: string }[];
+  profile?: string;
   language?: string;
+}
+
+/**
+ * One-line trader profile from the onboarding answers — sent with every coach
+ * call so the coaching addresses THIS trader (their style, market, declared
+ * weakness, goal and target) instead of sounding generic. Pure, sync, no IO.
+ */
+export function describeProfile(
+  onb: (OnboardingData & { monthlyTarget?: number | null }) | null | undefined,
+): string | undefined {
+  if (!onb) return undefined;
+  const parts: string[] = [];
+  if (onb.style) parts.push(`style: ${onb.style}`);
+  if (onb.experience) parts.push(`experience: ${onb.experience}`);
+  if (onb.assets?.length) parts.push(`markets: ${onb.assets.slice(0, 5).join(", ")}`);
+  if (onb.usesIct) parts.push("uses ICT concepts");
+  if (onb.goal) parts.push(`goal: ${onb.goal}`);
+  if (onb.pain) parts.push(`declared weakness to police: ${onb.pain}`);
+  if (typeof onb.monthlyTarget === "number" && onb.monthlyTarget > 0)
+    parts.push(`monthly target: ${onb.monthlyTarget}%`);
+  if (!parts.length) return undefined;
+  return `Trader profile — ${parts.join("; ")}.`;
 }
 
 /**
@@ -101,8 +124,10 @@ export function buildCoachV1Payload(opts: {
   conversation?: CoachTurn[];
   language?: string;
   maxTurns?: number;
+  /** Onboarding answers — makes the coaching personal on every single call. */
+  onboarding?: (OnboardingData & { monthlyTarget?: number | null }) | null;
 }): CoachV1Payload {
-  const { trades, conversation = [], language, maxTurns = 16 } = opts;
+  const { trades, conversation = [], language, maxTurns = 16, onboarding } = opts;
   const stats = trades.length ? computeStats(trades) : null;
   const mistakes = stats
     ? Object.entries(stats.mistakeStats)
@@ -117,6 +142,7 @@ export function buildCoachV1Payload(opts: {
     conversation: conversation
       .slice(-maxTurns)
       .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),
+    profile: describeProfile(onboarding),
     language,
   };
 }

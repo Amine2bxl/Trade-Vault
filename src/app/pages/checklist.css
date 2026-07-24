@@ -2306,6 +2306,40 @@
   background: rgba(255, 85, 102, 0.15);
   border-color: rgba(255, 85, 102, 0.5);
 }
+/* Per-item enable/disable switch — an off item stays in the config but is
+   hidden from the daily run and ignored by the gates. */
+.jchk .jk-cfg-toggle {
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.jchk .jk-cfg-toggle .jk-cfg-knob {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #94a3b8;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.jchk .jk-cfg-toggle.on {
+  background: rgba(34, 211, 238, 0.25);
+  border-color: rgba(34, 211, 238, 0.5);
+}
+.jchk .jk-cfg-toggle.on .jk-cfg-knob {
+  transform: translateX(14px);
+  background: var(--jk-cyan, #22d3ee);
+}
+.jchk .jk-cfg-row.off .jk-cfg-col {
+  opacity: 0.45;
+}
 .jchk .jk-cfg-add {
   border: 1px dashed rgba(34, 211, 238, 0.35);
   background: transparent;

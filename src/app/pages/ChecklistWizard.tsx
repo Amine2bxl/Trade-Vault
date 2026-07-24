@@ -124,8 +124,17 @@ export default function ChecklistWizard({
     onApply({ items, startTime: time.startTime, timeZone: time.timeZone });
   };
 
-  const next = () => setStep((s) => Math.min(s + 1, 2));
-  const back = () => setStep((s) => Math.max(s - 1, 0));
+  // The generated list already folds in the guardrails (weakness, risk, market),
+  // so picking it skips the add-on step entirely: 2 taps instead of 3 screens.
+  const skipsGuardrails = presetId === "generated";
+  const next = () =>
+    setStep((s) => {
+      if (s === 0 && skipsGuardrails) return 2;
+      return Math.min(s + 1, 2);
+    });
+  const back = () => setStep((s) => (s === 2 && skipsGuardrails ? 0 : Math.max(s - 1, 0)));
+  const totalSteps = skipsGuardrails ? 2 : 3;
+  const stepIndex = skipsGuardrails && step === 2 ? 1 : step;
 
   const toggleGuard = (k: keyof WizardToggles) => setToggles((t) => ({ ...t, [k]: !t[k] }));
 
@@ -148,12 +157,12 @@ export default function ChecklistWizard({
             <span className="w-5" />
           )}
           <div className="flex-1 flex gap-1.5">
-            {[0, 1, 2].map((i) => (
+            {Array.from({ length: totalSteps }, (_, i) => (
               <div
                 key={i}
                 className={cn(
                   "h-1.5 flex-1 rounded-full transition-colors",
-                  i <= step ? "bg-cyan-500" : "bg-white/[0.08]",
+                  i <= stepIndex ? "bg-cyan-500" : "bg-white/[0.08]",
                 )}
               />
             ))}
@@ -291,10 +300,17 @@ export default function ChecklistWizard({
                 {tr("Quand commence ta session ?", "When does your session start?")}
               </h2>
             </div>
-            <p className="text-sm text-slate-400 mb-5">
+            <p className="text-sm text-slate-400 mb-1.5">
               {tr(
                 "Aucune entrée avant cette heure. C'est ta règle n°1.",
                 "No entries before this time. That's your rule #1.",
+              )}
+            </p>
+            {/* Say WHY we ask — the only question left once the list is generated. */}
+            <p className="text-xs text-slate-500 mb-5">
+              {tr(
+                "On s'en sert pour verrouiller la checklist avant l'ouverture et t'alerter quand ta session démarre.",
+                "We use it to lock the checklist before the open and alert you when your session starts.",
               )}
             </p>
             <div className="grid gap-2.5 mb-4">

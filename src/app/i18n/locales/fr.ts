@@ -590,6 +590,8 @@ const fr: Dict = {
 
   // Checklist pré-market
   "chk.voice": "Voix JARVIS",
+  "chk.cfgItemOn": "Actif — compte aujourd'hui",
+  "chk.cfgItemOff": "Inactif — masqué aujourd'hui",
   "chk.editor": "Éditeur",
   "chk.customize": "Personnaliser",
   "chk.standby": "Standby",

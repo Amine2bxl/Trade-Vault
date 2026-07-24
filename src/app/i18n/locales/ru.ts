@@ -2,6 +2,8 @@ import type { Dict } from "../translations";
 
 const ru: Dict = {
   "nav.dashboard": "Панель",
+  "chk.cfgItemOn": "Включён — учитывается",
+  "chk.cfgItemOff": "Выключен — скрыт",
   "error.pageTitle": "Возникла проблема в этом разделе",
   "error.pageBody": "Не удалось загрузить страницу. Ваши данные в безопасности.",
   "error.retry": "Повторить",
