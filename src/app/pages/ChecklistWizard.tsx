@@ -26,6 +26,10 @@ const isFr = (lang: string) => lang === "fr";
 // Beginner-friendly one-liners per preset (the template names stay as-is).
 function presetBlurb(id: string, fr: boolean): string {
   const m: Record<string, [string, string]> = {
+    generated: [
+      "Générée depuis ton profil. Courte et faite pour toi.",
+      "Built from your profile. Short and made for you.",
+    ],
     simple: ["3 checks. Parfait pour débuter.", "3 checks. Perfect to start."],
     ict: ["ICT / Smart Money. 6 checks.", "ICT / Smart Money. 6 checks."],
     swing: ["Pour les trades sur plusieurs jours.", "For multi-day trades."],
@@ -170,8 +174,8 @@ export default function ChecklistWizard({
             </div>
             <p className="text-sm text-slate-400 mb-5">
               {tr(
-                "On a déjà choisi le meilleur départ pour toi. Change si tu veux.",
-                "We already picked the best start for you. Change it if you like.",
+                "On a généré une checklist depuis ton profil d'onboarding. Garde-la ou choisis une autre base.",
+                "We generated a checklist from your onboarding profile. Keep it or pick another base.",
               )}
             </p>
             <div className="grid gap-2.5">

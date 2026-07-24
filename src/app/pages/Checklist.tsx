@@ -4,7 +4,6 @@ import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
-import { personalizedItems } from "../utils/adaptiveChecklist";
 import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
@@ -14,6 +13,7 @@ import {
   type FomoState,
   defaultConfigFor,
   templatesFor,
+  generateChecklist,
   ranksFor,
   coachPromptsFor,
 } from "./checklistDefaults";
@@ -221,33 +221,35 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // Best-fit preset + sensible guardrail defaults, derived from onboarding.
-  const wizardDefaults = useMemo(() => {
-    const o = onb;
-    const style = o?.style;
-    const rec = o?.usesIct
-      ? "ict"
-      : style === "swing" || style === "position"
-        ? "swing"
-        : o?.goal === "prop_challenge" || o?.experience === "funded"
-          ? "prop"
-          : "simple";
-    const toggles: WizardToggles = {
-      oneTrade: o?.pain === "overtrading" || o?.goal === "discipline",
-      news: style === "swing" || style === "position" || o?.pain === "risk",
-      rr: o?.goal === "prop_challenge" || style === "swing" || style === "position",
-      dd: o?.experience === "funded" || o?.goal === "prop_challenge" || o?.pain === "risk",
-    };
-    const primary = o?.assets?.[0];
-    const time =
-      primary === "forex"
-        ? { startTime: "08:00", timeZone: "Europe/London" }
-        : primary === "futures" || primary === "stocks" || primary === "options"
-          ? { startTime: "09:30", timeZone: "America/New_York" }
-          : { startTime: config.startTime, timeZone: config.timeZone };
-    return { rec, toggles, time };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onb]);
+  // The bespoke checklist, generated from the onboarding profile. This is the
+  // recommended, self-contained short list (≤6 items) — it already folds in
+  // the trader's weakness, style, market and risk, so nothing extra is appended
+  // (no more preset + guardrails + adaptive-rules bloat).
+  const generated = useMemo(() => generateChecklist(onb ?? {}, lang), [onb, lang]);
+
+  // Wizard options: the personalized list first (recommended), then the plain
+  // presets as short alternatives.
+  const wizardTemplates = useMemo(
+    () => [
+      {
+        id: "generated",
+        name: lang === "fr" ? "Ta checklist perso" : "Your personalized checklist",
+        items: generated.items,
+      },
+      ...templatesFor(lang),
+    ],
+    [generated, lang],
+  );
+
+  const wizardDefaults = useMemo(
+    () => ({
+      rec: "generated",
+      // The generated list already encodes the guardrails → start clean.
+      toggles: { oneTrade: false, news: false, rr: false, dd: false } as WizardToggles,
+      time: { startTime: generated.startTime, timeZone: generated.timeZone },
+    }),
+    [generated],
+  );
 
   const applyWizard = (r: WizardResult) => {
     markTouched();
@@ -2106,11 +2108,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       {showWizard && (
         <ChecklistWizard
           lang={lang}
-          templates={templates}
+          templates={wizardTemplates}
           recommendedId={wizardDefaults.rec}
           defaultToggles={wizardDefaults.toggles}
           defaultTime={wizardDefaults.time}
-          personalItems={personalizedItems(onb, lang)}
           onApply={applyWizard}
           onClose={() => {
             try {
