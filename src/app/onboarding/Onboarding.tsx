@@ -11,6 +11,8 @@ import {
   Loader2,
   Compass,
   Target,
+  Layers,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -22,7 +24,7 @@ import logoSrc from "@/assets/tradevault-logo.png";
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;
 
-type StepKey = "language" | "welcome" | "profile" | "start";
+type StepKey = "language" | "welcome" | "profile" | "prefs" | "start";
 
 const EMPTY: OnboardingData = {
   goal: null,
@@ -38,11 +40,12 @@ const EMPTY: OnboardingData = {
 };
 
 /**
- * Minimal onboarding (aha moment < 2 min): language, welcome, then ONE
- * profiling screen with the 3 questions that drive the adaptive checklist
- * (style · biggest weakness · realistic monthly target), then straight to
- * filling the journal — CSV import first, demo trades as fallback. Every
- * profile question is skippable; safe defaults keep everything working.
+ * Onboarding (aha moment < 3 min): language, welcome, then two profiling
+ * screens — "profile" (style · biggest weakness · monthly target) and "prefs"
+ * (goal · experience · markets · ICT) — then straight to filling the journal
+ * (CSV import first, demo trades as fallback). Every profile question is
+ * skippable; safe defaults keep everything working. All collected fields feed
+ * the adaptive pre-market checklist and seed the AI coach's long-term memory.
  */
 export default function Onboarding({
   userId,
@@ -55,12 +58,17 @@ export default function Onboarding({
   const c = oc(lang);
   const [idx, setIdx] = useState(0);
   const [saving, setSaving] = useState<OnboardingAction | "fresh" | null>(null);
-  // The 3 profiling answers (all optional — skipping keeps safe defaults).
+  // Profiling answers (all optional — skipping keeps safe defaults). These feed
+  // the adaptive pre-market checklist and seed the AI coach's long-term memory.
   const [style, setStyle] = useState<string | null>(null);
   const [pain, setPain] = useState<string | null>(null);
   const [target, setTarget] = useState("");
+  const [goal, setGoal] = useState<string | null>(null);
+  const [experience, setExperience] = useState<string | null>(null);
+  const [assets, setAssets] = useState<string[]>([]);
+  const [usesIct, setUsesIct] = useState(false);
 
-  const steps: StepKey[] = ["language", "welcome", "profile", "start"];
+  const steps: StepKey[] = ["language", "welcome", "profile", "prefs", "start"];
   const step = steps[Math.min(idx, steps.length - 1)];
   const progress = (idx + 1) / steps.length;
 
@@ -74,14 +82,18 @@ export default function Onboarding({
       const parsed = parseFloat(target.replace(",", "."));
       const monthlyTarget = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 100) : null;
       try {
-        await saveOnboarding(userId, { ...EMPTY, style, pain, monthlyTarget }, { skipped: false });
+        await saveOnboarding(
+          userId,
+          { ...EMPTY, style, pain, monthlyTarget, goal, experience, assets, usesIct },
+          { skipped: false },
+        );
       } catch (e) {
         console.error("Failed to save onboarding", e);
       } finally {
         onDone(action);
       }
     },
-    [saving, userId, onDone, style, pain, target],
+    [saving, userId, onDone, style, pain, target, goal, experience, assets, usesIct],
   );
 
   const langs = Object.entries(LANG_NAMES) as [Lang, string][];
@@ -311,6 +323,164 @@ export default function Onboarding({
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
                   %
                 </span>
+              </div>
+
+              <button
+                onClick={next}
+                className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
+              >
+                {c.cont}
+              </button>
+              <button
+                onClick={next}
+                className="w-full mt-2.5 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {c.skip}
+              </button>
+            </div>
+          )}
+
+          {step === "prefs" && (
+            <div>
+              <div className="flex justify-center mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-cyan-300" />
+                </div>
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-1.5">
+                {c.goalTitle}
+              </h2>
+              <p className="text-sm text-slate-400 text-center mb-4">{c.goalSub}</p>
+              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["consistency", c.gCons, c.gConsD],
+                    ["prop_challenge", c.gProp, c.gPropD],
+                    ["discipline", c.gDisc, c.gDiscD],
+                    ["fulltime", c.gFull, c.gFullD],
+                    ["side", c.gSide, c.gSideD],
+                  ] as const
+                ).map(([id, label, desc]) => (
+                  <button
+                    key={id}
+                    onClick={() => setGoal(goal === id ? null : id)}
+                    className={cn(
+                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
+                      goal === id
+                        ? "bg-cyan-500/15 border-cyan-400/50"
+                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "text-[13px] font-semibold",
+                        goal === id ? "text-white" : "text-slate-300",
+                      )}
+                    >
+                      {label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 justify-center mb-1">
+                <GraduationCap className="w-4 h-4 text-cyan-300" />
+                <h2 className="text-base font-bold text-white text-center">{c.expTitle}</h2>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.expSub}</p>
+              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["new", c.eNew, c.eNewD],
+                    ["intermediate", c.eInt, c.eIntD],
+                    ["seasoned", c.eSea, c.eSeaD],
+                    ["funded", c.eFund, c.eFundD],
+                  ] as const
+                ).map(([id, label, desc]) => (
+                  <button
+                    key={id}
+                    onClick={() => setExperience(experience === id ? null : id)}
+                    className={cn(
+                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
+                      experience === id
+                        ? "bg-cyan-500/15 border-cyan-400/50"
+                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "text-[13px] font-semibold",
+                        experience === id ? "text-white" : "text-slate-300",
+                      )}
+                    >
+                      {label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 justify-center mb-1">
+                <Layers className="w-4 h-4 text-cyan-300" />
+                <h2 className="text-base font-bold text-white text-center">{c.assetsTitle}</h2>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.assetsSub}</p>
+              <div className="flex flex-wrap justify-center gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["futures", c.aFutures],
+                    ["forex", c.aForex],
+                    ["stocks", c.aStocks],
+                    ["options", c.aOptions],
+                    ["crypto", c.aCrypto],
+                  ] as const
+                ).map(([id, label]) => {
+                  const on = assets.includes(id);
+                  return (
+                    <button
+                      key={id}
+                      onClick={() =>
+                        setAssets((a) => (on ? a.filter((x) => x !== id) : [...a, id]))
+                      }
+                      className={cn(
+                        "onb-card rounded-xl px-3.5 py-2 border text-[13px] font-semibold",
+                        on
+                          ? "bg-cyan-500/15 border-cyan-400/50 text-white"
+                          : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2 justify-center mb-1">
+                <Compass className="w-4 h-4 text-cyan-300" />
+                <h2 className="text-base font-bold text-white text-center">{c.ictTitle}</h2>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.ictSub}</p>
+              <div className="grid grid-cols-2 gap-2 max-w-[280px] mx-auto mb-7 onb-in">
+                {(
+                  [
+                    [true, c.ictYes],
+                    [false, c.ictNo],
+                  ] as const
+                ).map(([val, label]) => (
+                  <button
+                    key={String(val)}
+                    onClick={() => setUsesIct(val)}
+                    className={cn(
+                      "onb-card rounded-xl px-3 py-2.5 border text-[13px] font-semibold text-center",
+                      usesIct === val
+                        ? "bg-cyan-500/15 border-cyan-400/50 text-white"
+                        : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
 
               <button

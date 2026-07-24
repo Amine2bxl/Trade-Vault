@@ -102,22 +102,32 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       setMessages((prev) => [...prev, { role: "user", text: query }]);
       setQuestion("");
       setLoading(true);
+      const payload = buildCoachV1Payload({
+        trades,
+        conversation: priorTurns,
+        language: lang,
+      });
       try {
-        const payload = buildCoachV1Payload({
-          trades,
-          conversation: priorTurns,
-          language: lang,
-        });
-        const res = await askCoach({ data: { question: query, ...payload } });
+        let res;
+        try {
+          res = await askCoach({ data: { question: query, ...payload } });
+        } catch (firstErr) {
+          // One automatic retry after a short backoff — most coach failures
+          // are transient (cold serverless function, network blip, brief 5xx).
+          // The trader never sees the first stumble.
+          console.warn("[coach] first attempt failed, retrying", firstErr);
+          await new Promise((r) => setTimeout(r, 1500));
+          res = await askCoach({ data: { question: query, ...payload } });
+        }
         setMessages((prev) => [
           ...prev,
           { role: "assistant", text: res.answer || t("ai.noResponse") },
         ]);
-      } catch (e: any) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "error", text: e?.message || t("ai.genericError") },
-        ]);
+      } catch (e) {
+        // Never surface raw provider/Supabase/rate-limit text to the trader —
+        // it's noise at best and leaks internals at worst. One calm message.
+        console.error("[coach] request failed after retry", e);
+        setMessages((prev) => [...prev, { role: "error", text: t("ai.genericError") }]);
       } finally {
         setLoading(false);
       }

@@ -1,24 +1,6 @@
-import {
-  LayoutDashboard,
-  BookOpen,
-  Calendar,
-  BarChart3,
-  AlertTriangle,
-  ClipboardCheck,
-  LogOut,
-  User,
-  Sparkles,
-  Target,
-  Newspaper,
-  CalendarRange,
-  Calculator,
-  Settings as SettingsIcon,
-  Map,
-  FileText,
-  Palette,
-  CreditCard,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Page } from "../types";
+import { NAV_GROUPS } from "../navigation";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
@@ -33,64 +15,9 @@ interface SidebarProps {
   winRate: number;
 }
 
-interface NavItem {
-  id: Page;
-  label: string;
-  icon: typeof LayoutDashboard;
-}
-
 export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t } = useT();
-
-  // Watertight categories — every page has exactly one home.
-  const groups: { label: string; items: NavItem[] }[] = [
-    {
-      label: t("nav.groupMain"),
-      items: [
-        { id: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
-        { id: "journal", label: t("nav.journal"), icon: BookOpen },
-        { id: "checklist", label: t("nav.checklist"), icon: ClipboardCheck },
-        { id: "calculator", label: t("nav.calculator"), icon: Calculator },
-        { id: "missed", label: t("nav.missed"), icon: Target },
-      ],
-    },
-    {
-      label: t("nav.groupAnalysis"),
-      items: [
-        { id: "analytics", label: t("nav.analytics"), icon: BarChart3 },
-        { id: "insights", label: t("nav.insights"), icon: Sparkles },
-        { id: "mistakes", label: t("nav.mistakes"), icon: AlertTriangle },
-        { id: "calendar", label: t("nav.calendar"), icon: Calendar },
-      ],
-    },
-    {
-      // Plan — everything about the trader's roadmap and long-term tracking:
-      // written trading plan, goals, monthly reports, personalization, billing.
-      label: t("nav.groupPlan"),
-      items: [
-        { id: "tradingplan", label: t("nav.tradingPlan"), icon: Map },
-        { id: "goals", label: t("nav.goals"), icon: Target },
-        { id: "reports", label: t("nav.reports"), icon: FileText },
-        { id: "appearance", label: t("nav.appearance"), icon: Palette },
-        { id: "subscription", label: t("nav.subscription"), icon: CreditCard },
-      ],
-    },
-    {
-      label: t("nav.groupData"),
-      items: [
-        { id: "news", label: t("nav.news"), icon: Newspaper },
-        { id: "seasonality", label: t("nav.seasonality"), icon: CalendarRange },
-      ],
-    },
-    {
-      label: t("nav.groupSystem"),
-      items: [
-        { id: "settings", label: t("nav.settings"), icon: SettingsIcon },
-        { id: "profile", label: t("nav.profile"), icon: User },
-      ],
-    },
-  ];
 
   return (
     // h-dvh + sticky top-0: the rail is always exactly viewport-height and never
@@ -126,13 +53,13 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
 
       {/* Navigation — scrolls internally, never moves the rail */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-3.5 min-h-0">
-        {groups.map((group) => (
-          <div key={group.label}>
+        {NAV_GROUPS.map((group) => (
+          <div key={group.labelKey}>
             <div className="px-3 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
-              {group.label}
+              {t(group.labelKey)}
             </div>
             <div className="space-y-0.5">
-              {group.items.map(({ id, label, icon: Icon }) => (
+              {group.items.map(({ id, labelKey, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setPage(id)}
@@ -152,7 +79,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                       page === id ? "text-cyan-400" : "text-slate-600",
                     )}
                   />
-                  <span className="truncate">{label}</span>
+                  <span className="truncate">{t(labelKey)}</span>
                   {page === id && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
                   )}

@@ -1,11 +1,11 @@
-import { PageHeader, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Calculator, Copy, Check, Wallet, Percent, Crosshair, Plus, Info } from "lucide-react";
 import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "../utils/positionCalc";
 import { loadAccountBalance, saveAccountBalance } from "../store";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { FIELD_BASE } from "@/shared/ui";
+import { FIELD_BASE, PageHeader } from "@/shared/ui";
 
 interface LotSizeCalculatorProps {
   onAddTrade: () => void;

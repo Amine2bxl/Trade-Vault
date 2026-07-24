@@ -31,6 +31,14 @@ export const LANG_NAMES: Record<Lang, string> = {
 const en = {
   // Nav
   "nav.dashboard": "Dashboard",
+  "error.pageTitle": "This section hit a snag",
+  "error.pageBody": "Something went wrong loading this page. Your data is safe.",
+  "error.retry": "Try again",
+  "nav.groupBefore": "Before trading",
+  "nav.groupDuring": "During trading",
+  "nav.groupAfter": "After trading",
+  "nav.groupAi": "AI & Analysis",
+  "nav.groupAccount": "Account",
   "nav.journal": "Journal",
   "nav.missed": "Missed Setups",
   "nav.calendar": "Calendar",
@@ -40,7 +48,6 @@ const en = {
   "nav.profile": "Profile",
   "nav.home": "Home",
   "nav.goals": "Goals",
-  "nav.groupPlan": "Plan",
   "nav.tradingPlan": "Trading Plan",
   "nav.reports": "Monthly Reports",
   "nav.appearance": "Appearance",
@@ -294,6 +301,12 @@ const en = {
 
   // Calendar
   "calendar.title": "Calendar",
+  "calendar.week": "Week",
+  "calendar.legendHeat": "Intensity = day size",
+  "calendar.trade": "trade",
+  "calendar.trades": "trades",
+  "calendar.day": "day",
+  "calendar.days": "days",
   "calendar.subtitle": "Daily performance overview",
   "calendar.monthlyPnl": "Monthly P&L",
   "calendar.tradingDays": "Trading Days",
@@ -559,10 +572,6 @@ const en = {
   "mistakes.goalEnd": ".",
 
   // Nav v2 — grouped sidebar + new pages
-  "nav.groupMain": "Main",
-  "nav.groupAnalysis": "Analysis",
-  "nav.groupData": "Data",
-  "nav.groupSystem": "System",
   "nav.news": "Economic News",
   "nav.seasonality": "Seasonality",
   "nav.calculator": "Lot Size Calculator",

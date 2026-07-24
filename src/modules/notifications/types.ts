@@ -43,6 +43,13 @@ export interface NotificationInput {
   data?: Record<string, unknown>;
   /** Skip DB persistence (pure toast). Defaults to false. */
   ephemeral?: boolean;
+  /**
+   * Anti-spam key for the PUSH channel only. When set, at most one push is
+   * sent per key per day — the in-app toast and dashboard record still fire
+   * every time (immediate feedback), but the phone isn't buzzed repeatedly
+   * for the same recurring rule break.
+   */
+  dedupKey?: string;
 }
 
 /** Injected adapters — the engine stays free of React/hooks/server imports. */

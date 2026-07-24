@@ -68,15 +68,17 @@ export default function Journal({
 }: JournalProps) {
   const { t } = useT();
   const stored = useMemo(loadStoredFilters, []);
-  const [search, setSearch] = useState("");
-  const [strategyFilter, setStrategyFilter] = useState(stored.strategyFilter ?? "all");
+  // strategyFilter is applied from persisted filters; there is no live control
+  // for it (the setter was dropped with the old strategy dropdown), so it stays
+  // at whatever was last stored — hence no setter here.
+  const [strategyFilter] = useState(stored.strategyFilter ?? "all");
   const [resultFilter, setResultFilter] = useState<ResultFilter>(stored.resultFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? "date");
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
   const [viewingIdx, setViewingIdx] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // Filters survive reloads (search stays session-local on purpose)
+  // Filters survive reloads.
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -90,22 +92,10 @@ export default function Journal({
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, strategyFilter, resultFilter]);
-
-  const strategies = useMemo(() => ["all", ...new Set(trades.map((t) => t.strategy))], [trades]);
+  }, [strategyFilter, resultFilter]);
 
   const filtered = useMemo(() => {
     let list = [...trades];
-    if (search) {
-      const s = search.toLowerCase();
-      list = list.filter(
-        (t) =>
-          t.symbol.toLowerCase().includes(s) ||
-          t.notes.toLowerCase().includes(s) ||
-          t.confluences.some((c: string) => c.toLowerCase().includes(s)) ||
-          t.mistakes.some((m: string) => m.toLowerCase().includes(s)),
-      );
-    }
     if (strategyFilter !== "all") list = list.filter((t) => t.strategy === strategyFilter);
     if (resultFilter === "win") list = list.filter((t) => !isBreakEven(t) && t.pnl > 0);
     if (resultFilter === "loss") list = list.filter((t) => !isBreakEven(t) && t.pnl < 0);
@@ -120,7 +110,7 @@ export default function Journal({
       return sortDir === "desc" ? -cmp : cmp;
     });
     return list;
-  }, [trades, search, strategyFilter, resultFilter, sortKey, sortDir]);
+  }, [trades, strategyFilter, resultFilter, sortKey, sortDir]);
 
   // Render at most `visibleCount` rows — keeps the DOM light on big journals
   const shown = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
@@ -142,8 +132,6 @@ export default function Journal({
       <ChevronDown className="w-3 h-3 text-cyan-400" />
     );
   };
-  const inputClass =
-    "bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all";
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">

@@ -522,12 +522,14 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     vwHideT.current = setTimeout(() => setVoice((v) => ({ ...v, show: false })), 1100);
   }, []);
 
-  const pickVoice = useCallback((forceVl?: "fr" | "en") => {
-    const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
+  // ONE robotic voice — always English (en-GB), independent of the UI
+  // language. A single deterministic pick keeps the JARVIS delivery identical
+  // for every trader in every locale.
+  const pickVoice = useCallback(() => {
     let best: SpeechSynthesisVoice | null = null;
     let bestScore = -999;
     voicesRef.current.forEach((v) => {
-      if (!v.lang.startsWith(vl)) return;
+      if (!v.lang.startsWith("en")) return;
       let s = 0;
       const n = v.name;
       // Prefer modern neural / cloud voices — they sound dramatically more
@@ -537,11 +539,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       if (/online/i.test(n)) s += 4;
       if (/google/i.test(n)) s += 6;
       if (/microsoft/i.test(n)) s += 3;
-      if (vl === "fr" && /paul|henri|guillaume|claude|thomas|r[ée]my|denise/i.test(n)) s += 3;
-      if (vl !== "fr" && /ryan|george|daniel|thomas|uk english male|mark\b/i.test(n)) s += 3;
-      if (vl !== "fr" && v.lang === "en-GB") s += 2;
+      if (/ryan|george|daniel|thomas|uk english male|mark\b/i.test(n)) s += 3;
+      if (v.lang === "en-GB") s += 2;
       // Deep male timbre suits the composed JARVIS delivery.
-      if (/hortense|julie|zira|hazel|susan|linda|female|am[ée]lie|caroline|eloise/i.test(n)) s -= 4;
+      if (/zira|hazel|susan|linda|female|caroline|eloise/i.test(n)) s -= 4;
       if (s > bestScore) {
         best = v;
         bestScore = s;
@@ -551,7 +552,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, []);
 
   const speak = useCallback(
-    (txt: string, tone: Tone, forceVl?: "fr" | "en") => {
+    (txt: string, tone: Tone) => {
       if (!audioOnRef.current) return;
       if (!("speechSynthesis" in window)) {
         showVoiceWidget(txt);
@@ -563,12 +564,12 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         radioClick();
         const u = new SpeechSynthesisUtterance(txt);
         const tn = TONES[tone] || TONES.calm;
-        const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
-        u.lang = vl === "fr" ? "fr-FR" : "en-GB";
+        // Always English (en-GB) — one voice, every locale.
+        u.lang = "en-GB";
         u.rate = tn.rate;
         u.pitch = tn.pitch;
         u.volume = 0.9;
-        const v = pickVoice(forceVl);
+        const v = pickVoice();
         if (v) u.voice = v;
         u.onstart = () => {
           showVoiceWidget(txt);
@@ -603,24 +604,16 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   );
 
   const say = useCallback(
-    (k: keyof typeof LINES, forceVl?: "fr" | "en") => {
+    (k: keyof typeof LINES) => {
       const o = LINES[k];
       if (!o) return;
-      const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
-      const arr = o[vl] || o.en;
+      // Spoken lines are always English so the one robotic voice never has to
+      // read another language's text (which would mangle pronunciation).
+      const arr = o.en;
       const h = new Date().getHours();
-      const greet =
-        vl === "fr"
-          ? h < 18
-            ? "Bonjour"
-            : "Bonsoir"
-          : h < 12
-            ? "Good morning"
-            : h < 18
-              ? "Good afternoon"
-              : "Good evening";
+      const greet = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
       const txt = arr[Math.floor(Math.random() * arr.length)].replace("%G", greet);
-      speak(txt, o.tone, forceVl);
+      speak(txt, o.tone);
     },
     [speak],
   );

@@ -1,27 +1,7 @@
 import { useState } from "react";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Calendar,
-  BarChart3,
-  Sparkles,
-  User,
-  Plus,
-  Target,
-  AlertTriangle,
-  ClipboardCheck,
-  MoreHorizontal,
-  X,
-  Newspaper,
-  CalendarRange,
-  Calculator,
-  Settings as SettingsIcon,
-  Map,
-  FileText,
-  Palette,
-  CreditCard,
-} from "lucide-react";
+import { LayoutDashboard, Plus, MoreHorizontal, X } from "lucide-react";
 import { Page } from "../types";
+import { MOBILE_BAR, MOBILE_MORE_GROUPS, NAV_ITEMS } from "../navigation";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,62 +19,17 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
   const hasDraft = useHasTradeDraft(user?.id);
   const [moreOpen, setMoreOpen] = useState(false);
 
-  // Symmetric 2 + FAB + 2 layout. Two primary tabs each side of the central
-  // add button; everything else lives behind "More".
-  const leftItems = [
-    { id: "dashboard" as Page, label: t("nav.home"), icon: LayoutDashboard },
-    { id: "journal" as Page, label: t("nav.journal"), icon: BookOpen },
-  ];
-  const rightItems = [{ id: "analytics" as Page, label: t("nav.analytics"), icon: BarChart3 }];
-  // The "more" sheet mirrors the desktop sidebar's categories so nothing has
-  // to be hunted: routine first, then analysis, then data, then account.
-  const moreGroups: {
-    label: string;
-    items: { id: Page; label: string; icon: typeof LayoutDashboard }[];
-  }[] = [
-    {
-      label: t("nav.groupMain"),
-      items: [
-        { id: "checklist" as Page, label: t("nav.checklist"), icon: ClipboardCheck },
-        { id: "calculator" as Page, label: t("nav.calculator"), icon: Calculator },
-        { id: "missed" as Page, label: t("nav.missed"), icon: Target },
-      ],
-    },
-    {
-      label: t("nav.groupAnalysis"),
-      items: [
-        { id: "insights" as Page, label: t("nav.insights"), icon: Sparkles },
-        { id: "mistakes" as Page, label: t("nav.mistakes"), icon: AlertTriangle },
-        { id: "calendar" as Page, label: t("nav.calendar"), icon: Calendar },
-      ],
-    },
-    {
-      label: t("nav.groupPlan"),
-      items: [
-        { id: "tradingplan" as Page, label: t("nav.tradingPlan"), icon: Map },
-        { id: "goals" as Page, label: t("nav.goals"), icon: Target },
-        { id: "reports" as Page, label: t("nav.reports"), icon: FileText },
-        { id: "appearance" as Page, label: t("nav.appearance"), icon: Palette },
-        { id: "subscription" as Page, label: t("nav.subscription"), icon: CreditCard },
-      ],
-    },
-    {
-      label: t("nav.groupData"),
-      items: [
-        { id: "news" as Page, label: t("nav.news"), icon: Newspaper },
-        { id: "seasonality" as Page, label: t("nav.seasonality"), icon: CalendarRange },
-      ],
-    },
-    {
-      label: t("nav.groupSystem"),
-      items: [
-        { id: "settings" as Page, label: t("nav.settings"), icon: SettingsIcon },
-        { id: "profile" as Page, label: t("nav.profile"), icon: User },
-      ],
-    },
-  ];
-  const moreItems = moreGroups.flatMap((g) => g.items);
-  const isMoreActive = moreItems.some((m) => m.id === page);
+  // Symmetric 2 + FAB + 2 layout. The promoted tabs come from MOBILE_BAR
+  // (single source of truth in navigation.ts); everything else lives behind
+  // "More", which mirrors the desktop sidebar's workflow groups.
+  const barItems = MOBILE_BAR.map((id) => {
+    const item = NAV_ITEMS.find((n) => n.id === id)!;
+    // The dashboard tab reads "Home" on mobile — friendlier thumb-reach label.
+    return { ...item, label: id === "dashboard" ? t("nav.home") : t(item.labelKey) };
+  });
+  const leftItems = barItems.slice(0, 2);
+  const rightItems = barItems.slice(2);
+  const isMoreActive = !MOBILE_BAR.includes(page);
 
   const renderItem = ({
     id,
@@ -187,13 +122,13 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               </button>
             </div>
             <div className="p-4 pt-2 max-h-[70dvh] overflow-y-auto">
-              {moreGroups.map((g) => (
-                <div key={g.label} className="mb-1.5">
+              {MOBILE_MORE_GROUPS.map((g) => (
+                <div key={g.labelKey} className="mb-1.5">
                   <div className="px-1 pt-2 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
-                    {g.label}
+                    {t(g.labelKey)}
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    {g.items.map(({ id, label, icon: Icon }) => (
+                    {g.items.map(({ id, labelKey, icon: Icon }) => (
                       <button
                         key={id}
                         onClick={() => {
@@ -209,7 +144,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
                       >
                         <Icon className="w-5 h-5" />
                         <span className="text-[11px] font-semibold text-center leading-tight">
-                          {label}
+                          {t(labelKey)}
                         </span>
                       </button>
                     ))}
