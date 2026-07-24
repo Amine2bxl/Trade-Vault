@@ -2,6 +2,9 @@ import type { Dict } from "../translations";
 
 const nl: Dict = {
   "nav.dashboard": "Dashboard",
+  "error.pageTitle": "Dit onderdeel liep vast",
+  "error.pageBody": "Deze pagina kon niet worden geladen. Je gegevens zijn veilig.",
+  "error.retry": "Opnieuw proberen",
   "nav.groupBefore": "Vóór het traden",
   "nav.groupDuring": "Tijdens",
   "nav.groupAfter": "Erna",

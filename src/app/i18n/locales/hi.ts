@@ -2,6 +2,9 @@ import type { Dict } from "../translations";
 
 const hi: Dict = {
   "nav.dashboard": "डैशबोर्ड",
+  "error.pageTitle": "इस अनुभाग में समस्या आई",
+  "error.pageBody": "यह पेज लोड नहीं हो सका। आपका डेटा सुरक्षित है।",
+  "error.retry": "पुनः प्रयास करें",
   "nav.groupBefore": "ट्रेडिंग से पहले",
   "nav.groupDuring": "ट्रेडिंग के दौरान",
   "nav.groupAfter": "ट्रेडिंग के बाद",

@@ -2,6 +2,9 @@ import type { Dict } from "../translations";
 
 const fr: Dict = {
   "nav.dashboard": "Tableau de bord",
+  "error.pageTitle": "Cette section a rencontré un souci",
+  "error.pageBody": "Le chargement de cette page a échoué. Tes données sont intactes.",
+  "error.retry": "Réessayer",
   "nav.groupBefore": "Avant de trader",
   "nav.groupDuring": "Pendant",
   "nav.groupAfter": "Après",

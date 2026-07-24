@@ -2,6 +2,9 @@ import type { Dict } from "../translations";
 
 const ja: Dict = {
   "nav.dashboard": "ダッシュボード",
+  "error.pageTitle": "このセクションで問題が発生しました",
+  "error.pageBody": "このページの読み込みに失敗しました。データは安全です。",
+  "error.retry": "再試行",
   "nav.groupBefore": "取引前",
   "nav.groupDuring": "取引中",
   "nav.groupAfter": "取引後",

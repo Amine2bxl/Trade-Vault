@@ -2,6 +2,9 @@ import type { Dict } from "../translations";
 
 const ru: Dict = {
   "nav.dashboard": "Панель",
+  "error.pageTitle": "Возникла проблема в этом разделе",
+  "error.pageBody": "Не удалось загрузить страницу. Ваши данные в безопасности.",
+  "error.retry": "Повторить",
   "nav.groupBefore": "До торговли",
   "nav.groupDuring": "Во время",
   "nav.groupAfter": "После",

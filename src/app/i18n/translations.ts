@@ -31,6 +31,9 @@ export const LANG_NAMES: Record<Lang, string> = {
 const en = {
   // Nav
   "nav.dashboard": "Dashboard",
+  "error.pageTitle": "This section hit a snag",
+  "error.pageBody": "Something went wrong loading this page. Your data is safe.",
+  "error.retry": "Try again",
   "nav.groupBefore": "Before trading",
   "nav.groupDuring": "During trading",
   "nav.groupAfter": "After trading",

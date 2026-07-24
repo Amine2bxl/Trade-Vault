@@ -2,6 +2,9 @@ import type { Dict } from "../translations";
 
 const ar: Dict = {
   "nav.dashboard": "لوحة التحكم",
+  "error.pageTitle": "واجه هذا القسم مشكلة",
+  "error.pageBody": "تعذّر تحميل هذه الصفحة. بياناتك آمنة.",
+  "error.retry": "إعادة المحاولة",
   "nav.groupBefore": "قبل التداول",
   "nav.groupDuring": "أثناء التداول",
   "nav.groupAfter": "بعد التداول",

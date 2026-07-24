@@ -2,6 +2,9 @@ import type { Dict } from "../translations";
 
 const zh: Dict = {
   "nav.dashboard": "仪表板",
+  "error.pageTitle": "此部分出现问题",
+  "error.pageBody": "加载此页面失败。您的数据是安全的。",
+  "error.retry": "重试",
   "nav.groupBefore": "交易前",
   "nav.groupDuring": "交易中",
   "nav.groupAfter": "交易后",
