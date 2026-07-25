@@ -118,7 +118,7 @@ const ja: Dict = {
   "missed.collapse": "詳細を隠す",
   "missed.countOnDay": "件逃した",
   "missed.nothingNoted": "記録なし",
-  "insights.title": "AIインサイト",
+  "insights.title": "Jarvis",
   "insights.subtitle": "トレードについて何でも質問してください",
   "insights.askLabel": "トレードについて質問する",
   "insights.placeholder": "例：私の最大の弱点は何ですか？",

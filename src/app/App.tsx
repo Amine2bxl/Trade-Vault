@@ -12,7 +12,7 @@ const Checklist = lazy(() => import("./pages/Checklist"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Mistakes = lazy(() => import("./pages/Mistakes"));
-const Insights = lazy(() => import("./pages/Insights"));
+const Jarvis = lazy(() => import("./pages/Jarvis"));
 const Profile = lazy(() => import("./pages/Profile"));
 const MissedOpportunities = lazy(() => import("./pages/MissedOpportunities"));
 const EconomicNews = lazy(() => import("./pages/EconomicNews"));
@@ -411,7 +411,7 @@ function AppContent() {
               {page === "analytics" && <Analytics trades={trades} />}
               {page === "mistakes" && <Mistakes trades={trades} />}
               {page === "missed" && <MissedOpportunities />}
-              {page === "insights" && <Insights trades={trades} />}
+              {page === "insights" && <Jarvis trades={trades} />}
               {page === "news" && <EconomicNews />}
               {page === "seasonality" && (
                 <Seasonality trades={trades} tradesLoading={tradesLoading} />

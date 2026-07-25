@@ -118,7 +118,7 @@ const ru: Dict = {
   "missed.collapse": "Скрыть детали",
   "missed.countOnDay": "упущено",
   "missed.nothingNoted": "Ничего не отмечено",
-  "insights.title": "ИИ-аналитика",
+  "insights.title": "Jarvis",
   "insights.subtitle": "Спросите что угодно о своей торговле",
   "insights.askLabel": "Спросите о своей торговле",
   "insights.placeholder": "напр. Каковы мои главные слабости?",

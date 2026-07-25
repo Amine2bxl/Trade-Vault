@@ -118,7 +118,7 @@ const zh: Dict = {
   "missed.collapse": "隐藏详情",
   "missed.countOnDay": "次错过",
   "missed.nothingNoted": "暂无记录",
-  "insights.title": "AI 洞察",
+  "insights.title": "Jarvis",
   "insights.subtitle": "询问任何有关您交易的问题",
   "insights.askLabel": "询问您的交易情况",
   "insights.placeholder": "例如：我最大的弱点是什么？",

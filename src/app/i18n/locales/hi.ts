@@ -120,7 +120,7 @@ const hi: Dict = {
   "missed.collapse": "विवरण छिपाएं",
   "missed.countOnDay": "छूटे",
   "missed.nothingNoted": "कुछ नोट नहीं किया गया",
-  "insights.title": "AI इनसाइट्स",
+  "insights.title": "Jarvis",
   "insights.subtitle": "अपने ट्रेडिंग के बारे में कुछ भी पूछें",
   "insights.askLabel": "अपने ट्रेडिंग के बारे में पूछें",
   "insights.placeholder": "जैसे: मेरी सबसे बड़ी कमजोरियां क्या हैं?",

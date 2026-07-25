@@ -121,7 +121,7 @@ const de: Dict = {
   "missed.collapse": "Details ausblenden",
   "missed.countOnDay": "verpasst",
   "missed.nothingNoted": "Nichts notiert",
-  "insights.title": "KI Insights",
+  "insights.title": "Jarvis",
   "insights.subtitle": "Fragen Sie alles über Ihr Trading",
   "insights.askLabel": "Fragen Sie zu Ihrem Trading",
   "insights.placeholder": "z. B. Was sind meine größten Schwächen?",

@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { ttsSpeak } from "@/backend/tts.functions";
+import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
 import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
@@ -545,33 +546,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, []);
 
   // ONE robotic voice — always English (en-GB), independent of the UI
-  // language. A single deterministic pick keeps the JARVIS delivery identical
-  // for every trader in every locale.
-  const pickVoice = useCallback(() => {
-    let best: SpeechSynthesisVoice | null = null;
-    let bestScore = -999;
-    voicesRef.current.forEach((v) => {
-      if (!v.lang.startsWith("en")) return;
-      let s = 0;
-      const n = v.name;
-      // Prefer modern neural / cloud voices — they sound dramatically more
-      // premium than the legacy built-ins.
-      if (/neural|natural/i.test(n)) s += 12;
-      if (/premium|enhanced|multilingual/i.test(n)) s += 5;
-      if (/online/i.test(n)) s += 4;
-      if (/google/i.test(n)) s += 6;
-      if (/microsoft/i.test(n)) s += 3;
-      if (/ryan|george|daniel|thomas|uk english male|mark\b/i.test(n)) s += 3;
-      if (v.lang === "en-GB") s += 2;
-      // Deep male timbre suits the composed JARVIS delivery.
-      if (/zira|hazel|susan|linda|female|caroline|eloise/i.test(n)) s -= 4;
-      if (s > bestScore) {
-        best = v;
-        bestScore = s;
-      }
-    });
-    return best;
-  }, []);
+  // language. The "closest male en-GB voice" scoring lives in the shared
+  // jarvisVoice util so the Checklist and the Jarvis page never drift apart.
+  const pickVoice = useCallback(() => pickEnglishMaleVoice(voicesRef.current), []);
 
   /* The product's ONE voice: a hosted, deep/calm/charismatic English voice that
      sounds identical on every OS and browser. When it isn't configured

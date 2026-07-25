@@ -120,7 +120,7 @@ const nl: Dict = {
   "missed.collapse": "Details verbergen",
   "missed.countOnDay": "gemist",
   "missed.nothingNoted": "Niets genoteerd",
-  "insights.title": "AI Insights",
+  "insights.title": "Jarvis",
   "insights.subtitle": "Vraag alles over uw trading",
   "insights.askLabel": "Vraag over uw trading",
   "insights.placeholder": "bijv. Wat zijn mijn grootste zwaktes?",

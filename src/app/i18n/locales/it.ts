@@ -118,7 +118,7 @@ const it: Dict = {
   "missed.collapse": "Nascondi dettagli",
   "missed.countOnDay": "persi",
   "missed.nothingNoted": "Niente annotato",
-  "insights.title": "IA Insights",
+  "insights.title": "Jarvis",
   "insights.subtitle": "Chiedi qualsiasi cosa sul tuo trading",
   "insights.askLabel": "Chiedi del tuo trading",
   "insights.placeholder": "es. Quali sono i miei maggiori punti deboli?",

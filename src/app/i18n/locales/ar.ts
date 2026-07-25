@@ -118,7 +118,7 @@ const ar: Dict = {
   "missed.collapse": "إخفاء التفاصيل",
   "missed.countOnDay": "فائت",
   "missed.nothingNoted": "لا توجد ملاحظات",
-  "insights.title": "رؤى الذكاء الاصطناعي",
+  "insights.title": "Jarvis",
   "insights.subtitle": "اسأل أي شيء عن تداولك",
   "insights.askLabel": "اسأل عن تداولك",
   "insights.placeholder": "مثال: ما هي أكبر نقاط ضعفي؟",
