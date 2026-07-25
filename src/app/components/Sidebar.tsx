@@ -52,30 +52,30 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       </div>
 
       {/* Navigation — scrolls internally, never moves the rail */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-3.5 min-h-0">
+      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
         {NAV_GROUPS.map((group) => (
           <div key={group.labelKey}>
-            <div className="px-3 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+            <div className="px-3 pb-1 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
               {t(group.labelKey)}
             </div>
-            <div className="space-y-0.5">
+            <div className="space-y-px">
               {group.items.map(({ id, labelKey, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setPage(id)}
                   className={cn(
-                    "relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200",
+                    "relative w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200",
                     page === id
                       ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10"
-                      : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03] hover:translate-x-0.5",
+                      : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
                   )}
                 >
                   {page === id && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
                   )}
                   <Icon
                     className={cn(
-                      "w-[17px] h-[17px] transition-transform shrink-0",
+                      "w-4 h-4 shrink-0",
                       page === id ? "text-cyan-400" : "text-slate-600",
                     )}
                   />

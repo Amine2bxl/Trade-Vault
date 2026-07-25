@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   BarChart3,
   BookOpen,
+  Bot,
   Calculator,
   Calendar,
   CalendarRange,
@@ -13,7 +14,6 @@ import {
   Newspaper,
   Palette,
   Settings as SettingsIcon,
-  Sparkles,
   Target,
   User,
 } from "lucide-react";
@@ -27,8 +27,8 @@ import type { TKey } from "./i18n/translations";
  * CommandPalette all derive from NAV_GROUPS, so adding/removing/reordering a
  * page is a one-file change and the three surfaces can never drift apart.
  *
- * Groups follow the trader's workflow: prepare → trade → review → understand,
- * with account plumbing last.
+ * Groups follow the natural flow of a trading session:
+ * home → prepare → trade & journal → analyse → AI coach → account.
  */
 
 export interface NavItem {
@@ -44,45 +44,41 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    // Before trading — the pre-session ritual and preparation tools.
-    labelKey: "nav.groupBefore",
+    labelKey: "nav.groupHome",
+    items: [{ id: "dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard }],
+  },
+  {
+    labelKey: "nav.groupPreparation",
     items: [
-      { id: "checklist", labelKey: "nav.checklist", icon: ClipboardCheck },
       { id: "tradingplan", labelKey: "nav.tradingPlan", icon: Map },
       { id: "goals", labelKey: "nav.goals", icon: Target },
       { id: "news", labelKey: "nav.news", icon: Newspaper },
       { id: "calculator", labelKey: "nav.calculator", icon: Calculator },
+      { id: "checklist", labelKey: "nav.checklist", icon: ClipboardCheck },
     ],
   },
   {
-    // During trading — live cockpit and capture.
-    labelKey: "nav.groupDuring",
+    labelKey: "nav.groupJournal",
     items: [
-      { id: "dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+      { id: "calendar", labelKey: "nav.calendar", icon: Calendar },
       { id: "journal", labelKey: "nav.journal", icon: BookOpen },
       { id: "missed", labelKey: "nav.missed", icon: Target },
     ],
   },
   {
-    // After trading — review what happened.
-    labelKey: "nav.groupAfter",
+    labelKey: "nav.groupAnalysis",
     items: [
-      { id: "calendar", labelKey: "nav.calendar", icon: Calendar },
+      { id: "analytics", labelKey: "nav.analytics", icon: BarChart3 },
       { id: "mistakes", labelKey: "nav.mistakes", icon: AlertTriangle },
       { id: "reports", labelKey: "nav.reports", icon: FileText },
-    ],
-  },
-  {
-    // AI & analysis — understand the edge.
-    labelKey: "nav.groupAi",
-    items: [
-      { id: "insights", labelKey: "nav.insights", icon: Sparkles },
-      { id: "analytics", labelKey: "nav.analytics", icon: BarChart3 },
       { id: "seasonality", labelKey: "nav.seasonality", icon: CalendarRange },
     ],
   },
   {
-    // Account — settings, identity, personalization, billing.
+    labelKey: "nav.groupJarvis",
+    items: [{ id: "insights", labelKey: "nav.jarvis", icon: Bot }],
+  },
+  {
     labelKey: "nav.groupAccount",
     items: [
       { id: "settings", labelKey: "nav.settings", icon: SettingsIcon },
