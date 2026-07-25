@@ -3,6 +3,8 @@ import type { Dict } from "../translations";
 const de: Dict = {
   "nav.dashboard": "Übersicht",
   "chk.cfgItemOn": "Aktiv — zählt heute",
+  "chk.deepShow": "Mehr anzeigen",
+  "chk.deepHide": "Extras ausblenden",
   "chk.cfgItemOff": "Aus — heute versteckt",
   "error.pageTitle": "Dieser Bereich hat ein Problem",
   "error.pageBody": "Diese Seite konnte nicht geladen werden. Deine Daten sind sicher.",

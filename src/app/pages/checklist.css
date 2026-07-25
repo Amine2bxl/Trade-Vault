@@ -2543,3 +2543,37 @@
     font-size: 11px;
   }
 }
+
+/* ── "Go deeper" — folds the sections that don't gate the day ──
+   The daily run is checklist → motivation → FOMO → gates; everything else
+   (score, quote, patience, signals, cycle, mantras, notes) sits behind this
+   one control so the routine takes seconds, without losing any content. */
+.jchk .jk-deep-toggle {
+  width: 100%;
+  margin: 14px 0 4px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 12px;
+  border: 1px dashed rgba(34, 211, 238, 0.28);
+  background: rgba(34, 211, 238, 0.04);
+  color: #67e8f9;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.jchk .jk-deep-toggle:hover {
+  background: rgba(34, 211, 238, 0.09);
+  border-color: rgba(34, 211, 238, 0.5);
+}
+.jchk .jk-deep-toggle .jk-deep-chevron {
+  font-size: 11px;
+  opacity: 0.85;
+}

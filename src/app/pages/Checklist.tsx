@@ -145,6 +145,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const { t, lang } = useT();
   const uid = user?.id ?? "anon";
   const CFG_KEY = `tv-chk-config-${uid}`;
+  const DEEP_KEY = `tv-chk-deep-${uid}`;
   const DAY_KEY = `tv-chk-${uid}-${todayKey()}`;
 
   /* Config only persists once the user actually customized it — untouched
@@ -178,6 +179,23 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   });
   const [audioOn, setAudioOn] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  // "Go deeper" block (score, quote, patience, signals, cycle, mantras, notes).
+  // Collapsed by default so the daily run is the 4 gating steps only; the
+  // preference is remembered, so a trader who wants the full cockpit keeps it.
+  const [deepOpen, setDeepOpen] = useState(() => {
+    try {
+      return localStorage.getItem(`tv-chk-deep-${uid}`) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(DEEP_KEY, deepOpen ? "1" : "0");
+    } catch {
+      /* best-effort */
+    }
+  }, [deepOpen, DEEP_KEY]);
   const [showConfig, setShowConfig] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [countdownVal, setCountdownVal] = useState<number | null>(null);
@@ -694,10 +712,17 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     setTimeout(() => say("activate"), 750);
   }, [powerUp, say]);
 
-  /* ══ Canvas particle field — fixed, covers the whole viewport ══ */
+  /* ══ Canvas particle field — fixed, covers the whole viewport ══
+     Kept (it IS the page's identity) but calmed: skipped entirely when the
+     visitor asked for reduced motion or is on a small screen, where a
+     permanent rAF loop costs battery for pure ambience. */
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
+    const reduced =
+      typeof window !== "undefined" &&
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || window.innerWidth < 768);
+    if (reduced) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
     let W = 0;
@@ -719,7 +744,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     };
     const init = () => {
       pts = [];
-      const n = Math.floor((W * H) / 18000);
+      // Calmer field: ~40% fewer particles than before (same look, less work).
+      const n = Math.min(90, Math.floor((W * H) / 30000));
       for (let i = 0; i < n; i++)
         pts.push({
           x: Math.random() * W,
@@ -1626,125 +1652,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           </div>
         )}
 
-        {/* ══ QUOTE + MISSION ══ */}
-        <div className="jk-brief-row">
-          <div className="jk-card jk-quote-card">
-            <div className="jk-q-label">{t("chk.transmission")}</div>
-            <div className="jk-q-text">« {quote} »</div>
-          </div>
-          <div className="jk-card jk-mission-card">
-            <div className="jk-m-label">{t("chk.mission")}</div>
-            <div className="jk-m-text">{mission}</div>
-          </div>
-        </div>
-
-        {/* ══ REACTOR / EDGE SCORE ══ */}
-        <div className="jk-card jk-hud-corners jk-reactor-wrap">
-          <div className="jk-reactor">
-            <svg viewBox="0 0 200 200">
-              <g className="jk-ring-ticks">
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="94"
-                  fill="none"
-                  stroke="rgba(34,211,238,.25)"
-                  strokeWidth="2"
-                  strokeDasharray="2 10"
-                />
-              </g>
-              <g className="jk-ring-ticks2">
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="86"
-                  fill="none"
-                  stroke="rgba(34,211,238,.15)"
-                  strokeWidth="1"
-                  strokeDasharray="14 8"
-                />
-              </g>
-              <circle className="jk-ring-track" cx="100" cy="100" r="74" />
-              <circle
-                className={cn("jk-ring-prog", (parts.mental < 0 || parts.motiv < 0) && "danger")}
-                cx="100"
-                cy="100"
-                r="74"
-                pathLength="100"
-                strokeDasharray="100"
-                strokeDashoffset={100 - parts.total}
-              />
-              <g className="jk-ring-comet">
-                <circle cx="100" cy="100" r="80" pathLength="100" strokeDasharray="10 90" />
-              </g>
-              <circle
-                className="jk-core"
-                cx="100"
-                cy="100"
-                r="52"
-                fill="rgba(34,211,238,.06)"
-                stroke="rgba(34,211,238,.3)"
-                strokeWidth="1"
-              />
-              <text className="jk-score-num" x="100" y="108" textAnchor="middle">
-                {Math.round(displayScore)}
-              </text>
-              <text className="jk-score-lbl" x="100" y="130" textAnchor="middle">
-                EDGE SCORE / 100
-              </text>
-            </svg>
-          </div>
-          <div className="jk-reactor-info">
-            <div className="jk-ri-title">{t("chk.edgeAnalysis")}</div>
-            <div className="jk-ri-bars">
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">{t("chk.barChecklist")}</span>
-                <div className="jk-ri-track">
-                  <div className="jk-ri-fill" style={{ width: `${(parts.check / 60) * 100}%` }} />
-                </div>
-                <span className="jk-ri-val">{parts.check}/60</span>
-              </div>
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">{t("chk.barMental")}</span>
-                <div className="jk-ri-track">
-                  <div
-                    className={cn(
-                      "jk-ri-fill",
-                      parts.mental < 0 ? "bad" : day.fomo === 2 && "warn",
-                    )}
-                    style={{
-                      width:
-                        parts.mental < 0 ? "100%" : `${(Math.max(0, parts.mental) / 15) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="jk-ri-val">{parts.mental}/15</span>
-              </div>
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">{t("chk.barMotiv")}</span>
-                <div className="jk-ri-track">
-                  <div
-                    className={cn("jk-ri-fill", parts.motiv < 0 && "bad")}
-                    style={{
-                      width: parts.motiv < 0 ? "100%" : `${(Math.max(0, parts.motiv) / 15) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="jk-ri-val">{parts.motiv}/15</span>
-              </div>
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">
-                  {t("chk.barWindow")} {config.startTime}
-                </span>
-                <div className="jk-ri-track">
-                  <div className="jk-ri-fill" style={{ width: `${(parts.win / 10) * 100}%` }} />
-                </div>
-                <span className="jk-ri-val">{parts.win}/10</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* ══ CHECKLIST ══ */}
         <div className="jk-sl">
           <span className="jk-sl-diamond" />
@@ -1861,136 +1768,282 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           )}
         </div>
 
-        {/* ══ PATIENCE ══ */}
-        <div className="jk-card jk-patience">
-          <div className="jk-pt-ring">
-            <svg viewBox="0 0 100 100">
-              <circle className="jk-pt-track" cx="50" cy="50" r="42" />
-              <circle
-                className="jk-pt-prog"
-                cx="50"
-                cy="50"
-                r="42"
-                pathLength="100"
-                strokeDasharray="100"
-                strokeDashoffset={Math.max(0, 100 - (mins / 40) * 100)}
-              />
-              <text className="jk-pt-time" x="50" y="55" textAnchor="middle">
-                {(mm > 99 ? mm : pad(mm)) + ":" + pad(ss)}
-              </text>
-            </svg>
-          </div>
-          <div>
-            <div className="jk-pt-title">{t("chk.patienceTitle")}</div>
-            <div className="jk-pt-desc">{RANK_DESCS[rank]}</div>
-            <span className={cn("jk-pt-rank", rankPulse && "lvl-up")}>{RANKS[rank][1]}</span>
-          </div>
-        </div>
+        {/* ══ GO DEEPER — everything that does NOT gate the day ══
+            The fast path is checklist → motivation → FOMO → gates (< 30 s).
+            Score, quote, patience, signals, cycle, mantras and notes stay one
+            tap away instead of standing between the trader and the open. */}
+        <button
+          type="button"
+          className={cn("jk-deep-toggle", deepOpen && "open")}
+          aria-expanded={deepOpen}
+          onClick={() => setDeepOpen((v) => !v)}
+        >
+          <span className="jk-deep-chevron">{deepOpen ? "▾" : "▸"}</span>
+          {deepOpen ? t("chk.deepHide") : t("chk.deepShow")}
+        </button>
 
-        <hr />
+        {deepOpen && (
+          <>
+            {/* ══ QUOTE + MISSION ══ */}
+            <div className="jk-brief-row">
+              <div className="jk-card jk-quote-card">
+                <div className="jk-q-label">{t("chk.transmission")}</div>
+                <div className="jk-q-text">« {quote} »</div>
+              </div>
+              <div className="jk-card jk-mission-card">
+                <div className="jk-m-label">{t("chk.mission")}</div>
+                <div className="jk-m-text">{mission}</div>
+              </div>
+            </div>
 
-        {/* ══ SIGNALS ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secSignals")}
-        </div>
-        <div className="jk-sigs">
-          {(
-            [
-              ["go", t("chk.sigGo"), "signalsGo"],
-              ["stop", t("chk.sigStop"), "signalsStop"],
-              ["wait", t("chk.sigWait"), "signalsWait"],
-            ] as const
-          ).map(([cls, head, key]) => (
-            <div key={cls} className={cn("jk-sig", cls)}>
-              <div className="jk-sig-head">{head}</div>
-              {config[key].map((s, i) => (
-                <div className="jk-sitem" key={i}>
-                  <span className="jk-sdot" />
-                  <Ed value={s} editable={editMode} onCommit={(v) => patchSignal(key, i, v)} />
+            {/* ══ REACTOR / EDGE SCORE ══ */}
+            <div className="jk-card jk-hud-corners jk-reactor-wrap">
+              <div className="jk-reactor">
+                <svg viewBox="0 0 200 200">
+                  <g className="jk-ring-ticks">
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="94"
+                      fill="none"
+                      stroke="rgba(34,211,238,.25)"
+                      strokeWidth="2"
+                      strokeDasharray="2 10"
+                    />
+                  </g>
+                  <g className="jk-ring-ticks2">
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="86"
+                      fill="none"
+                      stroke="rgba(34,211,238,.15)"
+                      strokeWidth="1"
+                      strokeDasharray="14 8"
+                    />
+                  </g>
+                  <circle className="jk-ring-track" cx="100" cy="100" r="74" />
+                  <circle
+                    className={cn(
+                      "jk-ring-prog",
+                      (parts.mental < 0 || parts.motiv < 0) && "danger",
+                    )}
+                    cx="100"
+                    cy="100"
+                    r="74"
+                    pathLength="100"
+                    strokeDasharray="100"
+                    strokeDashoffset={100 - parts.total}
+                  />
+                  <g className="jk-ring-comet">
+                    <circle cx="100" cy="100" r="80" pathLength="100" strokeDasharray="10 90" />
+                  </g>
+                  <circle
+                    className="jk-core"
+                    cx="100"
+                    cy="100"
+                    r="52"
+                    fill="rgba(34,211,238,.06)"
+                    stroke="rgba(34,211,238,.3)"
+                    strokeWidth="1"
+                  />
+                  <text className="jk-score-num" x="100" y="108" textAnchor="middle">
+                    {Math.round(displayScore)}
+                  </text>
+                  <text className="jk-score-lbl" x="100" y="130" textAnchor="middle">
+                    EDGE SCORE / 100
+                  </text>
+                </svg>
+              </div>
+              <div className="jk-reactor-info">
+                <div className="jk-ri-title">{t("chk.edgeAnalysis")}</div>
+                <div className="jk-ri-bars">
+                  <div className="jk-ri-row">
+                    <span className="jk-ri-name">{t("chk.barChecklist")}</span>
+                    <div className="jk-ri-track">
+                      <div
+                        className="jk-ri-fill"
+                        style={{ width: `${(parts.check / 60) * 100}%` }}
+                      />
+                    </div>
+                    <span className="jk-ri-val">{parts.check}/60</span>
+                  </div>
+                  <div className="jk-ri-row">
+                    <span className="jk-ri-name">{t("chk.barMental")}</span>
+                    <div className="jk-ri-track">
+                      <div
+                        className={cn(
+                          "jk-ri-fill",
+                          parts.mental < 0 ? "bad" : day.fomo === 2 && "warn",
+                        )}
+                        style={{
+                          width:
+                            parts.mental < 0
+                              ? "100%"
+                              : `${(Math.max(0, parts.mental) / 15) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="jk-ri-val">{parts.mental}/15</span>
+                  </div>
+                  <div className="jk-ri-row">
+                    <span className="jk-ri-name">{t("chk.barMotiv")}</span>
+                    <div className="jk-ri-track">
+                      <div
+                        className={cn("jk-ri-fill", parts.motiv < 0 && "bad")}
+                        style={{
+                          width:
+                            parts.motiv < 0 ? "100%" : `${(Math.max(0, parts.motiv) / 15) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="jk-ri-val">{parts.motiv}/15</span>
+                  </div>
+                  <div className="jk-ri-row">
+                    <span className="jk-ri-name">
+                      {t("chk.barWindow")} {config.startTime}
+                    </span>
+                    <div className="jk-ri-track">
+                      <div className="jk-ri-fill" style={{ width: `${(parts.win / 10) * 100}%` }} />
+                    </div>
+                    <span className="jk-ri-val">{parts.win}/10</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ══ PATIENCE ══ */}
+            <div className="jk-card jk-patience">
+              <div className="jk-pt-ring">
+                <svg viewBox="0 0 100 100">
+                  <circle className="jk-pt-track" cx="50" cy="50" r="42" />
+                  <circle
+                    className="jk-pt-prog"
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    pathLength="100"
+                    strokeDasharray="100"
+                    strokeDashoffset={Math.max(0, 100 - (mins / 40) * 100)}
+                  />
+                  <text className="jk-pt-time" x="50" y="55" textAnchor="middle">
+                    {(mm > 99 ? mm : pad(mm)) + ":" + pad(ss)}
+                  </text>
+                </svg>
+              </div>
+              <div>
+                <div className="jk-pt-title">{t("chk.patienceTitle")}</div>
+                <div className="jk-pt-desc">{RANK_DESCS[rank]}</div>
+                <span className={cn("jk-pt-rank", rankPulse && "lvl-up")}>{RANKS[rank][1]}</span>
+              </div>
+            </div>
+
+            <hr />
+
+            {/* ══ SIGNALS ══ */}
+            <div className="jk-sl">
+              <span className="jk-sl-diamond" />
+              {t("chk.secSignals")}
+            </div>
+            <div className="jk-sigs">
+              {(
+                [
+                  ["go", t("chk.sigGo"), "signalsGo"],
+                  ["stop", t("chk.sigStop"), "signalsStop"],
+                  ["wait", t("chk.sigWait"), "signalsWait"],
+                ] as const
+              ).map(([cls, head, key]) => (
+                <div key={cls} className={cn("jk-sig", cls)}>
+                  <div className="jk-sig-head">{head}</div>
+                  {config[key].map((s, i) => (
+                    <div className="jk-sitem" key={i}>
+                      <span className="jk-sdot" />
+                      <Ed value={s} editable={editMode} onCommit={(v) => patchSignal(key, i, v)} />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
-          ))}
-        </div>
 
-        <hr />
+            <hr />
 
-        {/* ══ CYCLE ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secCycle")}
-        </div>
-        <div className="jk-card jk-cycle">
-          <div className="jk-cycle-steps">
-            {config.cycle.map((c, i) => (
-              <div key={i} className={cn("jk-cstep", `jk-cs-${c.type}`)}>
-                <div className="jk-ccirc">{c.label}</div>
-                <div className="jk-ctext">{c.text}</div>
+            {/* ══ CYCLE ══ */}
+            <div className="jk-sl">
+              <span className="jk-sl-diamond" />
+              {t("chk.secCycle")}
+            </div>
+            <div className="jk-card jk-cycle">
+              <div className="jk-cycle-steps">
+                {config.cycle.map((c, i) => (
+                  <div key={i} className={cn("jk-cstep", `jk-cs-${c.type}`)}>
+                    <div className="jk-ccirc">{c.label}</div>
+                    <div className="jk-ctext">{c.text}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="jk-cycle-alert">
-            <Ed
-              value={config.cycleAlert}
-              editable={editMode}
-              onCommit={(v) => patch({ cycleAlert: v })}
-            />
-          </div>
-        </div>
-
-        <hr />
-
-        {/* ══ MANTRAS ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secMantras")}
-        </div>
-        <div className="jk-mantras">
-          {config.mantras.map((m, i) => (
-            <div
-              key={i}
-              className={cn(
-                "jk-mantra",
-                i === config.mantras.length - 1 && config.mantras.length % 2 === 1 && "full",
-              )}
-            >
-              <div className="jk-m-num">{pad(i + 1)}</div>
-              <div className="jk-m-text">
+              <div className="jk-cycle-alert">
                 <Ed
-                  value={m.text}
+                  value={config.cycleAlert}
                   editable={editMode}
-                  onCommit={(v) => patchMantra(i, { text: v })}
-                />
-              </div>
-              <div className="jk-m-why">
-                <Ed
-                  value={m.why}
-                  editable={editMode}
-                  onCommit={(v) => patchMantra(i, { why: v })}
+                  onCommit={(v) => patch({ cycleAlert: v })}
                 />
               </div>
             </div>
-          ))}
-        </div>
 
-        <hr />
+            <hr />
 
-        {/* ══ NOTES ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secNotes")}
-        </div>
-        <div className="jk-card jk-notes-block">
-          <textarea
-            className="jk-notes-area"
-            placeholder={t("chk.notesPlaceholder")}
-            value={day.notes}
-            onChange={(e) => setDay((d) => ({ ...d, notes: e.target.value }))}
-          />
-        </div>
+            {/* ══ MANTRAS ══ */}
+            <div className="jk-sl">
+              <span className="jk-sl-diamond" />
+              {t("chk.secMantras")}
+            </div>
+            <div className="jk-mantras">
+              {config.mantras.map((m, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "jk-mantra",
+                    i === config.mantras.length - 1 && config.mantras.length % 2 === 1 && "full",
+                  )}
+                >
+                  <div className="jk-m-num">{pad(i + 1)}</div>
+                  <div className="jk-m-text">
+                    <Ed
+                      value={m.text}
+                      editable={editMode}
+                      onCommit={(v) => patchMantra(i, { text: v })}
+                    />
+                  </div>
+                  <div className="jk-m-why">
+                    <Ed
+                      value={m.why}
+                      editable={editMode}
+                      onCommit={(v) => patchMantra(i, { why: v })}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
 
-        <hr />
+            <hr />
+
+            {/* ══ NOTES ══ */}
+            <div className="jk-sl">
+              <span className="jk-sl-diamond" />
+              {t("chk.secNotes")}
+            </div>
+            <div className="jk-card jk-notes-block">
+              <textarea
+                className="jk-notes-area"
+                placeholder={t("chk.notesPlaceholder")}
+                value={day.notes}
+                onChange={(e) => setDay((d) => ({ ...d, notes: e.target.value }))}
+              />
+            </div>
+
+            <hr />
+          </>
+        )}
 
         {/* ══ FINAL GATES ══ */}
         <div className="jk-sl">

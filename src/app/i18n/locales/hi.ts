@@ -3,6 +3,8 @@ import type { Dict } from "../translations";
 const hi: Dict = {
   "nav.dashboard": "डैशबोर्ड",
   "chk.cfgItemOn": "सक्रिय — आज गिना जाएगा",
+  "chk.deepShow": "और देखें",
+  "chk.deepHide": "अतिरिक्त छिपाएँ",
   "chk.cfgItemOff": "बंद — आज छिपा",
   "error.pageTitle": "इस अनुभाग में समस्या आई",
   "error.pageBody": "यह पेज लोड नहीं हो सका। आपका डेटा सुरक्षित है।",
