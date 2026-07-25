@@ -23,7 +23,11 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
     // h-dvh + sticky top-0: the rail is always exactly viewport-height and never
     // moves with page scroll — content scrolls in <main>, nav scrolls internally
     // if it ever overflows. Identical position and alignment on every page.
-    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 bg-[#08111e]/85 border-r border-white/[0.05] flex-col shrink-0 backdrop-blur-xl">
+    // z-30 keeps the rail above any page's full-viewport background layers
+    // (e.g. the Checklist's fixed particle/grid canvas), so the navbar keeps
+    // the exact same solid style on every page and never looks tinted or
+    // transparent — while staying below modals, the palette and the AI FAB.
+    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 z-30 bg-[#08111e]/85 border-r border-white/[0.05] flex-col shrink-0 backdrop-blur-xl">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/[0.05] flex items-center gap-3 shrink-0">
         <div className="relative shrink-0">
