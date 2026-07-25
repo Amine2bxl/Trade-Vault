@@ -1638,7 +1638,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             !isItemOn(it) ? null : (
               <div
                 key={i}
-                className={cn("jk-ci", checked[i] && "done")}
+                className={cn("jk-ci", checked[i] && "done", editMode && "editing")}
                 style={{ animationDelay: `${0.05 * (i + 1)}s` }}
                 onClick={() => toggleItem(i)}
               >
@@ -1653,13 +1653,18 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                     />
                   </div>
                 </div>
-                <div className="jk-ci-desc">
-                  <Ed
-                    value={it.desc}
-                    editable={editMode}
-                    onCommit={(v) => patchItem(i, { desc: v })}
-                  />
-                </div>
+                {/* The description is context for setup/editing only — the daily
+                    mandatory list stays title-only and horizontal. It shows
+                    just in the editor so the "why" can still be tuned. */}
+                {editMode && (
+                  <div className="jk-ci-desc">
+                    <Ed
+                      value={it.desc}
+                      editable={editMode}
+                      onCommit={(v) => patchItem(i, { desc: v })}
+                    />
+                  </div>
+                )}
               </div>
             ),
           )}

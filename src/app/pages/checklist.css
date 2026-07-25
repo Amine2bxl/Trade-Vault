@@ -417,11 +417,11 @@
   border-color: var(--jk-cyan);
 }
 .jchk .jk-header-right {
-  text-align: right;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 7px;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px 8px;
 }
 .jchk .jk-clock-badge {
   display: inline-flex;
@@ -760,12 +760,12 @@
 }
 
 /* ══ CHECKLIST ══ */
-/* auto-fit keeps the daily list HORIZONTAL: as many columns as fit (3 on a
-   desktop, 2 on a tablet), collapsing to a single column on phones — so the
-   whole ritual is scanned and completed with far less scrolling. */
+/* The mandatory list is a horizontal band of title-only chips that flow and
+   wrap — one homogeneous row, not a stack of description blocks — so the whole
+   ritual is scanned and ticked in seconds. */
 .jchk .jk-checklist {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 1.5rem;
 }
@@ -774,8 +774,8 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--jk-cyan-line);
-  border-radius: var(--jk-rs);
-  padding: 10px 12px;
+  border-radius: 999px;
+  padding: 8px 14px 8px 11px;
   cursor: pointer;
   transition:
     border-color 0.3s var(--jk-ease),
@@ -785,6 +785,17 @@
   overflow: hidden;
   animation: jk-fadeUp 0.4s ease both;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  /* chip: sizes to its title, flows horizontally in the wrap row */
+  display: inline-flex;
+  align-items: center;
+}
+/* Editor mode reverts to a titled block so the description can be tuned. */
+.jchk .jk-ci.editing {
+  flex: 1 1 calc(50% - 4px);
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: var(--jk-rs);
+  padding: 11px 13px;
 }
 .jchk .jk-ci .jk-scan-bar {
   position: absolute;
@@ -837,9 +848,13 @@
 }
 .jchk .jk-ci-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 9px;
-  margin-bottom: 3px;
+  margin-bottom: 0;
+}
+.jchk .jk-ci.editing .jk-ci-head {
+  align-items: flex-start;
+  margin-bottom: 4px;
 }
 .jchk .jk-ci-box {
   width: 17px;
@@ -894,19 +909,19 @@
 .jchk .jk-motiv-opts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 6px;
+  margin-bottom: 9px;
 }
 .jchk .jk-mopt {
-  padding: 12px 14px;
+  padding: 8px 11px;
   border-radius: var(--jk-rs);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--jk-t2);
   transition: all 0.25s var(--jk-ease);
-  line-height: 1.45;
+  line-height: 1.4;
   position: relative;
   overflow: hidden;
 }
@@ -931,14 +946,13 @@
   box-shadow: 0 0 18px rgba(255, 85, 102, 0.18);
 }
 .jchk .jk-motiv-msg {
-  font-size: 13px;
-  line-height: 1.65;
-  padding: 13px 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 9px 12px;
   border-radius: var(--jk-rs);
   background: var(--jk-bg3);
   color: var(--jk-t3);
   font-style: italic;
-  min-height: 50px;
   border: 1px solid transparent;
   transition: all 0.4s;
 }
@@ -1000,24 +1014,24 @@
   background: radial-gradient(ellipse at 50% 0%, rgba(255, 85, 102, 0.12) 0%, transparent 60%);
 }
 .jchk .jk-fomo-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--jk-t3);
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   font-family: var(--jk-disp);
 }
 .jchk .jk-fomo-track {
   display: flex;
   gap: 6px;
-  margin-bottom: 14px;
+  margin-bottom: 9px;
   position: relative;
   z-index: 1;
 }
 .jchk .jk-fseg {
   flex: 1;
-  padding: 12px 6px;
+  padding: 8px 5px;
   border-radius: var(--jk-rs);
   cursor: pointer;
   text-align: center;
@@ -1077,8 +1091,8 @@
   animation: jk-glow-red 1s infinite;
 }
 .jchk .jk-fseg-icon {
-  font-size: 20px;
-  margin-bottom: 5px;
+  font-size: 16px;
+  margin-bottom: 3px;
   display: block;
   transition: filter 0.3s var(--jk-ease);
 }
@@ -1086,21 +1100,20 @@
   filter: drop-shadow(0 0 9px currentColor);
 }
 .jchk .jk-fseg-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.03em;
   font-family: var(--jk-disp);
   text-transform: uppercase;
 }
 .jchk .jk-fomo-msg {
-  font-size: 13px;
-  line-height: 1.65;
-  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 9px 12px;
   border-radius: var(--jk-rs);
   background: var(--jk-bg3);
   color: var(--jk-t3);
   font-style: italic;
-  min-height: 56px;
   border: 1px solid transparent;
   transition:
     color 0.4s,
@@ -1210,13 +1223,13 @@
 .jchk .jk-sigs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 9px;
-  margin-bottom: 2.2rem;
+  gap: 8px;
+  margin-bottom: 1.4rem;
   animation: jk-fadeUp 0.4s 0.22s ease both;
 }
 .jchk .jk-sig {
-  border-radius: var(--jk-r);
-  padding: 16px;
+  border-radius: var(--jk-rs);
+  padding: 11px 12px;
   transition: transform 0.2s;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -1241,11 +1254,11 @@
 }
 .jchk .jk-sig-head {
   font-family: var(--jk-disp);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .jchk .jk-sig.go .jk-sig-head {
   color: var(--jk-cyan);
@@ -1257,20 +1270,20 @@
   color: var(--jk-amber);
 }
 .jchk .jk-sitem {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--jk-t2);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .jchk .jk-sdot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 6px;
+  margin-top: 5px;
 }
 .jchk .jk-sig.go .jk-sdot {
   background: var(--jk-cyan);
@@ -1372,8 +1385,8 @@
 .jchk .jk-mantras {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
-  margin-bottom: 2.2rem;
+  gap: 8px;
+  margin-bottom: 1.4rem;
   animation: jk-fadeUp 0.4s 0.26s ease both;
 }
 .jchk .jk-mantra {
@@ -1381,8 +1394,8 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--jk-cyan-line);
-  border-radius: var(--jk-r);
-  padding: 18px;
+  border-radius: var(--jk-rs);
+  padding: 11px 13px;
   transition:
     border-color 0.2s,
     transform 0.2s;
@@ -1417,17 +1430,17 @@
 }
 .jchk .jk-m-num {
   font-family: var(--jk-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--jk-cyan);
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   letter-spacing: 0.05em;
 }
 .jchk .jk-mantra .jk-m-text {
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--jk-t1);
-  line-height: 1.5;
-  margin-bottom: 6px;
+  line-height: 1.45;
+  margin-bottom: 5px;
 }
 .jchk .jk-m-why {
   font-size: 12px;
