@@ -95,9 +95,9 @@
 .jchk-shell {
   position: relative;
   z-index: 2;
-  max-width: 940px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 2.2rem 1.75rem 7rem;
+  padding: 1.5rem 1.6rem 5rem;
 }
 
 /* ══ ANIMATIONS ══ */
@@ -368,8 +368,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 2rem;
-  padding-bottom: 1.4rem;
+  margin-bottom: 1.4rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--jk-cyan-line);
   animation: jk-fadeUp 0.5s ease both;
 }
@@ -415,20 +415,6 @@
 }
 .jchk .jk-live-dot.ok::after {
   border-color: var(--jk-cyan);
-}
-.jchk .jk-boot-line {
-  font-size: 11px;
-  color: var(--jk-t3);
-  font-family: var(--jk-mono);
-  overflow: hidden;
-  white-space: nowrap;
-  max-width: 340px;
-  animation: jk-typing 1.4s steps(42) 0.2s both;
-}
-.jchk .jk-boot-line::after {
-  content: "▍";
-  color: var(--jk-cyan);
-  animation: jk-blink 1.1s step-end infinite;
 }
 .jchk .jk-header-right {
   text-align: right;
@@ -748,15 +734,15 @@
 /* ══ SECTION LABEL ══ */
 .jchk .jk-sl {
   font-family: var(--jk-disp);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--jk-t3);
-  margin-bottom: 12px;
+  margin-bottom: 9px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .jchk .jk-sl .jk-sl-diamond {
   width: 6px;
@@ -774,19 +760,22 @@
 }
 
 /* ══ CHECKLIST ══ */
+/* auto-fit keeps the daily list HORIZONTAL: as many columns as fit (3 on a
+   desktop, 2 on a tablet), collapsing to a single column on phones — so the
+   whole ritual is scanned and completed with far less scrolling. */
 .jchk .jk-checklist {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-  margin-bottom: 2.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: 8px;
+  margin-bottom: 1.5rem;
 }
 .jchk .jk-ci {
   background: var(--jk-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--jk-cyan-line);
-  border-radius: var(--jk-r);
-  padding: 14px 16px;
+  border-radius: var(--jk-rs);
+  padding: 10px 12px;
   cursor: pointer;
   transition:
     border-color 0.3s var(--jk-ease),
@@ -849,13 +838,13 @@
 .jchk .jk-ci-head {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: 9px;
+  margin-bottom: 3px;
 }
 .jchk .jk-ci-box {
-  width: 19px;
-  height: 19px;
-  border-radius: 6px;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
   border: 1.5px solid rgba(34, 211, 238, 0.35);
   flex-shrink: 0;
   margin-top: 1px;
@@ -875,23 +864,27 @@
   opacity: 0;
 }
 .jchk .jk-ci-title {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--jk-t1);
   transition: color 0.25s;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .jchk .jk-ci-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--jk-t3);
-  line-height: 1.55;
-  padding-left: 29px;
+  line-height: 1.45;
+  padding-left: 26px;
+}
+/* Hide the empty-desc gap so title-only items stay tight. */
+.jchk .jk-ci-desc:empty {
+  display: none;
 }
 
 /* ══ MOTIVATION ══ */
 .jchk .jk-motiv-block {
-  padding: 1.4rem;
-  margin-bottom: 2.2rem;
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1.5rem;
   transition: border-color 0.5s;
   animation: jk-fadeUp 0.4s 0.15s ease both;
 }
@@ -965,8 +958,8 @@
 
 /* ══ FOMO ══ */
 .jchk .jk-fomo-block {
-  padding: 1.4rem;
-  margin-bottom: 2.2rem;
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1.5rem;
   transition: border-color 0.6s;
   animation: jk-fadeUp 0.4s 0.18s ease both;
 }
@@ -1482,24 +1475,37 @@
 
 /* ══ GATES / FINAL ══ */
 .jchk .jk-gates {
-  padding: 1.5rem;
-  margin-bottom: 2.2rem;
+  padding: 1.2rem 1.3rem;
+  margin-bottom: 1.5rem;
   animation: jk-fadeUp 0.4s 0.3s ease both;
 }
+/* Gates read as a horizontal row of status chips — the trader sees at a glance
+   which conditions are green instead of scanning a tall vertical list. */
 .jchk .jk-gate-list {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 18px;
+  flex-flow: row wrap;
+  gap: 8px 10px;
+  margin-bottom: 16px;
 }
 .jchk .jk-gate {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 12.5px;
+  gap: 8px;
+  font-size: 12px;
   color: var(--jk-t3);
   font-family: var(--jk-mono);
-  transition: color 0.4s;
+  transition:
+    color 0.4s,
+    border-color 0.4s,
+    background 0.4s;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.jchk .jk-gate.ok {
+  border-color: var(--jk-cyan-line);
+  background: var(--jk-cyan-dim);
 }
 .jchk .jk-gate .jk-g-ind {
   width: 14px;
@@ -1822,7 +1828,7 @@
 .jchk hr {
   border: none;
   border-top: 1px solid rgba(34, 211, 238, 0.1);
-  margin: 2.2rem 0;
+  margin: 1.4rem 0;
 }
 
 .jchk [contenteditable] {

@@ -1266,7 +1266,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 Pre-Trade <span className="jk-os">OS</span>
               </h1>
             </div>
-            <div className="jk-boot-line">JARVIS // systems check — discipline protocol loaded</div>
           </div>
           <div className="jk-header-right">
             <div className="jk-clock-badge">
