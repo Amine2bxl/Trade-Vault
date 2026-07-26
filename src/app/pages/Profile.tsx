@@ -26,12 +26,12 @@ export default function Profile({ trades }: ProfileProps) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-      <div className="relative glass-strong rounded-3xl p-6 sm:p-8 overflow-hidden">
-        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl" />
+      <div className="relative rounded-3xl p-6 sm:p-8 overflow-hidden border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent animate-fade-in-up">
+        <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
           <div className="relative shrink-0">
-            <div className="absolute inset-0 rounded-2xl bg-cyan-500/40 blur-lg opacity-70" />
-            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-cyan-500/20">
+            <div className="absolute -inset-1 rounded-2xl bg-cyan-500/40 blur-lg opacity-70" />
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-cyan-500/25">
               {user.name.charAt(0).toUpperCase()}
             </div>
           </div>
