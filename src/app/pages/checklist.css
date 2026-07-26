@@ -20,8 +20,10 @@
   --jk-t1: #e6f6ff;
   --jk-t2: #7fa3bd;
   --jk-t3: #3d5a75;
-  --jk-r: 14px;
-  --jk-rs: 9px;
+  /* Radius aligned to the app design system (rounded-2xl / rounded-xl) so the
+     checklist cards read as the same family as Dashboard, Jarvis & the rest. */
+  --jk-r: 16px;
+  --jk-rs: 10px;
   /* Unified with the landing/app kit: Sora (display) + Manrope (body/numbers).
      The former HUD fonts (Rajdhani/Orbitron/JetBrains Mono) were never loaded
      and silently fell back to system fonts — this makes the checklist carry the
@@ -336,7 +338,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.25), transparent);
 }
 .jchk .jk-hud-corners::after {
   content: "";
@@ -359,7 +361,7 @@
       no-repeat,
     linear-gradient(0deg, var(--jk-cyan) 0 10px, transparent 10px) bottom right / 1.5px 22px
       no-repeat;
-  opacity: 0.35;
+  opacity: 0.16;
   transition: opacity 0.4s;
 }
 
