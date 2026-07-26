@@ -11,7 +11,6 @@ import {
   type ChkConfig,
   type ChkItem,
   type MotivOpt,
-  type Mantra,
   type FomoState,
   defaultConfigFor,
   templatesFor,
@@ -31,7 +30,6 @@ import {
   parseTimeToMinutes,
   isWindowOpen,
   getTimeZoneOptions,
-  dayOfYear,
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
@@ -146,7 +144,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const { t, lang } = useT();
   const uid = user?.id ?? "anon";
   const CFG_KEY = `tv-chk-config-${uid}`;
-  const DEEP_KEY = `tv-chk-deep-${uid}`;
   const DAY_KEY = `tv-chk-${uid}-${todayKey()}`;
 
   /* Config only persists once the user actually customized it — untouched
@@ -180,23 +177,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   });
   const [audioOn, setAudioOn] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  // "Go deeper" block (score, quote, patience, signals, cycle, mantras, notes).
-  // Collapsed by default so the daily run is the 4 gating steps only; the
-  // preference is remembered, so a trader who wants the full cockpit keeps it.
-  const [deepOpen, setDeepOpen] = useState(() => {
-    try {
-      return localStorage.getItem(`tv-chk-deep-${uid}`) === "1";
-    } catch {
-      return false;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(DEEP_KEY, deepOpen ? "1" : "0");
-    } catch {
-      /* best-effort */
-    }
-  }, [deepOpen, DEEP_KEY]);
   const [showConfig, setShowConfig] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [countdownVal, setCountdownVal] = useState<number | null>(null);
@@ -208,8 +188,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     speaking: false,
     show: false,
   });
-  const [quote, setQuote] = useState("");
-  const [displayScore, setDisplayScore] = useState(0);
   const [quickAdd, setQuickAdd] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [onb, setOnb] = useState<OnboardingData | null>(null);
@@ -299,7 +277,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, [lang]);
 
   /* Language-dependent content */
-  const { ranks: RANKS, descs: RANK_DESCS } = useMemo(() => ranksFor(lang), [lang]);
+  const { ranks: RANKS } = useMemo(() => ranksFor(lang), [lang]);
   const templates = useMemo(() => templatesFor(lang), [lang]);
   const coach = useMemo(() => coachPromptsFor(lang), [lang]);
 
@@ -326,13 +304,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       /* quota */
     }
   }, [day, DAY_KEY]);
-
-  /* ══ Quote + mission ══ */
-  useEffect(() => {
-    setQuote(config.quotes[Math.floor(Math.random() * config.quotes.length)] || "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
-  const mission = config.missions[dayOfYear() % Math.max(1, config.missions.length)] || "";
 
   /* ══════════ AUDIO ENGINE (WebAudio + speechSynthesis) ══════════ */
   const audioRef = useRef<{
@@ -813,22 +784,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   );
   const nChecked = activeIdx.filter((i) => checked[i]).length;
   const nActive = activeIdx.length;
-  const nItems = Math.max(1, nActive);
-  const parts = useMemo(() => {
-    const check = Math.round((nChecked / nItems) * 60);
-    const mental =
-      day.fomo === 0 ? 15 : day.fomo === 1 ? 10 : day.fomo === 2 ? 0 : day.fomo === 3 ? -15 : 0;
-    const motivOk = day.motiv >= 0 ? !!config.motivs[day.motiv]?.ok : false;
-    const motiv = day.motiv < 0 ? 0 : motivOk ? 15 : -10;
-    const win = winOpen ? 10 : 0;
-    return {
-      check,
-      mental,
-      motiv,
-      win,
-      total: Math.max(0, Math.min(100, check + mental + motiv + win)),
-    };
-  }, [nChecked, nItems, day.fomo, day.motiv, config.motivs, winOpen]);
   const gates = useMemo(
     () => ({
       check: nChecked === nActive && nActive > 0,
@@ -841,21 +796,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   );
   const allGates = gates.check && gates.mental && gates.motiv && gates.win && gates.assume;
   const interference = day.motiv >= 0 && !config.motivs[day.motiv]?.ok;
-
-  /* animated score number */
-  useEffect(() => {
-    let raf = 0;
-    const step = () => {
-      setDisplayScore((s) => {
-        const diff = parts.total - s;
-        if (Math.abs(diff) < 0.5) return parts.total;
-        raf = requestAnimationFrame(step);
-        return s + diff * 0.14;
-      });
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [parts.total]);
 
   /* gate-change sounds + full-validation HUD moment */
   const prevGatesRef = useRef(gates);
@@ -916,17 +856,14 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   let rank = 0;
   for (let i = 0; i < RANKS.length; i++) if (mins >= RANKS[i][0]) rank = i;
   const lastRankRef = useRef(0);
-  const [rankPulse, setRankPulse] = useState(false);
   useEffect(() => {
     if (rank !== lastRankRef.current) {
       lastRankRef.current = rank;
-      setRankPulse(true);
-      const tm = setTimeout(() => setRankPulse(false), 900);
+      // A quiet audio cue as patience deepens — a calm-mind milestone.
       if (rank > 0) {
         blip(1100, 0.13, "sine", 0.018);
         if (rank === 2) say("patience");
       }
-      return () => clearTimeout(tm);
     }
   }, [rank, blip, say]);
 
@@ -1044,7 +981,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     disciplineRef.current = false;
     wasAllRef.current = false;
     lastRankRef.current = 0;
-    setQuote(config.quotes[Math.floor(Math.random() * config.quotes.length)] || "");
   };
 
   /* Ask the in-app AI coach (opens the assistant panel with the prompt) */
@@ -1077,17 +1013,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       ...c,
       fomo: c.fomo.map((f, k) => (k === i ? { ...f, ...p } : f)) as FomoState[],
     }));
-  };
-  const patchMantra = (i: number, p: Partial<Mantra>) => {
-    markTouched();
-    setConfig((c) => ({
-      ...c,
-      mantras: c.mantras.map((m, k) => (k === i ? { ...m, ...p } : m)),
-    }));
-  };
-  const patchSignal = (list: "signalsGo" | "signalsStop" | "signalsWait", i: number, v: string) => {
-    markTouched();
-    setConfig((c) => ({ ...c, [list]: c[list].map((s, k) => (k === i ? v : s)) }));
   };
 
   const applyTemplate = (id: string) => {
@@ -1231,8 +1156,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     const left = (parseTimeToMinutes(config.startTime) - (p.hour * 60 + p.minute) + 1440) % 1440;
     winLabel = `${t("chk.winClosed")} ${config.startTime} — T-${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
   }
-  const mm = Math.floor(mins);
-  const ss = Math.floor((elapsedMs % 60000) / 1000);
   const tzOptions = useMemo(getTimeZoneOptions, []);
 
   return (
@@ -1292,6 +1215,17 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               </span>
             )}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <button
+                className="jk-jarvis-btn"
+                onClick={() => askCoach(coach.checklistReview)}
+                title="Jarvis"
+              >
+                <svg viewBox="0 0 24 24">
+                  <rect x="4" y="7" width="16" height="12" rx="3" />
+                  <path d="M12 3v4M9 13h.01M15 13h.01" />
+                </svg>
+                <span>{t("chk.askJarvis")}</span>
+              </button>
               <button className={cn("jk-toggle", audioOn && "on")} onClick={toggleAudio}>
                 <svg viewBox="0 0 24 24">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
@@ -1525,103 +1459,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               ))}
             </div>
 
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgMantras")}</div>
-              {config.mantras.map((m, i) => (
-                <div className="jk-cfg-row" key={i}>
-                  <div className="jk-cfg-col">
-                    <input
-                      className="jk-input"
-                      value={m.text}
-                      onChange={(e) => patchMantra(i, { text: e.target.value })}
-                    />
-                    <input
-                      className="jk-input"
-                      value={m.why}
-                      onChange={(e) => patchMantra(i, { why: e.target.value })}
-                    />
-                  </div>
-                  <button
-                    className="jk-cfg-del"
-                    onClick={() => {
-                      markTouched();
-                      setConfig((c) => ({ ...c, mantras: c.mantras.filter((_, k) => k !== i) }));
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              <button
-                className="jk-cfg-add"
-                onClick={() => {
-                  markTouched();
-                  setConfig((c) => ({
-                    ...c,
-                    mantras: [...c.mantras, { text: "…", why: "" }],
-                  }));
-                }}
-              >
-                {t("chk.cfgAddMantra")}
-              </button>
-            </div>
-
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgSignals")}</div>
-              <div className="jk-cfg-row">
-                <div className="jk-cfg-col">
-                  <div className="jk-cfg-hint">{t("chk.sigGo")}</div>
-                  <textarea
-                    className="jk-cfg-textarea"
-                    value={config.signalsGo.join("\n")}
-                    onChange={(e) =>
-                      patch({ signalsGo: e.target.value.split("\n").filter((s) => s.trim()) })
-                    }
-                  />
-                </div>
-                <div className="jk-cfg-col">
-                  <div className="jk-cfg-hint">{t("chk.sigStop")}</div>
-                  <textarea
-                    className="jk-cfg-textarea"
-                    value={config.signalsStop.join("\n")}
-                    onChange={(e) =>
-                      patch({ signalsStop: e.target.value.split("\n").filter((s) => s.trim()) })
-                    }
-                  />
-                </div>
-                <div className="jk-cfg-col">
-                  <div className="jk-cfg-hint">{t("chk.sigWait")}</div>
-                  <textarea
-                    className="jk-cfg-textarea"
-                    value={config.signalsWait.join("\n")}
-                    onChange={(e) =>
-                      patch({ signalsWait: e.target.value.split("\n").filter((s) => s.trim()) })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgQuotes")}</div>
-              <textarea
-                className="jk-cfg-textarea"
-                value={config.quotes.join("\n")}
-                onChange={(e) =>
-                  patch({ quotes: e.target.value.split("\n").filter((s) => s.trim()) })
-                }
-              />
-            </div>
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgMissions")}</div>
-              <textarea
-                className="jk-cfg-textarea"
-                value={config.missions.join("\n")}
-                onChange={(e) =>
-                  patch({ missions: e.target.value.split("\n").filter((s) => s.trim()) })
-                }
-              />
-            </div>
             <button className="jk-btn danger" onClick={resetConfig}>
               {t("chk.cfgReset")}
             </button>
@@ -1748,283 +1585,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             </button>
           )}
         </div>
-
-        {/* ══ GO DEEPER — everything that does NOT gate the day ══
-            The fast path is checklist → motivation → FOMO → gates (< 30 s).
-            Score, quote, patience, signals, cycle, mantras and notes stay one
-            tap away instead of standing between the trader and the open. */}
-        <button
-          type="button"
-          className={cn("jk-deep-toggle", deepOpen && "open")}
-          aria-expanded={deepOpen}
-          onClick={() => setDeepOpen((v) => !v)}
-        >
-          <span className="jk-deep-chevron">{deepOpen ? "▾" : "▸"}</span>
-          {deepOpen ? t("chk.deepHide") : t("chk.deepShow")}
-        </button>
-
-        {deepOpen && (
-          <>
-            {/* ══ QUOTE + MISSION ══ */}
-            <div className="jk-brief-row">
-              <div className="jk-card jk-quote-card">
-                <div className="jk-q-label">{t("chk.transmission")}</div>
-                <div className="jk-q-text">« {quote} »</div>
-              </div>
-              <div className="jk-card jk-mission-card">
-                <div className="jk-m-label">{t("chk.mission")}</div>
-                <div className="jk-m-text">{mission}</div>
-              </div>
-            </div>
-
-            {/* ══ REACTOR / EDGE SCORE ══ */}
-            <div className="jk-card jk-hud-corners jk-reactor-wrap">
-              <div className="jk-reactor">
-                <svg viewBox="0 0 200 200">
-                  <g className="jk-ring-ticks">
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="94"
-                      fill="none"
-                      stroke="rgba(34,211,238,.25)"
-                      strokeWidth="2"
-                      strokeDasharray="2 10"
-                    />
-                  </g>
-                  <g className="jk-ring-ticks2">
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="86"
-                      fill="none"
-                      stroke="rgba(34,211,238,.15)"
-                      strokeWidth="1"
-                      strokeDasharray="14 8"
-                    />
-                  </g>
-                  <circle className="jk-ring-track" cx="100" cy="100" r="74" />
-                  <circle
-                    className={cn(
-                      "jk-ring-prog",
-                      (parts.mental < 0 || parts.motiv < 0) && "danger",
-                    )}
-                    cx="100"
-                    cy="100"
-                    r="74"
-                    pathLength="100"
-                    strokeDasharray="100"
-                    strokeDashoffset={100 - parts.total}
-                  />
-                  <g className="jk-ring-comet">
-                    <circle cx="100" cy="100" r="80" pathLength="100" strokeDasharray="10 90" />
-                  </g>
-                  <circle
-                    className="jk-core"
-                    cx="100"
-                    cy="100"
-                    r="52"
-                    fill="rgba(34,211,238,.06)"
-                    stroke="rgba(34,211,238,.3)"
-                    strokeWidth="1"
-                  />
-                  <text className="jk-score-num" x="100" y="108" textAnchor="middle">
-                    {Math.round(displayScore)}
-                  </text>
-                  <text className="jk-score-lbl" x="100" y="130" textAnchor="middle">
-                    EDGE SCORE / 100
-                  </text>
-                </svg>
-              </div>
-              <div className="jk-reactor-info">
-                <div className="jk-ri-title">{t("chk.edgeAnalysis")}</div>
-                <div className="jk-ri-bars">
-                  <div className="jk-ri-row">
-                    <span className="jk-ri-name">{t("chk.barChecklist")}</span>
-                    <div className="jk-ri-track">
-                      <div
-                        className="jk-ri-fill"
-                        style={{ width: `${(parts.check / 60) * 100}%` }}
-                      />
-                    </div>
-                    <span className="jk-ri-val">{parts.check}/60</span>
-                  </div>
-                  <div className="jk-ri-row">
-                    <span className="jk-ri-name">{t("chk.barMental")}</span>
-                    <div className="jk-ri-track">
-                      <div
-                        className={cn(
-                          "jk-ri-fill",
-                          parts.mental < 0 ? "bad" : day.fomo === 2 && "warn",
-                        )}
-                        style={{
-                          width:
-                            parts.mental < 0
-                              ? "100%"
-                              : `${(Math.max(0, parts.mental) / 15) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="jk-ri-val">{parts.mental}/15</span>
-                  </div>
-                  <div className="jk-ri-row">
-                    <span className="jk-ri-name">{t("chk.barMotiv")}</span>
-                    <div className="jk-ri-track">
-                      <div
-                        className={cn("jk-ri-fill", parts.motiv < 0 && "bad")}
-                        style={{
-                          width:
-                            parts.motiv < 0 ? "100%" : `${(Math.max(0, parts.motiv) / 15) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="jk-ri-val">{parts.motiv}/15</span>
-                  </div>
-                  <div className="jk-ri-row">
-                    <span className="jk-ri-name">
-                      {t("chk.barWindow")} {config.startTime}
-                    </span>
-                    <div className="jk-ri-track">
-                      <div className="jk-ri-fill" style={{ width: `${(parts.win / 10) * 100}%` }} />
-                    </div>
-                    <span className="jk-ri-val">{parts.win}/10</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ══ PATIENCE ══ */}
-            <div className="jk-card jk-patience">
-              <div className="jk-pt-ring">
-                <svg viewBox="0 0 100 100">
-                  <circle className="jk-pt-track" cx="50" cy="50" r="42" />
-                  <circle
-                    className="jk-pt-prog"
-                    cx="50"
-                    cy="50"
-                    r="42"
-                    pathLength="100"
-                    strokeDasharray="100"
-                    strokeDashoffset={Math.max(0, 100 - (mins / 40) * 100)}
-                  />
-                  <text className="jk-pt-time" x="50" y="55" textAnchor="middle">
-                    {(mm > 99 ? mm : pad(mm)) + ":" + pad(ss)}
-                  </text>
-                </svg>
-              </div>
-              <div>
-                <div className="jk-pt-title">{t("chk.patienceTitle")}</div>
-                <div className="jk-pt-desc">{RANK_DESCS[rank]}</div>
-                <span className={cn("jk-pt-rank", rankPulse && "lvl-up")}>{RANKS[rank][1]}</span>
-              </div>
-            </div>
-
-            <hr />
-
-            {/* ══ SIGNALS ══ */}
-            <div className="jk-sl">
-              <span className="jk-sl-diamond" />
-              {t("chk.secSignals")}
-            </div>
-            <div className="jk-sigs">
-              {(
-                [
-                  ["go", t("chk.sigGo"), "signalsGo"],
-                  ["stop", t("chk.sigStop"), "signalsStop"],
-                  ["wait", t("chk.sigWait"), "signalsWait"],
-                ] as const
-              ).map(([cls, head, key]) => (
-                <div key={cls} className={cn("jk-sig", cls)}>
-                  <div className="jk-sig-head">{head}</div>
-                  {config[key].map((s, i) => (
-                    <div className="jk-sitem" key={i}>
-                      <span className="jk-sdot" />
-                      <Ed value={s} editable={editMode} onCommit={(v) => patchSignal(key, i, v)} />
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            <hr />
-
-            {/* ══ CYCLE ══ */}
-            <div className="jk-sl">
-              <span className="jk-sl-diamond" />
-              {t("chk.secCycle")}
-            </div>
-            <div className="jk-card jk-cycle">
-              <div className="jk-cycle-steps">
-                {config.cycle.map((c, i) => (
-                  <div key={i} className={cn("jk-cstep", `jk-cs-${c.type}`)}>
-                    <div className="jk-ccirc">{c.label}</div>
-                    <div className="jk-ctext">{c.text}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="jk-cycle-alert">
-                <Ed
-                  value={config.cycleAlert}
-                  editable={editMode}
-                  onCommit={(v) => patch({ cycleAlert: v })}
-                />
-              </div>
-            </div>
-
-            <hr />
-
-            {/* ══ MANTRAS ══ */}
-            <div className="jk-sl">
-              <span className="jk-sl-diamond" />
-              {t("chk.secMantras")}
-            </div>
-            <div className="jk-mantras">
-              {config.mantras.map((m, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "jk-mantra",
-                    i === config.mantras.length - 1 && config.mantras.length % 2 === 1 && "full",
-                  )}
-                >
-                  <div className="jk-m-num">{pad(i + 1)}</div>
-                  <div className="jk-m-text">
-                    <Ed
-                      value={m.text}
-                      editable={editMode}
-                      onCommit={(v) => patchMantra(i, { text: v })}
-                    />
-                  </div>
-                  <div className="jk-m-why">
-                    <Ed
-                      value={m.why}
-                      editable={editMode}
-                      onCommit={(v) => patchMantra(i, { why: v })}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <hr />
-
-            {/* ══ NOTES ══ */}
-            <div className="jk-sl">
-              <span className="jk-sl-diamond" />
-              {t("chk.secNotes")}
-            </div>
-            <div className="jk-card jk-notes-block">
-              <textarea
-                className="jk-notes-area"
-                placeholder={t("chk.notesPlaceholder")}
-                value={day.notes}
-                onChange={(e) => setDay((d) => ({ ...d, notes: e.target.value }))}
-              />
-            </div>
-
-            <hr />
-          </>
-        )}
 
         {/* ══ FINAL GATES ══ */}
         <div className="jk-sl">

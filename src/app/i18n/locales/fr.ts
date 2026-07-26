@@ -622,6 +622,7 @@ const fr: Dict = {
   "chk.cfgItemOff": "Inactif — masqué aujourd'hui",
   "chk.editor": "Éditeur",
   "chk.customize": "Personnaliser",
+  "chk.askJarvis": "Demander à Jarvis",
   "chk.standby": "Standby",
   "chk.ready": "Prêt — verrouille",
   "chk.locked": "Edge Locked",

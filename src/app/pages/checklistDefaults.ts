@@ -790,6 +790,8 @@ export function coachPromptsFor(lang: string) {
         "Donne-moi un résumé de mes 3 erreurs les plus récurrentes dans mes trades et un plan d'action pour chacune.",
       interference:
         "Ma checklist pre-market vient de détecter une motivation émotionnelle (pas process). Aide-moi à me recentrer avant de faire une bêtise.",
+      checklistReview:
+        "Je fais ma checklist pre-market. Passe en revue mon état d'esprit et ma préparation du jour, et dis-moi en 3 points si je suis prêt à trader ou si je dois attendre.",
     };
   }
   return {
@@ -801,5 +803,7 @@ export function coachPromptsFor(lang: string) {
       "Give me a summary of my 3 most recurring mistakes in my trades and an action plan for each.",
     interference:
       "My pre-market checklist just flagged an emotional (non-process) motivation. Help me re-center before I do something stupid.",
+    checklistReview:
+      "I'm doing my pre-market checklist. Review my mindset and today's preparation, and tell me in 3 points whether I'm ready to trade or should wait.",
   };
 }

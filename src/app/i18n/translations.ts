@@ -698,6 +698,7 @@ const en = {
   "chk.cfgItemOff": "Off — hidden today",
   "chk.editor": "Editor",
   "chk.customize": "Customize",
+  "chk.askJarvis": "Ask Jarvis",
   "chk.standby": "Standby",
   "chk.ready": "Ready — lock in",
   "chk.locked": "Edge Locked",
