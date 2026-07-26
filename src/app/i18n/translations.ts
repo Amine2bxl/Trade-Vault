@@ -275,6 +275,8 @@ const en = {
   "jarvis.bestDay": "Best day: {day}",
   "jarvis.bestSymbol": "Best symbol: {symbol}",
   "jarvis.profitFactor": "Profit factor {value}",
+  "jarvis.pf": "Profit factor",
+  "jarvis.streak": "Streak",
 
   // Jarvis (floating panel)
   "assistant.title": "Jarvis",

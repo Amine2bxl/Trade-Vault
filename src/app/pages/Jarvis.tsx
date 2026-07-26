@@ -10,19 +10,22 @@ import {
   AlertTriangle,
   Eraser,
   Radio,
+  Wallet,
+  Target,
+  Gauge,
+  Flame,
 } from "lucide-react";
 import { Trade } from "../types";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload } from "../utils/aiContext";
-import { computeStats } from "../utils/tradeCalcs";
-import { formatPnl } from "../utils/tradeCalcs";
+import { computeStats, formatPnl, formatPct } from "../utils/tradeCalcs";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
 import { useJarvisVoice } from "../utils/jarvisVoice";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, Metric } from "@/shared/ui";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 
 interface JarvisProps {
@@ -273,18 +276,22 @@ export default function Jarvis({ trades }: JarvisProps) {
       />
 
       {/* Today's briefing — the reason to open Jarvis every day. */}
-      <div className="glass-strong rounded-2xl p-4 md:p-5 mb-4 relative overflow-hidden">
-        <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              "w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0 transition-transform",
-              speaking && "animate-pulse",
-            )}
-          >
-            <Bot className="w-5 h-5 text-white" />
+      <div className="relative overflow-hidden rounded-2xl p-4 md:p-5 mb-4 border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.07] via-white/[0.02] to-transparent">
+        <div className="pointer-events-none absolute -top-16 -right-10 w-52 h-52 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="relative flex items-start gap-3.5">
+          <div className="relative shrink-0">
+            <span
+              className={cn(
+                "absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md",
+                speaking ? "animate-pulse opacity-100" : "opacity-60",
+              )}
+            />
+            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1.5">
               <span className="text-[10px] uppercase tracking-[0.18em] text-cyan-400/80 font-bold">
                 {t("jarvis.briefTitle")}
               </span>
@@ -294,20 +301,62 @@ export default function Jarvis({ trades }: JarvisProps) {
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-200 leading-relaxed">
-              <span className="text-slate-500 font-semibold">{t("jarvis.priority")}: </span>
+            <p className="text-[15px] text-slate-100 leading-relaxed">
+              <span className="text-cyan-300/80 font-semibold">{t("jarvis.priority")}: </span>
               {priorityText}
             </p>
           </div>
           <button
             onClick={briefMe}
-            className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all"
+            className="shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition-all"
           >
             <Volume2 className="w-4 h-4" />
             <span className="hidden sm:inline">{t("jarvis.brief")}</span>
           </button>
         </div>
       </div>
+
+      {/* Live KPI strip — the numbers Jarvis coaches from, at a glance. */}
+      {trades.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <Metric
+            title={t("stats.totalPnl")}
+            value={formatPnl(stats.totalPnl)}
+            trend={stats.totalPnl >= 0 ? "up" : "down"}
+            icon={<Wallet className="w-4 h-4" />}
+          />
+          <Metric
+            title={t("stats.winRate")}
+            value={formatPct(stats.winRate)}
+            icon={<Target className="w-4 h-4" />}
+          />
+          <Metric
+            title={t("jarvis.pf")}
+            value={stats.profitFactor.toFixed(2)}
+            trend={stats.profitFactor >= 1 ? "up" : "down"}
+            icon={<Gauge className="w-4 h-4" />}
+          />
+          <Metric
+            title={t("jarvis.streak")}
+            value={String(stats.currentStreak)}
+            subtitle={
+              stats.currentStreakType === "win"
+                ? t("common.win")
+                : stats.currentStreakType === "loss"
+                  ? t("common.loss")
+                  : undefined
+            }
+            trend={
+              stats.currentStreakType === "win"
+                ? "up"
+                : stats.currentStreakType === "loss"
+                  ? "down"
+                  : "neutral"
+            }
+            icon={<Flame className="w-4 h-4" />}
+          />
+        </div>
+      )}
 
       {/* Strengths / Watch-out — deterministic read of the edge. */}
       <div className="grid sm:grid-cols-2 gap-3 mb-4">

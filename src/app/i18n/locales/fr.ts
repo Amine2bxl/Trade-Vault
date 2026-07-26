@@ -231,6 +231,8 @@ const fr: Dict = {
   "jarvis.bestDay": "Meilleur jour : {day}",
   "jarvis.bestSymbol": "Meilleur symbole : {symbol}",
   "jarvis.profitFactor": "Profit factor {value}",
+  "jarvis.pf": "Profit factor",
+  "jarvis.streak": "Série",
   "assistant.title": "Jarvis",
   "assistant.subtitle": "Ton intelligence de performance trading",
   "assistant.placeholder": "Demande à Jarvis…",

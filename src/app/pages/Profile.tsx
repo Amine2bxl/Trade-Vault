@@ -12,7 +12,6 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
-import SubscriptionSection from "../components/SubscriptionSection";
 
 interface ProfileProps {
   trades: Trade[];
@@ -67,9 +66,8 @@ export default function Profile({ trades }: ProfileProps) {
         />
       </div>
 
-      {/* Subscription management — upgrade, card change, cancel.
-          (Trading rules now live on the Trading Plan page; themes on Appearance.) */}
-      <SubscriptionSection />
+      {/* Subscription lives entirely on its own page now — Profile stays focused
+          on personal info and preferences (single responsibility per page). */}
 
       {/* Contact / Support */}
       <div className="glass-strong rounded-3xl p-6 space-y-3">
