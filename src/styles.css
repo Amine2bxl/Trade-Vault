@@ -596,11 +596,13 @@ input[type="number"] {
 }
 
 .glass {
-  /* Deep-navy glass — same blue family as the landing cards (#0a1625/#0b1727) */
+  /* Deep-navy glass — same blue family as the landing cards (#0a1625/#0b1727).
+   * The hairline border stays deliberately faint: surfaces should be read by
+   * their fill, not outlined like a wireframe. */
   background: linear-gradient(135deg, rgba(13, 24, 40, 0.72) 0%, rgba(10, 19, 32, 0.44) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(56, 84, 116, 0.28);
+  border: 1px solid rgba(56, 84, 116, 0.18);
 }
 .glass-strong {
   background: linear-gradient(135deg, rgba(10, 20, 34, 0.99) 0%, rgba(8, 15, 26, 0.98) 100%);
@@ -621,14 +623,13 @@ input[type="number"] {
 }
 @media (hover: hover) {
   .card-premium:hover {
-    transform: translateY(-2px);
-    /* No white ring — a soft, theme-tinted glow + a whisper of accent on the
-       top edge reads as backlit glass, not a harsh outline. */
+    /* Restrained lift: a tool's surfaces acknowledge the pointer, they don't
+     * perform. Shorter travel + a tighter, dimmer shadow than a marketing card. */
+    transform: translateY(-1px);
     box-shadow:
-      0 18px 44px -14px rgba(0, 0, 0, 0.55),
-      0 6px 26px -10px rgb(var(--tv-accent-rgb) / 0.28),
-      inset 0 1px 0 rgb(var(--tv-highlight-rgb) / 0.1);
-    border-color: rgb(var(--tv-accent-rgb) / 0.3);
+      0 12px 30px -14px rgba(0, 0, 0, 0.5),
+      0 3px 14px -8px rgb(var(--tv-accent-rgb) / 0.16);
+    border-color: rgb(var(--tv-accent-rgb) / 0.18);
   }
 }
 

@@ -35,7 +35,7 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer } from "@/shared/ui";
 
 interface SeasonalityProps {
   trades: Trade[];
@@ -53,7 +53,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
   const setTab = (v: Tab) => writeJSON(tabKey, v);
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="mb-4 md:mb-5 stagger-0"
         title={t("seasonality.title")}
@@ -88,7 +88,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
       ) : (
         <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

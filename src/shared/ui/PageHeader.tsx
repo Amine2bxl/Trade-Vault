@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "./cn";
+import { density, type } from "./tokens";
 
 /**
  * PageHeader — the single page-title pattern of the app. Encodes the exact
@@ -28,7 +29,8 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "mb-4 md:mb-6 animate-fade-in-up flex items-start justify-between gap-3",
+        density.sectionGap,
+        "animate-fade-in-up flex items-start justify-between gap-3",
         className,
       )}
     >
@@ -36,11 +38,16 @@ export function PageHeader({
         {eyebrow}
         <div className="flex items-center gap-2">
           {icon}
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+          <h1
+            className={cn(
+              type.h1,
+              "bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent",
+            )}
+          >
             {title}
           </h1>
         </div>
-        {subtitle && <p className="text-xs md:text-sm text-slate-500 mt-1">{subtitle}</p>}
+        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
       </div>
       {actions}
     </div>
@@ -63,8 +70,8 @@ export function SectionHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("mb-3 flex items-center justify-between gap-2", className)}>
-      <h2 className="flex items-center gap-2 text-sm md:text-base font-bold text-white">
+    <div className={cn("mb-2.5 flex items-center justify-between gap-2", className)}>
+      <h2 className={cn("flex items-center gap-2 text-white", type.h2)}>
         {icon}
         {title}
       </h2>

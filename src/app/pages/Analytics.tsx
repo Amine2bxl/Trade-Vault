@@ -31,7 +31,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { EmptyState, PageHeader } from "@/shared/ui";
+import { EmptyState, PageHeader, PageContainer } from "@/shared/ui";
 import {
   CHART_ANIMATION,
   EQUITY_ANIMATION,
@@ -289,7 +289,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
     );
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="stagger-0"
         title={t("analytics.title")}
@@ -1076,7 +1076,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

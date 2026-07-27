@@ -25,7 +25,7 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer } from "@/shared/ui";
 
 interface JournalProps {
   trades: Trade[];
@@ -134,7 +134,7 @@ export default function Journal({
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="mb-3 md:mb-6 items-center stagger-0"
         title={t("journal.title")}
@@ -512,6 +512,6 @@ export default function Journal({
           positionLabel={`${viewingIdx + 1}/${filtered.length}`}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

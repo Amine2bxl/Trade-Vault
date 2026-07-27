@@ -10,7 +10,7 @@ import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import MissedOpportunities from "./MissedOpportunities";
 import { useT } from "../i18n/LanguageContext";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer } from "@/shared/ui";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -227,7 +227,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
   );
 
   return (
-    <div className="p-3 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="mb-3 md:mb-6 stagger-0"
         title={t("calendar.title")}
@@ -580,6 +580,6 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
       <div className="md:hidden mt-6">
         <MissedOpportunities />
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "./cn";
 import { Heading } from "./Typography";
+import { density } from "./tokens";
 
 /**
  * Card — the surface primitive. Variants map to the existing glass classes so
@@ -37,7 +38,10 @@ export function Card({
 
 export function CardHeader({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex items-center justify-between gap-3 p-5 pb-0", className)} {...rest}>
+    <div
+      className={cn("flex items-center justify-between gap-2.5", density.cardPad, "pb-0", className)}
+      {...rest}
+    >
       {children}
     </div>
   );
@@ -51,9 +55,23 @@ export function CardTitle({ className, children }: { className?: string; childre
   );
 }
 
-export function CardBody({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+export type CardPad = "default" | "tight" | "loose" | "none";
+
+const PAD: Record<CardPad, string> = {
+  default: density.cardPad,
+  tight: density.cardPadTight,
+  loose: density.cardPadLoose,
+  none: "",
+};
+
+export function CardBody({
+  pad = "default",
+  className,
+  children,
+  ...rest
+}: HTMLAttributes<HTMLDivElement> & { pad?: CardPad }) {
   return (
-    <div className={cn("p-5", className)} {...rest}>
+    <div className={cn(PAD[pad], className)} {...rest}>
       {children}
     </div>
   );

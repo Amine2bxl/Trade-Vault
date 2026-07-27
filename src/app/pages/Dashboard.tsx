@@ -32,7 +32,7 @@ import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/ed
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
 import CopilotBlock from "./dashboard/CopilotBlock";
 import MetricCard from "./dashboard/MetricCard";
@@ -288,7 +288,7 @@ export default function Dashboard({
         : "text-slate-300";
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="items-center stagger-0"
         eyebrow={
@@ -658,7 +658,7 @@ export default function Dashboard({
           </div>
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }
 

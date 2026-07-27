@@ -77,5 +77,47 @@ export const motion = {
   glow: "animate-glow",
 } as const;
 
+/**
+ * Density — the app's spacing contract. TradeVault is a working tool (traders
+ * scan it daily), so surfaces stay tight and information-dense in the spirit of
+ * TradingView / Linear rather than the airy marketing-SaaS default. These are
+ * the ONLY padding steps a screen should use; `Card`, `PageContainer` and
+ * `PageHeader` consume them so density evolves in one place.
+ */
+export const density = {
+  /** Card/panel inner padding. */
+  cardPad: "p-3.5 md:p-4",
+  /** Tighter variant for list rows and compact tiles. */
+  cardPadTight: "p-3",
+  /** Roomier variant, reserved for hero/feature surfaces. */
+  cardPadLoose: "p-4 md:p-5",
+  /** Page gutters — mobile stays tight so more fits on screen. */
+  pagePad: "p-3 md:p-6",
+  /** Vertical rhythm between page sections. */
+  sectionGap: "mb-3 md:mb-4",
+  /** Grid gap between sibling cards. */
+  gridGap: "gap-3",
+} as const;
+
+/**
+ * Typography roles — six named steps replacing ad-hoc `text-[Npx]` sizes.
+ * Floor is 11px: dense enough for a pro tool, above the unreadable 7–10px tier
+ * the audit flagged. Use these instead of arbitrary pixel classes.
+ */
+export const type = {
+  /** Page title. */
+  h1: "text-xl md:text-2xl font-bold",
+  /** Section title. */
+  h2: "text-sm md:text-base font-bold",
+  /** Card title. */
+  h3: "text-sm font-semibold",
+  /** Body copy. */
+  body: "text-sm",
+  /** Secondary/meta copy. */
+  caption: "text-xs",
+  /** Compact uppercase label (the 11px floor). */
+  label: "text-[11px] uppercase tracking-wider font-semibold",
+} as const;
+
 /** The full token set, for ergonomic single-import access. */
-export const tokens = { font, color, accentVar, surface, radius, motion } as const;
+export const tokens = { font, color, accentVar, surface, radius, motion, density, type } as const;
