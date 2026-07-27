@@ -89,8 +89,6 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
     <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
       {/* Header + completion */}
       <PageHeader
-        accent="emerald"
-        icon={<ClipboardList className="w-4 h-4" />}
         className="mb-2 items-center"
         title={tr("Plan de trading", "Trading Plan")}
         subtitle={tr(

@@ -291,8 +291,6 @@ export default function Analytics({ trades }: AnalyticsProps) {
   return (
     <PageContainer>
       <PageHeader
-        accent="violet"
-        icon={<BarChart3 className="w-4 h-4" />}
         className="stagger-0"
         title={t("analytics.title")}
         subtitle={t("analytics.subtitle")}

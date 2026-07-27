@@ -229,8 +229,6 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
   return (
     <PageContainer>
       <PageHeader
-        accent="sky"
-        icon={<CalendarDays className="w-4 h-4" />}
         className="mb-3 md:mb-6 stagger-0"
         title={t("calendar.title")}
         subtitle={t("calendar.subtitle")}

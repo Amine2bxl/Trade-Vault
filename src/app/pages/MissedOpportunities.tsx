@@ -164,8 +164,6 @@ export default function MissedOpportunities() {
   return (
     <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
       <PageHeader
-        accent="amber"
-        icon={<Target className="w-4 h-4" />}
         className="items-center"
         title={t("missed.title")}
         subtitle={t("missed.subtitle")}

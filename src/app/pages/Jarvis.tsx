@@ -237,8 +237,6 @@ export default function Jarvis({ trades }: JarvisProps) {
   return (
     <div className="p-4 md:p-5 max-w-4xl mx-auto">
       <PageHeader
-        accent="cyan"
-        icon={<Bot className="w-4 h-4" />}
         title={t("insights.title")}
         subtitle={t("insights.subtitle")}
         actions={
@@ -317,18 +315,15 @@ export default function Jarvis({ trades }: JarvisProps) {
             title={t("stats.totalPnl")}
             value={formatPnl(stats.totalPnl)}
             trend={stats.totalPnl >= 0 ? "up" : "down"}
-            icon={<Wallet className="w-4 h-4" />}
           />
           <Metric
             title={t("stats.winRate")}
             value={formatPct(stats.winRate)}
-            icon={<Target className="w-4 h-4" />}
           />
           <Metric
             title={t("jarvis.pf")}
             value={stats.profitFactor.toFixed(2)}
             trend={stats.profitFactor >= 1 ? "up" : "down"}
-            icon={<Gauge className="w-4 h-4" />}
           />
           <Metric
             title={t("jarvis.streak")}
@@ -347,7 +342,6 @@ export default function Jarvis({ trades }: JarvisProps) {
                   ? "down"
                   : "neutral"
             }
-            icon={<Flame className="w-4 h-4" />}
           />
         </div>
       )}

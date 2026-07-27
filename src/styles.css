@@ -1034,7 +1034,9 @@ svg.lucide {
   font-weight: 700;
   border-radius: 0.6rem;
   background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #0ea5e9 100%);
-  color: #03131b;
+  /* White label: reads as a product CTA rather than a marketing chip, and keeps
+   * contrast on the lighter cyan stops. */
+  color: #ffffff;
   overflow: hidden;
   isolation: isolate;
   transition:

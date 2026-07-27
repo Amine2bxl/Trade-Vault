@@ -159,7 +159,6 @@ export default function Settings({
       {sections.prefs && (
         <div className="glass-strong rounded-3xl p-5 space-y-4 animate-fade-in-up stagger-1">
           <SectionHeading
-            icon={<SlidersHorizontal className="w-4 h-4" />}
             title={t("settings.preferences")}
           />
 
@@ -221,26 +220,22 @@ export default function Settings({
       {sections.data && (
         <div className="glass-strong rounded-3xl p-5 space-y-3 animate-fade-in-up stagger-3">
           <SectionHeading
-            icon={<Database className="w-4 h-4" />}
             title={t("settings.data")}
             sub={t("settings.dataSub")}
           />
 
           <ActionRow
-            icon={<Download className="w-4 h-4" />}
             label={t("settings.exportCsv")}
             sub={`${t("settings.exportCsvSub")} · ${trades.length} ${t("common.trades")}`}
             onClick={() => exportTradesCSV(trades)}
             disabled={trades.length === 0}
           />
           <ActionRow
-            icon={<Upload className="w-4 h-4" />}
             label={t("settings.importCsv")}
             sub={t("settings.importCsvSub")}
             onClick={onOpenImport}
           />
           <ActionRow
-            icon={<FileText className="w-4 h-4" />}
             label={t("settings.reports")}
             sub={t("settings.reportsSub")}
             onClick={onOpenReports}

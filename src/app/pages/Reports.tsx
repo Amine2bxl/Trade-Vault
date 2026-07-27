@@ -102,8 +102,6 @@ export default function Reports() {
   return (
     <div className="p-4 md:p-5 max-w-[900px] mx-auto">
       <PageHeader
-        accent="violet"
-        icon={<FileText className="w-4 h-4" />}
         className="stagger-0"
         title={t("reports.title")}
         subtitle={t("reports.subtitle")}

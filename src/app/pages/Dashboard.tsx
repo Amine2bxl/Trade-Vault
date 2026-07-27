@@ -502,7 +502,6 @@ export default function Dashboard({
           {/* Stats Grid — radial gauges + sparkline, with folded secondary stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
             <Metric
-              icon={<Target className="w-4 h-4" />}
               title={t("stats.winRate")}
               value={formatPct(stats.winRate)}
               valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
@@ -516,7 +515,6 @@ export default function Dashboard({
               delay={0}
             />
             <Metric
-              icon={<Activity className="w-4 h-4" />}
               title={t("dashboard.profitFactor")}
               value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
               valueClass={
@@ -548,7 +546,6 @@ export default function Dashboard({
               delay={120}
             />
             <Metric
-              icon={<BarChart3 className="w-4 h-4" />}
               title={t("dashboard.maxDrawdown")}
               value={formatPnl(-stats.maxDrawdown)}
               valueClass="text-red-400"

@@ -139,8 +139,6 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   return (
     <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
       <PageHeader
-        accent="amber"
-        icon={<TrendingUp className="w-4 h-4" />}
         className="stagger-0"
         title={t("mistakes.title")}
         subtitle={t("mistakes.subtitle")}

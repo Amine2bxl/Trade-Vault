@@ -122,8 +122,6 @@ export default function Journal({
   return (
     <PageContainer>
       <PageHeader
-        accent="sky"
-        icon={<BookOpen className="w-4 h-4" />}
         className="mb-3 md:mb-6 items-center stagger-0"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
