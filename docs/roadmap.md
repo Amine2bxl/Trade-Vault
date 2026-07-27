@@ -4,8 +4,8 @@
 > performance, architecture IA, produit/UX). Doublons supprimés, contradictions
 > tranchées, une seule liste d'actions P0→P3. C'est **la** référence : toute
 > autre note d'audit est caduque.
-> Compléments d'architecture (non-décisionnels) : [`ARCHITECTURE.md`](ARCHITECTURE.md),
-> [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md), [`ux-architecture.md`](ux-architecture.md).
+> Compléments d'architecture (non-décisionnels) : [`architecture.md`](architecture.md),
+> [`ai-architecture.md`](ai-architecture.md), [`ux-architecture.md`](ux-architecture.md).
 
 ---
 

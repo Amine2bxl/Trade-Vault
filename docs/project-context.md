@@ -1,4 +1,4 @@
-# TradeVault — PROJECT_CONTEXT.md
+# TradeVault — project-context.md
 
 > **Mémoire permanente du projet.** Ce document permet à n'importe quelle IA
 > (ou n'importe quel humain) de comprendre TradeVault **sans aucun historique de
@@ -7,12 +7,12 @@
 >
 > Index/carte de toute la doc : [`README.md`](README.md).
 >
-> Documents détaillés : [`ARCHITECTURE.md`](ARCHITECTURE.md) ·
-> [`PRODUCT.md`](PRODUCT.md) · [`AI.md`](AI.md) ·
-> [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md) ·
-> [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) · [`ROADMAP.md`](ROADMAP.md) ·
+> Documents détaillés : [`architecture.md`](architecture.md) ·
+> [`product.md`](product.md) · [`ai-strategy.md`](ai-strategy.md) ·
+> [`ai-architecture.md`](ai-architecture.md) ·
+> [`design-system.md`](design-system.md) · [`roadmap.md`](roadmap.md) ·
 > [`ux-architecture.md`](ux-architecture.md) ·
-> [`agents/ai-coach.md`](agents/ai-coach.md)
+> [`agents/coach.md`](agents/coach.md)
 
 Dernière mise à jour : 2026-07-27 (post refonte UX/UI — Jarvis unifié, Checklist native, navigation par déroulé de session, PR #63 mergée).
 
@@ -26,7 +26,7 @@ un **coach IA qui connaît chacun de tes trades**, détecte tes schémas
 destructeurs, se souvient de toi, et t'impose la discipline que tu n'arrives
 pas à t'imposer seul.
 
-Trois piliers de valeur (voir `PRODUCT.md`) :
+Trois piliers de valeur (voir `product.md`) :
 
 1. **Comprendre** — journal + analytics + moteur d'analyse déterministe
    (scores de qualité, erreurs récurrentes chiffrées, patterns).
@@ -83,7 +83,7 @@ discipline** — c'est là que tout l'effort produit doit aller.
 
 ## 4. Architecture (résumé exécutable)
 
-Détails complets : `ARCHITECTURE.md`. Règles inviolables : `CLAUDE.md`.
+Détails complets : `architecture.md`. Règles inviolables : `CLAUDE.md`.
 
 ### 4.1 Couches et sens des dépendances
 
@@ -153,16 +153,16 @@ Trade-Vault/
 ├── CLAUDE.md                  # Charte permanente de l'équipe (PRIME SUR TOUT)
 ├── docs/
 │   ├── README.md              # Index/carte de la doc — porte d'entrée
-│   ├── PROJECT_CONTEXT.md     # CE FICHIER — mémoire permanente
-│   ├── ARCHITECTURE.md        # Guide onboarding dev (< 30 min)
-│   ├── PRODUCT.md             # Référence produit officielle
-│   ├── ROADMAP.md             # Source de vérité audits + priorités P0→P3
-│   ├── FEATURES_STATUS.md     # État vivant des fonctionnalités (✅/🟡/⚪)
-│   ├── AI.md                  # Stratégie IA 24 mois
-│   ├── AI-ARCHITECTURE.md     # Blueprint AI Platform (8 sous-systèmes)
-│   ├── DESIGN-SYSTEM.md       # Diagnostic + plan Design System
+│   ├── project-context.md     # CE FICHIER — mémoire permanente
+│   ├── architecture.md        # Guide onboarding dev (< 30 min)
+│   ├── product.md             # Référence produit officielle
+│   ├── roadmap.md             # Source de vérité audits + priorités P0→P3
+│   ├── features-status.md     # État vivant des fonctionnalités (✅/🟡/⚪)
+│   ├── ai-strategy.md                  # Stratégie IA 24 mois
+│   ├── ai-architecture.md     # Blueprint AI Platform (8 sous-systèmes)
+│   ├── design-system.md       # Diagnostic + plan Design System
 │   ├── ux-architecture.md     # Principes UX structurants
-│   └── agents/ai-coach.md     # Spec complète de l'agent Coach (Jarvis)
+│   └── agents/coach.md     # Spec complète de l'agent Coach (Jarvis)
 ├── src/
 │   ├── routes/                # __root, index, privacy, terms, reset-password
 │   ├── app/
@@ -323,7 +323,7 @@ migrés) ; le reste par lots avec build vert à chaque lot.
 
 ## 9. Fonctionnalités prévues (roadmap)
 
-Source de vérité : `ROADMAP.md` (P0→P3) et `AI.md` (24 mois). Résumé :
+Source de vérité : `roadmap.md` (P0→P3) et `ai-strategy.md` (24 mois). Résumé :
 
 - **P0 — combler l'écart promesse/produit ("l'âme")** :
   1. Coach avec **mémoire long terme** réellement branchée (V2) : le coach se
@@ -349,7 +349,7 @@ coder, proposer une alternative.
 
 ## 10. Stratégie IA
 
-Détails : `AI.md` (stratégie) et `AI-ARCHITECTURE.md` (blueprint technique).
+Détails : `ai-strategy.md` (stratégie) et `ai-architecture.md` (blueprint technique).
 
 - **Principe fondateur** : une **AI Platform**, pas un chatbot. 8
   sous-systèmes : Router, Memory, Context Builder, Prompt Builder, Tool
@@ -404,7 +404,7 @@ Détails : `ux-architecture.md`.
 
 ## 12. Principes design
 
-Détails : `DESIGN-SYSTEM.md`.
+Détails : `design-system.md`.
 
 - **Le thème de la landing est l'âme et le squelette visuel** du produit :
   fond `#060d16`, glassmorphism (`glass`, `glass-strong`), dégradés
@@ -438,7 +438,7 @@ Détails : `DESIGN-SYSTEM.md`.
 4. **Zone gelée Trustpilot** : `TrustpilotWidget`/`TrustpilotPrompt` et tout
    ce qui touche aux avis — **ne pas modifier** (vrais avis clients en cours).
 5. **Beta gratuite** : `AI_REQUIRE_PRO=false` ; pricing cible (Free / Pro
-   24,99 €/mois / Annuel 239 €) documenté dans `PRODUCT.md` mais non activé.
+   24,99 €/mois / Annuel 239 €) documenté dans `product.md` mais non activé.
 6. **L'IA n'invente jamais** : données réelles du trader uniquement, jamais de
    prédiction de marché, jamais de conseil financier.
 7. **Sécurité** : RLS owner-only sur toute table utilisateur ; secrets
@@ -456,12 +456,12 @@ Détails : `DESIGN-SYSTEM.md`.
 
 1. Lire `CLAUDE.md` (5 min) — la charte prime sur tout.
 2. Lire ce fichier (10 min) — la carte du territoire.
-3. Selon la tâche : `ARCHITECTURE.md` (code), `PRODUCT.md`/`ROADMAP.md`
-   (produit), `AI.md`/`AI-ARCHITECTURE.md`/`agents/ai-coach.md` (IA),
-   `DESIGN-SYSTEM.md`/`ux-architecture.md` (UI/UX).
+3. Selon la tâche : `architecture.md` (code), `product.md`/`roadmap.md`
+   (produit), `ai-strategy.md`/`ai-architecture.md`/`agents/coach.md` (IA),
+   `design-system.md`/`ux-architecture.md` (UI/UX).
 4. Vérifier l'état : `git log --oneline -5`, `bun test`, `npx tsc --noEmit`.
 5. Travailler sur la branche désignée, gates verts, PR draft, squash merge.
 
 > **Maintenance de ce fichier** : mettre à jour la section concernée à chaque
 > livraison structurante (nouvelle capacité IA, nouveau moteur, changement de
-> positionnement ou de pricing). Un PROJECT_CONTEXT périmé est pire qu'absent.
+> positionnement ou de pricing). Un project-context périmé est pire qu'absent.

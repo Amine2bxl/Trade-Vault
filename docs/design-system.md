@@ -5,8 +5,8 @@
 > propose un système cohérent, puis un plan de migration **non destructif**.
 >
 > À lire avec [`ux-architecture.md`](ux-architecture.md) (UX) et
-> [`ARCHITECTURE.md`](ARCHITECTURE.md) (couche `app/`). Priorités transverses :
-> [`ROADMAP.md`](ROADMAP.md).
+> [`architecture.md`](architecture.md) (couche `app/`). Priorités transverses :
+> [`roadmap.md`](roadmap.md).
 
 **Méthode.** Analyse statique de `src/styles.css` (1763 lignes) et des 55 fichiers
 `.tsx` de `src/app/` : comptage des tokens, tailles de police, couleurs codées en

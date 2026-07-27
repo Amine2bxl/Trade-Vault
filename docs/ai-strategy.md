@@ -5,9 +5,9 @@
 > les axes coûts / scalabilité / sécurité, puis la roadmap IA.
 >
 > **Deux documents complémentaires, pas de duplication :**
-> - **Ici (`AI.md`)** = *pourquoi, quoi, avec quels garde-fous, dans quel ordre* — la stratégie et l'état réel.
-> - **[`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md)** = *les contrats* (interfaces, types, registres, migrations) — le détail d'implémentation.
-> - Priorités produit transverses : [`ROADMAP.md`](ROADMAP.md).
+> - **Ici (`ai-strategy.md`)** = *pourquoi, quoi, avec quels garde-fous, dans quel ordre* — la stratégie et l'état réel.
+> - **[`ai-architecture.md`](ai-architecture.md)** = *les contrats* (interfaces, types, registres, migrations) — le détail d'implémentation.
+> - Priorités produit transverses : [`roadmap.md`](roadmap.md).
 
 **Légende d'état** (utilisée partout dans ce document) :
 🟢 **Livré** (en prod) · 🟡 **Fondation** (contrats/registres compilés, zéro logique runtime) · ⚪ **Planifié**.
@@ -89,7 +89,7 @@ server functions (auth + gating + rate-limit en middleware) :
 `src/modules/ai/{agents,router,tools,rag,jobs,mcp}` + `telemetry.ts` : contrats,
 types et registres compilés, **sans logique runtime**. C'est l'ossature qui rend
 chaque système IA **ajoutable indépendamment**. Détail dans
-[`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md).
+[`ai-architecture.md`](ai-architecture.md).
 
 ---
 
@@ -316,7 +316,7 @@ non fiables → même prudence que tout input externe).
 
 ## 12. Roadmap IA
 
-> Vue **IA** synthétique. Priorités produit transverses dans [`ROADMAP.md`](ROADMAP.md).
+> Vue **IA** synthétique. Priorités produit transverses dans [`roadmap.md`](roadmap.md).
 > Chaque étape = **un système à la fois**, sans réécrire l'existant.
 
 **Horizon 0–3 mois — Le coach vivant** _(en cours)_
@@ -347,5 +347,5 @@ non fiables → même prudence que tout input externe).
 ---
 
 _Ce document est la référence IA officielle des 24 prochains mois. Le détail des
-contrats vit dans [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md) ; l'ordre de bataille
-produit dans [`ROADMAP.md`](ROADMAP.md)._
+contrats vit dans [`ai-architecture.md`](ai-architecture.md) ; l'ordre de bataille
+produit dans [`roadmap.md`](roadmap.md)._

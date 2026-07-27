@@ -1,10 +1,10 @@
-# TradeVault — FEATURES_STATUS.md
+# TradeVault — features-status.md
 
 > **État vivant des fonctionnalités** : terminées, en cours, prévues.
 > Chaque entrée : statut · priorité · dépendances · description.
 > Les priorités et numéros (#1–#29) renvoient à la liste unique de
-> [`ROADMAP.md`](ROADMAP.md) §5. Le contexte global est dans
-> [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md).
+> [`roadmap.md`](roadmap.md) §5. Le contexte global est dans
+> [`project-context.md`](project-context.md).
 >
 > Statuts : ✅ Terminé · 🟡 En cours (partiellement livré) · ⚪ Prévu.
 > Priorités : P0 (bloque crédibilité/lancement) · P1 (fort ROI) ·
@@ -71,7 +71,7 @@ Dernière mise à jour : 2026-07-27 (refonte UX/UI PR #63 mergée : Jarvis unifi
 | Coach IA « complet » (P0 #1, reste) | 🟡 | **P0** | Coach V1 ✅, `ai_memory` ✅ | Reste à livrer : injection de la mémoire long terme dans le coach (V2), fil de conversation en DB (cross-device — aujourd'hui localStorage par appareil), mémorisation active des leçons/engagements. |
 | Adoption du Design System | 🟡 | P3 (fond) | `shared/ui` ✅ | Modals + Inputs migrés (byte-identical). Nouveau : `PageHeader`/`SectionHeader`/`EmptyState`/`Metric` livrés et adoptés (Dashboard, Analytics, Mistakes, Goals, Settings, Seasonality, Subscription, Appearance, LotSizeCalculator) ; tokens shadcn morts purgés de `styles.css` ; `cn` dédupliqué. Reste : Cards, Badges, boutons restants, modals lourdes, headers Journal/Calendar/News/Reports/Insights. Un lot = un build vert. |
 | Restructuration du dépôt | 🟡 | P2 #23 | Issues #46, #49 | Phases 1/3/4 faites (code mort, types Supabase, frontière serveur). Reste : pruning deps (bloqué egress registry, #46) et UI par `features/` (au fil des lots, #49). |
-| Dette typographique / tokens morts | 🟡 | P3 | `DESIGN-SYSTEM.md` | ~300 tailles arbitraires (`text-[10px]`…), anciens tokens shadcn oklch à purger. Résorption opportuniste, jamais en urgence. |
+| Dette typographique / tokens morts | 🟡 | P3 | `design-system.md` | ~300 tailles arbitraires (`text-[10px]`…), anciens tokens shadcn oklch à purger. Résorption opportuniste, jamais en urgence. |
 
 ---
 
@@ -128,7 +128,7 @@ Dernière mise à jour : 2026-07-27 (refonte UX/UI PR #63 mergée : Jarvis unifi
 
 ## 4. Règles de lecture
 
-- **Ordre de bataille** = lots de `ROADMAP.md` §7 : Lot 1 cœur (coach vivant +
+- **Ordre de bataille** = lots de `roadmap.md` §7 : Lot 1 cœur (coach vivant +
   nav) → Lot 2 rendez-vous (proactivité/rétention) → Lot 3 preuve (valeur
   chiffrée) → Lot 4 go-to-market → Lot 5 fond.
 - **Go/no-go** (`CLAUDE.md`) : toute fonctionnalité doit servir conversion,

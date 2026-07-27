@@ -6,9 +6,9 @@
 >
 > **Périmètre.** Ce document répond à « **pourquoi / pour qui / quoi / combien** ».
 > Le **« comment / quand »** (exécution priorisée P0→P3, séquencement en lots)
-> reste dans [`ROADMAP.md`](ROADMAP.md) — source de vérité unique de l'exécution.
-> L'architecture technique est dans [`ARCHITECTURE.md`](ARCHITECTURE.md) et
-> [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md).
+> reste dans [`roadmap.md`](roadmap.md) — source de vérité unique de l'exécution.
+> L'architecture technique est dans [`architecture.md`](architecture.md) et
+> [`ai-architecture.md`](ai-architecture.md).
 
 ---
 
@@ -211,7 +211,7 @@ erreurs/setups manqués · personnalisation · UX supérieure.
 ## 8. Roadmap
 
 > Vue **produit** synthétique. Le détail actionnable (P0→P3, statut par item) est
-> maintenu dans [`ROADMAP.md`](ROADMAP.md) — **ne pas dupliquer les priorités
+> maintenu dans [`roadmap.md`](roadmap.md) — **ne pas dupliquer les priorités
 > ici**, s'y référer.
 
 **Séquencement en 5 lots :**
@@ -297,4 +297,4 @@ Le jour où elles y sont, **25 €/mois cesse d'être une question**.
 
 _Ce document est la référence produit officielle. Toute évolution de vision, de
 cible ou de pricing se reflète ici en premier. L'exécution priorisée vit dans
-[`ROADMAP.md`](ROADMAP.md)._
+[`roadmap.md`](roadmap.md)._

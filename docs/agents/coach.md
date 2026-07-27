@@ -3,15 +3,15 @@
 > **Nom produit : Jarvis.** L'`AgentId` technique reste `coach` (code + catalogue) ;
 > côté utilisateur, l'IA unique s'appelle **Jarvis** (page + widget). Ce document
 > décrit l'agent ; l'identité produit unifiée est résumée dans
-> [`PROJECT_CONTEXT.md`](../PROJECT_CONTEXT.md) §6.
+> [`project-context.md`](../project-context.md) §6.
 >
 > **Conception (pas d'implémentation).** Spécification du **premier agent** de
 > TradeVault, bâti sur l'AI Platform (`src/modules/ai/*` + `ai-provider`).
 > Objectif : **répondre aux questions du trader à partir de ses données réelles**.
 > **L'agent n'invente jamais** ; il analyse uniquement les données de l'utilisateur.
 >
-> Références : [`AI-ARCHITECTURE.md`](../AI-ARCHITECTURE.md) (plateforme),
-> [`AI.md`](../AI.md) (stratégie), [`ARCHITECTURE.md`](../ARCHITECTURE.md).
+> Références : [`ai-architecture.md`](../ai-architecture.md) (plateforme),
+> [`ai-strategy.md`](../ai-strategy.md) (stratégie), [`architecture.md`](../architecture.md).
 
 ## 0. Identité & objectif
 

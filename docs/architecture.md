@@ -6,9 +6,9 @@
 > conventions, et les points de contact avec Supabase.
 >
 > À lire aussi : [`CLAUDE.md`](../CLAUDE.md) (charte de l'équipe, non
-> négociable), [`docs/AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md) (le détail du
+> négociable), [`docs/ai-architecture.md`](ai-architecture.md) (le détail du
 > cœur IA), [`docs/ux-architecture.md`](ux-architecture.md) (l'UX),
-> [`docs/ROADMAP.md`](ROADMAP.md) (audit + priorités P0–P3).
+> [`docs/roadmap.md`](roadmap.md) (audit + priorités P0–P3).
 
 ---
 
@@ -103,7 +103,7 @@ modules/ ne dépend JAMAIS de app/ ni de React.   ⚠️ invariant à préserver
 
 > **Dette connue** : quelques modules importent encore `@/app/types` et un ou
 > deux utilitaires UI (`generateId`, `tradingRules`). C'est le principal point
-> de nettoyage identifié dans [`ROADMAP.md`](ROADMAP.md) — extraire un
+> de nettoyage identifié dans [`roadmap.md`](roadmap.md) — extraire un
 > `src/domain/` kernel. Documenté, non bloquant.
 
 ---
@@ -285,7 +285,7 @@ Frontière serveur. L'UI n'importe **que** les `*.functions.ts`.
 
 Le cœur IA lui-même (`modules/ai/` + `modules/ai-provider/`) est
 **provider-agnostique** : changer de modèle = une variable d'environnement,
-aucun refactor. Voir [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md).
+aucun refactor. Voir [`ai-architecture.md`](ai-architecture.md).
 
 ---
 

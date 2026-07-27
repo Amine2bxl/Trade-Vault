@@ -2,7 +2,7 @@
 
 > L'infrastructure IA de TradeVault : une **plateforme** provider-agnostique
 > (router, provider service, context/prompt builder, tool system, response
-> formatter), **sans agent métier**. Blueprint : [`docs/AI-ARCHITECTURE.md`](../../../docs/AI-ARCHITECTURE.md).
+> formatter), **sans agent métier**. Blueprint : [`docs/ai-architecture.md`](../../../docs/ai-architecture.md).
 > Import : `import { … } from "@/modules/ai/infra"`.
 
 ## Infrastructure livrée (exécutable, testée)
@@ -22,7 +22,7 @@
 ## Contrats en attente (types seuls, volontairement)
 
 `agents/` (blueprints des 5 agents — **aucun agent implémenté**, c'est voulu),
-`jobs/`, `rag/`, `mcp/`. Ce sont les prochains lots (voir [`AI.md`](../../../docs/AI.md)).
+`jobs/`, `rag/`, `mcp/`. Ce sont les prochains lots (voir [`ai-strategy.md`](../../../docs/ai-strategy.md)).
 
 ## Règles
 
