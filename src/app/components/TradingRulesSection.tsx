@@ -19,6 +19,7 @@ import {
   loadTradingRules,
   saveTradingRules,
 } from "../utils/tradingRules";
+import { Button } from "@/shared/ui";
 
 // "Mes règles de trading" card on the profile page. The trader writes their
 // own rules; structured kinds are auto-checked on every trade save (the
@@ -251,12 +252,9 @@ export default function TradingRulesSection() {
             maxLength={120}
             className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
           />
-          <button
-            onClick={add}
-            className="w-full h-10 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all"
-          >
+          <Button onClick={add}>
             {t("rules.save")}
-          </button>
+          </Button>
         </div>
       )}
     </div>

@@ -25,7 +25,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
 import { useJarvisVoice } from "../utils/jarvisVoice";
-import { PageHeader, Metric, Card } from "@/shared/ui";
+import { PageHeader, Metric, Card, Button } from "@/shared/ui";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 
 interface JarvisProps {
@@ -303,13 +303,10 @@ export default function Jarvis({ trades }: JarvisProps) {
               {priorityText}
             </p>
           </div>
-          <button
-            onClick={briefMe}
-            className="shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition-all"
-          >
+          <Button onClick={briefMe} className="shrink-0 hover:scale-[1.03]">
             <Volume2 className="w-4 h-4" />
             <span className="hidden sm:inline">{t("jarvis.brief")}</span>
-          </button>
+          </Button>
         </div>
       </div>
 

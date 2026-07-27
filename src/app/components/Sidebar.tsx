@@ -44,7 +44,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           <h1 className="text-base font-bold text-white tracking-tight leading-tight">
             TradeVault
           </h1>
-          <p className="text-[11px] text-slate-600 uppercase tracking-[0.2em] mt-0.5">
+          <p className="text-[9px] text-slate-600 uppercase tracking-[0.2em] mt-0.5">
             {t("nav.journal")}
           </p>
         </div>
@@ -59,7 +59,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
         {NAV_GROUPS.map((group) => (
           <div key={group.labelKey}>
-            <div className="px-3 pb-1 text-[11px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+            <div className="px-3 pb-1 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
               {t(group.labelKey)}
             </div>
             <div className="space-y-px">

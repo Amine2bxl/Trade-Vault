@@ -11,6 +11,7 @@ import {
 import { useT } from "../i18n/LanguageContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
+import { Button } from "@/shared/ui";
 
 // "Gestion d'abonnement" card on the profile page.
 //
@@ -235,14 +236,10 @@ function PlanCard({
         </div>
         <p className="text-[11px] text-slate-500 mt-0.5">{note}</p>
       </div>
-      <button
-        onClick={onCard}
-        disabled={busy !== null}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition disabled:opacity-60"
-      >
+      <Button onClick={onCard} disabled={busy !== null} className="disabled:opacity-60">
         <CreditCard className="w-4 h-4" />
         {busy === keys.card ? tt("billing.opening") : tt("billing.payByCard")}
-      </button>
+      </Button>
       <button
         onClick={onCrypto}
         disabled={busy !== null}

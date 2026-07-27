@@ -17,6 +17,7 @@ import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Account, AccountType } from "../store";
+import { Button } from "@/shared/ui";
 
 const TYPE_ICON: Record<AccountType, typeof User> = {
   personal: User,
@@ -594,7 +595,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          <button
+          <Button
             onClick={create}
             disabled={!name.trim() || busy}
             className={cn(
@@ -605,7 +606,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
             )}
           >
             {busy ? t("account.creating") : t("account.create")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

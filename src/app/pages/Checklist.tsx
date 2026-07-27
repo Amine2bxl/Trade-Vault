@@ -48,6 +48,7 @@ import {
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
+import { Button } from "@/shared/ui";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -1840,7 +1841,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 </h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
-              <button
+              <Button
                 onClick={initiate}
                 disabled={!allGates || day.locked}
                 className={cn(
@@ -1851,7 +1852,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 )}
               >
                 {day.locked ? t("chk.lockedBtn") : t("chk.initiate")}
-              </button>
+              </Button>
               {actions.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
                   {actions.map((a) => (
@@ -1977,12 +1978,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               >
                 {t("chk.backStation")}
               </button>
-              <button
-                onClick={confirmLock}
-                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold hover:from-cyan-400 hover:to-teal-400 transition"
-              >
+              <Button onClick={confirmLock} className="flex-1">
                 {t("chk.enterExec")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

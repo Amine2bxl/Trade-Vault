@@ -29,7 +29,7 @@ import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
-import { Modal, FIELD_BASE } from "@/shared/ui";
+import { Modal, FIELD_BASE, Button } from "@/shared/ui";
 import {
   tradeDraftKey,
   readJSON,
@@ -981,7 +981,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           >
             {t("common.cancel")}
           </button>
-          <button
+          <Button
             onClick={handleSave}
             disabled={!isValid}
             className={cn(
@@ -992,7 +992,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             )}
           >
             {trade ? t("trade.updateTrade") : t("trade.saveTrade")}
-          </button>
+          </Button>
         </div>
       </Modal>
 

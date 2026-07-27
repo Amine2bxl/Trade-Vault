@@ -32,7 +32,7 @@ import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/ed
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageHeader, PageContainer, Metric, Card } from "@/shared/ui";
+import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
 import CopilotBlock from "./dashboard/CopilotBlock";
 import { cn } from "../utils/cn";
@@ -298,10 +298,7 @@ export default function Dashboard({
         }
         title={t("dashboard.title")}
         actions={
-          <button
-            onClick={onAddTrade}
-            className="relative hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 animate-fade-in-up stagger-1"
-          >
+          <Button onClick={onAddTrade} className="relative hidden md:flex animate-fade-in-up stagger-1">
             <Plus className="w-4 h-4" /> {t("common.addTrade")}
             {hasDraft && (
               <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
@@ -309,7 +306,7 @@ export default function Dashboard({
                 {t("trade.draftBadge")}
               </span>
             )}
-          </button>
+          </Button>
         }
       />
 
@@ -364,12 +361,9 @@ export default function Dashboard({
           </svg>
           <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
-          <button
-            onClick={onAddTrade}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5"
-          >
+          <Button onClick={onAddTrade}>
             <Plus className="w-4 h-4" /> {t("empty.cta")}
-          </button>
+          </Button>
           {/* Ghost example of what a logged trade looks like */}
           <div
             className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
