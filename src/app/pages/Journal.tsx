@@ -127,16 +127,16 @@ export default function Journal({
         subtitle={`${filtered.length} ${t("common.trades")}`}
         actions={
           <div className="flex items-center gap-1.5 md:gap-2 animate-fade-in-up stagger-1 shrink-0">
-            <Button
-              variant="subtle"
-              size="sm"
-              onClick={() => exportTradesCSV(trades)}
-              className="border-cyan-500/20 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/15 hover:text-cyan-300"
-            >
+            <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
               <Download className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.exportCsv")}</span>
             </Button>
-            <Button variant="danger" size="sm" onClick={onDeleteAll}>
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={onDeleteAll}
+              className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
+            >
               <Trash className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.deleteAll")}</span>
             </Button>
@@ -181,7 +181,7 @@ export default function Journal({
         <button
           onClick={onOpenMissed}
           title={t("missed.title")}
-          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-xs md:text-sm font-semibold transition-all"
+          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] text-slate-400 hover:text-slate-200 text-xs md:text-sm font-semibold transition-all"
         >
           <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
           <span className="hidden sm:inline">{t("missed.title")}</span>

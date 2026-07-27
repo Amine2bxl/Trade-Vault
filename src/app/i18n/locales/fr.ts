@@ -268,7 +268,6 @@ const fr: Dict = {
   "dashboard.riskSuffix": "de risque",
   "dashboard.avgRR": "R:R moyen",
   "dashboard.bestWorst": "Meilleur / Pire",
-  "insights.verdictsTitle": "Ce que ça veut dire — et quoi faire",
 
   // Dashboard — bloc Copilote (Score d'Edge, règle du jour, objectif)
   "copilot.title": "Copilote du jour",

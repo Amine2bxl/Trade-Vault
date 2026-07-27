@@ -32,7 +32,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import Lightbox from "../components/Lightbox";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import { PageHeader, Card } from "@/shared/ui";
+import { PageHeader, Card, PageContainer, Button, EmptyState } from "@/shared/ui";
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -162,7 +162,7 @@ export default function MissedOpportunities() {
   );
 
   return (
-    <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
+    <PageContainer className="max-w-[1100px]">
       <PageHeader
         className="items-center"
         title={t("missed.title")}
@@ -170,37 +170,33 @@ export default function MissedOpportunities() {
         actions={
           <div className="flex items-center gap-2 shrink-0">
             {items.length > 0 && (
-              <button
-                onClick={exportCsv}
-                className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-200 px-3 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition"
-                title={t("missed.exportCsv")}
-              >
+              <Button variant="subtle" size="sm" onClick={exportCsv} title={t("missed.exportCsv")}>
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">{t("missed.exportCsv")}</span>
-              </button>
+              </Button>
             )}
-            <button
-              onClick={() => setEditing(emptyMissed())}
-              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold shadow-lg shadow-amber-500/20"
-            >
-              <Plus className="w-4 h-4" />{" "}
+            <Button size="sm" onClick={() => setEditing(emptyMissed())}>
+              <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">{t("missed.log")}</span>
               <span className="sm:hidden">{t("missed.logShort")}</span>
-            </button>
+            </Button>
           </div>
         }
       />
 
       {loading ? (
-        <Card className="p-10 text-center text-slate-500 text-sm">
-          {t("common.loading")}
-        </Card>
+        <Card className="p-8 text-center text-slate-500 text-sm">{t("common.loading")}</Card>
       ) : items.length === 0 ? (
-        <Card className="p-10 text-center">
-          <Target className="w-8 h-8 text-amber-400/50 mx-auto mb-3" />
-          <p className="text-slate-300 text-sm font-semibold mb-1">{t("missed.empty.title")}</p>
-          <p className="text-slate-500 text-xs">{t("missed.empty.sub")}</p>
-        </Card>
+        <EmptyState
+          icon={<Target className="w-7 h-7" />}
+          title={t("missed.empty.title")}
+          description={t("missed.empty.sub")}
+          action={
+            <Button size="sm" onClick={() => setEditing(emptyMissed())}>
+              <Plus className="w-4 h-4" /> {t("missed.log")}
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {items.map((m) => {
@@ -296,7 +292,7 @@ export default function MissedOpportunities() {
       {editing && (
         <MissedEditor value={editing} onClose={() => setEditing(null)} onSave={handleSave} />
       )}
-    </div>
+    </PageContainer>
   );
 }
 
@@ -602,13 +598,9 @@ export function MissedEditor({
           >
             {t("common.cancel")}
           </button>
-          <button
-            onClick={() => onSave(m)}
-            disabled={uploading}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 disabled:opacity-50"
-          >
+          <Button onClick={() => onSave(m)} disabled={uploading} className="disabled:opacity-50">
             <Save className="w-4 h-4" /> {t("common.save")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

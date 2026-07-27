@@ -4,7 +4,7 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
-import { PageHeader, Card } from "@/shared/ui";
+import { PageHeader } from "@/shared/ui";
 
 type TFn = (k: TKey) => string;
 
@@ -91,44 +91,12 @@ export default function Subscription() {
           the product and the marketing site tell one story. Presentation only:
           no Stripe, no checkout, no payment logic on this page. */}
       <section className="animate-fade-in-up stagger-2">
-        <div className="text-center mb-4">
-          <h2 className="font-display text-xl md:text-2xl font-extrabold text-white">
-            {tr("Un investissement qui se rembourse en un trade", "An investment that pays for itself in one trade")}
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            {tr(
-              "Commence gratuitement. Passe en Pro quand tu es prêt.",
-              "Start free. Go Pro when you're ready.",
-            )}
-          </p>
-        </div>
-
-        <div className="flex justify-center mb-4">
-          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] px-3.5 py-1.5 text-[11px] font-bold text-emerald-300">
-            <Sparkles className="h-3.5 w-3.5" />
-            {tr("En annuel : 2 mois offerts", "Annual: 2 months free")}
-          </span>
-        </div>
-
         <div className="grid gap-3 lg:grid-cols-3 lg:items-stretch">
           {PLANS(tr).map((p) => (
             <PlanCard key={p.id} plan={p} current={sub?.plan} tr={tr} />
           ))}
         </div>
       </section>
-
-      {/* Where to manage it — points to the Profile billing section, no logic here. */}
-      <Card className="px-4 py-3.5 flex items-center gap-3 animate-fade-in-up stagger-4">
-        <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-          <Clock className="w-4 h-4" />
-        </div>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          {tr(
-            "La gestion de ton abonnement (changement de formule, paiement) se fait depuis ton Profil.",
-            "Managing your subscription (plan change, payment) happens from your Profile.",
-          )}
-        </p>
-      </Card>
     </div>
   );
 }
