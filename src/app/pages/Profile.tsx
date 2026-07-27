@@ -47,16 +47,19 @@ export default function Profile({ trades }: ProfileProps) {
 
       <div className="grid grid-cols-3 gap-3">
         <Stat
+          icon={<TrendingUp className="w-4 h-4" />}
           label={t("stats.totalPnl")}
           value={formatPnl(stats.totalPnl)}
           accent={stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}
         />
         <Stat
+          icon={<Hash className="w-4 h-4" />}
           label={t("stats.trades")}
           value={String(stats.totalTrades)}
           accent="text-white"
         />
         <Stat
+          icon={<UserIcon className="w-4 h-4" />}
           label={t("stats.winRate")}
           value={formatPct(stats.winRate)}
           accent="text-cyan-400"
@@ -72,16 +75,19 @@ export default function Profile({ trades }: ProfileProps) {
           {t("profile.getInTouch")}
         </h2>
         <ContactLink
+          icon={<MessageSquare className="w-4 h-4" />}
           label={t("profile.support")}
           sub={t("profile.supportSub")}
           subject="TradeVault — Support request"
         />
         <ContactLink
+          icon={<Handshake className="w-4 h-4" />}
           label={t("profile.collab")}
           sub={t("profile.collabSub")}
           subject="TradeVault — Collab inquiry"
         />
         <ContactLink
+          icon={<Lightbulb className="w-4 h-4" />}
           label={t("profile.improvements")}
           sub={t("profile.improvementsSub")}
           subject="TradeVault — Improvement idea"

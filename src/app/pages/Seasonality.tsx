@@ -188,24 +188,28 @@ function AssetSeasonality() {
       {/* Highlight cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <HighlightCard
+          icon={<Sparkles className="w-4 h-4" />}
           label={t("seasonality.thisMonth")}
           value={monthLabel(currentMonth)}
           sub={`${stats.currentMonthAvg >= 0 ? "+" : ""}${stats.currentMonthAvg.toFixed(1)}% · ${stats.currentMonthWin}% ${t("seasonality.win")}`}
           positive={stats.currentMonthAvg >= 0}
         />
         <HighlightCard
+          icon={<TrendingUp className="w-4 h-4" />}
           label={t("seasonality.bestMonth")}
           value={monthLabel(stats.bestMonth.month)}
           sub={`+${stats.bestMonth.avg.toFixed(1)}%`}
           positive
         />
         <HighlightCard
+          icon={<TrendingDown className="w-4 h-4" />}
           label={t("seasonality.worstMonth")}
           value={monthLabel(stats.worstMonth.month)}
           sub={`${stats.worstMonth.avg.toFixed(1)}%`}
           positive={false}
         />
         <HighlightCard
+          icon={<CalendarRange className="w-4 h-4" />}
           label={t("seasonality.annualBias")}
           value={`${stats.annualAvg >= 0 ? "+" : ""}${stats.annualAvg.toFixed(1)}%`}
           sub={`${asset.years} ${t("seasonality.years")}`}
@@ -517,24 +521,28 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
     <div className="animate-fade-in">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <HighlightCard
+          icon={<TrendingUp className="w-4 h-4" />}
           label={t("seasonality.bestMonth")}
           value={best ? best.month : "—"}
           sub={best ? formatPnl(best.pnl) : ""}
           positive
         />
         <HighlightCard
+          icon={<TrendingDown className="w-4 h-4" />}
           label={t("seasonality.worstMonth")}
           value={worst ? worst.month : "—"}
           sub={worst ? formatPnl(worst.pnl) : ""}
           positive={false}
         />
         <HighlightCard
+          icon={<CalendarDays className="w-4 h-4" />}
           label={t("seasonality.bestDay")}
           value={bestDay ? bestDay.day : "—"}
           sub={bestDay ? formatPnl(bestDay.pnl) : ""}
           positive={!!bestDay && bestDay.pnl >= 0}
         />
         <HighlightCard
+          icon={<Clock className="w-4 h-4" />}
           label={t("seasonality.bestHour")}
           value={bestHour ? bestHour.hour : "—"}
           sub={bestHour ? formatPnl(bestHour.pnl) : ""}
