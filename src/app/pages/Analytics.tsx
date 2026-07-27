@@ -32,6 +32,8 @@ import {
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
 import { EmptyState, PageHeader, PageContainer, Card } from "@/shared/ui";
+import InsightList from "../components/InsightList";
+import { analyticsInsights } from "../utils/insights";
 import {
   CHART_ANIMATION,
   EQUITY_ANIMATION,
@@ -217,6 +219,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
     [trades, startingBalance],
   );
 
+  // Plain-language verdicts derived from the same deterministic stats.
+  const insights = useMemo(
+    () => analyticsInsights(trades, stats, quant, lang),
+    [trades, stats, quant, lang],
+  );
+
   // Per-setup table: WR / expectancy / PF / avg R for every strategy used
   const setupTable = useMemo(() => {
     const byStrategy: Record<string, Trade[]> = {};
@@ -294,6 +302,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
         className="stagger-0"
         title={t("analytics.title")}
         subtitle={t("analytics.subtitle")}
+      />
+
+      {/* Verdicts first: what the numbers mean and what to do about them. */}
+      <InsightList
+        insights={insights}
+        title={t("insights.verdictsTitle")}
+        className="mb-4 md:mb-5 stagger-1"
       />
 
       <div className="space-y-4 md:space-y-6">

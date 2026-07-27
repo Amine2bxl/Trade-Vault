@@ -316,6 +316,9 @@ const en = {
   "dashboard.avgRR": "Avg R:R",
   "dashboard.bestWorst": "Best / Worst",
 
+  // Actionable verdicts (Analytics / Mistakes)
+  "insights.verdictsTitle": "What this means — and what to do",
+
   // Dashboard — Copilot block (Edge Score, rule of the day, objective)
   "copilot.title": "Today's copilot",
   "copilot.edgeLabel": "Edge score",

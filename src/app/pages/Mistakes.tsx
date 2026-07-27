@@ -18,6 +18,8 @@ import {
 import { useT } from "../i18n/LanguageContext";
 import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from "../utils/chartTheme";
 import { EmptyState, PageHeader, Card } from "@/shared/ui";
+import InsightList from "../components/InsightList";
+import { mistakeInsights } from "../utils/insights";
 
 interface MistakesProps {
   trades: Trade[];
@@ -90,6 +92,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   );
 
   const b = useMemo(() => computeBehavioral(trades), [trades]);
+  // Ranked verdicts + next actions, from the same behavioural report.
+  const insights = useMemo(() => mistakeInsights(b, lang), [b, lang]);
   const topMistakes = b.rows.slice(0, 3);
 
   const dayData = useMemo(
@@ -145,6 +149,9 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
       />
 
       <div className="space-y-4 md:space-y-6">
+        {/* Verdicts first: what the leaks cost and how to close them. */}
+        <InsightList insights={insights} title={t("insights.verdictsTitle")} className="stagger-1" />
+
         {/* ── Discipline score + summary KPIs ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Discipline dial */}
