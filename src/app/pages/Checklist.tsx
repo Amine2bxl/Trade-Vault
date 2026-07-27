@@ -35,6 +35,7 @@ import {
   ranksFor,
   coachPromptsFor,
 } from "./checklistDefaults";
+import "./checklist.css";
 
 import { type Tone, TONES, LINES } from "./checklist/voice";
 import {
@@ -1174,8 +1175,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
   return (
     <div ref={wrapRef} onMouseOver={onHover} onPointerDown={autoStartAudio} className="relative">
-      {/* One discreet futuristic touch: the ambient particle field, kept faint. */}
-      <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 -z-10 opacity-[0.14]" />
+      {/* Light holographic identity: a faint drifting grid + ambient particles. */}
+      <div className="tvchk-grid" />
+      <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 -z-10 opacity-[0.12]" />
       {/* Subtle validation pulse — reuses the global fade, no HUD flash. */}
       <div
         key={flash}
@@ -1201,8 +1203,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         <div className="flex flex-col gap-3 animate-fade-in-up">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
-                <Bot className="w-5 h-5 text-white" />
+              <span className="tvchk-sheen w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
+                <Bot className="relative w-5 h-5 text-white" />
               </span>
               <div className="min-w-0">
                 <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent leading-tight">
@@ -1297,10 +1299,20 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
-          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-4 animate-fade-in-up">
+          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-5 animate-fade-in-up">
+            <div className="flex items-start gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                <SlidersHorizontal className="w-4 h-4" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-white">{t("chk.customize")}</h3>
+                <p className="text-[11px] text-slate-500 leading-relaxed">{t("chk.cfgIntro")}</p>
+              </div>
+            </div>
+
             <button
               onClick={() => setShowWizard(true)}
-              className="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-teal-400 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-cyan-300 border border-cyan-500/25 bg-cyan-500/10 hover:bg-cyan-500/15 transition-all"
             >
               <Wand2 className="w-4 h-4" /> {t("chk.guidedSetup")}
             </button>
@@ -1352,6 +1364,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
                 {t("chk.cfgTemplates")}
               </div>
+              <p className="text-[11px] text-slate-500">{t("chk.cfgTemplatesHint")}</p>
               <div className="flex flex-wrap gap-2">
                 {templates.map((tp) => (
                   <button
@@ -1416,6 +1429,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                       <input
                         className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-slate-400 focus:outline-none focus:border-cyan-500/40"
                         value={it.desc}
+                        placeholder={t("chk.cfgDescOptional")}
                         onChange={(e) => patchItem(i, { desc: e.target.value })}
                       />
                     </div>
@@ -1431,15 +1445,24 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                   </div>
                 );
               })}
-              <input
-                className="w-full bg-white/[0.04] border border-dashed border-white/[0.12] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40"
-                placeholder={t("chk.cfgQuickAdd")}
-                value={quickAdd}
-                onChange={(e) => setQuickAdd(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addQuickItem();
-                }}
-              />
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 min-w-0 bg-white/[0.04] border border-dashed border-white/[0.14] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40"
+                  placeholder={t("chk.cfgQuickAdd")}
+                  value={quickAdd}
+                  onChange={(e) => setQuickAdd(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addQuickItem();
+                  }}
+                />
+                <button
+                  onClick={addQuickItem}
+                  disabled={!quickAdd.trim()}
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/25 bg-cyan-500/10 px-3 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> {t("chk.cfgAddItem")}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1532,7 +1555,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         {/* ══ STEP 1 · PRÉPARATION — the setup checks ══ */}
         <div className="space-y-2.5 animate-fade-in-up">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+            <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
               1
             </span>
             <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1582,7 +1605,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         {/* ══ STEP 2 · VALIDATION — preparation progress + session window ══ */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+            <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
               2
             </span>
             <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1621,7 +1644,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         {/* ══ STEP 3 · MENTAL — motivation + emotional state ══ */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+            <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
               3
             </span>
             <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1730,7 +1753,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         {/* ══ STEP 4 · VERROUILLAGE — gates + responsibility ══ */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+            <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
               4
             </span>
             <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1779,7 +1802,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         {/* ══ STEP 5 · TRADE — the go / no-go ══ */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+            <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
               5
             </span>
             <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1815,20 +1838,35 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         </div>
       </div>
 
-      {/* ══ VOICE WIDGET — Jarvis speaking indicator ══ */}
+      {/* ══ VOICE WIDGET — Jarvis speaking indicator ══
+          z-[60] + bottom-28 on mobile keeps it clear of (and above) the bottom
+          nav and the FAB; a floating pill, never hidden. */}
       {voice.show && (
-        <div className="fixed z-50 bottom-24 md:bottom-6 left-4 max-w-[300px] glass-strong rounded-2xl border border-cyan-500/20 px-3.5 py-2.5 flex items-center gap-3 animate-slide-up shadow-2xl shadow-black/50">
-          <span className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
-            {voice.speaking && (
-              <span className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md animate-pulse" />
-            )}
-            <Bot className="relative w-4 h-4 text-white" />
-          </span>
-          <div className="min-w-0">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-cyan-400 font-bold">
-              Jarvis
+        <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:left-6 md:translate-x-0 md:bottom-6 w-[min(340px,calc(100vw-2rem))] animate-slide-up">
+          <div className="tvchk-sheen relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3 shadow-2xl shadow-cyan-500/10">
+            <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
+            <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0 shadow-lg shadow-cyan-500/30">
+              {voice.speaking && (
+                <span className="absolute -inset-1 rounded-2xl bg-cyan-500/40 blur-md animate-pulse" />
+              )}
+              <Bot className="relative w-4 h-4 text-white" />
+            </span>
+            <div className="relative min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
+                  Jarvis
+                </span>
+                <span className={cn("tvchk-wave", voice.speaking && "on")}>
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </div>
+              <div className="text-xs text-slate-100 leading-snug line-clamp-2">{voice.text}</div>
             </div>
-            <div className="text-xs text-slate-200 truncate">{voice.text}</div>
           </div>
         </div>
       )}
