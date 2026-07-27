@@ -20,6 +20,40 @@ function toToastType(sev: AppNotification["severity"]): "success" | "error" | "i
   return sev === "success" ? "success" : sev === "info" ? "info" : "error";
 }
 
+/** UI language for notification copy — same source as the rule messages (tv.lang).
+ *  Only fr/en, matching what the localized rule `body` actually produces. */
+function isFr(): boolean {
+  try {
+    return (localStorage.getItem("tv.lang") ?? "en") === "fr";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Push anti-spam: at most one push per dedupKey per day. Stored in localStorage
+ * so it survives reloads; the record resets each calendar day. Returns true if
+ * a push for this key was already sent today (i.e. it should be suppressed).
+ */
+const PUSH_LOG_KEY = "tv.notif.pushed";
+function alreadyPushedToday(dedupKey: string): boolean {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const raw = localStorage.getItem(PUSH_LOG_KEY);
+    const log = raw ? (JSON.parse(raw) as { date: string; keys: string[] }) : null;
+    if (!log || log.date !== today) {
+      localStorage.setItem(PUSH_LOG_KEY, JSON.stringify({ date: today, keys: [dedupKey] }));
+      return false;
+    }
+    if (log.keys.includes(dedupKey)) return true;
+    log.keys.push(dedupKey);
+    localStorage.setItem(PUSH_LOG_KEY, JSON.stringify(log));
+    return false;
+  } catch {
+    return false; // storage unavailable — fail open, never block a push
+  }
+}
+
 export const NotificationEngine = {
   /** Called once at app bootstrap (and again when the user changes). */
   configure(userId: string | null, next: NotificationAdapters): void {
@@ -46,7 +80,9 @@ export const NotificationEngine = {
     if (notification.channels.includes("toast")) {
       adapters.toast?.(notification.body, toToastType(notification.severity));
     }
-    if (notification.channels.includes("push")) {
+    // Push is deduplicated (once per key per day); toast + persist are not.
+    const suppressPush = input.dedupKey ? alreadyPushedToday(input.dedupKey) : false;
+    if (notification.channels.includes("push") && !suppressPush) {
       await adapters
         .push?.({ title: notification.title, body: notification.body, url: notification.url })
         .catch(() => {});
@@ -67,30 +103,35 @@ export const NotificationEngine = {
 events.on("DISCIPLINE_WARNING", async ({ userId, violation }) => {
   await NotificationEngine.notify(userId, {
     kind: "discipline_warning",
-    title: "Rule check",
+    title: isFr() ? "Rappel de règle" : "Rule check",
     body: violation.message,
     severity: "warning",
     channels: ["dashboard", "toast", "push"],
     url: "/",
+    // One push per broken rule kind per day — recurring breaks don't spam.
+    dedupKey: `discipline_warning:${violation.rule.kind}`,
   });
 });
 
 events.on("DISCIPLINE_LIMIT_REACHED", async ({ userId, violation }) => {
   await NotificationEngine.notify(userId, {
     kind: "discipline_limit",
-    title: "Limit reached",
+    title: isFr() ? "Limite atteinte" : "Limit reached",
     body: violation.message,
     severity: "error",
     channels: ["dashboard", "toast", "push"],
     url: "/",
+    dedupKey: `discipline_limit:${violation.rule.kind}`,
   });
 });
 
 events.on("DISCIPLINE_SUCCESS", async ({ userId, summary }) => {
   await NotificationEngine.notify(userId, {
     kind: "discipline_success",
-    title: "Clean session",
-    body: `Day closed with ${summary.tradesToday} trade(s) and zero rule breaks.`,
+    title: isFr() ? "Séance propre" : "Clean session",
+    body: isFr()
+      ? `Journée clôturée : ${summary.tradesToday} trade(s), zéro écart.`
+      : `Day closed with ${summary.tradesToday} trade(s) and zero rule breaks.`,
     severity: "success",
     channels: ["dashboard"],
   });

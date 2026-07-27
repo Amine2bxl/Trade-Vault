@@ -1,19 +1,37 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+  Bot,
+  Volume2,
+  VolumeX,
+  Pencil,
+  SlidersHorizontal,
+  Check,
+  Lock,
+  Flame,
+  Clock,
+  Plus,
+  GripVertical,
+  X,
+  RotateCcw,
+  Wand2,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
-import { personalizedItems } from "../utils/adaptiveChecklist";
-import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
+import { ttsSpeak } from "@/backend/tts.functions";
+import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
+import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
   type ChkItem,
   type MotivOpt,
-  type Mantra,
   type FomoState,
   defaultConfigFor,
   templatesFor,
+  generateChecklist,
+  isItemOn,
   ranksFor,
   coachPromptsFor,
 } from "./checklistDefaults";
@@ -22,13 +40,11 @@ import "./checklist.css";
 import { type Tone, TONES, LINES } from "./checklist/voice";
 import {
   FOMO_ICONS,
-  FOMO_CLASSES,
   pad,
   getTimeInZone,
   parseTimeToMinutes,
   isWindowOpen,
   getTimeZoneOptions,
-  dayOfYear,
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
@@ -75,7 +91,11 @@ function Ed({
 }) {
   return (
     <Tag
-      className={cn(className, editable && "jk-ed")}
+      className={cn(
+        className,
+        editable &&
+          "outline-none rounded px-1 -mx-1 ring-1 ring-cyan-500/30 bg-cyan-500/5 focus:ring-cyan-500/60 cursor-text",
+      )}
       contentEditable={editable}
       suppressContentEditableWarning
       onBlur={(e) => {
@@ -177,6 +197,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const [audioOn, setAudioOn] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [cfgTab, setCfgTab] = useState<"items" | "session" | "models" | "advanced">("items");
   const [now, setNow] = useState(() => Date.now());
   const [countdownVal, setCountdownVal] = useState<number | null>(null);
   const [lockOverlay, setLockOverlay] = useState(false);
@@ -187,8 +208,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     speaking: false,
     show: false,
   });
-  const [quote, setQuote] = useState("");
-  const [displayScore, setDisplayScore] = useState(0);
   const [quickAdd, setQuickAdd] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [onb, setOnb] = useState<OnboardingData | null>(null);
@@ -221,33 +240,18 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // Best-fit preset + sensible guardrail defaults, derived from onboarding.
-  const wizardDefaults = useMemo(() => {
-    const o = onb;
-    const style = o?.style;
-    const rec = o?.usesIct
-      ? "ict"
-      : style === "swing" || style === "position"
-        ? "swing"
-        : o?.goal === "prop_challenge" || o?.experience === "funded"
-          ? "prop"
-          : "simple";
-    const toggles: WizardToggles = {
-      oneTrade: o?.pain === "overtrading" || o?.goal === "discipline",
-      news: style === "swing" || style === "position" || o?.pain === "risk",
-      rr: o?.goal === "prop_challenge" || style === "swing" || style === "position",
-      dd: o?.experience === "funded" || o?.goal === "prop_challenge" || o?.pain === "risk",
-    };
-    const primary = o?.assets?.[0];
-    const time =
-      primary === "forex"
-        ? { startTime: "08:00", timeZone: "Europe/London" }
-        : primary === "futures" || primary === "stocks" || primary === "options"
-          ? { startTime: "09:30", timeZone: "America/New_York" }
-          : { startTime: config.startTime, timeZone: config.timeZone };
-    return { rec, toggles, time };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onb]);
+  // The bespoke checklist, generated from the onboarding profile. This is the
+  // recommended, self-contained short list (≤6 items) — it already folds in
+  // the trader's weakness, style, market and risk, so nothing extra is appended
+  // (no more preset + guardrails + adaptive-rules bloat).
+  const generated = useMemo(() => generateChecklist(onb ?? {}, lang), [onb, lang]);
+
+  // Default session time offered by the wizard, derived from the onboarding
+  // profile (the adaptive wizard builds the item list from its own answers).
+  const wizardDefaultTime = useMemo(
+    () => ({ startTime: generated.startTime, timeZone: generated.timeZone }),
+    [generated],
+  );
 
   const applyWizard = (r: WizardResult) => {
     markTouched();
@@ -276,7 +280,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, [lang]);
 
   /* Language-dependent content */
-  const { ranks: RANKS, descs: RANK_DESCS } = useMemo(() => ranksFor(lang), [lang]);
+  const { ranks: RANKS } = useMemo(() => ranksFor(lang), [lang]);
   const templates = useMemo(() => templatesFor(lang), [lang]);
   const coach = useMemo(() => coachPromptsFor(lang), [lang]);
 
@@ -303,13 +307,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       /* quota */
     }
   }, [day, DAY_KEY]);
-
-  /* ══ Quote + mission ══ */
-  useEffect(() => {
-    setQuote(config.quotes[Math.floor(Math.random() * config.quotes.length)] || "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
-  const mission = config.missions[dayOfYear() % Math.max(1, config.missions.length)] || "";
 
   /* ══════════ AUDIO ENGINE (WebAudio + speechSynthesis) ══════════ */
   const audioRef = useRef<{
@@ -522,36 +519,57 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     vwHideT.current = setTimeout(() => setVoice((v) => ({ ...v, show: false })), 1100);
   }, []);
 
-  const pickVoice = useCallback((forceVl?: "fr" | "en") => {
-    const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
-    let best: SpeechSynthesisVoice | null = null;
-    let bestScore = -999;
-    voicesRef.current.forEach((v) => {
-      if (!v.lang.startsWith(vl)) return;
-      let s = 0;
-      const n = v.name;
-      // Prefer modern neural / cloud voices — they sound dramatically more
-      // premium than the legacy built-ins.
-      if (/neural|natural/i.test(n)) s += 12;
-      if (/premium|enhanced|multilingual/i.test(n)) s += 5;
-      if (/online/i.test(n)) s += 4;
-      if (/google/i.test(n)) s += 6;
-      if (/microsoft/i.test(n)) s += 3;
-      if (vl === "fr" && /paul|henri|guillaume|claude|thomas|r[ée]my|denise/i.test(n)) s += 3;
-      if (vl !== "fr" && /ryan|george|daniel|thomas|uk english male|mark\b/i.test(n)) s += 3;
-      if (vl !== "fr" && v.lang === "en-GB") s += 2;
-      // Deep male timbre suits the composed JARVIS delivery.
-      if (/hortense|julie|zira|hazel|susan|linda|female|am[ée]lie|caroline|eloise/i.test(n)) s -= 4;
-      if (s > bestScore) {
-        best = v;
-        bestScore = s;
-      }
-    });
-    return best;
-  }, []);
+  // ONE robotic voice — always English (en-GB), independent of the UI
+  // language. The "closest male en-GB voice" scoring lives in the shared
+  // jarvisVoice util so the Checklist and the Jarvis page never drift apart.
+  const pickVoice = useCallback(() => pickEnglishMaleVoice(voicesRef.current), []);
 
-  const speak = useCallback(
-    (txt: string, tone: Tone, forceVl?: "fr" | "en") => {
+  /* The product's ONE voice: a hosted, deep/calm/charismatic English voice that
+     sounds identical on every OS and browser. When it isn't configured
+     (no API key) we fall back to the locked-down browser voice below.
+     `ttsAvailable` is remembered per session so we try the network once. */
+  const ttsAvailableRef = useRef<boolean | null>(null);
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
+
+  const speakHosted = useCallback(
+    async (txt: string): Promise<boolean> => {
+      if (ttsAvailableRef.current === false) return false;
+      try {
+        const res = await ttsSpeak({ data: { text: txt } });
+        if (!res.available || !("audio" in res) || !res.audio) {
+          ttsAvailableRef.current = false;
+          return false;
+        }
+        ttsAvailableRef.current = true;
+        audioElRef.current?.pause();
+        const el = new Audio(res.audio);
+        audioElRef.current = el;
+        el.volume = 0.95;
+        showVoiceWidget(txt);
+        commOn();
+        el.onended = () => {
+          radioClick();
+          commOff();
+          hideVoiceWidget();
+        };
+        el.onerror = () => {
+          commOff();
+          hideVoiceWidget();
+        };
+        await el.play();
+        return true;
+      } catch {
+        // Network/autoplay refusal → fall back to the browser voice.
+        ttsAvailableRef.current = false;
+        commOff();
+        return false;
+      }
+    },
+    [showVoiceWidget, hideVoiceWidget, commOn, commOff, radioClick],
+  );
+
+  const speakBrowser = useCallback(
+    (txt: string, tone: Tone) => {
       if (!audioOnRef.current) return;
       if (!("speechSynthesis" in window)) {
         showVoiceWidget(txt);
@@ -563,12 +581,12 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         radioClick();
         const u = new SpeechSynthesisUtterance(txt);
         const tn = TONES[tone] || TONES.calm;
-        const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
-        u.lang = vl === "fr" ? "fr-FR" : "en-GB";
+        // Always English (en-GB) — one voice, every locale.
+        u.lang = "en-GB";
         u.rate = tn.rate;
         u.pitch = tn.pitch;
         u.volume = 0.9;
-        const v = pickVoice(forceVl);
+        const v = pickVoice();
         if (v) u.voice = v;
         u.onstart = () => {
           showVoiceWidget(txt);
@@ -602,25 +620,33 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     [radioClick, commOn, commOff, pickVoice, showVoiceWidget, hideVoiceWidget],
   );
 
+  const speak = useCallback(
+    (txt: string, tone: Tone) => {
+      if (!audioOnRef.current) return;
+      // Hosted voice first — identical everywhere. Browser voice is the fallback.
+      if (ttsAvailableRef.current !== false) {
+        void speakHosted(txt).then((ok) => {
+          if (ok || !("speechSynthesis" in window)) return;
+          speakBrowser(txt, tone);
+        });
+        return;
+      }
+      speakBrowser(txt, tone);
+    },
+    [speakHosted, speakBrowser],
+  );
+
   const say = useCallback(
-    (k: keyof typeof LINES, forceVl?: "fr" | "en") => {
+    (k: keyof typeof LINES) => {
       const o = LINES[k];
       if (!o) return;
-      const vl = forceVl ?? (langRef.current === "fr" ? "fr" : "en");
-      const arr = o[vl] || o.en;
+      // Spoken lines are always English so the one robotic voice never has to
+      // read another language's text (which would mangle pronunciation).
+      const arr = o.en;
       const h = new Date().getHours();
-      const greet =
-        vl === "fr"
-          ? h < 18
-            ? "Bonjour"
-            : "Bonsoir"
-          : h < 12
-            ? "Good morning"
-            : h < 18
-              ? "Good afternoon"
-              : "Good evening";
+      const greet = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
       const txt = arr[Math.floor(Math.random() * arr.length)].replace("%G", greet);
-      speak(txt, o.tone, forceVl);
+      speak(txt, o.tone);
     },
     [speak],
   );
@@ -637,10 +663,17 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     setTimeout(() => say("activate"), 750);
   }, [powerUp, say]);
 
-  /* ══ Canvas particle field — fixed, covers the whole viewport ══ */
+  /* ══ Canvas particle field — fixed, covers the whole viewport ══
+     Kept (it IS the page's identity) but calmed: skipped entirely when the
+     visitor asked for reduced motion or is on a small screen, where a
+     permanent rAF loop costs battery for pure ambience. */
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
+    const reduced =
+      typeof window !== "undefined" &&
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || window.innerWidth < 768);
+    if (reduced) return;
     const ctx = c.getContext("2d");
     if (!ctx) return;
     let W = 0;
@@ -662,7 +695,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     };
     const init = () => {
       pts = [];
-      const n = Math.floor((W * H) / 18000);
+      // Calmer field: ~40% fewer particles than before (same look, less work).
+      const n = Math.min(90, Math.floor((W * H) / 30000));
       for (let i = 0; i < n; i++)
         pts.push({
           x: Math.random() * W,
@@ -732,63 +766,28 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, []);
 
   /* ══ HUD fonts (Rajdhani / Orbitron / JetBrains Mono) — loaded once ══ */
-  useEffect(() => {
-    const ID = "jchk-fonts";
-    if (document.getElementById(ID)) return;
-    const link = document.createElement("link");
-    link.id = ID;
-    link.rel = "stylesheet";
-    link.href =
-      "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap";
-    document.head.appendChild(link);
-  }, []);
-
   /* ══ Derived scoring ══ */
   const winOpen = isWindowOpen(config, new Date(now));
-  const nChecked = checked.filter(Boolean).length;
-  const nItems = Math.max(1, config.items.length);
-  const parts = useMemo(() => {
-    const check = Math.round((nChecked / nItems) * 60);
-    const mental =
-      day.fomo === 0 ? 15 : day.fomo === 1 ? 10 : day.fomo === 2 ? 0 : day.fomo === 3 ? -15 : 0;
-    const motivOk = day.motiv >= 0 ? !!config.motivs[day.motiv]?.ok : false;
-    const motiv = day.motiv < 0 ? 0 : motivOk ? 15 : -10;
-    const win = winOpen ? 10 : 0;
-    return {
-      check,
-      mental,
-      motiv,
-      win,
-      total: Math.max(0, Math.min(100, check + mental + motiv + win)),
-    };
-  }, [nChecked, nItems, day.fomo, day.motiv, config.motivs, winOpen]);
+  // Only enabled items take part in the daily run — a disabled item is neither
+  // shown, counted, nor able to block the lock.
+  const activeIdx = useMemo(
+    () => config.items.map((it, i) => (isItemOn(it) ? i : -1)).filter((i) => i >= 0),
+    [config.items],
+  );
+  const nChecked = activeIdx.filter((i) => checked[i]).length;
+  const nActive = activeIdx.length;
   const gates = useMemo(
     () => ({
-      check: nChecked === config.items.length && config.items.length > 0,
+      check: nChecked === nActive && nActive > 0,
       mental: day.fomo === 0 || day.fomo === 1,
       motiv: day.motiv >= 0 && !!config.motivs[day.motiv]?.ok,
       win: winOpen,
       assume: day.assume,
     }),
-    [nChecked, config.items.length, day.fomo, day.motiv, config.motivs, winOpen],
+    [nChecked, nActive, day.fomo, day.motiv, config.motivs, winOpen],
   );
   const allGates = gates.check && gates.mental && gates.motiv && gates.win && gates.assume;
   const interference = day.motiv >= 0 && !config.motivs[day.motiv]?.ok;
-
-  /* animated score number */
-  useEffect(() => {
-    let raf = 0;
-    const step = () => {
-      setDisplayScore((s) => {
-        const diff = parts.total - s;
-        if (Math.abs(diff) < 0.5) return parts.total;
-        raf = requestAnimationFrame(step);
-        return s + diff * 0.14;
-      });
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [parts.total]);
 
   /* gate-change sounds + full-validation HUD moment */
   const prevGatesRef = useRef(gates);
@@ -849,17 +848,14 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   let rank = 0;
   for (let i = 0; i < RANKS.length; i++) if (mins >= RANKS[i][0]) rank = i;
   const lastRankRef = useRef(0);
-  const [rankPulse, setRankPulse] = useState(false);
   useEffect(() => {
     if (rank !== lastRankRef.current) {
       lastRankRef.current = rank;
-      setRankPulse(true);
-      const tm = setTimeout(() => setRankPulse(false), 900);
+      // A quiet audio cue as patience deepens — a calm-mind milestone.
       if (rank > 0) {
         blip(1100, 0.13, "sine", 0.018);
         if (rank === 2) say("patience");
       }
-      return () => clearTimeout(tm);
     }
   }, [rank, blip, say]);
 
@@ -887,9 +883,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const onHover = useCallback(
     (ev: React.MouseEvent) => {
       if (!audioOnRef.current) return;
-      const tg = (ev.target as HTMLElement).closest?.(
-        ".jk-ci,.jk-mopt,.jk-fseg,.jk-btn,.jk-mantra,.jk-sig,.jk-assume-btn,.jk-toggle,.jk-lock-go,.jk-lock-back,.jk-cd-cancel,.jk-cstep,.jk-tpl",
-      );
+      const tg = (ev.target as HTMLElement).closest?.("button,[role='button'],.cursor-pointer");
       if (!tg) return;
       const nowT = Date.now();
       if (nowT - lastHoverRef.current < 110) return;
@@ -977,7 +971,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     disciplineRef.current = false;
     wasAllRef.current = false;
     lastRankRef.current = 0;
-    setQuote(config.quotes[Math.floor(Math.random() * config.quotes.length)] || "");
   };
 
   /* Ask the in-app AI coach (opens the assistant panel with the prompt) */
@@ -1010,17 +1003,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       ...c,
       fomo: c.fomo.map((f, k) => (k === i ? { ...f, ...p } : f)) as FomoState[],
     }));
-  };
-  const patchMantra = (i: number, p: Partial<Mantra>) => {
-    markTouched();
-    setConfig((c) => ({
-      ...c,
-      mantras: c.mantras.map((m, k) => (k === i ? { ...m, ...p } : m)),
-    }));
-  };
-  const patchSignal = (list: "signalsGo" | "signalsStop" | "signalsWait", i: number, v: string) => {
-    markTouched();
-    setConfig((c) => ({ ...c, [list]: c[list].map((s, k) => (k === i ? v : s)) }));
   };
 
   const applyTemplate = (id: string) => {
@@ -1164,95 +1146,138 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     const left = (parseTimeToMinutes(config.startTime) - (p.hour * 60 + p.minute) + 1440) % 1440;
     winLabel = `${t("chk.winClosed")} ${config.startTime} — T-${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
   }
-  const mm = Math.floor(mins);
-  const ss = Math.floor((elapsedMs % 60000) / 1000);
   const tzOptions = useMemo(getTimeZoneOptions, []);
 
+  // Per-mood accent for the FOMO/mental segments (active state) — mapped by
+  // index (calm · focused · impatient · fomo). Pure presentation.
+  const FOMO_TONE = [
+    "border-cyan-500/50 bg-cyan-500/15 text-cyan-200",
+    "border-teal-500/50 bg-teal-500/15 text-teal-200",
+    "border-amber-500/50 bg-amber-500/15 text-amber-200",
+    "border-red-500/50 bg-red-500/15 text-red-200",
+  ];
+
   return (
-    <div
-      className={cn("jchk", editMode && "edit-mode")}
-      ref={wrapRef}
-      onMouseOver={onHover}
-      onPointerDown={autoStartAudio}
-    >
-      <canvas ref={canvasRef} className="jchk-canvas" />
-      <div className="jchk-scanline" />
-      <div key={flash} className={cn("jchk-hud-flash", flash > 0 && "go")} />
+    <div ref={wrapRef} onMouseOver={onHover} onPointerDown={autoStartAudio} className="relative">
+      {/* Light holographic identity: a faint drifting grid, a slow scanline and
+          ambient particles — a discreet nod to the original Pre-Trade OS. */}
+      <div className="tvchk-grid" />
+      <div className="tvchk-scanline" />
+      <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 -z-10 opacity-[0.12]" />
+      {/* Subtle validation pulse — reuses the global fade, no HUD flash. */}
+      <div
+        key={flash}
+        className={cn(
+          "pointer-events-none fixed inset-0 -z-10 bg-cyan-500/5",
+          flash > 0 ? "animate-fade-in" : "opacity-0",
+        )}
+      />
 
-      {day.locked && (
-        <div className="jchk-exec-banner">
-          <div className="jk-live-dot ok" />
-          <span>
+      <div className="p-4 md:p-6 max-w-3xl mx-auto pb-28 md:pb-10 space-y-4">
+        {day.locked && (
+          <div className="flex items-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 animate-fade-in-up">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
             {t("chk.execMode")} {execTime !== "—" ? execTime : ""}
-          </span>
-        </div>
-      )}
-      {editMode && <div className="jchk-edit-banner">{t("chk.editBanner")}</div>}
-
-      <div className="jchk-shell">
-        {/* ══ HEADER ══ */}
-        <div className="jk-header">
-          <div>
-            <div className="jk-logo-row">
-              <div className={cn("jk-live-dot", (allGates || day.locked) && "ok")} />
-              <h1 className="jk-h1">
-                Pre-Trade <span className="jk-os">OS</span>
-              </h1>
-            </div>
-            <div className="jk-boot-line">JARVIS // systems check — discipline protocol loaded</div>
           </div>
-          <div className="jk-header-right">
-            <div className="jk-clock-badge">
-              <svg
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-              <span>{dateStr}</span>&nbsp;<span className="jk-clock">{clockStr}</span>
+        )}
+        {editMode && (
+          <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-300 animate-fade-in-up">
+            {t("chk.editBanner")}
+          </div>
+        )}
+        {/* ══ HEADER ══ */}
+        <div className="flex flex-col gap-3 animate-fade-in-up">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="tvchk-sheen w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
+                <Bot className="relative w-5 h-5 text-white" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent leading-tight">
+                  {t("nav.checklist")}
+                </h1>
+                <p className="text-xs text-slate-500">{t("chk.tagline")}</p>
+              </div>
             </div>
-            <span className={cn("jk-win-status", winOpen ? "open" : "closed")}>{winLabel}</span>
-            <span className={cn("jk-ready-pill", (allGates || day.locked) && "ok")}>
+            {/* Ask Jarvis — the single AI entry point of the app. */}
+            <button
+              onClick={() => askCoach(coach.checklistReview)}
+              title="Jarvis"
+              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition-all"
+            >
+              <Bot className="w-4 h-4" />
+              <span className="hidden sm:inline">{t("chk.askJarvis")}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-slate-400 tabular-nums">
+              {dateStr} · {clockStr}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                winOpen
+                  ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-300",
+              )}
+            >
+              <Clock className="w-3 h-3" /> {winLabel}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide",
+                allGates || day.locked
+                  ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                  : "border-white/[0.08] bg-white/[0.03] text-slate-400",
+              )}
+            >
               {day.locked ? t("chk.locked") : allGates ? t("chk.ready") : t("chk.standby")}
             </span>
             {streak > 0 && (
-              <span className="jk-streak" title={t("chk.streakHint")}>
-                🔥 {streak} {t("chk.streakSuffix")}
+              <span
+                title={t("chk.streakHint")}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-300"
+              >
+                <Flame className="w-3 h-3" /> {streak} {t("chk.streakSuffix")}
               </span>
             )}
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <button className={cn("jk-toggle", audioOn && "on")} onClick={toggleAudio}>
-                <svg viewBox="0 0 24 24">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                  <path d="M15.54 8.46a5 5 0 010 7.07" />
-                </svg>
-                <span>
-                  {t("chk.voice")} : {audioOn ? "on" : "off"}
-                </span>
-              </button>
-              <button className={cn("jk-toggle", editMode && "on")} onClick={toggleEdit}>
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                <span>
-                  {t("chk.editor")} : {editMode ? "on" : "off"}
-                </span>
+            <div className="ml-auto flex items-center gap-1.5">
+              <button
+                onClick={toggleAudio}
+                title={`${t("chk.voice")} · ${audioOn ? "on" : "off"}`}
+                className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  audioOn
+                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                    : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
+                )}
+              >
+                {audioOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
               <button
-                className={cn("jk-toggle", showConfig && "on")}
-                onClick={() => setShowConfig((v) => !v)}
+                onClick={toggleEdit}
+                title={t("chk.editor")}
+                className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  editMode
+                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                    : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
+                )}
               >
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
-                </svg>
-                <span>{t("chk.customize")}</span>
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowConfig((v) => !v)}
+                title={t("chk.customize")}
+                className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  showConfig
+                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                    : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
+                )}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -1260,770 +1285,665 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
-          <div className="jk-card jk-config-panel">
-            <button className="jk-guided-btn" onClick={() => setShowWizard(true)}>
-              ✨ {t("chk.guidedSetup")}
-            </button>
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgSession")}</div>
-              <div className="jk-session-config-row">
-                <label>{t("chk.cfgStart")}</label>
-                <input
-                  type="time"
-                  className="jk-input"
-                  value={config.startTime}
-                  onChange={(e) => e.target.value && patch({ startTime: e.target.value })}
-                />
-                <label>{t("chk.cfgTz")}</label>
-                <select
-                  className="jk-select"
-                  value={config.timeZone}
-                  onChange={(e) => patch({ timeZone: e.target.value })}
-                >
-                  {tzOptions.map((z) => (
-                    <option key={z} value={z}>
-                      {z}
-                    </option>
-                  ))}
-                </select>
-                <label>{t("chk.cfgCd")}</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  className="jk-input"
-                  style={{ width: 70 }}
-                  value={config.countdown}
-                  onChange={(e) =>
-                    patch({ countdown: Math.max(1, Math.min(30, +e.target.value || 5)) })
-                  }
-                />
-              </div>
-              <div className="jk-session-status">
-                {winOpen
-                  ? t("chk.cfgOpenNow")
-                  : `${t("chk.cfgOpensAt")} ${config.startTime} (${config.timeZone})`}
+          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-5 animate-fade-in-up">
+            <div className="flex items-start gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                <SlidersHorizontal className="w-4 h-4" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-white">{t("chk.customize")}</h3>
+                <p className="text-[11px] text-slate-500 leading-relaxed">{t("chk.cfgIntro")}</p>
               </div>
             </div>
 
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgTemplates")}</div>
-              <div className="jk-tpl-row">
-                {templates.map((tp) => (
-                  <button key={tp.id} className="jk-tpl" onClick={() => applyTemplate(tp.id)}>
-                    <span className="jk-tpl-name">{tp.name}</span>
-                    <span className="jk-tpl-count">{tp.items.length} ✓</span>
+            <button
+              onClick={() => setShowWizard(true)}
+              className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-cyan-300 border border-cyan-500/25 bg-cyan-500/10 hover:bg-cyan-500/15 transition-all"
+            >
+              <Wand2 className="w-4 h-4" /> {t("chk.guidedSetup")}
+            </button>
+
+            {/* Real in-panel navigation — one thing at a time, never a wall. */}
+            <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              {(
+                [
+                  ["items", t("chk.tabChecks")],
+                  ["session", t("chk.cfgSession")],
+                  ["models", t("chk.tabModels")],
+                  ["advanced", t("chk.tabAdvanced")],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setCfgTab(id)}
+                  className={cn(
+                    "flex-1 rounded-lg px-2 py-1.5 text-[11px] md:text-xs font-semibold transition-all",
+                    cfgTab === id
+                      ? "bg-cyan-500/15 text-cyan-300 shadow-sm shadow-cyan-500/10"
+                      : "text-slate-400 hover:text-white",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {cfgTab === "session" && (
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
+                  {t("chk.cfgSession")}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                  <label>{t("chk.cfgStart")}</label>
+                  <input
+                    type="time"
+                    className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                    value={config.startTime}
+                    onChange={(e) => e.target.value && patch({ startTime: e.target.value })}
+                  />
+                  <label>{t("chk.cfgTz")}</label>
+                  <select
+                    className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                    value={config.timeZone}
+                    onChange={(e) => patch({ timeZone: e.target.value })}
+                  >
+                    {tzOptions.map((z) => (
+                      <option key={z} value={z} className="bg-[#0a0f1e]">
+                        {z}
+                      </option>
+                    ))}
+                  </select>
+                  <label>{t("chk.cfgCd")}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    className="w-16 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                    value={config.countdown}
+                    onChange={(e) =>
+                      patch({ countdown: Math.max(1, Math.min(30, +e.target.value || 5)) })
+                    }
+                  />
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {winOpen
+                    ? t("chk.cfgOpenNow")
+                    : `${t("chk.cfgOpensAt")} ${config.startTime} (${config.timeZone})`}
+                </div>
+              </div>
+            )}
+
+            {cfgTab === "models" && (
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
+                  {t("chk.cfgTemplates")}
+                </div>
+                <p className="text-[11px] text-slate-500">{t("chk.cfgTemplatesHint")}</p>
+                <div className="flex flex-wrap gap-2">
+                  {templates.map((tp) => (
+                    <button
+                      key={tp.id}
+                      onClick={() => applyTemplate(tp.id)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500/30 hover:text-white transition-all"
+                    >
+                      <span className="font-semibold">{tp.name}</span>
+                      <span className="text-[10px] text-cyan-400">{tp.items.length} ✓</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {cfgTab === "items" && (
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
+                  {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
+                </div>
+                <div className="text-[11px] text-slate-500">{t("chk.cfgDragHint")}</div>
+                {config.items.map((it, i) => {
+                  const on = isItemOn(it);
+                  return (
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-2 transition-opacity",
+                        dragIdx === i && "opacity-60",
+                        !on && "opacity-50",
+                      )}
+                      key={i}
+                      draggable
+                      onDragStart={() => setDragIdx(i)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => dropItem(i)}
+                      onDragEnd={() => setDragIdx(null)}
+                    >
+                      <span className="text-slate-600 cursor-grab shrink-0" title="Drag">
+                        <GripVertical className="w-4 h-4" />
+                      </span>
+                      <button
+                        className={cn(
+                          "relative w-9 h-5 rounded-full shrink-0 transition-colors",
+                          on ? "bg-cyan-500/70" : "bg-white/[0.1]",
+                        )}
+                        role="switch"
+                        aria-checked={on}
+                        title={on ? t("chk.cfgItemOn") : t("chk.cfgItemOff")}
+                        onClick={() => patchItem(i, { enabled: !on })}
+                      >
+                        <span
+                          className={cn(
+                            "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform",
+                            on ? "translate-x-4" : "translate-x-0.5",
+                          )}
+                        />
+                      </button>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <input
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                          value={it.title}
+                          onChange={(e) => patchItem(i, { title: e.target.value })}
+                        />
+                        <input
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-slate-400 focus:outline-none focus:border-cyan-500/40"
+                          value={it.desc}
+                          placeholder={t("chk.cfgDescOptional")}
+                          onChange={(e) => patchItem(i, { desc: e.target.value })}
+                        />
+                      </div>
+                      <button
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 shrink-0 transition-colors"
+                        onClick={() => {
+                          markTouched();
+                          setConfig((c) => ({ ...c, items: c.items.filter((_, k) => k !== i) }));
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 min-w-0 bg-white/[0.04] border border-dashed border-white/[0.14] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40"
+                    placeholder={t("chk.cfgQuickAdd")}
+                    value={quickAdd}
+                    onChange={(e) => setQuickAdd(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addQuickItem();
+                    }}
+                  />
+                  <button
+                    onClick={addQuickItem}
+                    disabled={!quickAdd.trim()}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/25 bg-cyan-500/10 px-3 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Plus className="w-4 h-4" /> {t("chk.cfgAddItem")}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {cfgTab === "advanced" && (
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
+                  {t("chk.cfgMotivs")}
+                </div>
+                <div className="text-[11px] text-slate-500">{t("chk.cfgMotivHint")}</div>
+                {config.motivs.map((m, i) => (
+                  <div
+                    className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-2"
+                    key={i}
+                  >
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <input
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                        value={m.text}
+                        onChange={(e) => patchMotiv(i, { text: e.target.value })}
+                      />
+                      <input
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-slate-400 focus:outline-none focus:border-cyan-500/40"
+                        value={m.msg}
+                        placeholder={t("chk.msgPlaceholder")}
+                        onChange={(e) => patchMotiv(i, { msg: e.target.value })}
+                      />
+                    </div>
+                    <label className="flex items-center gap-1.5 text-[11px] text-slate-400 shrink-0">
+                      <input
+                        type="checkbox"
+                        className="accent-cyan-500"
+                        checked={m.ok}
+                        onChange={(e) => patchMotiv(i, { ok: e.target.checked })}
+                      />
+                      {t("chk.process")}
+                    </label>
+                    <button
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 shrink-0 transition-colors"
+                      onClick={() => {
+                        markTouched();
+                        setConfig((c) => ({ ...c, motivs: c.motivs.filter((_, k) => k !== i) }));
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+                  onClick={() => {
+                    markTouched();
+                    setConfig((c) => ({
+                      ...c,
+                      motivs: [...c.motivs, { text: "…", ok: false, msg: "" }],
+                    }));
+                  }}
+                >
+                  <Plus className="w-3.5 h-3.5" /> {t("chk.cfgAddMotiv")}
+                </button>
+              </div>
+            )}
+
+            {cfgTab === "advanced" && (
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
+                  {t("chk.cfgStates")}
+                </div>
+                {config.fomo.map((f, i) => (
+                  <div className="flex items-center gap-2" key={i}>
+                    <input
+                      className="w-32 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                      value={f.label}
+                      onChange={(e) => patchFomo(i, { label: e.target.value })}
+                    />
+                    <input
+                      className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-slate-400 focus:outline-none focus:border-cyan-500/40"
+                      value={f.msg}
+                      placeholder={t("chk.msgPlaceholder")}
+                      onChange={(e) => patchFomo(i, { msg: e.target.value })}
+                    />
+                  </div>
                 ))}
               </div>
-            </div>
+            )}
 
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">
-                {t("chk.cfgChecklist")} ({config.items.length})
-              </div>
-              <div className="jk-cfg-hint">{t("chk.cfgDragHint")}</div>
-              {config.items.map((it, i) => (
-                <div
-                  className={cn("jk-cfg-row draggable", dragIdx === i && "dragging")}
-                  key={i}
-                  draggable
-                  onDragStart={() => setDragIdx(i)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => dropItem(i)}
-                  onDragEnd={() => setDragIdx(null)}
-                >
-                  <span className="jk-drag" title="Drag">
-                    ⋮⋮
-                  </span>
-                  <div className="jk-cfg-col">
-                    <input
-                      className="jk-input"
-                      value={it.title}
-                      onChange={(e) => patchItem(i, { title: e.target.value })}
-                    />
-                    <input
-                      className="jk-input"
-                      value={it.desc}
-                      onChange={(e) => patchItem(i, { desc: e.target.value })}
-                    />
-                  </div>
-                  <button
-                    className="jk-cfg-del"
-                    onClick={() => {
-                      markTouched();
-                      setConfig((c) => ({ ...c, items: c.items.filter((_, k) => k !== i) }));
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              <input
-                className="jk-input jk-quick-add"
-                placeholder={t("chk.cfgQuickAdd")}
-                value={quickAdd}
-                onChange={(e) => setQuickAdd(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addQuickItem();
-                }}
-              />
-            </div>
-
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgMotivs")}</div>
-              <div className="jk-cfg-hint">{t("chk.cfgMotivHint")}</div>
-              {config.motivs.map((m, i) => (
-                <div className="jk-cfg-row" key={i}>
-                  <div className="jk-cfg-col">
-                    <input
-                      className="jk-input"
-                      value={m.text}
-                      onChange={(e) => patchMotiv(i, { text: e.target.value })}
-                    />
-                    <input
-                      className="jk-input"
-                      value={m.msg}
-                      placeholder={t("chk.msgPlaceholder")}
-                      onChange={(e) => patchMotiv(i, { msg: e.target.value })}
-                    />
-                  </div>
-                  <label className="jk-cfg-check">
-                    <input
-                      type="checkbox"
-                      checked={m.ok}
-                      onChange={(e) => patchMotiv(i, { ok: e.target.checked })}
-                    />
-                    {t("chk.process")}
-                  </label>
-                  <button
-                    className="jk-cfg-del"
-                    onClick={() => {
-                      markTouched();
-                      setConfig((c) => ({ ...c, motivs: c.motivs.filter((_, k) => k !== i) }));
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              <button
-                className="jk-cfg-add"
-                onClick={() => {
-                  markTouched();
-                  setConfig((c) => ({
-                    ...c,
-                    motivs: [...c.motivs, { text: "…", ok: false, msg: "" }],
-                  }));
-                }}
-              >
-                {t("chk.cfgAddMotiv")}
-              </button>
-            </div>
-
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgStates")}</div>
-              {config.fomo.map((f, i) => (
-                <div className="jk-cfg-row" key={i}>
-                  <input
-                    className="jk-input"
-                    style={{ maxWidth: 140 }}
-                    value={f.label}
-                    onChange={(e) => patchFomo(i, { label: e.target.value })}
-                  />
-                  <input
-                    className="jk-input"
-                    value={f.msg}
-                    placeholder={t("chk.msgPlaceholder")}
-                    onChange={(e) => patchFomo(i, { msg: e.target.value })}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgMantras")}</div>
-              {config.mantras.map((m, i) => (
-                <div className="jk-cfg-row" key={i}>
-                  <div className="jk-cfg-col">
-                    <input
-                      className="jk-input"
-                      value={m.text}
-                      onChange={(e) => patchMantra(i, { text: e.target.value })}
-                    />
-                    <input
-                      className="jk-input"
-                      value={m.why}
-                      onChange={(e) => patchMantra(i, { why: e.target.value })}
-                    />
-                  </div>
-                  <button
-                    className="jk-cfg-del"
-                    onClick={() => {
-                      markTouched();
-                      setConfig((c) => ({ ...c, mantras: c.mantras.filter((_, k) => k !== i) }));
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              <button
-                className="jk-cfg-add"
-                onClick={() => {
-                  markTouched();
-                  setConfig((c) => ({
-                    ...c,
-                    mantras: [...c.mantras, { text: "…", why: "" }],
-                  }));
-                }}
-              >
-                {t("chk.cfgAddMantra")}
-              </button>
-            </div>
-
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgSignals")}</div>
-              <div className="jk-cfg-row">
-                <div className="jk-cfg-col">
-                  <div className="jk-cfg-hint">{t("chk.sigGo")}</div>
-                  <textarea
-                    className="jk-cfg-textarea"
-                    value={config.signalsGo.join("\n")}
-                    onChange={(e) =>
-                      patch({ signalsGo: e.target.value.split("\n").filter((s) => s.trim()) })
-                    }
-                  />
-                </div>
-                <div className="jk-cfg-col">
-                  <div className="jk-cfg-hint">{t("chk.sigStop")}</div>
-                  <textarea
-                    className="jk-cfg-textarea"
-                    value={config.signalsStop.join("\n")}
-                    onChange={(e) =>
-                      patch({ signalsStop: e.target.value.split("\n").filter((s) => s.trim()) })
-                    }
-                  />
-                </div>
-                <div className="jk-cfg-col">
-                  <div className="jk-cfg-hint">{t("chk.sigWait")}</div>
-                  <textarea
-                    className="jk-cfg-textarea"
-                    value={config.signalsWait.join("\n")}
-                    onChange={(e) =>
-                      patch({ signalsWait: e.target.value.split("\n").filter((s) => s.trim()) })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgQuotes")}</div>
-              <textarea
-                className="jk-cfg-textarea"
-                value={config.quotes.join("\n")}
-                onChange={(e) =>
-                  patch({ quotes: e.target.value.split("\n").filter((s) => s.trim()) })
-                }
-              />
-            </div>
-            <div className="jk-cfg-section">
-              <div className="jk-cfg-title">{t("chk.cfgMissions")}</div>
-              <textarea
-                className="jk-cfg-textarea"
-                value={config.missions.join("\n")}
-                onChange={(e) =>
-                  patch({ missions: e.target.value.split("\n").filter((s) => s.trim()) })
-                }
-              />
-            </div>
-            <button className="jk-btn danger" onClick={resetConfig}>
-              {t("chk.cfgReset")}
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/15 transition-colors"
+              onClick={resetConfig}
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> {t("chk.cfgReset")}
             </button>
           </div>
         )}
 
-        {/* ══ QUOTE + MISSION ══ */}
-        <div className="jk-brief-row">
-          <div className="jk-card jk-quote-card">
-            <div className="jk-q-label">{t("chk.transmission")}</div>
-            <div className="jk-q-text">« {quote} »</div>
-          </div>
-          <div className="jk-card jk-mission-card">
-            <div className="jk-m-label">{t("chk.mission")}</div>
-            <div className="jk-m-text">{mission}</div>
-          </div>
-        </div>
-
-        {/* ══ REACTOR / EDGE SCORE ══ */}
-        <div className="jk-card jk-hud-corners jk-reactor-wrap">
-          <div className="jk-reactor">
-            <svg viewBox="0 0 200 200">
-              <g className="jk-ring-ticks">
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="94"
-                  fill="none"
-                  stroke="rgba(34,211,238,.25)"
-                  strokeWidth="2"
-                  strokeDasharray="2 10"
-                />
-              </g>
-              <g className="jk-ring-ticks2">
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="86"
-                  fill="none"
-                  stroke="rgba(34,211,238,.15)"
-                  strokeWidth="1"
-                  strokeDasharray="14 8"
-                />
-              </g>
-              <circle className="jk-ring-track" cx="100" cy="100" r="74" />
-              <circle
-                className={cn("jk-ring-prog", (parts.mental < 0 || parts.motiv < 0) && "danger")}
-                cx="100"
-                cy="100"
-                r="74"
-                pathLength="100"
-                strokeDasharray="100"
-                strokeDashoffset={100 - parts.total}
-              />
-              <g className="jk-ring-comet">
-                <circle cx="100" cy="100" r="80" pathLength="100" strokeDasharray="10 90" />
-              </g>
-              <circle
-                className="jk-core"
-                cx="100"
-                cy="100"
-                r="52"
-                fill="rgba(34,211,238,.06)"
-                stroke="rgba(34,211,238,.3)"
-                strokeWidth="1"
-              />
-              <text className="jk-score-num" x="100" y="108" textAnchor="middle">
-                {Math.round(displayScore)}
-              </text>
-              <text className="jk-score-lbl" x="100" y="130" textAnchor="middle">
-                EDGE SCORE / 100
-              </text>
-            </svg>
-          </div>
-          <div className="jk-reactor-info">
-            <div className="jk-ri-title">{t("chk.edgeAnalysis")}</div>
-            <div className="jk-ri-bars">
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">{t("chk.barChecklist")}</span>
-                <div className="jk-ri-track">
-                  <div className="jk-ri-fill" style={{ width: `${(parts.check / 60) * 100}%` }} />
-                </div>
-                <span className="jk-ri-val">{parts.check}/60</span>
+        {/* The 5-step ritual is hidden while the config panel is open, so the
+            panel is the only thing on screen. */}
+        {!showConfig && (
+          <>
+            {/* ══ STEP 1 · PRÉPARATION — the setup checks ══ */}
+            <div className="space-y-2.5 animate-fade-in-up">
+              <div className="flex items-center gap-2.5">
+                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                  1
+                </span>
+                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
+                  {t("chk.stepPrep")}
+                </h2>
+                <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">{t("chk.barMental")}</span>
-                <div className="jk-ri-track">
-                  <div
+              <div className="glass rounded-2xl p-3 md:p-3.5">
+                <div className="flex flex-wrap gap-2">
+                  {config.items.map((it, i) =>
+                    !isItemOn(it) ? null : (
+                      <div
+                        key={i}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => toggleItem(i)}
+                        style={{ animationDelay: `${0.03 * (i + 1)}s` }}
+                        className={cn(
+                          "tvchk-item inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] cursor-pointer transition-all animate-fade-in-up",
+                          checked[i] && "done",
+                          checked[i]
+                            ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-100"
+                            : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:text-white",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all",
+                            checked[i]
+                              ? "border-cyan-400 bg-cyan-400 text-[#04141b]"
+                              : "border-white/25",
+                          )}
+                        >
+                          {checked[i] && <Check className="w-3 h-3" strokeWidth={3} />}
+                        </span>
+                        <Ed
+                          value={it.title}
+                          editable={editMode}
+                          onCommit={(v) => patchItem(i, { title: v })}
+                        />
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ══ STEP 2 · VALIDATION — preparation progress + session window ══ */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                  2
+                </span>
+                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
+                  {t("chk.stepValidation")}
+                </h2>
+                <span className="flex-1 h-px bg-white/[0.06]" />
+              </div>
+              <div className="glass rounded-2xl p-3.5 flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-slate-400 font-semibold">{t("chk.gateChecklist")}</span>
+                    <span className="tabular-nums text-white font-bold">
+                      {nChecked}/{nActive}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500"
+                      style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shrink-0",
+                    winOpen
+                      ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                      : "border-amber-500/30 bg-amber-500/10 text-amber-300",
+                  )}
+                >
+                  <Clock className="w-3 h-3" /> {winOpen ? t("chk.cfgOpenNow") : config.startTime}
+                </span>
+              </div>
+            </div>
+
+            {/* ══ STEP 3 · MENTAL — motivation + emotional state ══ */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                  3
+                </span>
+                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
+                  {t("chk.stepMental")}
+                </h2>
+                <span className="flex-1 h-px bg-white/[0.06]" />
+              </div>
+
+              <div
+                className={cn(
+                  "glass rounded-2xl p-3.5 space-y-2.5",
+                  interference && "border border-red-500/25",
+                )}
+              >
+                <div className="text-[11px] text-slate-500 font-semibold">{t("chk.secMotiv")}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {config.motivs.map((m, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setMotiv(i)}
+                      className={cn(
+                        "cursor-pointer rounded-xl border px-3 py-2 text-xs transition-all",
+                        day.motiv === i
+                          ? m.ok
+                            ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-200"
+                            : "border-red-500/50 bg-red-500/10 text-red-300"
+                          : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-white/[0.16]",
+                      )}
+                    >
+                      <Ed
+                        value={m.text}
+                        editable={editMode}
+                        onCommit={(v) => patchMotiv(i, { text: v })}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div
+                  className={cn(
+                    "text-xs rounded-lg px-3 py-2 border",
+                    day.motiv >= 0
+                      ? config.motivs[day.motiv]?.ok
+                        ? "border-cyan-500/20 bg-cyan-500/5 text-cyan-200"
+                        : "border-red-500/20 bg-red-500/5 text-red-300"
+                      : "border-white/[0.06] bg-white/[0.02] text-slate-500 italic",
+                  )}
+                >
+                  {day.motiv >= 0 ? config.motivs[day.motiv]?.msg : t("chk.motivDefault")}
+                </div>
+                {interference && (
+                  <button
+                    onClick={() => askCoach(coach.interference)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/15 transition-colors"
+                  >
+                    <Bot className="w-3.5 h-3.5" /> {t("chk.actCoachCenter")}
+                  </button>
+                )}
+              </div>
+
+              <div className="glass rounded-2xl p-3.5 space-y-2.5">
+                <div className="text-[11px] text-slate-500 font-semibold">
+                  {t("chk.fomoQuestion")}
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {config.fomo.map((f, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setFomo(i)}
+                      className={cn(
+                        "cursor-pointer rounded-xl border px-2 py-2.5 text-center transition-all",
+                        day.fomo === i
+                          ? FOMO_TONE[i]
+                          : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:border-white/[0.16]",
+                      )}
+                    >
+                      <div className="text-base leading-none mb-1">{FOMO_ICONS[i]}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wide">
+                        <Ed
+                          value={f.label}
+                          editable={editMode}
+                          onCommit={(v) => patchFomo(i, { label: v })}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  className={cn(
+                    "text-xs rounded-lg px-3 py-2 border",
+                    day.fomo >= 0
+                      ? "border-white/[0.08] bg-white/[0.02] text-slate-200"
+                      : "border-white/[0.06] bg-white/[0.02] text-slate-500 italic",
+                  )}
+                >
+                  {day.fomo >= 0 ? config.fomo[day.fomo]?.msg : t("chk.fomoDefault")}
+                </div>
+                {day.fomo === 3 && (
+                  <button
+                    onClick={() => askCoach(coach.fomo)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/15 transition-colors"
+                  >
+                    <Bot className="w-3.5 h-3.5" /> {t("chk.actCoachFomo")}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ══ STEP 4 · VERROUILLAGE — gates + responsibility ══ */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                  4
+                </span>
+                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
+                  {t("chk.stepLock")}
+                </h2>
+                <span className="flex-1 h-px bg-white/[0.06]" />
+              </div>
+              <div className="glass rounded-2xl p-3.5 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Gate
+                    ok={gates.check}
+                    label={`${t("chk.gateChecklist")} · ${nChecked}/${config.items.length}`}
+                  />
+                  <Gate ok={gates.mental} label={t("chk.gateMental")} />
+                  <Gate ok={gates.motiv} label={t("chk.gateMotiv")} />
+                  <Gate ok={gates.win} label={`${t("chk.gateWindow")} ${config.startTime}+`} />
+                  <Gate ok={gates.assume} label={t("chk.gateAssume")} />
+                </div>
+                <button
+                  onClick={toggleAssume}
+                  className={cn(
+                    "w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all",
+                    day.assume
+                      ? "border-cyan-500/40 bg-cyan-500/10"
+                      : "border-white/[0.08] bg-white/[0.03] hover:border-white/[0.16]",
+                  )}
+                >
+                  <span
                     className={cn(
-                      "jk-ri-fill",
-                      parts.mental < 0 ? "bad" : day.fomo === 2 && "warn",
+                      "w-5 h-5 rounded-md border flex items-center justify-center shrink-0",
+                      day.assume ? "border-cyan-400 bg-cyan-400 text-[#04141b]" : "border-white/25",
                     )}
-                    style={{
-                      width:
-                        parts.mental < 0 ? "100%" : `${(Math.max(0, parts.mental) / 15) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="jk-ri-val">{parts.mental}/15</span>
+                  >
+                    {day.assume && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-white">
+                      {t("chk.assumeTitle")}
+                    </span>
+                    <span className="block text-[11px] text-slate-400">
+                      {t("chk.assumePhrase")}
+                    </span>
+                  </span>
+                </button>
               </div>
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">{t("chk.barMotiv")}</span>
-                <div className="jk-ri-track">
-                  <div
-                    className={cn("jk-ri-fill", parts.motiv < 0 && "bad")}
-                    style={{
-                      width: parts.motiv < 0 ? "100%" : `${(Math.max(0, parts.motiv) / 15) * 100}%`,
-                    }}
-                  />
-                </div>
-                <span className="jk-ri-val">{parts.motiv}/15</span>
-              </div>
-              <div className="jk-ri-row">
-                <span className="jk-ri-name">
-                  {t("chk.barWindow")} {config.startTime}
+            </div>
+
+            {/* ══ STEP 5 · TRADE — the go / no-go ══ */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                  5
                 </span>
-                <div className="jk-ri-track">
-                  <div className="jk-ri-fill" style={{ width: `${(parts.win / 10) * 100}%` }} />
-                </div>
-                <span className="jk-ri-val">{parts.win}/10</span>
+                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
+                  {t("chk.stepTrade")}
+                </h2>
+                <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ══ CHECKLIST ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secChecklist")}
-        </div>
-        <div className="jk-checklist">
-          {config.items.map((it, i) => (
-            <div
-              key={i}
-              className={cn("jk-ci", checked[i] && "done")}
-              style={{ animationDelay: `${0.05 * (i + 1)}s` }}
-              onClick={() => toggleItem(i)}
-            >
-              <div className="jk-scan-bar" />
-              <div className="jk-ci-head">
-                <div className="jk-ci-box" />
-                <div className="jk-ci-title">
-                  <Ed
-                    value={it.title}
-                    editable={editMode}
-                    onCommit={(v) => patchItem(i, { title: v })}
-                  />
-                </div>
-              </div>
-              <div className="jk-ci-desc">
-                <Ed
-                  value={it.desc}
-                  editable={editMode}
-                  onCommit={(v) => patchItem(i, { desc: v })}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ══ MOTIVATION ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secMotiv")}
-        </div>
-        <div className={cn("jk-card jk-motiv-block", interference && "alert")}>
-          <div className="jk-motiv-opts">
-            {config.motivs.map((m, i) => (
-              <div
-                key={i}
-                className={cn("jk-mopt", day.motiv === i && (m.ok ? "sel-ok" : "sel-bad"))}
-                onClick={() => setMotiv(i)}
+              <button
+                onClick={initiate}
+                disabled={!allGates || day.locked}
+                className={cn(
+                  "w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wide transition-all",
+                  !allGates || day.locked
+                    ? "bg-white/[0.04] border border-white/[0.08] text-slate-600 cursor-not-allowed"
+                    : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.01] active:scale-95",
+                )}
               >
-                <Ed
-                  value={m.text}
-                  editable={editMode}
-                  onCommit={(v) => patchMotiv(i, { text: v })}
-                />
-              </div>
-            ))}
-          </div>
-          <div
-            className={cn(
-              "jk-motiv-msg",
-              day.motiv >= 0 && (config.motivs[day.motiv]?.ok ? "ok" : "bad"),
-            )}
-          >
-            {day.motiv >= 0 ? config.motivs[day.motiv]?.msg : t("chk.motivDefault")}
-          </div>
-          {interference && (
-            <button
-              className="jk-btn danger jk-inline-coach"
-              onClick={() => askCoach(coach.interference)}
-            >
-              {QA_ICONS.coach}
-              {t("chk.actCoachCenter")}
-            </button>
-          )}
-        </div>
-
-        <hr />
-
-        {/* ══ FOMO ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secFomo")}
-        </div>
-        <div className={cn("jk-card jk-fomo-block", day.fomo >= 0 && FOMO_CLASSES[day.fomo])}>
-          <div className="jk-fomo-bg" />
-          <div className="jk-fomo-label">{t("chk.fomoQuestion")}</div>
-          <div className="jk-fomo-track">
-            {config.fomo.map((f, i) => (
-              <div
-                key={i}
-                className={cn("jk-fseg", `s${i}`, day.fomo === i && "active")}
-                onClick={() => setFomo(i)}
-              >
-                <span className="jk-fseg-icon">{FOMO_ICONS[i]}</span>
-                <span className="jk-fseg-label">
-                  <Ed
-                    value={f.label}
-                    editable={editMode}
-                    onCommit={(v) => patchFomo(i, { label: v })}
-                  />
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className={cn("jk-fomo-msg", day.fomo >= 0 && ["on", FOMO_CLASSES[day.fomo]])}>
-            {day.fomo >= 0 ? config.fomo[day.fomo]?.msg : t("chk.fomoDefault")}
-          </div>
-          {day.fomo === 3 && (
-            <button className="jk-btn danger jk-inline-coach" onClick={() => askCoach(coach.fomo)}>
-              {QA_ICONS.coach}
-              {t("chk.actCoachFomo")}
-            </button>
-          )}
-        </div>
-
-        {/* ══ PATIENCE ══ */}
-        <div className="jk-card jk-patience">
-          <div className="jk-pt-ring">
-            <svg viewBox="0 0 100 100">
-              <circle className="jk-pt-track" cx="50" cy="50" r="42" />
-              <circle
-                className="jk-pt-prog"
-                cx="50"
-                cy="50"
-                r="42"
-                pathLength="100"
-                strokeDasharray="100"
-                strokeDashoffset={Math.max(0, 100 - (mins / 40) * 100)}
-              />
-              <text className="jk-pt-time" x="50" y="55" textAnchor="middle">
-                {(mm > 99 ? mm : pad(mm)) + ":" + pad(ss)}
-              </text>
-            </svg>
-          </div>
-          <div>
-            <div className="jk-pt-title">{t("chk.patienceTitle")}</div>
-            <div className="jk-pt-desc">{RANK_DESCS[rank]}</div>
-            <span className={cn("jk-pt-rank", rankPulse && "lvl-up")}>{RANKS[rank][1]}</span>
-          </div>
-        </div>
-
-        <hr />
-
-        {/* ══ SIGNALS ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secSignals")}
-        </div>
-        <div className="jk-sigs">
-          {(
-            [
-              ["go", t("chk.sigGo"), "signalsGo"],
-              ["stop", t("chk.sigStop"), "signalsStop"],
-              ["wait", t("chk.sigWait"), "signalsWait"],
-            ] as const
-          ).map(([cls, head, key]) => (
-            <div key={cls} className={cn("jk-sig", cls)}>
-              <div className="jk-sig-head">{head}</div>
-              {config[key].map((s, i) => (
-                <div className="jk-sitem" key={i}>
-                  <span className="jk-sdot" />
-                  <Ed value={s} editable={editMode} onCommit={(v) => patchSignal(key, i, v)} />
+                {day.locked ? t("chk.lockedBtn") : t("chk.initiate")}
+              </button>
+              {actions.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {actions.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={a.run}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500/30 hover:text-white transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:fill-none [&_svg]:stroke-current [&_svg]:[stroke-width:2] [&_svg]:[stroke-linecap:round] [&_svg]:[stroke-linejoin:round]"
+                    >
+                      {QA_ICONS[a.icon]} {a.label}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        <hr />
-
-        {/* ══ CYCLE ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secCycle")}
-        </div>
-        <div className="jk-card jk-cycle">
-          <div className="jk-cycle-steps">
-            {config.cycle.map((c, i) => (
-              <div key={i} className={cn("jk-cstep", `jk-cs-${c.type}`)}>
-                <div className="jk-ccirc">{c.label}</div>
-                <div className="jk-ctext">{c.text}</div>
-              </div>
-            ))}
-          </div>
-          <div className="jk-cycle-alert">
-            <Ed
-              value={config.cycleAlert}
-              editable={editMode}
-              onCommit={(v) => patch({ cycleAlert: v })}
-            />
-          </div>
-        </div>
-
-        <hr />
-
-        {/* ══ MANTRAS ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secMantras")}
-        </div>
-        <div className="jk-mantras">
-          {config.mantras.map((m, i) => (
-            <div
-              key={i}
-              className={cn(
-                "jk-mantra",
-                i === config.mantras.length - 1 && config.mantras.length % 2 === 1 && "full",
               )}
-            >
-              <div className="jk-m-num">{pad(i + 1)}</div>
-              <div className="jk-m-text">
-                <Ed
-                  value={m.text}
-                  editable={editMode}
-                  onCommit={(v) => patchMantra(i, { text: v })}
-                />
-              </div>
-              <div className="jk-m-why">
-                <Ed
-                  value={m.why}
-                  editable={editMode}
-                  onCommit={(v) => patchMantra(i, { why: v })}
-                />
-              </div>
             </div>
-          ))}
-        </div>
-
-        <hr />
-
-        {/* ══ NOTES ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secNotes")}
-        </div>
-        <div className="jk-card jk-notes-block">
-          <textarea
-            className="jk-notes-area"
-            placeholder={t("chk.notesPlaceholder")}
-            value={day.notes}
-            onChange={(e) => setDay((d) => ({ ...d, notes: e.target.value }))}
-          />
-        </div>
-
-        <hr />
-
-        {/* ══ FINAL GATES ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secLock")}
-        </div>
-        <div className="jk-card jk-hud-corners jk-gates">
-          <div className="jk-gate-list">
-            <div className={cn("jk-gate", gates.check && "ok")}>
-              <span className="jk-g-ind" />
-              <span>
-                {t("chk.gateChecklist")} — {nChecked}/{config.items.length}
-              </span>
-            </div>
-            <div className={cn("jk-gate", gates.mental && "ok")}>
-              <span className="jk-g-ind" />
-              <span>{t("chk.gateMental")}</span>
-            </div>
-            <div className={cn("jk-gate", gates.motiv && "ok")}>
-              <span className="jk-g-ind" />
-              <span>{t("chk.gateMotiv")}</span>
-            </div>
-            <div className={cn("jk-gate", gates.win && "ok")}>
-              <span className="jk-g-ind" />
-              <span>
-                {t("chk.gateWindow")} ({config.startTime}+)
-              </span>
-            </div>
-            <div className={cn("jk-gate", gates.assume && "ok")}>
-              <span className="jk-g-ind" />
-              <span>{t("chk.gateAssume")}</span>
-            </div>
-          </div>
-          <button className={cn("jk-assume-btn", day.assume && "on")} onClick={toggleAssume}>
-            <div className="jk-a-box" />
-            <div>
-              <div className="jk-a-title">{t("chk.assumeTitle")}</div>
-              <div className="jk-a-phrase">{t("chk.assumePhrase")}</div>
-            </div>
-          </button>
-          <button className="jk-initiate-btn" onClick={initiate} disabled={!allGates || day.locked}>
-            {day.locked ? t("chk.lockedBtn") : t("chk.initiate")}
-          </button>
-        </div>
-
-        {/* ══ CONTEXTUAL QUICK ACTIONS ══ */}
-        <div className="jk-sl">
-          <span className="jk-sl-diamond" />
-          {t("chk.secActions")}
-        </div>
-        <div className="jk-actions">
-          {actions.map((a) => (
-            <button key={a.id} className={cn("jk-btn", a.kind)} onClick={a.run}>
-              {QA_ICONS[a.icon]}
-              {a.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ══ BOTTOM ══ */}
-        <div className="jk-bottom">
-          <div>
-            <div className="jk-score-big">
-              {nChecked}/{config.items.length}
-            </div>
-            <div className="jk-score-sub">{t("chk.criteria")}</div>
-          </div>
-          <div className="jk-bottom-note">
-            {t("chk.note1")}
-            <br />
-            {t("chk.note2")}
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
-      {/* ══ VOICE WIDGET ══ */}
-      <div className={cn("jchk-voice-widget", voice.show && "show", voice.speaking && "speaking")}>
-        <div className="jk-vw-core" />
-        <div className="jk-vw-bars">
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
+      {/* ══ VOICE WIDGET — Jarvis speaking indicator ══
+          z-[60] + bottom-28 on mobile keeps it clear of (and above) the bottom
+          nav and the FAB; a floating pill, never hidden. */}
+      {voice.show && (
+        <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
+          <div className="tvchk-sheen relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3 shadow-2xl shadow-cyan-500/10">
+            <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
+            <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0 shadow-lg shadow-cyan-500/30">
+              {voice.speaking && (
+                <span className="absolute -inset-1 rounded-2xl bg-cyan-500/40 blur-md animate-pulse" />
+              )}
+              <Bot className="relative w-4 h-4 text-white" />
+            </span>
+            <div className="relative min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
+                  Jarvis
+                </span>
+                <span className={cn("tvchk-wave", voice.speaking && "on")}>
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </div>
+              <div className="text-xs text-slate-100 leading-snug line-clamp-2">{voice.text}</div>
+            </div>
+          </div>
         </div>
-        <div className="jk-vw-meta">
-          <div className="jk-vw-label">JARVIS</div>
-          <div className="jk-vw-text">{voice.text}</div>
-        </div>
-      </div>
+      )}
 
       {/* ══ COUNTDOWN OVERLAY ══ */}
       {countdownVal !== null && (
-        <div className="jchk-overlay">
-          <div className="jk-cd-box">
-            <div className="jk-cd-label">{t("chk.cdTitle")}</div>
-            <div className="jk-cd-sub">{t("chk.cdSub")}</div>
-            <div className="jk-cd-ring">
-              <svg viewBox="0 0 200 200">
-                <circle className="jk-cd-track" cx="100" cy="100" r="80" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in">
+            <div className="text-sm font-bold text-white">{t("chk.cdTitle")}</div>
+            <div className="text-xs text-slate-400 mb-5">{t("chk.cdSub")}</div>
+            <div className="relative w-40 h-40 mx-auto mb-5">
+              <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
                 <circle
-                  className="jk-cd-prog"
                   cx="100"
                   cy="100"
                   r="80"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeWidth="8"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="80"
+                  fill="none"
+                  stroke="#22d3ee"
+                  strokeWidth="8"
+                  strokeLinecap="round"
                   pathLength="100"
                   strokeDasharray="100"
                   strokeDashoffset={((config.countdown - countdownVal) / config.countdown) * 100}
+                  style={{
+                    transition: "stroke-dashoffset 1s linear",
+                    filter: "drop-shadow(0 0 8px rgba(34,211,238,0.5))",
+                  }}
                 />
-                <text className="jk-cd-num" x="100" y="122" textAnchor="middle">
-                  {countdownVal}
-                </text>
               </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-4xl font-extrabold text-white tabular-nums">
+                {countdownVal}
+              </div>
             </div>
-            <button className="jk-cd-cancel" onClick={cancelCountdown}>
+            <button
+              onClick={cancelCountdown}
+              className="w-full h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-semibold text-slate-300 hover:bg-white/[0.08] transition"
+            >
               {t("chk.cdCancel")}
             </button>
           </div>
@@ -2032,78 +1952,36 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
       {/* ══ EDGE LOCKED OVERLAY ══ */}
       {lockOverlay && (
-        <div className="jchk-overlay lock">
-          <div className="jk-lock-box">
-            <div className="jk-lock-reactor">
-              <svg viewBox="0 0 200 200">
-                <g className="jk-ring-ticks">
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="94"
-                    fill="none"
-                    stroke="rgba(34,211,238,.35)"
-                    strokeWidth="2"
-                    strokeDasharray="2 10"
-                  />
-                </g>
-                <g className="jk-ring-ticks2">
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="84"
-                    fill="none"
-                    stroke="rgba(34,211,238,.2)"
-                    strokeWidth="1"
-                    strokeDasharray="14 8"
-                  />
-                </g>
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="70"
-                  fill="none"
-                  stroke="#22d3ee"
-                  strokeWidth="4"
-                  style={{ filter: "drop-shadow(0 0 12px rgba(34,211,238,.7))" }}
-                />
-                <circle
-                  className="jk-core"
-                  cx="100"
-                  cy="100"
-                  r="48"
-                  fill="rgba(34,211,238,.12)"
-                  stroke="rgba(34,211,238,.5)"
-                  strokeWidth="1"
-                />
-                <text
-                  x="100"
-                  y="112"
-                  textAnchor="middle"
-                  style={{
-                    fontFamily: "var(--jk-num)",
-                    fontSize: 26,
-                    fontWeight: 600,
-                    fill: "#22d3ee",
-                  }}
-                >
-                  100
-                </text>
-              </svg>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-cyan-500/20">
+            <div className="relative w-24 h-24 mx-auto mb-4">
+              <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl" />
+              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/40">
+                <Lock className="w-9 h-9 text-white" />
+              </div>
             </div>
-            <div className="jk-lock-title">Edge Locked</div>
-            <div className="jk-lock-lines">
-              <div className="ok-line">✓ EDGE CONFIRMED</div>
-              <div className="ok-line">✓ DISCIPLINE VERIFIED</div>
-              <div>» WAITING FOR EXECUTION</div>
+            <div className="text-lg font-bold text-white mb-3">Edge Locked</div>
+            <div className="space-y-1 text-xs text-cyan-300 mb-4">
+              <div className="flex items-center justify-center gap-1.5">
+                <Check className="w-3.5 h-3.5" strokeWidth={3} /> EDGE CONFIRMED
+              </div>
+              <div className="flex items-center justify-center gap-1.5">
+                <Check className="w-3.5 h-3.5" strokeWidth={3} /> DISCIPLINE VERIFIED
+              </div>
             </div>
-            <div className="jk-lock-quote">{t("chk.lockQuote")}</div>
-            <div className="jk-lock-actions">
-              <button className="jk-lock-go" onClick={confirmLock}>
-                {t("chk.enterExec")}
-              </button>
-              <button className="jk-lock-back" onClick={closeLock}>
+            <div className="text-xs text-slate-400 italic mb-5">{t("chk.lockQuote")}</div>
+            <div className="flex gap-2.5">
+              <button
+                onClick={closeLock}
+                className="flex-1 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-semibold text-slate-300 hover:bg-white/[0.08] transition"
+              >
                 {t("chk.backStation")}
+              </button>
+              <button
+                onClick={confirmLock}
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold hover:from-cyan-400 hover:to-teal-400 transition"
+              >
+                {t("chk.enterExec")}
               </button>
             </div>
           </div>
@@ -2113,11 +1991,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       {showWizard && (
         <ChecklistWizard
           lang={lang}
-          templates={templates}
-          recommendedId={wizardDefaults.rec}
-          defaultToggles={wizardDefaults.toggles}
-          defaultTime={wizardDefaults.time}
-          personalItems={personalizedItems(onb, lang)}
+          defaultTime={wizardDefaultTime}
           onApply={applyWizard}
           onClose={() => {
             try {
@@ -2130,5 +2004,29 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         />
       )}
     </div>
+  );
+}
+
+/** A single lock-gate status chip (validated / pending). Presentation only. */
+function Gate({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+        ok
+          ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-200"
+          : "border-white/[0.08] bg-white/[0.03] text-slate-500",
+      )}
+    >
+      <span
+        className={cn(
+          "w-3.5 h-3.5 rounded-full border flex items-center justify-center",
+          ok ? "border-cyan-400 bg-cyan-400/20" : "border-white/15",
+        )}
+      >
+        {ok && <Check className="w-2.5 h-2.5 text-cyan-300" strokeWidth={3} />}
+      </span>
+      {label}
+    </span>
   );
 }

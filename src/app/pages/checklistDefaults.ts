@@ -7,7 +7,16 @@
 export interface ChkItem {
   title: string;
   desc: string;
+  /**
+   * Off-days it without deleting it. Optional so every previously stored
+   * config keeps working (undefined === enabled). Disabled items are hidden
+   * from the daily run and ignored by the gates.
+   */
+  enabled?: boolean;
 }
+
+/** An item counts for the daily run unless it was explicitly disabled. */
+export const isItemOn = (it: ChkItem): boolean => it.enabled !== false;
 export interface MotivOpt {
   text: string;
   ok: boolean; // true = process-driven motivation (the only valid one)
@@ -510,6 +519,227 @@ export function templatesFor(lang: string): ChkTemplate[] {
   ];
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Smart checklist generation.
+
+   Instead of picking a fixed template, assemble a SHORT, bespoke list
+   from the trader's onboarding profile — so it reads as written for
+   *them*, never as a generic template. Deterministic (zero AI, can't
+   fail), capped at 6 high-impact items, ordered prep → setup → risk →
+   mindset, deduped by title.
+   ════════════════════════════════════════════════════════════════ */
+
+/** Onboarding subset the generator needs (matches OnboardingData). */
+export interface ChkProfile {
+  style?: string | null; // scalping | daytrading | swing | position
+  experience?: string | null; // new | intermediate | seasoned | funded
+  assets?: string[] | null; // forex | futures | stocks | options | crypto
+  goal?: string | null; // consistency | prop_challenge | discipline | fulltime | side
+  pain?: string | null; // emotions | consistency | overtrading | risk | journaling
+  usesIct?: boolean | null;
+}
+
+type Loc = { fr: ChkItem; en: ChkItem };
+const pick = (l: Loc, fr: boolean) => (fr ? l.fr : l.en);
+
+/** Market → sensible session start (falls back to the user's current config). */
+function sessionTimeFor(primary?: string | null): { startTime: string; timeZone: string } {
+  if (primary === "forex") return { startTime: "08:00", timeZone: "Europe/London" };
+  if (primary === "futures" || primary === "stocks" || primary === "options")
+    return { startTime: "09:30", timeZone: "America/New_York" };
+  return { startTime: "09:30", timeZone: localTimeZone() };
+}
+
+export function generateChecklist(
+  p: ChkProfile,
+  lang: string,
+): { items: ChkItem[]; startTime: string; timeZone: string } {
+  const fr = lang === "fr";
+  const style = p.style ?? "";
+  const isSwing = style === "swing" || style === "position";
+  const isScalp = style === "scalping";
+  const funded = p.experience === "funded" || p.goal === "prop_challenge";
+  const primary = p.assets?.[0];
+
+  // Candidate blocks with a priority (higher = more important to keep).
+  const candidates: { prio: number; item: ChkItem }[] = [];
+  const add = (prio: number, loc: Loc) => candidates.push({ prio, item: pick(loc, fr) });
+
+  // ── Prep: session start (always, phrased by market) ──
+  add(100, {
+    fr: {
+      title: "Heure de session atteinte",
+      desc: "Zéro entrée avant ce signal — même si le prix bouge. C'est la règle n°1.",
+    },
+    en: {
+      title: "Session start time reached",
+      desc: "No entry before this signal — even if price is moving. This is rule #1.",
+    },
+  });
+
+  // ── Setup: the entry trigger (ICT-specific vs plan-specific) ──
+  if (p.usesIct) {
+    add(95, {
+      fr: {
+        title: "Draw on liquidity + setup ICT confirmé",
+        desc: "DoL nette en HTF, puis CISD/FVG/MSS alignés. Si tu hésites sur la qualité → pas de trade.",
+      },
+      en: {
+        title: "Draw on liquidity + ICT setup confirmed",
+        desc: "Clear HTF DoL, then CISD/FVG/MSS aligned. If you hesitate on quality → no trade.",
+      },
+    });
+  } else {
+    add(95, {
+      fr: {
+        title: "Mon setup exact est présent",
+        desc: "Tous les critères de MON plan sont réunis, sans exception. Un critère manquant = pas de trade.",
+      },
+      en: {
+        title: "My exact setup is present",
+        desc: "Every criterion of MY plan is met, no exceptions. One missing criterion = no trade.",
+      },
+    });
+  }
+
+  // ── Swing/position: HTF bias + news + alert (they don't sit at the screen) ──
+  if (isSwing) {
+    add(80, {
+      fr: {
+        title: "Biais HTF confirmé (D/W)",
+        desc: "Daily et weekly pointent dans la même direction. Prix dans ma zone marquée à l'avance.",
+      },
+      en: {
+        title: "HTF bias confirmed (D/W)",
+        desc: "Daily and weekly agree. Price inside a zone I marked in advance, not after the fact.",
+      },
+    });
+    add(60, {
+      fr: {
+        title: "Pas de news majeure sous 24h",
+        desc: "FOMC, NFP, CPI : calendrier vérifié. Alerte posée, je peux fermer le chart.",
+      },
+      en: {
+        title: "No major news within 24h",
+        desc: "FOMC, NFP, CPI: calendar checked. Alert set — I can close the chart.",
+      },
+    });
+  }
+
+  // ── Scalping: pre-defined kill-time / no chasing ──
+  if (isScalp) {
+    add(58, {
+      fr: {
+        title: "Fenêtre d'exécution respectée",
+        desc: "Je ne trade que ma plage horaire à edge. Hors fenêtre = zéro clic.",
+      },
+      en: {
+        title: "Execution window respected",
+        desc: "I only trade my edge time-window. Outside it = zero clicks.",
+      },
+    });
+  }
+
+  // ── Risk: always, sharpened by funded / risk pain ──
+  if (funded || p.pain === "risk") {
+    add(90, {
+      fr: {
+        title: "Risque défini AVANT l'entrée",
+        desc: "SL sur la structure d'abord, taille calculée ensuite. Drawdown journalier vérifié.",
+      },
+      en: {
+        title: "Risk defined BEFORE the entry",
+        desc: "SL on structure first, size computed after. Daily drawdown checked.",
+      },
+    });
+  } else {
+    add(75, {
+      fr: {
+        title: "SL sur structure, taille calculée",
+        desc: "Le risque est fixé avant l'entrée, jamais après. Le nombre de contrats suit le SL.",
+      },
+      en: {
+        title: "SL on structure, size computed",
+        desc: "Risk is set before the entry, never after. Contract size follows the SL.",
+      },
+    });
+  }
+
+  // ── Psychology block, keyed to the trader's stated weakness ──
+  if (p.pain === "overtrading" || p.goal === "discipline") {
+    add(85, {
+      fr: {
+        title: "Max 1 trade — pas de loss déjà prise",
+        desc: "Une perte le matin = chart fermé, journée terminée. Zéro trade est une position gagnante.",
+      },
+      en: {
+        title: "Max 1 trade — no loss taken yet",
+        desc: "A morning loss = chart closed, day over. Zero trades is a winning position.",
+      },
+    });
+  }
+  if (p.pain === "emotions") {
+    add(82, {
+      fr: {
+        title: "Je ne trade pas pour me prouver quelque chose",
+        desc: "Si l'envie de trader est plus forte que le signal → c'est une alarme, pas une entrée.",
+      },
+      en: {
+        title: "I'm not trading to prove something",
+        desc: "If the urge to trade is stronger than the signal → it's an alarm, not an entry.",
+      },
+    });
+  }
+  if (p.pain === "consistency" || p.goal === "consistency") {
+    add(70, {
+      fr: {
+        title: "Je suis le plan, pas l'improvisation",
+        desc: "Aujourd'hui = une copie propre de mon process. Aucune décision inventée en direct.",
+      },
+      en: {
+        title: "I follow the plan, not improvisation",
+        desc: "Today = a clean copy of my process. No decisions invented on the fly.",
+      },
+    });
+  }
+  if (p.pain === "journaling") {
+    add(55, {
+      fr: {
+        title: "Trade précédent journalisé",
+        desc: "Le dernier trade est loggé (raison, état, erreur) avant d'en envisager un nouveau.",
+      },
+      en: {
+        title: "Previous trade journaled",
+        desc: "The last trade is logged (reason, state, mistake) before considering a new one.",
+      },
+    });
+  }
+
+  // ── Mindset close: always the last line ──
+  add(50, {
+    fr: {
+      title: "Calme, lucide, prêt à ne rien faire",
+      desc: "Mon edge est prouvé. Mon seul travail aujourd'hui est de l'attendre sans forcer.",
+    },
+    en: {
+      title: "Calm, lucid, ready to do nothing",
+      desc: "My edge is proven. My only job today is to wait for it without forcing.",
+    },
+  });
+
+  // Keep the 6 highest-priority, de-duplicated by title, in a stable
+  // prep → setup → risk → mindset reading order (priority already encodes it).
+  const seen = new Set<string>();
+  const items = candidates
+    .sort((a, b) => b.prio - a.prio)
+    .filter(({ item }) => (seen.has(item.title) ? false : seen.add(item.title)))
+    .slice(0, 6)
+    .sort((a, b) => b.prio - a.prio)
+    .map(({ item }) => item);
+
+  return { items, ...sessionTimeFor(primary) };
+}
+
 /* ══ Patience ranks ══ */
 export function ranksFor(lang: string): { ranks: [number, string][]; descs: string[] } {
   if (lang === "fr") {
@@ -560,6 +790,8 @@ export function coachPromptsFor(lang: string) {
         "Donne-moi un résumé de mes 3 erreurs les plus récurrentes dans mes trades et un plan d'action pour chacune.",
       interference:
         "Ma checklist pre-market vient de détecter une motivation émotionnelle (pas process). Aide-moi à me recentrer avant de faire une bêtise.",
+      checklistReview:
+        "Je fais ma checklist pre-market. Passe en revue mon état d'esprit et ma préparation du jour, et dis-moi en 3 points si je suis prêt à trader ou si je dois attendre.",
     };
   }
   return {
@@ -571,5 +803,7 @@ export function coachPromptsFor(lang: string) {
       "Give me a summary of my 3 most recurring mistakes in my trades and an action plan for each.",
     interference:
       "My pre-market checklist just flagged an emotional (non-process) motivation. Help me re-center before I do something stupid.",
+    checklistReview:
+      "I'm doing my pre-market checklist. Review my mindset and today's preparation, and tell me in 3 points whether I'm ready to trade or should wait.",
   };
 }

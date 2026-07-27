@@ -14,13 +14,17 @@
  */
 
 @theme inline {
+  /* Dense "performance terminal" radius scale (Linear/TradingView direction).
+     rounded-xl/2xl/3xl dominate the app and resolve here, so tightening these
+     three retints every card/hero/button in one place — no component edits.
+     Kept monotonic; sm/md nearly unchanged (small controls stay crisp). */
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
-  --radius-2xl: 18px;
-  --radius-3xl: 22px;
-  --radius-4xl: 26px;
+  --radius-lg: 9px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+  --radius-4xl: 20px;
 }
 
 @layer base {
@@ -617,7 +621,7 @@ input[type="number"] {
 }
 @media (hover: hover) {
   .card-premium:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     /* No white ring — a soft, theme-tinted glow + a whisper of accent on the
        top edge reads as backlit glass, not a harsh outline. */
     box-shadow:

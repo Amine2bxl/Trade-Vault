@@ -11,8 +11,13 @@ import {
   Loader2,
   Compass,
   Target,
+  Layers,
+  GraduationCap,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { cn } from "../utils/cn";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useT } from "../i18n/LanguageContext";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, type OnboardingData } from "../store";
@@ -22,7 +27,7 @@ import logoSrc from "@/assets/tradevault-logo.png";
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;
 
-type StepKey = "language" | "welcome" | "profile" | "start";
+type StepKey = "language" | "welcome" | "profile" | "prefs" | "notify" | "start";
 
 const EMPTY: OnboardingData = {
   goal: null,
@@ -38,11 +43,12 @@ const EMPTY: OnboardingData = {
 };
 
 /**
- * Minimal onboarding (aha moment < 2 min): language, welcome, then ONE
- * profiling screen with the 3 questions that drive the adaptive checklist
- * (style · biggest weakness · realistic monthly target), then straight to
- * filling the journal — CSV import first, demo trades as fallback. Every
- * profile question is skippable; safe defaults keep everything working.
+ * Onboarding (aha moment < 3 min): language, welcome, then two profiling
+ * screens — "profile" (style · biggest weakness · monthly target) and "prefs"
+ * (goal · experience · markets · ICT) — then straight to filling the journal
+ * (CSV import first, demo trades as fallback). Every profile question is
+ * skippable; safe defaults keep everything working. All collected fields feed
+ * the adaptive pre-market checklist and seed the AI coach's long-term memory.
  */
 export default function Onboarding({
   userId,
@@ -52,15 +58,23 @@ export default function Onboarding({
   onDone: (action?: OnboardingAction) => void;
 }) {
   const { lang, setLang } = useT();
+  const fr = lang === "fr";
   const c = oc(lang);
+  const { subscribe } = usePushNotifications();
   const [idx, setIdx] = useState(0);
   const [saving, setSaving] = useState<OnboardingAction | "fresh" | null>(null);
-  // The 3 profiling answers (all optional — skipping keeps safe defaults).
+  const [notifBusy, setNotifBusy] = useState(false);
+  // Profiling answers (all optional — skipping keeps safe defaults). These feed
+  // the adaptive pre-market checklist and seed the AI coach's long-term memory.
   const [style, setStyle] = useState<string | null>(null);
   const [pain, setPain] = useState<string | null>(null);
   const [target, setTarget] = useState("");
+  const [goal, setGoal] = useState<string | null>(null);
+  const [experience, setExperience] = useState<string | null>(null);
+  const [assets, setAssets] = useState<string[]>([]);
+  const [usesIct, setUsesIct] = useState(false);
 
-  const steps: StepKey[] = ["language", "welcome", "profile", "start"];
+  const steps: StepKey[] = ["language", "welcome", "profile", "prefs", "notify", "start"];
   const step = steps[Math.min(idx, steps.length - 1)];
   const progress = (idx + 1) / steps.length;
 
@@ -74,15 +88,34 @@ export default function Onboarding({
       const parsed = parseFloat(target.replace(",", "."));
       const monthlyTarget = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 100) : null;
       try {
-        await saveOnboarding(userId, { ...EMPTY, style, pain, monthlyTarget }, { skipped: false });
+        await saveOnboarding(
+          userId,
+          { ...EMPTY, style, pain, monthlyTarget, goal, experience, assets, usesIct },
+          { skipped: false },
+        );
       } catch (e) {
         console.error("Failed to save onboarding", e);
       } finally {
         onDone(action);
       }
     },
-    [saving, userId, onDone, style, pain, target],
+    [saving, userId, onDone, style, pain, target, goal, experience, assets, usesIct],
   );
+
+  // Ask for notification permission here (once, in the flow) instead of nagging
+  // with a dashboard banner later. Never blocks: any outcome just advances.
+  const enableNotify = useCallback(async () => {
+    if (notifBusy) return;
+    setNotifBusy(true);
+    try {
+      await subscribe();
+    } catch {
+      /* denied / unsupported — the trader can still enable it in Settings */
+    } finally {
+      setNotifBusy(false);
+      next();
+    }
+  }, [notifBusy, subscribe, next]);
 
   const langs = Object.entries(LANG_NAMES) as [Lang, string][];
 
@@ -325,6 +358,208 @@ export default function Onboarding({
               >
                 {c.skip}
               </button>
+            </div>
+          )}
+
+          {step === "prefs" && (
+            <div>
+              <div className="flex justify-center mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-cyan-300" />
+                </div>
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-1.5">
+                {c.goalTitle}
+              </h2>
+              <p className="text-sm text-slate-400 text-center mb-4">{c.goalSub}</p>
+              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["consistency", c.gCons, c.gConsD],
+                    ["prop_challenge", c.gProp, c.gPropD],
+                    ["discipline", c.gDisc, c.gDiscD],
+                    ["fulltime", c.gFull, c.gFullD],
+                    ["side", c.gSide, c.gSideD],
+                  ] as const
+                ).map(([id, label, desc]) => (
+                  <button
+                    key={id}
+                    onClick={() => setGoal(goal === id ? null : id)}
+                    className={cn(
+                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
+                      goal === id
+                        ? "bg-cyan-500/15 border-cyan-400/50"
+                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "text-[13px] font-semibold",
+                        goal === id ? "text-white" : "text-slate-300",
+                      )}
+                    >
+                      {label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 justify-center mb-1">
+                <GraduationCap className="w-4 h-4 text-cyan-300" />
+                <h2 className="text-base font-bold text-white text-center">{c.expTitle}</h2>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.expSub}</p>
+              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["new", c.eNew, c.eNewD],
+                    ["intermediate", c.eInt, c.eIntD],
+                    ["seasoned", c.eSea, c.eSeaD],
+                    ["funded", c.eFund, c.eFundD],
+                  ] as const
+                ).map(([id, label, desc]) => (
+                  <button
+                    key={id}
+                    onClick={() => setExperience(experience === id ? null : id)}
+                    className={cn(
+                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
+                      experience === id
+                        ? "bg-cyan-500/15 border-cyan-400/50"
+                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "text-[13px] font-semibold",
+                        experience === id ? "text-white" : "text-slate-300",
+                      )}
+                    >
+                      {label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 justify-center mb-1">
+                <Layers className="w-4 h-4 text-cyan-300" />
+                <h2 className="text-base font-bold text-white text-center">{c.assetsTitle}</h2>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.assetsSub}</p>
+              <div className="flex flex-wrap justify-center gap-2 mb-6 onb-in">
+                {(
+                  [
+                    ["futures", c.aFutures],
+                    ["forex", c.aForex],
+                    ["stocks", c.aStocks],
+                    ["options", c.aOptions],
+                    ["crypto", c.aCrypto],
+                  ] as const
+                ).map(([id, label]) => {
+                  const on = assets.includes(id);
+                  return (
+                    <button
+                      key={id}
+                      onClick={() =>
+                        setAssets((a) => (on ? a.filter((x) => x !== id) : [...a, id]))
+                      }
+                      className={cn(
+                        "onb-card rounded-xl px-3.5 py-2 border text-[13px] font-semibold",
+                        on
+                          ? "bg-cyan-500/15 border-cyan-400/50 text-white"
+                          : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2 justify-center mb-1">
+                <Compass className="w-4 h-4 text-cyan-300" />
+                <h2 className="text-base font-bold text-white text-center">{c.ictTitle}</h2>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.ictSub}</p>
+              <div className="grid grid-cols-2 gap-2 max-w-[280px] mx-auto mb-7 onb-in">
+                {(
+                  [
+                    [true, c.ictYes],
+                    [false, c.ictNo],
+                  ] as const
+                ).map(([val, label]) => (
+                  <button
+                    key={String(val)}
+                    onClick={() => setUsesIct(val)}
+                    className={cn(
+                      "onb-card rounded-xl px-3 py-2.5 border text-[13px] font-semibold text-center",
+                      usesIct === val
+                        ? "bg-cyan-500/15 border-cyan-400/50 text-white"
+                        : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={next}
+                className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
+              >
+                {c.cont}
+              </button>
+              <button
+                onClick={next}
+                className="w-full mt-2.5 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {c.skip}
+              </button>
+            </div>
+          )}
+
+          {step === "notify" && (
+            <div className="text-center">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/25 mb-4">
+                <Bell className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-1.5">
+                {fr
+                  ? "Reste discipliné, même loin de l'écran"
+                  : "Stay disciplined, even away from the screen"}
+              </h2>
+              <p className="text-sm text-slate-400 mb-6">
+                {fr
+                  ? "Jarvis t'alerte quand tu enfreins une de tes règles ou qu'une session démarre. Rare et pertinent — jamais de spam."
+                  : "Jarvis alerts you when you break a rule or a session starts. Rare and relevant — never spammy."}
+              </p>
+              <div className="grid gap-3 onb-in">
+                <button
+                  onClick={enableNotify}
+                  disabled={notifBusy}
+                  className="onb-card flex items-center justify-center gap-2 rounded-2xl p-4 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60 text-sm font-bold text-white"
+                >
+                  {notifBusy ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Bell className="w-5 h-5 text-cyan-300" />
+                  )}
+                  {fr ? "Activer les notifications" : "Enable notifications"}
+                </button>
+                <button
+                  onClick={next}
+                  disabled={notifBusy}
+                  className="flex items-center justify-center gap-1.5 w-full py-2.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  <BellOff className="w-3.5 h-3.5" /> {fr ? "Plus tard" : "Maybe later"}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-600 mt-3">
+                {fr
+                  ? "Réglable à tout moment dans les Réglages."
+                  : "Adjustable anytime in Settings."}
+              </p>
             </div>
           )}
 

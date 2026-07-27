@@ -26,8 +26,9 @@ test("coach prompt grounds on the trader's real data (stats, trades, mistakes, g
 
   const system = messages[0];
   expect(system.role).toBe("system");
-  // Persona + the non-negotiable "never invent" contract are both present.
-  expect(system.content).toContain("performance coach");
+  // Persona (Jarvis, the single AI) + the non-negotiable "never invent"
+  // contract are both present.
+  expect(system.content).toContain("Jarvis");
   expect(system.content).toContain("STRICT DATA RULE");
 
   const grounded = messages.map((m) => m.content).join("\n");

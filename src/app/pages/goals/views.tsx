@@ -1,5 +1,5 @@
 /* Sous-vues de la page Goals — extrait de Goals.tsx (Phase D), aucun changement de comportement. */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Target,
   Wallet,
@@ -23,6 +23,7 @@ import {
   type GoalKind,
   type GoalPlan,
   type MeasureCtx,
+  type PlanPersonalization,
   currentGoalValue,
   currentMonthIndex,
   goalDirection,
@@ -383,6 +384,16 @@ export function PlanView({
   const cur = currentMonthIndex(plan);
   const [openMonth, setOpenMonth] = useState<number>(cur);
 
+  // The plan's shared monthly task attacks the trader's OWN most-costly
+  // recurring mistake, read from real logged data — no generic filler.
+  const personal = useMemo<PlanPersonalization>(() => {
+    const worst = Object.entries(ctx.stats.mistakeStats)
+      .map(([name, v]) => ({ name, totalPnl: v.totalPnl, count: v.count }))
+      .filter((m) => m.totalPnl < 0)
+      .sort((a, b) => a.totalPnl - b.totalPnl)[0];
+    return { topMistake: worst };
+  }, [ctx.stats.mistakeStats]);
+
   const monthLabel = (ymStr: string) => {
     const [y, m] = ymStr.split("-").map(Number);
     return new Intl.DateTimeFormat(fr ? "fr-FR" : "en-US", {
@@ -486,7 +497,7 @@ export function PlanView({
           const past = i < cur;
           const open = openMonth === i && !locked;
           const taskCompletion = monthTaskCompletion(plan, i);
-          const tasks = tasksForMonth(plan, i, lang);
+          const tasks = tasksForMonth(plan, i, lang, personal);
           return (
             <div
               key={i}

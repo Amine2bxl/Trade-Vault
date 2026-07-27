@@ -7,6 +7,7 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
+import { loadOnboarding, type OnboardingData } from "../store";
 import MarkdownAnswer from "./MarkdownAnswer";
 
 interface AiAssistantProps {
@@ -89,6 +90,27 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
     void seedProfileMemory(user.id);
   }, [open, user?.id]);
 
+  // The onboarding answers travel with EVERY coach call, so the coaching keeps
+  // naming this trader's own weakness, goal and style instead of sounding
+  // generic. Best-effort: a failed load just means a slightly less personal
+  // answer, never an error.
+  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
+  useEffect(() => {
+    if (!user?.id) {
+      setOnboarding(null);
+      return;
+    }
+    let active = true;
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setOnboarding(o);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
   const ask = useCallback(
     async (q: string) => {
       const query = q.trim();
@@ -102,27 +124,38 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       setMessages((prev) => [...prev, { role: "user", text: query }]);
       setQuestion("");
       setLoading(true);
+      const payload = buildCoachV1Payload({
+        trades,
+        conversation: priorTurns,
+        language: lang,
+        onboarding,
+      });
       try {
-        const payload = buildCoachV1Payload({
-          trades,
-          conversation: priorTurns,
-          language: lang,
-        });
-        const res = await askCoach({ data: { question: query, ...payload } });
+        let res;
+        try {
+          res = await askCoach({ data: { question: query, ...payload } });
+        } catch (firstErr) {
+          // One automatic retry after a short backoff — most coach failures
+          // are transient (cold serverless function, network blip, brief 5xx).
+          // The trader never sees the first stumble.
+          console.warn("[coach] first attempt failed, retrying", firstErr);
+          await new Promise((r) => setTimeout(r, 1500));
+          res = await askCoach({ data: { question: query, ...payload } });
+        }
         setMessages((prev) => [
           ...prev,
           { role: "assistant", text: res.answer || t("ai.noResponse") },
         ]);
-      } catch (e: any) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "error", text: e?.message || t("ai.genericError") },
-        ]);
+      } catch (e) {
+        // Never surface raw provider/Supabase/rate-limit text to the trader —
+        // it's noise at best and leaks internals at worst. One calm message.
+        console.error("[coach] request failed after retry", e);
+        setMessages((prev) => [...prev, { role: "error", text: t("ai.genericError") }]);
       } finally {
         setLoading(false);
       }
     },
-    [loading, messages, trades, lang, t, user?.id],
+    [loading, messages, trades, lang, t, user?.id, onboarding],
   );
 
   // Other pages (e.g. the pre-market Checklist) can open the coach with a

@@ -486,9 +486,94 @@ export interface PlanTask {
   desc: string;
 }
 
+/**
+ * Real-data signal that makes the plan the trader's OWN, not a template.
+ * `topMistake` is the recurring mistake bleeding the most money, read straight
+ * from the deterministic engine (stats.mistakeStats). Optional: with no logged
+ * mistakes the plan falls back to the generic wellness task.
+ */
+export interface PlanPersonalization {
+  topMistake?: { name: string; totalPnl: number; count: number };
+}
+
+/**
+ * A progressive 6-step campaign against the trader's #1 recurring mistake —
+ * one concrete action per month, escalating from awareness to proof. Cites the
+ * real cost so the task is unmistakably about THIS trader's data.
+ * Occupies the shared task slot (same key), so it never changes the task count.
+ */
+function leakTask(
+  i: number,
+  fr: boolean,
+  m: { name: string; totalPnl: number; count: number },
+): { title: string; desc: string } {
+  const cost = Math.round(Math.abs(m.totalPnl));
+  const stagesFr: [string, string][] = [
+    [
+      `Cible ta fuite n°1 : ${m.name}`,
+      `« ${m.name} » t'a coûté environ ${cost} $ sur ${m.count} trades. Ce mois-ci, marque chaque occurrence dans ton journal — on mesure avant de corriger.`,
+    ],
+    [
+      `Écris la règle anti « ${m.name} »`,
+      `Formule UNE règle écrite qui rend « ${m.name} » impossible, colle-la à l'écran et applique-la à 100 % des trades du mois.`,
+    ],
+    [
+      `Ajoute un garde-fou à l'entrée`,
+      `Transforme ta règle en friction : une case de checklist bloquante qui t'empêche d'entrer quand « ${m.name} » se profile.`,
+    ],
+    [
+      `Coupe la récidive à chaud`,
+      `Dès que « ${m.name} » réapparaît : demi-taille et 10 min de pause. Note le déclencheur émotionnel à chaque fois.`,
+    ],
+    [
+      `Audit hebdo de « ${m.name} »`,
+      `Chaque dimanche, compte les récidives de la semaine. L'objectif : une tendance strictement décroissante mois après mois.`,
+    ],
+    [
+      `Prouve que la fuite est fermée`,
+      `Vise zéro « ${m.name} » ce mois-ci. Compare le coût actuel aux ${cost} $ de départ : c'est ta preuve chiffrée de progrès.`,
+    ],
+  ];
+  const stagesEn: [string, string][] = [
+    [
+      `Target your #1 leak: ${m.name}`,
+      `"${m.name}" cost you about $${cost} across ${m.count} trades. This month, flag every occurrence in your journal — measure before you fix.`,
+    ],
+    [
+      `Write the anti-"${m.name}" rule`,
+      `Draft ONE written rule that makes "${m.name}" impossible, stick it on your screen, and apply it on 100% of this month's trades.`,
+    ],
+    [
+      `Add a guardrail at entry`,
+      `Turn the rule into friction: a blocking checklist item that stops you entering when "${m.name}" is forming.`,
+    ],
+    [
+      `Cut the relapse in the moment`,
+      `The instant "${m.name}" reappears: half size and a 10-minute break. Log the emotional trigger every time.`,
+    ],
+    [
+      `Weekly "${m.name}" audit`,
+      `Every Sunday, count the week's relapses. The target: a strictly decreasing trend month over month.`,
+    ],
+    [
+      `Prove the leak is closed`,
+      `Aim for zero "${m.name}" this month. Compare today's cost to the starting $${cost}: that's your measurable proof of progress.`,
+    ],
+  ];
+  const [title, desc] = (fr ? stagesFr : stagesEn)[i % 6];
+  return { title, desc };
+}
+
 /** Concrete tasks for month i: 2 per goal (rotated so each month differs)
- *  + 1 shared generic task. Custom goals get a self-referential task. */
-export function tasksForMonth(plan: GoalPlan, i: number, lang: string): PlanTask[] {
+ *  + 1 shared task. Custom goals get a self-referential task. When a dominant
+ *  recurring mistake is supplied, the shared slot becomes a data-grounded
+ *  campaign against it (same key, so completion math is unaffected). */
+export function tasksForMonth(
+  plan: GoalPlan,
+  i: number,
+  lang: string,
+  personal?: PlanPersonalization,
+): PlanTask[] {
   const fr = lang === "fr";
   const out: PlanTask[] = [];
   for (const g of plan.goals) {
@@ -511,9 +596,15 @@ export function tasksForMonth(plan: GoalPlan, i: number, lang: string): PlanTask
       out.push({ key: `${i}:${g.id}:${slot}`, goalId: g.id, title, desc });
     });
   }
-  const g = GENERIC[i % GENERIC.length];
-  const [title, desc] = fr ? g.fr : g.en;
-  out.push({ key: `${i}:generic:0`, goalId: null, title, desc });
+  // Shared slot: the trader's own #1 leak when we have the data, else generic.
+  if (personal?.topMistake && personal.topMistake.totalPnl < 0) {
+    const { title, desc } = leakTask(i, fr, personal.topMistake);
+    out.push({ key: `${i}:generic:0`, goalId: null, title, desc });
+  } else {
+    const g = GENERIC[i % GENERIC.length];
+    const [title, desc] = fr ? g.fr : g.en;
+    out.push({ key: `${i}:generic:0`, goalId: null, title, desc });
+  }
   return out;
 }
 

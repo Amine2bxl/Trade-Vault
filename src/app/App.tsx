@@ -12,7 +12,7 @@ const Checklist = lazy(() => import("./pages/Checklist"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Mistakes = lazy(() => import("./pages/Mistakes"));
-const Insights = lazy(() => import("./pages/Insights"));
+const Jarvis = lazy(() => import("./pages/Jarvis"));
 const Profile = lazy(() => import("./pages/Profile"));
 const MissedOpportunities = lazy(() => import("./pages/MissedOpportunities"));
 const EconomicNews = lazy(() => import("./pages/EconomicNews"));
@@ -53,8 +53,8 @@ import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import Landing from "./pages/Landing";
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
-import PushOnboardingBanner from "./components/PushOnboardingBanner";
 import { SkeletonForPage } from "./components/Skeleton";
+import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
@@ -380,56 +380,58 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
-        {/* One-click push opt-in — dashboard only, so it never nags mid-flow */}
-        {page === "dashboard" && user && <PushOnboardingBanner userId={user.id} />}
+        {/* Push opt-in now lives in onboarding (and Settings), not as a
+            dashboard banner. */}
         <div key={page} className="animate-fade-in">
           {/* Contextual skeleton: the loading frame mimics the destination
               page's real layout (chart grid, trade list, calendar…). */}
-          <Suspense fallback={<SkeletonForPage page={page} />}>
-            {page === "dashboard" && (
-              <Dashboard
-                trades={trades}
-                onAddTrade={handleAdd}
-                tradesLoading={tradesLoading}
-                onOpenChecklist={() => setPage("checklist")}
-              />
-            )}
-            {page === "journal" && (
-              <Journal
-                trades={trades}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onDeleteAll={handleDeleteAll}
-                onAdd={handleAdd}
-                onOpenMissed={() => setPage("missed")}
-              />
-            )}
-            {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
-            {page === "calendar" && <CalendarPage trades={trades} />}
-            {page === "analytics" && <Analytics trades={trades} />}
-            {page === "mistakes" && <Mistakes trades={trades} />}
-            {page === "missed" && <MissedOpportunities />}
-            {page === "insights" && <Insights trades={trades} />}
-            {page === "news" && <EconomicNews />}
-            {page === "seasonality" && (
-              <Seasonality trades={trades} tradesLoading={tradesLoading} />
-            )}
-            {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
-            {page === "settings" && (
-              <Settings
-                trades={trades}
-                onDeleteAll={handleDeleteAll}
-                onOpenImport={() => setImportOpen(true)}
-                onOpenReports={() => setPage("reports")}
-              />
-            )}
-            {page === "reports" && <Reports />}
-            {page === "goals" && <Goals trades={trades} />}
-            {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-            {page === "appearance" && <Appearance />}
-            {page === "subscription" && <Subscription />}
-            {page === "profile" && <Profile trades={trades} />}
-          </Suspense>
+          <PageErrorBoundary resetKey={page}>
+            <Suspense fallback={<SkeletonForPage page={page} />}>
+              {page === "dashboard" && (
+                <Dashboard
+                  trades={trades}
+                  onAddTrade={handleAdd}
+                  tradesLoading={tradesLoading}
+                  onOpenChecklist={() => setPage("checklist")}
+                />
+              )}
+              {page === "journal" && (
+                <Journal
+                  trades={trades}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onDeleteAll={handleDeleteAll}
+                  onAdd={handleAdd}
+                  onOpenMissed={() => setPage("missed")}
+                />
+              )}
+              {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
+              {page === "calendar" && <CalendarPage trades={trades} />}
+              {page === "analytics" && <Analytics trades={trades} />}
+              {page === "mistakes" && <Mistakes trades={trades} />}
+              {page === "missed" && <MissedOpportunities />}
+              {page === "insights" && <Jarvis trades={trades} />}
+              {page === "news" && <EconomicNews />}
+              {page === "seasonality" && (
+                <Seasonality trades={trades} tradesLoading={tradesLoading} />
+              )}
+              {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
+              {page === "settings" && (
+                <Settings
+                  trades={trades}
+                  onDeleteAll={handleDeleteAll}
+                  onOpenImport={() => setImportOpen(true)}
+                  onOpenReports={() => setPage("reports")}
+                />
+              )}
+              {page === "reports" && <Reports />}
+              {page === "goals" && <Goals trades={trades} />}
+              {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+              {page === "appearance" && <Appearance />}
+              {page === "subscription" && <Subscription />}
+              {page === "profile" && <Profile trades={trades} />}
+            </Suspense>
+          </PageErrorBoundary>
         </div>
       </main>
       {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}

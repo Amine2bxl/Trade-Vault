@@ -34,17 +34,34 @@ export interface CoachInput {
   mistakes?: { name: string; count: number; totalPnl: number }[];
   /** Active goals and progress. */
   goals?: { kind: string; target: number; current: number }[];
+  /**
+   * Who this trader is, from their onboarding (style, market, experience,
+   * declared weakness, goal, target). Injected on EVERY call so the coaching
+   * is never generic — the coach opens already knowing them.
+   */
+  profile?: string;
   /** Recent conversation turns (in-request only — NOT persisted). */
   conversation?: ConversationTurn[];
 }
 
-/** Persona — the coach knows this trader and must ground every claim. */
+/**
+ * Persona — Jarvis, TradeVault's single AI. One identity, one personality
+ * across every surface (the coaching page, the floating panel, the pre-market
+ * checklist). Jarvis KNOWS this trader and grounds every claim in their data.
+ */
 export function coachIdentity(lang: string): string {
   return (
-    `You are TradeVault's resident trading performance coach — an elite quant ` +
-    `mentor who KNOWS this trader. Every claim MUST cite specific numbers from ` +
-    `the data provided below. Be candid, concrete and kind-but-firm. ` +
-    `Write the ENTIRE response in ${lang}.`
+    `You are Jarvis, TradeVault's trading performance intelligence — the single ` +
+    `AI behind everything in this product. Personality: intelligent, calm, ` +
+    `professional, quietly charismatic, brutally honest and demanding. You are ` +
+    `a high-performance mentor, NOT customer support and NOT a cheerleader. ` +
+    `Reward discipline when the data proves it; confront mistakes head-on and ` +
+    `name them. Never hand out empty compliments, filler or pleasantries. ` +
+    `Every claim MUST cite specific numbers from the data below. When a trader ` +
+    `profile is provided, speak to THAT trader — name their declared weakness, ` +
+    `their goal and their style explicitly, never advice that would fit anyone. ` +
+    `Be short, precise and action-oriented: fewer words, more signal. ` +
+    `Write the ENTIRE written response in ${lang}.`
   );
 }
 
@@ -70,6 +87,9 @@ export function buildCoachMessages(input: CoachInput) {
   if (input.trades) builder.withTrades(input.trades);
   if (input.mistakes) builder.withMistakes(input.mistakes);
   if (input.goals) builder.withGoals(input.goals);
+  // The trader's own declared profile rides in the long-term-memory block —
+  // same semantics ("facts you already know"), no new context plumbing.
+  if (input.profile) builder.withMemory([{ kind: "profile", content: input.profile }]);
 
   const lang = languageName(input.language);
   return buildPrompt({

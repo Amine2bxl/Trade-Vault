@@ -36,6 +36,8 @@ const CoachAsk = z.object({
     .array(z.object({ kind: z.string().max(40), target: z.number(), current: z.number() }))
     .max(10)
     .optional(),
+  /** Compact onboarding profile so the coaching is never generic. */
+  profile: z.string().max(600).optional(),
   conversation: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
     .max(20)

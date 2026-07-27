@@ -1,29 +1,8 @@
 import { useEffect, useState } from "react";
 import { Command } from "cmdk";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Calendar,
-  BarChart3,
-  AlertTriangle,
-  ClipboardCheck,
-  Target,
-  Sparkles,
-  User,
-  Plus,
-  Download,
-  Search,
-  Upload,
-  Newspaper,
-  CalendarRange,
-  Calculator,
-  Settings as SettingsIcon,
-  Map,
-  FileText,
-  Palette,
-  CreditCard,
-} from "lucide-react";
+import { Plus, Download, Search, Upload } from "lucide-react";
 import { Trade, Page } from "../types";
+import { NAV_ITEMS } from "../navigation";
 import { formatPnl, formatShortDate } from "../utils/tradeCalcs";
 import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
@@ -61,39 +40,6 @@ export default function CommandPalette({
     onClose();
     fn();
   };
-
-  const NAV: { page: Page; label: string; icon: React.ReactNode }[] = [
-    { page: "dashboard", label: t("nav.dashboard"), icon: <LayoutDashboard className="w-4 h-4" /> },
-    { page: "journal", label: t("nav.journal"), icon: <BookOpen className="w-4 h-4" /> },
-    {
-      page: "checklist",
-      label: t("nav.checklist"),
-      icon: <ClipboardCheck className="w-4 h-4" />,
-    },
-    { page: "calendar", label: t("nav.calendar"), icon: <Calendar className="w-4 h-4" /> },
-    { page: "analytics", label: t("nav.analytics"), icon: <BarChart3 className="w-4 h-4" /> },
-    { page: "mistakes", label: t("nav.mistakes"), icon: <AlertTriangle className="w-4 h-4" /> },
-    { page: "missed", label: t("nav.missed"), icon: <Target className="w-4 h-4" /> },
-    { page: "insights", label: t("nav.insights"), icon: <Sparkles className="w-4 h-4" /> },
-    { page: "calculator", label: t("nav.calculator"), icon: <Calculator className="w-4 h-4" /> },
-    { page: "tradingplan", label: t("nav.tradingPlan"), icon: <Map className="w-4 h-4" /> },
-    { page: "goals", label: t("nav.goals"), icon: <Target className="w-4 h-4" /> },
-    { page: "reports", label: t("nav.reports"), icon: <FileText className="w-4 h-4" /> },
-    { page: "appearance", label: t("nav.appearance"), icon: <Palette className="w-4 h-4" /> },
-    {
-      page: "subscription",
-      label: t("nav.subscription"),
-      icon: <CreditCard className="w-4 h-4" />,
-    },
-    { page: "news", label: t("nav.news"), icon: <Newspaper className="w-4 h-4" /> },
-    {
-      page: "seasonality",
-      label: t("nav.seasonality"),
-      icon: <CalendarRange className="w-4 h-4" />,
-    },
-    { page: "settings", label: t("nav.settings"), icon: <SettingsIcon className="w-4 h-4" /> },
-    { page: "profile", label: t("nav.profile"), icon: <User className="w-4 h-4" /> },
-  ];
 
   // Trade search only kicks in once the user types (keeps the default list short)
   const q = query.trim().toLowerCase();
@@ -212,14 +158,17 @@ export default function CommandPalette({
             heading={t("palette.goTo")}
             className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[9px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
           >
-            {NAV.map((n) => (
+            {NAV_ITEMS.map(({ id, labelKey, icon: Icon }) => (
               <Command.Item
-                key={n.page}
-                value={`${n.label} ${n.page}`}
-                onSelect={() => run(() => setPage(n.page))}
+                key={id}
+                value={`${t(labelKey)} ${id}`}
+                onSelect={() => run(() => setPage(id))}
                 className={itemClass}
               >
-                <span className="text-slate-500">{n.icon}</span> {n.label}
+                <span className="text-slate-500">
+                  <Icon className="w-4 h-4" />
+                </span>{" "}
+                {t(labelKey)}
               </Command.Item>
             ))}
           </Command.Group>

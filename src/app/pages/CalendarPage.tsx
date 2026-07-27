@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Target } from "lucide-react";
 import { Trade, MissedOpportunity } from "../types";
 import { loadMissedOpportunities } from "../store";
@@ -193,6 +193,39 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
     return rows;
   }, [calendarDays]);
 
+  // Heatmap scale — the deepest tint maps to the month's single biggest |P&L|
+  // day, so cell intensity reads as relative magnitude (Topstep/Lucid style),
+  // not just win/loss binary.
+  const maxAbsDay = useMemo(() => {
+    let m = 0;
+    for (let d = 1; d <= new Date(year, month + 1, 0).getDate(); d++) {
+      const data = dailyData[getDateStr(d)];
+      if (data && data.count > 0) m = Math.max(m, Math.abs(data.pnl));
+    }
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month, dailyData]);
+
+  // Per-week aggregates for the right-hand summary column.
+  const weekTotals = useMemo(
+    () =>
+      calendarRows.map((row) => {
+        let pnl = 0;
+        let days = 0;
+        for (const day of row) {
+          if (day === null) continue;
+          const data = dailyData[getDateStr(day)];
+          if (data && data.count > 0) {
+            pnl += data.pnl;
+            days += 1;
+          }
+        }
+        return { pnl, days };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [calendarRows, dailyData, year, month],
+  );
+
   return (
     <div className="p-3 md:p-8 max-w-[1400px] mx-auto">
       <PageHeader
@@ -316,7 +349,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        <div className="grid grid-cols-7 border-b border-white/[0.06]">
+        <div className="grid grid-cols-8 border-b border-white/[0.06]">
           {DAYS.map((d, i) => (
             <div
               key={d + i}
@@ -328,125 +361,171 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
               {d}
             </div>
           ))}
+          <div className="py-2 md:py-3 text-center text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
+            {t("calendar.week")}
+          </div>
         </div>
         <div className="p-1.5 md:p-3 space-y-1 md:space-y-2">
-          {calendarRows.map((row, rowIdx) => (
-            <div key={rowIdx} className="grid grid-cols-7 gap-1 md:gap-2">
-              {row.map((day, colIdx) => {
-                if (day === null)
-                  return <div key={`e-${rowIdx}-${colIdx}`} className="h-14 md:min-h-[100px]" />;
-                const dateStr = getDateStr(day);
-                const data = dailyData[dateStr];
-                const isAllBE = data && data.count > 0 && data.count === data.breakEven;
-                const isWin = data && !isAllBE && data.pnl > 0;
-                const isLoss = data && !isAllBE && data.pnl < 0;
-                const isNeutral = data && !isAllBE && data.pnl === 0;
-                const isToday = dateStr === new Date().toISOString().split("T")[0];
-                const isWeekend = colIdx >= 5;
-                const dayMissed = missedByDate[dateStr] || [];
-                const missedCount = dayMissed.length;
-                return (
-                  <button
-                    key={dateStr}
-                    onClick={() => {
-                      if (data) setSelectedDate(dateStr);
-                      else if (dayMissed.length > 0) setSelectedMissed(dayMissed[0]);
-                    }}
-                    disabled={!data && missedCount === 0}
-                    className={cn(
-                      "h-14 md:min-h-[100px] md:p-3 p-1.5 rounded-lg md:rounded-2xl text-left transition-all duration-300 relative overflow-hidden group",
-                      isWin &&
-                        "bg-gradient-to-br from-emerald-500/[0.18] to-emerald-600/[0.06] border border-emerald-500/20",
-                      isLoss &&
-                        "bg-gradient-to-br from-red-500/[0.14] to-red-600/[0.05] border border-red-500/15",
-                      isAllBE &&
-                        "bg-gradient-to-br from-slate-500/[0.16] to-slate-600/[0.05] border border-slate-500/25",
-                      isNeutral && "bg-white/[0.03] border border-white/[0.06]",
-                      !data && !isWeekend && !missedCount && "border border-transparent",
-                      !data && missedCount > 0 && "bg-amber-500/[0.06] border border-amber-500/20",
-                      !data && isWeekend && "bg-white/[0.01]",
-                      isToday && "ring-1 ring-cyan-500/40",
-                      (data || missedCount > 0) && "cursor-pointer active:scale-95",
-                    )}
-                  >
-                    {missedCount > 0 && (
-                      <span
-                        className="absolute top-1 right-1 flex items-center gap-0.5 px-1 py-[1px] rounded-full bg-amber-500/25 text-amber-300 text-[8px] md:text-[10px] font-bold"
-                        title={`${missedCount} ${t("missed.title")}`}
-                      >
-                        <Target className="w-2 h-2 md:w-2.5 md:h-2.5" />
-                        {missedCount}
-                      </span>
-                    )}
-                    <div
+          {calendarRows.map((row, rowIdx) => {
+            const week = weekTotals[rowIdx];
+            return (
+              <div key={rowIdx} className="grid grid-cols-8 gap-1 md:gap-2">
+                {row.map((day, colIdx) => {
+                  if (day === null)
+                    return <div key={`e-${rowIdx}-${colIdx}`} className="h-14 md:min-h-[104px]" />;
+                  const dateStr = getDateStr(day);
+                  const data = dailyData[dateStr];
+                  const isAllBE = data && data.count > 0 && data.count === data.breakEven;
+                  const isWin = data && !isAllBE && data.pnl > 0;
+                  const isLoss = data && !isAllBE && data.pnl < 0;
+                  const isToday = dateStr === new Date().toISOString().split("T")[0];
+                  const isWeekend = colIdx >= 5;
+                  const dayMissed = missedByDate[dateStr] || [];
+                  const missedCount = dayMissed.length;
+
+                  // Heatmap intensity: 0 → the day with the largest |P&L| this month.
+                  const mag =
+                    data && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
+                  const a = 0.08 + 0.34 * mag; // fill alpha
+                  const b = 0.18 + 0.24 * mag; // border alpha
+                  let cellStyle: CSSProperties | undefined;
+                  if (isWin)
+                    cellStyle = {
+                      background: `linear-gradient(155deg, rgba(16,185,129,${a}), rgba(16,185,129,${a * 0.35}))`,
+                      borderColor: `rgba(16,185,129,${b})`,
+                    };
+                  else if (isLoss)
+                    cellStyle = {
+                      background: `linear-gradient(155deg, rgba(244,63,63,${a}), rgba(244,63,63,${a * 0.35}))`,
+                      borderColor: `rgba(244,63,63,${b})`,
+                    };
+                  else if (isAllBE)
+                    cellStyle = {
+                      background: "rgba(148,163,184,0.10)",
+                      borderColor: "rgba(148,163,184,0.22)",
+                    };
+
+                  return (
+                    <button
+                      key={dateStr}
+                      onClick={() => {
+                        if (data) setSelectedDate(dateStr);
+                        else if (dayMissed.length > 0) setSelectedMissed(dayMissed[0]);
+                      }}
+                      disabled={!data && missedCount === 0}
+                      style={cellStyle}
                       className={cn(
-                        "text-[10px] md:text-sm mb-0.5 md:mb-1.5",
-                        isWin
-                          ? "font-bold text-emerald-300"
-                          : isLoss
-                            ? "font-bold text-red-300"
-                            : isAllBE
-                              ? "font-bold text-slate-200"
-                              : isToday
-                                ? "font-bold text-cyan-400"
-                                : isWeekend
-                                  ? "text-slate-700"
-                                  : "font-medium text-slate-500",
+                        "h-14 md:min-h-[104px] md:p-2.5 p-1.5 rounded-lg md:rounded-xl text-left transition-all duration-200 relative overflow-hidden border flex flex-col",
+                        !cellStyle && !missedCount && "border-white/[0.05]",
+                        !cellStyle && isWeekend && "bg-white/[0.01]",
+                        !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
+                        isToday && "ring-1 ring-inset ring-cyan-400/60",
+                        (data || missedCount > 0) &&
+                          "cursor-pointer hover:brightness-125 active:scale-[0.97]",
                       )}
                     >
-                      {day}
-                    </div>
-                    {data && (
-                      <div
-                        className={cn(
-                          "text-[10px] md:text-sm font-bold",
-                          isAllBE
-                            ? "text-slate-300"
-                            : isWin
-                              ? "text-emerald-400"
-                              : isLoss
-                                ? "text-red-400"
-                                : "text-slate-400",
-                        )}
-                      >
-                        {isAllBE
-                          ? t("common.be")
-                          : `${data.pnl >= 0 ? "+" : ""}${data.pnl.toFixed(0)}`}
-                      </div>
-                    )}
-                    {data && (
-                      <div className="flex items-center gap-0.5 md:gap-1.5 mt-0.5">
+                      {/* Day number */}
+                      <div className="flex items-center justify-between">
                         <span
                           className={cn(
-                            "text-[7px] md:text-[10px] font-bold px-0.5 md:px-1.5 py-0 md:py-0.5 rounded md:rounded-md",
-                            isAllBE
-                              ? "bg-slate-500/20 text-slate-300"
-                              : isWin
-                                ? "bg-emerald-500/20 text-emerald-400"
-                                : isLoss
-                                  ? "bg-red-500/20 text-red-400"
-                                  : "bg-white/[0.06] text-slate-400",
+                            "text-[10px] md:text-xs font-semibold tabular-nums",
+                            isToday
+                              ? "text-cyan-300"
+                              : data
+                                ? "text-slate-300"
+                                : isWeekend
+                                  ? "text-slate-700"
+                                  : "text-slate-600",
                           )}
                         >
-                          {data.count}t
+                          {day}
                         </span>
-                        {data.breakEven > 0 && !isAllBE && (
-                          <span className="text-[7px] md:text-[10px] font-bold text-slate-300 hidden md:inline">
-                            {data.breakEven}BE
-                          </span>
-                        )}
-                        {data.avgRR > 0 && (
-                          <span className="text-[7px] md:text-[10px] font-semibold text-cyan-400 hidden md:inline">
-                            RR{data.avgRR.toFixed(1)}
+                        {missedCount > 0 && (
+                          <span
+                            className="flex items-center gap-0.5 text-amber-300 text-[8px] md:text-[10px] font-bold"
+                            title={`${missedCount} ${t("missed.title")}`}
+                          >
+                            <Target className="w-2 h-2 md:w-2.5 md:h-2.5" />
+                            {missedCount}
                           </span>
                         )}
                       </div>
+
+                      {/* P&L — the hero number, centered in the cell */}
+                      {data && (
+                        <div className="flex-1 flex flex-col justify-center">
+                          <div
+                            className={cn(
+                              "font-display text-[11px] md:text-base font-extrabold tabular-nums leading-none",
+                              isAllBE
+                                ? "text-slate-300"
+                                : isWin
+                                  ? "text-emerald-300"
+                                  : isLoss
+                                    ? "text-red-300"
+                                    : "text-slate-400",
+                            )}
+                          >
+                            {isAllBE
+                              ? t("common.be")
+                              : `${data.pnl >= 0 ? "+" : "−"}$${Math.abs(data.pnl).toFixed(0)}`}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Footer: trade count + RR */}
+                      {data && (
+                        <div className="flex items-center gap-1.5 text-[7px] md:text-[10px] font-semibold tabular-nums">
+                          <span className="text-slate-400">
+                            {data.count}{" "}
+                            {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
+                          </span>
+                          {data.avgRR > 0 && (
+                            <span className="text-cyan-400/80 hidden md:inline">
+                              {data.avgRR.toFixed(1)}R
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {/* Weekly summary column */}
+                <div
+                  className={cn(
+                    "h-14 md:min-h-[104px] rounded-lg md:rounded-xl p-1.5 md:p-2.5 flex flex-col justify-center border border-white/[0.04] bg-white/[0.015]",
+                    week.days === 0 && "opacity-40",
+                  )}
+                >
+                  <div className="text-[7px] md:text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">
+                    {t("calendar.week")} {rowIdx + 1}
+                  </div>
+                  <div
+                    className={cn(
+                      "font-display text-[11px] md:text-sm font-extrabold tabular-nums leading-none",
+                      week.days === 0
+                        ? "text-slate-600"
+                        : week.pnl > 0
+                          ? "text-emerald-400"
+                          : week.pnl < 0
+                            ? "text-red-400"
+                            : "text-slate-300",
                     )}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+                  >
+                    {week.days === 0
+                      ? "—"
+                      : `${week.pnl >= 0 ? "+" : "−"}$${Math.abs(week.pnl).toFixed(0)}`}
+                  </div>
+                  {week.days > 0 && (
+                    <div className="text-[7px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
+                      {week.days} {week.days === 1 ? t("calendar.day") : t("calendar.days")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -466,6 +545,17 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-lg ring-1 ring-cyan-500/40" />
           <span className="text-[10px] text-slate-500">{t("calendar.legendToday")}</span>
+        </div>
+        {/* Heatmap intensity scale — deeper tint = bigger day. */}
+        <div className="flex items-center gap-2">
+          <div
+            className="w-16 h-3 rounded"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(244,63,63,0.42), rgba(244,63,63,0.08), rgba(16,185,129,0.08), rgba(16,185,129,0.42))",
+            }}
+          />
+          <span className="text-[10px] text-slate-500">{t("calendar.legendHeat")}</span>
         </div>
       </div>
 

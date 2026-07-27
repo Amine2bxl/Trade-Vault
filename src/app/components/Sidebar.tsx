@@ -1,24 +1,6 @@
-import {
-  LayoutDashboard,
-  BookOpen,
-  Calendar,
-  BarChart3,
-  AlertTriangle,
-  ClipboardCheck,
-  LogOut,
-  User,
-  Sparkles,
-  Target,
-  Newspaper,
-  CalendarRange,
-  Calculator,
-  Settings as SettingsIcon,
-  Map,
-  FileText,
-  Palette,
-  CreditCard,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Page } from "../types";
+import { NAV_GROUPS } from "../navigation";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
@@ -33,70 +15,19 @@ interface SidebarProps {
   winRate: number;
 }
 
-interface NavItem {
-  id: Page;
-  label: string;
-  icon: typeof LayoutDashboard;
-}
-
 export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t } = useT();
-
-  // Watertight categories — every page has exactly one home.
-  const groups: { label: string; items: NavItem[] }[] = [
-    {
-      label: t("nav.groupMain"),
-      items: [
-        { id: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
-        { id: "journal", label: t("nav.journal"), icon: BookOpen },
-        { id: "checklist", label: t("nav.checklist"), icon: ClipboardCheck },
-        { id: "calculator", label: t("nav.calculator"), icon: Calculator },
-        { id: "missed", label: t("nav.missed"), icon: Target },
-      ],
-    },
-    {
-      label: t("nav.groupAnalysis"),
-      items: [
-        { id: "analytics", label: t("nav.analytics"), icon: BarChart3 },
-        { id: "insights", label: t("nav.insights"), icon: Sparkles },
-        { id: "mistakes", label: t("nav.mistakes"), icon: AlertTriangle },
-        { id: "calendar", label: t("nav.calendar"), icon: Calendar },
-      ],
-    },
-    {
-      // Plan — everything about the trader's roadmap and long-term tracking:
-      // written trading plan, goals, monthly reports, personalization, billing.
-      label: t("nav.groupPlan"),
-      items: [
-        { id: "tradingplan", label: t("nav.tradingPlan"), icon: Map },
-        { id: "goals", label: t("nav.goals"), icon: Target },
-        { id: "reports", label: t("nav.reports"), icon: FileText },
-        { id: "appearance", label: t("nav.appearance"), icon: Palette },
-        { id: "subscription", label: t("nav.subscription"), icon: CreditCard },
-      ],
-    },
-    {
-      label: t("nav.groupData"),
-      items: [
-        { id: "news", label: t("nav.news"), icon: Newspaper },
-        { id: "seasonality", label: t("nav.seasonality"), icon: CalendarRange },
-      ],
-    },
-    {
-      label: t("nav.groupSystem"),
-      items: [
-        { id: "settings", label: t("nav.settings"), icon: SettingsIcon },
-        { id: "profile", label: t("nav.profile"), icon: User },
-      ],
-    },
-  ];
 
   return (
     // h-dvh + sticky top-0: the rail is always exactly viewport-height and never
     // moves with page scroll — content scrolls in <main>, nav scrolls internally
     // if it ever overflows. Identical position and alignment on every page.
-    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 bg-[#08111e]/85 border-r border-white/[0.05] flex-col shrink-0 backdrop-blur-xl">
+    // z-30 keeps the rail above any page's full-viewport background layers
+    // (e.g. the Checklist's fixed particle/grid canvas), so the navbar keeps
+    // the exact same solid style on every page and never looks tinted or
+    // transparent — while staying below modals, the palette and the AI FAB.
+    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 z-30 bg-[#08111e]/85 border-r border-white/[0.05] flex-col shrink-0 backdrop-blur-xl">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/[0.05] flex items-center gap-3 shrink-0">
         <div className="relative shrink-0">
@@ -125,34 +56,34 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       </div>
 
       {/* Navigation — scrolls internally, never moves the rail */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-3.5 min-h-0">
-        {groups.map((group) => (
-          <div key={group.label}>
-            <div className="px-3 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
-              {group.label}
+      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.labelKey}>
+            <div className="px-3 pb-1 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+              {t(group.labelKey)}
             </div>
-            <div className="space-y-0.5">
-              {group.items.map(({ id, label, icon: Icon }) => (
+            <div className="space-y-px">
+              {group.items.map(({ id, labelKey, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setPage(id)}
                   className={cn(
-                    "relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200",
+                    "relative w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200",
                     page === id
                       ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10"
-                      : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03] hover:translate-x-0.5",
+                      : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
                   )}
                 >
                   {page === id && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
                   )}
                   <Icon
                     className={cn(
-                      "w-[17px] h-[17px] transition-transform shrink-0",
+                      "w-4 h-4 shrink-0",
                       page === id ? "text-cyan-400" : "text-slate-600",
                     )}
                   />
-                  <span className="truncate">{label}</span>
+                  <span className="truncate">{t(labelKey)}</span>
                   {page === id && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
                   )}

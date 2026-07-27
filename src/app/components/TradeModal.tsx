@@ -719,34 +719,39 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             />
           </div>
 
-          {/* Confluences (Customizable) */}
+          {/* Confluences (Customizable) — same clean pill language as the
+              Mistakes block: natural-width chips in a single flex-wrap row,
+              cyan when selected. The remove affordance is integrated into the
+              chip (× on hover) instead of a floating circle, so the section
+              reads as calmly as the Errors reference. */}
           <div>
             <label className={labelClass}>{t("trade.confluences")}</label>
-            {/* Equal-size bubbles: a 2-col grid on mobile keeps every chip the
-                exact same width/height; flows naturally as wrap chips on ≥sm. */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-2">
-              {userConfluences.map((c) => (
-                <div key={c} className="relative group">
-                  <button
-                    onClick={() => toggleConfluence(c)}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {userConfluences.map((c) => {
+                const active = form.confluences.includes(c);
+                return (
+                  <div
+                    key={c}
                     className={cn(
-                      "w-full h-9 flex items-center justify-center px-3 rounded-xl text-xs font-medium transition-all border text-center truncate",
-                      form.confluences.includes(c)
+                      "group inline-flex items-center rounded-xl text-xs font-medium transition-all border",
+                      active
                         ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
                         : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600",
                     )}
                   >
-                    {c}
-                  </button>
-                  <button
-                    onClick={() => removeConfluence(c)}
-                    aria-label={t("common.remove")}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#0c1018] border border-white/10 flex items-center justify-center text-slate-500 hover:text-red-400 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              ))}
+                    <button onClick={() => toggleConfluence(c)} className="pl-3 pr-1.5 py-1.5">
+                      {c}
+                    </button>
+                    <button
+                      onClick={() => removeConfluence(c)}
+                      aria-label={t("common.remove")}
+                      className="pr-2 py-1.5 text-slate-600 hover:text-red-400 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
             <div className="flex gap-2">
               <input
@@ -759,6 +764,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               />
               <button
                 onClick={addConfluence}
+                aria-label={t("common.add")}
                 className="px-3 rounded-xl border border-white/[0.08] text-cyan-400 hover:bg-cyan-500/10 transition-all"
               >
                 <Plus className="w-4 h-4" />

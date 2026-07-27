@@ -6,35 +6,49 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import { ThemeDef, harmonize, lighten } from "../utils/themes";
 import { cn } from "../utils/cn";
 
-// Tiny per-theme equity sparkline so every card reads as a distinct identity
-// (uses the theme's OWN colors, independent of what's currently active).
+// Per-theme preview: a full colour band (primary · secondary · highlight, so
+// every colour of the identity is visible at a glance) above an equity
+// sparkline drawn in the theme's OWN colours. Never cropped — the band and the
+// curve both sit fully inside the card.
 function ThemePreview({ theme }: { theme: ThemeDef }) {
   const gid = `tp-${theme.id}`;
   return (
-    <svg viewBox="0 0 120 46" className="w-full h-10" aria-hidden="true" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={theme.highlight} stopOpacity="0.35" />
-          <stop offset="100%" stopColor={theme.primary} stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id={`${gid}s`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={theme.primary} />
-          <stop offset="100%" stopColor={theme.highlight} />
-        </linearGradient>
-      </defs>
-      <path
-        d="M2 38 L22 30 L40 34 L60 18 L80 24 L100 8 L118 12 L118 46 L2 46 Z"
-        fill={`url(#${gid})`}
-      />
-      <path
-        d="M2 38 L22 30 L40 34 L60 18 L80 24 L100 8 L118 12"
-        fill="none"
-        stroke={`url(#${gid}s)`}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div className="w-full">
+      <div className="flex h-3 w-full">
+        <span className="flex-1" style={{ background: theme.primary }} />
+        <span className="flex-1" style={{ background: theme.secondary }} />
+        <span className="flex-1" style={{ background: theme.highlight }} />
+      </div>
+      <svg
+        viewBox="0 0 120 44"
+        className="block w-full h-14"
+        aria-hidden="true"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme.highlight} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={theme.primary} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id={`${gid}s`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={theme.primary} />
+            <stop offset="100%" stopColor={theme.highlight} />
+          </linearGradient>
+        </defs>
+        <path
+          d="M2 36 L22 28 L40 32 L60 16 L80 22 L100 8 L118 12 L118 44 L2 44 Z"
+          fill={`url(#${gid})`}
+        />
+        <path
+          d="M2 36 L22 28 L40 32 L60 16 L80 22 L100 8 L118 12"
+          fill="none"
+          stroke={`url(#${gid}s)`}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -115,6 +129,7 @@ export default function ThemeSettings() {
           <div className="flex items-center gap-1.5 min-w-0">
             <Swatch color={th.primary} />
             <Swatch color={th.secondary} />
+            <Swatch color={th.highlight} />
             <span className="text-xs font-semibold text-white truncate">{th.name}</span>
           </div>
           {isActive && <Check className="w-4 h-4 shrink-0" style={{ color: th.primary }} />}
@@ -191,7 +206,7 @@ export default function ThemeSettings() {
           ))}
           <button
             onClick={startNew}
-            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-cyan-500/40 hover:bg-cyan-500/[0.03] transition-all flex flex-col items-center justify-center gap-1.5 min-h-[112px] text-slate-500 hover:text-cyan-300"
+            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-cyan-500/40 hover:bg-cyan-500/[0.03] transition-all flex flex-col items-center justify-center gap-1.5 min-h-[136px] text-slate-500 hover:text-cyan-300"
           >
             <Plus className="w-5 h-5" />
             <span className="text-[11px] font-semibold">{t("appearance.new")}</span>
@@ -293,7 +308,9 @@ function Section({
         )}
       >
         <div className="overflow-hidden">
-          <div className="pb-1">{children}</div>
+          {/* p-1 leaves room for the active card's outer ring/shadow so it is
+              never clipped by the collapse container. */}
+          <div className="p-1">{children}</div>
         </div>
       </div>
     </div>
