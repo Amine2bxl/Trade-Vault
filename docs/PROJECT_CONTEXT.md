@@ -12,7 +12,7 @@
 > [`ux-architecture.md`](ux-architecture.md) ·
 > [`agents/ai-coach.md`](agents/ai-coach.md)
 
-Dernière mise à jour : 2026-07-21 (post AI Coach V1, PR #59 mergée).
+Dernière mise à jour : 2026-07-27 (post refonte UX/UI — Jarvis unifié, Checklist native, navigation par déroulé de session, PR #63 mergée).
 
 ---
 
@@ -33,8 +33,12 @@ Trois piliers de valeur (voir `PRODUCT.md`) :
 3. **Discipliner** — checklist pré-market, plan de trading, objectifs, règles,
    moteur de discipline.
 
+L'IA du produit a **une seule identité** : **Jarvis** (fini les intitulés
+« AI Coach » / « Assistant » / « Insights »). Persona centralisée, voix,
+briefing du jour, chat — c'est le point d'entrée IA unique partout.
+
 **En une phrase** : la coque (journal/analytics/checklist) est la meilleure du
-marché mais non différenciante ; **l'âme du produit est le coach IA + la
+marché mais non différenciante ; **l'âme du produit est Jarvis + la
 discipline** — c'est là que tout l'effort produit doit aller.
 
 ---
@@ -133,8 +137,7 @@ src/shared/    →  helpers neutres + shared/ui (primitives Design System)
 
 Commandes : `bun run dev` · `bun run build` · `bun run lint` ·
 `bun run format` · `bun test`. Gates de vérification avant tout push :
-`npx tsc --noEmit` (exit 0) + `npx vite build` + `bun test` (46 tests, 4
-fichiers).
+`npx tsc --noEmit` (exit 0) + `npx vite build` + `bun test` (55 tests).
 
 Production : Vercel, ref Supabase `tjikygsipblatubyzbrt`, URL publique
 `https://tradevaultt.vercel.app`. CSP headers dans `vercel.json`.
@@ -160,15 +163,15 @@ Trade-Vault/
 │   ├── routes/                # __root, index, privacy, terms, reset-password
 │   ├── app/
 │   │   ├── App.tsx            # Shell applicatif (auth, navigation, layout)
-│   │   ├── pages/             # Dashboard, Journal, Analytics, Insights,
+│   │   ├── pages/             # Dashboard, Journal, Analytics, Jarvis (ex-Insights),
 │   │   │                      # CalendarPage, Goals, Mistakes, Checklist(+Wizard),
 │   │   │                      # TradingPlan, Reports, Seasonality, EconomicNews,
 │   │   │                      # MissedOpportunities, LotSizeCalculator, Landing,
 │   │   │                      # Profile, Settings, Subscription, Appearance…
-│   │   ├── components/        # TradeModal, TradeDetailModal, AiAssistant,
+│   │   ├── components/        # TradeModal, TradeDetailModal, AiAssistant (widget Jarvis),
 │   │   │                      # Sidebar, MobileNav, CommandPalette, EquityChart,
 │   │   │                      # ImportCsvModal, Trustpilot* (⚠️ ZONE GELÉE)…
-│   │   ├── contexts/ hooks/ i18n/ onboarding/ store(.ts) utils/ types.ts
+│   │   ├── contexts/ hooks/ i18n/ navigation.ts onboarding/ store(.ts) utils/ types.ts
 │   ├── modules/
 │   │   ├── trading/analysis/  # Trade Analysis Engine (pur, déterministe)
 │   │   ├── ai/                # AI Platform : infra.ts (barrel), router/,
@@ -265,10 +268,14 @@ Trade-Vault/
   autorisés), Response Formatter (Zod optionnel, ne throw jamais).
   Providers : Gemini (défaut), Anthropic (tool-calling), OpenAI-compatible
   (tool-calling). Changer de modèle = une variable d'environnement.
-- **AI Coach V1 en production** (`agents/coach.agent.ts` +
+- **Jarvis V1 en production** (`agents/coach.agent.ts` +
   `backend/coach.functions.ts` + surfaces `AiAssistant` (widget flottant,
-  multi-tours, voix, persistance locale par user) et page `Insights` (quick
-  prompts)). Capacités : lire stats, trades, erreurs, objectifs, répondre.
+  multi-tours, voix, persistance locale par user) et page `Jarvis.tsx`
+  (ex-Insights) : briefing du jour déterministe, KPI live, forces/faiblesses,
+  chat persistant, voix). Une seule identité IA dans tout le produit. Voix
+  mutualisée `utils/jarvisVoice.ts` + `backend/tts.functions.ts` (ElevenLabs,
+  **toujours en anglais**, fallback voix masculine navigateur ; réponses
+  écrites = langue UI). Capacités : lire stats, trades, erreurs, objectifs, répondre.
   **Règle absolue `ANTI_HALLUCINATION`** : le coach ne cite que les blocs de
   données fournis, dit quand la donnée manque, n'invente jamais, ne prédit
   jamais le marché. Payload construit côté client par `buildCoachV1Payload`
@@ -279,11 +286,22 @@ Trade-Vault/
 
 ### Plateforme / growth
 
-- Auth Supabase, onboarding profilé, i18n FR/EN, PWA + push notifications,
-  Command Palette, thèmes (Appearance), abonnement (Stripe billing +
-  crypto-pay), emails lifecycle, page légale (privacy/terms), landing
+- Auth Supabase, onboarding profilé (opt-in **notifications** désormais dans
+  l'onboarding, plus de bannière Dashboard), i18n FR/EN, PWA + push
+  notifications, Command Palette, thèmes (Appearance), abonnement (Stripe
+  billing + crypto-pay), emails lifecycle, page légale (privacy/terms), landing
   marketing premium, **widget Trustpilot (⚠️ GELÉ — vrais avis en cours, ne
   jamais toucher)**.
+- **Navigation centralisée** (`src/app/navigation.ts` = source unique) par
+  déroulé d'une session : Home · Préparation · Journal · Analyse · Jarvis ·
+  Compte. Sidebar, MobileNav et CommandPalette en dérivent (une seule édition
+  pour ajouter/déplacer une page). Réduction de nav (#11) partiellement livrée.
+- **Checklist pré-market** réécrite native au Design System (identité
+  holographique légère `tvchk-*`), progression en 5 étapes (Préparation →
+  Validation → Mental → Verrouillage → Trade), **setup adaptatif** (`ChecklistWizard`)
+  et pop-up vocal premium « Demander à Jarvis ».
+- **Subscription** = statut seul (plan · essai · jours restants), **aucun prix
+  ni logique Stripe** (retiré de Profile — une responsabilité par page).
 
 ### Design System (`src/shared/ui`)
 

@@ -141,9 +141,9 @@
 
 ## Bloc 11 — Analyse IA comportementale étendue
 
-- **Objectif** — Étendre l'IA existante (`ai-insights.functions.ts`, Insights, Coach flottant) vers l'analyse comportementale proactive : détection de patterns (revenge trading, sur-risque après perte, dérive de discipline) et synthèses périodiques.
+- **Objectif** — Étendre l'IA existante (`ai-insights.functions.ts`, page Jarvis, widget Jarvis flottant) vers l'analyse comportementale proactive : détection de patterns (revenge trading, sur-risque après perte, dérive de discipline) et synthèses périodiques.
 - **Bénéfice utilisateur** — Le coach passe de « répond aux questions » à « repère ce que le trader ne voit pas ».
-- **Approche d'implémentation** — Réutiliser les agrégats déjà calculés (`quantStats.ts`, `behavioral.ts`) comme contexte structuré du prompt (pas de données brutes superflues) ; prompts dédiés par pattern ; rapport hebdo généré à la demande (pas de cron coûteux au départ) affiché dans Insights ; citations chiffrées obligatoires (règle déjà présente dans le prompt système).
+- **Approche d'implémentation** — Réutiliser les agrégats déjà calculés (`quantStats.ts`, `behavioral.ts`) comme contexte structuré du prompt (pas de données brutes superflues) ; prompts dédiés par pattern ; rapport hebdo généré à la demande (pas de cron coûteux au départ) affiché dans la page Jarvis ; citations chiffrées obligatoires (règle déjà présente dans le prompt système).
 - **Impact UX** — Valeur perçue maximale de la brique IA existante, sans nouveau paradigme d'interface.
 - **Impact performance** — Coût API Gemini borné (contexte agrégé, génération à la demande).
 - **Priorité** — Moyenne

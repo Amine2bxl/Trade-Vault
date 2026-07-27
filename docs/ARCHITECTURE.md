@@ -17,7 +17,8 @@
 TradeVault est un **journal de trading enrichi à l'IA** (« AI Trading Operating
 System »). Un trader logge ses trades ; l'app calcule des stats de niveau quant
 (Sharpe, Sortino, expectancy, drawdown), affiche un calendrier économique, une
-checklist de discipline pré-marché, et un coach IA qui interprète ses données.
+checklist de discipline pré-marché, et **Jarvis**, l'IA unique qui interprète
+ses données (page dédiée + widget flottant).
 
 - **Front** : SPA React 19 servie par **TanStack Start** (SSR shell + hydratation).
 - **Back** : **server functions** TanStack (`createServerFn`) — pas d'API REST séparée.
@@ -189,7 +190,7 @@ co-localisés (ex. `pages/landing/`, `pages/checklist/`, `pages/goals/`).
 | `Sidebar` · `MobileNav` | Navigation (desktop / mobile) |
 | `TradeModal` · `TradeDetailModal` | Création/édition & détail d'un trade |
 | `EquityChart` · `StatsCard` | Visualisation (Recharts) & KPI |
-| `AiAssistant` · `MarkdownAnswer` | Coach IA & rendu markdown des réponses |
+| `AiAssistant` · `MarkdownAnswer` | Jarvis (widget IA flottant) & rendu markdown des réponses |
 | `CommandPalette` | Palette ⌘K (cmdk) |
 | `ImportCsvModal` | Import de trades depuis CSV broker |
 | `AccountSwitcher` | Bascule entre sous-comptes |

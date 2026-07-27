@@ -10,7 +10,7 @@
 > Priorités : P0 (bloque crédibilité/lancement) · P1 (fort ROI) ·
 > P2 (important, non urgent) · P3 (fond/opportuniste) · — (socle, hors grille).
 
-Dernière mise à jour : 2026-07-22 (audit pré-Sprint 3 : DS consolidé — PageHeader/SectionHeader/EmptyState/Metric, purge tokens shadcn morts, lint 0 erreur).
+Dernière mise à jour : 2026-07-27 (refonte UX/UI PR #63 mergée : Jarvis unifié, Checklist native + wizard adaptatif, navigation par déroulé de session, Subscription statut-seul, opt-in notifications dans l'onboarding — 55 tests verts).
 
 ---
 
@@ -29,7 +29,7 @@ Dernière mise à jour : 2026-07-22 (audit pré-Sprint 3 : DS consolidé — Pag
 | Mistakes (erreurs récurrentes) | ✅ | — | Moteur d'analyse | Erreurs chiffrées (occurrences + P&L total) issues du moteur déterministe. Le « coût des erreurs » mensuel narré reste à faire (P1 #6). |
 | Missed Opportunities | ✅ | — | Journal | Journal des setups manqués (avec détail par modal). |
 | Goals (objectifs) | ✅ | — | Journal, cron `goal-reminders` | Objectifs cible/actuel + rappels automatiques. |
-| Checklist pré-market (+ Wizard) | ✅ | — | Bus d'événements (`tv:ask-coach`) | Rituel de discipline quotidien ; peut ouvrir le coach avec un prompt prérempli. |
+| Checklist pré-market (+ Wizard) | ✅ | — | Bus d'événements (`tv:ask-coach`) | Rituel de discipline quotidien. **Réécrite native au Design System** (identité holographique légère `tvchk-*`), progression 5 étapes (Préparation → Validation → Mental → Verrouillage → Trade), **setup adaptatif** (`ChecklistWizard` : checklist ciblée sur le profil), pop-up vocal premium « Demander à Jarvis ». |
 | Trading Plan | ✅ | — | — | Plan de trading structuré du trader. |
 | Lot Size Calculator | ✅ | — | — | Calculateur de taille de position. |
 | Economic News | ✅ | — | — | Calendrier économique intégré. |
@@ -39,9 +39,9 @@ Dernière mise à jour : 2026-07-22 (audit pré-Sprint 3 : DS consolidé — Pag
 
 | Fonctionnalité | Statut | Priorité | Dépendances | Description |
 | --- | --- | --- | --- | --- |
-| AI Platform (infrastructure) | ✅ | — (fondation) | `modules/ai`, `modules/ai-provider` | Router, Provider Service (retry + télémétrie), Context Builder (caps stricts), Prompt Builder, Tool System, Response Formatter. 46 tests verts. |
+| AI Platform (infrastructure) | ✅ | — (fondation) | `modules/ai`, `modules/ai-provider` | Router, Provider Service (retry + télémétrie), Context Builder (caps stricts), Prompt Builder, Tool System, Response Formatter. 55 tests verts. |
 | Providers multi-modèles | ✅ | — | AI Platform | Gemini (défaut) / Anthropic / OpenAI-compatible, tool-calling inclus. Changer de modèle = une env var (`AI_PROVIDER`). |
-| **AI Coach V1** (P0 #1, 1ʳᵉ partie) | ✅ | **P0** | AI Platform, `computeStats`, `requireProAccess` | Agent read-only en prod : lit stats, trades, erreurs, objectifs ; répond en multi-tours. Règle `ANTI_HALLUCINATION` : n'invente jamais, ne prédit jamais le marché. Surfaces : widget `AiAssistant` (voix, persistance locale) + page Insights (quick prompts). |
+| **Jarvis V1** (P0 #1, 1ʳᵉ partie) | ✅ | **P0** | AI Platform, `computeStats`, `requireProAccess` | Identité IA **unique** (fini AI Coach / Assistant / Insights). Agent read-only en prod : lit stats, trades, erreurs, objectifs ; répond en multi-tours. Règle `ANTI_HALLUCINATION` : n'invente jamais, ne prédit jamais le marché. Surfaces : widget `AiAssistant` (voix, persistance locale) + page `Jarvis.tsx` (briefing du jour, KPI live, forces/faiblesses, chat, voix ElevenLabs anglais). |
 | Mémoire coach (seed profil) | ✅ | P0 | Table `ai_memory` (RLS), onboarding | `ai_memory` + seed du profil onboarding (`seedProfileMemory`) livrés (PR #14). **Non injectée dans Coach V1** — branchement = V2 (voir « En cours »). |
 
 ### Plateforme, growth & design
@@ -50,8 +50,10 @@ Dernière mise à jour : 2026-07-22 (audit pré-Sprint 3 : DS consolidé — Pag
 | --- | --- | --- | --- | --- |
 | Auth + onboarding profilé | ✅ | — | Supabase Auth | Signup/login, onboarding (style, expérience, pain, objectif mensuel, ICT) qui nourrit la mémoire du coach. |
 | i18n FR/EN | ✅ | — | `useT()` | Bilingue intégral ; la langue UI pilote la langue des réponses IA. |
-| PWA + push notifications | ✅ | — | `push.functions`, service worker | Notifications push + bannière d'onboarding push. |
-| Command Palette | ✅ | — | — | Navigation clavier rapide. |
+| PWA + push notifications | ✅ | — | `push.functions`, service worker | Notifications push. Opt-in **déplacé dans l'onboarding** (étape dédiée) + réglable dans Réglages ; bannière du Dashboard supprimée. |
+| Command Palette | ✅ | — | `navigation.ts` | Navigation clavier rapide. |
+| Navigation centralisée | ✅ | P1 #11 (partiel) | `src/app/navigation.ts` | Source unique par déroulé de session : Home · Préparation · Journal · Analyse · Jarvis · Compte. Sidebar/MobileNav/CommandPalette en dérivent. Fusions restantes de #11 encore à faire. |
+| Subscription statut-seul | ✅ | — | `useSubscription` | Page statut (plan · essai · jours restants), **aucun prix ni logique Stripe** ; retirée de Profile (une responsabilité par page). |
 | Thèmes (Appearance) | ✅ | — | — | Personnalisation visuelle. Sera absorbé dans Réglages (P1 #11). |
 | Abonnement (Stripe + crypto) | ✅ | — | `billing.server`, `crypto-pay.server`, webhooks idempotents | Infra payante complète mais **désactivée** : `AI_REQUIRE_PRO=false`, tout gratuit en beta. |
 | Emails lifecycle | ✅ | — | Cron `0 8 * * *`, `email-templates` | Emails de cycle de vie automatiques. |
@@ -93,7 +95,7 @@ Dernière mise à jour : 2026-07-22 (audit pré-Sprint 3 : DS consolidé — Pag
 | Bloc « Aujourd'hui » sur le dashboard (#8) | ⚪ | P1 | Données existantes | Le dashboard passe de rétroviseur à copilote : règle du jour, checklist, objectif en cours. Quick win. |
 | Streak de discipline + checklist poussée (#9) | ⚪ | P1 | Checklist ✅, push ✅ | Rituel quotidien imposé : streak visible + notification pré-market. |
 | Sync broker / import auto (#10) | ⚪ | P1 | APIs brokers (externe) | Supprime la friction n°1 (saisie manuelle). Chantier lourd, incontournable pour la rétention. |
-| Navigation réduite à 6–7 entrées (#11) | ⚪ | P1 | — | Fusions : Appearance+Settings+Profile→Réglages ; Insights+AiAssistant→Coach IA ; Mistakes+Missed→Discipline ; Seasonality/Calculateur/News→Outils. |
+| Navigation réduite à 6–7 entrées (#11) | 🟡 | P1 | `navigation.ts` ✅ | **Socle livré** (source unique `navigation.ts`, 6 groupes par déroulé de session, Insights→Jarvis). Reste : fusions Appearance+Settings+Profile→Réglages ; Mistakes+Missed→Discipline ; Seasonality/Calculateur/News→Outils. |
 | Écran « plan personnalisé » fin d'onboarding (#12) | ⚪ | P1 | Profil onboarding ✅ | Payoff immédiat du profil collecté. Quick win. |
 | ICP resserré prop-firm/discipline (#13) | ⚪ | P1 | Landing ✅ | Message antidouleur tranché (challenge prop-firm) au lieu du positionnement « vitamine ». |
 | Free qui fait goûter l'IA — quota (#14) | ⚪ | P1 | Billing ✅, `consume_ai_quota` ✅ | Bascule commerciale : quota IA en Free, jamais un Free sans IA. Fail-open→fail-closed au passage payant. Décision fondateur requise. |
