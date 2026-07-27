@@ -1,20 +1,24 @@
 import { useMemo, useState } from "react";
-import { Check, ArrowLeft, Sparkles, Clock, ShieldCheck, X } from "lucide-react";
+import {
+  Check,
+  ArrowLeft,
+  Sparkles,
+  Clock,
+  ShieldCheck,
+  X,
+  Gauge,
+  Crosshair,
+  Brain,
+  LineChart,
+} from "lucide-react";
 import { cn } from "../utils/cn";
-import type { ChkItem, ChkTemplate } from "./checklistDefaults";
+import type { ChkItem } from "./checklistDefaults";
 
-/* A friendly, beginner-first setup for the pre-market checklist. Three tiny
-   steps, plain language, big tap targets — no jargon, nothing to drag. It
-   pre-selects everything from the user's onboarding profile, so a new trader
-   can just tap "Create" and be done. Advanced editing still lives in the
-   config panel for anyone who wants it. */
+/* Adaptive setup for the pre-market checklist. A short, visual questionnaire
+   whose answers BUILD the checklist — every option carries the exact checks it
+   adds, so the result targets this trader (style, market, read, weakness, risk)
+   instead of a generic preset. One tap per question, big cards, no jargon. */
 
-export interface WizardToggles {
-  oneTrade: boolean;
-  news: boolean;
-  rr: boolean;
-  dd: boolean;
-}
 export interface WizardResult {
   items: ChkItem[];
   startTime: string;
@@ -23,57 +27,326 @@ export interface WizardResult {
 
 const isFr = (lang: string) => lang === "fr";
 
-// Beginner-friendly one-liners per preset (the template names stay as-is).
-function presetBlurb(id: string, fr: boolean): string {
-  const m: Record<string, [string, string]> = {
-    generated: [
-      "Générée depuis ton profil. Courte et faite pour toi.",
-      "Built from your profile. Short and made for you.",
-    ],
-    simple: ["3 checks. Parfait pour débuter.", "3 checks. Perfect to start."],
-    ict: ["ICT / Smart Money. 6 checks.", "ICT / Smart Money. 6 checks."],
-    swing: ["Pour les trades sur plusieurs jours.", "For multi-day trades."],
-    prop: ["Axé risque, pour comptes fundés.", "Risk-focused, for funded accounts."],
-  };
-  const e = m[id];
-  return e ? (fr ? e[0] : e[1]) : "";
+interface Opt {
+  id: string;
+  label: string;
+  hint?: string;
+  items: ChkItem[];
+}
+interface Question {
+  id: string;
+  icon: typeof Sparkles;
+  title: string;
+  sub: string;
+  multi?: boolean;
+  options: Opt[];
 }
 
-function addonItems(fr: boolean): Record<keyof WizardToggles, ChkItem> {
+// Base checks every trader gets — the non-negotiable spine of any plan.
+function baseItems(fr: boolean): ChkItem[] {
   return fr
-    ? {
-        oneTrade: {
-          title: "Max 1 trade aujourd'hui",
-          desc: "Une perte le matin = chart fermé. Journée terminée.",
+    ? [
+        {
+          title: "Biais HTF défini",
+          desc: "Tendance ou range identifié sur ton unité de référence.",
         },
-        news: {
-          title: "Pas de news rouge dans 30 min",
-          desc: "FOMC, NFP, CPI : je vérifie le calendrier d'abord.",
+        {
+          title: "Plan écrit : entrée · invalidation · cible",
+          desc: "Les 3 niveaux notés avant d'armer.",
         },
-        rr: {
-          title: "Gain visé ≥ 2× mon risque",
-          desc: "Si le trade ne paie pas 2 fois le risque, je passe.",
+      ]
+    : [
+        {
+          title: "HTF bias defined",
+          desc: "Trend or range identified on your reference timeframe.",
         },
-        dd: {
-          title: "Limite de perte journalière vérifiée",
-          desc: "Je connais ma marge restante avant d'entrer.",
+        {
+          title: "Plan written: entry · invalidation · target",
+          desc: "All 3 levels noted before arming.",
         },
-      }
-    : {
-        oneTrade: { title: "Max 1 trade today", desc: "A morning loss = chart closed. Day over." },
-        news: {
-          title: "No red news in the next 30 min",
-          desc: "FOMC, NFP, CPI: I check the calendar first.",
+      ];
+}
+
+function buildQuestions(fr: boolean): Question[] {
+  const I = (f: string, e: string, df: string, de: string): ChkItem => ({
+    title: fr ? f : e,
+    desc: fr ? df : de,
+  });
+  return [
+    {
+      id: "style",
+      icon: Crosshair,
+      title: fr ? "Ton style de trading ?" : "Your trading style?",
+      sub: fr
+        ? "On cible les checks qui comptent pour toi."
+        : "We target the checks that matter to you.",
+      options: [
+        {
+          id: "scalp",
+          label: fr ? "Scalping" : "Scalping",
+          hint: fr ? "Très court terme" : "Very short term",
+          items: [
+            I(
+              "Spread & liquidité OK",
+              "Spread & liquidity OK",
+              "Conditions serrées avant d'entrer.",
+              "Tight conditions before entry.",
+            ),
+          ],
         },
-        rr: {
-          title: "Target ≥ 2× my risk",
-          desc: "If the trade doesn't pay twice the risk, I skip it.",
+        {
+          id: "intraday",
+          label: fr ? "Intraday" : "Intraday",
+          hint: fr ? "Clôturé le jour même" : "Closed same day",
+          items: [
+            I(
+              "Niveaux clés du jour marqués",
+              "Key levels of the day marked",
+              "Zones de la séance tracées à l'avance.",
+              "Session zones drawn ahead.",
+            ),
+          ],
         },
-        dd: {
-          title: "Daily loss limit checked",
-          desc: "I know my remaining margin before entering.",
+        {
+          id: "swing",
+          label: fr ? "Swing" : "Swing",
+          hint: fr ? "Sur plusieurs jours" : "Multi-day",
+          items: [
+            I(
+              "Alignement H4 / Daily",
+              "H4 / Daily alignment",
+              "Le setup respecte les unités hautes.",
+              "Setup agrees with higher timeframes.",
+            ),
+          ],
         },
-      };
+      ],
+    },
+    {
+      id: "market",
+      icon: LineChart,
+      title: fr ? "Ton marché principal ?" : "Your main market?",
+      sub: fr ? "Chaque marché a son piège du matin." : "Each market has its morning trap.",
+      options: [
+        {
+          id: "forex",
+          label: "Forex",
+          items: [
+            I(
+              "Pas de news rouge < 30 min",
+              "No red news < 30 min",
+              "FOMC, NFP, CPI : je vérifie le calendrier.",
+              "FOMC, NFP, CPI: I check the calendar.",
+            ),
+          ],
+        },
+        {
+          id: "indices",
+          label: fr ? "Indices" : "Indices",
+          items: [
+            I(
+              "Pas de news rouge < 30 min",
+              "No red news < 30 min",
+              "FOMC, CPI, ouverture cash vérifiés.",
+              "FOMC, CPI, cash open checked.",
+            ),
+          ],
+        },
+        {
+          id: "crypto",
+          label: "Crypto",
+          items: [
+            I(
+              "Volatilité & funding vérifiés",
+              "Volatility & funding checked",
+              "Contexte de marché avant d'entrer.",
+              "Market context before entry.",
+            ),
+          ],
+        },
+        {
+          id: "stocks",
+          label: fr ? "Actions" : "Stocks",
+          items: [
+            I(
+              "Earnings / catalyseurs vérifiés",
+              "Earnings / catalysts checked",
+              "Pas de surprise fondamentale imminente.",
+              "No imminent fundamental surprise.",
+            ),
+          ],
+        },
+      ],
+    },
+    {
+      id: "read",
+      icon: Sparkles,
+      title: fr ? "Ta lecture du marché ?" : "How do you read the market?",
+      sub: fr
+        ? "On ajoute le check de validation de ton approche."
+        : "We add the validation check for your approach.",
+      options: [
+        {
+          id: "ict",
+          label: "ICT / Smart Money",
+          items: [
+            I(
+              "Liquidité prise + POI (FVG/OB)",
+              "Liquidity taken + POI (FVG/OB)",
+              "Prix dans ma zone après la prise de liquidité.",
+              "Price in my zone after the liquidity grab.",
+            ),
+          ],
+        },
+        {
+          id: "pa",
+          label: "Price Action",
+          items: [
+            I(
+              "Structure de marché confirmée",
+              "Market structure confirmed",
+              "BOS / CHoCH clair avant l'entrée.",
+              "Clear BOS / CHoCH before entry.",
+            ),
+          ],
+        },
+        {
+          id: "indic",
+          label: fr ? "Indicateurs" : "Indicators",
+          items: [
+            I(
+              "Confluence d'indicateurs alignée",
+              "Indicator confluence aligned",
+              "Mes signaux pointent dans le même sens.",
+              "My signals point the same way.",
+            ),
+          ],
+        },
+      ],
+    },
+    {
+      id: "weakness",
+      icon: Brain,
+      title: fr ? "Ta plus grosse fuite ?" : "Your biggest leak?",
+      sub: fr
+        ? "C'est LE garde-fou qu'on met en avant pour toi."
+        : "This is THE guardrail we put front and center for you.",
+      options: [
+        {
+          id: "fomo",
+          label: "FOMO",
+          hint: fr ? "Peur de rater" : "Fear of missing out",
+          items: [
+            I(
+              "J'attends MA config — pas de chasse",
+              "I wait for MY setup — no chasing",
+              "Si je cours après le prix, je ne prends pas.",
+              "If I chase price, I don't take it.",
+            ),
+          ],
+        },
+        {
+          id: "overtrading",
+          label: "Overtrading",
+          hint: fr ? "Trop de trades" : "Too many trades",
+          items: [
+            I(
+              "Max 1 trade — une perte = chart fermé",
+              "Max 1 trade — a loss = chart closed",
+              "Une seule balle aujourd'hui.",
+              "One bullet today.",
+            ),
+          ],
+        },
+        {
+          id: "revenge",
+          label: fr ? "Revenge trading" : "Revenge trading",
+          hint: fr ? "Reprendre après une perte" : "Trading back a loss",
+          items: [
+            I(
+              "Après une perte : 15 min de pause",
+              "After a loss: 15-min pause",
+              "Je respire avant toute décision.",
+              "I breathe before any decision.",
+            ),
+          ],
+        },
+        {
+          id: "risk",
+          label: fr ? "Sur-risque" : "Over-risking",
+          hint: fr ? "Taille trop grosse" : "Size too big",
+          items: [
+            I(
+              "Risque fixe — jamais augmenté",
+              "Fixed risk — never increased",
+              "Même % sur chaque trade, sans exception.",
+              "Same % on every trade, no exception.",
+            ),
+          ],
+        },
+        {
+          id: "noplan",
+          label: fr ? "Manque de plan" : "No plan",
+          hint: fr ? "Entrées impulsives" : "Impulsive entries",
+          items: [
+            I(
+              "Aucune entrée sans plan complet",
+              "No entry without a full plan",
+              "Entrée, stop et cible écrits — ou je passe.",
+              "Entry, stop and target written — or I skip.",
+            ),
+          ],
+        },
+      ],
+    },
+    {
+      id: "guards",
+      icon: ShieldCheck,
+      multi: true,
+      title: fr ? "Garde-fous risque ?" : "Risk guardrails?",
+      sub: fr
+        ? "Active ce qui te parle (plusieurs possibles)."
+        : "Turn on what speaks to you (pick any).",
+      options: [
+        {
+          id: "rr",
+          label: fr ? "Gain visé ≥ 2× le risque" : "Target ≥ 2× the risk",
+          items: [
+            I(
+              "Gain visé ≥ 2× mon risque",
+              "Target ≥ 2× my risk",
+              "Sinon je ne prends pas le trade.",
+              "Otherwise I skip the trade.",
+            ),
+          ],
+        },
+        {
+          id: "dd",
+          label: fr ? "Limite de perte journalière" : "Daily loss limit",
+          items: [
+            I(
+              "Limite de perte journalière vérifiée",
+              "Daily loss limit checked",
+              "Je connais ma marge restante avant d'entrer.",
+              "I know my remaining margin before entering.",
+            ),
+          ],
+        },
+        {
+          id: "size",
+          label: fr ? "Taille = mon % exact" : "Size = my exact %",
+          items: [
+            I(
+              "Taille = mon % de risque exact",
+              "Size = my exact risk %",
+              "Position calculée, pas au feeling.",
+              "Position calculated, not by feel.",
+            ),
+          ],
+        },
+      ],
+    },
+  ];
 }
 
 const TIME_PRESETS: { id: string; label: string; start: string; tz: string }[] = [
@@ -84,59 +357,54 @@ const TIME_PRESETS: { id: string; label: string; start: string; tz: string }[] =
 
 export default function ChecklistWizard({
   lang,
-  templates,
-  recommendedId,
-  defaultToggles,
   defaultTime,
-  personalItems = [],
   onApply,
   onClose,
 }: {
   lang: string;
-  templates: ChkTemplate[];
-  recommendedId: string;
-  defaultToggles: WizardToggles;
   defaultTime: { startTime: string; timeZone: string };
-  /** Adaptive rules from the onboarding profile — appended to any preset. */
-  personalItems?: ChkItem[];
   onApply: (r: WizardResult) => void;
   onClose: () => void;
 }) {
   const fr = isFr(lang);
-  const [step, setStep] = useState(0);
-  const [presetId, setPresetId] = useState(recommendedId);
-  const [toggles, setToggles] = useState<WizardToggles>(defaultToggles);
-  const [time, setTime] = useState(defaultTime);
-  const addons = useMemo(() => addonItems(fr), [fr]);
-
   const tr = (f: string, e: string) => (fr ? f : e);
+  const questions = useMemo(() => buildQuestions(fr), [fr]);
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [time, setTime] = useState(defaultTime);
+
+  const total = questions.length + 1; // + the session-time step
+  const onTimeStep = step === questions.length;
+
+  const next = () => setStep((s) => Math.min(s + 1, questions.length));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
+
+  const pickSingle = (q: Question, optId: string) => {
+    setAnswers((a) => ({ ...a, [q.id]: [optId] }));
+    setTimeout(next, 160);
+  };
+  const toggleMulti = (q: Question, optId: string) =>
+    setAnswers((a) => {
+      const cur = a[q.id] ?? [];
+      return {
+        ...a,
+        [q.id]: cur.includes(optId) ? cur.filter((x) => x !== optId) : [...cur, optId],
+      };
+    });
 
   const buildAndApply = () => {
-    const base = templates.find((t) => t.id === presetId)?.items ?? [];
-    const items: ChkItem[] = structuredClone(base);
-    (Object.keys(toggles) as (keyof WizardToggles)[]).forEach((k) => {
-      if (toggles[k] && !items.some((it) => it.title === addons[k].title)) items.push(addons[k]);
-    });
-    // Adaptive rules derived from onboarding (weakness, style, monthly target).
-    for (const it of personalItems) {
-      if (!items.some((x) => x.title === it.title)) items.push(structuredClone(it));
+    const items: ChkItem[] = [...baseItems(fr)];
+    for (const q of questions) {
+      const picked = answers[q.id] ?? [];
+      for (const opt of q.options) {
+        if (!picked.includes(opt.id)) continue;
+        for (const it of opt.items) {
+          if (!items.some((x) => x.title === it.title)) items.push({ ...it });
+        }
+      }
     }
     onApply({ items, startTime: time.startTime, timeZone: time.timeZone });
   };
-
-  // The generated list already folds in the guardrails (weakness, risk, market),
-  // so picking it skips the add-on step entirely: 2 taps instead of 3 screens.
-  const skipsGuardrails = presetId === "generated";
-  const next = () =>
-    setStep((s) => {
-      if (s === 0 && skipsGuardrails) return 2;
-      return Math.min(s + 1, 2);
-    });
-  const back = () => setStep((s) => (s === 2 && skipsGuardrails ? 0 : Math.max(s - 1, 0)));
-  const totalSteps = skipsGuardrails ? 2 : 3;
-  const stepIndex = skipsGuardrails && step === 2 ? 1 : step;
-
-  const toggleGuard = (k: keyof WizardToggles) => setToggles((t) => ({ ...t, [k]: !t[k] }));
 
   return (
     <div
@@ -147,7 +415,7 @@ export default function ChecklistWizard({
         className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 animate-slide-in"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header + progress */}
         <div className="flex items-center gap-3 mb-5">
           {step > 0 ? (
             <button onClick={back} className="text-slate-400 hover:text-white transition-colors">
@@ -157,12 +425,12 @@ export default function ChecklistWizard({
             <span className="w-5" />
           )}
           <div className="flex-1 flex gap-1.5">
-            {Array.from({ length: totalSteps }, (_, i) => (
+            {Array.from({ length: total }, (_, i) => (
               <div
                 key={i}
                 className={cn(
                   "h-1.5 flex-1 rounded-full transition-colors",
-                  i <= stepIndex ? "bg-cyan-500" : "bg-white/[0.08]",
+                  i <= step ? "bg-cyan-500" : "bg-white/[0.08]",
                 )}
               />
             ))}
@@ -172,127 +440,80 @@ export default function ChecklistWizard({
           </button>
         </div>
 
-        {/* Step 1 — detail level */}
-        {step === 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <Sparkles className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-lg font-bold text-white">
-                {tr("Ta checklist, en 20 secondes", "Your checklist, in 20 seconds")}
-              </h2>
-            </div>
-            <p className="text-sm text-slate-400 mb-5">
-              {tr(
-                "On a généré une checklist depuis ton profil d'onboarding. Garde-la ou choisis une autre base.",
-                "We generated a checklist from your onboarding profile. Keep it or pick another base.",
-              )}
-            </p>
-            <div className="grid gap-2.5">
-              {templates.map((tp) => {
-                const active = presetId === tp.id;
-                const rec = tp.id === recommendedId;
-                return (
-                  <button
-                    key={tp.id}
-                    onClick={() => {
-                      setPresetId(tp.id);
-                      setTimeout(next, 160);
-                    }}
-                    className={cn(
-                      "flex items-center gap-3.5 rounded-2xl p-3.5 border text-left transition-all",
-                      active
-                        ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold",
-                        active ? "bg-cyan-500/20 text-cyan-300" : "bg-white/[0.04] text-slate-400",
-                      )}
-                    >
-                      {tp.items.length}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-white">{tp.name}</span>
-                        {rec && (
-                          <span className="text-[9px] uppercase tracking-wider font-bold text-cyan-300 bg-cyan-500/15 px-1.5 py-0.5 rounded-full">
-                            {tr("Recommandé", "Recommended")}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-slate-500">{presetBlurb(tp.id, fr)}</div>
-                    </div>
-                    {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Step 2 — guardrails */}
-        {step === 1 && (
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <ShieldCheck className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-lg font-bold text-white">
-                {tr("Quelques garde-fous ?", "A few guardrails?")}
-              </h2>
-            </div>
-            <p className="text-sm text-slate-400 mb-5">
-              {tr(
-                "Active ce qui te parle. On peut changer plus tard.",
-                "Turn on what speaks to you. You can change it later.",
-              )}
-            </p>
-            <div className="grid gap-2.5">
-              {(Object.keys(addons) as (keyof WizardToggles)[]).map((k) => {
-                const on = toggles[k];
-                return (
-                  <button
-                    key={k}
-                    onClick={() => toggleGuard(k)}
-                    className={cn(
-                      "flex items-center gap-3.5 rounded-2xl p-3.5 border text-left transition-all",
-                      on
-                        ? "bg-cyan-500/15 border-cyan-400/50"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-white">{addons[k].title}</div>
-                      <div className="text-xs text-slate-500">{addons[k].desc}</div>
-                    </div>
-                    <div
-                      className={cn(
-                        "w-11 h-6 rounded-full p-0.5 shrink-0 transition-colors",
-                        on ? "bg-cyan-500" : "bg-white/[0.12]",
-                      )}
-                    >
-                      <div
+        {/* Question steps */}
+        {!onTimeStep &&
+          (() => {
+            const q = questions[step];
+            const Icon = q.icon;
+            const picked = answers[q.id] ?? [];
+            return (
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Icon className="w-5 h-5 text-cyan-400" />
+                  <h2 className="text-lg font-bold text-white">{q.title}</h2>
+                </div>
+                <p className="text-sm text-slate-400 mb-5">{q.sub}</p>
+                <div className="grid gap-2.5">
+                  {q.options.map((opt) => {
+                    const on = picked.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => (q.multi ? toggleMulti(q, opt.id) : pickSingle(q, opt.id))}
                         className={cn(
-                          "w-5 h-5 rounded-full bg-white transition-transform",
-                          on && "translate-x-5",
+                          "flex items-center gap-3.5 rounded-2xl p-3.5 border text-left transition-all",
+                          on
+                            ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
+                            : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
                         )}
-                      />
-                    </div>
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white">{opt.label}</div>
+                          {opt.hint && <div className="text-xs text-slate-500">{opt.hint}</div>}
+                        </div>
+                        {q.multi ? (
+                          <div
+                            className={cn(
+                              "w-11 h-6 rounded-full p-0.5 shrink-0 transition-colors",
+                              on ? "bg-cyan-500" : "bg-white/[0.12]",
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "w-5 h-5 rounded-full bg-white transition-transform",
+                                on && "translate-x-5",
+                              )}
+                            />
+                          </div>
+                        ) : (
+                          on && <Check className="w-4 h-4 text-cyan-300 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-5 flex items-center justify-between">
+                  <button
+                    onClick={next}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    {tr("Passer", "Skip")}
                   </button>
-                );
-              })}
-            </div>
-            <button
-              onClick={next}
-              className="w-full mt-6 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
-            >
-              {tr("Continuer", "Continue")}
-            </button>
-          </div>
-        )}
+                  {q.multi && (
+                    <button
+                      onClick={next}
+                      className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
+                    >
+                      {tr("Continuer", "Continue")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
-        {/* Step 3 — session start */}
-        {step === 2 && (
+        {/* Final step — session start */}
+        {onTimeStep && (
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Clock className="w-5 h-5 text-cyan-400" />
@@ -300,17 +521,10 @@ export default function ChecklistWizard({
                 {tr("Quand commence ta session ?", "When does your session start?")}
               </h2>
             </div>
-            <p className="text-sm text-slate-400 mb-1.5">
-              {tr(
-                "Aucune entrée avant cette heure. C'est ta règle n°1.",
-                "No entries before this time. That's your rule #1.",
-              )}
-            </p>
-            {/* Say WHY we ask — the only question left once the list is generated. */}
             <p className="text-xs text-slate-500 mb-5">
               {tr(
-                "On s'en sert pour verrouiller la checklist avant l'ouverture et t'alerter quand ta session démarre.",
-                "We use it to lock the checklist before the open and alert you when your session starts.",
+                "On s'en sert pour verrouiller la checklist avant l'ouverture et t'alerter au départ.",
+                "We use it to lock the checklist before the open and alert you at the start.",
               )}
             </p>
             <div className="grid gap-2.5 mb-4">
@@ -346,9 +560,9 @@ export default function ChecklistWizard({
             </div>
             <button
               onClick={buildAndApply}
-              className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
             >
-              {tr("Créer ma checklist", "Create my checklist")}
+              <Gauge className="w-4 h-4" /> {tr("Créer ma checklist", "Create my checklist")}
             </button>
           </div>
         )}

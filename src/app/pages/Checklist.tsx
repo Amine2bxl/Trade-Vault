@@ -22,7 +22,7 @@ import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { ttsSpeak } from "@/backend/tts.functions";
 import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
-import ChecklistWizard, { type WizardToggles, type WizardResult } from "./ChecklistWizard";
+import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
   type ChkItem,
@@ -245,27 +245,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   // (no more preset + guardrails + adaptive-rules bloat).
   const generated = useMemo(() => generateChecklist(onb ?? {}, lang), [onb, lang]);
 
-  // Wizard options: the personalized list first (recommended), then the plain
-  // presets as short alternatives.
-  const wizardTemplates = useMemo(
-    () => [
-      {
-        id: "generated",
-        name: lang === "fr" ? "Ta checklist perso" : "Your personalized checklist",
-        items: generated.items,
-      },
-      ...templatesFor(lang),
-    ],
-    [generated, lang],
-  );
-
-  const wizardDefaults = useMemo(
-    () => ({
-      rec: "generated",
-      // The generated list already encodes the guardrails → start clean.
-      toggles: { oneTrade: false, news: false, rr: false, dd: false } as WizardToggles,
-      time: { startTime: generated.startTime, timeZone: generated.timeZone },
-    }),
+  // Default session time offered by the wizard, derived from the onboarding
+  // profile (the adaptive wizard builds the item list from its own answers).
+  const wizardDefaultTime = useMemo(
+    () => ({ startTime: generated.startTime, timeZone: generated.timeZone }),
     [generated],
   );
 
@@ -1175,8 +1158,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
   return (
     <div ref={wrapRef} onMouseOver={onHover} onPointerDown={autoStartAudio} className="relative">
-      {/* Light holographic identity: a faint drifting grid + ambient particles. */}
+      {/* Light holographic identity: a faint drifting grid, a slow scanline and
+          ambient particles — a discreet nod to the original Pre-Trade OS. */}
       <div className="tvchk-grid" />
+      <div className="tvchk-scanline" />
       <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 -z-10 opacity-[0.12]" />
       {/* Subtle validation pulse — reuses the global fade, no HUD flash. */}
       <div
@@ -1574,7 +1559,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                     onClick={() => toggleItem(i)}
                     style={{ animationDelay: `${0.03 * (i + 1)}s` }}
                     className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] cursor-pointer transition-all animate-fade-in-up",
+                      "tvchk-item inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] cursor-pointer transition-all animate-fade-in-up",
+                      checked[i] && "done",
                       checked[i]
                         ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-100"
                         : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:text-white",
@@ -1842,7 +1828,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           z-[60] + bottom-28 on mobile keeps it clear of (and above) the bottom
           nav and the FAB; a floating pill, never hidden. */}
       {voice.show && (
-        <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:left-6 md:translate-x-0 md:bottom-6 w-[min(340px,calc(100vw-2rem))] animate-slide-up">
+        <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
           <div className="tvchk-sheen relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3 shadow-2xl shadow-cyan-500/10">
             <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
             <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0 shadow-lg shadow-cyan-500/30">
@@ -1959,10 +1945,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       {showWizard && (
         <ChecklistWizard
           lang={lang}
-          templates={wizardTemplates}
-          recommendedId={wizardDefaults.rec}
-          defaultToggles={wizardDefaults.toggles}
-          defaultTime={wizardDefaults.time}
+          defaultTime={wizardDefaultTime}
           onApply={applyWizard}
           onClose={() => {
             try {

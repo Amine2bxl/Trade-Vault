@@ -86,6 +86,55 @@
   }
 }
 
+/* A single faint scanline that sweeps down the page — a nod to the original
+   Pre-Trade OS, kept extremely subtle. */
+.tvchk-scanline {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: -20%;
+  height: 140px;
+  z-index: -9;
+  pointer-events: none;
+  opacity: 0.5;
+  background: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.04) 50%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tvchk-scanline {
+    animation: tvchk-scan 15s linear infinite;
+  }
+}
+@keyframes tvchk-scan {
+  0% {
+    top: -20%;
+  }
+  100% {
+    top: 120%;
+  }
+}
+
+/* Cyan scan sweep across a checklist item the moment it is ticked. */
+.tvchk-item {
+  position: relative;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tvchk-item.done::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.22), transparent);
+    transform: translateX(-100%);
+    animation: tvchk-itemscan 0.6s ease-out;
+  }
+}
+@keyframes tvchk-itemscan {
+  to {
+    transform: translateX(100%);
+  }
+}
+
 /* Premium voice waveform (equalizer bars). */
 .tvchk-wave {
   display: flex;
