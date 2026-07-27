@@ -123,7 +123,7 @@ function Stat({
 }) {
   return (
     <div className="glass rounded-2xl p-2.5 md:p-4 min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 mb-1.5 md:mb-2 truncate">
+      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 mb-1.5 md:mb-2 truncate">
         {icon}
         {label}
       </div>

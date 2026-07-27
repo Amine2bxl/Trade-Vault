@@ -252,14 +252,14 @@ export default function Journal({
                         </span>
                         <span
                           className={cn(
-                            "text-[9px] font-bold px-1.5 py-0.5 rounded leading-none",
+                            "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
                             directionBadgeClass(trade.direction),
                           )}
                         >
                           {directionLabel(trade.direction)}
                         </span>
                         {trade.isExample && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
                             {t("journal.exampleBadge")}
                           </span>
                         )}
@@ -387,7 +387,7 @@ export default function Journal({
                       <td className="px-5 py-3">
                         <span className="text-sm font-bold text-white">{trade.symbol}</span>
                         {trade.isExample && (
-                          <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
+                          <span className="ml-2 text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
                             {t("journal.exampleBadge")}
                           </span>
                         )}

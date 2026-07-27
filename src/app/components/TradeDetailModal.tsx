@@ -118,7 +118,7 @@ export default function TradeDetailModal({
                 {macro.map((ev) => (
                   <span
                     key={ev}
-                    className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[9px] font-bold"
+                    className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-bold"
                     title={t("tradeDetail.macroHint")}
                   >
                     {ev}
@@ -237,7 +237,7 @@ export default function TradeDetailModal({
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-500">{trade.strategy}</span>
                         {getSession(trade.entryTime) && (
-                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase">
+                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[11px] font-bold uppercase">
                             {t(`session.${getSession(trade.entryTime)}` as never)}
                           </span>
                         )}

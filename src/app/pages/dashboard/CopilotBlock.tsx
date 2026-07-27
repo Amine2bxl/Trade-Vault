@@ -60,7 +60,7 @@ function EdgeDial({ score }: { score: number }) {
         <span className={cn("font-display text-4xl font-extrabold tabular-nums leading-none", tone.text)}>
           {score}
         </span>
-        <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold mt-1">/ 100</span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mt-1">/ 100</span>
       </div>
     </div>
   );
@@ -233,7 +233,7 @@ export default function CopilotBlock({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-white">{t("chk.dashTitle")}</span>
                   {checklist.locked && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-300">
                       <Check className="w-2.5 h-2.5" /> {t("chk.ready")}
                     </span>
                   )}

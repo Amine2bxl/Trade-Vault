@@ -185,7 +185,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className={cn("text-xl font-bold tabular-nums", discColor)}>{disc}</span>
-                <span className="text-[8px] text-slate-500 uppercase tracking-wider">/ 100</span>
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider">/ 100</span>
               </div>
             </div>
             <div className="min-w-0">
@@ -241,12 +241,12 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   {card.icon}
-                  <span className="text-[9px] text-slate-500 truncate">{card.label}</span>
+                  <span className="text-[11px] text-slate-500 truncate">{card.label}</span>
                 </div>
                 <div className={cn("text-base md:text-lg font-bold leading-none", card.color)}>
                   {card.value}
                 </div>
-                <div className="text-[9px] text-slate-600 mt-1 truncate">{card.sub}</div>
+                <div className="text-[11px] text-slate-600 mt-1 truncate">{card.sub}</div>
               </div>
             ))}
           </div>
@@ -492,13 +492,13 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   >
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                       {idx === 0 && (
-                        <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">
+                        <span className="text-[11px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">
                           {t("mistakes.priority")}
                         </span>
                       )}
                       <span
                         className={cn(
-                          "text-[8px] font-bold px-1 py-0.5 rounded uppercase",
+                          "text-[11px] font-bold px-1 py-0.5 rounded uppercase",
                           SEV_STYLE[m.severity].bg,
                           SEV_STYLE[m.severity].text,
                         )}
@@ -519,7 +519,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                         ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
                         : t("mistakes.defaultTip")}
                     </p>
-                    <div className="mt-1.5 text-[9px] text-slate-600">
+                    <div className="mt-1.5 text-[11px] text-slate-600">
                       <span className="font-bold text-slate-400">{m.count}×</span> ·{" "}
                       <span
                         className={cn(

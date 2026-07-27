@@ -411,7 +411,7 @@ function Kpi({
 }) {
   return (
     <div className="glass rounded-xl p-3">
-      <div className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
+      <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
         {label}
       </div>
       <div
@@ -422,7 +422,7 @@ function Kpi({
       >
         {value}
       </div>
-      <div className="text-[9px] text-slate-600 mt-0.5 truncate">{sub}</div>
+      <div className="text-[11px] text-slate-600 mt-0.5 truncate">{sub}</div>
     </div>
   );
 }

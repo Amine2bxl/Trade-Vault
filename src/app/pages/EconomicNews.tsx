@@ -352,7 +352,7 @@ export default function EconomicNews() {
                     {dayFmt.format(date)}
                   </span>
                   {isToday && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                    <span className="text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
                       {t("news.today")}
                     </span>
                   )}
@@ -380,7 +380,7 @@ export default function EconomicNews() {
                           <div className="w-12 shrink-0">
                             <div className="text-sm font-bold text-white tabular-nums">{time}</div>
                             {e.approximate && (
-                              <div className="text-[8px] text-slate-600 uppercase font-semibold">
+                              <div className="text-[11px] text-slate-600 uppercase font-semibold">
                                 {t("news.approx")}
                               </div>
                             )}

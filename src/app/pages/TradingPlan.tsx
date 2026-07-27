@@ -649,7 +649,7 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-xs font-bold text-white tabular-nums leading-none">{pct}%</span>
-        <span className="text-[7px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
       </div>
     </div>
   );

@@ -315,7 +315,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
             <div className="flex items-center gap-3 md:gap-6 flex-wrap">
               <div className="text-center">
-                <div className="text-[9px] md:text-[10px] text-slate-500">
+                <div className="text-[11px] md:text-[10px] text-slate-500">
                   {t("analytics.profits")}
                 </div>
                 <div className="text-sm md:text-lg font-bold text-emerald-400">
@@ -324,7 +324,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </div>
               <div className="text-lg text-slate-600">÷</div>
               <div className="text-center">
-                <div className="text-[9px] md:text-[10px] text-slate-500">
+                <div className="text-[11px] md:text-[10px] text-slate-500">
                   {t("analytics.losses")}
                 </div>
                 <div className="text-sm md:text-lg font-bold text-red-400">
@@ -333,7 +333,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </div>
               <div className="text-lg text-slate-600">=</div>
               <div className="text-center">
-                <div className="text-[9px] md:text-[10px] text-slate-500">
+                <div className="text-[11px] md:text-[10px] text-slate-500">
                   {t("analytics.factor")}
                 </div>
                 <div
@@ -377,7 +377,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
           <Card hover className="md:hidden group relative p-3.5">
             <div className="flex items-center gap-1 mb-1.5">
-              <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">
+              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
                 {t("analytics.profitFactor")}
               </span>
             </div>
@@ -391,7 +391,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 ? "99+"
                 : profitFactorData.profitFactor.toFixed(2)}
             </div>
-            <div className="text-[9px] text-slate-600 mt-0.5 truncate">
+            <div className="text-[11px] text-slate-600 mt-0.5 truncate">
               {profitFactorData.isProfitable
                 ? `✓ ${t("analytics.profitable")}`
                 : `✗ ${t("analytics.losing")}`}
@@ -463,7 +463,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           ].map((m, i) => (
             <div key={i} className="group relative glass rounded-2xl p-3.5 card-premium">
               <div className="flex items-center gap-1 mb-1.5">
-                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
                   {m.label}
                 </span>
                 {"info" in m && m.info && <InfoTip text={m.info} />}
@@ -476,7 +476,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               >
                 {m.value}
               </div>
-              <div className="text-[9px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
+              <div className="text-[11px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
             </div>
           ))}
         </div>
@@ -581,13 +581,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <div className="grid gap-1" style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}>
               <div />
               {[1, 2, 3, 4, 5].map((d) => (
-                <div key={d} className="text-center text-[9px] text-slate-500 font-semibold pb-1">
+                <div key={d} className="text-center text-[11px] text-slate-500 font-semibold pb-1">
                   {DAY_NAMES[d]}
                 </div>
               ))}
               {SESSIONS.map((s) => (
                 <Fragment key={s}>
-                  <div className="text-[9px] text-slate-500 font-semibold pr-2 flex items-center">
+                  <div className="text-[11px] text-slate-500 font-semibold pr-2 flex items-center">
                     {t(`session.${s}` as never)}
                   </div>
                   {[1, 2, 3, 4, 5].map((d) => {
@@ -599,7 +599,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         key={`${s}-${d}`}
                         title={cell ? `${formatPnl(cell.pnl)} · ${cell.count} trades` : ""}
                         className={cn(
-                          "rounded-lg h-11 flex flex-col items-center justify-center text-[9px] font-bold transition-transform hover:scale-105",
+                          "rounded-lg h-11 flex flex-col items-center justify-center text-[11px] font-bold transition-transform hover:scale-105",
                           !cell && "bg-white/[0.02]",
                         )}
                         style={
@@ -887,15 +887,15 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <div className="flex items-center justify-center gap-4 mt-1">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded bg-emerald-500/50" />
-                  <span className="text-[9px] text-slate-500">{t("journal.colPnl")}</span>
+                  <span className="text-[11px] text-slate-500">{t("journal.colPnl")}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-4 h-0.5 bg-cyan-500" />
-                  <span className="text-[9px] text-slate-500">WR%</span>
+                  <span className="text-[11px] text-slate-500">WR%</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-4 h-0 border-t border-dashed border-amber-500" />
-                  <span className="text-[9px] text-slate-500">RR</span>
+                  <span className="text-[11px] text-slate-500">RR</span>
                 </span>
               </div>
             </div>

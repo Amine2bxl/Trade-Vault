@@ -123,7 +123,7 @@ export default function PushOnboardingBanner({ userId }: { userId: string }) {
               {/* Fake address bar */}
               <span className="relative w-7 h-7 rounded-lg bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center shrink-0 animate-pulse">
                 <Lock className="w-3.5 h-3.5 text-amber-300" />
-                <span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-amber-400 text-[8px] font-black text-black flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-amber-400 text-[11px] font-black text-black flex items-center justify-center">
                   1
                 </span>
               </span>
@@ -132,13 +132,13 @@ export default function PushOnboardingBanner({ userId }: { userId: string }) {
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400">
-              <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-black flex items-center justify-center shrink-0">
+              <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px] font-black flex items-center justify-center shrink-0">
                 2
               </span>
               {t("pushBanner.blockedStep2")}
             </div>
             <div className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-400">
-              <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-black flex items-center justify-center shrink-0">
+              <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px] font-black flex items-center justify-center shrink-0">
                 3
               </span>
               {t("pushBanner.blockedStep3")}

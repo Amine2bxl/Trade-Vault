@@ -124,7 +124,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
             <div className="p-4 pt-2 max-h-[70dvh] overflow-y-auto">
               {MOBILE_MORE_GROUPS.map((g) => (
                 <div key={g.labelKey} className="mb-1.5">
-                  <div className="px-1 pt-2 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+                  <div className="px-1 pt-2 pb-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-600 font-bold">
                     {t(g.labelKey)}
                   </div>
                   <div className="grid grid-cols-3 gap-2">

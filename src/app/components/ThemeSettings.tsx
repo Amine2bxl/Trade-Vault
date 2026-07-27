@@ -137,7 +137,7 @@ export default function ThemeSettings() {
 
         {/* Badges + actions */}
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-600">
+          <span className="text-[11px] uppercase tracking-wider font-bold text-slate-600">
             {isDefault ? t("appearance.default") : th.builtin ? "" : t("appearance.yours")}
           </span>
           <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>

@@ -1885,7 +1885,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             </span>
             <div className="relative min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
                   Jarvis
                 </span>
                 <span className={cn("tvchk-wave", voice.speaking && "on")}>

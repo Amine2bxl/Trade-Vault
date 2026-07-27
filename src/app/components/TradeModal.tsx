@@ -900,7 +900,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     placeholder="—"
                     className={inputClass}
                   />
-                  <div className="text-[9px] text-slate-600 mt-1">{t("trade.maeHint")}</div>
+                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.maeHint")}</div>
                 </div>
                 <div>
                   <label className={labelClass}>MFE ($)</label>
@@ -912,7 +912,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     placeholder="—"
                     className={inputClass}
                   />
-                  <div className="text-[9px] text-slate-600 mt-1">{t("trade.mfeHint")}</div>
+                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.mfeHint")}</div>
                 </div>
                 <div>
                   <label className={labelClass}>{t("trade.slippage")} ($)</label>
@@ -949,7 +949,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <>
                 <span className="font-bold text-white shrink-0">{form.symbol.toUpperCase()}</span>
                 {session && (
-                  <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase shrink-0">
+                  <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[11px] font-bold uppercase shrink-0">
                     {t(`session.${session}` as never)}
                   </span>
                 )}

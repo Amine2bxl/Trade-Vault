@@ -236,7 +236,7 @@ export default function MissedOpportunities() {
                       </span>
                     )}
                     {m.screenshots && m.screenshots.length > 0 && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 font-semibold">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 font-semibold">
                         {m.screenshots.length}📷
                       </span>
                     )}

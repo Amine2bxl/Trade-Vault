@@ -546,7 +546,7 @@ export function PlanView({
                     >
                       {tr("Mois", "Month")} {i + 1} · {monthLabel(monthOf(plan, i))}
                       {i === cur && (
-                        <span className="ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-300">
+                        <span className="ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
                           {tr("en cours", "current")}
                         </span>
                       )}

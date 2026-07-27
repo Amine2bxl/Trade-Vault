@@ -385,7 +385,7 @@ export default function Dashboard({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-white">NQ</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
                     L
                   </span>
                   <span className="text-[10px] text-slate-600">Silver Bullet</span>
@@ -611,7 +611,7 @@ export default function Dashboard({
                             <span className="text-sm font-bold text-white">{trade.symbol}</span>
                             <span
                               className={cn(
-                                "text-[9px] font-bold px-1.5 py-0.5 rounded",
+                                "text-[11px] font-bold px-1.5 py-0.5 rounded",
                                 directionBadgeClass(trade.direction),
                               )}
                             >
@@ -670,7 +670,7 @@ function MiniStat({
 }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
+      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
         <span className="text-cyan-400/60">{icon}</span>
         {label}
       </div>

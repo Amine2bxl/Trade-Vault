@@ -278,10 +278,10 @@ function AssetSeasonality() {
         <div className="mt-3 pt-3 border-t border-white/[0.05] grid grid-cols-12 gap-1">
           {chartData.map((d, i) => (
             <div key={i} className="text-center">
-              <div className="text-[8px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
+              <div className="text-[11px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
               <div
                 className={cn(
-                  "text-[9px] font-bold tabular-nums",
+                  "text-[11px] font-bold tabular-nums",
                   d.win >= 60
                     ? "text-emerald-400"
                     : d.win >= 50
@@ -318,7 +318,7 @@ function AssetSeasonality() {
                 <div
                   key={m}
                   className={cn(
-                    "text-center text-[9px] font-bold uppercase tracking-wide pb-1",
+                    "text-center text-[11px] font-bold uppercase tracking-wide pb-1",
                     i === currentMonth ? "text-cyan-300" : "text-slate-500",
                   )}
                 >
@@ -376,7 +376,7 @@ function AssetHeatRow({
             key={i}
             title={`${asset.symbol} ${MONTHS_SHORT[i]}: ${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
             className={cn(
-              "h-8 rounded-md flex items-center justify-center text-[8px] font-bold tabular-nums cursor-default transition-transform hover:scale-[1.08]",
+              "h-8 rounded-md flex items-center justify-center text-[11px] font-bold tabular-nums cursor-default transition-transform hover:scale-[1.08]",
               i === currentMonth && "ring-1 ring-cyan-400/50",
             )}
             style={{ background: bg, color: "#f1f5f9" }}
@@ -613,7 +613,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
               {monthly.map((m) => (
                 <div
                   key={m.key}
-                  className="text-center text-[9px] font-bold uppercase tracking-wide text-slate-500 pb-1"
+                  className="text-center text-[11px] font-bold uppercase tracking-wide text-slate-500 pb-1"
                 >
                   {m.month}
                 </div>
@@ -735,7 +735,7 @@ function YearRow({ year, values, heatMax }: { year: number; values: number[]; he
           <div
             key={i}
             title={v === 0 ? "—" : `$${v.toFixed(2)}`}
-            className="h-9 rounded-lg flex items-center justify-center text-[9px] font-bold tabular-nums transition-transform hover:scale-[1.06] cursor-default"
+            className="h-9 rounded-lg flex items-center justify-center text-[11px] font-bold tabular-nums transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >
             {v === 0 ? "" : `${v > 0 ? "+" : ""}${Math.round(v)}`}
@@ -761,7 +761,7 @@ function HighlightCard({
 }) {
   return (
     <Card hover className="p-3.5 md:p-4 min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 truncate">
+      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 truncate">
         <span className={positive ? "text-emerald-400" : "text-red-400"}>{icon}</span>
         {label}
       </div>
