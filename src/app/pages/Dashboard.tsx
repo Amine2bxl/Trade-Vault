@@ -216,13 +216,16 @@ export default function Dashboard({
         >
           <div
             className={cn(
-              "w-9 h-9 rounded-xl border flex items-center justify-center shrink-0",
+              "relative w-9 h-9 rounded-xl border flex items-center justify-center shrink-0",
               chkStatus.locked
                 ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
                 : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
             )}
           >
-            <ClipboardCheck className="w-4 h-4" />
+            {!chkStatus.locked && (
+              <span className="absolute -inset-0.5 rounded-xl bg-cyan-500/25 blur-md animate-pulse" />
+            )}
+            <ClipboardCheck className="relative w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
