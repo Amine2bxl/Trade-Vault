@@ -25,7 +25,7 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageHeader, PageContainer } from "@/shared/ui";
+import { PageHeader, PageContainer, Button, EmptyState } from "@/shared/ui";
 
 interface JournalProps {
   trades: Trade[];
@@ -140,27 +140,23 @@ export default function Journal({
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
         actions={
-          <div className="flex items-center gap-1.5 md:gap-3 animate-fade-in-up stagger-1 shrink-0">
-            <button
+          <div className="flex items-center gap-1.5 md:gap-2 animate-fade-in-up stagger-1 shrink-0">
+            <Button
+              variant="subtle"
+              size="sm"
               onClick={() => exportTradesCSV(trades)}
-              className="flex items-center gap-1.5 md:gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
+              className="border-cyan-500/20 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/15 hover:text-cyan-300"
             >
-              <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <Download className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.exportCsv")}</span>
-            </button>
-            <button
-              onClick={onDeleteAll}
-              className="flex items-center gap-1.5 md:gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
-            >
-              <Trash className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            </Button>
+            <Button variant="danger" size="sm" onClick={onDeleteAll}>
+              <Trash className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.deleteAll")}</span>
-            </button>
-            <button
-              onClick={onAdd}
-              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5"
-            >
+            </Button>
+            <Button size="sm" onClick={onAdd} className="hidden md:inline-flex">
               <Plus className="w-4 h-4" /> {t("common.addTrade")}
-            </button>
+            </Button>
           </div>
         }
       />
@@ -209,20 +205,17 @@ export default function Journal({
       {/* ── Mobile: Card List ── */}
       <div className="md:hidden space-y-2 animate-fade-in-up stagger-2">
         {trades.length === 0 ? (
-          <div className="glass rounded-2xl p-10 text-center">
-            <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-            <p className="text-xs text-slate-500 mb-4">{t("empty.subtitle")}</p>
-            <button
-              onClick={onAdd}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20"
-            >
-              <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-            </button>
-          </div>
+          <EmptyState
+            title={t("empty.title")}
+            description={t("empty.subtitle")}
+            action={
+              <Button size="sm" onClick={onAdd}>
+                <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
+              </Button>
+            }
+          />
         ) : filtered.length === 0 ? (
-          <div className="glass rounded-2xl p-10 text-center text-slate-600 text-sm">
-            {t("common.noTradesFound")}
-          </div>
+          <EmptyState title={t("common.noTradesFound")} />
         ) : (
           shown.map((trade, i) => {
             const be = isBreakEven(trade);
@@ -365,20 +358,17 @@ export default function Journal({
             <tbody className="divide-y divide-white/[0.04]">
               {trades.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-14 text-center">
+                  <td colSpan={8} className="px-5 py-10 text-center">
                     <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-                    <p className="text-xs text-slate-500 mb-4">{t("empty.subtitle")}</p>
-                    <button
-                      onClick={onAdd}
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all"
-                    >
+                    <p className="text-xs text-slate-500 mb-3">{t("empty.subtitle")}</p>
+                    <Button size="sm" onClick={onAdd}>
                       <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center text-slate-600 text-sm">
+                  <td colSpan={8} className="px-5 py-10 text-center text-slate-600 text-sm">
                     {t("common.noTradesFound")}
                   </td>
                 </tr>
