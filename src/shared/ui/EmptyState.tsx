@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "./cn";
+import { density } from "./tokens";
 
 /**
  * EmptyState — the one way a screen says "nothing here yet". Same glass
@@ -20,7 +21,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("glass rounded-2xl p-8 text-center", className)}>
+    <div className={cn("glass rounded-2xl text-center", density.cardPadLoose, className)}>
       {icon && <div className="mb-3 flex justify-center text-slate-600">{icon}</div>}
       <p className="text-slate-400 font-semibold">{title}</p>
       {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}

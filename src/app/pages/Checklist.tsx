@@ -1649,7 +1649,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                   </div>
                   <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500"
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
                       style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
                     />
                   </div>
