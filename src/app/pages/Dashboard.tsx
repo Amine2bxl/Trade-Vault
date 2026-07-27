@@ -32,10 +32,9 @@ import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/ed
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageHeader, PageContainer } from "@/shared/ui";
+import { PageHeader, PageContainer, Metric } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
 import CopilotBlock from "./dashboard/CopilotBlock";
-import MetricCard from "./dashboard/MetricCard";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 
@@ -508,9 +507,9 @@ export default function Dashboard({
 
           {/* Stats Grid — radial gauges + sparkline, with folded secondary stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-            <MetricCard
+            <Metric
               icon={<Target className="w-4 h-4" />}
-              label={t("stats.winRate")}
+              title={t("stats.winRate")}
               value={formatPct(stats.winRate)}
               valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
               visual={{
@@ -519,14 +518,12 @@ export default function Dashboard({
                 color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
                 center: `${stats.wins}/${stats.losses}`,
               }}
-              footerLabel={t("dashboard.currentStreak")}
-              footerValue={streakLabel}
-              footerClass={streakColor}
+              footer={{ label: t("dashboard.currentStreak"), value: streakLabel, className: streakColor }}
               delay={0}
             />
-            <MetricCard
+            <Metric
               icon={<Activity className="w-4 h-4" />}
-              label={t("dashboard.profitFactor")}
+              title={t("dashboard.profitFactor")}
               value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
               valueClass={
                 stats.profitFactor >= 1.5
@@ -540,13 +537,12 @@ export default function Dashboard({
                 pct: Math.min(stats.profitFactor / 3, 1),
                 color: stats.profitFactor >= 1.5 ? "#10b981" : stats.profitFactor < 1 ? "#ef4444" : "#22d3ee",
               }}
-              footerLabel={t("dashboard.avgRR")}
-              footerValue={stats.avgRR.toFixed(2)}
+              footer={{ label: t("dashboard.avgRR"), value: stats.avgRR.toFixed(2) }}
               delay={60}
             />
-            <MetricCard
+            <Metric
               icon={quant.expectancy >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              label={t("quant.expectancy")}
+              title={t("quant.expectancy")}
               value={formatPnl(quant.expectancy)}
               valueClass={quant.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
               visual={{
@@ -554,13 +550,12 @@ export default function Dashboard({
                 data: stats.equityCurve.map((e) => e.equity),
                 color: quant.expectancy >= 0 ? "#22d3ee" : "#ef4444",
               }}
-              footerLabel={t("dashboard.bestWorst")}
-              footerValue={`${stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"} / ${stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}`}
+              footer={{ label: t("dashboard.bestWorst"), value: `${stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"} / ${stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}` }}
               delay={120}
             />
-            <MetricCard
+            <Metric
               icon={<BarChart3 className="w-4 h-4" />}
-              label={t("dashboard.maxDrawdown")}
+              title={t("dashboard.maxDrawdown")}
               value={formatPnl(-stats.maxDrawdown)}
               valueClass="text-red-400"
               visual={{
@@ -569,9 +564,7 @@ export default function Dashboard({
                 color: (quant.maxDrawdownPct ?? 0) >= 0.2 ? "#ef4444" : "#f59e0b",
                 center: quant.maxDrawdownPct !== null ? `${(quant.maxDrawdownPct * 100).toFixed(0)}%` : undefined,
               }}
-              footerLabel={t("quant.planAdherence")}
-              footerValue={formatPct(quant.planAdherence)}
-              footerClass={quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400"}
+              footer={{ label: t("quant.planAdherence"), value: formatPct(quant.planAdherence), className: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400" }}
               delay={180}
             />
           </div>
