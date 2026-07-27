@@ -162,7 +162,7 @@ export default function MissedOpportunities() {
   );
 
   return (
-    <div className="p-3.5 md:p-5 max-w-[1100px] mx-auto">
+    <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
       <PageHeader
         className="items-center"
         icon={<Target className="w-5 h-5 text-amber-400" />}

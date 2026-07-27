@@ -86,17 +86,17 @@ export const motion = {
  */
 export const density = {
   /** Card/panel inner padding. */
-  cardPad: "p-3.5 md:p-4",
+  cardPad: "p-4 md:p-5",
   /** Tighter variant for list rows and compact tiles. */
-  cardPadTight: "p-3",
+  cardPadTight: "p-3.5",
   /** Roomier variant, reserved for hero/feature surfaces. */
-  cardPadLoose: "p-4 md:p-5",
-  /** Page gutters — mobile stays tight so more fits on screen. */
-  pagePad: "p-3 md:p-6",
+  cardPadLoose: "p-5 md:p-6",
+  /** Page gutters — mobile stays a touch tighter so more fits on screen. */
+  pagePad: "p-4 md:p-6",
   /** Vertical rhythm between page sections. */
-  sectionGap: "mb-3 md:mb-4",
+  sectionGap: "mb-4 md:mb-5",
   /** Grid gap between sibling cards. */
-  gridGap: "gap-3",
+  gridGap: "gap-4",
 } as const;
 
 /**
@@ -106,7 +106,7 @@ export const density = {
  */
 export const type = {
   /** Page title. */
-  h1: "text-xl md:text-2xl font-bold",
+  h1: "text-2xl md:text-[28px] font-bold",
   /** Section title. */
   h2: "text-sm md:text-base font-bold",
   /** Card title. */

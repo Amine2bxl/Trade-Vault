@@ -282,7 +282,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
   if (trades.length === 0)
     return (
-      <div className="p-3.5 md:p-5">
+      <div className="p-4 md:p-5">
         <PageHeader className="mb-2 md:mb-2" title={t("analytics.title")} />
         <EmptyState title={t("analytics.noTrades")} />
       </div>
@@ -302,7 +302,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             Rate / PnL), so the stats read as one uniform, scroll-light grid. */}
         <div
           className={cn(
-            "hidden md:block glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-1 border",
+            "hidden md:block glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 border",
             profitFactorData.isProfitable ? "border-emerald-500/15" : "border-red-500/15",
           )}
         >
@@ -574,8 +574,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Session × weekday heatmap + win rate by hour */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2">
             <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.heatmap")}</h3>
             <p className="text-[10px] text-slate-600 mb-3">{t("analytics.heatmapSub")}</p>
             <div className="grid gap-1" style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}>
@@ -628,7 +628,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               ))}
             </div>
           </div>
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-3">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.byHour")}</h3>
             <p className="text-[10px] text-slate-600 mb-3">{t("analytics.byHourSub")}</p>
             {hourData.length > 0 ? (
@@ -697,8 +697,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Equity + Pie */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="relative md:col-span-2 glass rounded-3xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-2 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <h3 className="text-sm font-semibold text-white mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-organic chart-draw">
@@ -761,7 +761,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-3">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-3">{t("analytics.winLoss")}</h3>
             <div className="h-40 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -813,7 +813,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Monthly Performance */}
-        <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-4">
+        <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
           <h3 className="text-sm font-semibold text-white mb-1">
             {t("analytics.monthlyPerformance")}
           </h3>
@@ -907,8 +907,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Day of Week + Strategy */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlWinRateByDay")}
             </h3>
@@ -965,7 +965,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-6">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlByStrategy")}
             </h3>
@@ -1010,8 +1010,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Distribution + Symbol */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-7">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-7">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlDistribution")}
             </h3>
@@ -1043,7 +1043,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-8">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-8">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.symbolPerformance")}
             </h3>

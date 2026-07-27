@@ -68,7 +68,7 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
         </header>
 
         {/* Table of contents */}
-        <nav className="glass rounded-2xl p-3.5 md:p-4 mb-8">
+        <nav className="glass rounded-2xl p-4 md:p-5 mb-8">
           <div className="text-[11px] uppercase tracking-wider text-cyan-400 font-bold mb-3">
             {chrome.toc}
           </div>
@@ -94,7 +94,7 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
             <section
               key={b.h}
               id={`sec-${i}`}
-              className="glass-strong rounded-2xl p-4 scroll-mt-6"
+              className="glass-strong rounded-2xl p-4 md:p-5 scroll-mt-6"
             >
               <h2 className="text-base md:text-lg font-bold text-white mb-2.5 flex items-center gap-2.5">
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 text-cyan-400 text-xs font-bold flex items-center justify-center shrink-0 tabular-nums">

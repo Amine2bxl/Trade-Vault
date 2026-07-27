@@ -429,7 +429,7 @@ function DeleteAccountModal({
       onClick={onClose}
     >
       <div
-        className="glass-strong rounded-3xl p-4 max-w-sm w-full animate-slide-in border border-red-500/20"
+        className="glass-strong rounded-3xl p-5 max-w-sm w-full animate-slide-in border border-red-500/20"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center mb-4">
@@ -520,7 +520,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
       {/* Mobile: stacked form. Desktop: one clean horizontal row — name |
           type | balance | create — like a spreadsheet line, zero scrolling. */}
       <div
-        className="glass-strong rounded-3xl p-4 w-full max-w-sm md:max-w-3xl animate-slide-in"
+        className="glass-strong rounded-3xl p-5 w-full max-w-sm md:max-w-3xl animate-slide-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">

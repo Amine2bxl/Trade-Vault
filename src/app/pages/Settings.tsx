@@ -157,7 +157,7 @@ export default function Settings({
 
       {/* Preferences */}
       {sections.prefs && (
-        <div className="glass-strong rounded-3xl p-4 space-y-4 animate-fade-in-up stagger-1">
+        <div className="glass-strong rounded-3xl p-5 space-y-4 animate-fade-in-up stagger-1">
           <SectionHeading
             icon={<SlidersHorizontal className="w-4 h-4" />}
             title={t("settings.preferences")}
@@ -219,7 +219,7 @@ export default function Settings({
 
       {/* Data */}
       {sections.data && (
-        <div className="glass-strong rounded-3xl p-4 space-y-3 animate-fade-in-up stagger-3">
+        <div className="glass-strong rounded-3xl p-5 space-y-3 animate-fade-in-up stagger-3">
           <SectionHeading
             icon={<Database className="w-4 h-4" />}
             title={t("settings.data")}
@@ -250,7 +250,7 @@ export default function Settings({
 
       {/* Danger zone */}
       {sections.danger && (
-        <div className="glass-strong rounded-3xl p-4 space-y-3 border border-red-500/10 animate-fade-in-up stagger-4">
+        <div className="glass-strong rounded-3xl p-5 space-y-3 border border-red-500/10 animate-fade-in-up stagger-4">
           <h2 className="text-sm font-semibold text-red-400/90 uppercase tracking-wider">
             {t("settings.dangerZone")}
           </h2>
@@ -327,7 +327,7 @@ function DeleteAccountModal({
       onClick={onClose}
     >
       <div
-        className="glass-strong rounded-3xl p-4 max-w-md w-full border border-red-500/20 animate-slide-in"
+        className="glass-strong rounded-3xl p-5 max-w-md w-full border border-red-500/20 animate-slide-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">

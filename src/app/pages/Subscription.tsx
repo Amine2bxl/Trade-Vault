@@ -44,7 +44,7 @@ export default function Subscription() {
         : t("billing.planFree");
 
   return (
-    <div className="p-3.5 md:p-5 max-w-3xl mx-auto space-y-5">
+    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-5">
       <PageHeader
         className="mb-1 md:mb-1"
         title={tr("Abonnement", "Subscription")}
@@ -55,7 +55,7 @@ export default function Subscription() {
       />
 
       {/* Status hero — real subscription state, no prices. */}
-      <div className="relative glass-strong rounded-3xl p-3.5 md:p-4 overflow-hidden animate-fade-in-up stagger-1">
+      <div className="relative glass-strong rounded-3xl p-4 md:p-5 overflow-hidden animate-fade-in-up stagger-1">
         <div className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">

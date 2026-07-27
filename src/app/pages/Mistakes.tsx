@@ -122,7 +122,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   if (trades.length === 0) {
     if (embedded) return null;
     return (
-      <div className="p-3.5 md:p-5">
+      <div className="p-4 md:p-5">
         <PageHeader className="mb-2 md:mb-2" title={t("mistakes.title")} />
         <EmptyState title={t("mistakes.noTrades")} />
       </div>
@@ -145,7 +145,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
     C = 2 * Math.PI * R;
 
   return (
-    <div className={cn(embedded ? "pt-2" : "p-3.5 md:p-5 max-w-[1400px] mx-auto")}>
+    <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
       <PageHeader
         className="stagger-0"
         title={t("mistakes.title")}
@@ -154,9 +154,9 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
       <div className="space-y-4 md:space-y-6">
         {/* ── Discipline score + summary KPIs ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Discipline dial */}
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-1 flex items-center gap-4">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 flex items-center gap-4">
             <div className="relative shrink-0" style={{ width: 84, height: 84 }}>
               <svg width="84" height="84" viewBox="0 0 84 84" className="-rotate-90">
                 <circle
@@ -267,9 +267,9 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
         )}
 
         {/* ── Behavioral breakdown: severity + cost ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Severity distribution */}
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-3">
+          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.severity")}</h3>
             {severityTotal > 0 ? (
               <div className="space-y-3">
@@ -311,7 +311,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
           </div>
 
           {/* Cost per mistake type */}
-          <div className="md:col-span-2 glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-4">
+          <div className="md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
             <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.costAnalysis")}</h3>
             {b.rows.length > 0 ? (
               <div className="h-56 md:h-64">
@@ -366,9 +366,9 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
         {/* ── When mistakes happen: weekly trend + session + day ── */}
         {b.totalIncidents > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Weekly trend */}
-            <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-5">
+            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
               <h3 className="text-sm font-semibold text-white mb-1">{t("mistakes.weeklyTrend")}</h3>
               <p className="text-[10px] text-slate-600 mb-3">{t("mistakes.weeklyTrendSub")}</p>
               {b.weeklyTrend.length > 0 ? (
@@ -422,7 +422,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             </div>
 
             {/* Session + day distribution */}
-            <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-6 space-y-4">
+            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6 space-y-4">
               <div>
                 <h3 className="text-sm font-semibold text-white mb-2">{t("mistakes.bySession")}</h3>
                 <div className="space-y-2">
@@ -474,7 +474,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
         )}
 
         {/* ── Personalized recommendations + progression goal ── */}
-        <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-7">
+        <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-7">
           <div className="flex items-center gap-2 mb-3 md:mb-4">
             <Lightbulb className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-semibold text-white">{t("mistakes.improvementTips")}</h3>

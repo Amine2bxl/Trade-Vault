@@ -194,7 +194,7 @@ export function GoalPicker({
   const selectedCount = kinds.filter((k) => drafts[k].selected).length;
 
   return (
-    <div className="glass-strong rounded-3xl p-4 animate-fade-in-up">
+    <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up">
       <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-1.5">
         {tr("Choisis tes objectifs", "Pick your goals")}
       </h2>

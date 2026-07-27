@@ -327,7 +327,7 @@ export default function Dashboard({
 
       {trades.length === 0 ? (
         /* ── Empty state: first-run experience ── */
-        <div className="glass rounded-3xl p-3.5 md:p-4 text-center card-premium animate-fade-in-up stagger-1 relative overflow-hidden">
+        <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium animate-fade-in-up stagger-1 relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
           <svg
             viewBox="0 0 200 80"
@@ -401,7 +401,7 @@ export default function Dashboard({
       ) : (
         <>
           {/* ── Hero: Equity Curve ── */}
-          <div className="relative glass rounded-3xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
+          <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
               <div>
