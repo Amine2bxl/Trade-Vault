@@ -4,7 +4,7 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, Card } from "@/shared/ui";
 
 type TFn = (k: TKey) => string;
 
@@ -88,7 +88,7 @@ export default function Subscription() {
       </div>
 
       {/* Where to manage it — points to the Profile billing section, no logic here. */}
-      <div className="glass rounded-2xl px-4 py-3.5 flex items-center gap-3 animate-fade-in-up stagger-4">
+      <Card className="px-4 py-3.5 flex items-center gap-3 animate-fade-in-up stagger-4">
         <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
           <Clock className="w-4 h-4" />
         </div>
@@ -98,7 +98,7 @@ export default function Subscription() {
             "Managing your subscription (plan change, payment) happens from your Profile.",
           )}
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

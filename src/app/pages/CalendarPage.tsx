@@ -10,7 +10,7 @@ import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import MissedOpportunities from "./MissedOpportunities";
 import { useT } from "../i18n/LanguageContext";
-import { PageHeader, PageContainer } from "@/shared/ui";
+import { PageHeader, PageContainer, Card } from "@/shared/ui";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -321,7 +321,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
       </div>
 
       {/* Calendar */}
-      <div className="glass rounded-2xl md:rounded-3xl overflow-hidden animate-fade-in-up stagger-5">
+      <Card className="md:rounded-3xl overflow-hidden animate-fade-in-up stagger-5">
         <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-5 border-b border-white/[0.06]">
           <button
             onClick={prevMonth}
@@ -527,7 +527,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       <div className="hidden md:flex items-center gap-6 mt-4 px-2 flex-wrap">
         <div className="flex items-center gap-2">

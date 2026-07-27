@@ -35,7 +35,7 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import { PageHeader, PageContainer } from "@/shared/ui";
+import { PageHeader, PageContainer, Card } from "@/shared/ui";
 
 interface SeasonalityProps {
   trades: Trade[];
@@ -141,12 +141,12 @@ function AssetSeasonality() {
   return (
     <div className="animate-fade-in">
       {/* Disclaimer */}
-      <div className="glass rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5 border border-cyan-500/10">
+      <Card className="px-4 py-3 mb-4 flex items-start gap-2.5 border border-cyan-500/10">
         <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed text-slate-400">
           {t("seasonality.assetDisclaimer")}
         </p>
-      </div>
+      </Card>
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-1.5 mb-3">
@@ -760,7 +760,7 @@ function HighlightCard({
   positive: boolean;
 }) {
   return (
-    <div className="glass rounded-2xl p-3.5 md:p-4 card-premium min-w-0">
+    <Card hover className="p-3.5 md:p-4 min-w-0">
       <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 truncate">
         <span className={positive ? "text-emerald-400" : "text-red-400"}>{icon}</span>
         {label}
@@ -776,6 +776,6 @@ function HighlightCard({
           {sub}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

@@ -32,7 +32,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import Lightbox from "../components/Lightbox";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, Card } from "@/shared/ui";
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -193,15 +193,15 @@ export default function MissedOpportunities() {
       />
 
       {loading ? (
-        <div className="glass rounded-2xl p-10 text-center text-slate-500 text-sm">
+        <Card className="p-10 text-center text-slate-500 text-sm">
           {t("common.loading")}
-        </div>
+        </Card>
       ) : items.length === 0 ? (
-        <div className="glass rounded-2xl p-10 text-center">
+        <Card className="p-10 text-center">
           <Target className="w-8 h-8 text-amber-400/50 mx-auto mb-3" />
           <p className="text-slate-300 text-sm font-semibold mb-1">{t("missed.empty.title")}</p>
           <p className="text-slate-500 text-xs">{t("missed.empty.sub")}</p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-3">
           {items.map((m) => {

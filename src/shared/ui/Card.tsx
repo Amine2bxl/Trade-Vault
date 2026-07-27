@@ -22,15 +22,34 @@ const VARIANT: Record<CardVariant, string> = {
   plain: "rounded-2xl border border-white/[0.06] bg-white/[0.015]",
 };
 
+/** Inner padding steps, straight from the density scale. */
+export type CardPad = "default" | "tight" | "loose" | "none";
+
+const PAD: Record<CardPad, string> = {
+  default: density.cardPad,
+  tight: density.cardPadTight,
+  loose: density.cardPadLoose,
+  none: "",
+};
+
 export function Card({
   variant = "glass",
   hover = false,
+  pad = "none",
   className,
   children,
   ...rest
-}: HTMLAttributes<HTMLDivElement> & { variant?: CardVariant; hover?: boolean }) {
+}: HTMLAttributes<HTMLDivElement> & {
+  variant?: CardVariant;
+  hover?: boolean;
+  /** Inner padding from the density scale. `none` (default) keeps the card bare. */
+  pad?: CardPad;
+}) {
   return (
-    <div className={cn(VARIANT[variant], hover && "card-premium", className)} {...rest}>
+    <div
+      className={cn(VARIANT[variant], hover && "card-premium", PAD[pad], className)}
+      {...rest}
+    >
       {children}
     </div>
   );
@@ -54,15 +73,6 @@ export function CardTitle({ className, children }: { className?: string; childre
     </Heading>
   );
 }
-
-export type CardPad = "default" | "tight" | "loose" | "none";
-
-const PAD: Record<CardPad, string> = {
-  default: density.cardPad,
-  tight: density.cardPadTight,
-  loose: density.cardPadLoose,
-  none: "",
-};
 
 export function CardBody({
   pad = "default",

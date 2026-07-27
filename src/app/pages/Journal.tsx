@@ -25,7 +25,7 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageHeader, PageContainer, Button, EmptyState } from "@/shared/ui";
+import { PageHeader, PageContainer, Button, EmptyState, Card } from "@/shared/ui";
 
 interface JournalProps {
   trades: Trade[];
@@ -319,7 +319,7 @@ export default function Journal({
       </div>
 
       {/* ── Desktop: Table ── */}
-      <div className="hidden md:block glass rounded-2xl overflow-hidden animate-fade-in-up stagger-2">
+      <Card className="hidden md:block overflow-hidden animate-fade-in-up stagger-2">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[880px]">
             <thead>
@@ -472,7 +472,7 @@ export default function Journal({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Load more (both layouts) */}
       {hasMore && (

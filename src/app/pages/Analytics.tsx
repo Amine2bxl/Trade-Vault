@@ -31,7 +31,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { EmptyState, PageHeader, PageContainer } from "@/shared/ui";
+import { EmptyState, PageHeader, PageContainer, Card } from "@/shared/ui";
 import {
   CHART_ANIMATION,
   EQUITY_ANIMATION,
@@ -375,7 +375,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Quant metrics grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-fade-in-up stagger-1">
           {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
-          <div className="md:hidden group relative glass rounded-2xl p-3.5 card-premium">
+          <Card hover className="md:hidden group relative p-3.5">
             <div className="flex items-center gap-1 mb-1.5">
               <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">
                 {t("analytics.profitFactor")}
@@ -396,7 +396,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 ? `✓ ${t("analytics.profitable")}`
                 : `✗ ${t("analytics.losing")}`}
             </div>
-          </div>
+          </Card>
           {[
             {
               label: t("dashboard.avgRR"),
@@ -482,7 +482,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Performance by setup */}
-        <div className="glass rounded-2xl overflow-hidden card-premium animate-fade-in-up stagger-2">
+        <Card hover className="overflow-hidden animate-fade-in-up stagger-2">
           <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
             <h3 className="text-sm font-semibold text-white">{t("analytics.setupTable")}</h3>
           </div>
@@ -571,11 +571,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* Session × weekday heatmap + win rate by hour */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-2">
             <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.heatmap")}</h3>
             <p className="text-[10px] text-slate-600 mb-3">{t("analytics.heatmapSub")}</p>
             <div className="grid gap-1" style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}>
@@ -627,8 +627,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </Fragment>
               ))}
             </div>
-          </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
+          </Card>
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.byHour")}</h3>
             <p className="text-[10px] text-slate-600 mb-3">{t("analytics.byHourSub")}</p>
             {hourData.length > 0 ? (
@@ -693,7 +693,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 {t("analytics.noData")}
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Equity + Pie */}
@@ -761,7 +761,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-3">{t("analytics.winLoss")}</h3>
             <div className="h-40 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -809,11 +809,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </div>
               <div className="text-[10px] text-slate-500">{t("analytics.winRateLabel")}</div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Monthly Performance */}
-        <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
+        <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-4">
           <h3 className="text-sm font-semibold text-white mb-1">
             {t("analytics.monthlyPerformance")}
           </h3>
@@ -904,11 +904,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
               {t("analytics.noData")}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Day of Week + Strategy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-5">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlWinRateByDay")}
             </h3>
@@ -964,8 +964,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6">
+          </Card>
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlByStrategy")}
             </h3>
@@ -1006,12 +1006,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Distribution + Symbol */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-7">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-7">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlDistribution")}
             </h3>
@@ -1042,8 +1042,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-8">
+          </Card>
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-8">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.symbolPerformance")}
             </h3>
@@ -1073,7 +1073,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </PageContainer>

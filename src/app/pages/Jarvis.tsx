@@ -25,7 +25,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
 import { useJarvisVoice } from "../utils/jarvisVoice";
-import { PageHeader, Metric } from "@/shared/ui";
+import { PageHeader, Metric, Card } from "@/shared/ui";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 
 interface JarvisProps {
@@ -360,7 +360,7 @@ export default function Jarvis({ trades }: JarvisProps) {
 
       {/* Strengths / Watch-out — deterministic read of the edge. */}
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
-        <div className="glass rounded-2xl p-4">
+        <Card className="p-4">
           <div className="flex items-center gap-2 mb-2.5">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-white">{t("jarvis.strengths")}</h3>
@@ -377,8 +377,8 @@ export default function Jarvis({ trades }: JarvisProps) {
           ) : (
             <p className="text-[13px] text-slate-500">{t("jarvis.strengthNone")}</p>
           )}
-        </div>
-        <div className="glass rounded-2xl p-4">
+        </Card>
+        <Card className="p-4">
           <div className="flex items-center gap-2 mb-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-bold text-white">{t("jarvis.weaknesses")}</h3>
@@ -393,7 +393,7 @@ export default function Jarvis({ trades }: JarvisProps) {
           ) : (
             <p className="text-[13px] text-slate-500">{t("jarvis.weaknessNone")}</p>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Conversation */}

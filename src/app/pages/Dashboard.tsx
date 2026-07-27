@@ -32,7 +32,7 @@ import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/ed
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageHeader, PageContainer, Metric } from "@/shared/ui";
+import { PageHeader, PageContainer, Metric, Card } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
 import CopilotBlock from "./dashboard/CopilotBlock";
 import { cn } from "../utils/cn";
@@ -571,7 +571,7 @@ export default function Dashboard({
 
           <div>
             {/* Recent Trades */}
-            <div className="glass rounded-2xl overflow-hidden card-premium animate-fade-in-up stagger-4">
+            <Card hover className="overflow-hidden animate-fade-in-up stagger-4">
               <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
                 <h3 className="text-sm font-semibold text-white">{t("dashboard.recentTrades")}</h3>
               </div>
@@ -647,7 +647,7 @@ export default function Dashboard({
                   })
                 )}
               </div>
-            </div>
+            </Card>
           </div>
         </>
       )}

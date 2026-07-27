@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, Card } from "@/shared/ui";
 import {
   getEventsForWeek,
   startOfWeek,
@@ -176,7 +176,7 @@ export default function EconomicNews() {
       />
 
       {/* Week navigator */}
-      <div className="glass rounded-2xl p-2.5 mb-3 flex items-center justify-between gap-2 animate-fade-in-up stagger-1">
+      <Card className="p-2.5 mb-3 flex items-center justify-between gap-2 animate-fade-in-up stagger-1">
         <button
           onClick={() => setWeekStart((w) => addDays(w, -7))}
           aria-label={t("news.prevWeek")}
@@ -205,7 +205,7 @@ export default function EconomicNews() {
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-      </div>
+      </Card>
 
       {/* Search + filter toggle */}
       <div className="flex items-center gap-2 mb-3 animate-fade-in-up stagger-1">
@@ -249,7 +249,7 @@ export default function EconomicNews() {
 
       {/* Filter panel */}
       {filtersOpen && (
-        <div className="glass rounded-2xl p-4 mb-3 space-y-4 animate-fade-in-up">
+        <Card className="p-4 mb-3 space-y-4 animate-fade-in-up">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
               {t("news.currency")}
@@ -314,14 +314,14 @@ export default function EconomicNews() {
               {t("news.clearFilters")}
             </button>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Indicative-times notice */}
-      <div className="glass rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5 animate-fade-in-up stagger-2 border border-cyan-500/10">
+      <Card className="px-4 py-3 mb-4 flex items-start gap-2.5 animate-fade-in-up stagger-2 border border-cyan-500/10">
         <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed text-slate-400">{t("news.notice")}</p>
-      </div>
+      </Card>
 
       {/* Days */}
       {loading ? (
@@ -331,9 +331,9 @@ export default function EconomicNews() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glass rounded-2xl p-10 text-center text-slate-500 text-sm">
+        <Card className="p-10 text-center text-slate-500 text-sm">
           {t("news.noEvents")}
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {days.map(({ iso, date, events: dayEvents }) => {
@@ -363,7 +363,7 @@ export default function EconomicNews() {
                 </div>
 
                 {/* Events */}
-                <div className="glass rounded-2xl overflow-hidden divide-y divide-white/[0.04]">
+                <Card className="overflow-hidden divide-y divide-white/[0.04]">
                   {dayEvents.map((e) => {
                     const s = IMPACT_STYLE[e.impact];
                     const open = expanded === e.id;
@@ -416,7 +416,7 @@ export default function EconomicNews() {
                       </div>
                     );
                   })}
-                </div>
+                </Card>
               </div>
             );
           })}
