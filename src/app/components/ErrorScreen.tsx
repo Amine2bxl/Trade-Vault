@@ -1,5 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Home, RotateCw } from "lucide-react";
+// Button is a leaf primitive (only `cn`), so it stays safe for this
+// dependency-light error surface.
+import { Button } from "@/shared/ui";
 
 /* Branded full-screen error identity, shared by the 404 and 500 boundaries.
    Deliberately dependency-light (no i18n/context) so it renders even when the
@@ -63,12 +66,9 @@ export default function ErrorScreen({
 
         <div className="flex flex-wrap gap-2.5 justify-center">
           {onRetry && (
-            <button
-              onClick={onRetry}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-teal-500 text-[#04121a] shadow-lg shadow-cyan-500/30 hover:brightness-110 hover:-translate-y-px transition-all"
-            >
+            <Button onClick={onRetry}>
               <RotateCw className="w-4 h-4" /> Try again
-            </button>
+            </Button>
           )}
           <Link
             to="/"

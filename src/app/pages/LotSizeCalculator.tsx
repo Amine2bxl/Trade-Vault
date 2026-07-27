@@ -5,7 +5,7 @@ import { loadAccountBalance, saveAccountBalance } from "../store";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { FIELD_BASE, PageHeader } from "@/shared/ui";
+import { FIELD_BASE, PageHeader, Button } from "@/shared/ui";
 
 interface LotSizeCalculatorProps {
   onAddTrade: () => void;
@@ -370,12 +370,9 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                 )}
                 {copied ? t("calc.copied") : t("calc.copy")}
               </button>
-              <button
-                onClick={onAddTrade}
-                className="flex-1 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-1.5"
-              >
+              <Button onClick={onAddTrade} className="flex-1 h-10">
                 <Plus className="w-3.5 h-3.5" /> {t("calc.logTrade")}
-              </button>
+              </Button>
             </div>
           )}
         </div>

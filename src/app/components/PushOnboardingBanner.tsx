@@ -3,6 +3,7 @@ import { Bell, X, Loader2, Lock, ChevronDown, CheckCircle2 } from "lucide-react"
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
+import { Button } from "@/shared/ui";
 
 // Non-intrusive dashboard banner that sells push notifications in one line
 // and enables them in one click. If the browser has them blocked, it swaps
@@ -95,18 +96,14 @@ export default function PushOnboardingBanner({ userId }: { userId: string }) {
                 />
               </button>
             ) : (
-              <button
-                onClick={enable}
-                disabled={isLoading}
-                className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all shrink-0 disabled:opacity-60"
-              >
+              <Button onClick={enable} disabled={isLoading} className="shrink-0 disabled:opacity-60">
                 {isLoading ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Bell className="w-3.5 h-3.5" />
                 )}
                 {t("pushBanner.cta")}
-              </button>
+              </Button>
             ))}
 
           <button

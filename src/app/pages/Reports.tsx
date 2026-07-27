@@ -19,7 +19,7 @@ import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { Skeleton } from "../components/Skeleton";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, Button } from "@/shared/ui";
 
 const LOCALE_MAP: Record<string, string> = {
   en: "en-US",
@@ -108,11 +108,7 @@ export default function Reports() {
         actions={
           !hasLastMonth &&
           !loading && (
-            <button
-              onClick={generate}
-              disabled={generating}
-              className="shrink-0 flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-3 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-60 animate-fade-in-up stagger-1"
-            >
+            <Button onClick={generate} disabled={generating} className="shrink-0 disabled:opacity-60 animate-fade-in-up stagger-1">
               {generating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
@@ -121,7 +117,7 @@ export default function Reports() {
               <span className="hidden sm:inline">
                 {generating ? t("reports.generating") : t("reports.generate")}
               </span>
-            </button>
+            </Button>
           )
         }
       />
@@ -139,18 +135,14 @@ export default function Reports() {
           </div>
           <h2 className="text-base font-bold text-white mb-1.5">{t("reports.empty")}</h2>
           <p className="text-sm text-slate-500 max-w-sm mx-auto mb-5">{t("reports.emptySub")}</p>
-          <button
-            onClick={generate}
-            disabled={generating}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-60"
-          >
+          <Button onClick={generate} disabled={generating} className="disabled:opacity-60">
             {generating ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <RefreshCw className="w-4 h-4" />
             )}
             {generating ? t("reports.generating") : t("reports.generate")}
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
