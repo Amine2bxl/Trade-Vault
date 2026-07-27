@@ -186,7 +186,7 @@ erreurs/setups manqués · personnalisation · UX supérieure.
 - Statistiques de base
 
 **Pro** — _tout le Free, sans limite, plus :_
-- Assistant IA illimité 24h/24 (coach à mémoire)
+- Jarvis illimité 24h/24 (coach IA à mémoire)
 - Insights automatiques (détection de patterns)
 - Import CSV automatique illimité
 - Analytics quantitatives (**20+ métriques**)
@@ -243,7 +243,7 @@ reste au fil de l'eau — jamais un préalable technique bloquant.
 
 | Domaine | Fonctionnalité |
 |---|---|
-| **Coach IA** | Assistant conversationnel à mémoire, réponses ancrées sur l'historique réel (chat, brief, review, patterns, leçons) |
+| **Jarvis (coach IA)** | Identité IA unique : assistant conversationnel à mémoire, réponses ancrées sur l'historique réel (chat, brief, review, patterns, leçons), page dédiée + widget flottant, voix |
 | **Journal** | Saisie d'un trade en ~20 s, screenshots, MAE/MFE/slippage, sous-comptes |
 | **Analytics** | 20+ métriques quant (Sharpe, Sortino, expectancy, profit factor, drawdown, streaks, equity curve, PnL par stratégie / jour) |
 | **Discipline** | Checklist pré-market, suivi des erreurs, setups manqués |

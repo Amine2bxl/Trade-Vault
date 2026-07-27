@@ -286,7 +286,7 @@ Trade-Vault/
   (synchrone, zéro lecture DB). V1 = **pas** de mémoire longue durée, **pas**
   de proactivité, **pas** d'agents secondaires.
 - Mémoire IA (`ai_memory`, seed du profil onboarding via `seedProfileMemory`)
-  existe en fondation mais n'est **pas** injectée dans le Coach V1 (scope V2).
+  existe en fondation mais n'est **pas** injectée dans le Jarvis V1 (scope V2).
 
 ### Plateforme / growth
 

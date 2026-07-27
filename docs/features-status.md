@@ -42,7 +42,7 @@ Dernière mise à jour : 2026-07-27 (refonte UX/UI PR #63 mergée : Jarvis unifi
 | AI Platform (infrastructure) | ✅ | — (fondation) | `modules/ai`, `modules/ai-provider` | Router, Provider Service (retry + télémétrie), Context Builder (caps stricts), Prompt Builder, Tool System, Response Formatter. 55 tests verts. |
 | Providers multi-modèles | ✅ | — | AI Platform | Gemini (défaut) / Anthropic / OpenAI-compatible, tool-calling inclus. Changer de modèle = une env var (`AI_PROVIDER`). |
 | **Jarvis V1** (P0 #1, 1ʳᵉ partie) | ✅ | **P0** | AI Platform, `computeStats`, `requireProAccess` | Identité IA **unique** (fini AI Coach / Assistant / Insights). Agent read-only en prod : lit stats, trades, erreurs, objectifs ; répond en multi-tours. Règle `ANTI_HALLUCINATION` : n'invente jamais, ne prédit jamais le marché. Surfaces : widget `AiAssistant` (voix, persistance locale) + page `Jarvis.tsx` (briefing du jour, KPI live, forces/faiblesses, chat, voix ElevenLabs anglais). |
-| Mémoire coach (seed profil) | ✅ | P0 | Table `ai_memory` (RLS), onboarding | `ai_memory` + seed du profil onboarding (`seedProfileMemory`) livrés (PR #14). **Non injectée dans Coach V1** — branchement = V2 (voir « En cours »). |
+| Mémoire coach (seed profil) | ✅ | P0 | Table `ai_memory` (RLS), onboarding | `ai_memory` + seed du profil onboarding (`seedProfileMemory`) livrés (PR #14). **Non injectée dans Jarvis V1** — branchement = V2 (voir « En cours »). |
 
 ### Plateforme, growth & design
 
@@ -68,7 +68,7 @@ Dernière mise à jour : 2026-07-27 (refonte UX/UI PR #63 mergée : Jarvis unifi
 
 | Fonctionnalité | Statut | Priorité | Dépendances | Description |
 | --- | --- | --- | --- | --- |
-| Coach IA « complet » (P0 #1, reste) | 🟡 | **P0** | Coach V1 ✅, `ai_memory` ✅ | Reste à livrer : injection de la mémoire long terme dans le coach (V2), fil de conversation en DB (cross-device — aujourd'hui localStorage par appareil), mémorisation active des leçons/engagements. |
+| Coach IA « complet » (P0 #1, reste) | 🟡 | **P0** | Jarvis V1 ✅, `ai_memory` ✅ | Reste à livrer : injection de la mémoire long terme dans le coach (V2), fil de conversation en DB (cross-device — aujourd'hui localStorage par appareil), mémorisation active des leçons/engagements. |
 | Adoption du Design System | 🟡 | P3 (fond) | `shared/ui` ✅ | Modals + Inputs migrés (byte-identical). Nouveau : `PageHeader`/`SectionHeader`/`EmptyState`/`Metric` livrés et adoptés (Dashboard, Analytics, Mistakes, Goals, Settings, Seasonality, Subscription, Appearance, LotSizeCalculator) ; tokens shadcn morts purgés de `styles.css` ; `cn` dédupliqué. Reste : Cards, Badges, boutons restants, modals lourdes, headers Journal/Calendar/News/Reports/Insights. Un lot = un build vert. |
 | Restructuration du dépôt | 🟡 | P2 #23 | Issues #46, #49 | Phases 1/3/4 faites (code mort, types Supabase, frontière serveur). Reste : pruning deps (bloqué egress registry, #46) et UI par `features/` (au fil des lots, #49). |
 | Dette typographique / tokens morts | 🟡 | P3 | `design-system.md` | ~300 tailles arbitraires (`text-[10px]`…), anciens tokens shadcn oklch à purger. Résorption opportuniste, jamais en urgence. |
@@ -81,7 +81,7 @@ Dernière mise à jour : 2026-07-27 (refonte UX/UI PR #63 mergée : Jarvis unifi
 
 | Fonctionnalité | Statut | Priorité | Dépendances | Description |
 | --- | --- | --- | --- | --- |
-| Insights proactifs (#2) | ⚪ | **P0** | Coach V1 ✅, moteur d'analyse ✅, notifications ✅, jobs IA | Détection de pattern → notification : le produit vient au trader (« tu as pris 3 trades hors plan cette semaine »). Cœur de la promesse « coach 24 h/24 ». |
+| Insights proactifs (#2) | ⚪ | **P0** | Jarvis V1 ✅, moteur d'analyse ✅, notifications ✅, jobs IA | Détection de pattern → notification : le produit vient au trader (« tu as pris 3 trades hors plan cette semaine »). Cœur de la promesse « coach 24 h/24 ». |
 | Weekly Review + Daily Brief (#3) | ⚪ | **P0** | AI Platform ✅, crons ✅, emails ✅, table `ai_reports` | Bilan hebdo automatique + brief pré-session quotidien, in-app + e-mail. Crée le rendez-vous récurrent (rétention). Reports existants à fusionner dans cette chaîne. |
 | Déclencheurs de retour push (#4) | ⚪ | **P0** | Push ✅, checklist ✅, streaks | Notifs pré-market, rappel de review, protection de streak — transformer le produit « pull » en produit « push ». |
 | Import CSV blindé + fallback démo (#5) | ⚪ | **P0** | Import CSV ✅, données démo | Le premier « wow » ne doit jamais échouer : parsing robuste + bascule automatique sur données démo en cas d'échec. |
@@ -109,7 +109,7 @@ Dernière mise à jour : 2026-07-27 (refonte UX/UI PR #63 mergée : Jarvis unifi
 | Rapport e-mail + carte partageable (#17) | ⚪ | P2 | Weekly Review (#3) | Le rapport devient canal de rétention ET d'acquisition (carte de perf partageable). |
 | Micro-feedback discipline à la saisie (#18) | ⚪ | P2 | Moteur discipline ✅ | Le journal « répond » à chaque trade enregistré (respect du plan, streak). |
 | Empty states guidés (#19) | ⚪ | P2 | — | Dashboard/journal vides deviennent pédagogiques. Pur front, quick win. |
-| Coach IA omniprésent contextuel (#20) | ⚪ | P2 | Coach V1 ✅ | L'assistant flottant devient contextuel à la page (suggestions selon l'écran). |
+| Coach IA omniprésent contextuel (#20) | ⚪ | P2 | Jarvis V1 ✅ | L'assistant flottant devient contextuel à la page (suggestions selon l'écran). |
 | Démo sans compte depuis la landing (#21) | ⚪ | P2 | Données démo | Goûter le produit avant signup. |
 | Bandeau statut beta sur les tarifs (#22) | ⚪ | P2 | Landing ✅ | Cohérence prix affiché ⇄ produit gratuit : assumer la beta honnêtement. |
 | Perf secondaire (#24) | ⚪ | P2 | — | Fonts, images, vendor chunks, prefetch. |
