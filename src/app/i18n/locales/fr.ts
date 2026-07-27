@@ -630,6 +630,7 @@ const fr: Dict = {
     "Point de départ optionnel — charge-en un puis adapte tout librement (ou pars de zéro).",
   "chk.cfgAddItem": "Ajouter",
   "chk.cfgDescOptional": "Pourquoi c'est important (optionnel)",
+  "chk.cfgAdvanced": "Avancé · optionnel",
   "chk.stepPrep": "Préparation",
   "chk.stepValidation": "Validation",
   "chk.stepMental": "Mental",

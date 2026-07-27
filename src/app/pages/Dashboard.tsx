@@ -16,6 +16,7 @@ import {
   Scale,
   ClipboardCheck,
   ChevronRight,
+  Check,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -224,14 +225,36 @@ export default function Dashboard({
             <ClipboardCheck className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-white">{t("chk.dashTitle")}</div>
-            <div className="text-[11px] text-slate-400 truncate">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold text-white">{t("chk.dashTitle")}</div>
+              {chkStatus.locked && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-300">
+                  <Check className="w-2.5 h-2.5" /> {t("chk.ready")}
+                </span>
+              )}
+            </div>
+            <div className="text-[11px] text-slate-400 truncate mb-1.5">
               {chkStatus.locked
                 ? t("chk.dashLocked")
                 : chkStatus.total > 0
                   ? `${chkStatus.n}/${chkStatus.total} ${t("chk.dashChecked")}`
                   : t("chk.dashStart")}
             </div>
+            {chkStatus.total > 0 && (
+              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden max-w-xs">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    chkStatus.locked
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+                      : "bg-gradient-to-r from-cyan-500 to-teal-400",
+                  )}
+                  style={{
+                    width: `${chkStatus.locked ? 100 : Math.round((chkStatus.n / Math.max(1, chkStatus.total)) * 100)}%`,
+                  }}
+                />
+              </div>
+            )}
           </div>
           <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-cyan-400 shrink-0">
             {t("chk.dashCta")} <ChevronRight className="w-3.5 h-3.5" />

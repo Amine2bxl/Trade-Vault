@@ -1450,6 +1450,15 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               </div>
             </div>
 
+            {/* Everything below is optional fine-tuning — kept out of the way
+                so the core setup (session · start list · checks) reads clean. */}
+            <div className="flex items-center gap-2.5 pt-1">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+                {t("chk.cfgAdvanced")}
+              </span>
+              <span className="flex-1 h-px bg-white/[0.06]" />
+            </div>
+
             <div className="space-y-2">
               <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
                 {t("chk.cfgMotivs")}

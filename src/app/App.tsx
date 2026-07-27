@@ -53,7 +53,6 @@ import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import Landing from "./pages/Landing";
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
-import PushOnboardingBanner from "./components/PushOnboardingBanner";
 import { SkeletonForPage } from "./components/Skeleton";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -381,8 +380,8 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
-        {/* One-click push opt-in — dashboard only, so it never nags mid-flow */}
-        {page === "dashboard" && user && <PushOnboardingBanner userId={user.id} />}
+        {/* Push opt-in now lives in onboarding (and Settings), not as a
+            dashboard banner. */}
         <div key={page} className="animate-fade-in">
           {/* Contextual skeleton: the loading frame mimics the destination
               page's real layout (chart grid, trade list, calendar…). */}

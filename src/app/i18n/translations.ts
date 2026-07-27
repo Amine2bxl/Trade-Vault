@@ -706,6 +706,7 @@ const en = {
     "Optional starting point — load one, then adapt it freely (or build from scratch).",
   "chk.cfgAddItem": "Add",
   "chk.cfgDescOptional": "Why it matters (optional)",
+  "chk.cfgAdvanced": "Advanced · optional",
   "chk.stepPrep": "Preparation",
   "chk.stepValidation": "Validation",
   "chk.stepMental": "Mental",
