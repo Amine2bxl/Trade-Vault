@@ -1,5 +1,5 @@
 import { useCallback, type ReactNode } from "react";
-import { Sparkles, Shield, Zap, Crown, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Sparkles, Shield, Zap, Crown, Clock, CheckCircle2, AlertTriangle, X } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
@@ -44,7 +44,7 @@ export default function Subscription() {
         : t("billing.planFree");
 
   return (
-    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-5 max-w-5xl mx-auto space-y-4">
       <PageHeader
         className="mb-1 md:mb-1"
         title={tr("Abonnement", "Subscription")}
@@ -87,6 +87,36 @@ export default function Subscription() {
         </div>
       </div>
 
+      {/* Plans — same structure and wording as the landing pricing section, so
+          the product and the marketing site tell one story. Presentation only:
+          no Stripe, no checkout, no payment logic on this page. */}
+      <section className="animate-fade-in-up stagger-2">
+        <div className="text-center mb-4">
+          <h2 className="font-display text-xl md:text-2xl font-extrabold text-white">
+            {tr("Un investissement qui se rembourse en un trade", "An investment that pays for itself in one trade")}
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            {tr(
+              "Commence gratuitement. Passe en Pro quand tu es prêt.",
+              "Start free. Go Pro when you're ready.",
+            )}
+          </p>
+        </div>
+
+        <div className="flex justify-center mb-4">
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] px-3.5 py-1.5 text-[11px] font-bold text-emerald-300">
+            <Sparkles className="h-3.5 w-3.5" />
+            {tr("En annuel : 2 mois offerts", "Annual: 2 months free")}
+          </span>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-3 lg:items-stretch">
+          {PLANS(tr).map((p) => (
+            <PlanCard key={p.id} plan={p} current={sub?.plan} tr={tr} />
+          ))}
+        </div>
+      </section>
+
       {/* Where to manage it — points to the Profile billing section, no logic here. */}
       <Card className="px-4 py-3.5 flex items-center gap-3 animate-fade-in-up stagger-4">
         <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
@@ -99,6 +129,159 @@ export default function Subscription() {
           )}
         </p>
       </Card>
+    </div>
+  );
+}
+
+/* ── Plans (presentation only — mirrors the landing pricing section) ───────── */
+
+interface Plan {
+  id: "free" | "pro_yearly" | "pro_monthly";
+  name: string;
+  price: string;
+  period: string;
+  note?: string;
+  badge?: string;
+  tagline: string;
+  featured?: boolean;
+  included: string[];
+  excluded?: string[];
+}
+
+const PLANS = (tr: (f: string, e: string) => string): Plan[] => [
+  {
+    id: "free",
+    name: "Free",
+    price: "0 €",
+    period: tr("/ toujours", "/ forever"),
+    tagline: tr("Pour poser les bases de ta discipline.", "To lay the foundations of your discipline."),
+    included: [
+      "Dashboard",
+      tr("Journal de trading (30 trades / mois)", "Trading journal (30 trades / month)"),
+      tr("Checklist pré-market", "Pre-market checklist"),
+      tr("Statistiques de base", "Basic statistics"),
+    ],
+    excluded: [
+      tr("Jarvis illimité", "Unlimited Jarvis"),
+      tr("Import CSV automatique", "Automatic CSV import"),
+      tr("Rapports mensuels", "Monthly reports"),
+    ],
+  },
+  {
+    id: "pro_yearly",
+    name: tr("Pro · Annuel", "Pro · Yearly"),
+    price: "19,90 €",
+    period: tr("/ mois", "/ month"),
+    note: tr("239 € facturés une fois par an", "€239 billed once a year"),
+    badge: tr("2 mois offerts", "2 months free"),
+    tagline: tr("La meilleure valeur, de loin.", "The best value, by far."),
+    featured: true,
+    included: [
+      tr("Tout le plan Free, sans limite", "Everything in Free, unlimited"),
+      tr("Jarvis illimité 24h/24", "Unlimited Jarvis 24/7"),
+      tr("Analytics quantitatives (20+ métriques)", "Quant analytics (20+ metrics)"),
+      tr("Suivi des erreurs & setups manqués", "Mistake & missed-setup tracking"),
+      tr("Rapports mensuels automatiques", "Automatic monthly reports"),
+      tr("Import CSV illimité", "Unlimited CSV import"),
+    ],
+  },
+  {
+    id: "pro_monthly",
+    name: tr("Pro · Mensuel", "Pro · Monthly"),
+    price: "24,99 €",
+    period: tr("/ mois", "/ month"),
+    note: tr("Sans engagement, résiliable à tout moment", "No commitment, cancel anytime"),
+    tagline: tr("La souplesse, mois par mois.", "Flexibility, month by month."),
+    included: [
+      tr("Tout le plan Free, sans limite", "Everything in Free, unlimited"),
+      tr("Jarvis illimité 24h/24", "Unlimited Jarvis 24/7"),
+      tr("Analytics quantitatives (20+ métriques)", "Quant analytics (20+ metrics)"),
+      tr("Rapports mensuels automatiques", "Automatic monthly reports"),
+    ],
+  },
+];
+
+function PlanCard({
+  plan,
+  current,
+  tr,
+}: {
+  plan: Plan;
+  current?: string;
+  tr: (f: string, e: string) => string;
+}) {
+  const isCurrent = current === plan.id || (!current && plan.id === "free");
+  return (
+    <div
+      className={cn(
+        "relative flex flex-col rounded-2xl p-4 md:p-5",
+        plan.featured
+          ? "border border-cyan-400/25 bg-[linear-gradient(160deg,rgba(14,58,82,.55),rgba(7,14,24,.92)_60%)]"
+          : "border border-white/[0.06] bg-white/[0.015]",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p
+          className={cn(
+            "text-[11px] font-bold uppercase tracking-[.15em]",
+            plan.featured ? "text-cyan-300" : "text-slate-400",
+          )}
+        >
+          {plan.name}
+        </p>
+        {plan.badge && (
+          <span className="rounded-full bg-emerald-400 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#03131b]">
+            {plan.badge}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-end gap-1.5">
+        <span
+          className={cn(
+            "font-display font-extrabold text-white",
+            plan.featured ? "text-4xl" : "text-3xl",
+          )}
+        >
+          {plan.price}
+        </span>
+        <span className="mb-1.5 text-sm text-slate-500">{plan.period}</span>
+      </div>
+      {plan.note && <p className="mt-1.5 text-xs text-slate-400">{plan.note}</p>}
+      <p className="mt-2 text-xs text-slate-500">{plan.tagline}</p>
+
+      {/* Presentation only — the real checkout lives in the Profile billing section. */}
+      <div className="mt-4">
+        {isCurrent ? (
+          <span className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs font-bold text-slate-400">
+            <CheckCircle2 className="h-4 w-4" />
+            {tr("Ton offre actuelle", "Your current plan")}
+          </span>
+        ) : (
+          <span className="flex h-10 w-full items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] text-xs font-bold text-cyan-300">
+            {tr("Disponible bientôt", "Available soon")}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 space-y-2 text-xs">
+        {plan.included.map((f) => (
+          <p key={f} className="flex items-start gap-2 text-slate-300">
+            <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-white/[0.06] text-slate-300">
+              <CheckCircle2 className="h-3 w-3" />
+            </span>
+            {f}
+          </p>
+        ))}
+        {plan.excluded?.map((f) => (
+          <p key={f} className="flex items-start gap-2 text-slate-600">
+            <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-white/[0.03]">
+              <X className="h-3 w-3" />
+            </span>
+            <span className="line-through">{f}</span>
+          </p>
+        ))}
+      </div>
     </div>
   );
 }
