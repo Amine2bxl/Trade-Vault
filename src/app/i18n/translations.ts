@@ -700,8 +700,10 @@ const en = {
   "chk.customize": "Customize",
   "chk.askJarvis": "Ask Jarvis",
   "chk.tagline": "Your discipline check before every trade.",
-  "chk.cfgIntro": "Everything here is yours — add, rename, reorder, enable or remove anything. No fixed template.",
-  "chk.cfgTemplatesHint": "Optional starting point — load one, then adapt it freely (or build from scratch).",
+  "chk.cfgIntro":
+    "Everything here is yours — add, rename, reorder, enable or remove anything. No fixed template.",
+  "chk.cfgTemplatesHint":
+    "Optional starting point — load one, then adapt it freely (or build from scratch).",
   "chk.cfgAddItem": "Add",
   "chk.cfgDescOptional": "Why it matters (optional)",
   "chk.stepPrep": "Preparation",
