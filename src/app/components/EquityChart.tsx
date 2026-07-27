@@ -6,6 +6,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  CartesianGrid,
 } from "recharts";
 import {
   EQUITY_ANIMATION,
@@ -36,6 +37,11 @@ export default function EquityChart({ data }: { data: { date: string; equity: nu
             <stop offset="100%" stopColor="var(--tv-highlight)" />
           </linearGradient>
         </defs>
+        <CartesianGrid
+          vertical={false}
+          stroke="rgba(255,255,255,0.045)"
+          strokeDasharray="0"
+        />
         <XAxis
           dataKey="date"
           padding={EQUITY_X_PADDING}
@@ -62,13 +68,13 @@ export default function EquityChart({ data }: { data: { date: string; equity: nu
           labelFormatter={(v) => formatShortDate(v as string)}
         />
         <Area
-          type="natural"
+          type="monotone"
           dataKey="equity"
           stroke="url(#eqStroke)"
           fill="url(#eqGrad)"
           dot={false}
           activeDot={glowActiveDot("var(--tv-highlight)")}
-          style={{ filter: "drop-shadow(0 3px 8px rgb(var(--tv-highlight-rgb) / 0.4))" }}
+          style={{ filter: "drop-shadow(0 2px 6px rgb(var(--tv-highlight-rgb) / 0.22))" }}
           {...EQUITY_LINE}
           {...EQUITY_ANIMATION}
         />

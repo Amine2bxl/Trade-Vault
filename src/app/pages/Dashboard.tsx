@@ -32,9 +32,10 @@ import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/ed
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { Metric, PageHeader } from "@/shared/ui";
+import { PageHeader } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
 import CopilotBlock from "./dashboard/CopilotBlock";
+import MetricCard from "./dashboard/MetricCard";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 
@@ -144,7 +145,7 @@ export default function Dashboard({
     [filtered, startingBalance],
   );
   const recentTrades = useMemo(
-    () => [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8),
+    () => [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4),
     [filtered],
   );
 
@@ -270,6 +271,21 @@ export default function Dashboard({
   if (tradesLoading) return <PageSkeleton />;
 
   const gain = stats.totalPnl >= 0;
+  const streakLabel = `${stats.currentStreak}${
+    stats.currentStreakType === "win"
+      ? "W"
+      : stats.currentStreakType === "loss"
+        ? "L"
+        : stats.currentStreakType === "be"
+          ? "BE"
+          : ""
+  }`;
+  const streakColor =
+    stats.currentStreakType === "win"
+      ? "text-emerald-400"
+      : stats.currentStreakType === "loss"
+        ? "text-red-400"
+        : "text-slate-300";
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
@@ -449,7 +465,7 @@ export default function Dashboard({
               </div>
             </div>
             {stats.equityCurve.length > 0 ? (
-              <div className="h-56 md:h-80 chart-organic chart-draw">
+              <div className="h-56 md:h-80 chart-draw">
                 <Suspense
                   fallback={
                     <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
@@ -490,55 +506,79 @@ export default function Dashboard({
             )}
           </div>
 
-          {/* Stats Grid */}
+          {/* Stats Grid — radial gauges + sparkline, with folded secondary stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-            <Metric
-              title={t("stats.winRate")}
-              value={formatPct(stats.winRate)}
-              subtitle={`${stats.wins}W / ${stats.losses}L${stats.breakEven > 0 ? ` / ${stats.breakEven}BE` : ""}`}
+            <MetricCard
               icon={<Target className="w-4 h-4" />}
-              trend={stats.winRate >= 0.5 ? "up" : "down"}
+              label={t("stats.winRate")}
+              value={formatPct(stats.winRate)}
+              valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
+              visual={{
+                kind: "radial",
+                pct: stats.winRate,
+                color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
+                center: `${stats.wins}/${stats.losses}`,
+              }}
+              footerLabel={t("dashboard.currentStreak")}
+              footerValue={streakLabel}
+              footerClass={streakColor}
               delay={0}
             />
-            <Metric
-              title={t("dashboard.profitFactor")}
-              value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
-              subtitle={`${t("dashboard.avgRR")} ${stats.avgRR.toFixed(2)}`}
+            <MetricCard
               icon={<Activity className="w-4 h-4" />}
-              trend={stats.profitFactor >= 1.5 ? "up" : stats.profitFactor < 1 ? "down" : "neutral"}
+              label={t("dashboard.profitFactor")}
+              value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
+              valueClass={
+                stats.profitFactor >= 1.5
+                  ? "text-emerald-400"
+                  : stats.profitFactor < 1
+                    ? "text-red-400"
+                    : "text-white"
+              }
+              visual={{
+                kind: "radial",
+                pct: Math.min(stats.profitFactor / 3, 1),
+                color: stats.profitFactor >= 1.5 ? "#10b981" : stats.profitFactor < 1 ? "#ef4444" : "#22d3ee",
+              }}
+              footerLabel={t("dashboard.avgRR")}
+              footerValue={stats.avgRR.toFixed(2)}
               delay={60}
             />
-            <Metric
-              title={t("quant.expectancy")}
+            <MetricCard
+              icon={quant.expectancy >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              label={t("quant.expectancy")}
               value={formatPnl(quant.expectancy)}
-              subtitle={`${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R / trade`}
-              icon={
-                stats.totalPnl >= 0 ? (
-                  <TrendingUp className="w-4 h-4" />
-                ) : (
-                  <TrendingDown className="w-4 h-4" />
-                )
-              }
-              trend={quant.expectancy >= 0 ? "up" : "down"}
+              valueClass={quant.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
+              visual={{
+                kind: "spark",
+                data: stats.equityCurve.map((e) => e.equity),
+                color: quant.expectancy >= 0 ? "#22d3ee" : "#ef4444",
+              }}
+              footerLabel={t("dashboard.bestWorst")}
+              footerValue={`${stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"} / ${stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}`}
               delay={120}
             />
-            <Metric
-              title={t("dashboard.maxDrawdown")}
-              value={formatPnl(-stats.maxDrawdown)}
-              subtitle={
-                quant.maxDrawdownPct !== null
-                  ? `${(quant.maxDrawdownPct * 100).toFixed(1)}% · ${t("dashboard.peakToTrough")}`
-                  : t("dashboard.peakToTrough")
-              }
+            <MetricCard
               icon={<BarChart3 className="w-4 h-4" />}
-              trend="down"
+              label={t("dashboard.maxDrawdown")}
+              value={formatPnl(-stats.maxDrawdown)}
+              valueClass="text-red-400"
+              visual={{
+                kind: "radial",
+                pct: quant.maxDrawdownPct ?? 0,
+                color: (quant.maxDrawdownPct ?? 0) >= 0.2 ? "#ef4444" : "#f59e0b",
+                center: quant.maxDrawdownPct !== null ? `${(quant.maxDrawdownPct * 100).toFixed(0)}%` : undefined,
+              }}
+              footerLabel={t("quant.planAdherence")}
+              footerValue={formatPct(quant.planAdherence)}
+              footerClass={quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400"}
               delay={180}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div>
             {/* Recent Trades */}
-            <div className="col-span-1 md:col-span-2 glass rounded-2xl overflow-hidden card-premium animate-fade-in-up stagger-4">
+            <div className="glass rounded-2xl overflow-hidden card-premium animate-fade-in-up stagger-4">
               <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
                 <h3 className="text-sm font-semibold text-white">{t("dashboard.recentTrades")}</h3>
               </div>
@@ -613,80 +653,6 @@ export default function Dashboard({
                     );
                   })
                 )}
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5 space-y-2 md:space-y-3 self-start">
-              <h3 className="text-sm font-semibold text-white">{t("stats.performance")}</h3>
-              {[
-                {
-                  label: t("dashboard.avgWin"),
-                  value: formatPnl(stats.avgWin),
-                  color: "text-emerald-400",
-                  dot: "bg-emerald-400",
-                },
-                {
-                  label: t("dashboard.avgLoss"),
-                  value: formatPnl(stats.avgLoss),
-                  color: "text-red-400",
-                  dot: "bg-red-400",
-                },
-                {
-                  label: t("dashboard.bestTrade"),
-                  value: stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "$0.00",
-                  color: "text-emerald-400",
-                  dot: "bg-emerald-400",
-                },
-                {
-                  label: t("dashboard.worstTrade"),
-                  value: stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "$0.00",
-                  color: "text-red-400",
-                  dot: "bg-red-400",
-                },
-                {
-                  label: t("quant.planAdherence"),
-                  value: formatPct(quant.planAdherence),
-                  color: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400",
-                  dot: quant.planAdherence >= 0.8 ? "bg-emerald-400" : "bg-amber-400",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between py-1.5 md:py-2 border-b border-white/[0.04]"
-                >
-                  <span className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className={cn("w-1.5 h-1.5 rounded-full", item.dot)} />
-                    {item.label}
-                  </span>
-                  <span className={cn("text-xs md:text-sm font-bold tabular-nums", item.color)}>
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between py-1.5 md:py-2">
-                <span className="text-xs text-slate-500">{t("dashboard.currentStreak")}</span>
-                <span
-                  className={cn(
-                    "text-xs md:text-sm font-bold",
-                    stats.currentStreakType === "win"
-                      ? "text-emerald-400"
-                      : stats.currentStreakType === "loss"
-                        ? "text-red-400"
-                        : stats.currentStreakType === "be"
-                          ? "text-slate-300"
-                          : "text-slate-400",
-                  )}
-                >
-                  {stats.currentStreak}
-                  {stats.currentStreakType === "win"
-                    ? "W"
-                    : stats.currentStreakType === "loss"
-                      ? "L"
-                      : stats.currentStreakType === "be"
-                        ? "BE"
-                        : ""}
-                </span>
               </div>
             </div>
           </div>

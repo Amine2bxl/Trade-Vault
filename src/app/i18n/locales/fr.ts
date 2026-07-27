@@ -267,6 +267,7 @@ const fr: Dict = {
     "Aucun trade pour le moment. Cliquez sur « Ajouter un trade » pour commencer !",
   "dashboard.riskSuffix": "de risque",
   "dashboard.avgRR": "R:R moyen",
+  "dashboard.bestWorst": "Meilleur / Pire",
 
   // Dashboard — bloc Copilote (Score d'Edge, règle du jour, objectif)
   "copilot.title": "Copilote du jour",

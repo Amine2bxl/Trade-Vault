@@ -314,6 +314,7 @@ const en = {
   "dashboard.noTradesCta": 'No trades yet. Click "Add Trade" to get started!',
   "dashboard.riskSuffix": "risk",
   "dashboard.avgRR": "Avg R:R",
+  "dashboard.bestWorst": "Best / Worst",
 
   // Dashboard — Copilot block (Edge Score, rule of the day, objective)
   "copilot.title": "Today's copilot",
