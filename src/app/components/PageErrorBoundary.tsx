@@ -26,7 +26,7 @@ interface State {
 function PageErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useT();
   return (
-    <div className="p-4 md:p-8 max-w-2xl mx-auto">
+    <div className="p-3.5 md:p-5 max-w-2xl mx-auto">
       <EmptyState
         title={t("error.pageTitle")}
         description={t("error.pageBody")}

@@ -412,7 +412,7 @@ export default function ChecklistWizard({
       onClick={onClose}
     >
       <div
-        className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 animate-slide-in"
+        className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-4 animate-slide-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header + progress */}

@@ -175,7 +175,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
       </div>
 
       {/* Body */}
-      <div className="overflow-y-auto flex-1 p-3.5 md:p-7 space-y-3 md:space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] md:pb-7">
+      <div className="overflow-y-auto flex-1 p-3.5 md:p-5 space-y-3 md:space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] md:pb-5">
         <Section
           tone="red"
           icon={Quote}

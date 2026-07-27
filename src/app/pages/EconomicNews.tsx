@@ -158,7 +158,7 @@ export default function EconomicNews() {
   const isThisWeek = isoDate(weekStart) === isoDate(startOfWeek(new Date()));
 
   return (
-    <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
+    <div className="p-3.5 md:p-5 max-w-[1100px] mx-auto">
       {/* Header */}
       <PageHeader
         className="mb-4 stagger-0"

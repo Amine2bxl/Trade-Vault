@@ -1173,7 +1173,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         )}
       />
 
-      <div className="p-4 md:p-6 max-w-3xl mx-auto pb-28 md:pb-10 space-y-4">
+      <div className="p-3.5 md:p-4 max-w-3xl mx-auto pb-28 md:pb-10 space-y-4">
         {day.locked && (
           <div className="flex items-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 animate-fade-in-up">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -1285,7 +1285,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
-          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-5 animate-fade-in-up">
+          <div className="glass-strong rounded-2xl p-3.5 md:p-4 space-y-5 animate-fade-in-up">
             <div className="flex items-start gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
                 <SlidersHorizontal className="w-4 h-4" />
@@ -1906,7 +1906,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       {/* ══ COUNTDOWN OVERLAY ══ */}
       {countdownVal !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in">
+          <div className="glass-strong rounded-3xl p-6 max-w-sm w-full text-center animate-slide-in">
             <div className="text-sm font-bold text-white">{t("chk.cdTitle")}</div>
             <div className="text-xs text-slate-400 mb-5">{t("chk.cdSub")}</div>
             <div className="relative w-40 h-40 mx-auto mb-5">
@@ -1953,7 +1953,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       {/* ══ EDGE LOCKED OVERLAY ══ */}
       {lockOverlay && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-cyan-500/20">
+          <div className="glass-strong rounded-3xl p-6 max-w-sm w-full text-center animate-slide-in border border-cyan-500/20">
             <div className="relative w-24 h-24 mx-auto mb-4">
               <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl" />
               <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/40">

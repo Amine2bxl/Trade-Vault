@@ -35,7 +35,7 @@ export default function SubscriptionSection() {
 
   if (loading || !sub) {
     return (
-      <div className="glass-strong rounded-3xl p-6">
+      <div className="glass-strong rounded-3xl p-4">
         <div className="h-5 w-40 rounded bg-white/[0.06] animate-pulse" />
       </div>
     );
@@ -85,7 +85,7 @@ export default function SubscriptionSection() {
   const isStripeActive = sub.status === "active" && sub.source === "stripe";
 
   return (
-    <div className="glass-strong rounded-3xl p-6 space-y-5">
+    <div className="glass-strong rounded-3xl p-4 space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
           {t("billing.title")}

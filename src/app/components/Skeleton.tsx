@@ -11,7 +11,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { t } = useT();
   return (
     <div
-      className="p-4 md:p-8 max-w-[1400px] mx-auto"
+      className="p-3.5 md:p-5 max-w-[1400px] mx-auto"
       aria-busy="true"
       aria-label={t("common.loading")}
     >
@@ -53,7 +53,7 @@ export function ChartSkeleton() {
           <Skeleton key={i} className="h-20 rounded-2xl" />
         ))}
       </div>
-      <div className="glass rounded-2xl p-4 md:p-6 mb-6">
+      <div className="glass rounded-2xl p-3.5 md:p-4 mb-6">
         <Skeleton className="h-4 w-40 mb-5" />
         <div className="flex items-end gap-2 h-44 md:h-56">
           {bars.map((h, i) => (
@@ -67,13 +67,13 @@ export function ChartSkeleton() {
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="glass rounded-2xl p-4 md:p-6">
+        <div className="glass rounded-2xl p-3.5 md:p-4">
           <Skeleton className="h-4 w-32 mb-5" />
           <div className="flex items-center justify-center py-4">
             <div className="skeleton w-36 h-36 rounded-full" />
           </div>
         </div>
-        <div className="glass rounded-2xl p-4 md:p-6">
+        <div className="glass rounded-2xl p-3.5 md:p-4">
           <Skeleton className="h-4 w-32 mb-5" />
           <div className="space-y-3 pt-2">
             {[0, 1, 2, 3].map((i) => (
@@ -122,7 +122,7 @@ export function ListSkeleton() {
 export function CalendarSkeleton() {
   return (
     <Shell>
-      <div className="glass rounded-2xl p-4 md:p-6">
+      <div className="glass rounded-2xl p-3.5 md:p-4">
         <div className="flex items-center justify-between mb-5">
           <Skeleton className="h-6 w-36" />
           <div className="flex gap-2">

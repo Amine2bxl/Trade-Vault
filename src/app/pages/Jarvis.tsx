@@ -235,7 +235,7 @@ export default function Jarvis({ trades }: JarvisProps) {
   }, [chatKey]);
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto">
+    <div className="p-3.5 md:p-5 max-w-4xl mx-auto">
       <PageHeader
         icon={
           <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
@@ -276,7 +276,7 @@ export default function Jarvis({ trades }: JarvisProps) {
       />
 
       {/* Today's briefing — the reason to open Jarvis every day. */}
-      <div className="relative overflow-hidden rounded-2xl p-4 md:p-5 mb-4 border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.07] via-white/[0.02] to-transparent">
+      <div className="relative overflow-hidden rounded-2xl p-3.5 md:p-4 mb-4 border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.07] via-white/[0.02] to-transparent">
         <div className="pointer-events-none absolute -top-16 -right-10 w-52 h-52 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-start gap-3.5">
           <div className="relative shrink-0">

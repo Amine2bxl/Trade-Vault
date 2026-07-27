@@ -120,7 +120,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
     mode === "forex" ? !!forex && forex.lots > 0 : !!futures && futures.contracts > 0;
 
   return (
-    <div className="p-4 md:p-8 max-w-[860px] mx-auto">
+    <div className="p-3.5 md:p-5 max-w-[860px] mx-auto">
       <PageHeader className="stagger-0" title={t("calc.title")} subtitle={t("calc.subtitle")} />
 
       {/* Mode toggle */}
@@ -143,7 +143,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
 
       <div className="grid md:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Inputs */}
-        <div className="glass-strong rounded-3xl p-5 md:p-6 space-y-4 animate-fade-in-up stagger-2">
+        <div className="glass-strong rounded-3xl p-4 space-y-4 animate-fade-in-up stagger-2">
           {/* Risk budget — shared by both modes */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -297,7 +297,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
         {/* Result */}
         <div
           className={cn(
-            "glass-strong rounded-3xl p-5 md:p-6 animate-fade-in-up stagger-3 border transition-colors",
+            "glass-strong rounded-3xl p-4 animate-fade-in-up stagger-3 border transition-colors",
             hasResult ? "border-cyan-500/20" : "border-transparent",
           )}
         >

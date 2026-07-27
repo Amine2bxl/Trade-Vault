@@ -91,7 +91,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   if (loading) {
     return (
-      <div className="p-4 md:p-8 max-w-3xl mx-auto">
+      <div className="p-3.5 md:p-5 max-w-3xl mx-auto">
         <div className="glass rounded-3xl p-10 flex justify-center">
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
         </div>
@@ -100,7 +100,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4">
+    <div className="p-3.5 md:p-5 max-w-3xl mx-auto space-y-4">
       {/* Header + completion */}
       <PageHeader
         className="mb-2 items-center"
@@ -406,7 +406,7 @@ function Section({
 }) {
   return (
     <div
-      className="glass-strong rounded-3xl p-5 md:p-6 animate-fade-in-up"
+      className="glass-strong rounded-3xl p-4 animate-fade-in-up"
       style={{ animationDelay: `${delay * 70}ms` }}
     >
       <div className="flex items-start gap-3 mb-4">

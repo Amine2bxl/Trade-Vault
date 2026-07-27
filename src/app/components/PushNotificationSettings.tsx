@@ -43,7 +43,7 @@ export function PushNotificationSettings() {
   };
 
   return (
-    <div className="glass-strong rounded-3xl p-6 space-y-4">
+    <div className="glass-strong rounded-3xl p-4 space-y-4">
       <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
         {t("push.title")}
       </h2>

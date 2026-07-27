@@ -168,7 +168,7 @@ export default function ThemeSettings() {
   };
 
   return (
-    <div className="glass-strong rounded-3xl p-6 space-y-4">
+    <div className="glass-strong rounded-3xl p-4 space-y-4">
       <div className="flex items-start gap-2">
         <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
           <Palette className="w-4 h-4" />

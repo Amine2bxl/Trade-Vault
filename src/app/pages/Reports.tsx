@@ -100,7 +100,7 @@ export default function Reports() {
   }, [generating, lastMonth, refresh, t, toast]);
 
   return (
-    <div className="p-4 md:p-8 max-w-[900px] mx-auto">
+    <div className="p-3.5 md:p-5 max-w-[900px] mx-auto">
       <PageHeader
         className="stagger-0"
         title={t("reports.title")}

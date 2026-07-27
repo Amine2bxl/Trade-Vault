@@ -84,7 +84,7 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
       {/* Tapping anywhere in the dim area — including the empty space around the
           image — closes. Only the image itself swallows the click, so on mobile
           there's a huge, forgiving exit zone and no fiddly corner-only target. */}
-      <div className="w-full h-full flex items-center justify-center p-4 md:p-8">
+      <div className="w-full h-full flex items-center justify-center p-3.5 md:p-5">
         <img
           src={src}
           alt="Screenshot"

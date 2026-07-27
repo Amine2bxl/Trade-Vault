@@ -181,7 +181,7 @@ export default function TradeDetailModal({
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(96vh-100px)] md:max-h-[calc(88vh-90px)] p-4 md:p-6 space-y-3 md:space-y-4">
+        <div className="overflow-y-auto max-h-[calc(96vh-100px)] md:max-h-[calc(88vh-90px)] p-3.5 md:p-4 space-y-3 md:space-y-4">
           {missed.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {missed.map((m) => (
