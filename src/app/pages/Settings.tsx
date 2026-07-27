@@ -132,7 +132,7 @@ export default function Settings({
   if (!user) return null;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-4">
       <PageHeader
         className="mb-0 md:mb-0 stagger-0"
         title={t("settings.title")}

@@ -1285,7 +1285,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
-          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-5 animate-fade-in-up">
+          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-4 animate-fade-in-up">
             <div className="flex items-start gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
                 <SlidersHorizontal className="w-4 h-4" />

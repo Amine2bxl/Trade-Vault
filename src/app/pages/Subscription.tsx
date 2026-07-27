@@ -44,7 +44,7 @@ export default function Subscription() {
         : t("billing.planFree");
 
   return (
-    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-5">
+    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
       <PageHeader
         className="mb-1 md:mb-1"
         title={tr("Abonnement", "Subscription")}

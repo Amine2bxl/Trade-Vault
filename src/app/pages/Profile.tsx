@@ -25,7 +25,7 @@ export default function Profile({ trades }: ProfileProps) {
   if (!user) return null;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-4">
       <div className="relative rounded-3xl p-5 sm:p-8 overflow-hidden border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent animate-fade-in-up">
         <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-4">

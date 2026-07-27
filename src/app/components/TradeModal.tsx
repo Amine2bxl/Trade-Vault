@@ -391,7 +391,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-5">
+        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-4">
           {/* Row 1: Symbol, Direction, Date */}
           <div className="grid grid-cols-3 gap-3">
             <div>

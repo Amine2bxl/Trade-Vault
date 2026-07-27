@@ -298,7 +298,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-70px)] px-6 py-5 space-y-5">
+        <div className="overflow-y-auto max-h-[calc(90vh-70px)] px-6 py-5 space-y-4">
           {result ? (
             <div className="text-center py-8">
               <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">

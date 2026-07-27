@@ -200,7 +200,7 @@ export default function TradeDetailModal({
           {trades.map((trade) => {
             const be = isBreakEven(trade);
             return (
-              <div key={trade.id} className="glass rounded-2xl p-5 space-y-5 card-premium">
+              <div key={trade.id} className="glass rounded-2xl p-5 space-y-4 card-premium">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
