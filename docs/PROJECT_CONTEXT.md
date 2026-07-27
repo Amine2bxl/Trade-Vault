@@ -5,6 +5,8 @@
 > conversation**. Il synthétise et pointe vers les documents de référence
 > détaillés. En cas de conflit : `CLAUDE.md` (charte) > ce document > le reste.
 >
+> Index/carte de toute la doc : [`README.md`](README.md).
+>
 > Documents détaillés : [`ARCHITECTURE.md`](ARCHITECTURE.md) ·
 > [`PRODUCT.md`](PRODUCT.md) · [`AI.md`](AI.md) ·
 > [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md) ·
@@ -150,15 +152,17 @@ Production : Vercel, ref Supabase `tjikygsipblatubyzbrt`, URL publique
 Trade-Vault/
 ├── CLAUDE.md                  # Charte permanente de l'équipe (PRIME SUR TOUT)
 ├── docs/
+│   ├── README.md              # Index/carte de la doc — porte d'entrée
 │   ├── PROJECT_CONTEXT.md     # CE FICHIER — mémoire permanente
 │   ├── ARCHITECTURE.md        # Guide onboarding dev (< 30 min)
 │   ├── PRODUCT.md             # Référence produit officielle
+│   ├── ROADMAP.md             # Source de vérité audits + priorités P0→P3
+│   ├── FEATURES_STATUS.md     # État vivant des fonctionnalités (✅/🟡/⚪)
 │   ├── AI.md                  # Stratégie IA 24 mois
 │   ├── AI-ARCHITECTURE.md     # Blueprint AI Platform (8 sous-systèmes)
 │   ├── DESIGN-SYSTEM.md       # Diagnostic + plan Design System
-│   ├── ROADMAP.md             # Source de vérité audits + priorités P0→P3
 │   ├── ux-architecture.md     # Principes UX structurants
-│   └── agents/ai-coach.md     # Spec complète de l'agent AI Coach
+│   └── agents/ai-coach.md     # Spec complète de l'agent Coach (Jarvis)
 ├── src/
 │   ├── routes/                # __root, index, privacy, terms, reset-password
 │   ├── app/

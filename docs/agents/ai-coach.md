@@ -1,5 +1,10 @@
-# Agent — AI Coach
+# Agent — Coach (Jarvis)
 
+> **Nom produit : Jarvis.** L'`AgentId` technique reste `coach` (code + catalogue) ;
+> côté utilisateur, l'IA unique s'appelle **Jarvis** (page + widget). Ce document
+> décrit l'agent ; l'identité produit unifiée est résumée dans
+> [`PROJECT_CONTEXT.md`](../PROJECT_CONTEXT.md) §6.
+>
 > **Conception (pas d'implémentation).** Spécification du **premier agent** de
 > TradeVault, bâti sur l'AI Platform (`src/modules/ai/*` + `ai-provider`).
 > Objectif : **répondre aux questions du trader à partir de ses données réelles**.
@@ -161,4 +166,5 @@ flowchart TB
 
 `agents/coach.agent.ts` = un `run()` qui appelle `buildPrompt` + `runWithTools`
 avec le manifeste ci-dessus ; + les 5 outils read-only ; + brancher les 2 surfaces
-UI (Coach IA) dessus — **sans toucher** au reste de l'infra (extension par plug-in).
+UI de **Jarvis** (page `Jarvis.tsx` + widget `AiAssistant`) dessus — **sans toucher**
+au reste de l'infra (extension par plug-in).
