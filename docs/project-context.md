@@ -1,4 +1,4 @@
-# TradeVault — project-context.md
+# TradeVault — Contexte projet (mémoire permanente)
 
 > **Mémoire permanente du projet.** Ce document permet à n'importe quelle IA
 > (ou n'importe quel humain) de comprendre TradeVault **sans aucun historique de
@@ -158,11 +158,11 @@ Trade-Vault/
 │   ├── product.md             # Référence produit officielle
 │   ├── roadmap.md             # Source de vérité audits + priorités P0→P3
 │   ├── features-status.md     # État vivant des fonctionnalités (✅/🟡/⚪)
-│   ├── ai-strategy.md                  # Stratégie IA 24 mois
+│   ├── ai-strategy.md         # Stratégie IA 24 mois
 │   ├── ai-architecture.md     # Blueprint AI Platform (8 sous-systèmes)
 │   ├── design-system.md       # Diagnostic + plan Design System
-│   ├── ux-architecture.md     # Principes UX structurants
-│   └── agents/coach.md     # Spec complète de l'agent Coach (Jarvis)
+│   ├── ux-architecture.md     # Blueprint UX + principes
+│   └── agents/coach.md        # Spec complète de l'agent Coach (Jarvis)
 ├── src/
 │   ├── routes/                # __root, index, privacy, terms, reset-password
 │   ├── app/
@@ -197,7 +197,7 @@ Trade-Vault/
 │   │   │                      # Table, Modal, Chart, Typography, cn, tokens
 │   │   └── error-*.ts, lock-zoom.ts
 │   └── styles.css             # Tokens --tv-*, glass, animations, .btn-*
-├── tests/                     # bun:test — aiInfra, coach, etc. (46 tests)
+├── tests/                     # bun:test — aiInfra, coach, etc. (55 tests)
 ├── vercel.json                # crons + CSP
 └── .env.example               # Toutes les env vars documentées
 ```
@@ -225,8 +225,8 @@ Trade-Vault/
 
 ### Git / livraison
 
-- Branche de travail : `claude/tradevault-tech-guidelines-10l4y0`. **Jamais**
-  de push sur une autre branche sans permission explicite.
+- Travailler sur la **branche désignée de la tâche**. **Jamais** de push sur une
+  autre branche sans permission explicite.
 - Cycle : dev sur la branche → gates verts → push → **PR draft** → ready →
   **squash merge** → re-baser la branche sur `origin/main`
   (`git checkout -B <branche> origin/main`).
@@ -257,8 +257,8 @@ Trade-Vault/
 - **Missed Opportunities** : journal des setups manqués.
 - **Goals** : objectifs (win rate, P&L…) avec cible/actuel + rappels
   (goal-reminders cron).
-- **Checklist pré-market** (+ Wizard) : discipline quotidienne, peut ouvrir le
-  coach avec un prompt prérempli (event `tv:ask-coach`).
+- **Checklist pré-market** (+ Wizard) : discipline quotidienne, peut ouvrir
+  Jarvis avec un prompt prérempli (event `tv:ask-coach`).
 - **Trading Plan**, **Lot Size Calculator**, **Economic News**.
 - **Reports** : rapports mensuels générés + envoyés par cron.
 
@@ -366,8 +366,8 @@ Détails : `ai-strategy.md` (stratégie) et `ai-architecture.md` (blueprint tech
   pas la donnée le dit.
 - **Sécurité IA** : secrets uniquement côté serveur (server functions), Zod
   avec tailles max sur toute entrée, `requireProAccess` (auth + rate-limit),
-  RLS owner-only sur toute persistance IA (`ai_memory`, futurs
-  `ai_insights`/`ai_reports`).
+  RLS owner-only sur toute persistance IA (`ai_memory`, `ai_reports` ;
+  futurs `ai_insights`).
 - **Coûts** : payloads compacts (stats scalaires, trades résumés), caps
   stricts, retry unique sur erreur transitoire, hook `onUsage` pour la
   télémétrie ; le défaut Gemini = coût faible ; montée en gamme par env var.
@@ -383,18 +383,17 @@ Détails : `ai-strategy.md` (stratégie) et `ai-architecture.md` (blueprint tech
 
 Détails : `ux-architecture.md`.
 
-- **Mobile-first réel** : bottom nav mobile, sidebar desktop, widget coach
+- **Mobile-first réel** : bottom nav mobile, sidebar desktop, widget Jarvis
   flottant, gestes (swipe sur TradeDetailModal).
 - **L'optimistic UI n'attend jamais** : toute action utilisateur répond
   instantanément ; le réseau rattrape en arrière-plan.
 - **Zéro friction de saisie** : le journal doit être plus rapide qu'Excel —
-  quick prompts, valeurs par défaut, import CSV, voix (Web Speech) sur le
-  coach.
+  quick prompts, valeurs par défaut, import CSV, voix (Web Speech) sur Jarvis.
 - **Le produit vient au trader** (cible) : notifications, rappels d'objectifs,
   briefs — l'utilisateur ne doit pas avoir à chercher sa valeur.
-- **Continuité** : conversations et brouillons du coach persistés par
+- **Continuité** : conversations et brouillons de Jarvis persistés par
   utilisateur (localStorage namespacé `nsKey(userId, …)`) ; pages découplées
-  qui parlent au coach via l'événement `tv:ask-coach`.
+  qui parlent à Jarvis via l'événement `tv:ask-coach`.
 - **i18n natif** : FR/EN partout, la langue de l'UI pilote la langue des
   réponses IA.
 - **États toujours gérés** : loading (skeletons/spinners), vide (empty states
