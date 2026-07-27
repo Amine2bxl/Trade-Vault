@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Info } from "lucide-react";
+import { Info, BarChart3 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
 import {
@@ -291,6 +291,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
   return (
     <PageContainer>
       <PageHeader
+        accent="violet"
+        icon={<BarChart3 className="w-4 h-4" />}
         className="stagger-0"
         title={t("analytics.title")}
         subtitle={t("analytics.subtitle")}

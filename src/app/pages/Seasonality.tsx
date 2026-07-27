@@ -55,6 +55,8 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
   return (
     <PageContainer>
       <PageHeader
+        accent="violet"
+        icon={<CalendarRange className="w-4 h-4" />}
         className="mb-4 md:mb-5 stagger-0"
         title={t("seasonality.title")}
         subtitle={t("seasonality.subtitle")}

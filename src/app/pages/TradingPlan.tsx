@@ -1,19 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Map,
-  Compass,
-  ShieldAlert,
-  Layers,
-  Ban,
-  SunMedium,
-  Target,
-  Plus,
-  Trash2,
-  Check,
-  Loader2,
-  X,
-  Sparkles,
-} from "lucide-react";
+import { Map, Compass, ShieldAlert, Layers, Ban, SunMedium, Target, Plus, Trash2, Check, Loader2, X, Sparkles, ClipboardList } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
@@ -103,6 +89,8 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
     <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
       {/* Header + completion */}
       <PageHeader
+        accent="emerald"
+        icon={<ClipboardList className="w-4 h-4" />}
         className="mb-2 items-center"
         title={tr("Plan de trading", "Trading Plan")}
         subtitle={tr(

@@ -1,19 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import {
-  Plus,
-  ArrowUpDown,
-  Pencil,
-  Trash2,
-  Eye,
-  ChevronDown,
-  ChevronUp,
-  Trash,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Download,
-  Target,
-} from "lucide-react";
+import { Plus, ArrowUpDown, Pencil, Trash2, Eye, ChevronDown, ChevronUp, Trash, ArrowUpRight, ArrowDownRight, Minus, Download, Target, BookOpen } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
   formatPnl,
@@ -136,6 +122,8 @@ export default function Journal({
   return (
     <PageContainer>
       <PageHeader
+        accent="sky"
+        icon={<BookOpen className="w-4 h-4" />}
         className="mb-3 md:mb-6 items-center stagger-0"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}

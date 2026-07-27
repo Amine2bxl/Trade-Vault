@@ -237,11 +237,8 @@ export default function Jarvis({ trades }: JarvisProps) {
   return (
     <div className="p-4 md:p-5 max-w-4xl mx-auto">
       <PageHeader
-        icon={
-          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-            <Bot className="w-5 h-5 text-white" />
-          </span>
-        }
+        accent="cyan"
+        icon={<Bot className="w-4 h-4" />}
         title={t("insights.title")}
         subtitle={t("insights.subtitle")}
         actions={

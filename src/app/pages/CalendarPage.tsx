@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target, CalendarDays } from "lucide-react";
 import { Trade, MissedOpportunity } from "../types";
 import { loadMissedOpportunities } from "../store";
 import { useAuth } from "../contexts/AuthContext";
@@ -229,6 +229,8 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
   return (
     <PageContainer>
       <PageHeader
+        accent="sky"
+        icon={<CalendarDays className="w-4 h-4" />}
         className="mb-3 md:mb-6 stagger-0"
         title={t("calendar.title")}
         subtitle={t("calendar.subtitle")}

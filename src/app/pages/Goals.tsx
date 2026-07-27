@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Flag } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
@@ -217,6 +217,8 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   return (
     <div className="p-4 md:p-5 max-w-3xl mx-auto">
       <PageHeader
+        accent="emerald"
+        icon={<Flag className="w-4 h-4" />}
         className="mb-6"
         title={tr("Objectifs", "Goals")}
         subtitle={tr(

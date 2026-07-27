@@ -1,13 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  CalendarDays,
-  Info,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  SlidersHorizontal,
-} from "lucide-react";
+import { CalendarDays, Info, Search, ChevronLeft, ChevronRight, X, SlidersHorizontal, Newspaper } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import { PageHeader, Card } from "@/shared/ui";
@@ -161,6 +153,8 @@ export default function EconomicNews() {
     <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
       {/* Header */}
       <PageHeader
+        accent="rose"
+        icon={<Newspaper className="w-4 h-4" />}
         className="mb-4 stagger-0"
         title={t("news.title")}
         subtitle={t("news.subtitle")}
