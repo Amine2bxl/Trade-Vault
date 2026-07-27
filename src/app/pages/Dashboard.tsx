@@ -14,9 +14,6 @@ import {
   CalendarDays,
   Gauge,
   Scale,
-  ClipboardCheck,
-  ChevronRight,
-  Check,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -29,11 +26,15 @@ import {
 } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
 import { loadStartingBalance } from "../store";
+import { loadTradingPlan } from "../utils/tradingPlan";
+import { loadOnboarding } from "../store/profile";
+import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/edgeScore";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { Metric, PageHeader } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
+import CopilotBlock from "./dashboard/CopilotBlock";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 
@@ -88,6 +89,8 @@ export default function Dashboard({
     }
   });
   const [startingBalance, setStartingBalance] = useState(0);
+  const [maxRiskPct, setMaxRiskPct] = useState<number | null>(null);
+  const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -95,6 +98,18 @@ export default function Dashboard({
     loadStartingBalance(user.id)
       .then((b) => {
         if (active) setStartingBalance(b);
+      })
+      .catch(() => {});
+    loadTradingPlan(user.id)
+      .then((p) => {
+        if (!active) return;
+        const pct = parseFloat(p.risk.maxRiskPerTradePct);
+        setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
+      })
+      .catch(() => {});
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setMonthlyTarget(o.monthlyTarget ?? null);
       })
       .catch(() => {});
     return () => {
@@ -164,6 +179,86 @@ export default function Dashboard({
     }
   }, [user?.id]);
 
+  // ── Copilot block: Edge Score, rule of the day, objective ──
+  // Checklist completion per day over the Edge window, read from the same
+  // localStorage keys the Checklist page writes (tv-chk-{uid}-{ISO date}).
+  const checklistByDay = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (!user) return map;
+    const now = new Date();
+    for (let i = 0; i < EDGE_WINDOW_DAYS; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      try {
+        const raw = localStorage.getItem(`tv-chk-${user.id}-${iso}`);
+        if (!raw) continue;
+        const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
+        if (p.locked) map[iso] = 1;
+        else if (Array.isArray(p.checked) && p.checked.length > 0)
+          map[iso] = p.checked.filter(Boolean).length / p.checked.length;
+      } catch {
+        /* ignore malformed entry */
+      }
+    }
+    return map;
+  }, [user?.id]);
+
+  // Edge Score is computed over the whole account history (not the period
+  // filter) so it reflects recent discipline, not the selected window.
+  const edge = useMemo(
+    () => computeEdgeScore(trades, { maxRiskPct, startingBalance, checklistByDay }),
+    [trades, maxRiskPct, startingBalance, checklistByDay],
+  );
+  const dailyRule = useMemo(() => deriveDailyRule(computeStats(trades)), [trades]);
+
+  // Day-over-day delta: compare today's score with the last stored snapshot.
+  const edgeDelta = useMemo(() => {
+    if (!user || edge.score === null) return null;
+    try {
+      const raw = localStorage.getItem(`tv.edge.${user.id}`);
+      if (!raw) return null;
+      const snap = JSON.parse(raw) as { date?: string; score?: number };
+      const today = new Date().toISOString().slice(0, 10);
+      if (snap.date && snap.date !== today && typeof snap.score === "number") {
+        return edge.score - snap.score;
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }, [user?.id, edge.score]);
+
+  // Persist today's score once known, so tomorrow can show a delta.
+  useEffect(() => {
+    if (!user || edge.score === null) return;
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const raw = localStorage.getItem(`tv.edge.${user.id}`);
+      const snap = raw ? (JSON.parse(raw) as { date?: string }) : null;
+      if (!snap || snap.date !== today) {
+        localStorage.setItem(`tv.edge.${user.id}`, JSON.stringify({ date: today, score: edge.score }));
+      }
+    } catch {
+      /* best-effort */
+    }
+  }, [user?.id, edge.score]);
+
+  // Monthly objective: current-month PnL as a fraction of the month's opening
+  // equity (starting balance + PnL accumulated before this month).
+  const objective = useMemo(() => {
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    let monthPnl = 0;
+    let before = 0;
+    for (const tr of trades) {
+      if (tr.date >= monthStart) monthPnl += tr.pnl;
+      else before += tr.pnl;
+    }
+    const base = startingBalance + before;
+    return { currentPct: base > 0 ? monthPnl / base : 0, targetPct: monthlyTarget };
+  }, [trades, startingBalance, monthlyTarget]);
+
   const getGreeting = () => {
     const h = new Date().getHours();
     if (h < 5) return t("dashboard.greetingStillUp");
@@ -203,66 +298,16 @@ export default function Dashboard({
         }
       />
 
-      {/* Pre-market checklist synergy card */}
-      {onOpenChecklist && chkStatus && (
-        <button
-          onClick={onOpenChecklist}
-          className={cn(
-            "w-full flex items-center gap-3 mb-4 md:mb-6 px-4 py-3 rounded-2xl border text-left transition-all animate-fade-in-up stagger-1 hover:-translate-y-0.5",
-            chkStatus.locked
-              ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/10"
-              : "bg-cyan-500/[0.05] border-cyan-500/15 hover:bg-cyan-500/[0.09]",
-          )}
-        >
-          <div
-            className={cn(
-              "relative w-9 h-9 rounded-xl border flex items-center justify-center shrink-0",
-              chkStatus.locked
-                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
-            )}
-          >
-            {!chkStatus.locked && (
-              <span className="absolute -inset-0.5 rounded-xl bg-cyan-500/25 blur-md animate-pulse" />
-            )}
-            <ClipboardCheck className="relative w-4 h-4" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-semibold text-white">{t("chk.dashTitle")}</div>
-              {chkStatus.locked && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-300">
-                  <Check className="w-2.5 h-2.5" /> {t("chk.ready")}
-                </span>
-              )}
-            </div>
-            <div className="text-[11px] text-slate-400 truncate mb-1.5">
-              {chkStatus.locked
-                ? t("chk.dashLocked")
-                : chkStatus.total > 0
-                  ? `${chkStatus.n}/${chkStatus.total} ${t("chk.dashChecked")}`
-                  : t("chk.dashStart")}
-            </div>
-            {chkStatus.total > 0 && (
-              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden max-w-xs">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    chkStatus.locked
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-                      : "bg-gradient-to-r from-cyan-500 to-teal-400",
-                  )}
-                  style={{
-                    width: `${chkStatus.locked ? 100 : Math.round((chkStatus.n / Math.max(1, chkStatus.total)) * 100)}%`,
-                  }}
-                />
-              </div>
-            )}
-          </div>
-          <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-cyan-400 shrink-0">
-            {t("chk.dashCta")} <ChevronRight className="w-3.5 h-3.5" />
-          </span>
-        </button>
+      {/* Copilot block — the day's focus (Edge Score, rule, checklist, objective) */}
+      {trades.length > 0 && (
+        <CopilotBlock
+          edge={edge}
+          edgeDelta={edgeDelta}
+          rule={dailyRule}
+          checklist={chkStatus}
+          objective={objective}
+          onOpenChecklist={onOpenChecklist}
+        />
       )}
 
       {trades.length === 0 ? (

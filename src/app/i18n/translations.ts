@@ -315,6 +315,26 @@ const en = {
   "dashboard.riskSuffix": "risk",
   "dashboard.avgRR": "Avg R:R",
 
+  // Dashboard — Copilot block (Edge Score, rule of the day, objective)
+  "copilot.title": "Today's copilot",
+  "copilot.edgeLabel": "Edge score",
+  "copilot.scoreBuilding": "Score building — log more trades",
+  "copilot.cleanDays": "Clean days",
+  "copilot.cleanDaysWord": "clean days",
+  "copilot.jarvisBuilding": "Not enough recent data yet — log your trades and I'll start scoring your discipline.",
+  "copilot.obsPlan": "Plan adherence is your weak spot right now.",
+  "copilot.obsRisk": "Position sizing slipped above your limit recently.",
+  "copilot.obsRoutine": "Your pre-market routine has been inconsistent.",
+  "copilot.obsClean": "{clean} lately.",
+  "copilot.actionRule": "Today: {rule}.",
+  "copilot.actionGeneric": "Keep to your plan today.",
+  "copilot.ruleTitle": "Rule of the day",
+  "copilot.ruleFrom": "Targets your #1 recurring leak",
+  "copilot.ruleNone": "Stick to your plan",
+  "copilot.ruleNoneHint": "No costly recurring mistake detected yet",
+  "copilot.objTitle": "Monthly objective",
+  "copilot.objNone": "Set a monthly target in your profile",
+
   // Journal
   "journal.title": "Trade Journal",
   "journal.colDate": "date",
