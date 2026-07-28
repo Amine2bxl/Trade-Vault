@@ -27,6 +27,13 @@ export interface AIUserContext {
   goals?: { kind: string; target: number; current: number }[];
   /** Recurring mistakes with how often they occur and their net cost. */
   mistakes?: { name: string; count: number; totalPnl: number }[];
+  /**
+   * Precomputed behaviour signals — the deterministic "why" behind the stats
+   * (weekday/session edge, size drift after a loss, cost of over-trading…).
+   * Shape is owned by the caller: this layer stays business-agnostic and only
+   * serializes whatever structured object it is handed.
+   */
+  signals?: Record<string, unknown>;
   /** The trader's own written rules. */
   rules?: { kind: string; text: string; enabled: boolean }[];
   /** Long-term memory entries (profile facts, recurring lessons). */
@@ -89,6 +96,14 @@ export function contextBlocks(ctx: AIUserContext): string {
   }
   if (ctx.stats && Object.keys(ctx.stats).length) {
     blocks.push(`PRECOMPUTED STATS (trust these numbers):\n${JSON.stringify(ctx.stats)}`);
+  }
+  if (ctx.signals && Object.keys(ctx.signals).length) {
+    blocks.push(
+      "BEHAVIOUR SIGNALS (precomputed by the deterministic engine — trust these " +
+        "numbers and cite them; they are the evidence behind every diagnosis. " +
+        "P&L values are in account currency, winRatePct and driftPct are " +
+        `percentages):\n${JSON.stringify(ctx.signals)}`,
+    );
   }
   if (ctx.trades?.length) {
     blocks.push(

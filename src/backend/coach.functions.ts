@@ -36,6 +36,19 @@ const CoachAsk = z.object({
     .array(z.object({ kind: z.string().max(40), target: z.number(), current: z.number() }))
     .max(10)
     .optional(),
+  rules: z
+    .array(z.object({ kind: z.string().max(40), text: z.string().max(300), enabled: z.boolean() }))
+    .max(30)
+    .optional(),
+  /**
+   * Precomputed behaviour signals. The shape is owned by the client engine, so
+   * it is validated by size rather than by field: a hard 12 KB ceiling keeps a
+   * malformed or oversized payload from ever reaching the provider.
+   */
+  signals: z
+    .record(z.string(), z.unknown())
+    .refine((v) => JSON.stringify(v).length <= 12_000, "signals payload too large")
+    .optional(),
   /** Compact onboarding profile so the coaching is never generic. */
   profile: z.string().max(600).optional(),
   conversation: z

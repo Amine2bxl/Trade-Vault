@@ -48,6 +48,11 @@ export class ContextBuilder {
     return this;
   }
 
+  withSignals(signals: Record<string, unknown>): this {
+    this.ctx.signals = signals;
+    return this;
+  }
+
   withRules(rules: Rule[]): this {
     this.ctx.rules = rules.slice(0, CONTEXT_CAPS.rules);
     return this;

@@ -19,6 +19,8 @@ import { Trade } from "../types";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload } from "../utils/aiContext";
 import { computeStats, formatPnl, formatPct } from "../utils/tradeCalcs";
+import { computeBehaviorSignals } from "../utils/behaviorSignals";
+import { useTradingRules } from "../hooks/useTradingRules";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -36,6 +38,18 @@ interface ChatMessage {
   role: "user" | "assistant" | "error";
   text: string;
 }
+
+/** Maps the English weekday keys the signal engine emits back to a date index,
+ *  so the suggested question can be shown in the trader's own language. */
+const DAY_INDEX: Record<string, number> = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
 
 /**
  * Jarvis — the coaching center. The single AI's home page: a live daily
@@ -84,6 +98,10 @@ export default function Jarvis({ trades }: JarvisProps) {
   }, [messages, loading]);
 
   const stats = useMemo(() => computeStats(trades), [trades]);
+  // Same deterministic read the coach is grounded on — used here to pick which
+  // questions to suggest, so the page and the AI agree on what matters.
+  const signals = useMemo(() => computeBehaviorSignals(trades), [trades]);
+  const rules = useTradingRules();
 
   /* Deterministic read of the trader's edge — no AI cost, always available.
      `priority` carries a structured kind so the display is localized while the
@@ -169,24 +187,87 @@ export default function Jarvis({ trades }: JarvisProps) {
     void speak(englishBrief);
   }, [englishBrief, speak]);
 
-  const QUICK_PROMPTS = [
-    {
-      label: t("insights.quick.winLoss"),
-      q: "Analyze my win/loss patterns. What separates my winning trades from my losing ones?",
-    },
-    {
-      label: t("insights.quick.days"),
-      q: "Which days of the week are my best and worst performing? Why?",
-    },
-    {
-      label: t("insights.quick.symbols"),
-      q: "Break down my performance by symbol. Which should I focus on or avoid?",
-    },
-    {
-      label: t("insights.quick.improvements"),
-      q: "What are my biggest weaknesses and the top 3 concrete improvements I should make?",
-    },
-  ];
+  /**
+   * Suggested questions, written FROM this trader's data.
+   *
+   * A fixed list of four generic prompts is what makes an AI feel like a
+   * chatbot: it asks the same thing of a scalper and of a swing trader. Here
+   * the deterministic behaviour signals pick the questions — the losing weekday
+   * they actually have, the mistake that actually costs them, the size drift
+   * they actually show — so opening Jarvis already points at their problem.
+   * Falls back to the general prompts while the journal is still thin.
+   */
+  const QUICK_PROMPTS = useMemo(() => {
+    const suggestions: { label: string; q: string }[] = [];
+
+    const worstDay = signals.byWeekday?.find((b) => b.pnl < 0);
+    if (worstDay) {
+      const localDay =
+        DAY_INDEX[worstDay.key] !== undefined
+          ? new Date(2024, 0, 7 + DAY_INDEX[worstDay.key]).toLocaleDateString(lang, {
+              weekday: "long",
+            })
+          : worstDay.key;
+      suggestions.push({
+        label: t("jarvis.q.worstDay").replace("{day}", localDay),
+        q: `I lose money on ${worstDay.key}. Diagnose exactly why, using my weekday numbers, and give me a rule to apply this ${worstDay.key}.`,
+      });
+    }
+
+    if (briefing.weakness) {
+      suggestions.push({
+        label: t("jarvis.q.mistakeCost").replace("{mistake}", briefing.weakness.name),
+        q: `Break down what "${briefing.weakness.name}" costs me, when it happens, and the single change that stops it.`,
+      });
+    }
+
+    const drift = signals.riskAfterLoss;
+    if (drift && drift.driftPct > 10) {
+      suggestions.push({
+        label: t("jarvis.q.sizeAfterLoss"),
+        q: "Do I increase my position size after a losing trade? Use my risk-after-loss numbers and tell me what it has cost me.",
+      });
+    }
+
+    const over = signals.overtrading;
+    if (over && over.avgPnlPerTradeBusy < over.avgPnlPerTradeCalm) {
+      suggestions.push({
+        label: t("jarvis.q.overtrading"),
+        q: "Am I overtrading? Compare my busy days with my selective days and give me a daily trade cap.",
+      });
+    }
+
+    if (signals.byStrategy && signals.byStrategy.length >= 2) {
+      suggestions.push({
+        label: t("jarvis.q.focus"),
+        q: "Which of my setups actually makes money and which one should I drop? Decide with the numbers.",
+      });
+    }
+
+    suggestions.push({
+      label: t("jarvis.q.thisWeek"),
+      q: "Give me the single most important thing to fix this week, and how I will know on Friday whether I did it.",
+    });
+
+    if (suggestions.length >= 4) return suggestions.slice(0, 4);
+
+    // Thin journal — keep the general prompts so the panel is never empty.
+    return [
+      ...suggestions,
+      {
+        label: t("insights.quick.winLoss"),
+        q: "Analyze my win/loss patterns. What separates my winning trades from my losing ones?",
+      },
+      {
+        label: t("insights.quick.days"),
+        q: "Which days of the week are my best and worst performing? Why?",
+      },
+      {
+        label: t("insights.quick.improvements"),
+        q: "What are my biggest weaknesses and the top 3 concrete improvements I should make?",
+      },
+    ].slice(0, 4);
+  }, [signals, briefing.weakness, lang, t]);
 
   const ask = useCallback(
     async (q: string) => {
@@ -203,6 +284,7 @@ export default function Jarvis({ trades }: JarvisProps) {
         conversation: priorTurns,
         language: lang,
         onboarding,
+        rules,
       });
       try {
         let res;
@@ -226,7 +308,7 @@ export default function Jarvis({ trades }: JarvisProps) {
         setLoading(false);
       }
     },
-    [loading, messages, trades, lang, onboarding, t],
+    [loading, messages, trades, lang, onboarding, rules, t],
   );
 
   const clearChat = useCallback(() => {
@@ -437,7 +519,13 @@ export default function Jarvis({ trades }: JarvisProps) {
           )}
         </div>
 
-        {/* Quick actions */}
+        {/* Quick actions — written from this trader's own signals. */}
+        <div className="px-4 pb-1 flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+            {t("jarvis.suggestedFor")}
+          </span>
+          <span className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="px-4 pb-2 flex flex-wrap gap-2">
           {QUICK_PROMPTS.map((p) => (
             <button

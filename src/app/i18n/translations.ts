@@ -288,6 +288,13 @@ const en = {
   "jarvis.bestDay": "Best day: {day}",
   "jarvis.bestSymbol": "Best symbol: {symbol}",
   "jarvis.profitFactor": "Profit factor {value}",
+  "jarvis.q.worstDay": "Why do I lose on {day}?",
+  "jarvis.q.mistakeCost": "What does “{mistake}” cost me?",
+  "jarvis.q.sizeAfterLoss": "Do I size up after a loss?",
+  "jarvis.q.overtrading": "Am I overtrading?",
+  "jarvis.q.focus": "Which setup should I focus on?",
+  "jarvis.q.thisWeek": "What do I fix this week?",
+  "jarvis.suggestedFor": "Based on your data",
   "jarvis.pf": "Profit factor",
   "jarvis.streak": "Streak",
 

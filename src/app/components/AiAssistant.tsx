@@ -3,6 +3,7 @@ import { Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
 import { Trade } from "../types";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../utils/aiContext";
+import { useTradingRules } from "../hooks/useTradingRules";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -40,6 +41,9 @@ function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
 export default function AiAssistant({ trades }: AiAssistantProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
+  // The floating panel and the Jarvis page must never diverge in what they
+  // ground the coach on — same rules, same signals, same persona.
+  const rules = useTradingRules();
   const chatKey = nsKey(user?.id, "ai.chat");
   const inputKey = nsKey(user?.id, "ai.input");
   const [open, setOpen] = useState(false);
@@ -129,6 +133,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         conversation: priorTurns,
         language: lang,
         onboarding,
+        rules,
       });
       try {
         let res;
@@ -155,7 +160,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         setLoading(false);
       }
     },
-    [loading, messages, trades, lang, t, user?.id, onboarding],
+    [loading, messages, trades, lang, t, user?.id, onboarding, rules],
   );
 
   // Other pages (e.g. the pre-market Checklist) can open the coach with a
