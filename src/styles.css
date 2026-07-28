@@ -186,7 +186,7 @@ body {
     border-color 0.2s ease,
     background 0.2s ease,
     box-shadow 0.2s ease;
-  will-change: transform;
+  /* No permanent will-change — see .card-premium: it blurred text on Windows. */
 }
 .onb-card:hover {
   transform: translateY(-2px);
@@ -619,7 +619,11 @@ input[type="number"] {
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
+  /* No permanent `will-change: transform`: it forces every card onto its own
+   * GPU layer, and Chrome on Windows then rasterises the text to a texture that
+   * lands on a fractional device pixel → blurry copy. On Retina/macOS it's
+   * invisible; on Windows it made the whole app look soft. The hover lift stays
+   * perfectly smooth without it. */
 }
 @media (hover: hover) {
   .card-premium:hover {
