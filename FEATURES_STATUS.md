@@ -77,7 +77,8 @@
 | **Abonnement (statut)** | ✅ | Page statut seul (plan · essai · jours restants) ; ni prix ni logique Stripe dans le Profil |
 | **Infra de paiement** | ✅ (dormante) | Stripe (checkout, portail, webhook signé) + Coinbase Commerce, idempotence `processed_webhook_events` |
 | **E-mails de cycle de vie** | ✅ | Bienvenue, fin d'essai (J-2), winback (J+3 à J+10), idempotents via `email_log` |
-| **Landing + pages légales** | ✅ | Landing de conversion (hero, problème, IA, fonctionnalités, tarifs, FAQ, CTA), `/privacy`, `/terms` |
+| **Landing + pages publiques** | ✅ | Landing de conversion (hero, problème, IA, fonctionnalités, tarifs, FAQ, CTA) + `/privacy`, `/terms`, `/contact` — bilingues, responsive, sommaire, RTL |
+| **SEO public** | ✅ | `pageSeo()` : canonical absolu, Open Graph + Twitter Card complets, `robots` par page ; `robots.txt` et `sitemap.xml` générés depuis `SITE_URL` ; previews en `noindex` |
 | **Trustpilot** | ✅ | ⚠️ **Zone gelée** — ne jamais toucher |
 | **Design System `shared/ui`** | ✅ | Typography, Button, Input/Field, Card, Table, Modal accessible, Badge, Chip, PageHeader, EmptyState, Metric, Chart, tokens |
 | **Résilience** | ✅ | `PageErrorBoundary` par page, écrans 404/500, normalisation des erreurs SSR, skeletons contextuels |

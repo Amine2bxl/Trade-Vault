@@ -10,6 +10,7 @@ import {
   YEARLY_PER_MONTH,
   YEARLY_SAVING,
 } from "../utils/pricing";
+import { SUPPORT_EMAIL } from "../types";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated
@@ -1378,12 +1379,18 @@ export default function Landing() {
                 <a href="/privacy" className="hover:text-slate-300 transition">
                   Confidentialité
                 </a>
+                <a href="/contact" className="hover:text-slate-300 transition">
+                  Contact
+                </a>
               </div>
+              {/* SUPPORT_EMAIL is the single source of truth: the same address
+                  is declared on the Google OAuth consent screen, so a mismatch
+                  here would look like a different company. */}
               <a
-                href="mailto:contact@tradevault.app"
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="inline-flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-cyan-300 transition"
               >
-                <Icon n="mail" cls="h-3.5 w-3.5" /> contact@tradevault.app
+                <Icon n="mail" cls="h-3.5 w-3.5" /> {SUPPORT_EMAIL}
               </a>
             </div>
           </div>

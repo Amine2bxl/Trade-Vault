@@ -9,7 +9,15 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME } from "../shared/seo";
 import { reportAppError } from "../shared/error-reporting";
+
+/** Site-wide title and description — the marketing promise, in the language
+ *  the landing page is written in. Public routes override both. */
+const ROOT_TITLE = "TradeVault — Ton coach IA de trading personnel";
+const ROOT_DESCRIPTION =
+  "Pas un simple journal de trading : un coach IA qui lit chacun de tes trades, chiffre les erreurs qui te coûtent le plus et t'impose la discipline. Journal, analytics quantitatives et checklist pré-market.";
+
 import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../app/components/ErrorScreen";
 
@@ -61,30 +69,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "TradeVault" },
-      { title: "TradeVault" },
-      {
-        name: "description",
-        content:
-          "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance.",
-      },
-      { property: "og:title", content: "TradeVault" },
-      {
-        property: "og:description",
-        content:
-          "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance.",
-      },
+      // Site-wide defaults. Public routes override them via `pageSeo()`;
+      // the authenticated app inherits these. Absolute URLs are mandatory —
+      // Open Graph scrapers have no base to resolve a relative path against.
+      { title: ROOT_TITLE },
+      { name: "description", content: ROOT_DESCRIPTION },
+      { property: "og:site_name", content: SITE_NAME },
+      { property: "og:title", content: ROOT_TITLE },
+      { property: "og:description", content: ROOT_DESCRIPTION },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/icon-512.png" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "TradeVault" },
-      {
-        name: "twitter:description",
-        content:
-          "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance.",
-      },
-      { name: "twitter:image", content: "/icon-512.png" },
+      { property: "og:url", content: absoluteUrl("/") },
+      { property: "og:image", content: DEFAULT_OG_IMAGE },
+      { property: "og:locale", content: "fr_FR" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: ROOT_TITLE },
+      { name: "twitter:description", content: ROOT_DESCRIPTION },
+      { name: "twitter:image", content: DEFAULT_OG_IMAGE },
     ],
     links: [
+      { rel: "canonical", href: absoluteUrl("/") },
       {
         rel: "stylesheet",
         href: appCss,

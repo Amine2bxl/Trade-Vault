@@ -315,6 +315,17 @@ Source unique côté code : [`src/shared/site.ts`](src/shared/site.ts).
 | Authorized domain | `vercel.app` |
 | Developer contact | l'e-mail du propriétaire du projet Google Cloud |
 
+Les trois pages référencées existent et sont servies en SSR par des routes
+dédiées (`src/routes/{privacy,terms,contact}.tsx`). L'adresse de support
+déclarée ici **doit** rester `SUPPORT_EMAIL` (`src/app/types.ts`) : c'est la
+même que celle affichée dans le pied de page, sur les pages légales et sur
+`/contact`. Une divergence donne l'impression de deux entreprises différentes
+et affaiblit la demande de vérification.
+
+Une **page `/contact` publique** n'est pas exigée par Google, mais elle pèse
+dans l'évaluation manuelle lors de la vérification : elle prouve qu'un humain
+répond derrière l'application.
+
 **Google Cloud Console → Data access (scopes)**
 
 Uniquement les trois scopes **non sensibles** : `openid`, `.../auth/userinfo.email`,
@@ -385,9 +396,11 @@ dans le code.
 | 5 | **Google → Branding** | Home page, Privacy, Terms sur le nouveau domaine · Authorized domain → `tradevault.app` (remplace `vercel.app`) |
 
 **Rien d'autre dans le code n'est à modifier** : `src/shared/site.ts` est le
-seul fichier qui connaît un domaine. Penser aussi à `PUBLIC_SITE_URL`
-(server-only, e-mails de cycle de vie) et à la CSP de `vercel.json` si le
-domaine Supabase change un jour.
+seul fichier qui connaît un domaine. En dérivent automatiquement les URL
+canoniques, `og:url`, `og:image`, `robots.txt` et `sitemap.xml` — les pages
+publiques (`/`, `/privacy`, `/terms`, `/contact`) suivent sans édition. Penser
+aussi à `PUBLIC_SITE_URL` (server-only, e-mails de cycle de vie) et à la CSP de
+`vercel.json` si le domaine Supabase change un jour.
 
 **Bonus post-migration** : un domaine personnalisé permet enfin la vérification
 Google complète (logo validé, écran « app non vérifiée » supprimé) — impossible

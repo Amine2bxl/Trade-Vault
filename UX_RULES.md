@@ -142,6 +142,27 @@ deep-links existent via query params sur `/` : `?report=YYYY-MM` (Rapports) et
 | **Jarvis** | Centre de coaching : briefing, forces/faiblesses, conversation |
 | **Réglages / Profil / Apparence / Abonnement** | Compte, préférences, thème, statut d'abonnement |
 | **Landing** | Page publique de conversion (hors app) |
+| **Confidentialité / Conditions / Contact** | Pages publiques (hors app) : `/privacy`, `/terms`, `/contact` |
+
+### 3.2 Pages publiques (hors arbre applicatif)
+
+`/privacy`, `/terms` et `/contact` rendent **en dehors** de l'application : pas
+de `LanguageProvider`, donc pas de `useT()`. Elles suivent trois règles
+propres :
+
+- **Copie co-localisée et bilingue** — `legal-content.ts` et
+  `contact-content.ts` : l'anglais est la source et le repli, le français est
+  intégralement traduit, toute autre locale retombe sur l'anglais.
+- **Langue lue directement** via `usePersistedLang()`, qui démarre en anglais
+  pour que le rendu SSR et la première peinture client soient identiques (pas
+  de divergence d'hydratation), puis applique la langue stockée après montage.
+- **Même identité visuelle que la landing** — mesh d'ambiance, orbes, panneaux
+  `glass`, lien de retour. Les trois pages doivent se lire comme un seul site,
+  parce que c'est exactement ce qu'un évaluateur Google vérifie.
+
+L'adresse de support y est **toujours** `SUPPORT_EMAIL`, jamais une adresse
+écrite à la main : elle doit correspondre à celle déclarée sur l'écran de
+consentement Google.
 
 ---
 

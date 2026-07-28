@@ -2,6 +2,49 @@ import "./shared/error-capture";
 
 import { consumeLastCapturedError } from "./shared/error-capture";
 import { renderErrorPage } from "./shared/error-page";
+import { SITE_URL } from "./shared/site";
+
+/** Public routes worth indexing. The authenticated app is behind `/` and is
+ *  client-rendered, so there is nothing else for a crawler to see. */
+const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/contact"] as const;
+
+/**
+ * `robots.txt` and `sitemap.xml`, generated rather than shipped as static
+ * files so they follow `SITE_URL` — connecting a custom domain needs no edit.
+ *
+ * Preview deployments answer on a different host and are deliberately served a
+ * blanket `Disallow: /`: a preview must never compete with production in the
+ * index, nor leak an unfinished page into search results.
+ */
+function isCanonicalHost(request: Request): boolean {
+  try {
+    return new URL(request.url).host === new URL(SITE_URL).host;
+  } catch {
+    return false;
+  }
+}
+
+function robotsTxt(request: Request): Response {
+  const body = isCanonicalHost(request)
+    ? `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`
+    : `User-agent: *\nDisallow: /\n`;
+  return new Response(body, {
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" },
+  });
+}
+
+function sitemapXml(): Response {
+  const today = new Date().toISOString().slice(0, 10);
+  const urls = PUBLIC_ROUTES.map((path) => {
+    const loc = path === "/" ? `${SITE_URL}/` : `${SITE_URL}${path}`;
+    const priority = path === "/" ? "1.0" : "0.5";
+    return `  <url><loc>${loc}</loc><lastmod>${today}</lastmod><priority>${priority}</priority></url>`;
+  }).join("\n");
+  const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+  return new Response(body, {
+    headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" },
+  });
+}
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -43,6 +86,8 @@ export default {
       // Raw HTTP endpoints (no file-route support in this router version).
       // The Vercel cron hits this path on the 1st of each month.
       const { pathname } = new URL(request.url);
+      if (pathname === "/robots.txt") return robotsTxt(request);
+      if (pathname === "/sitemap.xml") return sitemapXml();
       if (pathname === "/api/cron/monthly-reports") {
         const { handleMonthlyReportsCron } = await import("./backend/monthly-reports.server");
         return await handleMonthlyReportsCron(request);

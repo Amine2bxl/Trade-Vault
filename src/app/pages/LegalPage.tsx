@@ -1,28 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Mail } from "lucide-react";
 import type { Lang } from "../i18n/translations";
-import { LANG_NAMES } from "../i18n/translations";
 import { SUPPORT_EMAIL } from "../types";
 import { legalChrome, type LegalDoc } from "./legal-content";
-
-const STORAGE_KEY = "tv.lang";
-
-/** Reads the persisted UI language without the app's LanguageProvider (these
- *  routes render outside the app tree). Starts at "en" so the SSR/first-paint
- *  markup matches, then upgrades to the stored language after mount. */
-function usePersistedLang(): Lang {
-  const [lang, setLang] = useState<Lang>("en");
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored && stored in LANG_NAMES) setLang(stored as Lang);
-    } catch {
-      // storage unavailable — keep English
-    }
-  }, []);
-  return lang;
-}
+import { usePersistedLang } from "./usePersistedLang";
 
 export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) {
   const lang = usePersistedLang();

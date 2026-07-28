@@ -132,6 +132,20 @@ feuilles) mais n'importe jamais `app/`.
 | `index.tsx` | `/` | Monte `<App/>` — toute l'application authentifiée |
 | `reset-password.tsx` | `/reset-password` | Réinitialisation de mot de passe |
 | `privacy.tsx` · `terms.tsx` | `/privacy` · `/terms` | Pages légales |
+| `contact.tsx` | `/contact` | Page de contact publique (support, facturation, RGPD, sécurité) |
+
+**Routes publiques et SEO.** Les quatre routes publiques (`/`, `/privacy`,
+`/terms`, `/contact`) déclarent leurs métadonnées via `pageSeo()`
+(`src/shared/seo.ts`) : titre, description, `robots`, Open Graph et Twitter
+Card complets, et **URL canonique absolue**. Toutes les URL absolues dérivent de
+`SITE_URL` — brancher un domaine personnalisé ne demande aucune édition. Les
+trois pages publiques rendent **hors de l'arbre applicatif** (pas de
+`LanguageProvider`) et lisent la langue persistée via `usePersistedLang()`.
+
+`robots.txt` et `sitemap.xml` sont **générés** par `src/server.ts` depuis
+`SITE_URL`. Un déploiement de preview répond sur un autre hôte et reçoit
+délibérément `Disallow: /`, pour ne jamais concurrencer la production dans
+l'index.
 
 `routeTree.gen.ts` est **auto-généré** — ne jamais l'éditer. Ne jamais créer
 `src/pages/` ni de layouts façon Next/Remix : le seul layout racine est
