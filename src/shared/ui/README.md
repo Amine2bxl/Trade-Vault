@@ -44,16 +44,18 @@ import { Button, Card, Modal, Field, Input, Badge, Table, Heading, Text } from "
 
 ## Adoption (non destructive, par lots)
 
-Ces primitives sont **disponibles mais encore adoptées nulle part** : c'est
-volontaire pour garantir zéro régression. La migration des appels existants se
-fait **par lots vérifiables** (build + QA visuelle preview), pas en big-bang :
+**Adoption mesurée au 2026-07-28 : 28 des 56 fichiers `.tsx` de `src/app`
+importent `@/shared/ui`** (la plupart des pages + les composants transverses).
+La migration se fait **par lots vérifiables** (build vert + QA visuelle), jamais
+en big-bang :
 
-1. **`Modal`** → migrer les 6 modales hand-rolled (gain accessibilité).
-2. **`Button`** → remplacer `.btn-*` et les boutons inline ; retirer le doublon `.btn-ghost`.
-3. **`Field`/`Input`** → supprimer les copies de `fieldBase` (TradeModal, Journal, LotSizeCalculator, TradingPlan).
-4. **`Badge`/`Table`/`Card`/Typography** → au fil des écrans touchés.
+- ✅ Déjà migrés : `Modal`, `Button`, `Field`/`Input`, `PageHeader`,
+  `EmptyState`, `Metric`, `Card`, `Table` sur la majorité des pages ; doublon
+  `.btn-ghost` supprimé ; tokens shadcn morts purgés de `styles.css`.
+- 🟡 Restants : `Landing`, `Sidebar`, `MobileNav`, `CommandPalette`,
+  `AiAssistant`, `TradeDetailModal`, `EquityChart`, `Onboarding`, `Skeleton`.
 
-Voir le plan complet et le diagnostic chiffré : [`docs/design-system.md`](../../../docs/design-system.md).
+Voir le plan complet et le diagnostic chiffré : [`DESIGN_SYSTEM.md`](../../../DESIGN_SYSTEM.md).
 
 > **Zone gelée** : ne pas router les composants Trustpilot via ces primitives
 > (avis réels en prod).

@@ -47,7 +47,7 @@ export const AI = {
 
 // ── AI Operating System foundation ───────────────────────────────────────────
 // Contracts + registries only — NO agent, tool, retriever, or job is
-// implemented yet. See docs/ai-architecture.md for the design and data flows.
+// implemented yet. See AI_ARCHITECTURE.md for the design and data flows.
 export { AGENT_CATALOG, AGENT_IDS } from "./agents/catalog";
 export { registerAgent, getAgent, listReadyAgents, isAgentReady } from "./agents/registry";
 export type {

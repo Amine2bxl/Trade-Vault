@@ -2,8 +2,14 @@
 
 > L'infrastructure IA de TradeVault : une **plateforme** provider-agnostique
 > (router, provider service, context/prompt builder, tool system, response
-> formatter), **sans agent métier**. Blueprint : [`docs/ai-architecture.md`](../../../docs/ai-architecture.md).
+> formatter). Blueprint : [`AI_ARCHITECTURE.md`](../../../AI_ARCHITECTURE.md) ·
+> Rôle produit de l'IA : [`JARVIS.md`](../../../JARVIS.md).
 > Import : `import { … } from "@/modules/ai/infra"`.
+>
+> **Ce qui tourne réellement en production** : `agents/coach.agent.ts`
+> (`runCoach`) appelé par `backend/coach.functions.ts` (`askCoach`), avec repli
+> sur `fallback-coach.ts`. Router, agent registry et tool registry sont
+> **compilés et testés mais non branchés** — voir `AI_ARCHITECTURE.md` §2 et §10.
 
 ## Infrastructure livrée (exécutable, testée)
 
@@ -21,8 +27,9 @@
 
 ## Contrats en attente (types seuls, volontairement)
 
-`agents/` (blueprints des 5 agents — **aucun agent implémenté**, c'est voulu),
-`jobs/`, `rag/`, `mcp/`. Ce sont les prochains lots (voir [`ai-strategy.md`](../../../docs/ai-strategy.md)).
+`agents/catalog.ts` (blueprints des 5 agents — **aucun `AgentDefinition`
+enregistré au runtime**, c'est voulu), `jobs/`, `rag/`, `mcp/`. Ce sont les
+prochains lots (voir [`ROADMAP.md`](../../../ROADMAP.md)).
 
 ## Règles
 

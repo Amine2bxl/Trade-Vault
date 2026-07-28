@@ -57,11 +57,11 @@ Si aucun n'est servi : le dire, proposer une alternative, ne pas coder.
 
 ## Garde-fous d'architecture
 
-Ces règles découlent de [`docs/architecture.md`](docs/architecture.md) et de
-[`docs/ux-architecture.md`](docs/ux-architecture.md) — les lire avant tout
-changement structurant.
+Ces règles découlent de [`ARCHITECTURE.md`](ARCHITECTURE.md) et de
+[`UX_RULES.md`](UX_RULES.md) — les lire avant tout changement structurant.
+La carte complète de la documentation est dans [`README.md`](README.md).
 
-- **Sens des dépendances** : `src/tradevault/` (UI) importe `src/modules/` —
+- **Sens des dépendances** : `src/app/` (UI) importe `src/modules/` —
   **jamais l'inverse**. Aucune logique métier dans les composants React.
 - **Moteurs purs** : le Trade Analysis Engine reste déterministe, sans IO ni IA.
   L'IA interprète les scores, elle ne les recalcule jamais.
