@@ -194,7 +194,7 @@ export function GoalPicker({
   const selectedCount = kinds.filter((k) => drafts[k].selected).length;
 
   return (
-    <div className="glass-strong rounded-3xl p-5 md:p-6 animate-fade-in-up">
+    <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up">
       <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-1.5">
         {tr("Choisis tes objectifs", "Pick your goals")}
       </h2>
@@ -546,7 +546,7 @@ export function PlanView({
                     >
                       {tr("Mois", "Month")} {i + 1} · {monthLabel(monthOf(plan, i))}
                       {i === cur && (
-                        <span className="ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-300">
+                        <span className="ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
                           {tr("en cours", "current")}
                         </span>
                       )}

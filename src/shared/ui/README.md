@@ -53,7 +53,7 @@ fait **par lots vérifiables** (build + QA visuelle preview), pas en big-bang :
 3. **`Field`/`Input`** → supprimer les copies de `fieldBase` (TradeModal, Journal, LotSizeCalculator, TradingPlan).
 4. **`Badge`/`Table`/`Card`/Typography** → au fil des écrans touchés.
 
-Voir le plan complet et le diagnostic chiffré : [`docs/DESIGN-SYSTEM.md`](../../../docs/DESIGN-SYSTEM.md).
+Voir le plan complet et le diagnostic chiffré : [`docs/design-system.md`](../../../docs/design-system.md).
 
 > **Zone gelée** : ne pas router les composants Trustpilot via ces primitives
 > (avis réels en prod).

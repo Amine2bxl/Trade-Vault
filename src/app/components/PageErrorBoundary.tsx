@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { RotateCw } from "lucide-react";
-import { EmptyState } from "@/shared/ui";
+import { EmptyState, Button } from "@/shared/ui";
 import { reportAppError } from "@/shared/error-reporting";
 import { useT } from "../i18n/LanguageContext";
 
@@ -26,17 +26,14 @@ interface State {
 function PageErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useT();
   return (
-    <div className="p-4 md:p-8 max-w-2xl mx-auto">
+    <div className="p-4 md:p-5 max-w-2xl mx-auto">
       <EmptyState
         title={t("error.pageTitle")}
         description={t("error.pageBody")}
         action={
-          <button
-            onClick={onRetry}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25 hover:brightness-110 transition-all"
-          >
+          <Button onClick={onRetry}>
             <RotateCw className="w-4 h-4" /> {t("error.retry")}
-          </button>
+          </Button>
         }
       />
     </div>

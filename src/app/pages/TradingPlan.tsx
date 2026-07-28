@@ -13,6 +13,7 @@ import {
   Loader2,
   X,
   Sparkles,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
@@ -91,7 +92,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   if (loading) {
     return (
-      <div className="p-4 md:p-8 max-w-3xl mx-auto">
+      <div className="p-4 md:p-5 max-w-3xl mx-auto">
         <div className="glass rounded-3xl p-10 flex justify-center">
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
         </div>
@@ -100,7 +101,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
       {/* Header + completion */}
       <PageHeader
         className="mb-2 items-center"
@@ -406,7 +407,7 @@ function Section({
 }) {
   return (
     <div
-      className="glass-strong rounded-3xl p-5 md:p-6 animate-fade-in-up"
+      className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up"
       style={{ animationDelay: `${delay * 70}ms` }}
     >
       <div className="flex items-start gap-3 mb-4">
@@ -649,7 +650,7 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-xs font-bold text-white tabular-nums leading-none">{pct}%</span>
-        <span className="text-[7px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
       </div>
     </div>
   );

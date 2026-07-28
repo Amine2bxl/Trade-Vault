@@ -1,18 +1,20 @@
-# TradeVault — PROJECT_CONTEXT.md
+# TradeVault — Contexte projet (mémoire permanente)
 
 > **Mémoire permanente du projet.** Ce document permet à n'importe quelle IA
 > (ou n'importe quel humain) de comprendre TradeVault **sans aucun historique de
 > conversation**. Il synthétise et pointe vers les documents de référence
 > détaillés. En cas de conflit : `CLAUDE.md` (charte) > ce document > le reste.
 >
-> Documents détaillés : [`ARCHITECTURE.md`](ARCHITECTURE.md) ·
-> [`PRODUCT.md`](PRODUCT.md) · [`AI.md`](AI.md) ·
-> [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md) ·
-> [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) · [`ROADMAP.md`](ROADMAP.md) ·
+> Index/carte de toute la doc : [`README.md`](README.md).
+>
+> Documents détaillés : [`architecture.md`](architecture.md) ·
+> [`product.md`](product.md) · [`ai-strategy.md`](ai-strategy.md) ·
+> [`ai-architecture.md`](ai-architecture.md) ·
+> [`design-system.md`](design-system.md) · [`roadmap.md`](roadmap.md) ·
 > [`ux-architecture.md`](ux-architecture.md) ·
-> [`agents/ai-coach.md`](agents/ai-coach.md)
+> [`agents/coach.md`](agents/coach.md)
 
-Dernière mise à jour : 2026-07-21 (post AI Coach V1, PR #59 mergée).
+Dernière mise à jour : 2026-07-27 (post refonte UX/UI — Jarvis unifié, Checklist native, navigation par déroulé de session, PR #63 mergée).
 
 ---
 
@@ -24,7 +26,7 @@ un **coach IA qui connaît chacun de tes trades**, détecte tes schémas
 destructeurs, se souvient de toi, et t'impose la discipline que tu n'arrives
 pas à t'imposer seul.
 
-Trois piliers de valeur (voir `PRODUCT.md`) :
+Trois piliers de valeur (voir `product.md`) :
 
 1. **Comprendre** — journal + analytics + moteur d'analyse déterministe
    (scores de qualité, erreurs récurrentes chiffrées, patterns).
@@ -33,8 +35,12 @@ Trois piliers de valeur (voir `PRODUCT.md`) :
 3. **Discipliner** — checklist pré-market, plan de trading, objectifs, règles,
    moteur de discipline.
 
+L'IA du produit a **une seule identité** : **Jarvis** (fini les intitulés
+« AI Coach » / « Assistant » / « Insights »). Persona centralisée, voix,
+briefing du jour, chat — c'est le point d'entrée IA unique partout.
+
 **En une phrase** : la coque (journal/analytics/checklist) est la meilleure du
-marché mais non différenciante ; **l'âme du produit est le coach IA + la
+marché mais non différenciante ; **l'âme du produit est Jarvis + la
 discipline** — c'est là que tout l'effort produit doit aller.
 
 ---
@@ -77,7 +83,7 @@ discipline** — c'est là que tout l'effort produit doit aller.
 
 ## 4. Architecture (résumé exécutable)
 
-Détails complets : `ARCHITECTURE.md`. Règles inviolables : `CLAUDE.md`.
+Détails complets : `architecture.md`. Règles inviolables : `CLAUDE.md`.
 
 ### 4.1 Couches et sens des dépendances
 
@@ -133,8 +139,7 @@ src/shared/    →  helpers neutres + shared/ui (primitives Design System)
 
 Commandes : `bun run dev` · `bun run build` · `bun run lint` ·
 `bun run format` · `bun test`. Gates de vérification avant tout push :
-`npx tsc --noEmit` (exit 0) + `npx vite build` + `bun test` (46 tests, 4
-fichiers).
+`npx tsc --noEmit` (exit 0) + `npx vite build` + `bun test` (55 tests).
 
 Production : Vercel, ref Supabase `tjikygsipblatubyzbrt`, URL publique
 `https://tradevaultt.vercel.app`. CSP headers dans `vercel.json`.
@@ -147,28 +152,30 @@ Production : Vercel, ref Supabase `tjikygsipblatubyzbrt`, URL publique
 Trade-Vault/
 ├── CLAUDE.md                  # Charte permanente de l'équipe (PRIME SUR TOUT)
 ├── docs/
-│   ├── PROJECT_CONTEXT.md     # CE FICHIER — mémoire permanente
-│   ├── ARCHITECTURE.md        # Guide onboarding dev (< 30 min)
-│   ├── PRODUCT.md             # Référence produit officielle
-│   ├── AI.md                  # Stratégie IA 24 mois
-│   ├── AI-ARCHITECTURE.md     # Blueprint AI Platform (8 sous-systèmes)
-│   ├── DESIGN-SYSTEM.md       # Diagnostic + plan Design System
-│   ├── ROADMAP.md             # Source de vérité audits + priorités P0→P3
-│   ├── ux-architecture.md     # Principes UX structurants
-│   └── agents/ai-coach.md     # Spec complète de l'agent AI Coach
+│   ├── README.md              # Index/carte de la doc — porte d'entrée
+│   ├── project-context.md     # CE FICHIER — mémoire permanente
+│   ├── architecture.md        # Guide onboarding dev (< 30 min)
+│   ├── product.md             # Référence produit officielle
+│   ├── roadmap.md             # Source de vérité audits + priorités P0→P3
+│   ├── features-status.md     # État vivant des fonctionnalités (✅/🟡/⚪)
+│   ├── ai-strategy.md         # Stratégie IA 24 mois
+│   ├── ai-architecture.md     # Blueprint AI Platform (8 sous-systèmes)
+│   ├── design-system.md       # Diagnostic + plan Design System
+│   ├── ux-architecture.md     # Blueprint UX + principes
+│   └── agents/coach.md        # Spec complète de l'agent Coach (Jarvis)
 ├── src/
 │   ├── routes/                # __root, index, privacy, terms, reset-password
 │   ├── app/
 │   │   ├── App.tsx            # Shell applicatif (auth, navigation, layout)
-│   │   ├── pages/             # Dashboard, Journal, Analytics, Insights,
+│   │   ├── pages/             # Dashboard, Journal, Analytics, Jarvis (ex-Insights),
 │   │   │                      # CalendarPage, Goals, Mistakes, Checklist(+Wizard),
 │   │   │                      # TradingPlan, Reports, Seasonality, EconomicNews,
 │   │   │                      # MissedOpportunities, LotSizeCalculator, Landing,
 │   │   │                      # Profile, Settings, Subscription, Appearance…
-│   │   ├── components/        # TradeModal, TradeDetailModal, AiAssistant,
+│   │   ├── components/        # TradeModal, TradeDetailModal, AiAssistant (widget Jarvis),
 │   │   │                      # Sidebar, MobileNav, CommandPalette, EquityChart,
 │   │   │                      # ImportCsvModal, Trustpilot* (⚠️ ZONE GELÉE)…
-│   │   ├── contexts/ hooks/ i18n/ onboarding/ store(.ts) utils/ types.ts
+│   │   ├── contexts/ hooks/ i18n/ navigation.ts onboarding/ store(.ts) utils/ types.ts
 │   ├── modules/
 │   │   ├── trading/analysis/  # Trade Analysis Engine (pur, déterministe)
 │   │   ├── ai/                # AI Platform : infra.ts (barrel), router/,
@@ -190,7 +197,7 @@ Trade-Vault/
 │   │   │                      # Table, Modal, Chart, Typography, cn, tokens
 │   │   └── error-*.ts, lock-zoom.ts
 │   └── styles.css             # Tokens --tv-*, glass, animations, .btn-*
-├── tests/                     # bun:test — aiInfra, coach, etc. (46 tests)
+├── tests/                     # bun:test — aiInfra, coach, etc. (55 tests)
 ├── vercel.json                # crons + CSP
 └── .env.example               # Toutes les env vars documentées
 ```
@@ -218,8 +225,8 @@ Trade-Vault/
 
 ### Git / livraison
 
-- Branche de travail : `claude/tradevault-tech-guidelines-10l4y0`. **Jamais**
-  de push sur une autre branche sans permission explicite.
+- Travailler sur la **branche désignée de la tâche**. **Jamais** de push sur une
+  autre branche sans permission explicite.
 - Cycle : dev sur la branche → gates verts → push → **PR draft** → ready →
   **squash merge** → re-baser la branche sur `origin/main`
   (`git checkout -B <branche> origin/main`).
@@ -250,8 +257,8 @@ Trade-Vault/
 - **Missed Opportunities** : journal des setups manqués.
 - **Goals** : objectifs (win rate, P&L…) avec cible/actuel + rappels
   (goal-reminders cron).
-- **Checklist pré-market** (+ Wizard) : discipline quotidienne, peut ouvrir le
-  coach avec un prompt prérempli (event `tv:ask-coach`).
+- **Checklist pré-market** (+ Wizard) : discipline quotidienne, peut ouvrir
+  Jarvis avec un prompt prérempli (event `tv:ask-coach`).
 - **Trading Plan**, **Lot Size Calculator**, **Economic News**.
 - **Reports** : rapports mensuels générés + envoyés par cron.
 
@@ -265,25 +272,40 @@ Trade-Vault/
   autorisés), Response Formatter (Zod optionnel, ne throw jamais).
   Providers : Gemini (défaut), Anthropic (tool-calling), OpenAI-compatible
   (tool-calling). Changer de modèle = une variable d'environnement.
-- **AI Coach V1 en production** (`agents/coach.agent.ts` +
+- **Jarvis V1 en production** (`agents/coach.agent.ts` +
   `backend/coach.functions.ts` + surfaces `AiAssistant` (widget flottant,
-  multi-tours, voix, persistance locale par user) et page `Insights` (quick
-  prompts)). Capacités : lire stats, trades, erreurs, objectifs, répondre.
+  multi-tours, voix, persistance locale par user) et page `Jarvis.tsx`
+  (ex-Insights) : briefing du jour déterministe, KPI live, forces/faiblesses,
+  chat persistant, voix). Une seule identité IA dans tout le produit. Voix
+  mutualisée `utils/jarvisVoice.ts` + `backend/tts.functions.ts` (ElevenLabs,
+  **toujours en anglais**, fallback voix masculine navigateur ; réponses
+  écrites = langue UI). Capacités : lire stats, trades, erreurs, objectifs, répondre.
   **Règle absolue `ANTI_HALLUCINATION`** : le coach ne cite que les blocs de
   données fournis, dit quand la donnée manque, n'invente jamais, ne prédit
   jamais le marché. Payload construit côté client par `buildCoachV1Payload`
   (synchrone, zéro lecture DB). V1 = **pas** de mémoire longue durée, **pas**
   de proactivité, **pas** d'agents secondaires.
 - Mémoire IA (`ai_memory`, seed du profil onboarding via `seedProfileMemory`)
-  existe en fondation mais n'est **pas** injectée dans le Coach V1 (scope V2).
+  existe en fondation mais n'est **pas** injectée dans le Jarvis V1 (scope V2).
 
 ### Plateforme / growth
 
-- Auth Supabase, onboarding profilé, i18n FR/EN, PWA + push notifications,
-  Command Palette, thèmes (Appearance), abonnement (Stripe billing +
-  crypto-pay), emails lifecycle, page légale (privacy/terms), landing
+- Auth Supabase, onboarding profilé (opt-in **notifications** désormais dans
+  l'onboarding, plus de bannière Dashboard), i18n FR/EN, PWA + push
+  notifications, Command Palette, thèmes (Appearance), abonnement (Stripe
+  billing + crypto-pay), emails lifecycle, page légale (privacy/terms), landing
   marketing premium, **widget Trustpilot (⚠️ GELÉ — vrais avis en cours, ne
   jamais toucher)**.
+- **Navigation centralisée** (`src/app/navigation.ts` = source unique) par
+  déroulé d'une session : Home · Préparation · Journal · Analyse · Jarvis ·
+  Compte. Sidebar, MobileNav et CommandPalette en dérivent (une seule édition
+  pour ajouter/déplacer une page). Réduction de nav (#11) partiellement livrée.
+- **Checklist pré-market** réécrite native au Design System (identité
+  holographique légère `tvchk-*`), progression en 5 étapes (Préparation →
+  Validation → Mental → Verrouillage → Trade), **setup adaptatif** (`ChecklistWizard`)
+  et pop-up vocal premium « Demander à Jarvis ».
+- **Subscription** = statut seul (plan · essai · jours restants), **aucun prix
+  ni logique Stripe** (retiré de Profile — une responsabilité par page).
 
 ### Design System (`src/shared/ui`)
 
@@ -301,7 +323,7 @@ migrés) ; le reste par lots avec build vert à chaque lot.
 
 ## 9. Fonctionnalités prévues (roadmap)
 
-Source de vérité : `ROADMAP.md` (P0→P3) et `AI.md` (24 mois). Résumé :
+Source de vérité : `roadmap.md` (P0→P3) et `ai-strategy.md` (24 mois). Résumé :
 
 - **P0 — combler l'écart promesse/produit ("l'âme")** :
   1. Coach avec **mémoire long terme** réellement branchée (V2) : le coach se
@@ -327,7 +349,7 @@ coder, proposer une alternative.
 
 ## 10. Stratégie IA
 
-Détails : `AI.md` (stratégie) et `AI-ARCHITECTURE.md` (blueprint technique).
+Détails : `ai-strategy.md` (stratégie) et `ai-architecture.md` (blueprint technique).
 
 - **Principe fondateur** : une **AI Platform**, pas un chatbot. 8
   sous-systèmes : Router, Memory, Context Builder, Prompt Builder, Tool
@@ -344,8 +366,8 @@ Détails : `AI.md` (stratégie) et `AI-ARCHITECTURE.md` (blueprint technique).
   pas la donnée le dit.
 - **Sécurité IA** : secrets uniquement côté serveur (server functions), Zod
   avec tailles max sur toute entrée, `requireProAccess` (auth + rate-limit),
-  RLS owner-only sur toute persistance IA (`ai_memory`, futurs
-  `ai_insights`/`ai_reports`).
+  RLS owner-only sur toute persistance IA (`ai_memory`, `ai_reports` ;
+  futurs `ai_insights`).
 - **Coûts** : payloads compacts (stats scalaires, trades résumés), caps
   stricts, retry unique sur erreur transitoire, hook `onUsage` pour la
   télémétrie ; le défaut Gemini = coût faible ; montée en gamme par env var.
@@ -361,18 +383,17 @@ Détails : `AI.md` (stratégie) et `AI-ARCHITECTURE.md` (blueprint technique).
 
 Détails : `ux-architecture.md`.
 
-- **Mobile-first réel** : bottom nav mobile, sidebar desktop, widget coach
+- **Mobile-first réel** : bottom nav mobile, sidebar desktop, widget Jarvis
   flottant, gestes (swipe sur TradeDetailModal).
 - **L'optimistic UI n'attend jamais** : toute action utilisateur répond
   instantanément ; le réseau rattrape en arrière-plan.
 - **Zéro friction de saisie** : le journal doit être plus rapide qu'Excel —
-  quick prompts, valeurs par défaut, import CSV, voix (Web Speech) sur le
-  coach.
+  quick prompts, valeurs par défaut, import CSV, voix (Web Speech) sur Jarvis.
 - **Le produit vient au trader** (cible) : notifications, rappels d'objectifs,
   briefs — l'utilisateur ne doit pas avoir à chercher sa valeur.
-- **Continuité** : conversations et brouillons du coach persistés par
+- **Continuité** : conversations et brouillons de Jarvis persistés par
   utilisateur (localStorage namespacé `nsKey(userId, …)`) ; pages découplées
-  qui parlent au coach via l'événement `tv:ask-coach`.
+  qui parlent à Jarvis via l'événement `tv:ask-coach`.
 - **i18n natif** : FR/EN partout, la langue de l'UI pilote la langue des
   réponses IA.
 - **États toujours gérés** : loading (skeletons/spinners), vide (empty states
@@ -382,7 +403,7 @@ Détails : `ux-architecture.md`.
 
 ## 12. Principes design
 
-Détails : `DESIGN-SYSTEM.md`.
+Détails : `design-system.md`.
 
 - **Le thème de la landing est l'âme et le squelette visuel** du produit :
   fond `#060d16`, glassmorphism (`glass`, `glass-strong`), dégradés
@@ -416,7 +437,7 @@ Détails : `DESIGN-SYSTEM.md`.
 4. **Zone gelée Trustpilot** : `TrustpilotWidget`/`TrustpilotPrompt` et tout
    ce qui touche aux avis — **ne pas modifier** (vrais avis clients en cours).
 5. **Beta gratuite** : `AI_REQUIRE_PRO=false` ; pricing cible (Free / Pro
-   19,99 €/mois / Annuel 199 €) documenté dans `PRODUCT.md` mais non activé.
+   19,99 €/mois / Annuel 199 €) documenté dans `product.md` mais non activé.
 6. **L'IA n'invente jamais** : données réelles du trader uniquement, jamais de
    prédiction de marché, jamais de conseil financier.
 7. **Sécurité** : RLS owner-only sur toute table utilisateur ; secrets
@@ -434,12 +455,12 @@ Détails : `DESIGN-SYSTEM.md`.
 
 1. Lire `CLAUDE.md` (5 min) — la charte prime sur tout.
 2. Lire ce fichier (10 min) — la carte du territoire.
-3. Selon la tâche : `ARCHITECTURE.md` (code), `PRODUCT.md`/`ROADMAP.md`
-   (produit), `AI.md`/`AI-ARCHITECTURE.md`/`agents/ai-coach.md` (IA),
-   `DESIGN-SYSTEM.md`/`ux-architecture.md` (UI/UX).
+3. Selon la tâche : `architecture.md` (code), `product.md`/`roadmap.md`
+   (produit), `ai-strategy.md`/`ai-architecture.md`/`agents/coach.md` (IA),
+   `design-system.md`/`ux-architecture.md` (UI/UX).
 4. Vérifier l'état : `git log --oneline -5`, `bun test`, `npx tsc --noEmit`.
 5. Travailler sur la branche désignée, gates verts, PR draft, squash merge.
 
 > **Maintenance de ce fichier** : mettre à jour la section concernée à chaque
 > livraison structurante (nouvelle capacité IA, nouveau moteur, changement de
-> positionnement ou de pricing). Un PROJECT_CONTEXT périmé est pire qu'absent.
+> positionnement ou de pricing). Un project-context périmé est pire qu'absent.

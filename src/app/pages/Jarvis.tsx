@@ -27,7 +27,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
 import { useJarvisVoice } from "../utils/jarvisVoice";
-import { PageHeader, Metric } from "@/shared/ui";
+import { PageHeader, Metric, Card, Button } from "@/shared/ui";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 
 interface JarvisProps {
@@ -317,13 +317,8 @@ export default function Jarvis({ trades }: JarvisProps) {
   }, [chatKey]);
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto">
+    <div className="p-4 md:p-5 max-w-4xl mx-auto">
       <PageHeader
-        icon={
-          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-            <Bot className="w-5 h-5 text-white" />
-          </span>
-        }
         title={t("insights.title")}
         subtitle={t("insights.subtitle")}
         actions={
@@ -388,13 +383,10 @@ export default function Jarvis({ trades }: JarvisProps) {
               {priorityText}
             </p>
           </div>
-          <button
-            onClick={briefMe}
-            className="shrink-0 flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition-all"
-          >
+          <Button onClick={briefMe} className="shrink-0 hover:scale-[1.03]">
             <Volume2 className="w-4 h-4" />
             <span className="hidden sm:inline">{t("jarvis.brief")}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -405,18 +397,12 @@ export default function Jarvis({ trades }: JarvisProps) {
             title={t("stats.totalPnl")}
             value={formatPnl(stats.totalPnl)}
             trend={stats.totalPnl >= 0 ? "up" : "down"}
-            icon={<Wallet className="w-4 h-4" />}
           />
-          <Metric
-            title={t("stats.winRate")}
-            value={formatPct(stats.winRate)}
-            icon={<Target className="w-4 h-4" />}
-          />
+          <Metric title={t("stats.winRate")} value={formatPct(stats.winRate)} />
           <Metric
             title={t("jarvis.pf")}
             value={stats.profitFactor.toFixed(2)}
             trend={stats.profitFactor >= 1 ? "up" : "down"}
-            icon={<Gauge className="w-4 h-4" />}
           />
           <Metric
             title={t("jarvis.streak")}
@@ -435,14 +421,13 @@ export default function Jarvis({ trades }: JarvisProps) {
                   ? "down"
                   : "neutral"
             }
-            icon={<Flame className="w-4 h-4" />}
           />
         </div>
       )}
 
       {/* Strengths / Watch-out — deterministic read of the edge. */}
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
-        <div className="glass rounded-2xl p-4">
+        <Card className="p-4">
           <div className="flex items-center gap-2 mb-2.5">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-white">{t("jarvis.strengths")}</h3>
@@ -459,8 +444,8 @@ export default function Jarvis({ trades }: JarvisProps) {
           ) : (
             <p className="text-[13px] text-slate-500">{t("jarvis.strengthNone")}</p>
           )}
-        </div>
-        <div className="glass rounded-2xl p-4">
+        </Card>
+        <Card className="p-4">
           <div className="flex items-center gap-2 mb-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-bold text-white">{t("jarvis.weaknesses")}</h3>
@@ -475,7 +460,7 @@ export default function Jarvis({ trades }: JarvisProps) {
           ) : (
             <p className="text-[13px] text-slate-500">{t("jarvis.weaknessNone")}</p>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Conversation */}

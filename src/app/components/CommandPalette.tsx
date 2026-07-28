@@ -75,7 +75,7 @@ export default function CommandPalette({
             autoFocus
             className="flex-1 bg-transparent py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none"
           />
-          <kbd className="hidden md:inline text-[9px] font-bold text-slate-600 border border-white/[0.08] rounded px-1.5 py-0.5">
+          <kbd className="hidden md:inline text-[11px] font-bold text-slate-600 border border-white/[0.08] rounded px-1.5 py-0.5">
             ESC
           </kbd>
         </div>
@@ -87,7 +87,7 @@ export default function CommandPalette({
           {matchingTrades.length > 0 && (
             <Command.Group
               heading={t("common.trades")}
-              className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[9px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
+              className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
             >
               {matchingTrades.map((tr) => (
                 <Command.Item
@@ -129,7 +129,7 @@ export default function CommandPalette({
 
           <Command.Group
             heading={t("palette.actions")}
-            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[9px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
+            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
           >
             <Command.Item
               value={`${t("common.addTrade")} new trade add`}
@@ -156,7 +156,7 @@ export default function CommandPalette({
 
           <Command.Group
             heading={t("palette.goTo")}
-            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[9px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
+            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
           >
             {NAV_ITEMS.map(({ id, labelKey, icon: Icon }) => (
               <Command.Item

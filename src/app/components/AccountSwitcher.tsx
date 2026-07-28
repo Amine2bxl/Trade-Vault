@@ -94,7 +94,7 @@ export default function AccountSwitcher({
           </span>
           <span className="min-w-0 max-w-[96px] text-left">
             <span
-              className="block text-[8px] uppercase tracking-[0.14em] font-bold leading-none mb-0.5 flex items-center gap-1"
+              className="block text-[11px] uppercase tracking-[0.14em] font-bold leading-none mb-0.5 flex items-center gap-1"
               style={{ color: `${activeAccount.color}cc` }}
             >
               <Layers className="w-2.5 h-2.5" /> {t("account.fabLabel")}
@@ -315,7 +315,7 @@ export default function AccountSwitcher({
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
           <div className="absolute left-0 right-0 mt-2 z-[61] glass-strong rounded-2xl p-1.5 shadow-2xl shadow-black/50 animate-fade-in max-h-[60vh] overflow-y-auto">
-            <div className="px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+            <div className="px-2.5 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-600 font-bold">
               {t("account.title")}
             </div>
             {accounts.map((a) => {

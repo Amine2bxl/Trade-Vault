@@ -7,10 +7,11 @@ import {
   ChevronRight,
   X,
   SlidersHorizontal,
+  Newspaper,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, Card } from "@/shared/ui";
 import {
   getEventsForWeek,
   startOfWeek,
@@ -166,7 +167,7 @@ export default function EconomicNews() {
   const isThisWeek = isoDate(weekStart) === isoDate(startOfWeek(new Date()));
 
   return (
-    <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
+    <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
       {/* Header */}
       <PageHeader
         className="mb-4 stagger-0"
@@ -184,7 +185,7 @@ export default function EconomicNews() {
       />
 
       {/* Week navigator */}
-      <div className="glass rounded-2xl p-2.5 mb-3 flex items-center justify-between gap-2 animate-fade-in-up stagger-1">
+      <Card className="p-2.5 mb-3 flex items-center justify-between gap-2 animate-fade-in-up stagger-1">
         <button
           onClick={() => setWeekStart((w) => addDays(w, -7))}
           aria-label={t("news.prevWeek")}
@@ -213,7 +214,7 @@ export default function EconomicNews() {
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-      </div>
+      </Card>
 
       {/* Week shape at a glance — doubles as an impact legend and as a filter. */}
       {!loading && events.length > 0 && (
@@ -305,7 +306,7 @@ export default function EconomicNews() {
 
       {/* Filter panel */}
       {filtersOpen && (
-        <div className="glass rounded-2xl p-4 mb-3 space-y-4 animate-fade-in-up">
+        <Card className="p-4 mb-3 space-y-4 animate-fade-in-up">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
               {t("news.currency")}
@@ -370,7 +371,7 @@ export default function EconomicNews() {
               {t("news.clearFilters")}
             </button>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Days */}
@@ -381,9 +382,7 @@ export default function EconomicNews() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glass rounded-2xl p-10 text-center text-slate-500 text-sm">
-          {t("news.noEvents")}
-        </div>
+        <Card className="p-10 text-center text-slate-500 text-sm">{t("news.noEvents")}</Card>
       ) : (
         <div className="space-y-4">
           {days.map(({ iso, date, events: dayEvents }) => {
@@ -403,7 +402,7 @@ export default function EconomicNews() {
                     {dayFmt.format(date)}
                   </span>
                   {isToday && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                    <span className="text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
                       {t("news.today")}
                     </span>
                   )}
@@ -414,7 +413,7 @@ export default function EconomicNews() {
                 </div>
 
                 {/* Events */}
-                <div className="glass rounded-2xl overflow-hidden divide-y divide-white/[0.04]">
+                <Card className="overflow-hidden divide-y divide-white/[0.04]">
                   {dayEvents.map((e) => {
                     const s = IMPACT_STYLE[e.impact];
                     const open = expanded === e.id;
@@ -434,7 +433,7 @@ export default function EconomicNews() {
                           <div className="w-14 shrink-0">
                             <div className="text-sm font-bold text-white tabular-nums">{time}</div>
                             {e.approximate && (
-                              <div className="text-[8px] text-slate-600 uppercase font-semibold">
+                              <div className="text-[11px] text-slate-600 uppercase font-semibold">
                                 {t("news.approx")}
                               </div>
                             )}
@@ -472,7 +471,7 @@ export default function EconomicNews() {
                       </div>
                     );
                   })}
-                </div>
+                </Card>
               </div>
             );
           })}

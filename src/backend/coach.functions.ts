@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireProAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
+import { fallbackCoachAnswer } from "@/modules/ai/fallback-coach";
 
 /**
  * AI Coach V1 — server function. Validates the trader's real data (Zod, with
@@ -61,6 +62,17 @@ export const askCoach = createServerFn({ method: "POST" })
   .middleware([requireProAccess])
   .inputValidator((input: unknown) => CoachAsk.parse(input))
   .handler(async ({ data }) => {
-    const res = await runCoach(data);
-    return { answer: res.text };
+    // The trader must always get a grounded answer. When no provider is
+    // configured (beta with no key) or the call fails, we answer deterministically
+    // from the very same payload — zero cost, same grounding rules, no error
+    // bubble in the conversation.
+    try {
+      const res = await runCoach(data);
+      const text = res.text?.trim();
+      if (text) return { answer: text, source: "ai" as const };
+      return { answer: fallbackCoachAnswer(data), source: "deterministic" as const };
+    } catch (err) {
+      console.warn("[coach] provider unavailable — deterministic answer served", err);
+      return { answer: fallbackCoachAnswer(data), source: "deterministic" as const };
+    }
   });

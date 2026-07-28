@@ -35,7 +35,7 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer, Card } from "@/shared/ui";
 
 interface SeasonalityProps {
   trades: Trade[];
@@ -53,7 +53,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
   const setTab = (v: Tab) => writeJSON(tabKey, v);
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="mb-4 md:mb-5 stagger-0"
         title={t("seasonality.title")}
@@ -88,7 +88,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
       ) : (
         <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
       )}
-    </div>
+    </PageContainer>
   );
 }
 
@@ -141,12 +141,12 @@ function AssetSeasonality() {
   return (
     <div className="animate-fade-in">
       {/* Disclaimer */}
-      <div className="glass rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5 border border-cyan-500/10">
+      <Card className="px-4 py-3 mb-4 flex items-start gap-2.5 border border-cyan-500/10">
         <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed text-slate-400">
           {t("seasonality.assetDisclaimer")}
         </p>
-      </div>
+      </Card>
 
       {/* Category filter */}
       <div className="flex flex-wrap gap-1.5 mb-3">
@@ -218,7 +218,7 @@ function AssetSeasonality() {
       </div>
 
       {/* Monthly avg return chart */}
-      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold text-white mb-0.5">
@@ -278,10 +278,10 @@ function AssetSeasonality() {
         <div className="mt-3 pt-3 border-t border-white/[0.05] grid grid-cols-12 gap-1">
           {chartData.map((d, i) => (
             <div key={i} className="text-center">
-              <div className="text-[8px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
+              <div className="text-[11px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
               <div
                 className={cn(
-                  "text-[9px] font-bold tabular-nums",
+                  "text-[11px] font-bold tabular-nums",
                   d.win >= 60
                     ? "text-emerald-400"
                     : d.win >= 50
@@ -297,7 +297,7 @@ function AssetSeasonality() {
       </div>
 
       {/* Category heatmap */}
-      <div className="glass rounded-3xl p-4 md:p-6 card-premium">
+      <div className="glass rounded-3xl p-4 md:p-5 card-premium">
         <div className="flex items-center gap-2 mb-4">
           <Layers className="w-4 h-4 text-cyan-400/70" />
           <div>
@@ -318,7 +318,7 @@ function AssetSeasonality() {
                 <div
                   key={m}
                   className={cn(
-                    "text-center text-[9px] font-bold uppercase tracking-wide pb-1",
+                    "text-center text-[11px] font-bold uppercase tracking-wide pb-1",
                     i === currentMonth ? "text-cyan-300" : "text-slate-500",
                   )}
                 >
@@ -376,7 +376,7 @@ function AssetHeatRow({
             key={i}
             title={`${asset.symbol} ${MONTHS_SHORT[i]}: ${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
             className={cn(
-              "h-8 rounded-md flex items-center justify-center text-[8px] font-bold tabular-nums cursor-default transition-transform hover:scale-[1.08]",
+              "h-8 rounded-md flex items-center justify-center text-[11px] font-bold tabular-nums cursor-default transition-transform hover:scale-[1.08]",
               i === currentMonth && "ring-1 ring-cyan-400/50",
             )}
             style={{ background: bg, color: "#f1f5f9" }}
@@ -550,7 +550,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         />
       </div>
 
-      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
         <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.monthly")}</h3>
         <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.monthlySub")}</p>
         <div className="h-56 md:h-64">
@@ -600,7 +600,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         </div>
       </div>
 
-      <div className="glass rounded-3xl p-4 md:p-6 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
         <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.heatmap")}</h3>
         <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.heatmapSub")}</p>
         <div className="overflow-x-auto -mx-1 px-1">
@@ -613,7 +613,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
               {monthly.map((m) => (
                 <div
                   key={m.key}
-                  className="text-center text-[9px] font-bold uppercase tracking-wide text-slate-500 pb-1"
+                  className="text-center text-[11px] font-bold uppercase tracking-wide text-slate-500 pb-1"
                 >
                   {m.month}
                 </div>
@@ -627,7 +627,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
-        <div className="glass rounded-3xl p-4 md:p-6 card-premium">
+        <div className="glass rounded-3xl p-4 md:p-5 card-premium">
           <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.weekday")}</h3>
           <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.weekdaySub")}</p>
           <div className="h-48">
@@ -670,7 +670,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           </div>
         </div>
 
-        <div className="glass rounded-3xl p-4 md:p-6 card-premium">
+        <div className="glass rounded-3xl p-4 md:p-5 card-premium">
           <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.hourly")}</h3>
           <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.hourlySub")}</p>
           <div className="h-48">
@@ -735,7 +735,7 @@ function YearRow({ year, values, heatMax }: { year: number; values: number[]; he
           <div
             key={i}
             title={v === 0 ? "—" : `$${v.toFixed(2)}`}
-            className="h-9 rounded-lg flex items-center justify-center text-[9px] font-bold tabular-nums transition-transform hover:scale-[1.06] cursor-default"
+            className="h-9 rounded-lg flex items-center justify-center text-[11px] font-bold tabular-nums transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >
             {v === 0 ? "" : `${v > 0 ? "+" : ""}${Math.round(v)}`}
@@ -760,8 +760,8 @@ function HighlightCard({
   positive: boolean;
 }) {
   return (
-    <div className="glass rounded-2xl p-3.5 md:p-4 card-premium min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 truncate">
+    <Card hover className="p-3.5 md:p-4 min-w-0">
+      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 truncate">
         <span className={positive ? "text-emerald-400" : "text-red-400"}>{icon}</span>
         {label}
       </div>
@@ -776,6 +776,6 @@ function HighlightCard({
           {sub}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

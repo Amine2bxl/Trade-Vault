@@ -13,6 +13,7 @@ import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
 import { eur, MONTHLY_EUR, YEARLY_EUR, YEARLY_PER_MONTH, YEARLY_SAVING } from "../utils/pricing";
+import { Button } from "@/shared/ui";
 
 /** What Premium unlocks — existing product features only. */
 const PREMIUM_KEYS: TKey[] = [
@@ -45,7 +46,7 @@ export default function SubscriptionSection() {
 
   if (loading || !sub) {
     return (
-      <div className="glass-strong rounded-3xl p-6">
+      <div className="glass-strong rounded-3xl p-5">
         <div className="h-5 w-40 rounded bg-white/[0.06] animate-pulse" />
       </div>
     );
@@ -95,7 +96,7 @@ export default function SubscriptionSection() {
   const isStripeActive = sub.status === "active" && sub.source === "stripe";
 
   return (
-    <div className="glass-strong rounded-3xl p-6 space-y-5">
+    <div className="glass-strong rounded-3xl p-5 space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
           {t("billing.title")}
@@ -287,14 +288,10 @@ function PlanCard({
           </span>
         )}
       </div>
-      <button
-        onClick={onCard}
-        disabled={busy !== null}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition disabled:opacity-60"
-      >
+      <Button onClick={onCard} disabled={busy !== null} className="disabled:opacity-60">
         <CreditCard className="w-4 h-4" />
         {busy === keys.card ? tt("billing.opening") : tt("billing.payByCard")}
-      </button>
+      </Button>
       <button
         onClick={onCrypto}
         disabled={busy !== null}

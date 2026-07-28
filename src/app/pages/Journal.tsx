@@ -13,6 +13,7 @@ import {
   Minus,
   Download,
   Target,
+  BookOpen,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -27,7 +28,7 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { EmptyState, PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer, Button, EmptyState, Card } from "@/shared/ui";
 
 interface JournalProps {
   trades: Trade[];
@@ -154,33 +155,29 @@ export default function Journal({
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="mb-3 md:mb-4 items-center stagger-0"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
         actions={
-          <div className="flex items-center gap-1.5 md:gap-3 animate-fade-in-up stagger-1 shrink-0">
-            <button
-              onClick={() => exportTradesCSV(trades)}
-              className="flex items-center gap-1.5 md:gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
-            >
-              <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+          <div className="flex items-center gap-1.5 md:gap-2 animate-fade-in-up stagger-1 shrink-0">
+            <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
+              <Download className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.exportCsv")}</span>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="subtle"
+              size="sm"
               onClick={onDeleteAll}
-              className="flex items-center gap-1.5 md:gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
+              className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
             >
-              <Trash className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <Trash className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.deleteAll")}</span>
-            </button>
-            <button
-              onClick={onAdd}
-              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5"
-            >
+            </Button>
+            <Button size="sm" onClick={onAdd} className="hidden md:inline-flex">
               <Plus className="w-4 h-4" /> {t("common.addTrade")}
-            </button>
+            </Button>
           </div>
         }
       />
@@ -247,7 +244,7 @@ export default function Journal({
         <button
           onClick={onOpenMissed}
           title={t("missed.title")}
-          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-xs md:text-sm font-semibold transition-all"
+          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] text-slate-400 hover:text-slate-200 text-xs md:text-sm font-semibold transition-all"
         >
           <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
           <span className="hidden sm:inline">{t("missed.title")}</span>
@@ -262,24 +259,18 @@ export default function Journal({
             title={t("empty.title")}
             description={t("empty.subtitle")}
             action={
-              <button
-                onClick={onAdd}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20"
-              >
+              <Button size="sm" onClick={onAdd}>
                 <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-              </button>
+              </Button>
             }
           />
         ) : filtered.length === 0 ? (
           <EmptyState
             title={t("common.noTradesFound")}
             action={
-              <button
-                onClick={() => setResultFilter("all")}
-                className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition"
-              >
+              <Button size="sm" variant="ghost" onClick={() => setResultFilter("all")}>
                 {t("common.all")}
-              </button>
+              </Button>
             }
           />
         ) : (
@@ -318,14 +309,14 @@ export default function Journal({
                         </span>
                         <span
                           className={cn(
-                            "text-[9px] font-bold px-1.5 py-0.5 rounded leading-none",
+                            "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
                             directionBadgeClass(trade.direction),
                           )}
                         >
                           {directionLabel(trade.direction)}
                         </span>
                         {trade.isExample && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
                             {t("journal.exampleBadge")}
                           </span>
                         )}
@@ -385,7 +376,7 @@ export default function Journal({
       </div>
 
       {/* ── Desktop: Table ── */}
-      <div className="hidden md:block glass rounded-2xl overflow-hidden animate-fade-in-up stagger-2">
+      <Card className="hidden md:block overflow-hidden animate-fade-in-up stagger-2">
         <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[880px]">
             <thead className="sticky top-0 z-10 bg-[#0a0f1e]/85 backdrop-blur-md">
@@ -424,20 +415,17 @@ export default function Journal({
             <tbody className="divide-y divide-white/[0.04]">
               {trades.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
+                  <td colSpan={8} className="px-5 py-10 text-center">
                     <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-                    <p className="text-xs text-slate-500 mb-4">{t("empty.subtitle")}</p>
-                    <button
-                      onClick={onAdd}
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all"
-                    >
+                    <p className="text-xs text-slate-500 mb-3">{t("empty.subtitle")}</p>
+                    <Button size="sm" onClick={onAdd}>
                       <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-slate-600 text-sm">
+                  <td colSpan={8} className="px-5 py-10 text-center text-slate-600 text-sm">
                     {t("common.noTradesFound")}
                   </td>
                 </tr>
@@ -456,7 +444,7 @@ export default function Journal({
                       <td className="px-4 py-1.5">
                         <span className="text-sm font-bold text-white">{trade.symbol}</span>
                         {trade.isExample && (
-                          <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
+                          <span className="ml-2 text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
                             {t("journal.exampleBadge")}
                           </span>
                         )}
@@ -541,7 +529,7 @@ export default function Journal({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Load more (both layouts) */}
       {hasMore && (
@@ -571,7 +559,7 @@ export default function Journal({
           positionLabel={`${viewingIdx + 1}/${filtered.length}`}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

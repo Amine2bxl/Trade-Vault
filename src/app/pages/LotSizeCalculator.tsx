@@ -15,7 +15,7 @@ import { loadAccountBalance, saveAccountBalance } from "../store";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { FIELD_BASE, PageHeader } from "@/shared/ui";
+import { FIELD_BASE, PageHeader, Button } from "@/shared/ui";
 
 interface LotSizeCalculatorProps {
   onAddTrade: () => void;
@@ -140,7 +140,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
   const fiveLossDrawdown = `${Math.min(100, riskPctNum * 5).toFixed(0)}%`;
 
   return (
-    <div className="p-4 md:p-8 max-w-[860px] mx-auto">
+    <div className="p-4 md:p-5 max-w-[860px] mx-auto">
       <PageHeader className="stagger-0" title={t("calc.title")} subtitle={t("calc.subtitle")} />
 
       {/* Mode toggle */}
@@ -163,7 +163,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
 
       <div className="grid md:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Inputs */}
-        <div className="glass-strong rounded-3xl p-5 md:p-6 space-y-4 animate-fade-in-up stagger-2">
+        <div className="glass-strong rounded-3xl p-4 md:p-5 space-y-4 animate-fade-in-up stagger-2">
           {/* Risk budget — shared by both modes */}
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
             {t("calc.sectionRisk")}
@@ -357,7 +357,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
         {/* Result */}
         <div
           className={cn(
-            "glass-strong rounded-3xl p-5 md:p-6 animate-fade-in-up stagger-3 border transition-colors md:sticky md:top-6",
+            "glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-3 border transition-colors md:sticky md:top-6",
             hasResult ? "border-cyan-500/20" : "border-transparent",
           )}
         >
@@ -430,12 +430,9 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                 )}
                 {copied ? t("calc.copied") : t("calc.copy")}
               </button>
-              <button
-                onClick={onAddTrade}
-                className="flex-1 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-1.5"
-              >
+              <Button onClick={onAddTrade} className="flex-1 h-10">
                 <Plus className="w-3.5 h-3.5" /> {t("calc.logTrade")}
-              </button>
+              </Button>
             </div>
           )}
         </div>

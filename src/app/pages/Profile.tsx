@@ -25,8 +25,8 @@ export default function Profile({ trades }: ProfileProps) {
   if (!user) return null;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-      <div className="relative rounded-3xl p-6 sm:p-8 overflow-hidden border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent animate-fade-in-up">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-4">
+      <div className="relative rounded-3xl p-5 sm:p-8 overflow-hidden border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent animate-fade-in-up">
         <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
           <div className="relative shrink-0">
@@ -70,7 +70,7 @@ export default function Profile({ trades }: ProfileProps) {
           on personal info and preferences (single responsibility per page). */}
 
       {/* Contact / Support */}
-      <div className="glass-strong rounded-3xl p-6 space-y-3">
+      <div className="glass-strong rounded-3xl p-5 space-y-3">
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
           {t("profile.getInTouch")}
         </h2>
@@ -94,7 +94,7 @@ export default function Profile({ trades }: ProfileProps) {
         />
       </div>
 
-      <div className="glass-strong rounded-3xl p-6 space-y-4">
+      <div className="glass-strong rounded-3xl p-5 space-y-4">
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
           {t("profile.account")}
         </h2>
@@ -123,7 +123,7 @@ function Stat({
 }) {
   return (
     <div className="glass rounded-2xl p-2.5 md:p-4 min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 mb-1.5 md:mb-2 truncate">
+      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 mb-1.5 md:mb-2 truncate">
         {icon}
         {label}
       </div>

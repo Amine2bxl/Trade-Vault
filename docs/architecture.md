@@ -6,9 +6,9 @@
 > conventions, et les points de contact avec Supabase.
 >
 > À lire aussi : [`CLAUDE.md`](../CLAUDE.md) (charte de l'équipe, non
-> négociable), [`docs/AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md) (le détail du
+> négociable), [`docs/ai-architecture.md`](ai-architecture.md) (le détail du
 > cœur IA), [`docs/ux-architecture.md`](ux-architecture.md) (l'UX),
-> [`docs/ROADMAP.md`](ROADMAP.md) (audit + priorités P0–P3).
+> [`docs/roadmap.md`](roadmap.md) (audit + priorités P0–P3).
 
 ---
 
@@ -17,7 +17,8 @@
 TradeVault est un **journal de trading enrichi à l'IA** (« AI Trading Operating
 System »). Un trader logge ses trades ; l'app calcule des stats de niveau quant
 (Sharpe, Sortino, expectancy, drawdown), affiche un calendrier économique, une
-checklist de discipline pré-marché, et un coach IA qui interprète ses données.
+checklist de discipline pré-marché, et **Jarvis**, l'IA unique qui interprète
+ses données (page dédiée + widget flottant).
 
 - **Front** : SPA React 19 servie par **TanStack Start** (SSR shell + hydratation).
 - **Back** : **server functions** TanStack (`createServerFn`) — pas d'API REST séparée.
@@ -102,7 +103,7 @@ modules/ ne dépend JAMAIS de app/ ni de React.   ⚠️ invariant à préserver
 
 > **Dette connue** : quelques modules importent encore `@/app/types` et un ou
 > deux utilitaires UI (`generateId`, `tradingRules`). C'est le principal point
-> de nettoyage identifié dans [`ROADMAP.md`](ROADMAP.md) — extraire un
+> de nettoyage identifié dans [`roadmap.md`](roadmap.md) — extraire un
 > `src/domain/` kernel. Documenté, non bloquant.
 
 ---
@@ -189,7 +190,7 @@ co-localisés (ex. `pages/landing/`, `pages/checklist/`, `pages/goals/`).
 | `Sidebar` · `MobileNav` | Navigation (desktop / mobile) |
 | `TradeModal` · `TradeDetailModal` | Création/édition & détail d'un trade |
 | `EquityChart` · `StatsCard` | Visualisation (Recharts) & KPI |
-| `AiAssistant` · `MarkdownAnswer` | Coach IA & rendu markdown des réponses |
+| `AiAssistant` · `MarkdownAnswer` | Jarvis (widget IA flottant) & rendu markdown des réponses |
 | `CommandPalette` | Palette ⌘K (cmdk) |
 | `ImportCsvModal` | Import de trades depuis CSV broker |
 | `AccountSwitcher` | Bascule entre sous-comptes |
@@ -284,7 +285,7 @@ Frontière serveur. L'UI n'importe **que** les `*.functions.ts`.
 
 Le cœur IA lui-même (`modules/ai/` + `modules/ai-provider/`) est
 **provider-agnostique** : changer de modèle = une variable d'environnement,
-aucun refactor. Voir [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md).
+aucun refactor. Voir [`ai-architecture.md`](ai-architecture.md).
 
 ---
 

@@ -475,8 +475,8 @@ export function SubscriptionSkeleton() {
 /** Calendar: weekday header + 5×7 day-cell grid. */
 export function CalendarSkeleton() {
   return (
-    <Shell pad="p-4 md:p-8">
-      <div className="glass rounded-2xl p-4 md:p-6">
+    <Shell>
+      <div className="glass rounded-2xl p-4 md:p-5">
         <div className="flex items-center justify-between mb-5">
           <Skeleton className="h-6 w-36 rounded-lg" />
           <div className="flex gap-2">

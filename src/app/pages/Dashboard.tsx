@@ -14,10 +14,6 @@ import {
   CalendarDays,
   Gauge,
   Scale,
-  ClipboardCheck,
-  ChevronRight,
-  Check,
-  Bot,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -30,11 +26,15 @@ import {
 } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
 import { loadStartingBalance } from "../store";
+import { loadTradingPlan } from "../utils/tradingPlan";
+import { loadOnboarding } from "../store/profile";
+import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/edgeScore";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { Metric, PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
+import CopilotBlock from "./dashboard/CopilotBlock";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 
@@ -89,6 +89,8 @@ export default function Dashboard({
     }
   });
   const [startingBalance, setStartingBalance] = useState(0);
+  const [maxRiskPct, setMaxRiskPct] = useState<number | null>(null);
+  const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -96,6 +98,18 @@ export default function Dashboard({
     loadStartingBalance(user.id)
       .then((b) => {
         if (active) setStartingBalance(b);
+      })
+      .catch(() => {});
+    loadTradingPlan(user.id)
+      .then((p) => {
+        if (!active) return;
+        const pct = parseFloat(p.risk.maxRiskPerTradePct);
+        setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
+      })
+      .catch(() => {});
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setMonthlyTarget(o.monthlyTarget ?? null);
       })
       .catch(() => {});
     return () => {
@@ -130,7 +144,7 @@ export default function Dashboard({
     [filtered, startingBalance],
   );
   const recentTrades = useMemo(
-    () => [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8),
+    () => [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4),
     [filtered],
   );
 
@@ -165,29 +179,88 @@ export default function Dashboard({
     }
   }, [user?.id]);
 
-  // Everything the trader needs before the open, computed from data already in
-  // memory: what today has produced so far, and the one habit costing the most.
-  const today = useMemo(() => {
-    const iso = new Date().toISOString().slice(0, 10);
-    const list = trades.filter((tr) => tr.date === iso);
-    return { count: list.length, pnl: list.reduce((sum, tr) => sum + tr.pnl, 0) };
-  }, [trades]);
+  // ── Copilot block: Edge Score, rule of the day, objective ──
+  // Checklist completion per day over the Edge window, read from the same
+  // localStorage keys the Checklist page writes (tv-chk-{uid}-{ISO date}).
+  const checklistByDay = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (!user) return map;
+    const now = new Date();
+    for (let i = 0; i < EDGE_WINDOW_DAYS; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      try {
+        const raw = localStorage.getItem(`tv-chk-${user.id}-${iso}`);
+        if (!raw) continue;
+        const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
+        if (p.locked) map[iso] = 1;
+        else if (Array.isArray(p.checked) && p.checked.length > 0)
+          map[iso] = p.checked.filter(Boolean).length / p.checked.length;
+      } catch {
+        /* ignore malformed entry */
+      }
+    }
+    return map;
+  }, [user?.id]);
 
-  const priority = useMemo(() => {
-    if (trades.length === 0) return { text: t("dashboard.priorityLog"), prompt: null };
-    const all = computeStats(trades);
-    const worst = Object.entries(all.mistakeStats)
-      .map(([name, v]) => ({ name, ...v }))
-      .filter((m) => m.totalPnl < 0)
-      .sort((a, b) => a.totalPnl - b.totalPnl)[0];
-    if (!worst) return { text: t("dashboard.priorityNone"), prompt: null };
-    return {
-      text: t("dashboard.priorityFix")
-        .replace("{mistake}", worst.name)
-        .replace("{amount}", formatPnl(worst.totalPnl)),
-      prompt: `What exactly triggers "${worst.name}" for me, and what is the one rule that stops it today?`,
-    };
-  }, [trades, t]);
+  // Edge Score is computed over the whole account history (not the period
+  // filter) so it reflects recent discipline, not the selected window.
+  const edge = useMemo(
+    () => computeEdgeScore(trades, { maxRiskPct, startingBalance, checklistByDay }),
+    [trades, maxRiskPct, startingBalance, checklistByDay],
+  );
+  const dailyRule = useMemo(() => deriveDailyRule(computeStats(trades)), [trades]);
+
+  // Day-over-day delta: compare today's score with the last stored snapshot.
+  const edgeDelta = useMemo(() => {
+    if (!user || edge.score === null) return null;
+    try {
+      const raw = localStorage.getItem(`tv.edge.${user.id}`);
+      if (!raw) return null;
+      const snap = JSON.parse(raw) as { date?: string; score?: number };
+      const today = new Date().toISOString().slice(0, 10);
+      if (snap.date && snap.date !== today && typeof snap.score === "number") {
+        return edge.score - snap.score;
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }, [user?.id, edge.score]);
+
+  // Persist today's score once known, so tomorrow can show a delta.
+  useEffect(() => {
+    if (!user || edge.score === null) return;
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const raw = localStorage.getItem(`tv.edge.${user.id}`);
+      const snap = raw ? (JSON.parse(raw) as { date?: string }) : null;
+      if (!snap || snap.date !== today) {
+        localStorage.setItem(
+          `tv.edge.${user.id}`,
+          JSON.stringify({ date: today, score: edge.score }),
+        );
+      }
+    } catch {
+      /* best-effort */
+    }
+  }, [user?.id, edge.score]);
+
+  // Monthly objective: current-month PnL as a fraction of the month's opening
+  // equity (starting balance + PnL accumulated before this month).
+  const objective = useMemo(() => {
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    let monthPnl = 0;
+    let before = 0;
+    for (const tr of trades) {
+      if (tr.date >= monthStart) monthPnl += tr.pnl;
+      else before += tr.pnl;
+    }
+    const base = startingBalance + before;
+    return { currentPct: base > 0 ? monthPnl / base : 0, targetPct: monthlyTarget };
+  }, [trades, startingBalance, monthlyTarget]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -200,9 +273,24 @@ export default function Dashboard({
   if (tradesLoading) return <PageSkeleton />;
 
   const gain = stats.totalPnl >= 0;
+  const streakLabel = `${stats.currentStreak}${
+    stats.currentStreakType === "win"
+      ? "W"
+      : stats.currentStreakType === "loss"
+        ? "L"
+        : stats.currentStreakType === "be"
+          ? "BE"
+          : ""
+  }`;
+  const streakColor =
+    stats.currentStreakType === "win"
+      ? "text-emerald-400"
+      : stats.currentStreakType === "loss"
+        ? "text-red-400"
+        : "text-slate-300";
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="items-center stagger-0"
         eyebrow={
@@ -213,9 +301,9 @@ export default function Dashboard({
         }
         title={t("dashboard.title")}
         actions={
-          <button
+          <Button
             onClick={onAddTrade}
-            className="relative hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5 animate-fade-in-up stagger-1"
+            className="relative hidden md:flex animate-fade-in-up stagger-1"
           >
             <Plus className="w-4 h-4" /> {t("common.addTrade")}
             {hasDraft && (
@@ -224,113 +312,25 @@ export default function Dashboard({
                 {t("trade.draftBadge")}
               </span>
             )}
-          </button>
+          </Button>
         }
       />
 
-      {/* ── Command bar ──────────────────────────────────────────────────
-          The dashboard's job at 8am is not to show a year of history: it is to
-          answer "am I ready, what has today done, and what am I fixing". Those
-          three live in one strip, so the checklist is part of the cockpit
-          instead of a banner sitting above it. */}
-      <div className="grid gap-2.5 md:grid-cols-3 mb-4 md:mb-5 animate-fade-in-up stagger-1">
-        {/* Readiness — the checklist, as a first-class cell */}
-        {onOpenChecklist && chkStatus && (
-          <button
-            onClick={onOpenChecklist}
-            className={cn(
-              "group flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all hover:-translate-y-0.5",
-              chkStatus.locked
-                ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/10"
-                : "bg-cyan-500/[0.05] border-cyan-500/15 hover:bg-cyan-500/[0.09]",
-            )}
-          >
-            <ProgressRing
-              pct={
-                chkStatus.locked
-                  ? 100
-                  : chkStatus.total > 0
-                    ? Math.round((chkStatus.n / chkStatus.total) * 100)
-                    : 0
-              }
-              done={chkStatus.locked}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  {t("chk.dashTitle")}
-                </span>
-                {chkStatus.locked && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
-              </div>
-              <div className="text-[13px] font-bold text-white truncate mt-0.5">
-                {chkStatus.locked
-                  ? t("chk.ready")
-                  : chkStatus.total > 0
-                    ? `${chkStatus.n}/${chkStatus.total} ${t("chk.dashChecked")}`
-                    : t("chk.dashStart")}
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-600 shrink-0 transition-transform group-hover:translate-x-0.5" />
-          </button>
-        )}
-
-        {/* What today has actually produced */}
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            {t("dashboard.today")}
-          </div>
-          {today.count > 0 ? (
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span
-                className={cn(
-                  "font-display text-lg font-extrabold tabular-nums tracking-tight",
-                  today.pnl >= 0 ? "text-emerald-400" : "text-red-400",
-                )}
-              >
-                {formatPnl(today.pnl)}
-              </span>
-              <span className="text-[11px] text-slate-500 tabular-nums">
-                {today.count} {t("common.trades")}
-              </span>
-            </div>
-          ) : (
-            <div className="mt-1 text-[13px] font-medium text-slate-500">
-              {t("dashboard.noTradeToday")}
-            </div>
-          )}
-        </div>
-
-        {/* The one thing to fix — and one tap to talk it through with Jarvis */}
-        <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.04] px-3.5 py-3 flex items-start gap-2.5">
-          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
-            <Bot className="w-4 h-4 text-white" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/80">
-              {t("dashboard.priorityToday")}
-            </div>
-            <p className="mt-0.5 text-[13px] leading-snug text-slate-200 line-clamp-2">
-              {priority.text}
-            </p>
-            {priority.prompt && (
-              <button
-                onClick={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("tv:ask-coach", { detail: { prompt: priority.prompt } }),
-                  )
-                }
-                className="mt-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
-              >
-                {t("dashboard.askJarvis")} →
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Copilot block — the day's focus (Edge Score, rule, checklist, objective) */}
+      {trades.length > 0 && (
+        <CopilotBlock
+          edge={edge}
+          edgeDelta={edgeDelta}
+          rule={dailyRule}
+          checklist={chkStatus}
+          objective={objective}
+          onOpenChecklist={onOpenChecklist}
+        />
+      )}
 
       {trades.length === 0 ? (
         /* ── Empty state: first-run experience ── */
-        <div className="glass rounded-3xl p-8 md:p-14 text-center card-premium animate-fade-in-up stagger-1 relative overflow-hidden">
+        <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium animate-fade-in-up stagger-1 relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
           <svg
             viewBox="0 0 200 80"
@@ -367,12 +367,9 @@ export default function Dashboard({
           </svg>
           <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
           <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
-          <button
-            onClick={onAddTrade}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5"
-          >
+          <Button onClick={onAddTrade}>
             <Plus className="w-4 h-4" /> {t("empty.cta")}
-          </button>
+          </Button>
           {/* Ghost example of what a logged trade looks like */}
           <div
             className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
@@ -388,7 +385,7 @@ export default function Dashboard({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-white">NQ</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
                     L
                   </span>
                   <span className="text-[10px] text-slate-600">Silver Bullet</span>
@@ -404,7 +401,7 @@ export default function Dashboard({
       ) : (
         <>
           {/* ── Hero: Equity Curve ── */}
-          <div className="relative glass rounded-3xl p-4 md:p-6 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
+          <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
               <div>
@@ -467,7 +464,7 @@ export default function Dashboard({
               </div>
             </div>
             {stats.equityCurve.length > 0 ? (
-              <div className="h-56 md:h-80 chart-organic chart-draw">
+              <div className="h-56 md:h-80 chart-draw">
                 <Suspense
                   fallback={
                     <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
@@ -508,55 +505,95 @@ export default function Dashboard({
             )}
           </div>
 
-          {/* Stats Grid */}
+          {/* Stats Grid — radial gauges + sparkline, with folded secondary stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
             <Metric
               title={t("stats.winRate")}
               value={formatPct(stats.winRate)}
-              subtitle={`${stats.wins}W / ${stats.losses}L${stats.breakEven > 0 ? ` / ${stats.breakEven}BE` : ""}`}
-              icon={<Target className="w-4 h-4" />}
-              trend={stats.winRate >= 0.5 ? "up" : "down"}
+              valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
+              visual={{
+                kind: "radial",
+                pct: stats.winRate,
+                color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
+                center: `${stats.wins}/${stats.losses}`,
+              }}
+              footer={{
+                label: t("dashboard.currentStreak"),
+                value: streakLabel,
+                className: streakColor,
+              }}
               delay={0}
             />
             <Metric
               title={t("dashboard.profitFactor")}
               value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
-              subtitle={`${t("dashboard.avgRR")} ${stats.avgRR.toFixed(2)}`}
-              icon={<Activity className="w-4 h-4" />}
-              trend={stats.profitFactor >= 1.5 ? "up" : stats.profitFactor < 1 ? "down" : "neutral"}
+              valueClass={
+                stats.profitFactor >= 1.5
+                  ? "text-emerald-400"
+                  : stats.profitFactor < 1
+                    ? "text-red-400"
+                    : "text-white"
+              }
+              visual={{
+                kind: "radial",
+                pct: Math.min(stats.profitFactor / 3, 1),
+                color:
+                  stats.profitFactor >= 1.5
+                    ? "#10b981"
+                    : stats.profitFactor < 1
+                      ? "#ef4444"
+                      : "#22d3ee",
+              }}
+              footer={{ label: t("dashboard.avgRR"), value: stats.avgRR.toFixed(2) }}
               delay={60}
             />
             <Metric
-              title={t("quant.expectancy")}
-              value={formatPnl(quant.expectancy)}
-              subtitle={`${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R / trade`}
               icon={
-                stats.totalPnl >= 0 ? (
+                quant.expectancy >= 0 ? (
                   <TrendingUp className="w-4 h-4" />
                 ) : (
                   <TrendingDown className="w-4 h-4" />
                 )
               }
-              trend={quant.expectancy >= 0 ? "up" : "down"}
+              title={t("quant.expectancy")}
+              value={formatPnl(quant.expectancy)}
+              valueClass={quant.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
+              visual={{
+                kind: "spark",
+                data: stats.equityCurve.map((e) => e.equity),
+                color: quant.expectancy >= 0 ? "#22d3ee" : "#ef4444",
+              }}
+              footer={{
+                label: t("dashboard.bestWorst"),
+                value: `${stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"} / ${stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}`,
+              }}
               delay={120}
             />
             <Metric
               title={t("dashboard.maxDrawdown")}
               value={formatPnl(-stats.maxDrawdown)}
-              subtitle={
-                quant.maxDrawdownPct !== null
-                  ? `${(quant.maxDrawdownPct * 100).toFixed(1)}% · ${t("dashboard.peakToTrough")}`
-                  : t("dashboard.peakToTrough")
-              }
-              icon={<BarChart3 className="w-4 h-4" />}
-              trend="down"
+              valueClass="text-red-400"
+              visual={{
+                kind: "radial",
+                pct: quant.maxDrawdownPct ?? 0,
+                color: (quant.maxDrawdownPct ?? 0) >= 0.2 ? "#ef4444" : "#f59e0b",
+                center:
+                  quant.maxDrawdownPct !== null
+                    ? `${(quant.maxDrawdownPct * 100).toFixed(0)}%`
+                    : undefined,
+              }}
+              footer={{
+                label: t("quant.planAdherence"),
+                value: formatPct(quant.planAdherence),
+                className: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400",
+              }}
               delay={180}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div>
             {/* Recent Trades */}
-            <div className="col-span-1 md:col-span-2 glass rounded-2xl overflow-hidden card-premium animate-fade-in-up stagger-4">
+            <Card hover className="overflow-hidden animate-fade-in-up stagger-4">
               <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
                 <h3 className="text-sm font-semibold text-white">{t("dashboard.recentTrades")}</h3>
               </div>
@@ -596,7 +633,7 @@ export default function Dashboard({
                             <span className="text-sm font-bold text-white">{trade.symbol}</span>
                             <span
                               className={cn(
-                                "text-[9px] font-bold px-1.5 py-0.5 rounded",
+                                "text-[11px] font-bold px-1.5 py-0.5 rounded",
                                 directionBadgeClass(trade.direction),
                               )}
                             >
@@ -632,113 +669,11 @@ export default function Dashboard({
                   })
                 )}
               </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5 space-y-2 md:space-y-3 self-start">
-              <h3 className="text-sm font-semibold text-white">{t("stats.performance")}</h3>
-              {[
-                {
-                  label: t("dashboard.avgWin"),
-                  value: formatPnl(stats.avgWin),
-                  color: "text-emerald-400",
-                  dot: "bg-emerald-400",
-                },
-                {
-                  label: t("dashboard.avgLoss"),
-                  value: formatPnl(stats.avgLoss),
-                  color: "text-red-400",
-                  dot: "bg-red-400",
-                },
-                {
-                  label: t("dashboard.bestTrade"),
-                  value: stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "$0.00",
-                  color: "text-emerald-400",
-                  dot: "bg-emerald-400",
-                },
-                {
-                  label: t("dashboard.worstTrade"),
-                  value: stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "$0.00",
-                  color: "text-red-400",
-                  dot: "bg-red-400",
-                },
-                {
-                  label: t("quant.planAdherence"),
-                  value: formatPct(quant.planAdherence),
-                  color: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400",
-                  dot: quant.planAdherence >= 0.8 ? "bg-emerald-400" : "bg-amber-400",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between py-1.5 md:py-2 border-b border-white/[0.04]"
-                >
-                  <span className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className={cn("w-1.5 h-1.5 rounded-full", item.dot)} />
-                    {item.label}
-                  </span>
-                  <span className={cn("text-xs md:text-sm font-bold tabular-nums", item.color)}>
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between py-1.5 md:py-2">
-                <span className="text-xs text-slate-500">{t("dashboard.currentStreak")}</span>
-                <span
-                  className={cn(
-                    "text-xs md:text-sm font-bold",
-                    stats.currentStreakType === "win"
-                      ? "text-emerald-400"
-                      : stats.currentStreakType === "loss"
-                        ? "text-red-400"
-                        : stats.currentStreakType === "be"
-                          ? "text-slate-300"
-                          : "text-slate-400",
-                  )}
-                >
-                  {stats.currentStreak}
-                  {stats.currentStreakType === "win"
-                    ? "W"
-                    : stats.currentStreakType === "loss"
-                      ? "L"
-                      : stats.currentStreakType === "be"
-                        ? "BE"
-                        : ""}
-                </span>
-              </div>
-            </div>
+            </Card>
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-/** Compact ring for the checklist cell — reads at a glance, costs no layout. */
-function ProgressRing({ pct, done }: { pct: number; done: boolean }) {
-  const r = 15;
-  const c = 2 * Math.PI * r;
-  return (
-    <span className="relative grid h-10 w-10 shrink-0 place-items-center">
-      <svg viewBox="0 0 36 36" className="absolute inset-0 h-10 w-10 -rotate-90">
-        <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3" />
-        <circle
-          cx="18"
-          cy="18"
-          r={r}
-          fill="none"
-          stroke={done ? "#34d399" : "var(--tv-accent)"}
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c - (c * Math.min(100, Math.max(0, pct))) / 100}
-          style={{ transition: "stroke-dashoffset 600ms cubic-bezier(0.22,1,0.36,1)" }}
-        />
-      </svg>
-      <ClipboardCheck
-        className={cn("relative w-4 h-4", done ? "text-emerald-400" : "text-cyan-400")}
-      />
-    </span>
+    </PageContainer>
   );
 }
 
@@ -757,7 +692,7 @@ function MiniStat({
 }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
+      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
         <span className="text-cyan-400/60">{icon}</span>
         {label}
       </div>

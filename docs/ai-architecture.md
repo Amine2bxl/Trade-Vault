@@ -7,9 +7,9 @@
 > sécurité**.
 >
 > **Deux compagnons, zéro duplication :**
-> - **[`AI.md`](AI.md)** = *stratégie & roadmap 24 mois* (pourquoi / quand).
+> - **[`ai-strategy.md`](ai-strategy.md)** = *stratégie & roadmap 24 mois* (pourquoi / quand).
 > - **Ici** = *comment c'est construit* (contrats, flux, données).
-> - Priorités transverses : [`ROADMAP.md`](ROADMAP.md).
+> - Priorités transverses : [`roadmap.md`](roadmap.md).
 >
 > **Légende d'état :** 🟢 Livré · 🟡 Fondation (contrats compilés, zéro runtime) · ⚪ Planifié.
 
@@ -342,7 +342,7 @@ Toutes en **RLS owner-only** (`user_id = auth.uid()`), migrations **additives**.
 **Ordre recommandé** (par valeur) : (1) Tool Calling + coach sur le provider
 existant, (2) RAG (embeddings trades/notes), (3) Jobs (Daily Brief / Weekly
 Review), (4) Performance Analyst + Risk Manager, (5) Psychologist, (6) MCP.
-Détail temporel dans [`AI.md`](AI.md).
+Détail temporel dans [`ai-strategy.md`](ai-strategy.md).
 
 _Document de conception — aucune implémentation. « Ajouter un système IA » ne
 modifie jamais un agent, un service ou un moteur existant : c'est la garantie

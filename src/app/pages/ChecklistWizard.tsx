@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import type { ChkItem } from "./checklistDefaults";
+import { Button } from "@/shared/ui";
 
 /* Adaptive setup for the pre-market checklist. A short, visual questionnaire
    whose answers BUILD the checklist — every option carries the exact checks it
@@ -412,7 +413,7 @@ export default function ChecklistWizard({
       onClick={onClose}
     >
       <div
-        className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 animate-slide-in"
+        className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5 animate-slide-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header + progress */}
@@ -499,14 +500,7 @@ export default function ChecklistWizard({
                   >
                     {tr("Passer", "Skip")}
                   </button>
-                  {q.multi && (
-                    <button
-                      onClick={next}
-                      className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
-                    >
-                      {tr("Continuer", "Continue")}
-                    </button>
-                  )}
+                  {q.multi && <Button onClick={next}>{tr("Continuer", "Continue")}</Button>}
                 </div>
               </div>
             );
@@ -558,12 +552,9 @@ export default function ChecklistWizard({
                 />
               </label>
             </div>
-            <button
-              onClick={buildAndApply}
-              className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
-            >
+            <Button onClick={buildAndApply}>
               <Gauge className="w-4 h-4" /> {tr("Créer ma checklist", "Create my checklist")}
-            </button>
+            </Button>
           </div>
         )}
       </div>
