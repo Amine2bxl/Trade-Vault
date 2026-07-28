@@ -12,7 +12,7 @@ export default function Appearance() {
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
       <PageHeader
         className="mb-2 md:mb-2"
         title={tr("Apparence", "Appearance")}

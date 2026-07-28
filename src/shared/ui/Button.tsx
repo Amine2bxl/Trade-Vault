@@ -26,8 +26,9 @@ const VARIANT: Record<ButtonVariant, string> = {
     "bg-red-500/10 font-semibold text-red-400 transition-all hover:bg-red-500/15 hover:text-red-300",
 };
 
-// Height/padding only applies to the composed variants; `.btn-*` already fix
-// their own height, and twMerge lets these overrides win where relevant.
+// Composed variants get Tailwind sizing; the CSS-class variants (`.btn-*`)
+// carry their own padding, so `sm` swaps in the shared `.btn-sm` modifier
+// instead of fighting the cascade with utilities.
 const SIZE: Record<ButtonSize, string> = {
   md: "h-11 px-4 text-sm",
   sm: "h-9 px-3 text-xs",
@@ -47,7 +48,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type={type}
-      className={cn(VARIANT[variant], composed && SIZE[size], className)}
+      className={cn(VARIANT[variant], composed ? SIZE[size] : size === "sm" && "btn-sm", className)}
       {...rest}
     />
   );

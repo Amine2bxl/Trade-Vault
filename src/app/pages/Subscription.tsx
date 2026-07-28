@@ -1,22 +1,50 @@
 import { useCallback, type ReactNode } from "react";
-import { Sparkles, Shield, Zap, Crown, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  Sparkles,
+  Shield,
+  Zap,
+  Crown,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  CreditCard,
+  Bitcoin,
+  CalendarClock,
+  RefreshCw,
+  Receipt,
+  Download,
+  Lock,
+} from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
+import { eur, planPrice, YEARLY_PER_MONTH } from "../utils/pricing";
 import { PageHeader } from "@/shared/ui";
+import SubscriptionSection from "../components/SubscriptionSection";
 
 type TFn = (k: TKey) => string;
 
-// Subscription — STATUS ONLY. This page shows the trader where they stand
-// (plan, trial, days left) and never any price or checkout: all payment logic
-// lives in the Profile billing section. No Stripe calls happen here.
-
+/**
+ * Subscription — the single place the trader's plan lives.
+ *
+ * Everything about the subscription is here and only here: which formula, what
+ * it costs, the live status, when it renews or ends, how it is paid, how much
+ * trial is left, and what the plan actually unlocks. Profile stays focused on
+ * personal information.
+ *
+ * The visual language is the landing page's — display type, a cyan hairline on
+ * the card edge, one soft radial bloom, tabular figures — so the page a trader
+ * was sold on and the page they manage look like the same product.
+ *
+ * Payment itself is untouched: checkout and the billing portal stay in
+ * `SubscriptionSection`, rendered at the bottom exactly as it is.
+ */
 export default function Subscription() {
   const { t, lang } = useT();
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
-  const { sub, loading, trialDaysLeft } = useSubscription();
+  const { sub, loading, isPro, trialDaysLeft } = useSubscription();
 
   const features = [
     {
@@ -43,61 +71,194 @@ export default function Subscription() {
         ? t("billing.planProMonthly")
         : t("billing.planFree");
 
+  const paid = sub?.plan === "pro_yearly" || sub?.plan === "pro_monthly";
+  const dateFmt = (d: Date) =>
+    d.toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric" });
+
+  // Trial progress — a 14-day trial with 5 days left reads very differently as
+  // a bar than as a sentence, and it is the single most retention-relevant
+  // thing on this page.
+  const TRIAL_DAYS = 14;
+  const trialPct = Math.max(0, Math.min(100, ((TRIAL_DAYS - trialDaysLeft) / TRIAL_DAYS) * 100));
+
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-5">
+    <div className="p-4 md:p-5 max-w-5xl mx-auto space-y-4">
       <PageHeader
         className="mb-1 md:mb-1"
         title={tr("Abonnement", "Subscription")}
         subtitle={tr(
-          "Ton accès TradeVault, en un coup d'œil.",
-          "Your TradeVault access at a glance.",
+          "Ta formule, ton statut et tes échéances — tout au même endroit.",
+          "Your plan, your status and your dates — all in one place.",
         )}
       />
 
-      {/* Status hero — real subscription state, no prices. */}
-      <div className="relative glass-strong rounded-3xl p-6 md:p-8 overflow-hidden animate-fade-in-up stagger-1">
-        <div className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="relative flex items-center gap-4">
+      {/* ── Status hero, landing-page language ── */}
+      <div className="relative rounded-3xl p-6 md:p-7 overflow-hidden border border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.5),rgba(7,14,24,.9)_60%)] animate-fade-in-up stagger-1">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+        <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl" />
+
+        <div className="relative flex items-start gap-4 flex-wrap">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
             <Crown className="w-7 h-7 text-white" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-lg font-bold text-white">{loading ? "TradeVault" : planLabel}</h2>
+              <h2 className="font-display text-xl font-extrabold tracking-tight text-white">
+                {loading ? "TradeVault" : planLabel}
+              </h2>
               {!loading && sub && <StatusChip sub={sub} trialDaysLeft={trialDaysLeft} t={t} />}
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1.5">
               {loading
                 ? tr("Chargement de ton statut…", "Loading your status…")
-                : accessLine(sub, t, tr)}
+                : accessLine(sub, t, tr, dateFmt)}
             </p>
           </div>
+
+          {/* The price of what they are on right now — not a sales price. */}
+          {!loading && (
+            <div className="text-right shrink-0">
+              <div className="font-display text-3xl font-extrabold tabular-nums text-white leading-none">
+                {paid && sub ? eur(planPrice(sub.plan as "pro_monthly" | "pro_yearly")) : "0 €"}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">
+                {paid
+                  ? sub?.plan === "pro_yearly"
+                    ? `${t("billing.perYear")} · ${eur(YEARLY_PER_MONTH)}${t("billing.perMonth")}`
+                    : t("billing.perMonth")
+                  : tr("/ toujours", "/ forever")}
+              </div>
+            </div>
+          )}
         </div>
-        <div className="relative grid md:grid-cols-3 gap-2.5 mt-6">
+
+        {/* Trial countdown — only while it is actually running. */}
+        {!loading && sub?.status === "trialing" && (
+          <div className="relative mt-5">
+            <div className="flex items-center justify-between text-[11px] font-semibold mb-1.5">
+              <span className="text-cyan-300">
+                {tr("Essai Premium", "Premium trial")} · {TRIAL_DAYS} {tr("jours", "days")}
+              </span>
+              <span className="text-slate-400 tabular-nums">
+                {t("billing.trialDaysLeft").replace("{n}", String(trialDaysLeft))}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
+                style={{ width: `${trialPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── The facts, in one scannable grid ── */}
+        {!loading && sub && (
+          <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-6">
+            <Fact
+              icon={<Receipt className="w-3.5 h-3.5" />}
+              label={tr("Formule", "Plan")}
+              value={planLabel}
+            />
+            <Fact
+              icon={<CalendarClock className="w-3.5 h-3.5" />}
+              label={
+                sub.cancelAtPeriodEnd
+                  ? tr("Accès jusqu'au", "Access until")
+                  : tr("Prochaine échéance", "Next billing")
+              }
+              value={
+                sub.status === "trialing" && sub.trialEndsAt
+                  ? dateFmt(sub.trialEndsAt)
+                  : sub.currentPeriodEnd
+                    ? dateFmt(sub.currentPeriodEnd)
+                    : "—"
+              }
+            />
+            <Fact
+              icon={
+                sub.source === "crypto" ? (
+                  <Bitcoin className="w-3.5 h-3.5" />
+                ) : sub.source === "stripe" ? (
+                  <CreditCard className="w-3.5 h-3.5" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5" />
+                )
+              }
+              label={tr("Paiement", "Payment")}
+              value={
+                sub.source === "crypto"
+                  ? tr("Crypto", "Crypto")
+                  : sub.source === "stripe"
+                    ? tr("Carte", "Card")
+                    : tr("Aucun", "None")
+              }
+            />
+            <Fact
+              icon={<RefreshCw className="w-3.5 h-3.5" />}
+              label={tr("Renouvellement", "Renewal")}
+              value={
+                !paid
+                  ? "—"
+                  : sub.cancelAtPeriodEnd
+                    ? tr("Arrêté", "Stopped")
+                    : sub.source === "crypto"
+                      ? tr("Manuel", "Manual")
+                      : tr("Automatique", "Automatic")
+              }
+              tone={sub.cancelAtPeriodEnd ? "warn" : undefined}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── What the plan unlocks ── */}
+      <div className="glass rounded-2xl p-4 animate-fade-in-up stagger-2">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="w-4 h-4 text-cyan-400" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+            {isPro
+              ? tr("Ce que tu as débloqué", "What you have unlocked")
+              : t("billing.premiumTitle")}
+          </h3>
+        </div>
+        <div className="grid md:grid-cols-3 gap-2.5">
           {features.map((f) => (
             <div
               key={f.title}
-              className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-3.5"
+              className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-3"
             >
-              <f.icon className="w-4.5 h-4.5 text-cyan-400 mb-2" />
+              <f.icon className="w-4 h-4 text-cyan-400 mb-1.5" />
               <div className="text-xs font-bold text-white">{f.title}</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">{f.sub}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{f.sub}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Where to manage it — points to the Profile billing section, no logic here. */}
-      <div className="glass rounded-2xl px-4 py-3.5 flex items-center gap-3 animate-fade-in-up stagger-4">
-        <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-          <Clock className="w-4 h-4" />
-        </div>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          {tr(
-            "La gestion de ton abonnement (changement de formule, paiement) se fait depuis ton Profil.",
-            "Managing your subscription (plan change, payment) happens from your Profile.",
-          )}
-        </p>
+      {/* ── Plans & payment. Untouched: this is the existing billing block. ── */}
+      <div className="animate-fade-in-up stagger-3">
+        <SubscriptionSection />
+      </div>
+
+      {/* ── Reassurance rail, straight from the landing ── */}
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">
+        {[
+          [Lock, tr("Paiement sécurisé Stripe", "Secure Stripe payment")],
+          [CheckCircle2, tr("Annulation en 1 clic", "Cancel in one click")],
+          [Download, tr("Données exportables", "Your data stays exportable")],
+        ].map(([Ico, label]) => {
+          const I = Ico as typeof Lock;
+          return (
+            <span
+              key={label as string}
+              className="flex items-center gap-2 text-[11px] text-slate-500"
+            >
+              <I className="w-3.5 h-3.5 text-emerald-400/80" />
+              {label as string}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
@@ -105,15 +266,56 @@ export default function Subscription() {
 
 type Sub = NonNullable<ReturnType<typeof useSubscription>["sub"]>;
 
+/** One fact of the subscription: label on top, value below, nothing else. */
+function Fact({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  tone?: "warn";
+}) {
+  return (
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] px-3 py-2.5 min-w-0">
+      <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider text-slate-500">
+        <span className="text-cyan-400/70 shrink-0">{icon}</span>
+        <span className="truncate">{label}</span>
+      </div>
+      <div
+        className={cn(
+          "mt-1 text-[13px] font-bold truncate",
+          tone === "warn" ? "text-amber-300" : "text-white",
+        )}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
 /** One accessible line: renews on / access until / trial ends / free hint. */
-function accessLine(sub: Sub | null, t: TFn, tr: (f: string, e: string) => string): string {
+function accessLine(
+  sub: Sub | null,
+  t: TFn,
+  tr: (f: string, e: string) => string,
+  dateFmt: (d: Date) => string,
+): string {
   if (!sub) return tr("Statut indisponible pour le moment.", "Status unavailable right now.");
   if (sub.status === "active" && sub.currentPeriodEnd) {
     const label = sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("billing.renewsOn");
-    return `${label} ${sub.currentPeriodEnd.toLocaleDateString()}`;
+    return `${label} ${dateFmt(sub.currentPeriodEnd)}`;
   }
   if (sub.status === "trialing" && sub.trialEndsAt) {
-    return `${t("billing.trialEndsOn")} ${sub.trialEndsAt.toLocaleDateString()}`;
+    return `${t("billing.trialEndsOn")} ${dateFmt(sub.trialEndsAt)}`;
+  }
+  if (sub.status === "past_due") {
+    return tr(
+      "Le dernier paiement a échoué — mets ta carte à jour pour garder ton accès.",
+      "The last payment failed — update your card to keep your access.",
+    );
   }
   return tr(
     "Tout TradeVault, sans limite — pensé pour les traders sérieux.",

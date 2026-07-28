@@ -1,5 +1,7 @@
 import type { Trade } from "../types";
 import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
+import { computeBehaviorSignals } from "./behaviorSignals";
+import type { TradingRule } from "./tradingRules";
 import { loadMemory, remember } from "@/modules/ai/memory";
 import { loadOnboarding, type OnboardingData } from "../store";
 import type { AIUserContext } from "@/modules/ai/context";
@@ -86,6 +88,10 @@ export interface CoachV1Payload {
   stats?: Record<string, number | string | null>;
   trades?: ReturnType<typeof toInsightTradesPayload>;
   mistakes?: { name: string; count: number; totalPnl: number }[];
+  /** Deterministic behaviour signals — the evidence behind a real diagnosis. */
+  signals?: Record<string, unknown>;
+  /** The rules the trader wrote for themselves, so the coach can enforce them. */
+  rules?: { kind: string; text: string; enabled: boolean }[];
   conversation?: { role: "user" | "assistant"; content: string }[];
   profile?: string;
   language?: string;
@@ -126,8 +132,10 @@ export function buildCoachV1Payload(opts: {
   maxTurns?: number;
   /** Onboarding answers — makes the coaching personal on every single call. */
   onboarding?: (OnboardingData & { monthlyTarget?: number | null }) | null;
+  /** The trader's own rules, so the coach holds them to their own standard. */
+  rules?: TradingRule[];
 }): CoachV1Payload {
-  const { trades, conversation = [], language, maxTurns = 16, onboarding } = opts;
+  const { trades, conversation = [], language, maxTurns = 16, onboarding, rules } = opts;
   const stats = trades.length ? computeStats(trades) : null;
   const mistakes = stats
     ? Object.entries(stats.mistakeStats)
@@ -135,10 +143,19 @@ export function buildCoachV1Payload(opts: {
         .sort((a, b) => a.totalPnl - b.totalPnl)
         .slice(0, 40)
     : [];
+  // The behavioural read is what turns "here are your stats" into "here is why
+  // you lose on Fridays". Computed deterministically, never by the model.
+  const signals = computeBehaviorSignals(trades);
   return {
     trades: toInsightTradesPayload(trades),
     stats: trades.length ? compactStats(trades) : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
+    signals: Object.keys(signals).length ? (signals as Record<string, unknown>) : undefined,
+    rules: rules?.length
+      ? rules
+          .slice(0, 30)
+          .map((r) => ({ kind: r.kind, text: r.text.slice(0, 300), enabled: r.enabled }))
+      : undefined,
     conversation: conversation
       .slice(-maxTurns)
       .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),

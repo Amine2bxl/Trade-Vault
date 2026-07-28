@@ -15,46 +15,74 @@ export const CHART_ANIMATION = {
   animationEasing: ORGANIC_EASING as unknown as "ease-out",
 };
 
-// Dedicated, more cinematic reveal for the equity curves — a longer draw with a
-// gentle late settle, kicked off after a short beat so the wipe reads as a
-// deliberate "drawing" motion rather than an instant pop.
+// Equity-curve reveal. Deliberately restrained: a single, quick, decelerating
+// draw. Institutional charting tools (Topstep, Lucid) animate once and get out
+// of the way — a long cinematic wipe reads as a marketing effect, not a tool.
 export const EQUITY_ANIMATION = {
-  animationDuration: 1700,
-  animationBegin: 90,
-  animationEasing: "cubic-bezier(0.22,1,0.36,1)" as unknown as "ease-out",
+  animationDuration: 900,
+  animationBegin: 40,
+  animationEasing: "cubic-bezier(0.33,1,0.68,1)" as unknown as "ease-out",
 };
 
-// Shared equity-line look so Dashboard + Analytics curves match: a rounded,
-// dynamic stroke with a soft accent drop-shadow for a professional, alive feel.
+// Shared equity-line look so Dashboard + Analytics curves match: a precise
+// 2px stroke, no glow, no drop-shadow. Legibility of the path IS the styling.
 export const EQUITY_LINE = {
-  strokeWidth: 3,
+  strokeWidth: 2,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };
 
-// Hover cursor shared by every chart. TradingView-style: a single hairline-thin,
-// solid guide in the active theme accent — deliberately faint so the glowing
-// marker dot (glowActiveDot) is the star of the hover, not a loud dashed line.
-// The soft glow is applied in CSS via `.recharts-tooltip-cursor`, so it always
-// tracks the current theme.
+// `monotone` never overshoots between points, so the curve stays faithful to
+// the equity it plots — `natural` (a cubic spline) invents wobbles and bumps
+// that do not exist in the data, which is exactly what made the old curve look
+// decorative rather than professional.
+export const EQUITY_CURVE_TYPE = "monotone" as const;
+
+// Horizontal-only grid, whisper-faint. Gives the eye a baseline to read levels
+// against without drawing attention to itself.
+export const EQUITY_GRID = {
+  stroke: "rgba(148,163,184,0.08)",
+  strokeDasharray: "0",
+  vertical: false,
+} as const;
+
+// Axis ticks — one muted slate, one size, everywhere.
+export const AXIS_TICK = { fill: "#64748b", fontSize: 11 } as const;
+
+// Compact money labels ($1.2k) so the Y axis stays narrow and readable at any
+// account size instead of wrapping five-digit numbers.
+export function formatAxisMoney(v: number): string {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? "-" : "";
+  if (abs >= 1000) {
+    const k = abs / 1000;
+    return `${sign}$${k >= 10 ? Math.round(k) : k.toFixed(1)}k`;
+  }
+  return `${sign}$${Math.round(abs)}`;
+}
+
+// Hover cursor shared by every chart: a neutral hairline guide, no accent tint
+// and no glow. It marks the hovered point and nothing more.
 export const crosshairCursor = {
-  stroke: "var(--tv-accent)",
+  stroke: "#94a3b8",
   strokeWidth: 1,
-  strokeOpacity: 0.28,
+  strokeOpacity: 0.22,
   fill: "transparent",
 };
 
+// Tooltip — a plain, dense data card. Neutral border, real shadow, no accent
+// halo: the numbers should be the only thing that stands out.
 export const tooltipStyle = {
   contentStyle: {
-    background: "rgba(17,24,39,0.96)",
-    border: "1px solid rgb(var(--tv-accent-rgb) / 0.18)",
-    borderRadius: "12px",
+    background: "rgba(10,15,30,0.97)",
+    border: "1px solid rgba(148,163,184,0.16)",
+    borderRadius: "10px",
     fontSize: 11,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
-    padding: "8px 12px",
+    boxShadow: "0 10px 30px -10px rgba(0,0,0,0.65)",
+    padding: "8px 11px",
   },
-  labelStyle: { color: "#94a3b8", marginBottom: 2 },
-  itemStyle: { color: "#e2e8f0" },
+  labelStyle: { color: "#94a3b8", marginBottom: 3, fontSize: 10 },
+  itemStyle: { color: "#e2e8f0", fontWeight: 600 },
   cursor: crosshairCursor,
 };
 
@@ -62,17 +90,15 @@ export function glowDot(color: string) {
   return { r: 4, strokeWidth: 2, stroke: "#0a0f1e", fill: color };
 }
 
-// Premium hover marker — a small, precise circle with a soft two-stop glow in
-// the series color. Small radius + a thin dark ring keep it discreet and crisp
-// against the line; the layered drop-shadows give the light TradingView-like
-// halo without a heavy dashed crosshair.
+// Hover marker — a small filled dot with a dark ring so it reads crisply on top
+// of the line. No drop-shadow halo: the glow was the single loudest "cheap neon"
+// signal on the equity curve.
 export function glowActiveDot(color: string) {
   return {
-    r: 4,
-    strokeWidth: 1.5,
+    r: 3.5,
+    strokeWidth: 2,
     stroke: "#0a0f1e",
     fill: color,
-    style: { filter: `drop-shadow(0 0 3px ${color}) drop-shadow(0 0 7px rgba(255,255,255,0.12))` },
   };
 }
 
@@ -80,7 +106,7 @@ export function glowActiveDot(color: string) {
 // without this, recharts fits the axis exactly to data min/max and the line
 // looks visually "cut off" at the top/bottom of the plot area.
 export function equityYDomain([dataMin, dataMax]: [number, number]): [number, number] {
-  const pad = Math.max((dataMax - dataMin) * 0.15, 20);
+  const pad = Math.max((dataMax - dataMin) * 0.12, 20);
   return [Math.floor(dataMin - pad), Math.ceil(dataMax + pad)];
 }
 

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   Target,
+  TrendingUp,
 } from "lucide-react";
 import { Trade } from "../types";
 import { formatPnl } from "../utils/tradeCalcs";
@@ -25,7 +26,7 @@ import {
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
 import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from "../utils/chartTheme";
-import { EmptyState, PageHeader } from "@/shared/ui";
+import { EmptyState, PageHeader, Card } from "@/shared/ui";
 
 interface MistakesProps {
   trades: Trade[];
@@ -122,7 +123,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   if (trades.length === 0) {
     if (embedded) return null;
     return (
-      <div className="p-4 md:p-8">
+      <div className="p-4 md:p-5">
         <PageHeader className="mb-2 md:mb-2" title={t("mistakes.title")} />
         <EmptyState title={t("mistakes.noTrades")} />
       </div>
@@ -145,7 +146,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
     C = 2 * Math.PI * R;
 
   return (
-    <div className={cn(embedded ? "pt-2" : "p-4 md:p-8 max-w-[1400px] mx-auto")}>
+    <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
       <PageHeader
         className="stagger-0"
         title={t("mistakes.title")}
@@ -154,9 +155,9 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
       <div className="space-y-4 md:space-y-6">
         {/* ── Discipline score + summary KPIs ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Discipline dial */}
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 flex items-center gap-4">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-1 flex items-center gap-4">
             <div className="relative shrink-0" style={{ width: 84, height: 84 }}>
               <svg width="84" height="84" viewBox="0 0 84 84" className="-rotate-90">
                 <circle
@@ -185,7 +186,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className={cn("text-xl font-bold tabular-nums", discColor)}>{disc}</span>
-                <span className="text-[8px] text-slate-500 uppercase tracking-wider">/ 100</span>
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider">/ 100</span>
               </div>
             </div>
             <div className="min-w-0">
@@ -200,7 +201,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 {b.cleanTrades}/{trades.length} {t("mistakes.cleanSuffix")}
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* KPIs (2×2) */}
           <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
@@ -241,12 +242,12 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   {card.icon}
-                  <span className="text-[9px] text-slate-500 truncate">{card.label}</span>
+                  <span className="text-[11px] text-slate-500 truncate">{card.label}</span>
                 </div>
                 <div className={cn("text-base md:text-lg font-bold leading-none", card.color)}>
                   {card.value}
                 </div>
-                <div className="text-[9px] text-slate-600 mt-1 truncate">{card.sub}</div>
+                <div className="text-[11px] text-slate-600 mt-1 truncate">{card.sub}</div>
               </div>
             ))}
           </div>
@@ -254,7 +255,10 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
         {/* Clean vs mistake edge callout */}
         {b.cleanWinRate !== null && b.mistakeWinRate !== null && (
-          <div className="glass rounded-2xl p-3.5 md:p-4 card-premium animate-fade-in-up stagger-2 flex items-center gap-3 text-xs">
+          <Card
+            hover
+            className="p-3.5 md:p-4 animate-fade-in-up stagger-2 flex items-center gap-3 text-xs"
+          >
             <Target className="w-4 h-4 text-cyan-400 shrink-0" />
             <span className="text-slate-400">
               {t("mistakes.edgePrefix")}{" "}
@@ -263,13 +267,13 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               </span>{" "}
               {t("mistakes.edgeSuffix")}
             </span>
-          </div>
+          </Card>
         )}
 
         {/* ── Behavioral breakdown: severity + cost ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Severity distribution */}
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.severity")}</h3>
             {severityTotal > 0 ? (
               <div className="space-y-3">
@@ -308,10 +312,10 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Cost per mistake type */}
-          <div className="md:col-span-2 glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
+          <Card hover className="md:col-span-2 p-4 md:p-5 animate-fade-in-up stagger-4">
             <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.costAnalysis")}</h3>
             {b.rows.length > 0 ? (
               <div className="h-56 md:h-64">
@@ -361,14 +365,14 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* ── When mistakes happen: weekly trend + session + day ── */}
         {b.totalIncidents > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Weekly trend */}
-            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
+            <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-5">
               <h3 className="text-sm font-semibold text-white mb-1">{t("mistakes.weeklyTrend")}</h3>
               <p className="text-[10px] text-slate-600 mb-3">{t("mistakes.weeklyTrendSub")}</p>
               {b.weeklyTrend.length > 0 ? (
@@ -419,10 +423,10 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   —
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Session + day distribution */}
-            <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6 space-y-4">
+            <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
               <div>
                 <h3 className="text-sm font-semibold text-white mb-2">{t("mistakes.bySession")}</h3>
                 <div className="space-y-2">
@@ -469,12 +473,12 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   </ResponsiveContainer>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
         {/* ── Personalized recommendations + progression goal ── */}
-        <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-7">
+        <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-7">
           <div className="flex items-center gap-2 mb-3 md:mb-4">
             <Lightbulb className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-semibold text-white">{t("mistakes.improvementTips")}</h3>
@@ -492,13 +496,13 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   >
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                       {idx === 0 && (
-                        <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">
+                        <span className="text-[11px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">
                           {t("mistakes.priority")}
                         </span>
                       )}
                       <span
                         className={cn(
-                          "text-[8px] font-bold px-1 py-0.5 rounded uppercase",
+                          "text-[11px] font-bold px-1 py-0.5 rounded uppercase",
                           SEV_STYLE[m.severity].bg,
                           SEV_STYLE[m.severity].text,
                         )}
@@ -519,7 +523,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                         ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
                         : t("mistakes.defaultTip")}
                     </p>
-                    <div className="mt-1.5 text-[9px] text-slate-600">
+                    <div className="mt-1.5 text-[11px] text-slate-600">
                       <span className="font-bold text-slate-400">{m.count}×</span> ·{" "}
                       <span
                         className={cn(
@@ -552,7 +556,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               {t("mistakes.noMistakesGreat")}
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

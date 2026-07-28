@@ -57,7 +57,7 @@ Si aucun n'est servi : le dire, proposer une alternative, ne pas coder.
 
 ## Garde-fous d'architecture
 
-Ces règles découlent de [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) et de
+Ces règles découlent de [`docs/architecture.md`](docs/architecture.md) et de
 [`docs/ux-architecture.md`](docs/ux-architecture.md) — les lire avant tout
 changement structurant.
 

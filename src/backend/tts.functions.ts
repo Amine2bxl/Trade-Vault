@@ -1,45 +1,56 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { JARVIS_VOICE } from "@/modules/voice";
 
 /**
- * Text-to-speech — ONE voice for the whole product.
+ * Text-to-speech — the OPTIONAL hosted half of Jarvis's voice.
  *
- * The browser's speechSynthesis gives a different voice on every OS/browser, so
- * it can never satisfy "the same voice everywhere". This function renders the
- * coach's lines with a single hosted voice instead, so a trader on Windows,
- * macOS, Android or iOS hears the exact same coach.
+ * The product no longer depends on this: `modules/voice` speaks locally in the
+ * browser, with no key, no vendor and no network. This function is a pure
+ * upgrade path — when an ElevenLabs key is configured, every trader hears the
+ * exact same neural voice on every OS instead of the closest local one.
  *
- * Gated on ELEVENLABS_API_KEY: with no key configured the function reports
- * `available: false` and the client silently falls back to the locked-down
- * browser voice — the feature degrades, it never errors.
+ * Two switches, both server-side, both fail-safe:
+ *   - no `ELEVENLABS_API_KEY`      → `available: false`, the app speaks locally
+ *   - `TTS_PROVIDER=local`         → hosted is force-disabled even with a key
  *
- * The voice id is fixed server-side: users cannot switch voices.
+ * The voice id is fixed: traders cannot switch voices, there is one Jarvis.
  */
 
-/** Deep, calm, charismatic male voice — the product's single coach voice. */
-const VOICE_ID = "IKne3meq5aSn9XLyUdCD";
-const MODEL_ID = "eleven_multilingual_v2";
+function hostedEnabled(): boolean {
+  if ((process.env.TTS_PROVIDER ?? "").toLowerCase() === "local") return false;
+  return !!process.env.ELEVENLABS_API_KEY;
+}
+
+/**
+ * Cheap capability probe. The client asks once per session so it can go
+ * straight to the local voice instead of paying a failed audio round-trip on
+ * the first thing Jarvis ever says.
+ */
+export const ttsCapabilities = createServerFn({ method: "GET" }).handler(async () => ({
+  hosted: hostedEnabled(),
+}));
 
 const SpeakInput = z.object({
-  /** The line to speak. Always English — see the checklist voice engine. */
+  /** The line to speak. Always English — see the voice module. */
   text: z.string().min(1).max(600),
 });
 
 export const ttsSpeak = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SpeakInput.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) return { available: false as const };
+    if (!hostedEnabled()) return { available: false as const };
+    const apiKey = process.env.ELEVENLABS_API_KEY as string;
 
     try {
       const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_64`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${JARVIS_VOICE.hostedVoiceId}?output_format=mp3_44100_64`,
         {
           method: "POST",
           headers: { "xi-api-key": apiKey, "content-type": "application/json" },
           body: JSON.stringify({
             text: data.text,
-            model_id: MODEL_ID,
+            model_id: JARVIS_VOICE.hostedModelId,
             // Tuned for an executive-coach delivery: stable and composed,
             // with enough style to stay human rather than robotic.
             voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.3 },

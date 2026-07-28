@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target, CalendarDays } from "lucide-react";
 import { Trade, MissedOpportunity } from "../types";
 import { loadMissedOpportunities } from "../store";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,7 +10,7 @@ import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import MissedOpportunities from "./MissedOpportunities";
 import { useT } from "../i18n/LanguageContext";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer, Card } from "@/shared/ui";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -227,7 +227,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
   );
 
   return (
-    <div className="p-3 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="mb-3 md:mb-6 stagger-0"
         title={t("calendar.title")}
@@ -305,7 +305,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
               `stagger-${card.delay}`,
             )}
           >
-            <div className="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-0.5 md:mb-1">
+            <div className="text-[11px] md:text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-0.5 md:mb-1">
               {card.label}
             </div>
             <div
@@ -321,7 +321,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
       </div>
 
       {/* Calendar */}
-      <div className="glass rounded-2xl md:rounded-3xl overflow-hidden animate-fade-in-up stagger-5">
+      <Card className="md:rounded-3xl overflow-hidden animate-fade-in-up stagger-5">
         <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-5 border-b border-white/[0.06]">
           <button
             onClick={prevMonth}
@@ -354,14 +354,14 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
             <div
               key={d + i}
               className={cn(
-                "py-2 md:py-3 text-center text-[8px] md:text-[10px] font-bold uppercase tracking-widest",
+                "py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest",
                 i >= 5 ? "text-slate-700" : "text-slate-500",
               )}
             >
               {d}
             </div>
           ))}
-          <div className="py-2 md:py-3 text-center text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
+          <div className="py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
             {t("calendar.week")}
           </div>
         </div>
@@ -442,7 +442,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
                         </span>
                         {missedCount > 0 && (
                           <span
-                            className="flex items-center gap-0.5 text-amber-300 text-[8px] md:text-[10px] font-bold"
+                            className="flex items-center gap-0.5 text-amber-300 text-[11px] md:text-[10px] font-bold"
                             title={`${missedCount} ${t("missed.title")}`}
                           >
                             <Target className="w-2 h-2 md:w-2.5 md:h-2.5" />
@@ -475,7 +475,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
 
                       {/* Footer: trade count + RR */}
                       {data && (
-                        <div className="flex items-center gap-1.5 text-[7px] md:text-[10px] font-semibold tabular-nums">
+                        <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] font-semibold tabular-nums">
                           <span className="text-slate-400">
                             {data.count}{" "}
                             {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
@@ -498,7 +498,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
                     week.days === 0 && "opacity-40",
                   )}
                 >
-                  <div className="text-[7px] md:text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">
+                  <div className="text-[11px] md:text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">
                     {t("calendar.week")} {rowIdx + 1}
                   </div>
                   <div
@@ -518,7 +518,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
                       : `${week.pnl >= 0 ? "+" : "−"}$${Math.abs(week.pnl).toFixed(0)}`}
                   </div>
                   {week.days > 0 && (
-                    <div className="text-[7px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
+                    <div className="text-[11px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
                       {week.days} {week.days === 1 ? t("calendar.day") : t("calendar.days")}
                     </div>
                   )}
@@ -527,7 +527,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       <div className="hidden md:flex items-center gap-6 mt-4 px-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -580,6 +580,6 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
       <div className="md:hidden mt-6">
         <MissedOpportunities />
       </div>
-    </div>
+    </PageContainer>
   );
 }

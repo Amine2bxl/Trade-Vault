@@ -13,9 +13,12 @@ import {
   Minus,
   Download,
   Target,
+  BookOpen,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
+  computeStats,
+  formatPct,
   formatPnl,
   formatShortDate,
   directionLabel,
@@ -25,7 +28,7 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, PageContainer, Button, EmptyState, Card } from "@/shared/ui";
 
 interface JournalProps {
   trades: Trade[];
@@ -112,6 +115,24 @@ export default function Journal({
     return list;
   }, [trades, strategyFilter, resultFilter, sortKey, sortDir]);
 
+  // Counts per result filter — shown inside the pills so the trader sees the
+  // shape of their journal before clicking, not after.
+  const counts = useMemo(() => {
+    const base =
+      strategyFilter === "all" ? trades : trades.filter((t) => t.strategy === strategyFilter);
+    return {
+      all: base.length,
+      win: base.filter((t) => !isBreakEven(t) && t.pnl > 0).length,
+      loss: base.filter((t) => !isBreakEven(t) && t.pnl < 0).length,
+      be: base.filter(isBreakEven).length,
+    } as Record<ResultFilter, number>;
+  }, [trades, strategyFilter]);
+
+  // The journal's headline numbers, recomputed on the CURRENT selection. Making
+  // the summary follow the filter is what turns the list into an analysis tool:
+  // "show me my losses" instantly answers "what do they cost me".
+  const summary = useMemo(() => computeStats(filtered), [filtered]);
+
   // Render at most `visibleCount` rows — keeps the DOM light on big journals
   const shown = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = filtered.length > visibleCount;
@@ -134,39 +155,55 @@ export default function Journal({
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
-        className="mb-3 md:mb-6 items-center stagger-0"
+        className="mb-3 md:mb-4 items-center stagger-0"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
         actions={
-          <div className="flex items-center gap-1.5 md:gap-3 animate-fade-in-up stagger-1 shrink-0">
-            <button
-              onClick={() => exportTradesCSV(trades)}
-              className="flex items-center gap-1.5 md:gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
-            >
-              <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+          <div className="flex items-center gap-1.5 md:gap-2 animate-fade-in-up stagger-1 shrink-0">
+            <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
+              <Download className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.exportCsv")}</span>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="subtle"
+              size="sm"
               onClick={onDeleteAll}
-              className="flex items-center gap-1.5 md:gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all"
+              className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
             >
-              <Trash className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <Trash className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.deleteAll")}</span>
-            </button>
-            <button
-              onClick={onAdd}
-              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:-translate-y-0.5"
-            >
+            </Button>
+            <Button size="sm" onClick={onAdd} className="hidden md:inline-flex">
               <Plus className="w-4 h-4" /> {t("common.addTrade")}
-            </button>
+            </Button>
           </div>
         }
       />
 
+      {/* Summary of the CURRENT selection — the journal reads as an analysis,
+          not just a list. Recomputed from the same deterministic engine. */}
+      {filtered.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5 animate-fade-in-up stagger-1">
+          <SummaryTile
+            label={t("stats.totalPnl")}
+            value={formatPnl(summary.totalPnl)}
+            tone={summary.totalPnl >= 0 ? "up" : "down"}
+          />
+          <SummaryTile label={t("stats.winRate")} value={formatPct(summary.winRate)} />
+          <SummaryTile label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
+          <SummaryTile
+            label={t("journal.colPnl")}
+            hint={t("common.best")}
+            value={formatPnl(summary.bestTrade?.pnl ?? 0)}
+            tone="up"
+          />
+        </div>
+      )}
+
       {/* Result filter pill group + Missed Setups shortcut */}
-      <div className="flex items-center gap-1.5 mb-3 md:mb-5">
+      <div className="flex items-center gap-1.5 mb-2.5 md:mb-3">
         <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
           {(
             [
@@ -180,7 +217,7 @@ export default function Journal({
               key={opt.v}
               onClick={() => setResultFilter(opt.v)}
               className={cn(
-                "flex-1 md:flex-none md:px-5 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all",
+                "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
                 resultFilter === opt.v
                   ? opt.v === "win"
                     ? "bg-emerald-500/15 text-emerald-400"
@@ -193,13 +230,21 @@ export default function Journal({
               )}
             >
               {opt.label}
+              <span
+                className={cn(
+                  "tabular-nums text-[10px] font-bold",
+                  resultFilter === opt.v ? "opacity-70" : "text-slate-600",
+                )}
+              >
+                {counts[opt.v]}
+              </span>
             </button>
           ))}
         </div>
         <button
           onClick={onOpenMissed}
           title={t("missed.title")}
-          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-xs md:text-sm font-semibold transition-all"
+          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] text-slate-400 hover:text-slate-200 text-xs md:text-sm font-semibold transition-all"
         >
           <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
           <span className="hidden sm:inline">{t("missed.title")}</span>
@@ -207,28 +252,33 @@ export default function Journal({
       </div>
 
       {/* ── Mobile: Card List ── */}
-      <div className="md:hidden space-y-2 animate-fade-in-up stagger-2">
+      <div className="md:hidden space-y-1.5 animate-fade-in-up stagger-2">
         {trades.length === 0 ? (
-          <div className="glass rounded-2xl p-10 text-center">
-            <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-            <p className="text-xs text-slate-500 mb-4">{t("empty.subtitle")}</p>
-            <button
-              onClick={onAdd}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20"
-            >
-              <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-            </button>
-          </div>
+          <EmptyState
+            icon={<Target className="w-7 h-7" />}
+            title={t("empty.title")}
+            description={t("empty.subtitle")}
+            action={
+              <Button size="sm" onClick={onAdd}>
+                <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
+              </Button>
+            }
+          />
         ) : filtered.length === 0 ? (
-          <div className="glass rounded-2xl p-10 text-center text-slate-600 text-sm">
-            {t("common.noTradesFound")}
-          </div>
+          <EmptyState
+            title={t("common.noTradesFound")}
+            action={
+              <Button size="sm" variant="ghost" onClick={() => setResultFilter("all")}>
+                {t("common.all")}
+              </Button>
+            }
+          />
         ) : (
           shown.map((trade, i) => {
             const be = isBreakEven(trade);
             return (
               <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
-                <div className="flex items-center gap-2 px-2.5 py-2">
+                <div className="flex items-center gap-2 px-2.5 py-1.5">
                   <button
                     type="button"
                     className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
@@ -259,14 +309,14 @@ export default function Journal({
                         </span>
                         <span
                           className={cn(
-                            "text-[9px] font-bold px-1.5 py-0.5 rounded leading-none",
+                            "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
                             directionBadgeClass(trade.direction),
                           )}
                         >
                           {directionLabel(trade.direction)}
                         </span>
                         {trade.isExample && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
                             {t("journal.exampleBadge")}
                           </span>
                         )}
@@ -326,16 +376,16 @@ export default function Journal({
       </div>
 
       {/* ── Desktop: Table ── */}
-      <div className="hidden md:block glass rounded-2xl overflow-hidden animate-fade-in-up stagger-2">
-        <div className="overflow-x-auto">
+      <Card className="hidden md:block overflow-hidden animate-fade-in-up stagger-2">
+        <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[880px]">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-[#0a0f1e]/85 backdrop-blur-md">
               <tr className="border-b border-white/[0.06]">
                 {(["date", "symbol", "strategy", "pnl", "rMultiple"] as SortKey[]).map((key) => (
                   <th
                     key={key}
                     onClick={() => handleSort(key)}
-                    className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-300 transition-colors select-none"
+                    className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-300 transition-colors select-none"
                   >
                     <span className="flex items-center gap-1.5">
                       {key === "pnl"
@@ -351,13 +401,13 @@ export default function Journal({
                     </span>
                   </th>
                 ))}
-                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {t("common.side")}
                 </th>
-                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {t("common.risk")}
                 </th>
-                <th className="px-5 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {t("common.actions")}
                 </th>
               </tr>
@@ -365,20 +415,17 @@ export default function Journal({
             <tbody className="divide-y divide-white/[0.04]">
               {trades.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-14 text-center">
+                  <td colSpan={8} className="px-5 py-10 text-center">
                     <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-                    <p className="text-xs text-slate-500 mb-4">{t("empty.subtitle")}</p>
-                    <button
-                      onClick={onAdd}
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20 transition-all"
-                    >
+                    <p className="text-xs text-slate-500 mb-3">{t("empty.subtitle")}</p>
+                    <Button size="sm" onClick={onAdd}>
                       <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center text-slate-600 text-sm">
+                  <td colSpan={8} className="px-5 py-10 text-center text-slate-600 text-sm">
                     {t("common.noTradesFound")}
                   </td>
                 </tr>
@@ -388,22 +435,22 @@ export default function Journal({
                   return (
                     <tr
                       key={trade.id}
-                      className="hover:bg-white/[0.02] transition-colors cursor-pointer"
+                      className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
                       onClick={() => setViewingIdx(i)}
                     >
-                      <td className="px-5 py-3 text-sm text-slate-300">
+                      <td className="px-4 py-1.5 text-sm text-slate-300">
                         {formatShortDate(trade.date)}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <span className="text-sm font-bold text-white">{trade.symbol}</span>
                         {trade.isExample && (
-                          <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
+                          <span className="ml-2 text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
                             {t("journal.exampleBadge")}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-sm text-slate-400">{trade.strategy}</td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5 text-sm text-slate-400">{trade.strategy}</td>
+                      <td className="px-4 py-1.5">
                         <span
                           className={cn(
                             "text-sm font-bold",
@@ -417,7 +464,7 @@ export default function Journal({
                           {formatPnl(trade.pnl)}
                         </span>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <span
                           className={cn(
                             "text-sm font-bold",
@@ -431,7 +478,7 @@ export default function Journal({
                           {trade.rMultiple.toFixed(2)}R
                         </span>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <span
                           className={cn(
                             "text-[10px] font-bold px-2 py-1 rounded-lg",
@@ -441,12 +488,12 @@ export default function Journal({
                           {directionLabel(trade.direction)}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-sm font-semibold text-slate-300 tabular-nums">
+                      <td className="px-4 py-1.5 text-sm font-semibold text-slate-300 tabular-nums">
                         ${trade.riskAmount.toFixed(0)}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <div
-                          className="flex items-center justify-end gap-1"
+                          className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -482,7 +529,7 @@ export default function Journal({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Load more (both layouts) */}
       {hasMore && (
@@ -512,6 +559,47 @@ export default function Journal({
           positionLabel={`${viewingIdx + 1}/${filtered.length}`}
         />
       )}
+    </PageContainer>
+  );
+}
+
+/**
+ * One number of the current selection. Deliberately flatter than `Metric` (no
+ * hover glow, no corner accent): four of these sit in a row directly under the
+ * page title, so they have to read as a quiet summary line, not as four cards
+ * competing with the table below.
+ */
+function SummaryTile({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "up" | "down" | "neutral";
+}) {
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+          {label}
+        </span>
+        {hint && (
+          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
+            {hint}
+          </span>
+        )}
+      </div>
+      <div
+        className={cn(
+          "mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight",
+          tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }

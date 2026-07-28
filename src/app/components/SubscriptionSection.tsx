@@ -5,12 +5,34 @@ import {
   Bitcoin,
   ExternalLink,
   Clock,
+  Check,
   CheckCircle2,
   AlertTriangle,
+  Flame,
+  X,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
+import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
+import { eur, MONTHLY_EUR, YEARLY_EUR, YEARLY_PER_MONTH, YEARLY_SAVING } from "../utils/pricing";
+import { Button } from "@/shared/ui";
+
+/** What Free gives, and where it stops. Same content as the landing. */
+const FREE_KEYS: TKey[] = ["plan.free1", "plan.free2", "plan.free3", "plan.free4"];
+const MISSING_KEYS: TKey[] = ["plan.miss1", "plan.miss2", "plan.miss3", "plan.miss4"];
+
+/** The Premium promise, ordered by perceived value — the coach first. */
+const PREMIUM_KEYS: [TKey, TKey][] = [
+  ["plan.p1", "plan.p1sub"],
+  ["plan.p2", "plan.p2sub"],
+  ["plan.p3", "plan.p3sub"],
+  ["plan.p4", "plan.p4sub"],
+  ["plan.p5", "plan.p5sub"],
+  ["plan.p6", "plan.p6sub"],
+  ["plan.p7", "plan.p7sub"],
+  ["plan.p8", "plan.p8sub"],
+];
 
 // "Gestion d'abonnement" card on the profile page.
 //
@@ -35,7 +57,7 @@ export default function SubscriptionSection() {
 
   if (loading || !sub) {
     return (
-      <div className="glass-strong rounded-3xl p-6">
+      <div className="glass-strong rounded-3xl p-5">
         <div className="h-5 w-40 rounded bg-white/[0.06] animate-pulse" />
       </div>
     );
@@ -85,7 +107,7 @@ export default function SubscriptionSection() {
   const isStripeActive = sub.status === "active" && sub.source === "stripe";
 
   return (
-    <div className="glass-strong rounded-3xl p-6 space-y-5">
+    <div className="glass-strong rounded-3xl p-5 space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
           {t("billing.title")}
@@ -122,25 +144,85 @@ export default function SubscriptionSection() {
         </div>
       )}
 
-      {/* Upgrade grid — free & trialing users */}
+      {/* Plan cards — the landing's three-column offer, rendered in-app.
+          A trader who was sold on the landing should recognise the exact same
+          cards here: same hierarchy, same "2 mois offerts" badge, same raised
+          annual column, same honest crossed-out anchor. Only the CTAs differ,
+          because here they lead to checkout rather than to signup. */}
       {showPlans && (
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid gap-3 lg:grid-cols-3 lg:items-stretch">
+          {/* FREE — where the trader is today */}
+          <div className="flex flex-col rounded-2xl border border-white/[0.07] bg-white/[0.015] p-5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400">
+                {t("billing.freePlan")}
+              </p>
+              {sub.plan === "free" && sub.status !== "trialing" && (
+                <span className="rounded-full border border-white/[0.1] bg-white/[0.05] px-2 py-0.5 text-[10px] font-bold uppercase text-slate-300">
+                  {t("plan.current")}
+                </span>
+              )}
+            </div>
+            <div className="mt-3 flex items-end gap-1">
+              <span className="font-display text-3xl font-extrabold text-white">0 €</span>
+              <span className="mb-1 text-xs text-slate-500">{t("plan.forever")}</span>
+            </div>
+            <p className="mt-2 text-[13px] leading-5 text-slate-500">{t("plan.freeTagline")}</p>
+
+            <div className="mt-5 space-y-2 text-[13px]">
+              {FREE_KEYS.map((k) => (
+                <p key={k} className="flex items-start gap-2.5 text-slate-300">
+                  <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-white/[0.06] text-slate-400">
+                    <Check className="h-2.5 w-2.5" />
+                  </span>
+                  {t(k)}
+                </p>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">
+                {t("plan.notIncluded")}
+              </p>
+              <div className="mt-2 space-y-1.5 text-[12px]">
+                {MISSING_KEYS.map((k) => (
+                  <p key={k} className="flex items-start gap-2.5 text-slate-600">
+                    <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-white/[0.03]">
+                      <X className="h-2.5 w-2.5" />
+                    </span>
+                    {t(k)}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* PRO ANNUEL — the hero column, raised like on the landing */}
           <PlanCard
             highlight
             title={t("billing.planProYearly")}
-            price="239 €"
-            per={t("billing.perYear")}
-            note={t("billing.yearlyNote")}
+            badge={t("plan.monthsFree")}
+            price={eur(YEARLY_PER_MONTH)}
+            per={t("billing.perMonth")}
+            billed={t("plan.billedYearly").replace("{v}", eur(YEARLY_EUR))}
+            anchor={eur(MONTHLY_EUR * 12)}
+            saving={t("billing.yearlySave").replace("{v}", eur(YEARLY_SAVING))}
+            current={sub.plan === "pro_yearly"}
             busy={busy}
             keys={{ card: "y-card", crypto: "y-crypto" }}
             onCard={() => run("y-card", () => checkout("pro_yearly", promo))}
             onCrypto={() => run("y-crypto", () => cryptoCheckout("pro_yearly"))}
           />
+
+          {/* PRO MENSUEL — same product, looser commitment */}
           <PlanCard
             title={t("billing.planProMonthly")}
-            price="24,99 €"
+            price={eur(MONTHLY_EUR)}
             per={t("billing.perMonth")}
+            billed={t("billing.monthlyEquiv").replace("{v}", eur(MONTHLY_EUR * 12))}
             note={t("billing.monthlyNote")}
+            compact
+            current={sub.plan === "pro_monthly"}
             busy={busy}
             keys={{ card: "m-card", crypto: "m-crypto" }}
             onCard={() => run("m-card", () => checkout("pro_monthly", promo))}
@@ -191,22 +273,44 @@ export default function SubscriptionSection() {
   );
 }
 
+/**
+ * A plan column, with the landing page's anatomy: label + badge, the price a
+ * trader actually compares (the monthly figure), the honest annual bill under
+ * it with the crossed-out anchor, the saving pill, then the feature list. The
+ * highlighted column is raised on desktop exactly as on the landing.
+ */
 function PlanCard({
   title,
+  badge,
   price,
   per,
+  billed,
+  anchor,
   note,
+  saving,
   highlight = false,
+  compact = false,
+  current = false,
   busy,
   keys,
   onCard,
   onCrypto,
 }: {
   title: string;
+  /** Small emphasis pill on the hero column ("2 mois offerts"). */
+  badge?: string;
   price: string;
   per: string;
-  note: string;
+  /** The honest second line: what is actually charged, and when. */
+  billed?: string;
+  /** Crossed-out full price, only where a discount is real. */
+  anchor?: string;
+  note?: string;
+  saving?: string;
   highlight?: boolean;
+  /** Renders the feature list as bare titles instead of title + reason. */
+  compact?: boolean;
+  current?: boolean;
   busy: string | null;
   keys: { card: string; crypto: string };
   onCard: () => void;
@@ -216,41 +320,99 @@ function PlanCard({
   return (
     <div
       className={cn(
-        "rounded-2xl p-4 border flex flex-col gap-3",
-        highlight ? "border-cyan-500/30 bg-cyan-500/[0.05]" : "border-white/[0.07] bg-white/[0.02]",
+        "flex flex-col rounded-2xl p-5 transition-colors",
+        highlight
+          ? "border border-cyan-500/30 bg-[linear-gradient(160deg,rgba(14,58,82,.45),rgba(7,14,24,.85)_60%)] lg:-my-2 lg:py-7"
+          : "border border-white/[0.07] bg-white/[0.015] hover:border-white/[0.12]",
       )}
     >
-      <div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{title}</span>
-          {highlight && (
-            <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-300">
-              {tt("billing.bestValue")}
-            </span>
+      <div className="flex items-center justify-between gap-2">
+        <p
+          className={cn(
+            "text-[11px] font-bold uppercase tracking-[.15em]",
+            highlight ? "text-cyan-300" : "text-slate-400",
           )}
-        </div>
-        <div className="mt-1.5 flex items-end gap-1">
-          <span className="text-2xl font-extrabold text-white">{price}</span>
-          <span className="mb-0.5 text-xs text-slate-500">{per}</span>
-        </div>
-        <p className="text-[11px] text-slate-500 mt-0.5">{note}</p>
+        >
+          {title}
+        </p>
+        {current ? (
+          <span className="rounded-full border border-emerald-500/25 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-300">
+            {tt("plan.current")}
+          </span>
+        ) : (
+          badge && (
+            <span className="flex items-center gap-1 rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-[#03131b]">
+              <Flame className="h-3 w-3 fill-current" />
+              {badge}
+            </span>
+          )
+        )}
       </div>
-      <button
-        onClick={onCard}
-        disabled={busy !== null}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition disabled:opacity-60"
+
+      <div className="mt-3 flex items-end gap-1.5">
+        <span className="font-display text-4xl font-extrabold tabular-nums text-white">
+          {price}
+        </span>
+        <span className="mb-1.5 text-xs text-slate-400">{per}</span>
+      </div>
+      {billed && (
+        <p className="mt-2 text-[13px] text-slate-300 tabular-nums">
+          {billed}
+          {anchor && <span className="ml-1.5 text-slate-500 line-through">{anchor}</span>}
+        </p>
+      )}
+      {note && <p className="mt-1 text-[12px] text-slate-500">{note}</p>}
+      {saving && (
+        <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg bg-emerald-400/10 px-2.5 py-1 text-[12px] font-bold text-emerald-300">
+          <Check className="h-3.5 w-3.5" /> {saving}
+        </div>
+      )}
+
+      <div className="mt-5 space-y-2">
+        <Button onClick={onCard} disabled={busy !== null} className="w-full disabled:opacity-60">
+          <CreditCard className="w-4 h-4" />
+          {busy === keys.card ? tt("billing.opening") : tt("billing.payByCard")}
+        </Button>
+        <button
+          onClick={onCrypto}
+          disabled={busy !== null}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition disabled:opacity-60"
+        >
+          <Bitcoin className="w-4 h-4 text-amber-400" />
+          {busy === keys.crypto ? tt("billing.opening") : tt("billing.payByCrypto")}
+        </button>
+      </div>
+
+      <p
+        className={cn(
+          "mt-5 text-[11px] font-bold uppercase tracking-[.12em]",
+          highlight ? "text-cyan-300/80" : "text-slate-500",
+        )}
       >
-        <CreditCard className="w-4 h-4" />
-        {busy === keys.card ? tt("billing.opening") : tt("billing.payByCard")}
-      </button>
-      <button
-        onClick={onCrypto}
-        disabled={busy !== null}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition disabled:opacity-60"
-      >
-        <Bitcoin className="w-4 h-4 text-amber-400" />
-        {busy === keys.crypto ? tt("billing.opening") : tt("billing.payByCrypto")}
-      </button>
+        {compact ? tt("plan.sameAsYearly") : tt("plan.premiumIntro")}
+      </p>
+      <div className={cn("mt-3", compact ? "space-y-1.5" : "space-y-2.5")}>
+        {PREMIUM_KEYS.map(([k, why]) => (
+          <div key={k} className="flex items-start gap-2.5 text-[13px]">
+            <span
+              className={cn(
+                "mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full",
+                highlight ? "bg-cyan-400/15 text-cyan-300" : "bg-white/[0.06] text-slate-500",
+              )}
+            >
+              <Check className="h-2.5 w-2.5" />
+            </span>
+            <span>
+              <span className={cn("block", highlight ? "text-slate-100" : "text-slate-400")}>
+                {tt(k)}
+              </span>
+              {!compact && (
+                <span className="block text-[12px] leading-5 text-slate-500">{tt(why)}</span>
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

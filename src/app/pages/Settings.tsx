@@ -21,7 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { PushNotificationSettings } from "../components/PushNotificationSettings";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { Button, Card, FIELD_BASE, Modal, PageContainer, PageHeader } from "@/shared/ui";
 
 interface SettingsProps {
   trades: Trade[];
@@ -132,14 +132,14 @@ export default function Settings({
   if (!user) return null;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+    <PageContainer className="max-w-2xl space-y-3">
       <PageHeader
         className="mb-0 md:mb-0 stagger-0"
         title={t("settings.title")}
         subtitle={t("settings.subtitle")}
       />
 
-      {/* Search */}
+      {/* Search — the fastest route through a settings page is typing. */}
       <div className="relative animate-fade-in-up stagger-1">
         <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
@@ -147,7 +147,7 @@ export default function Settings({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("settings.search")}
-          className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
+          className={cn(FIELD_BASE, "h-11 pl-10")}
         />
       </div>
 
@@ -157,7 +157,11 @@ export default function Settings({
 
       {/* Preferences */}
       {sections.prefs && (
-        <div className="glass-strong rounded-3xl p-6 space-y-4 animate-fade-in-up stagger-1">
+        <Card
+          variant="glass-strong"
+          pad="default"
+          className="space-y-4 animate-fade-in-up stagger-1"
+        >
           <SectionHeading
             icon={<SlidersHorizontal className="w-4 h-4" />}
             title={t("settings.preferences")}
@@ -173,7 +177,7 @@ export default function Settings({
             <select
               value={language}
               onChange={(e) => handleLanguage(e.target.value)}
-              className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+              className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
             >
               {LANGUAGES.map((l) => (
                 <option key={l.code} value={l.code} className="bg-[#0a0f1e]">
@@ -202,12 +206,12 @@ export default function Settings({
                 onBlur={handleEquityBlur}
                 min={0}
                 step={100}
-                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-7 pr-3 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                className={cn(FIELD_BASE, "h-11 pl-7")}
               />
             </div>
             <p className="text-[10px] text-slate-600 mt-1.5">{t("profile.startingEquityHint")}</p>
           </label>
-        </div>
+        </Card>
       )}
 
       {/* Notifications */}
@@ -219,7 +223,11 @@ export default function Settings({
 
       {/* Data */}
       {sections.data && (
-        <div className="glass-strong rounded-3xl p-6 space-y-3 animate-fade-in-up stagger-3">
+        <Card
+          variant="glass-strong"
+          pad="default"
+          className="space-y-2.5 animate-fade-in-up stagger-3"
+        >
           <SectionHeading
             icon={<Database className="w-4 h-4" />}
             title={t("settings.data")}
@@ -245,24 +253,25 @@ export default function Settings({
             sub={t("settings.reportsSub")}
             onClick={onOpenReports}
           />
-        </div>
+        </Card>
       )}
 
-      {/* Danger zone */}
+      {/* Danger zone — set apart by a red hairline and its own heading, so a
+          destructive action can never be mistaken for a setting. */}
       {sections.danger && (
-        <div className="glass-strong rounded-3xl p-6 space-y-3 border border-red-500/10 animate-fade-in-up stagger-4">
-          <h2 className="text-sm font-semibold text-red-400/90 uppercase tracking-wider">
+        <Card
+          variant="glass-strong"
+          pad="default"
+          className="space-y-2.5 border border-red-500/15 animate-fade-in-up stagger-4"
+        >
+          <h2 className="text-xs font-bold uppercase tracking-wider text-red-400/90">
             {t("settings.dangerZone")}
           </h2>
-          <button
+          <Button
+            variant="danger"
             onClick={onDeleteAll}
             disabled={trades.length === 0}
-            className={cn(
-              "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition",
-              trades.length === 0
-                ? "bg-white/[0.02] border-white/[0.05] text-slate-600 cursor-not-allowed"
-                : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15",
-            )}
+            className="w-full justify-between h-auto py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="text-left">
               <span className="block text-sm font-medium">{t("profile.deleteAllTrades")}</span>
@@ -271,11 +280,12 @@ export default function Settings({
               </span>
             </span>
             <Trash2 className="w-4 h-4 shrink-0" />
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="danger"
             onClick={() => setDeleteOpen(true)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/20 transition"
+            className="w-full justify-between h-auto py-3"
           >
             <span className="text-left">
               <span className="block text-sm font-medium">{t("settings.deleteAccount")}</span>
@@ -284,14 +294,14 @@ export default function Settings({
               </span>
             </span>
             <UserX className="w-4 h-4 shrink-0" />
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {deleteOpen && (
         <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />
       )}
-    </div>
+    </PageContainer>
   );
 }
 
@@ -322,14 +332,13 @@ function DeleteAccountModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
-      onClick={onClose}
+    <Modal
+      open
+      onClose={onClose}
+      className="md:max-w-md p-5 border border-red-500/20"
+      wrapperClassName="z-[100]"
     >
-      <div
-        className="glass-strong rounded-3xl p-6 max-w-md w-full border border-red-500/20 animate-slide-in"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div>
         <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">
           <AlertTriangle className="w-6 h-6 text-red-400" />
         </div>
@@ -345,19 +354,15 @@ function DeleteAccountModal({
           onChange={(e) => setConfirmText(e.target.value)}
           autoFocus
           placeholder="DELETE"
-          className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-red-500/40 mb-4"
+          className={cn(FIELD_BASE, "h-11 mb-4 focus:border-red-500/40 focus:ring-red-500/20")}
         />
 
         {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
 
         <div className="flex gap-2.5">
-          <button
-            onClick={onClose}
-            disabled={busy}
-            className="flex-1 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium text-slate-300 hover:bg-white/[0.08] transition"
-          >
+          <Button variant="subtle" onClick={onClose} disabled={busy} className="flex-1">
             {t("common.cancel")}
-          </button>
+          </Button>
           <button
             onClick={handleDelete}
             disabled={!armed || busy}
@@ -372,7 +377,7 @@ function DeleteAccountModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

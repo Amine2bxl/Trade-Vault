@@ -29,7 +29,7 @@ import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
-import { Modal, FIELD_BASE } from "@/shared/ui";
+import { Modal, FIELD_BASE, Button, Chip, RemovableChip, CHIP_ROW } from "@/shared/ui";
 import {
   tradeDraftKey,
   readJSON,
@@ -391,7 +391,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-5">
+        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-4">
           {/* Row 1: Symbol, Direction, Date */}
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -719,39 +719,23 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             />
           </div>
 
-          {/* Confluences (Customizable) — same clean pill language as the
-              Mistakes block: natural-width chips in a single flex-wrap row,
-              cyan when selected. The remove affordance is integrated into the
-              chip (× on hover) instead of a floating circle, so the section
-              reads as calmly as the Errors reference. */}
+          {/* Confluences (customizable) and Mistakes below both render the one
+              shared `Chip` from the design system — same size, shape, spacing
+              and states, here and in the Missed Setup modal. */}
           <div>
             <label className={labelClass}>{t("trade.confluences")}</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {userConfluences.map((c) => {
-                const active = form.confluences.includes(c);
-                return (
-                  <div
-                    key={c}
-                    className={cn(
-                      "group inline-flex items-center rounded-xl text-xs font-medium transition-all border",
-                      active
-                        ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
-                        : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600",
-                    )}
-                  >
-                    <button onClick={() => toggleConfluence(c)} className="pl-3 pr-1.5 py-1.5">
-                      {c}
-                    </button>
-                    <button
-                      onClick={() => removeConfluence(c)}
-                      aria-label={t("common.remove")}
-                      className="pr-2 py-1.5 text-slate-600 hover:text-red-400 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                );
-              })}
+            <div className={cn(CHIP_ROW, "mb-2")}>
+              {userConfluences.map((c) => (
+                <RemovableChip
+                  key={c}
+                  selected={form.confluences.includes(c)}
+                  onClick={() => toggleConfluence(c)}
+                  onRemove={() => removeConfluence(c)}
+                  removeLabel={t("common.remove")}
+                >
+                  {c}
+                </RemovableChip>
+              ))}
             </div>
             <div className="flex gap-2">
               <input
@@ -775,10 +759,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Mistakes */}
           <div>
             <label className={labelClass}>{t("trade.mistakes")}</label>
-            <div className="flex flex-wrap gap-2">
+            <div className={CHIP_ROW}>
               {(showAllMistakes ? MISTAKE_OPTIONS : MISTAKE_OPTIONS.slice(0, 5)).map((m) => (
-                <button
+                <Chip
                   key={m}
+                  tone="danger"
+                  selected={form.mistakes.includes(m)}
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
@@ -787,15 +773,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         : [...f.mistakes, m],
                     }))
                   }
-                  className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-medium transition-all border",
-                    form.mistakes.includes(m)
-                      ? "bg-red-500/15 border-red-500/25 text-red-400"
-                      : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600",
-                  )}
                 >
                   {m}
-                </button>
+                </Chip>
               ))}
               <button
                 onClick={() => setShowAllMistakes(!showAllMistakes)}
@@ -900,7 +880,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     placeholder="—"
                     className={inputClass}
                   />
-                  <div className="text-[9px] text-slate-600 mt-1">{t("trade.maeHint")}</div>
+                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.maeHint")}</div>
                 </div>
                 <div>
                   <label className={labelClass}>MFE ($)</label>
@@ -912,7 +892,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     placeholder="—"
                     className={inputClass}
                   />
-                  <div className="text-[9px] text-slate-600 mt-1">{t("trade.mfeHint")}</div>
+                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.mfeHint")}</div>
                 </div>
                 <div>
                   <label className={labelClass}>{t("trade.slippage")} ($)</label>
@@ -949,7 +929,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <>
                 <span className="font-bold text-white shrink-0">{form.symbol.toUpperCase()}</span>
                 {session && (
-                  <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase shrink-0">
+                  <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[11px] font-bold uppercase shrink-0">
                     {t(`session.${session}` as never)}
                   </span>
                 )}
@@ -981,7 +961,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           >
             {t("common.cancel")}
           </button>
-          <button
+          <Button
             onClick={handleSave}
             disabled={!isValid}
             className={cn(
@@ -992,7 +972,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             )}
           >
             {trade ? t("trade.updateTrade") : t("trade.saveTrade")}
-          </button>
+          </Button>
         </div>
       </Modal>
 

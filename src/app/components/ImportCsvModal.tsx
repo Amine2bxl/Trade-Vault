@@ -5,6 +5,7 @@ import { generateId } from "../store";
 import { formatPnl } from "../utils/tradeCalcs";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { Button } from "@/shared/ui";
 
 interface ImportCsvModalProps {
   existing: Trade[];
@@ -298,7 +299,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-70px)] px-6 py-5 space-y-5">
+        <div className="overflow-y-auto max-h-[calc(90vh-70px)] px-6 py-5 space-y-4">
           {result ? (
             <div className="text-center py-8">
               <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
@@ -319,12 +320,9 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                   </span>
                 )}
               </div>
-              <button
-                onClick={onClose}
-                className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
-              >
+              <Button onClick={onClose} className="mt-6">
                 {t("common.close")}
-              </button>
+              </Button>
             </div>
           ) : !parsed ? (
             <div
@@ -470,7 +468,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 </div>
               </div>
 
-              <button
+              <Button
                 onClick={doImport}
                 disabled={!canImport || importing}
                 className={cn(
@@ -486,7 +484,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                   <Upload className="w-4 h-4" />
                 )}
                 {t("import.importBtn")} ({mappedTrades.valid.length})
-              </button>
+              </Button>
             </>
           )}
         </div>

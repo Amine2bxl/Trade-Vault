@@ -4,8 +4,8 @@
 > performance, architecture IA, produit/UX). Doublons supprimés, contradictions
 > tranchées, une seule liste d'actions P0→P3. C'est **la** référence : toute
 > autre note d'audit est caduque.
-> Compléments d'architecture (non-décisionnels) : [`ARCHITECTURE.md`](ARCHITECTURE.md),
-> [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md), [`ux-architecture.md`](ux-architecture.md).
+> Compléments d'architecture (non-décisionnels) : [`architecture.md`](architecture.md),
+> [`ai-architecture.md`](ai-architecture.md), [`ux-architecture.md`](ux-architecture.md).
 
 ---
 
@@ -80,6 +80,11 @@ chiffrée et prouvée — et « 25 €/mois » cesse d'être une question.
 
 - **P0 #1 — Coach IA conversationnel à mémoire** (PR #14) : `aiChat` + `ai_memory`
   branchés, fil multi-tours, seed profil depuis l'onboarding.
+- **Refonte UX/UI pré-Sprint 3** (PR #63) : **Jarvis** = identité IA unique
+  (page `Jarvis` ex-Insights + widget), **navigation centralisée** par déroulé de
+  session (`navigation.ts`), **Checklist native au DS + wizard adaptatif**,
+  **Subscription statut-seul**, opt-in **notifications dans l'onboarding**, plan
+  6 mois ciblé sur la fuite réelle du trader. 55 tests verts, lint 0, build OK.
 
 ---
 
@@ -171,14 +176,17 @@ Trustpilot en l'état, vrais avis en cours.)_
 ### À fusionner
 
 - Appearance + Settings + Profile → **Réglages**.
-- Insights + AiAssistant → une surface **Coach IA**.
+- ~~Insights + AiAssistant → une surface **Jarvis**~~ ✅ **fait** (PR #63 : identité IA unique, page `Jarvis` + widget).
 - Mistakes + Missed Opportunities → **Discipline & erreurs**.
 - Daily Brief + Weekly Review + Notifications IA → système **coach push** unifié.
 - Goals → intégré au Dashboard / Trading Plan.
 - Reports → alimenté par la Weekly Review (une seule chaîne de génération).
 
 **Principe** : passer de ~20 destinations à 6–7
-(Dashboard · Journal · **Coach IA** · Analytics · Discipline · Plan · Réglages).
+(Dashboard · Journal · **Jarvis** · Analytics · Discipline · Plan · Réglages).
+**Socle livré (PR #63)** : source unique `navigation.ts`, 6 groupes par déroulé
+de session (Home · Préparation · Journal · Analyse · Jarvis · Compte). Reste
+les fusions Réglages / Discipline / Outils.
 
 ---
 
@@ -222,7 +230,8 @@ Trustpilot en l'état, vrais avis en cours.)_
 **Navigation**
 
 - Surcharge (20 destinations) → réduire à 6–7. **P1**.
-- Coach IA (« Insights ») enterré → promouvoir & rendre omniprésent. **P2**.
+- Jarvis (ex-« Insights ») promu en entrée de nav de 1ᵉʳ niveau ✅ ; reste à le
+  rendre omniprésent/contextuel. **P2**.
 
 **Dashboard**
 

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Info } from "lucide-react";
+import { Info, BarChart3 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
 import {
@@ -29,13 +29,18 @@ import {
   ComposedChart,
   Line,
   ReferenceLine,
+  CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { EmptyState, PageHeader } from "@/shared/ui";
+import { EmptyState, PageHeader, PageContainer, Card } from "@/shared/ui";
 import {
+  AXIS_TICK,
   CHART_ANIMATION,
   EQUITY_ANIMATION,
+  EQUITY_CURVE_TYPE,
+  EQUITY_GRID,
   EQUITY_LINE,
+  formatAxisMoney,
   tooltipStyle,
   glowActiveDot,
   equityYDomain,
@@ -282,14 +287,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
   if (trades.length === 0)
     return (
-      <div className="p-4 md:p-8">
+      <div className="p-4 md:p-5">
         <PageHeader className="mb-2 md:mb-2" title={t("analytics.title")} />
         <EmptyState title={t("analytics.noTrades")} />
       </div>
     );
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <PageContainer>
       <PageHeader
         className="stagger-0"
         title={t("analytics.title")}
@@ -302,7 +307,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             Rate / PnL), so the stats read as one uniform, scroll-light grid. */}
         <div
           className={cn(
-            "hidden md:block glass rounded-2xl p-4 md:p-6 card-premium animate-fade-in-up stagger-1 border",
+            "hidden md:block glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 border",
             profitFactorData.isProfitable ? "border-emerald-500/15" : "border-red-500/15",
           )}
         >
@@ -315,7 +320,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
             <div className="flex items-center gap-3 md:gap-6 flex-wrap">
               <div className="text-center">
-                <div className="text-[9px] md:text-[10px] text-slate-500">
+                <div className="text-[11px] md:text-[10px] text-slate-500">
                   {t("analytics.profits")}
                 </div>
                 <div className="text-sm md:text-lg font-bold text-emerald-400">
@@ -324,7 +329,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </div>
               <div className="text-lg text-slate-600">÷</div>
               <div className="text-center">
-                <div className="text-[9px] md:text-[10px] text-slate-500">
+                <div className="text-[11px] md:text-[10px] text-slate-500">
                   {t("analytics.losses")}
                 </div>
                 <div className="text-sm md:text-lg font-bold text-red-400">
@@ -333,7 +338,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </div>
               <div className="text-lg text-slate-600">=</div>
               <div className="text-center">
-                <div className="text-[9px] md:text-[10px] text-slate-500">
+                <div className="text-[11px] md:text-[10px] text-slate-500">
                   {t("analytics.factor")}
                 </div>
                 <div
@@ -375,9 +380,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Quant metrics grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-fade-in-up stagger-1">
           {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
-          <div className="md:hidden group relative glass rounded-2xl p-3.5 card-premium">
+          <Card hover className="md:hidden group relative p-3.5">
             <div className="flex items-center gap-1 mb-1.5">
-              <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">
+              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
                 {t("analytics.profitFactor")}
               </span>
             </div>
@@ -391,12 +396,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 ? "99+"
                 : profitFactorData.profitFactor.toFixed(2)}
             </div>
-            <div className="text-[9px] text-slate-600 mt-0.5 truncate">
+            <div className="text-[11px] text-slate-600 mt-0.5 truncate">
               {profitFactorData.isProfitable
                 ? `✓ ${t("analytics.profitable")}`
                 : `✗ ${t("analytics.losing")}`}
             </div>
-          </div>
+          </Card>
           {[
             {
               label: t("dashboard.avgRR"),
@@ -463,7 +468,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           ].map((m, i) => (
             <div key={i} className="group relative glass rounded-2xl p-3.5 card-premium">
               <div className="flex items-center gap-1 mb-1.5">
-                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
                   {m.label}
                 </span>
                 {"info" in m && m.info && <InfoTip text={m.info} />}
@@ -476,13 +481,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
               >
                 {m.value}
               </div>
-              <div className="text-[9px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
+              <div className="text-[11px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
             </div>
           ))}
         </div>
 
         {/* Performance by setup */}
-        <div className="glass rounded-2xl overflow-hidden card-premium animate-fade-in-up stagger-2">
+        <Card hover className="overflow-hidden animate-fade-in-up stagger-2">
           <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
             <h3 className="text-sm font-semibold text-white">{t("analytics.setupTable")}</h3>
           </div>
@@ -571,23 +576,23 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* Session × weekday heatmap + win rate by hour */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-2">
             <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.heatmap")}</h3>
             <p className="text-[10px] text-slate-600 mb-3">{t("analytics.heatmapSub")}</p>
             <div className="grid gap-1" style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}>
               <div />
               {[1, 2, 3, 4, 5].map((d) => (
-                <div key={d} className="text-center text-[9px] text-slate-500 font-semibold pb-1">
+                <div key={d} className="text-center text-[11px] text-slate-500 font-semibold pb-1">
                   {DAY_NAMES[d]}
                 </div>
               ))}
               {SESSIONS.map((s) => (
                 <Fragment key={s}>
-                  <div className="text-[9px] text-slate-500 font-semibold pr-2 flex items-center">
+                  <div className="text-[11px] text-slate-500 font-semibold pr-2 flex items-center">
                     {t(`session.${s}` as never)}
                   </div>
                   {[1, 2, 3, 4, 5].map((d) => {
@@ -599,7 +604,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         key={`${s}-${d}`}
                         title={cell ? `${formatPnl(cell.pnl)} · ${cell.count} trades` : ""}
                         className={cn(
-                          "rounded-lg h-11 flex flex-col items-center justify-center text-[9px] font-bold transition-transform hover:scale-105",
+                          "rounded-lg h-11 flex flex-col items-center justify-center text-[11px] font-bold transition-transform hover:scale-105",
                           !cell && "bg-white/[0.02]",
                         )}
                         style={
@@ -627,8 +632,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </Fragment>
               ))}
             </div>
-          </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
+          </Card>
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.byHour")}</h3>
             <p className="text-[10px] text-slate-600 mb-3">{t("analytics.byHourSub")}</p>
             {hourData.length > 0 ? (
@@ -693,12 +698,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 {t("analytics.noData")}
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Equity + Pie */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-6 card-premium animate-fade-in-up stagger-2 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <h3 className="text-sm font-semibold text-white mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-organic chart-draw">
@@ -709,35 +714,32 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 >
                   <defs>
                     <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.42} />
-                      <stop offset="55%" stopColor="var(--tv-accent)" stopOpacity={0.12} />
+                      <stop offset="0%" stopColor="var(--tv-accent)" stopOpacity={0.18} />
                       <stop offset="100%" stopColor="var(--tv-accent)" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="eqGStroke" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="var(--tv-accent)" />
-                      <stop offset="100%" stopColor="var(--tv-highlight)" />
-                    </linearGradient>
                   </defs>
+                  <CartesianGrid {...EQUITY_GRID} />
                   <XAxis
                     dataKey="date"
                     padding={EQUITY_X_PADDING}
-                    tick={{ fill: "#475569", fontSize: 10 }}
+                    tick={AXIS_TICK}
+                    minTickGap={28}
                     tickFormatter={(v) => {
                       const p = v.split("-");
-                      return `${p[1]}/${p[0].slice(2)}`;
+                      return `${p[2]}/${p[1]}`;
                     }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
                     domain={equityYDomain}
-                    tick={{ fill: "#475569", fontSize: 10 }}
-                    tickFormatter={(v) => `$${v}`}
+                    tick={AXIS_TICK}
+                    tickFormatter={formatAxisMoney}
                     axisLine={false}
                     tickLine={false}
-                    width={45}
+                    width={52}
                   />
-                  <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
+                  <ReferenceLine y={0} stroke="rgba(148,163,184,0.28)" strokeWidth={1} />
                   <Tooltip
                     {...tooltipStyle}
                     formatter={(value: any) => [
@@ -747,13 +749,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     labelFormatter={(v) => formatShortDate(v)}
                   />
                   <Area
-                    type="natural"
+                    type={EQUITY_CURVE_TYPE}
                     dataKey="equity"
-                    stroke="url(#eqGStroke)"
+                    stroke="var(--tv-accent)"
                     fill="url(#eqG)"
                     dot={false}
-                    activeDot={glowActiveDot("var(--tv-highlight)")}
-                    style={{ filter: "drop-shadow(0 3px 8px rgb(var(--tv-accent-rgb) / 0.4))" }}
+                    activeDot={glowActiveDot("var(--tv-accent)")}
                     {...EQUITY_LINE}
                     {...EQUITY_ANIMATION}
                   />
@@ -761,7 +762,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-3">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
             <h3 className="text-sm font-semibold text-white mb-3">{t("analytics.winLoss")}</h3>
             <div className="h-40 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -809,11 +810,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </div>
               <div className="text-[10px] text-slate-500">{t("analytics.winRateLabel")}</div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Monthly Performance */}
-        <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-4">
+        <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-4">
           <h3 className="text-sm font-semibold text-white mb-1">
             {t("analytics.monthlyPerformance")}
           </h3>
@@ -887,15 +888,15 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <div className="flex items-center justify-center gap-4 mt-1">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded bg-emerald-500/50" />
-                  <span className="text-[9px] text-slate-500">{t("journal.colPnl")}</span>
+                  <span className="text-[11px] text-slate-500">{t("journal.colPnl")}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-4 h-0.5 bg-cyan-500" />
-                  <span className="text-[9px] text-slate-500">WR%</span>
+                  <span className="text-[11px] text-slate-500">WR%</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-4 h-0 border-t border-dashed border-amber-500" />
-                  <span className="text-[9px] text-slate-500">RR</span>
+                  <span className="text-[11px] text-slate-500">RR</span>
                 </span>
               </div>
             </div>
@@ -904,11 +905,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
               {t("analytics.noData")}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Day of Week + Strategy */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-5">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlWinRateByDay")}
             </h3>
@@ -964,8 +965,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-6">
+          </Card>
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlByStrategy")}
             </h3>
@@ -1006,12 +1007,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Distribution + Symbol */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-7">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-7">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.pnlDistribution")}
             </h3>
@@ -1042,8 +1043,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
-          <div className="glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-8">
+          </Card>
+          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-8">
             <h3 className="text-sm font-semibold text-white mb-3">
               {t("analytics.symbolPerformance")}
             </h3>
@@ -1073,10 +1074,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -1092,7 +1093,7 @@ function InfoTip({ text }: { text: string }) {
       <Info className="w-3 h-3 text-slate-600 hover:text-slate-300 focus:text-slate-300 transition-colors cursor-help" />
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-52 -translate-x-1/2 rounded-xl border border-white/10 bg-[#0c1220] px-3 py-2 text-[10.5px] font-normal normal-case leading-snug tracking-normal text-slate-300 opacity-0 shadow-xl shadow-black/50 transition-opacity duration-150 group-hover/tip:opacity-100 group-focus/tip:opacity-100"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-52 -translate-x-1/2 rounded-xl border border-white/10 bg-[#0c1220] px-3 py-2 text-[10.5px] font-normal normal-case leading-snug tracking-normal text-slate-300 opacity-0 shadow-xl shadow-black/50 transition-opacity duration-200 group-hover/tip:opacity-100 group-focus/tip:opacity-100"
       >
         {text}
       </span>

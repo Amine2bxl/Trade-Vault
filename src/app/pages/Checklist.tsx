@@ -48,6 +48,7 @@ import {
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
+import { Button } from "@/shared/ui";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -1173,7 +1174,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         )}
       />
 
-      <div className="p-4 md:p-6 max-w-3xl mx-auto pb-28 md:pb-10 space-y-4">
+      <div className="p-4 md:p-5 max-w-3xl mx-auto pb-28 md:pb-10 space-y-4">
         {day.locked && (
           <div className="flex items-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 animate-fade-in-up">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -1285,7 +1286,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
-          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-5 animate-fade-in-up">
+          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-4 animate-fade-in-up">
             <div className="flex items-start gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
                 <SlidersHorizontal className="w-4 h-4" />
@@ -1649,7 +1650,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                   </div>
                   <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500"
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
                       style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
                     />
                   </div>
@@ -1840,7 +1841,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 </h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
-              <button
+              <Button
                 onClick={initiate}
                 disabled={!allGates || day.locked}
                 className={cn(
@@ -1851,7 +1852,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 )}
               >
                 {day.locked ? t("chk.lockedBtn") : t("chk.initiate")}
-              </button>
+              </Button>
               {actions.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
                   {actions.map((a) => (
@@ -1885,7 +1886,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             </span>
             <div className="relative min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
                   Jarvis
                 </span>
                 <span className={cn("tvchk-wave", voice.speaking && "on")}>
@@ -1977,12 +1978,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
               >
                 {t("chk.backStation")}
               </button>
-              <button
-                onClick={confirmLock}
-                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold hover:from-cyan-400 hover:to-teal-400 transition"
-              >
+              <Button onClick={confirmLock} className="flex-1">
                 {t("chk.enterExec")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

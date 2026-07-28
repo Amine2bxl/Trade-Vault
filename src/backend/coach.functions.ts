@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireProAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
+import { fallbackCoachAnswer } from "@/modules/ai/fallback-coach";
 
 /**
  * AI Coach V1 — server function. Validates the trader's real data (Zod, with
@@ -36,6 +37,19 @@ const CoachAsk = z.object({
     .array(z.object({ kind: z.string().max(40), target: z.number(), current: z.number() }))
     .max(10)
     .optional(),
+  rules: z
+    .array(z.object({ kind: z.string().max(40), text: z.string().max(300), enabled: z.boolean() }))
+    .max(30)
+    .optional(),
+  /**
+   * Precomputed behaviour signals. The shape is owned by the client engine, so
+   * it is validated by size rather than by field: a hard 12 KB ceiling keeps a
+   * malformed or oversized payload from ever reaching the provider.
+   */
+  signals: z
+    .record(z.string(), z.unknown())
+    .refine((v) => JSON.stringify(v).length <= 12_000, "signals payload too large")
+    .optional(),
   /** Compact onboarding profile so the coaching is never generic. */
   profile: z.string().max(600).optional(),
   conversation: z
@@ -48,6 +62,17 @@ export const askCoach = createServerFn({ method: "POST" })
   .middleware([requireProAccess])
   .inputValidator((input: unknown) => CoachAsk.parse(input))
   .handler(async ({ data }) => {
-    const res = await runCoach(data);
-    return { answer: res.text };
+    // The trader must always get a grounded answer. When no provider is
+    // configured (beta with no key) or the call fails, we answer deterministically
+    // from the very same payload — zero cost, same grounding rules, no error
+    // bubble in the conversation.
+    try {
+      const res = await runCoach(data);
+      const text = res.text?.trim();
+      if (text) return { answer: text, source: "ai" as const };
+      return { answer: fallbackCoachAnswer(data), source: "deterministic" as const };
+    } catch (err) {
+      console.warn("[coach] provider unavailable — deterministic answer served", err);
+      return { answer: fallbackCoachAnswer(data), source: "deterministic" as const };
+    }
   });

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
+import { Bot, Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
 import { Trade } from "../types";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../utils/aiContext";
+import { useTradingRules } from "../hooks/useTradingRules";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -40,6 +41,9 @@ function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
 export default function AiAssistant({ trades }: AiAssistantProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
+  // The floating panel and the Jarvis page must never diverge in what they
+  // ground the coach on — same rules, same signals, same persona.
+  const rules = useTradingRules();
   const chatKey = nsKey(user?.id, "ai.chat");
   const inputKey = nsKey(user?.id, "ai.input");
   const [open, setOpen] = useState(false);
@@ -129,6 +133,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         conversation: priorTurns,
         language: lang,
         onboarding,
+        rules,
       });
       try {
         let res;
@@ -155,7 +160,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         setLoading(false);
       }
     },
-    [loading, messages, trades, lang, t, user?.id, onboarding],
+    [loading, messages, trades, lang, t, user?.id, onboarding, rules],
   );
 
   // Other pages (e.g. the pre-market Checklist) can open the coach with a
@@ -194,24 +199,62 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
 
   return (
     <>
+      {/* Jarvis dock.
+          A round gradient bubble is the universal signature of a bolt-on chat
+          widget — the thing every SaaS glues to the corner. Jarvis is not a
+          widget, it is the product's intelligence, so it gets a piece of app
+          chrome instead: the same glass surface, cyan hairline and squircle
+          mark used by the Jarvis page and the sidebar, named, with a live
+          status dot. On mobile it collapses to the mark alone to stay out of
+          the thumb zone, but keeps the identical surface. */}
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? t("assistant.close") : t("assistant.open")}
-        className="fixed z-40 bottom-24 right-4 md:bottom-6 md:right-6 w-11 h-11 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-cyan-500/20 md:shadow-lg md:shadow-cyan-500/30 hover:scale-105 active:scale-95 transition-transform md:animate-glow"
-      >
-        {open ? (
-          <X className="w-5 h-5 md:w-6 md:h-6" />
-        ) : (
-          <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
+        aria-expanded={open}
+        className={cn(
+          "group fixed z-40 bottom-24 right-4 md:bottom-6 md:right-6",
+          "flex items-center gap-2.5 rounded-2xl border p-1.5 md:pr-4",
+          "glass-strong shadow-xl shadow-black/40 transition-all duration-300",
+          "hover:-translate-y-0.5 active:scale-[0.98]",
+          open
+            ? "border-cyan-400/40 bg-cyan-500/[0.08]"
+            : "border-white/[0.1] hover:border-cyan-400/35",
         )}
+      >
+        <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+        <span className="relative shrink-0">
+          <span
+            className={cn(
+              "absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md transition-opacity",
+              open ? "opacity-100" : "opacity-0 group-hover:opacity-70",
+            )}
+          />
+          <span className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+            {open ? (
+              <X className="w-4.5 h-4.5 text-white" />
+            ) : (
+              <Bot className="w-5 h-5 text-white" />
+            )}
+          </span>
+        </span>
+        <span className="hidden md:block text-left leading-none">
+          <span className="block text-[13px] font-bold text-white">{t("assistant.title")}</span>
+          <span className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60 animate-ping" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            </span>
+            {t("assistant.dockStatus")}
+          </span>
+        </span>
       </button>
 
       {open && (
-        <div className="fixed z-40 bottom-36 right-4 left-4 md:left-auto md:bottom-24 md:right-6 md:w-[380px] h-[65vh] md:h-[600px] max-h-[calc(100vh-180px)] glass-strong rounded-3xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-slide-up">
+        <div className="fixed z-40 bottom-[9.5rem] right-4 left-4 md:left-auto md:bottom-24 md:right-6 md:w-[380px] h-[65vh] md:h-[600px] max-h-[calc(100vh-180px)] glass-strong rounded-3xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.06] to-transparent shrink-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
-              <Sparkles className="w-4.5 h-4.5 text-white" />
+              <Bot className="w-4.5 h-4.5 text-white" />
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-bold text-white">{t("assistant.title")}</h3>

@@ -15,7 +15,7 @@ export { cn } from "./cn";
 
 // Design tokens — the centralized landing theme (typography, color, surface,
 // motion). The single reference every primitive and future screen builds on.
-export { tokens, font, color, accentVar, surface, radius, motion } from "./tokens";
+export { tokens, font, color, accentVar, surface, radius, motion, density, type } from "./tokens";
 
 export { Display, Heading, Text, Label } from "./Typography";
 
@@ -25,7 +25,9 @@ export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";
 export { Input, Textarea, Select, Field, FIELD_BASE } from "./Input";
 
 export { Card, CardHeader, CardTitle, CardBody } from "./Card";
-export type { CardVariant } from "./Card";
+export type { CardVariant, CardPad } from "./Card";
+
+export { PageContainer } from "./PageContainer";
 
 export { Table, THead, TBody, TR, TH, TD, TableScroll } from "./Table";
 
@@ -34,6 +36,9 @@ export type { ModalSize } from "./Modal";
 
 export { Badge } from "./Badge";
 export type { BadgeVariant } from "./Badge";
+
+export { Chip, RemovableChip, CHIP_BASE, CHIP_ROW } from "./Chip";
+export type { ChipTone } from "./Chip";
 
 export { PageHeader, SectionHeader } from "./PageHeader";
 export { EmptyState } from "./EmptyState";

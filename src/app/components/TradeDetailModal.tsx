@@ -118,7 +118,7 @@ export default function TradeDetailModal({
                 {macro.map((ev) => (
                   <span
                     key={ev}
-                    className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[9px] font-bold"
+                    className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-bold"
                     title={t("tradeDetail.macroHint")}
                   >
                     {ev}
@@ -181,7 +181,7 @@ export default function TradeDetailModal({
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(96vh-100px)] md:max-h-[calc(88vh-90px)] p-4 md:p-6 space-y-3 md:space-y-4">
+        <div className="overflow-y-auto max-h-[calc(96vh-100px)] md:max-h-[calc(88vh-90px)] p-4 md:p-5 space-y-3 md:space-y-4">
           {missed.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {missed.map((m) => (
@@ -200,7 +200,7 @@ export default function TradeDetailModal({
           {trades.map((trade) => {
             const be = isBreakEven(trade);
             return (
-              <div key={trade.id} className="glass rounded-2xl p-5 space-y-5 card-premium">
+              <div key={trade.id} className="glass rounded-2xl p-5 space-y-4 card-premium">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ export default function TradeDetailModal({
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-500">{trade.strategy}</span>
                         {getSession(trade.entryTime) && (
-                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase">
+                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[11px] font-bold uppercase">
                             {t(`session.${getSession(trade.entryTime)}` as never)}
                           </span>
                         )}

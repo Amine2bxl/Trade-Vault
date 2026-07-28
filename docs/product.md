@@ -6,9 +6,9 @@
 >
 > **Périmètre.** Ce document répond à « **pourquoi / pour qui / quoi / combien** ».
 > Le **« comment / quand »** (exécution priorisée P0→P3, séquencement en lots)
-> reste dans [`ROADMAP.md`](ROADMAP.md) — source de vérité unique de l'exécution.
-> L'architecture technique est dans [`ARCHITECTURE.md`](ARCHITECTURE.md) et
-> [`AI-ARCHITECTURE.md`](AI-ARCHITECTURE.md).
+> reste dans [`roadmap.md`](roadmap.md) — source de vérité unique de l'exécution.
+> L'architecture technique est dans [`architecture.md`](architecture.md) et
+> [`ai-architecture.md`](ai-architecture.md).
 
 ---
 
@@ -175,8 +175,8 @@ erreurs/setups manqués · personnalisation · UX supérieure.
 | Formule | Prix | Essai | Cible |
 |---|---|---|---|
 | **Free** | 0 € | — | Faire goûter, activer l'habitude |
-| **Pro Mensuel** | **24,99 €/mois** | 14 jours | Engagement souple |
-| **Pro Annuel** ⭐ | **239 €/an** (≈ 19,92 €/mois, **2 mois offerts**) | 14 jours | **L'offre héros** (meilleure valeur) |
+| **Pro Mensuel** | **19,99 €/mois** | 14 jours | Engagement souple |
+| **Pro Annuel** ⭐ | **199 €/an** (≈ 16,58 €/mois, **2 mois offerts**, 40 € économisés) | 14 jours | **L'offre héros** (meilleure valeur) |
 
 ### Ce que contient chaque formule
 
@@ -186,7 +186,7 @@ erreurs/setups manqués · personnalisation · UX supérieure.
 - Statistiques de base
 
 **Pro** — _tout le Free, sans limite, plus :_
-- Assistant IA illimité 24h/24 (coach à mémoire)
+- Jarvis illimité 24h/24 (coach IA à mémoire)
 - Insights automatiques (détection de patterns)
 - Import CSV automatique illimité
 - Analytics quantitatives (**20+ métriques**)
@@ -211,7 +211,7 @@ erreurs/setups manqués · personnalisation · UX supérieure.
 ## 8. Roadmap
 
 > Vue **produit** synthétique. Le détail actionnable (P0→P3, statut par item) est
-> maintenu dans [`ROADMAP.md`](ROADMAP.md) — **ne pas dupliquer les priorités
+> maintenu dans [`roadmap.md`](roadmap.md) — **ne pas dupliquer les priorités
 > ici**, s'y référer.
 
 **Séquencement en 5 lots :**
@@ -243,7 +243,7 @@ reste au fil de l'eau — jamais un préalable technique bloquant.
 
 | Domaine | Fonctionnalité |
 |---|---|
-| **Coach IA** | Assistant conversationnel à mémoire, réponses ancrées sur l'historique réel (chat, brief, review, patterns, leçons) |
+| **Jarvis (coach IA)** | Identité IA unique : assistant conversationnel à mémoire, réponses ancrées sur l'historique réel (chat, brief, review, patterns, leçons), page dédiée + widget flottant, voix |
 | **Journal** | Saisie d'un trade en ~20 s, screenshots, MAE/MFE/slippage, sous-comptes |
 | **Analytics** | 20+ métriques quant (Sharpe, Sortino, expectancy, profit factor, drawdown, streaks, equity curve, PnL par stratégie / jour) |
 | **Discipline** | Checklist pré-market, suivi des erreurs, setups manqués |
@@ -270,8 +270,8 @@ reste au fil de l'eau — jamais un préalable technique bloquant.
 
 Les leviers qui transforment l'usage en revenu récurrent :
 
-1. **Abonnement Pro récurrent (MRR)** — cœur du modèle. Mensuel 24,99 € /
-   Annuel 239 €. **L'annuel est le driver principal** (cash upfront, churn plus
+1. **Abonnement Pro récurrent (MRR)** — cœur du modèle. Mensuel 19,99 € /
+   Annuel 199 €. **L'annuel est le driver principal** (cash upfront, churn plus
    faible, 2 mois offerts comme aimant).
 2. **Conversion Free → Pro par le quota IA** — le Free fait goûter le coach ;
    la limite (trades/mois + quota IA) crée la tension d'upgrade **une fois la
@@ -297,4 +297,4 @@ Le jour où elles y sont, **25 €/mois cesse d'être une question**.
 
 _Ce document est la référence produit officielle. Toute évolution de vision, de
 cible ou de pricing se reflète ici en premier. L'exécution priorisée vit dans
-[`ROADMAP.md`](ROADMAP.md)._
+[`roadmap.md`](roadmap.md)._

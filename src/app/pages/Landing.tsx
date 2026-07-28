@@ -2,6 +2,14 @@ import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "reac
 import logoSrc from "@/assets/tradevault-logo.png";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
+import {
+  eur,
+  MONTHLY_EUR,
+  YEARLY_EUR,
+  YEARLY_FULL_PRICE,
+  YEARLY_PER_MONTH,
+  YEARLY_SAVING,
+} from "../utils/pricing";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated
@@ -560,6 +568,40 @@ const FAQS: [string, string][] = [
   ],
 ];
 
+/* ─────────────────────────── PRICING ───────────────────────────────
+ * Prices come from `utils/pricing` — the one source of truth shared with the
+ * in-app subscription centre and the crypto checkout, so the landing can never
+ * quote a figure the product does not actually charge.
+ * Only features that already exist in the product are listed. */
+
+/** What Free gives — and, explicitly, where it stops. The honest boundary is
+ *  what makes the Premium column readable at a glance. */
+const FREE_INCLUDED = [
+  "Journal de trading — 30 trades / mois",
+  "Dashboard & courbe d'equity",
+  "Checklist pré-market",
+  "Statistiques de base (P&L, win rate, R)",
+] as const;
+const FREE_MISSING = [
+  "Coach IA Jarvis",
+  "Import CSV automatique",
+  "Analytics quantitatives avancées",
+  "Rapports mensuels automatiques",
+] as const;
+
+/** The Premium promise, ordered by perceived value — the AI coach first,
+ *  because that is the differentiator, not the storage. */
+const PREMIUM_FEATURES = [
+  ["Coach IA Jarvis, illimité 24h/24", "Il lit TES trades et te dit quoi corriger."],
+  ["Trades illimités + comptes illimités", "Prop firm, démo, réel — chacun séparé."],
+  ["Analytics quantitatives (20+ métriques)", "Drawdown, expectancy, saisonnalité."],
+  ["Suivi des erreurs & setups manqués", "Le coût réel de chaque mauvaise habitude."],
+  ["Import CSV automatique illimité", "Ton historique complet en quelques secondes."],
+  ["Rapports mensuels automatiques", "Ton bilan écrit, sans rien faire."],
+  ["Calculateur de position & palette ⌘K", "Le quotidien, sans friction."],
+  ["Support prioritaire", "Une vraie réponse, vite."],
+] as const;
+
 /* ─────────────────────────── SECTION TITLE ─────────────────────────── */
 function SectionHead({
   tag,
@@ -1053,8 +1095,8 @@ export default function Landing() {
 
             <div className="reveal mb-10 flex justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[.08] px-4 py-1.5 text-xs font-bold text-emerald-300">
-                <Icon n="sparkle" cls="h-3.5 w-3.5" /> En passant à l'année : 2 mois offerts + 20%
-                d'économie
+                <Icon n="sparkle" cls="h-3.5 w-3.5" /> En passant à l'année : 2 mois offerts, soit
+                40 € d'économie
               </div>
             </div>
 
@@ -1072,7 +1114,8 @@ export default function Landing() {
                   <span className="mb-1.5 text-sm text-slate-500">/ toujours</span>
                 </div>
                 <p className="mt-2 text-sm text-slate-500">
-                  Pour poser les bases de ta discipline.
+                  Pour <span className="text-slate-300">noter</span> tes trades et poser les bases
+                  de ta discipline.
                 </p>
                 <button
                   onClick={() => open("signup", "Plan Gratuit")}
@@ -1081,29 +1124,29 @@ export default function Landing() {
                   Commencer gratuitement
                 </button>
                 <div className="mt-7 space-y-2.5 text-sm">
-                  {[
-                    "Dashboard",
-                    "Journal de trading (30 trades / mois)",
-                    "Checklist pré-market",
-                    "Statistiques de base",
-                  ].map((f) => (
-                    <p key={f} className="flex items-center gap-2.5 text-slate-300">
-                      <span className="grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-400">
+                  {FREE_INCLUDED.map((f) => (
+                    <p key={f} className="flex items-start gap-2.5 text-slate-300">
+                      <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-400">
                         <Icon n="check" cls="h-3 w-3" />
                       </span>
                       {f}
                     </p>
                   ))}
-                  {["Assistant IA & Insights", "Import CSV automatique", "Rapports mensuels"].map(
-                    (f) => (
-                      <p key={f} className="flex items-center gap-2.5 text-slate-600">
-                        <span className="grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.03]">
+                </div>
+                <div className="mt-5 rounded-xl border border-white/[.06] bg-white/[.02] p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">
+                    Pas inclus
+                  </p>
+                  <div className="mt-2.5 space-y-2 text-[13px]">
+                    {FREE_MISSING.map((f) => (
+                      <p key={f} className="flex items-start gap-2.5 text-slate-600">
+                        <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.03]">
                           <Icon n="x" cls="h-3 w-3" />
                         </span>
-                        <span className="line-through">{f}</span>
+                        {f}
                       </p>
-                    ),
-                  )}
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1124,15 +1167,20 @@ export default function Landing() {
                   </div>
                   {/* Lead with the small monthly-equivalent, then reveal the honest annual bill */}
                   <div className="mt-4 flex items-end gap-1.5">
-                    <span className="font-display text-5xl font-extrabold text-white">19,90 €</span>
+                    <span className="font-display text-5xl font-extrabold text-white">
+                      {eur(Math.round(YEARLY_PER_MONTH * 100) / 100)}
+                    </span>
                     <span className="mb-2 text-sm text-slate-400">/ mois</span>
                   </div>
                   <p className="mt-2 text-sm text-slate-300">
-                    <span className="font-semibold text-white">239 €</span> facturés une fois par an
-                    <span className="ml-1.5 text-slate-500 line-through">299 €</span>
+                    <span className="font-semibold text-white">{eur(YEARLY_EUR)}</span> facturés une
+                    fois par an
+                    <span className="ml-1.5 text-slate-500 line-through">
+                      {eur(YEARLY_FULL_PRICE)}
+                    </span>
                   </p>
                   <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg bg-emerald-400/10 px-2.5 py-1 text-[12px] font-bold text-emerald-300">
-                    <Icon n="check" cls="h-3.5 w-3.5" /> Tu économises 60 € / an
+                    <Icon n="check" cls="h-3.5 w-3.5" /> Tu économises {eur(YEARLY_SAVING)} / an
                   </div>
                   <button
                     onClick={() => open("signup", "Pro Annuel — 14 jours d'essai")}
@@ -1143,25 +1191,20 @@ export default function Landing() {
                   <p className="mt-2 text-center text-[11px] text-slate-500">
                     Sans engagement · Sans carte requise
                   </p>
-                  <div className="mt-7 space-y-2.5 text-sm">
-                    {[
-                      "Tout le plan Free, sans limite",
-                      "Assistant IA illimité 24h/24",
-                      "Insights automatiques (patterns)",
-                      "Import CSV automatique illimité",
-                      "Analytics quantitatives (20+ métriques)",
-                      "Suivi des erreurs & setups manqués",
-                      "Calculateur de position intégré",
-                      "Rapports mensuels automatiques",
-                      "Palette de commandes ⌘K",
-                      "Support prioritaire",
-                    ].map((f) => (
-                      <p key={f} className="flex items-center gap-2.5 text-slate-200">
-                        <span className="grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-300">
+                  <p className="mt-7 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/80">
+                    Tout le plan Free, sans limite — et&nbsp;:
+                  </p>
+                  <div className="mt-3 space-y-3 text-sm">
+                    {PREMIUM_FEATURES.map(([f, why]) => (
+                      <div key={f} className="flex items-start gap-2.5">
+                        <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-300">
                           <Icon n="check" cls="h-3 w-3" />
                         </span>
-                        {f}
-                      </p>
+                        <span>
+                          <span className="block text-slate-100">{f}</span>
+                          <span className="block text-[12px] leading-5 text-slate-500">{why}</span>
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1178,13 +1221,16 @@ export default function Landing() {
                 </p>
                 <div className="mt-4 flex items-end gap-1">
                   <span className="font-display text-4xl font-extrabold text-slate-200">
-                    24,99 €
+                    {eur(MONTHLY_EUR)}
                   </span>
                   <span className="mb-1.5 text-sm text-slate-500">/ mois</span>
                 </div>
                 <p className="mt-2 text-sm text-slate-500">
-                  Soit <span className="font-semibold text-slate-400">299 € / an</span> — 60 € de
-                  plus que l'annuel.
+                  Soit{" "}
+                  <span className="font-semibold text-slate-400">
+                    {eur(YEARLY_FULL_PRICE)} / an
+                  </span>{" "}
+                  — {eur(YEARLY_SAVING)} de plus que l'annuel.
                 </p>
                 <button
                   onClick={() => open("signup", "Pro Mensuel — 14 jours d'essai")}
@@ -1193,18 +1239,12 @@ export default function Landing() {
                   Prendre au mois
                 </button>
                 <div className="mt-7 space-y-2.5 text-sm">
-                  {[
-                    "Tout le plan Free, sans limite",
-                    "Assistant IA illimité 24h/24",
-                    "Insights automatiques (patterns)",
-                    "Import CSV automatique illimité",
-                    "Analytics quantitatives avancées",
-                    "Suivi des erreurs & setups manqués",
-                    "Rapports mensuels automatiques",
-                    "Support prioritaire",
-                  ].map((f) => (
-                    <p key={f} className="flex items-center gap-2.5 text-slate-400">
-                      <span className="grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-500">
+                  <p className="text-[13px] leading-6 text-slate-500">
+                    Exactement les mêmes fonctionnalités que l'annuel — seule la facturation change.
+                  </p>
+                  {PREMIUM_FEATURES.map(([f]) => (
+                    <p key={f} className="flex items-start gap-2.5 text-slate-400">
+                      <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-500">
                         <Icon n="check" cls="h-3 w-3" />
                       </span>
                       {f}

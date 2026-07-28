@@ -14,7 +14,7 @@ export function AuthModal({
   initialMode?: "login" | "signup";
   plan?: string;
 }) {
-  const { login, signup, loginWithGoogle, loginWithDiscord, requestPasswordReset } = useAuth();
+  const { login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -69,11 +69,11 @@ export function AuthModal({
     }
   };
 
-  const oauth = async (provider: "google" | "discord") => {
+  const oauth = async () => {
     setError("");
     setInfo("");
     setLoading(true);
-    const err = provider === "google" ? await loginWithGoogle() : await loginWithDiscord();
+    const err = await loginWithGoogle();
     if (err) {
       setError(err);
       setLoading(false);
@@ -92,8 +92,11 @@ export function AuthModal({
     else setInfo("Lien de réinitialisation envoyé. Vérifie ta boîte mail.");
   };
 
+  // Same field geometry as the in-app design system (rounded-xl, 44px, cyan
+  // focus ring) so the very first control a visitor touches already feels like
+  // the product they are signing into.
   const field =
-    "w-full rounded-lg border border-white/[.1] bg-white/[.03] px-3.5 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400/55 focus:bg-white/[.04] focus:ring-2 focus:ring-cyan-400/12";
+    "w-full h-11 rounded-xl border border-white/[.1] bg-white/[.03] px-3.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400/55 focus:bg-white/[.05] focus:ring-2 focus:ring-cyan-400/15";
   const toggleMode = () => {
     setMode(mode === "login" ? "signup" : "login");
     setError("");
@@ -105,8 +108,11 @@ export function AuthModal({
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-md overflow-y-auto"
       onMouseDown={(e) => e.currentTarget === e.target && onClose()}
     >
-      <div className="modal-in relative my-auto w-full max-w-[400px] overflow-hidden rounded-2xl border border-white/[.08] bg-[#0c1421] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+      <div className="modal-in relative my-auto w-full max-w-[420px] overflow-hidden rounded-2xl border border-white/[.09] bg-[#0a1220] shadow-[0_40px_110px_rgba(0,0,0,.7)]">
+        {/* Same light signature as the landing sections: a cyan hairline on the
+            top edge and one soft radial bloom behind the header. */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-cyan-500/[.13] blur-3xl" />
         <button
           onClick={onClose}
           aria-label="Fermer"
@@ -115,36 +121,65 @@ export function AuthModal({
           <Icon n="close" cls="h-4 w-4" />
         </button>
 
-        <div className="p-7 sm:p-8">
-          <img
-            src={logoSrc}
-            alt="TradeVault"
-            width={32}
-            height={32}
-            className="h-8 w-8 object-contain"
-          />
+        <div className="relative p-7 sm:p-8">
+          {/* Full lockup, not a bare mark — the visitor should know exactly
+              whose product is asking for their email. */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src={logoSrc}
+              alt=""
+              width={30}
+              height={30}
+              className="h-[30px] w-[30px] object-contain drop-shadow-[0_0_10px_rgba(56,189,248,.45)]"
+            />
+            <span className="font-display text-[1.05rem] font-extrabold leading-none tracking-[-0.04em] text-white">
+              Trade Vault
+            </span>
+          </div>
 
           {plan && (
-            <div className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/[.06] px-2.5 py-1 text-[11px] font-semibold text-cyan-300">
+            <div className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-400/[.08] px-2.5 py-1 text-[11px] font-semibold text-cyan-300">
               <Icon n="sparkle" cls="h-3 w-3" />
               {plan}
             </div>
           )}
-          <h2 className="mt-4 font-display text-[1.4rem] font-bold tracking-[-0.01em] text-white">
+          <h2 className="mt-4 font-display text-[1.45rem] font-bold tracking-[-0.02em] text-white">
             {mode === "login" ? "Ravi de te revoir" : "Créer ton compte"}
           </h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1.5 text-sm leading-6 text-slate-400">
             {mode === "login"
               ? "Connecte-toi pour reprendre où tu t'es arrêté."
-              : "14 jours pour transformer ton trading."}
+              : "14 jours de Premium, sans carte bancaire."}
           </p>
 
-          {/* SSO — fastest paths */}
-          <div className="mt-6 grid grid-cols-2 gap-2.5">
+          {/* Signup only: the three things that remove the hesitation right
+              where the hesitation happens. */}
+          {mode === "signup" && (
+            <div className="mt-4 space-y-1.5">
+              {[
+                "Ton coach IA analyse tes trades dès le premier jour",
+                "Aucune carte demandée, rien à annuler",
+                "Tes données restent exportables à tout moment",
+              ].map((line) => (
+                <p
+                  key={line}
+                  className="flex items-start gap-2 text-[12.5px] leading-5 text-slate-400"
+                >
+                  <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-300">
+                    <Icon n="check" cls="h-2.5 w-2.5" />
+                  </span>
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* SSO — the fastest path in, on its own so it reads as the default */}
+          <div className="mt-6">
             <button
-              onClick={() => oauth("google")}
+              onClick={oauth}
               disabled={loading}
-              className="flex items-center justify-center gap-2.5 rounded-lg border border-white/[.1] bg-white/[.04] py-2.5 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/[.07] disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/[.1] bg-white/[.05] py-3 text-sm font-semibold text-slate-100 transition hover:border-white/25 hover:bg-white/[.09] disabled:opacity-60"
             >
               <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24">
                 <path
@@ -164,23 +199,15 @@ export function AuthModal({
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Google
-            </button>
-            <button
-              onClick={() => oauth("discord")}
-              disabled={loading}
-              className="flex items-center justify-center gap-2.5 rounded-lg border border-white/[.1] bg-white/[.04] py-2.5 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/[.07] disabled:opacity-60"
-            >
-              <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="#5865F2">
-                <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-              </svg>
-              Discord
+              Continuer avec Google
             </button>
           </div>
 
-          <div className="my-4 flex items-center gap-3">
+          <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/[.07]" />
-            <span className="text-[11px] text-slate-600">ou</span>
+            <span className="text-[11px] uppercase tracking-wider text-slate-600">
+              ou par e-mail
+            </span>
             <div className="h-px flex-1 bg-white/[.07]" />
           </div>
 
@@ -261,7 +288,11 @@ export function AuthModal({
               disabled={loading}
               className="btn-primary w-full h-11! mt-1 disabled:opacity-60 disabled:cursor-wait"
             >
-              {loading ? "Un instant…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
+              {loading
+                ? "Un instant…"
+                : mode === "login"
+                  ? "Se connecter"
+                  : "Démarrer mes 14 jours"}
               {!loading && <Icon n="arrow" cls="h-4 w-4" />}
             </button>
           </form>
@@ -275,6 +306,19 @@ export function AuthModal({
               {mode === "login" ? "Créer un compte" : "Se connecter"}
             </button>
           </p>
+          <div className="mt-5 flex items-center justify-center gap-x-4 gap-y-1.5 flex-wrap border-t border-white/[.06] pt-4">
+            {[
+              ["shield", "Sans engagement"],
+              ["lock", "Données chiffrées"],
+              ["check", "Annulation en 1 clic"],
+            ].map(([ic, label]) => (
+              <span key={label} className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                <Icon n={ic as "shield"} cls="h-3.5 w-3.5 text-emerald-400/80" />
+                {label}
+              </span>
+            ))}
+          </div>
+
           <p className="mt-3 text-center text-[10.5px] leading-4 text-slate-600">
             En continuant, tu acceptes nos{" "}
             <a href="/terms" className="underline hover:text-slate-400">

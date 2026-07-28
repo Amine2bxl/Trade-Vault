@@ -15,10 +15,10 @@ import {
 
 const COMMERCE_API = "https://api.commerce.coinbase.com";
 
-// Mirrors the landing pricing: 24,99 €/mois · 239 €/an.
+// Mirrors the landing pricing: 19,99 €/mois · 199 €/an (2 mois offerts).
 const PLAN_PRICING: Record<PaidPlan, { amount: string; label: string; days: number }> = {
-  pro_monthly: { amount: "24.99", label: "TradeVault Pro — 1 mois", days: 31 },
-  pro_yearly: { amount: "239.00", label: "TradeVault Pro — 1 an", days: 366 },
+  pro_monthly: { amount: "19.99", label: "TradeVault Pro — 1 mois", days: 31 },
+  pro_yearly: { amount: "199.00", label: "TradeVault Pro — 1 an", days: 366 },
 };
 
 function json(body: unknown, status = 200): Response {
