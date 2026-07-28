@@ -429,7 +429,7 @@ function AppContent() {
               {page === "tradingplan" && <TradingPlan setPage={setPage} />}
               {page === "appearance" && <Appearance />}
               {page === "subscription" && <Subscription />}
-              {page === "profile" && <Profile trades={trades} />}
+              {page === "profile" && <Profile trades={trades} setPage={setPage} />}
             </Suspense>
           </PageErrorBoundary>
         </div>
