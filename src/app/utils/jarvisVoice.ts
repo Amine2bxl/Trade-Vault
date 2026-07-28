@@ -1,54 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ttsSpeak } from "@/backend/tts.functions";
+import { ttsCapabilities, ttsSpeak } from "@/backend/tts.functions";
+import { JARVIS_VOICE, pickJarvisVoice, toSpeechSegments } from "@/modules/voice";
 
 /**
  * Jarvis voice — the product's ONE voice, shared by every surface (the
  * pre-market Checklist and the Jarvis coaching page).
  *
  * Contract, identical everywhere:
- *   1. Speak with the hosted ElevenLabs voice (same deep, calm male voice on
- *      Windows, macOS, Android, iOS) — see `backend/tts.functions.ts`.
- *   2. If that is unavailable (no API key, network/autoplay refusal), fall back
- *      to the closest browser male voice — no error, no interruption.
- *   3. Spoken text is ALWAYS English, whatever the UI language, so the single
+ *   1. Speak LOCALLY by default — `modules/voice` picks the closest deep male
+ *      English voice on the device and shapes the delivery clause by clause.
+ *      No key, no vendor, no network: this works the moment main is deployed.
+ *   2. If a hosted neural voice is configured server-side, use it instead so
+ *      every trader hears the identical voice on every OS. Availability is
+ *      probed once per session, never per line.
+ *   3. Any hosted failure (network, quota, autoplay refusal) falls back to the
+ *      local voice mid-sentence — the trader hears a voice, never an error.
+ *   4. Spoken text is ALWAYS English, whatever the UI language, so the single
  *      voice never has to mispronounce another locale.
- *
- * The scoring below is the single source of truth for "closest male en-GB
- * voice"; the Checklist imports it too instead of keeping its own copy.
  */
 
-/**
- * Pick the closest deep/male English voice from the browser's list.
- * Pure — deterministic for a given voice list, so the fallback voice is stable.
- */
-export function pickEnglishMaleVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
-  let best: SpeechSynthesisVoice | null = null;
-  let bestScore = -999;
-  for (const v of voices) {
-    if (!v.lang.startsWith("en")) continue;
-    let s = 0;
-    const n = v.name;
-    // Prefer modern neural / cloud voices — dramatically more premium than
-    // the legacy built-ins.
-    if (/neural|natural/i.test(n)) s += 12;
-    if (/premium|enhanced|multilingual/i.test(n)) s += 5;
-    if (/online/i.test(n)) s += 4;
-    if (/google/i.test(n)) s += 6;
-    if (/microsoft/i.test(n)) s += 3;
-    if (/ryan|george|daniel|thomas|uk english male|mark\b/i.test(n)) s += 3;
-    if (v.lang === "en-GB") s += 2;
-    // Deep male timbre suits the composed Jarvis delivery.
-    if (/zira|hazel|susan|linda|female|caroline|eloise/i.test(n)) s -= 4;
-    if (s > bestScore) {
-      best = v;
-      bestScore = s;
-    }
+/** Probed once per page load and shared by every hook instance. */
+let hostedProbe: Promise<boolean> | null = null;
+
+function hostedAvailable(): Promise<boolean> {
+  if (!hostedProbe) {
+    hostedProbe = ttsCapabilities()
+      .then((r) => !!r.hosted)
+      .catch(() => false);
   }
-  return best;
+  return hostedProbe;
 }
 
+/** Back-compat alias — the Checklist imports the picker under this name. */
+export { pickJarvisVoice as pickEnglishMaleVoice } from "@/modules/voice";
+
 export interface JarvisVoice {
-  /** Speak a line (English). Resolves once playback has started (or fell back). */
+  /** Speak a line (English). Resolves once playback has started. */
   speak: (text: string) => Promise<void>;
   /** Stop any current playback immediately. */
   stop: () => void;
@@ -56,19 +43,16 @@ export interface JarvisVoice {
   speaking: boolean;
 }
 
-/**
- * Lightweight Jarvis voice hook for the coaching page: hosted voice first,
- * browser male voice as the silent fallback. No page-specific HUD — callers
- * read `speaking` to render their own indicator.
- */
 export function useJarvisVoice(): JarvisVoice {
   const [speaking, setSpeaking] = useState(false);
-  // Remember hosted availability for the session so we probe the network once.
-  const hostedRef = useRef<boolean | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  // Incremented on every stop/new line so a queued segment from a cancelled
+  // line can tell it is stale and drop itself instead of talking over the next.
+  const runRef = useRef(0);
 
-  // Keep the browser voice list warm (it populates asynchronously).
+  // Keep the browser voice list warm (it populates asynchronously, and on some
+  // browsers only after the first `getVoices()` call).
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const load = () => {
@@ -80,6 +64,7 @@ export function useJarvisVoice(): JarvisVoice {
   }, []);
 
   const stop = useCallback(() => {
+    runRef.current++;
     audioRef.current?.pause();
     audioRef.current = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -88,24 +73,49 @@ export function useJarvisVoice(): JarvisVoice {
     setSpeaking(false);
   }, []);
 
-  const speakBrowser = useCallback((text: string) => {
+  /**
+   * Local delivery: one utterance per clause, with the pause the prosody
+   * engine asked for between them. That cadence is most of what makes the
+   * browser engine read as a composed coach rather than a screen reader.
+   */
+  const speakLocal = useCallback((text: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       setSpeaking(false);
       return;
     }
+    const segments = toSpeechSegments(text);
+    if (!segments.length) return;
+
+    const run = ++runRef.current;
     try {
       speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "en-GB";
-      u.rate = 0.96;
-      u.pitch = 0.92;
-      u.volume = 0.9;
-      const v = pickEnglishMaleVoice(voicesRef.current);
-      if (v) u.voice = v;
-      u.onstart = () => setSpeaking(true);
-      u.onend = () => setSpeaking(false);
-      u.onerror = () => setSpeaking(false);
-      speechSynthesis.speak(u);
+      const voice = pickJarvisVoice(voicesRef.current);
+      setSpeaking(true);
+
+      const sayFrom = (i: number) => {
+        if (run !== runRef.current) return; // superseded by a newer line
+        if (i >= segments.length) {
+          setSpeaking(false);
+          return;
+        }
+        const seg = segments[i];
+        const u = new SpeechSynthesisUtterance(seg.text);
+        u.lang = JARVIS_VOICE.lang;
+        u.rate = JARVIS_VOICE.rate;
+        u.pitch = JARVIS_VOICE.pitch;
+        u.volume = JARVIS_VOICE.volume;
+        if (voice) u.voice = voice;
+        u.onend = () => {
+          if (run !== runRef.current) return;
+          if (seg.pauseMs > 0) window.setTimeout(() => sayFrom(i + 1), seg.pauseMs);
+          else sayFrom(i + 1);
+        };
+        u.onerror = () => {
+          if (run === runRef.current) setSpeaking(false);
+        };
+        speechSynthesis.speak(u);
+      };
+      sayFrom(0);
     } catch {
       setSpeaking(false);
     }
@@ -115,34 +125,38 @@ export function useJarvisVoice(): JarvisVoice {
     async (text: string) => {
       const line = text.trim();
       if (!line) return;
-      // Browser voice directly if the hosted one already proved unavailable.
-      if (hostedRef.current === false) {
-        speakBrowser(line);
+
+      if (!(await hostedAvailable())) {
+        speakLocal(line);
         return;
       }
       try {
         const res = await ttsSpeak({ data: { text: line.slice(0, 600) } });
         if (!res.available || !("audio" in res) || !res.audio) {
-          hostedRef.current = false;
-          speakBrowser(line);
+          hostedProbe = Promise.resolve(false);
+          speakLocal(line);
           return;
         }
-        hostedRef.current = true;
+        const run = ++runRef.current;
         audioRef.current?.pause();
         const el = new Audio(res.audio);
         audioRef.current = el;
         el.volume = 0.95;
-        el.onended = () => setSpeaking(false);
-        el.onerror = () => setSpeaking(false);
+        el.onended = () => {
+          if (run === runRef.current) setSpeaking(false);
+        };
+        el.onerror = () => {
+          if (run === runRef.current) setSpeaking(false);
+        };
         setSpeaking(true);
         await el.play();
       } catch {
-        // Network or autoplay refusal → browser voice, never an error.
-        hostedRef.current = false;
-        speakBrowser(line);
+        // Network or autoplay refusal → local voice, never an error.
+        hostedProbe = Promise.resolve(false);
+        speakLocal(line);
       }
     },
-    [speakBrowser],
+    [speakLocal],
   );
 
   // Silence Jarvis when the component using the hook unmounts.

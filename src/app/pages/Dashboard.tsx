@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   ChevronRight,
   Check,
+  Bot,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -164,6 +165,30 @@ export default function Dashboard({
     }
   }, [user?.id]);
 
+  // Everything the trader needs before the open, computed from data already in
+  // memory: what today has produced so far, and the one habit costing the most.
+  const today = useMemo(() => {
+    const iso = new Date().toISOString().slice(0, 10);
+    const list = trades.filter((tr) => tr.date === iso);
+    return { count: list.length, pnl: list.reduce((sum, tr) => sum + tr.pnl, 0) };
+  }, [trades]);
+
+  const priority = useMemo(() => {
+    if (trades.length === 0) return { text: t("dashboard.priorityLog"), prompt: null };
+    const all = computeStats(trades);
+    const worst = Object.entries(all.mistakeStats)
+      .map(([name, v]) => ({ name, ...v }))
+      .filter((m) => m.totalPnl < 0)
+      .sort((a, b) => a.totalPnl - b.totalPnl)[0];
+    if (!worst) return { text: t("dashboard.priorityNone"), prompt: null };
+    return {
+      text: t("dashboard.priorityFix")
+        .replace("{mistake}", worst.name)
+        .replace("{amount}", formatPnl(worst.totalPnl)),
+      prompt: `What exactly triggers "${worst.name}" for me, and what is the one rule that stops it today?`,
+    };
+  }, [trades, t]);
+
   const getGreeting = () => {
     const h = new Date().getHours();
     if (h < 5) return t("dashboard.greetingStillUp");
@@ -203,67 +228,105 @@ export default function Dashboard({
         }
       />
 
-      {/* Pre-market checklist synergy card */}
-      {onOpenChecklist && chkStatus && (
-        <button
-          onClick={onOpenChecklist}
-          className={cn(
-            "w-full flex items-center gap-3 mb-4 md:mb-6 px-4 py-3 rounded-2xl border text-left transition-all animate-fade-in-up stagger-1 hover:-translate-y-0.5",
-            chkStatus.locked
-              ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/10"
-              : "bg-cyan-500/[0.05] border-cyan-500/15 hover:bg-cyan-500/[0.09]",
-          )}
-        >
-          <div
+      {/* ── Command bar ──────────────────────────────────────────────────
+          The dashboard's job at 8am is not to show a year of history: it is to
+          answer "am I ready, what has today done, and what am I fixing". Those
+          three live in one strip, so the checklist is part of the cockpit
+          instead of a banner sitting above it. */}
+      <div className="grid gap-2.5 md:grid-cols-3 mb-4 md:mb-5 animate-fade-in-up stagger-1">
+        {/* Readiness — the checklist, as a first-class cell */}
+        {onOpenChecklist && chkStatus && (
+          <button
+            onClick={onOpenChecklist}
             className={cn(
-              "relative w-9 h-9 rounded-xl border flex items-center justify-center shrink-0",
+              "group flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all hover:-translate-y-0.5",
               chkStatus.locked
-                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
+                ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/10"
+                : "bg-cyan-500/[0.05] border-cyan-500/15 hover:bg-cyan-500/[0.09]",
             )}
           >
-            {!chkStatus.locked && (
-              <span className="absolute -inset-0.5 rounded-xl bg-cyan-500/25 blur-md animate-pulse" />
-            )}
-            <ClipboardCheck className="relative w-4 h-4" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-semibold text-white">{t("chk.dashTitle")}</div>
-              {chkStatus.locked && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-300">
-                  <Check className="w-2.5 h-2.5" /> {t("chk.ready")}
+            <ProgressRing
+              pct={
+                chkStatus.locked
+                  ? 100
+                  : chkStatus.total > 0
+                    ? Math.round((chkStatus.n / chkStatus.total) * 100)
+                    : 0
+              }
+              done={chkStatus.locked}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  {t("chk.dashTitle")}
                 </span>
-              )}
-            </div>
-            <div className="text-[11px] text-slate-400 truncate mb-1.5">
-              {chkStatus.locked
-                ? t("chk.dashLocked")
-                : chkStatus.total > 0
-                  ? `${chkStatus.n}/${chkStatus.total} ${t("chk.dashChecked")}`
-                  : t("chk.dashStart")}
-            </div>
-            {chkStatus.total > 0 && (
-              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden max-w-xs">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    chkStatus.locked
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-                      : "bg-gradient-to-r from-cyan-500 to-teal-400",
-                  )}
-                  style={{
-                    width: `${chkStatus.locked ? 100 : Math.round((chkStatus.n / Math.max(1, chkStatus.total)) * 100)}%`,
-                  }}
-                />
+                {chkStatus.locked && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
               </div>
+              <div className="text-[13px] font-bold text-white truncate mt-0.5">
+                {chkStatus.locked
+                  ? t("chk.ready")
+                  : chkStatus.total > 0
+                    ? `${chkStatus.n}/${chkStatus.total} ${t("chk.dashChecked")}`
+                    : t("chk.dashStart")}
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-600 shrink-0 transition-transform group-hover:translate-x-0.5" />
+          </button>
+        )}
+
+        {/* What today has actually produced */}
+        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            {t("dashboard.today")}
+          </div>
+          {today.count > 0 ? (
+            <div className="mt-0.5 flex items-baseline gap-2">
+              <span
+                className={cn(
+                  "font-display text-lg font-extrabold tabular-nums tracking-tight",
+                  today.pnl >= 0 ? "text-emerald-400" : "text-red-400",
+                )}
+              >
+                {formatPnl(today.pnl)}
+              </span>
+              <span className="text-[11px] text-slate-500 tabular-nums">
+                {today.count} {t("common.trades")}
+              </span>
+            </div>
+          ) : (
+            <div className="mt-1 text-[13px] font-medium text-slate-500">
+              {t("dashboard.noTradeToday")}
+            </div>
+          )}
+        </div>
+
+        {/* The one thing to fix — and one tap to talk it through with Jarvis */}
+        <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.04] px-3.5 py-3 flex items-start gap-2.5">
+          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
+            <Bot className="w-4 h-4 text-white" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/80">
+              {t("dashboard.priorityToday")}
+            </div>
+            <p className="mt-0.5 text-[13px] leading-snug text-slate-200 line-clamp-2">
+              {priority.text}
+            </p>
+            {priority.prompt && (
+              <button
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent("tv:ask-coach", { detail: { prompt: priority.prompt } }),
+                  )
+                }
+                className="mt-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+              >
+                {t("dashboard.askJarvis")} →
+              </button>
             )}
           </div>
-          <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-cyan-400 shrink-0">
-            {t("chk.dashCta")} <ChevronRight className="w-3.5 h-3.5" />
-          </span>
-        </button>
-      )}
+        </div>
+      </div>
 
       {trades.length === 0 ? (
         /* ── Empty state: first-run experience ── */
@@ -648,6 +711,34 @@ export default function Dashboard({
         </>
       )}
     </div>
+  );
+}
+
+/** Compact ring for the checklist cell — reads at a glance, costs no layout. */
+function ProgressRing({ pct, done }: { pct: number; done: boolean }) {
+  const r = 15;
+  const c = 2 * Math.PI * r;
+  return (
+    <span className="relative grid h-10 w-10 shrink-0 place-items-center">
+      <svg viewBox="0 0 36 36" className="absolute inset-0 h-10 w-10 -rotate-90">
+        <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3" />
+        <circle
+          cx="18"
+          cy="18"
+          r={r}
+          fill="none"
+          stroke={done ? "#34d399" : "var(--tv-accent)"}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c - (c * Math.min(100, Math.max(0, pct))) / 100}
+          style={{ transition: "stroke-dashoffset 600ms cubic-bezier(0.22,1,0.36,1)" }}
+        />
+      </svg>
+      <ClipboardCheck
+        className={cn("relative w-4 h-4", done ? "text-emerald-400" : "text-cyan-400")}
+      />
+    </span>
   );
 }
 

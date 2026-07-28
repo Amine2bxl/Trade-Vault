@@ -2,6 +2,14 @@ import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "reac
 import logoSrc from "@/assets/tradevault-logo.png";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
+import {
+  eur,
+  MONTHLY_EUR,
+  YEARLY_EUR,
+  YEARLY_FULL_PRICE,
+  YEARLY_PER_MONTH,
+  YEARLY_SAVING,
+} from "../utils/pricing";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated
@@ -561,18 +569,10 @@ const FAQS: [string, string][] = [
 ];
 
 /* ─────────────────────────── PRICING ───────────────────────────────
- * Single source of truth for the offer. Monthly is the reference price;
- * the annual bill and every "you save" figure are DERIVED from it, so a
- * price change never leaves a stale number somewhere on the page.
+ * Prices come from `utils/pricing` — the one source of truth shared with the
+ * in-app subscription centre and the crypto checkout, so the landing can never
+ * quote a figure the product does not actually charge.
  * Only features that already exist in the product are listed. */
-const MONTHLY_EUR = 19.99;
-const YEARLY_EUR = 199; // 2 months free vs monthly
-const eur = (n: number) =>
-  n.toLocaleString("fr-FR", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) +
-  " €";
-const YEARLY_FULL_PRICE = MONTHLY_EUR * 12; // what 12 monthly bills cost
-const YEARLY_SAVING = Math.round(YEARLY_FULL_PRICE - YEARLY_EUR);
-const YEARLY_PER_MONTH = YEARLY_EUR / 12;
 
 /** What Free gives — and, explicitly, where it stops. The honest boundary is
  *  what makes the Premium column readable at a glance. */

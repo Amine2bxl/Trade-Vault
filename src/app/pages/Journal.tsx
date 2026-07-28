@@ -154,9 +154,9 @@ export default function Journal({
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto">
       <PageHeader
-        className="mb-3 md:mb-6 items-center stagger-0"
+        className="mb-3 md:mb-4 items-center stagger-0"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
         actions={
@@ -188,7 +188,7 @@ export default function Journal({
       {/* Summary of the CURRENT selection — the journal reads as an analysis,
           not just a list. Recomputed from the same deterministic engine. */}
       {filtered.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-3 md:mb-4 animate-fade-in-up stagger-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5 animate-fade-in-up stagger-1">
           <SummaryTile
             label={t("stats.totalPnl")}
             value={formatPnl(summary.totalPnl)}
@@ -206,7 +206,7 @@ export default function Journal({
       )}
 
       {/* Result filter pill group + Missed Setups shortcut */}
-      <div className="flex items-center gap-1.5 mb-3 md:mb-5">
+      <div className="flex items-center gap-1.5 mb-2.5 md:mb-3">
         <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
           {(
             [
@@ -255,7 +255,7 @@ export default function Journal({
       </div>
 
       {/* ── Mobile: Card List ── */}
-      <div className="md:hidden space-y-2 animate-fade-in-up stagger-2">
+      <div className="md:hidden space-y-1.5 animate-fade-in-up stagger-2">
         {trades.length === 0 ? (
           <EmptyState
             icon={<Target className="w-7 h-7" />}
@@ -287,7 +287,7 @@ export default function Journal({
             const be = isBreakEven(trade);
             return (
               <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
-                <div className="flex items-center gap-2 px-2.5 py-2">
+                <div className="flex items-center gap-2 px-2.5 py-1.5">
                   <button
                     type="button"
                     className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
@@ -394,7 +394,7 @@ export default function Journal({
                   <th
                     key={key}
                     onClick={() => handleSort(key)}
-                    className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-300 transition-colors select-none"
+                    className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-300 transition-colors select-none"
                   >
                     <span className="flex items-center gap-1.5">
                       {key === "pnl"
@@ -410,13 +410,13 @@ export default function Journal({
                     </span>
                   </th>
                 ))}
-                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {t("common.side")}
                 </th>
-                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {t("common.risk")}
                 </th>
-                <th className="px-5 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {t("common.actions")}
                 </th>
               </tr>
@@ -424,7 +424,7 @@ export default function Journal({
             <tbody className="divide-y divide-white/[0.04]">
               {trades.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-14 text-center">
+                  <td colSpan={8} className="px-4 py-12 text-center">
                     <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
                     <p className="text-xs text-slate-500 mb-4">{t("empty.subtitle")}</p>
                     <button
@@ -437,7 +437,7 @@ export default function Journal({
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center text-slate-600 text-sm">
+                  <td colSpan={8} className="px-4 py-10 text-center text-slate-600 text-sm">
                     {t("common.noTradesFound")}
                   </td>
                 </tr>
@@ -450,10 +450,10 @@ export default function Journal({
                       className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
                       onClick={() => setViewingIdx(i)}
                     >
-                      <td className="px-5 py-3 text-sm text-slate-300">
+                      <td className="px-4 py-1.5 text-sm text-slate-300">
                         {formatShortDate(trade.date)}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <span className="text-sm font-bold text-white">{trade.symbol}</span>
                         {trade.isExample && (
                           <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
@@ -461,8 +461,8 @@ export default function Journal({
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-sm text-slate-400">{trade.strategy}</td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5 text-sm text-slate-400">{trade.strategy}</td>
+                      <td className="px-4 py-1.5">
                         <span
                           className={cn(
                             "text-sm font-bold",
@@ -476,7 +476,7 @@ export default function Journal({
                           {formatPnl(trade.pnl)}
                         </span>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <span
                           className={cn(
                             "text-sm font-bold",
@@ -490,7 +490,7 @@ export default function Journal({
                           {trade.rMultiple.toFixed(2)}R
                         </span>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <span
                           className={cn(
                             "text-[10px] font-bold px-2 py-1 rounded-lg",
@@ -500,10 +500,10 @@ export default function Journal({
                           {directionLabel(trade.direction)}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-sm font-semibold text-slate-300 tabular-nums">
+                      <td className="px-4 py-1.5 text-sm font-semibold text-slate-300 tabular-nums">
                         ${trade.riskAmount.toFixed(0)}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-1.5">
                         <div
                           className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
                           onClick={(e) => e.stopPropagation()}
@@ -593,7 +593,7 @@ function SummaryTile({
   tone?: "up" | "down" | "neutral";
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
       <div className="flex items-center gap-1.5">
         <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
           {label}
@@ -606,7 +606,7 @@ function SummaryTile({
       </div>
       <div
         className={cn(
-          "mt-1 font-display text-base md:text-lg font-extrabold tabular-nums tracking-tight",
+          "mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight",
           tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white",
         )}
       >

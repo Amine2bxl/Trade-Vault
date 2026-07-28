@@ -12,19 +12,7 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
-
-// Pricing — monthly is the reference, the annual bill and every derived figure
-// (monthly equivalent, saving) are computed from it so a price change can never
-// leave a stale number in the UI. Mirrors `backend/crypto-pay.server.ts`.
-const MONTHLY_EUR = 19.99;
-const YEARLY_EUR = 199;
-const YEARLY_PER_MONTH = YEARLY_EUR / 12;
-const YEARLY_SAVING = Math.round(MONTHLY_EUR * 12 - YEARLY_EUR);
-const eur = (n: number) =>
-  `${n.toLocaleString("fr-FR", {
-    minimumFractionDigits: n % 1 ? 2 : 0,
-    maximumFractionDigits: 2,
-  })} €`;
+import { eur, MONTHLY_EUR, YEARLY_EUR, YEARLY_PER_MONTH, YEARLY_SAVING } from "../utils/pricing";
 
 /** What Premium unlocks — existing product features only. */
 const PREMIUM_KEYS: TKey[] = [

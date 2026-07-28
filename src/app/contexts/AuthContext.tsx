@@ -10,7 +10,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<string | null>;
   signup: (name: string, email: string, password: string) => Promise<string | null>;
   loginWithGoogle: () => Promise<string | null>;
-  loginWithDiscord: () => Promise<string | null>;
   requestPasswordReset: (email: string) => Promise<string | null>;
   updatePassword: (newPassword: string) => Promise<string | null>;
   deleteAccount: () => Promise<string | null>;
@@ -90,17 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
-  const loginWithDiscord = useCallback(async (): Promise<string | null> => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "discord",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-    if (error) return error.message ?? "Discord sign-in failed";
-    return null;
-  }, []);
-
   const requestPasswordReset = useCallback(async (email: string): Promise<string | null> => {
     if (!email) return "Please enter your email";
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -142,7 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         loginWithGoogle,
-        loginWithDiscord,
         requestPasswordReset,
         updatePassword,
         deleteAccount,

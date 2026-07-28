@@ -308,6 +308,7 @@ const en = {
   "assistant.micUnsupported": "Voice input is not supported in this browser.",
   "assistant.thinking": "Thinking…",
   "assistant.open": "Open Jarvis",
+  "assistant.dockStatus": "Coach online",
   "assistant.clear": "Clear conversation",
   "assistant.close": "Close",
 
@@ -334,6 +335,15 @@ const en = {
   "dashboard.noTradesCta": 'No trades yet. Click "Add Trade" to get started!',
   "dashboard.riskSuffix": "risk",
   "dashboard.avgRR": "Avg R:R",
+  "dashboard.today": "Today",
+  "dashboard.todayPnl": "Today's P&L",
+  "dashboard.todayTrades": "Trades today",
+  "dashboard.noTradeToday": "Nothing logged today",
+  "dashboard.priorityToday": "Today's priority",
+  "dashboard.askJarvis": "Ask Jarvis",
+  "dashboard.priorityNone": "No recurring leak. Run the same process today.",
+  "dashboard.priorityLog": "Log today's trades — that is what Jarvis coaches from.",
+  "dashboard.priorityFix": "Cut “{mistake}” — it has cost you {amount}.",
 
   // Journal
   "journal.title": "Trade Journal",

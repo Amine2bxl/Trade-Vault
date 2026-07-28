@@ -169,7 +169,7 @@ export default function MissedOpportunities() {
   }, [items]);
 
   return (
-    <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
+    <div className="p-4 md:p-6 max-w-[1100px] mx-auto">
       <PageHeader
         className="items-center"
         icon={<Target className="w-5 h-5 text-amber-400" />}
@@ -202,7 +202,7 @@ export default function MissedOpportunities() {
       {/* Cost of hesitation, up front. Seeing "+18.4 R left on the table" is
           what turns this page from a notebook into an argument. */}
       {!loading && items.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4 animate-fade-in-up stagger-1">
+        <div className="grid grid-cols-3 gap-2 mb-2.5 animate-fade-in-up stagger-1">
           <MissedTile
             label={t("missed.totalMissed")}
             value={`+${summary.totalR.toFixed(1)}R`}
@@ -216,7 +216,7 @@ export default function MissedOpportunities() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="glass rounded-2xl h-16 animate-pulse" />
+            <div key={i} className="glass rounded-2xl h-11 animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -234,7 +234,7 @@ export default function MissedOpportunities() {
           }
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {items.map((m) => {
             const open = openIds.has(m.id);
             return (
@@ -255,7 +255,7 @@ export default function MissedOpportunities() {
                       toggleOpen(m.id);
                     }
                   }}
-                  className="w-full flex items-center justify-between gap-3 p-3 md:p-4 text-left hover:bg-white/[0.02] transition cursor-pointer"
+                  className="w-full flex items-center justify-between gap-3 px-3 py-2 md:px-3.5 text-left hover:bg-white/[0.02] transition cursor-pointer"
                   aria-expanded={open}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -286,7 +286,7 @@ export default function MissedOpportunities() {
                       onClick={() => setViewing(m)}
                       aria-label={t("missed.preview")}
                       title={t("missed.preview")}
-                      className="w-11 h-11 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10"
+                      className="w-10 h-10 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
@@ -294,7 +294,7 @@ export default function MissedOpportunities() {
                       onClick={() => setEditing(m)}
                       aria-label={t("common.edit")}
                       title={t("common.edit")}
-                      className="w-11 h-11 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10"
+                      className="w-10 h-10 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -302,15 +302,15 @@ export default function MissedOpportunities() {
                       onClick={() => handleDelete(m.id)}
                       aria-label={t("common.delete")}
                       title={t("common.delete")}
-                      className="w-11 h-11 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10"
+                      className="w-10 h-10 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
                 {open && (
-                  <div className="px-4 md:px-5 pb-4 md:pb-5 pt-1 animate-fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs md:text-sm">
+                  <div className="px-3 md:px-3.5 pb-3 pt-0.5 animate-fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
                       <Field label={t("missed.card.why")} value={m.reasonNotTaken} tone="red" />
                       <Field label={t("missed.card.what")} value={m.whatHappened} tone="amber" />
                       <Field label={t("missed.card.lesson")} value={m.lessonLearned} tone="blue" />
@@ -342,13 +342,13 @@ export default function MissedOpportunities() {
  *  so both "list" pages of the product read the same way. */
 function MissedTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
       <div className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
         {label}
       </div>
       <div
         className={cn(
-          "mt-1 font-display text-base md:text-lg font-extrabold tabular-nums tracking-tight",
+          "mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight",
           accent ? "text-amber-300" : "text-white",
         )}
       >
@@ -374,8 +374,8 @@ function Field({
     emerald: "text-emerald-400 border-emerald-500/15",
   };
   return (
-    <div className={cn("rounded-xl bg-white/[0.02] border p-2.5", tones[tone])}>
-      <div className="text-[10px] uppercase tracking-wider font-bold mb-1 opacity-80">{label}</div>
+    <div className={cn("rounded-lg bg-white/[0.02] border px-2.5 py-2", tones[tone])}>
+      <div className="text-[9px] uppercase tracking-wider font-bold mb-0.5 opacity-80">{label}</div>
       <div className="text-slate-200 text-xs md:text-sm whitespace-pre-wrap">
         {value || <span className="text-slate-600 italic">—</span>}
       </div>
