@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
+import { authRedirectTo } from "@/shared/site";
 
 interface AuthContextType {
   user: User | null;
@@ -68,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          // Same reasoning as the OAuth redirect: a confirmation link minted
+          // from a preview domain points at that preview forever.
+          emailRedirectTo: authRedirectTo("/"),
           data: { name },
         },
       });
@@ -78,11 +81,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // Pinned to the canonical origin, never `window.location.origin`: a Vercel
+  // project answers on several domains, and a PKCE flow started on one origin
+  // cannot be completed on another ("OAuth state not found or expired").
+  // Scopes are left at the Supabase default (email + profile) on purpose —
+  // both are non-sensitive, so Google requires no security review for them.
   const loginWithGoogle = useCallback(async (): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: authRedirectTo("/"),
       },
     });
     if (error) return error.message ?? "Google sign-in failed";
@@ -92,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const requestPasswordReset = useCallback(async (email: string): Promise<string | null> => {
     if (!email) return "Please enter your email";
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: authRedirectTo("/reset-password"),
     });
     if (error) return error.message;
     return null;

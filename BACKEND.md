@@ -268,7 +268,135 @@ sauf celles préfixées `VITE_`.
 
 ---
 
-## 12. Checklist de sécurité serveur
+## 12. Authentification Google OAuth
+
+> Sujet transverse (code + Supabase + Google Cloud Console). Ce document en est
+> le propriétaire. Dernière vérification contre les **logs Auth de production** :
+> **2026-07-28**.
+
+### 13.1 Comment le flux marche réellement
+
+```
+App (SITE_URL)
+  └─ supabase.auth.signInWithOAuth({ provider: "google", redirectTo: SITE_URL })
+       └─ GET https://<ref>.supabase.co/auth/v1/authorize?provider=google
+            └─ 302 → accounts.google.com   ← c'est ICI que le branding s'affiche
+                 └─ 302 → https://<ref>.supabase.co/auth/v1/callback   ← l'URI que Google doit connaître
+                      └─ 302 → SITE_URL (doit être dans la liste blanche Supabase)
+```
+
+**Point contre-intuitif, essentiel pour la migration** : Google ne redirige
+**jamais** vers l'application. Il redirige vers **Supabase**. Le
+`redirect_uri` déclaré côté Google est donc
+`https://tjikygsipblatubyzbrt.supabase.co/auth/v1/callback` — il **ne change
+pas** quand un domaine personnalisé est branché.
+
+### 13.2 Valeurs de configuration
+
+Source unique côté code : [`src/shared/site.ts`](src/shared/site.ts).
+
+**Google Cloud Console → Clients OAuth → Client Web**
+
+| Champ | Valeur |
+| --- | --- |
+| Authorized JavaScript origins | `https://tradevaultt.vercel.app` |
+| Authorized redirect URIs | `https://tjikygsipblatubyzbrt.supabase.co/auth/v1/callback` |
+
+**Google Cloud Console → Branding**
+
+| Champ | Valeur |
+| --- | --- |
+| App name | `TradeVault` |
+| Logo | [`public/branding/google-oauth-logo-120.png`](public/branding/google-oauth-logo-120.png) — 120×120, PNG, 4,6 Ko (carré, < 1 Mo : conforme) |
+| User support email | `tradevault@outlook.fr` (constante `SUPPORT_EMAIL`) |
+| Application home page | `https://tradevaultt.vercel.app` |
+| Privacy policy | `https://tradevaultt.vercel.app/privacy` |
+| Terms of service | `https://tradevaultt.vercel.app/terms` |
+| Authorized domain | `vercel.app` |
+| Developer contact | l'e-mail du propriétaire du projet Google Cloud |
+
+**Google Cloud Console → Data access (scopes)**
+
+Uniquement les trois scopes **non sensibles** : `openid`, `.../auth/userinfo.email`,
+`.../auth/userinfo.profile`. C'est le défaut de Supabase et le code ne demande
+**rien de plus** (aucun `scopes` n'est passé à `signInWithOAuth`). Conséquence
+directe : **aucune revue de sécurité Google n'est requise**, et le quota de
+100 utilisateurs des apps non vérifiées ne s'applique pas aux scopes basiques.
+Ne jamais ajouter Gmail, Drive ou Calendar sans en mesurer le coût : cela
+bascule l'app en vérification lourde.
+
+**Google Cloud Console → Audience**
+
+`External`. En mode `Testing`, seuls les Test Users listés peuvent se connecter
+et le jeton expire au bout de 7 jours. En `In production` avec des scopes non
+sensibles, tout le monde peut se connecter — un écran « Google n'a pas vérifié
+cette application » peut apparaître tant que la vérification n'est pas faite,
+mais la connexion fonctionne.
+
+**Supabase → Authentication → Providers → Google** : activé, avec le Client ID
+et le Client Secret du client Web ci-dessus.
+
+**Supabase → Authentication → URL Configuration**
+
+| Champ | Valeur |
+| --- | --- |
+| Site URL | `https://tradevaultt.vercel.app` |
+| Redirect URLs | `https://tradevaultt.vercel.app/**` |
+
+### 13.3 Panne diagnostiquée le 2026-07-28
+
+Les logs Auth de production sur 24 h montrent une corrélation parfaite :
+
+| Erreur | Occurrences | Origine du flux |
+| --- | --- | --- |
+| `400: OAuth state not found or expired` | 8 | `tradevault-…-projects.vercel.app` |
+| `400: OAuth state parameter missing` | 2 | `tradevault-…-projects.vercel.app` |
+| `400: OAuth state has expired` | 2 | `tradevault-…-projects.vercel.app` |
+| — *(7 connexions Google réussies)* | 7 | `tradevaultt.vercel.app` |
+
+**Cause** : `redirectTo` valait `window.location.origin`. Un projet Vercel
+répond sur plusieurs domaines (alias de production, domaine par défaut du
+projet, un domaine par branche de preview). Le vérificateur PKCE est stocké
+**par origine** : un flux démarré sur un domaine ne peut pas être terminé sur un
+autre. **100 % des échecs venaient du domaine par défaut du projet, 0 % du
+domaine canonique.**
+
+**Correctif appliqué** : toutes les redirections d'authentification passent par
+`authRedirectTo()` (`src/shared/site.ts`), qui renvoie toujours l'origine
+canonique. Effet de bord assumé : une preview renvoie sur la production après
+connexion — strictement préférable à l'échec actuel.
+
+> Option si les previews doivent rester connectables : ajouter
+> `https://tradevault-*-amineazouzi2009-7012s-projects.vercel.app/**` aux
+> Redirect URLs Supabase **et** rendre `authRedirectTo()` conditionnel. Non
+> retenu : cela multiplie les URLs à maintenir pour un bénéfice faible.
+
+### 13.4 Migration vers un domaine personnalisé
+
+Le jour où `tradevault.app` est acheté, il y a **cinq** changements — et un seul
+dans le code.
+
+| # | Où | Changement |
+| --- | --- | --- |
+| 1 | **Vercel** | Ajouter le domaine au projet, le passer en domaine de production |
+| 2 | **Vercel → Env** | `VITE_SITE_URL=https://tradevault.app`, puis **redéployer** (Vite inline la valeur au build : sans redéploiement, rien ne change) |
+| 3 | **Supabase → URL Configuration** | Site URL → `https://tradevault.app` · Redirect URLs → `https://tradevault.app/**` |
+| 4 | **Google → Client OAuth** | Authorized JavaScript origins → `https://tradevault.app`. **Ne pas toucher au redirect URI** : il pointe sur Supabase, pas sur l'app |
+| 5 | **Google → Branding** | Home page, Privacy, Terms sur le nouveau domaine · Authorized domain → `tradevault.app` (remplace `vercel.app`) |
+
+**Rien d'autre dans le code n'est à modifier** : `src/shared/site.ts` est le
+seul fichier qui connaît un domaine. Penser aussi à `PUBLIC_SITE_URL`
+(server-only, e-mails de cycle de vie) et à la CSP de `vercel.json` si le
+domaine Supabase change un jour.
+
+**Bonus post-migration** : un domaine personnalisé permet enfin la vérification
+Google complète (logo validé, écran « app non vérifiée » supprimé) — impossible
+sur `vercel.app`, qui est un domaine partagé que personne ne peut prouver
+posséder dans la Search Console.
+
+---
+
+## 13. Checklist de sécurité serveur
 
 | Garde-fou | État | Détail |
 | --- | --- | --- |
