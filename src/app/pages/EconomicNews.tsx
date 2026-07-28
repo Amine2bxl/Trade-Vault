@@ -144,6 +144,14 @@ export default function EconomicNews() {
 
   const activeFilterCount = currencyFilter.size + impactFilter.size + (search.trim() ? 1 : 0);
 
+  // How the week is shaped, before any filter — the single most useful thing to
+  // know when you open an economic calendar ("is this a red week?").
+  const weekCounts = useMemo(() => {
+    const c: Record<ImpactLevel, number> = { high: 0, medium: 0, low: 0 };
+    for (const e of events) c[e.impact]++;
+    return c;
+  }, [events]);
+
   const weekLabel = useMemo(() => {
     const end = addDays(weekStart, 6);
     const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
@@ -206,6 +214,54 @@ export default function EconomicNews() {
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Week shape at a glance — doubles as an impact legend and as a filter. */}
+      {!loading && events.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-3 animate-fade-in-up stagger-1">
+          {IMPACTS.map((i) => {
+            const st = IMPACT_STYLE[i];
+            const on = impactFilter.has(i);
+            const label = {
+              high: t("news.impactHigh"),
+              medium: t("news.impactMedium"),
+              low: t("news.impactLow"),
+            }[i];
+            return (
+              <button
+                key={i}
+                onClick={() => toggleImpact(i)}
+                aria-pressed={on}
+                className={cn(
+                  "flex-1 rounded-xl border px-3 py-2 text-left transition-all",
+                  on
+                    ? cn(st.bg, st.ring)
+                    : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]",
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className={cn("w-1.5 h-1.5 rounded-full", st.dot)} />
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider truncate",
+                      on ? st.text : "text-slate-500",
+                    )}
+                  >
+                    {label}
+                  </span>
+                </span>
+                <span
+                  className={cn(
+                    "block mt-0.5 font-display text-lg font-extrabold tabular-nums leading-none",
+                    on ? st.text : "text-slate-200",
+                  )}
+                >
+                  {weekCounts[i]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Search + filter toggle */}
       <div className="flex items-center gap-2 mb-3 animate-fade-in-up stagger-1">
@@ -317,12 +373,6 @@ export default function EconomicNews() {
         </div>
       )}
 
-      {/* Indicative-times notice */}
-      <div className="glass rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5 animate-fade-in-up stagger-2 border border-cyan-500/10">
-        <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
-        <p className="text-[11px] leading-relaxed text-slate-400">{t("news.notice")}</p>
-      </div>
-
       {/* Days */}
       {loading ? (
         <div className="space-y-3">
@@ -341,8 +391,9 @@ export default function EconomicNews() {
             const isToday = iso === todayIso;
             return (
               <div key={iso} className="animate-fade-in-up">
-                {/* Day header */}
-                <div className="flex items-center gap-2 mb-2 px-1">
+                {/* Day header — sticks while its events scroll past, so you
+                    always know which session you are reading. */}
+                <div className="sticky top-0 z-10 flex items-center gap-2 mb-2 px-1 py-1.5 -mx-1 bg-[#070d18]/85 backdrop-blur-md rounded-lg">
                   <span
                     className={cn(
                       "text-xs font-bold capitalize",
@@ -372,12 +423,15 @@ export default function EconomicNews() {
                       <div key={e.id}>
                         <button
                           onClick={() => setExpanded(open ? null : e.id)}
-                          className="w-full flex items-center gap-3 px-3.5 py-3 text-left hover:bg-white/[0.02] transition"
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3.5 py-3.5 text-left transition-colors",
+                            open ? "bg-white/[0.03]" : "hover:bg-white/[0.02]",
+                          )}
                         >
-                          {/* Impact bar */}
-                          <span className={cn("w-1 h-9 rounded-full shrink-0", s.dot)} />
+                          {/* Impact rail */}
+                          <span className={cn("w-1 h-10 rounded-full shrink-0", s.dot)} />
                           {/* Time */}
-                          <div className="w-12 shrink-0">
+                          <div className="w-14 shrink-0">
                             <div className="text-sm font-bold text-white tabular-nums">{time}</div>
                             {e.approximate && (
                               <div className="text-[8px] text-slate-600 uppercase font-semibold">
@@ -409,8 +463,10 @@ export default function EconomicNews() {
                           />
                         </button>
                         {open && (
-                          <div className="px-3.5 pb-3.5 pl-[68px] animate-fade-in">
-                            <p className="text-xs leading-relaxed text-slate-400">{e.note}</p>
+                          <div className="px-3.5 pb-3.5 pl-[74px] animate-fade-in">
+                            <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs leading-relaxed text-slate-400">
+                              {e.note}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -422,6 +478,13 @@ export default function EconomicNews() {
           })}
         </div>
       )}
+
+      {/* Indicative-times notice — a footnote, not a banner: it explains the
+          data, it should never be the first thing the eye lands on. */}
+      <p className="mt-5 flex items-start gap-2 px-1 text-[11px] leading-relaxed text-slate-600">
+        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+        {t("news.notice")}
+      </p>
     </div>
   );
 }

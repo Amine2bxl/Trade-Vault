@@ -35,6 +35,9 @@ export type { ModalSize } from "./Modal";
 export { Badge } from "./Badge";
 export type { BadgeVariant } from "./Badge";
 
+export { Chip, RemovableChip, CHIP_BASE, CHIP_ROW } from "./Chip";
+export type { ChipTone } from "./Chip";
+
 export { PageHeader, SectionHeader } from "./PageHeader";
 export { EmptyState } from "./EmptyState";
 export { Metric } from "./Metric";

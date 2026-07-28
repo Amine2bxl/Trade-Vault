@@ -29,7 +29,7 @@ import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
-import { Modal, FIELD_BASE } from "@/shared/ui";
+import { Modal, FIELD_BASE, Chip, RemovableChip, CHIP_ROW } from "@/shared/ui";
 import {
   tradeDraftKey,
   readJSON,
@@ -719,39 +719,23 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             />
           </div>
 
-          {/* Confluences (Customizable) — same clean pill language as the
-              Mistakes block: natural-width chips in a single flex-wrap row,
-              cyan when selected. The remove affordance is integrated into the
-              chip (× on hover) instead of a floating circle, so the section
-              reads as calmly as the Errors reference. */}
+          {/* Confluences (customizable) and Mistakes below both render the one
+              shared `Chip` from the design system — same size, shape, spacing
+              and states, here and in the Missed Setup modal. */}
           <div>
             <label className={labelClass}>{t("trade.confluences")}</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {userConfluences.map((c) => {
-                const active = form.confluences.includes(c);
-                return (
-                  <div
-                    key={c}
-                    className={cn(
-                      "group inline-flex items-center rounded-xl text-xs font-medium transition-all border",
-                      active
-                        ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
-                        : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600",
-                    )}
-                  >
-                    <button onClick={() => toggleConfluence(c)} className="pl-3 pr-1.5 py-1.5">
-                      {c}
-                    </button>
-                    <button
-                      onClick={() => removeConfluence(c)}
-                      aria-label={t("common.remove")}
-                      className="pr-2 py-1.5 text-slate-600 hover:text-red-400 opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                );
-              })}
+            <div className={cn(CHIP_ROW, "mb-2")}>
+              {userConfluences.map((c) => (
+                <RemovableChip
+                  key={c}
+                  selected={form.confluences.includes(c)}
+                  onClick={() => toggleConfluence(c)}
+                  onRemove={() => removeConfluence(c)}
+                  removeLabel={t("common.remove")}
+                >
+                  {c}
+                </RemovableChip>
+              ))}
             </div>
             <div className="flex gap-2">
               <input
@@ -775,10 +759,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Mistakes */}
           <div>
             <label className={labelClass}>{t("trade.mistakes")}</label>
-            <div className="flex flex-wrap gap-2">
+            <div className={CHIP_ROW}>
               {(showAllMistakes ? MISTAKE_OPTIONS : MISTAKE_OPTIONS.slice(0, 5)).map((m) => (
-                <button
+                <Chip
                   key={m}
+                  tone="danger"
+                  selected={form.mistakes.includes(m)}
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
@@ -787,15 +773,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         : [...f.mistakes, m],
                     }))
                   }
-                  className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-medium transition-all border",
-                    form.mistakes.includes(m)
-                      ? "bg-red-500/15 border-red-500/25 text-red-400"
-                      : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600",
-                  )}
                 >
                   {m}
-                </button>
+                </Chip>
               ))}
               <button
                 onClick={() => setShowAllMistakes(!showAllMistakes)}

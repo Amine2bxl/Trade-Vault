@@ -9,8 +9,30 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
+import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
+
+// Pricing — monthly is the reference, the annual bill and every derived figure
+// (monthly equivalent, saving) are computed from it so a price change can never
+// leave a stale number in the UI. Mirrors `backend/crypto-pay.server.ts`.
+const MONTHLY_EUR = 19.99;
+const YEARLY_EUR = 199;
+const YEARLY_PER_MONTH = YEARLY_EUR / 12;
+const YEARLY_SAVING = Math.round(MONTHLY_EUR * 12 - YEARLY_EUR);
+const eur = (n: number) =>
+  `${n.toLocaleString("fr-FR", {
+    minimumFractionDigits: n % 1 ? 2 : 0,
+    maximumFractionDigits: 2,
+  })} €`;
+
+/** What Premium unlocks — existing product features only. */
+const PREMIUM_KEYS: TKey[] = [
+  "billing.premium1",
+  "billing.premium2",
+  "billing.premium3",
+  "billing.premium4",
+];
 
 // "Gestion d'abonnement" card on the profile page.
 //
@@ -122,31 +144,58 @@ export default function SubscriptionSection() {
         </div>
       )}
 
-      {/* Upgrade grid — free & trialing users */}
+      {/* Upgrade grid — free & trialing users. The value block sits ABOVE the
+          prices on purpose: a trader decides on what they unlock, not on the
+          number. Only features that already ship are listed. */}
       {showPlans && (
-        <div className="grid sm:grid-cols-2 gap-3">
-          <PlanCard
-            highlight
-            title={t("billing.planProYearly")}
-            price="239 €"
-            per={t("billing.perYear")}
-            note={t("billing.yearlyNote")}
-            busy={busy}
-            keys={{ card: "y-card", crypto: "y-crypto" }}
-            onCard={() => run("y-card", () => checkout("pro_yearly", promo))}
-            onCrypto={() => run("y-crypto", () => cryptoCheckout("pro_yearly"))}
-          />
-          <PlanCard
-            title={t("billing.planProMonthly")}
-            price="24,99 €"
-            per={t("billing.perMonth")}
-            note={t("billing.monthlyNote")}
-            busy={busy}
-            keys={{ card: "m-card", crypto: "m-crypto" }}
-            onCard={() => run("m-card", () => checkout("pro_monthly", promo))}
-            onCrypto={() => run("m-crypto", () => cryptoCheckout("pro_monthly"))}
-          />
-        </div>
+        <>
+          <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.04] p-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                {t("billing.premiumTitle")}
+              </h3>
+            </div>
+            <div className="mt-3 grid sm:grid-cols-2 gap-x-4 gap-y-2">
+              {PREMIUM_KEYS.map((k) => (
+                <p key={k} className="flex items-start gap-2 text-[13px] text-slate-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  {t(k)}
+                </p>
+              ))}
+            </div>
+            <p className="mt-3 pt-3 border-t border-white/[0.06] text-[11px] text-slate-500">
+              {t("billing.freeLimits")}
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <PlanCard
+              highlight
+              title={t("billing.planProYearly")}
+              price={eur(YEARLY_EUR)}
+              per={t("billing.perYear")}
+              note={t("billing.yearlyNote")}
+              sub={t("billing.yearlyEquiv").replace("{v}", eur(YEARLY_PER_MONTH))}
+              saving={t("billing.yearlySave").replace("{v}", eur(YEARLY_SAVING))}
+              busy={busy}
+              keys={{ card: "y-card", crypto: "y-crypto" }}
+              onCard={() => run("y-card", () => checkout("pro_yearly", promo))}
+              onCrypto={() => run("y-crypto", () => cryptoCheckout("pro_yearly"))}
+            />
+            <PlanCard
+              title={t("billing.planProMonthly")}
+              price={eur(MONTHLY_EUR)}
+              per={t("billing.perMonth")}
+              note={t("billing.monthlyNote")}
+              sub={t("billing.monthlyEquiv").replace("{v}", eur(MONTHLY_EUR * 12))}
+              busy={busy}
+              keys={{ card: "m-card", crypto: "m-crypto" }}
+              onCard={() => run("m-card", () => checkout("pro_monthly", promo))}
+              onCrypto={() => run("m-crypto", () => cryptoCheckout("pro_monthly"))}
+            />
+          </div>
+        </>
       )}
 
       {/* Stripe subscribers: everything (card, plan switch, cancel) is one
@@ -196,6 +245,8 @@ function PlanCard({
   price,
   per,
   note,
+  sub,
+  saving,
   highlight = false,
   busy,
   keys,
@@ -206,6 +257,10 @@ function PlanCard({
   price: string;
   per: string;
   note: string;
+  /** Honest second line: the yearly total, or the monthly equivalent. */
+  sub?: string;
+  /** Only the yearly plan carries one — the concrete euros saved. */
+  saving?: string;
   highlight?: boolean;
   busy: string | null;
   keys: { card: string; crypto: string };
@@ -216,12 +271,14 @@ function PlanCard({
   return (
     <div
       className={cn(
-        "rounded-2xl p-4 border flex flex-col gap-3",
-        highlight ? "border-cyan-500/30 bg-cyan-500/[0.05]" : "border-white/[0.07] bg-white/[0.02]",
+        "rounded-2xl p-4 border flex flex-col gap-3 transition-colors",
+        highlight
+          ? "border-cyan-500/30 bg-cyan-500/[0.05]"
+          : "border-white/[0.07] bg-white/[0.02] hover:border-white/[0.12]",
       )}
     >
       <div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{title}</span>
           {highlight && (
             <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-300">
@@ -230,10 +287,17 @@ function PlanCard({
           )}
         </div>
         <div className="mt-1.5 flex items-end gap-1">
-          <span className="text-2xl font-extrabold text-white">{price}</span>
+          <span className="text-2xl font-extrabold text-white tabular-nums">{price}</span>
           <span className="mb-0.5 text-xs text-slate-500">{per}</span>
         </div>
+        {sub && <p className="text-[11px] text-slate-400 mt-0.5 tabular-nums">{sub}</p>}
         <p className="text-[11px] text-slate-500 mt-0.5">{note}</p>
+        {saving && (
+          <span className="mt-2 inline-flex items-center gap-1 rounded-lg bg-emerald-400/10 px-2 py-0.5 text-[11px] font-bold text-emerald-300">
+            <CheckCircle2 className="w-3 h-3" />
+            {saving}
+          </span>
+        )}
       </div>
       <button
         onClick={onCard}

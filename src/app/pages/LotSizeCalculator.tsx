@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calculator, Copy, Check, Wallet, Percent, Crosshair, Plus, Info } from "lucide-react";
+import {
+  Calculator,
+  Copy,
+  Check,
+  Wallet,
+  Percent,
+  Crosshair,
+  Plus,
+  Info,
+  AlertTriangle,
+} from "lucide-react";
 import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "../utils/positionCalc";
 import { loadAccountBalance, saveAccountBalance } from "../store";
 import { useAuth } from "../contexts/AuthContext";
@@ -14,6 +24,10 @@ interface LotSizeCalculatorProps {
 type Mode = "forex" | "futures";
 
 const PERSIST_KEY = "tv-lot-calc";
+
+// The four sizes a disciplined trader actually uses. One tap beats typing, and
+// putting 2% at the end of the row makes it read as the ceiling it should be.
+const RISK_PRESETS = ["0.25", "0.5", "1", "2"] as const;
 
 interface PersistedState {
   mode: Mode;
@@ -119,6 +133,12 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
   const hasResult =
     mode === "forex" ? !!forex && forex.lots > 0 : !!futures && futures.contracts > 0;
 
+  // Sizing is only as good as the risk behind it: past 2% per trade the maths
+  // stops protecting the account, so we say so — with the number, not a lecture.
+  const riskPctNum = parseFloat(riskPct) || 0;
+  const riskTooHigh = riskPctNum > 2;
+  const fiveLossDrawdown = `${Math.min(100, riskPctNum * 5).toFixed(0)}%`;
+
   return (
     <div className="p-4 md:p-8 max-w-[860px] mx-auto">
       <PageHeader className="stagger-0" title={t("calc.title")} subtitle={t("calc.subtitle")} />
@@ -145,6 +165,9 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
         {/* Inputs */}
         <div className="glass-strong rounded-3xl p-5 md:p-6 space-y-4 animate-fade-in-up stagger-2">
           {/* Risk budget — shared by both modes */}
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
+            {t("calc.sectionRisk")}
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>
@@ -193,14 +216,51 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl bg-cyan-500/[0.05] border border-cyan-500/15 px-3.5 h-11">
+          {/* One-tap risk sizes — the fastest path to a correct position. */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mr-0.5">
+              {t("calc.riskPresets")}
+            </span>
+            {RISK_PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setRiskPct(p)}
+                className={cn(
+                  "h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
+                  riskPct === p
+                    ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
+                    : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12]",
+                )}
+              >
+                {p}%
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl bg-cyan-500/[0.05] border border-cyan-500/15 px-3.5 h-12">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               {t("calc.riskBudget")}
             </span>
-            <span className="text-sm font-bold text-cyan-300 tabular-nums">
+            <span className="text-base font-bold text-cyan-300 tabular-nums">
               ${riskDollar.toFixed(2)}
+              <span className="ml-1.5 text-[10px] font-medium text-slate-500">
+                {t("calc.perTrade")}
+              </span>
             </span>
           </div>
+
+          {riskTooHigh && (
+            <p className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5 text-[11px] leading-relaxed text-amber-300 animate-fade-in">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              {t("calc.riskHigh").replace("{v}", fiveLossDrawdown)}
+            </p>
+          )}
+
+          <div className="pt-1 border-t border-white/[0.05]" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
+            {t("calc.sectionInstrument")}
+          </p>
 
           {mode === "forex" ? (
             <>
@@ -297,7 +357,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
         {/* Result */}
         <div
           className={cn(
-            "glass-strong rounded-3xl p-5 md:p-6 animate-fade-in-up stagger-3 border transition-colors",
+            "glass-strong rounded-3xl p-5 md:p-6 animate-fade-in-up stagger-3 border transition-colors md:sticky md:top-6",
             hasResult ? "border-cyan-500/20" : "border-transparent",
           )}
         >
@@ -317,7 +377,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           ) : mode === "forex" && forex ? (
             <div className="space-y-1 animate-fade-in">
               <div className="text-center py-3">
-                <div className="text-4xl font-bold text-white font-display tabular-nums">
+                <div className="text-5xl font-extrabold text-white font-display tabular-nums tracking-tight">
                   {forex.lots.toFixed(2)}
                 </div>
                 <div className="text-[10px] uppercase tracking-wider text-cyan-400 font-bold mt-1">
@@ -340,7 +400,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           ) : futures ? (
             <div className="space-y-1 animate-fade-in">
               <div className="text-center py-3">
-                <div className="text-4xl font-bold text-white font-display tabular-nums">
+                <div className="text-5xl font-extrabold text-white font-display tabular-nums tracking-tight">
                   {futures.contracts}
                 </div>
                 <div className="text-[10px] uppercase tracking-wider text-cyan-400 font-bold mt-1">

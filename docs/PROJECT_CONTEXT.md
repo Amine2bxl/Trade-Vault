@@ -416,7 +416,7 @@ Détails : `DESIGN-SYSTEM.md`.
 4. **Zone gelée Trustpilot** : `TrustpilotWidget`/`TrustpilotPrompt` et tout
    ce qui touche aux avis — **ne pas modifier** (vrais avis clients en cours).
 5. **Beta gratuite** : `AI_REQUIRE_PRO=false` ; pricing cible (Free / Pro
-   24,99 €/mois / Annuel 239 €) documenté dans `PRODUCT.md` mais non activé.
+   19,99 €/mois / Annuel 199 €) documenté dans `PRODUCT.md` mais non activé.
 6. **L'IA n'invente jamais** : données réelles du trader uniquement, jamais de
    prédiction de marché, jamais de conseil financier.
 7. **Sécurité** : RLS owner-only sur toute table utilisateur ; secrets

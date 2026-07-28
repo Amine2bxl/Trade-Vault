@@ -29,13 +29,18 @@ import {
   ComposedChart,
   Line,
   ReferenceLine,
+  CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
 import { EmptyState, PageHeader } from "@/shared/ui";
 import {
+  AXIS_TICK,
   CHART_ANIMATION,
   EQUITY_ANIMATION,
+  EQUITY_CURVE_TYPE,
+  EQUITY_GRID,
   EQUITY_LINE,
+  formatAxisMoney,
   tooltipStyle,
   glowActiveDot,
   equityYDomain,
@@ -709,35 +714,32 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 >
                   <defs>
                     <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.42} />
-                      <stop offset="55%" stopColor="var(--tv-accent)" stopOpacity={0.12} />
+                      <stop offset="0%" stopColor="var(--tv-accent)" stopOpacity={0.18} />
                       <stop offset="100%" stopColor="var(--tv-accent)" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="eqGStroke" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="var(--tv-accent)" />
-                      <stop offset="100%" stopColor="var(--tv-highlight)" />
-                    </linearGradient>
                   </defs>
+                  <CartesianGrid {...EQUITY_GRID} />
                   <XAxis
                     dataKey="date"
                     padding={EQUITY_X_PADDING}
-                    tick={{ fill: "#475569", fontSize: 10 }}
+                    tick={AXIS_TICK}
+                    minTickGap={28}
                     tickFormatter={(v) => {
                       const p = v.split("-");
-                      return `${p[1]}/${p[0].slice(2)}`;
+                      return `${p[2]}/${p[1]}`;
                     }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
                     domain={equityYDomain}
-                    tick={{ fill: "#475569", fontSize: 10 }}
-                    tickFormatter={(v) => `$${v}`}
+                    tick={AXIS_TICK}
+                    tickFormatter={formatAxisMoney}
                     axisLine={false}
                     tickLine={false}
-                    width={45}
+                    width={52}
                   />
-                  <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
+                  <ReferenceLine y={0} stroke="rgba(148,163,184,0.28)" strokeWidth={1} />
                   <Tooltip
                     {...tooltipStyle}
                     formatter={(value: any) => [
@@ -747,13 +749,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     labelFormatter={(v) => formatShortDate(v)}
                   />
                   <Area
-                    type="natural"
+                    type={EQUITY_CURVE_TYPE}
                     dataKey="equity"
-                    stroke="url(#eqGStroke)"
+                    stroke="var(--tv-accent)"
                     fill="url(#eqG)"
                     dot={false}
-                    activeDot={glowActiveDot("var(--tv-highlight)")}
-                    style={{ filter: "drop-shadow(0 3px 8px rgb(var(--tv-accent-rgb) / 0.4))" }}
+                    activeDot={glowActiveDot("var(--tv-accent)")}
                     {...EQUITY_LINE}
                     {...EQUITY_ANIMATION}
                   />

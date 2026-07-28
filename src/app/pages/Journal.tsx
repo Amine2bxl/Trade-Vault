@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
+  computeStats,
+  formatPct,
   formatPnl,
   formatShortDate,
   directionLabel,
@@ -25,7 +27,7 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageHeader } from "@/shared/ui";
+import { EmptyState, PageHeader } from "@/shared/ui";
 
 interface JournalProps {
   trades: Trade[];
@@ -112,6 +114,24 @@ export default function Journal({
     return list;
   }, [trades, strategyFilter, resultFilter, sortKey, sortDir]);
 
+  // Counts per result filter — shown inside the pills so the trader sees the
+  // shape of their journal before clicking, not after.
+  const counts = useMemo(() => {
+    const base =
+      strategyFilter === "all" ? trades : trades.filter((t) => t.strategy === strategyFilter);
+    return {
+      all: base.length,
+      win: base.filter((t) => !isBreakEven(t) && t.pnl > 0).length,
+      loss: base.filter((t) => !isBreakEven(t) && t.pnl < 0).length,
+      be: base.filter(isBreakEven).length,
+    } as Record<ResultFilter, number>;
+  }, [trades, strategyFilter]);
+
+  // The journal's headline numbers, recomputed on the CURRENT selection. Making
+  // the summary follow the filter is what turns the list into an analysis tool:
+  // "show me my losses" instantly answers "what do they cost me".
+  const summary = useMemo(() => computeStats(filtered), [filtered]);
+
   // Render at most `visibleCount` rows — keeps the DOM light on big journals
   const shown = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = filtered.length > visibleCount;
@@ -165,6 +185,26 @@ export default function Journal({
         }
       />
 
+      {/* Summary of the CURRENT selection — the journal reads as an analysis,
+          not just a list. Recomputed from the same deterministic engine. */}
+      {filtered.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-3 md:mb-4 animate-fade-in-up stagger-1">
+          <SummaryTile
+            label={t("stats.totalPnl")}
+            value={formatPnl(summary.totalPnl)}
+            tone={summary.totalPnl >= 0 ? "up" : "down"}
+          />
+          <SummaryTile label={t("stats.winRate")} value={formatPct(summary.winRate)} />
+          <SummaryTile label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
+          <SummaryTile
+            label={t("journal.colPnl")}
+            hint={t("common.best")}
+            value={formatPnl(summary.bestTrade?.pnl ?? 0)}
+            tone="up"
+          />
+        </div>
+      )}
+
       {/* Result filter pill group + Missed Setups shortcut */}
       <div className="flex items-center gap-1.5 mb-3 md:mb-5">
         <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
@@ -180,7 +220,7 @@ export default function Journal({
               key={opt.v}
               onClick={() => setResultFilter(opt.v)}
               className={cn(
-                "flex-1 md:flex-none md:px-5 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all",
+                "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
                 resultFilter === opt.v
                   ? opt.v === "win"
                     ? "bg-emerald-500/15 text-emerald-400"
@@ -193,6 +233,14 @@ export default function Journal({
               )}
             >
               {opt.label}
+              <span
+                className={cn(
+                  "tabular-nums text-[10px] font-bold",
+                  resultFilter === opt.v ? "opacity-70" : "text-slate-600",
+                )}
+              >
+                {counts[opt.v]}
+              </span>
             </button>
           ))}
         </div>
@@ -209,20 +257,31 @@ export default function Journal({
       {/* ── Mobile: Card List ── */}
       <div className="md:hidden space-y-2 animate-fade-in-up stagger-2">
         {trades.length === 0 ? (
-          <div className="glass rounded-2xl p-10 text-center">
-            <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-            <p className="text-xs text-slate-500 mb-4">{t("empty.subtitle")}</p>
-            <button
-              onClick={onAdd}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20"
-            >
-              <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-            </button>
-          </div>
+          <EmptyState
+            icon={<Target className="w-7 h-7" />}
+            title={t("empty.title")}
+            description={t("empty.subtitle")}
+            action={
+              <button
+                onClick={onAdd}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20"
+              >
+                <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
+              </button>
+            }
+          />
         ) : filtered.length === 0 ? (
-          <div className="glass rounded-2xl p-10 text-center text-slate-600 text-sm">
-            {t("common.noTradesFound")}
-          </div>
+          <EmptyState
+            title={t("common.noTradesFound")}
+            action={
+              <button
+                onClick={() => setResultFilter("all")}
+                className="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition"
+              >
+                {t("common.all")}
+              </button>
+            }
+          />
         ) : (
           shown.map((trade, i) => {
             const be = isBreakEven(trade);
@@ -327,9 +386,9 @@ export default function Journal({
 
       {/* ── Desktop: Table ── */}
       <div className="hidden md:block glass rounded-2xl overflow-hidden animate-fade-in-up stagger-2">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[880px]">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-[#0a0f1e]/85 backdrop-blur-md">
               <tr className="border-b border-white/[0.06]">
                 {(["date", "symbol", "strategy", "pnl", "rMultiple"] as SortKey[]).map((key) => (
                   <th
@@ -388,7 +447,7 @@ export default function Journal({
                   return (
                     <tr
                       key={trade.id}
-                      className="hover:bg-white/[0.02] transition-colors cursor-pointer"
+                      className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
                       onClick={() => setViewingIdx(i)}
                     >
                       <td className="px-5 py-3 text-sm text-slate-300">
@@ -446,7 +505,7 @@ export default function Journal({
                       </td>
                       <td className="px-5 py-3">
                         <div
-                          className="flex items-center justify-end gap-1"
+                          className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -512,6 +571,47 @@ export default function Journal({
           positionLabel={`${viewingIdx + 1}/${filtered.length}`}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * One number of the current selection. Deliberately flatter than `Metric` (no
+ * hover glow, no corner accent): four of these sit in a row directly under the
+ * page title, so they have to read as a quiet summary line, not as four cards
+ * competing with the table below.
+ */
+function SummaryTile({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "up" | "down" | "neutral";
+}) {
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+          {label}
+        </span>
+        {hint && (
+          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
+            {hint}
+          </span>
+        )}
+      </div>
+      <div
+        className={cn(
+          "mt-1 font-display text-base md:text-lg font-extrabold tabular-nums tracking-tight",
+          tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }

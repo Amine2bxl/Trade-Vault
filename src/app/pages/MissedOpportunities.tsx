@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
   Plus,
   Target,
@@ -32,7 +32,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import Lightbox from "../components/Lightbox";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import { PageHeader } from "@/shared/ui";
+import { PageHeader, EmptyState, Modal, FIELD_BASE } from "@/shared/ui";
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -161,6 +161,13 @@ export default function MissedOpportunities() {
     [user, t, items, confirm],
   );
 
+  // The whole point of the page in three numbers: how much edge was skipped.
+  // Derived from the loaded rows — no extra query, no extra state.
+  const summary = useMemo(() => {
+    const totalR = items.reduce((sum, m) => sum + (m.estimatedR || 0), 0);
+    return { totalR, count: items.length, avgR: items.length ? totalR / items.length : 0 };
+  }, [items]);
+
   return (
     <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
       <PageHeader
@@ -192,22 +199,52 @@ export default function MissedOpportunities() {
         }
       />
 
+      {/* Cost of hesitation, up front. Seeing "+18.4 R left on the table" is
+          what turns this page from a notebook into an argument. */}
+      {!loading && items.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4 animate-fade-in-up stagger-1">
+          <MissedTile
+            label={t("missed.totalMissed")}
+            value={`+${summary.totalR.toFixed(1)}R`}
+            accent
+          />
+          <MissedTile label={t("missed.logged")} value={String(summary.count)} />
+          <MissedTile label={t("missed.avgMissed")} value={`${summary.avgR.toFixed(1)}R`} />
+        </div>
+      )}
+
       {loading ? (
-        <div className="glass rounded-2xl p-10 text-center text-slate-500 text-sm">
-          {t("common.loading")}
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="glass rounded-2xl h-16 animate-pulse" />
+          ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="glass rounded-2xl p-10 text-center">
-          <Target className="w-8 h-8 text-amber-400/50 mx-auto mb-3" />
-          <p className="text-slate-300 text-sm font-semibold mb-1">{t("missed.empty.title")}</p>
-          <p className="text-slate-500 text-xs">{t("missed.empty.sub")}</p>
-        </div>
+        <EmptyState
+          icon={<Target className="w-8 h-8 text-amber-400/50" />}
+          title={t("missed.empty.title")}
+          description={t("missed.empty.sub")}
+          action={
+            <button
+              onClick={() => setEditing(emptyMissed())}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-amber-500/20"
+            >
+              <Plus className="w-3.5 h-3.5" /> {t("missed.log")}
+            </button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {items.map((m) => {
             const open = openIds.has(m.id);
             return (
-              <div key={m.id} className="glass rounded-2xl overflow-hidden">
+              <div
+                key={m.id}
+                className={cn(
+                  "glass rounded-2xl overflow-hidden border transition-colors",
+                  open ? "border-amber-500/20" : "border-transparent",
+                )}
+              >
                 <div
                   role="button"
                   tabIndex={0}
@@ -231,13 +268,13 @@ export default function MissedOpportunities() {
                     <span className="text-sm font-bold text-white">{m.symbol || "—"}</span>
                     <span className="text-[10px] text-slate-500">{formatShortDate(m.date)}</span>
                     {m.estimatedR > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-bold">
+                      <span className="shrink-0 rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
                         +{m.estimatedR.toFixed(1)} {t("missed.rMissed")}
                       </span>
                     )}
                     {m.screenshots && m.screenshots.length > 0 && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 font-semibold">
-                        {m.screenshots.length}📷
+                      <span className="shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+                        {m.screenshots.length} 📷
                       </span>
                     )}
                   </div>
@@ -297,6 +334,26 @@ export default function MissedOpportunities() {
       {editing && (
         <MissedEditor value={editing} onClose={() => setEditing(null)} onSave={handleSave} />
       )}
+    </div>
+  );
+}
+
+/** Three flat tiles above the list — same visual weight as the Journal summary
+ *  so both "list" pages of the product read the same way. */
+function MissedTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+      <div className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+        {label}
+      </div>
+      <div
+        className={cn(
+          "mt-1 font-display text-base md:text-lg font-extrabold tabular-nums tracking-tight",
+          accent ? "text-amber-300" : "text-white",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -489,132 +546,144 @@ export function MissedEditor({
   }, [handleFiles]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in"
-      onClick={onClose}
+    <Modal
+      open
+      onClose={onClose}
+      className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
+      labelledBy="missed-editor-title"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full md:max-w-2xl bg-[#0a0f1e] md:rounded-3xl rounded-t-3xl border border-white/10 max-h-[92vh] overflow-y-auto animate-slide-up"
-      >
-        <div className="sticky top-0 bg-[#0a0f1e]/95 backdrop-blur-lg flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Target className="w-4 h-4 text-amber-400" /> {t("missed.modalTitle")}
-          </h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
-          >
-            <X className="w-4 h-4" />
-          </button>
+      {/* Same shell as the Add Trade modal: a 2px accent rule, a 24px-padded
+          header row, a scrolling body and a sticky action footer. The two
+          popups are now literally the same architecture — only the accent
+          colour (amber vs cyan) and the fields differ. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+        <h2
+          id="missed-editor-title"
+          className="text-lg font-bold text-white flex items-center gap-2.5"
+        >
+          <Target className="w-4.5 h-4.5 text-amber-400 shrink-0" />
+          {t("missed.modalTitle")}
+        </h2>
+        <button
+          onClick={onClose}
+          aria-label={t("common.close")}
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-5">
+        <div className="grid grid-cols-3 gap-3">
+          <FieldInput
+            label={t("missed.field.date")}
+            type="date"
+            value={m.date}
+            onChange={(v) => set("date", v)}
+          />
+          <FieldInput
+            label={t("missed.field.symbol")}
+            value={m.symbol}
+            onChange={(v) => set("symbol", v.toUpperCase())}
+            placeholder="ES"
+          />
+          <FieldInput
+            label={t("missed.field.estR")}
+            type="number"
+            value={String(m.estimatedR)}
+            onChange={(v) => set("estimatedR", Number(v) || 0)}
+            step="0.1"
+          />
         </div>
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <FieldInput
-              label={t("missed.field.date")}
-              type="date"
-              value={m.date}
-              onChange={(v) => set("date", v)}
-            />
-            <FieldInput
-              label={t("missed.field.symbol")}
-              value={m.symbol}
-              onChange={(v) => set("symbol", v.toUpperCase())}
-              placeholder="ES"
-            />
-            <FieldInput
-              label={t("missed.field.estR")}
-              type="number"
-              value={String(m.estimatedR)}
-              onChange={(v) => set("estimatedR", Number(v) || 0)}
-              step="0.1"
-            />
-          </div>
-          <FieldArea
-            label={t("missed.field.why")}
-            value={m.reasonNotTaken}
-            onChange={(v) => set("reasonNotTaken", v)}
-            placeholder={t("missed.field.whyPh")}
-          />
-          <FieldArea
-            label={t("missed.field.what")}
-            value={m.whatHappened}
-            onChange={(v) => set("whatHappened", v)}
-            placeholder={t("missed.field.whatPh")}
-          />
-          <FieldArea
-            label={t("missed.field.lesson")}
-            value={m.lessonLearned}
-            onChange={(v) => set("lessonLearned", v)}
-            placeholder={t("missed.field.lessonPh")}
-          />
-          <FieldArea
-            label={t("missed.field.next")}
-            value={m.nextTimePlan}
-            onChange={(v) => set("nextTimePlan", v)}
-            placeholder={t("missed.field.nextPh")}
-          />
+        <FieldArea
+          label={t("missed.field.why")}
+          value={m.reasonNotTaken}
+          onChange={(v) => set("reasonNotTaken", v)}
+          placeholder={t("missed.field.whyPh")}
+        />
+        <FieldArea
+          label={t("missed.field.what")}
+          value={m.whatHappened}
+          onChange={(v) => set("whatHappened", v)}
+          placeholder={t("missed.field.whatPh")}
+        />
+        <FieldArea
+          label={t("missed.field.lesson")}
+          value={m.lessonLearned}
+          onChange={(v) => set("lessonLearned", v)}
+          placeholder={t("missed.field.lessonPh")}
+        />
+        <FieldArea
+          label={t("missed.field.next")}
+          value={m.nextTimePlan}
+          onChange={(v) => set("nextTimePlan", v)}
+          placeholder={t("missed.field.nextPh")}
+        />
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                {t("missed.field.screenshots")}{" "}
-                <span className="text-slate-700">({(m.screenshots ?? []).length}/3)</span>
-              </span>
-              <span className="text-[10px] text-slate-600">
-                {t("missed.field.screenshotsHint")} · {t("common.pasteHint")}
-              </span>
-            </div>
-            <ScreenshotsView paths={m.screenshots ?? []} onRemove={removeShot} />
-            {(m.screenshots ?? []).length < 3 && (
-              <>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => handleFiles(e.target.files)}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.05] text-sm text-slate-300 hover:text-white transition disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> {t("missed.uploading")}
-                    </>
-                  ) : (
-                    <>
-                      <ImagePlus className="w-4 h-4" /> {t("missed.addImage")}
-                    </>
-                  )}
-                </button>
-              </>
-            )}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className={cn(EDITOR_LABEL, "mb-0")}>
+              {t("missed.field.screenshots")}{" "}
+              <span className="text-slate-600">({(m.screenshots ?? []).length}/3)</span>
+            </span>
+            <span className="text-[10px] text-slate-600">
+              {t("missed.field.screenshotsHint")} · {t("common.pasteHint")}
+            </span>
           </div>
-        </div>
-        <div className="sticky bottom-0 bg-[#0a0f1e]/95 backdrop-blur-lg flex justify-end gap-2 px-5 py-4 border-t border-white/[0.06]">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-300 bg-white/[0.04] hover:bg-white/[0.08]"
-          >
-            {t("common.cancel")}
-          </button>
-          <button
-            onClick={() => onSave(m)}
-            disabled={uploading}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" /> {t("common.save")}
-          </button>
+          <ScreenshotsView paths={m.screenshots ?? []} onRemove={removeShot} />
+          {(m.screenshots ?? []).length < 3 && (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.05] text-sm text-slate-300 hover:text-white transition disabled:opacity-50"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> {t("missed.uploading")}
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="w-4 h-4" /> {t("missed.addImage")}
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
-    </div>
+      <div className="flex justify-end gap-2 px-6 py-4 border-t border-white/[0.06]">
+        <button
+          onClick={onClose}
+          className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
+        >
+          {t("common.cancel")}
+        </button>
+        <button
+          onClick={() => onSave(m)}
+          disabled={uploading}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 transition-all"
+        >
+          <Save className="w-4 h-4" /> {t("common.save")}
+        </button>
+      </div>
+    </Modal>
   );
 }
+
+// Both editors share one label style and one field skin (`FIELD_BASE`), so a
+// field in Missed Setup is pixel-identical to the same field in Add Trade.
+const EDITOR_LABEL =
+  "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
 
 function FieldInput({
   label,
@@ -633,16 +702,14 @@ function FieldInput({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 block mb-1">
-        {label}
-      </span>
+      <span className={EDITOR_LABEL}>{label}</span>
       <input
         type={type}
         value={value}
         step={step}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/40"
+        className={cn(FIELD_BASE, "h-9 sm:h-11 text-xs sm:text-sm")}
       />
     </label>
   );
@@ -661,15 +728,13 @@ function FieldArea({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 block mb-1">
-        {label}
-      </span>
+      <span className={EDITOR_LABEL}>{label}</span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={2}
-        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white resize-y min-h-[56px] focus:outline-none focus:border-amber-500/40"
+        className={cn(FIELD_BASE, "py-2.5 resize-y min-h-[56px]")}
       />
     </label>
   );

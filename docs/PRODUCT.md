@@ -175,8 +175,8 @@ erreurs/setups manqués · personnalisation · UX supérieure.
 | Formule | Prix | Essai | Cible |
 |---|---|---|---|
 | **Free** | 0 € | — | Faire goûter, activer l'habitude |
-| **Pro Mensuel** | **24,99 €/mois** | 14 jours | Engagement souple |
-| **Pro Annuel** ⭐ | **239 €/an** (≈ 19,92 €/mois, **2 mois offerts**) | 14 jours | **L'offre héros** (meilleure valeur) |
+| **Pro Mensuel** | **19,99 €/mois** | 14 jours | Engagement souple |
+| **Pro Annuel** ⭐ | **199 €/an** (≈ 16,58 €/mois, **2 mois offerts**, 40 € économisés) | 14 jours | **L'offre héros** (meilleure valeur) |
 
 ### Ce que contient chaque formule
 
@@ -270,8 +270,8 @@ reste au fil de l'eau — jamais un préalable technique bloquant.
 
 Les leviers qui transforment l'usage en revenu récurrent :
 
-1. **Abonnement Pro récurrent (MRR)** — cœur du modèle. Mensuel 24,99 € /
-   Annuel 239 €. **L'annuel est le driver principal** (cash upfront, churn plus
+1. **Abonnement Pro récurrent (MRR)** — cœur du modèle. Mensuel 19,99 € /
+   Annuel 199 €. **L'annuel est le driver principal** (cash upfront, churn plus
    faible, 2 mois offerts comme aimant).
 2. **Conversion Free → Pro par le quota IA** — le Free fait goûter le coach ;
    la limite (trades/mois + quota IA) crée la tension d'upgrade **une fois la
