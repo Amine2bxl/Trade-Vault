@@ -920,8 +920,6 @@ const en = {
   "news.approx": "approx.",
   "news.previous": "Previous",
   "news.forecast": "Forecast",
-  "news.actual": "Actual",
-  "news.released": "Released",
   "news.releasing": "Releasing now",
   "news.upcoming": "Upcoming",
   "news.allDay": "All day",

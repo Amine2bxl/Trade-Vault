@@ -45,10 +45,17 @@ export interface EventProvider {
 
 const DAY = 86_400_000;
 
+/**
+ * Début de la semaine du calendrier économique — **dimanche**, pas lundi.
+ *
+ * C'est la convention de la source : son fichier hebdomadaire court du
+ * dimanche au samedi. Avec une semaine calée sur le lundi, les publications
+ * du dimanche soir (ouverture asiatique) étaient récupérées puis jamais
+ * affichées, tombant hors de la fenêtre interrogée.
+ */
 export function startOfWeek(d: Date): Date {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const dow = (x.getDay() + 6) % 7; // Monday = 0
-  return new Date(x.getTime() - dow * DAY);
+  return new Date(x.getTime() - x.getDay() * DAY);
 }
 
 export function addDays(d: Date, n: number): Date {
