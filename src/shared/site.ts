@@ -19,12 +19,27 @@
  * MIGRATION TO A CUSTOM DOMAIN: set `VITE_SITE_URL` in Vercel (or edit the
  * fallback below) and redeploy. Nothing else in the app hardcodes a domain.
  * The matching console changes are listed in BACKEND.md §12.
+ *
+ * CURRENT CANONICAL DOMAIN: `tradevaultt.vercel.app`. The move to
+ * `tradevault.be` is prepared but deliberately NOT active — the custom domain
+ * is not connected on Vercel yet, and pointing canonicals, auth redirects and
+ * the sitemap at a host that does not serve the app would break sign-in and
+ * de-index the site. Flip it by setting `VITE_SITE_URL=https://tradevault.be`
+ * in Vercel (or editing the fallback) once the domain actually resolves.
+ *
+ * Whatever value is active must match, character for character, the Homepage /
+ * Privacy / Terms URLs and the Authorized Domain on the Google OAuth consent
+ * screen — brand verification compares them and rejects on any mismatch.
  */
 
 /** Canonical origin, no trailing slash. Build-time value (Vite inlines it). */
-export const SITE_URL = (
-  import.meta.env.VITE_SITE_URL || "https://tradevaultt.vercel.app"
-).replace(/\/+$/, "");
+export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://tradevaultt.vercel.app").replace(
+  /\/+$/,
+  "",
+);
+
+/** Bare hostname — Trustpilot review paths and any display copy. */
+export const SITE_DOMAIN = SITE_URL.replace(/^https?:\/\//, "");
 
 /** Supabase project ref — also the host of the Google OAuth callback. */
 export const SUPABASE_PROJECT_REF = "tjikygsipblatubyzbrt";

@@ -961,6 +961,21 @@ svg.lucide {
    flush at the top — never hidden behind the bar or stopped between two. */
 .landing-root section[id] {
   scroll-margin-top: 82px;
+  /* Each nav-linked section fills the viewport below the header and centres its
+     own content, so a nav click lands on a section shown whole and centred at
+     any screen size. `min-height` (not `height`) is a floor: when the content
+     is taller than the viewport — small laptops, zoomed text — the section
+     grows and the page scrolls, so nothing is ever clipped. `dvh` tracks the
+     mobile URL bar. */
+  min-height: calc(100dvh - 66px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+/* The direct content wrapper of each section must still span the section so its
+   own `max-width` + `mx-auto` keep it horizontally centred inside the flex. */
+.landing-root section[id] > div {
+  width: 100%;
 }
 
 /* ── reveal on scroll ── */

@@ -9,7 +9,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME } from "../shared/seo";
+import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../shared/seo";
 import { reportAppError } from "../shared/error-reporting";
 
 /** Site-wide title and description — the marketing promise, in the language
@@ -119,9 +119,17 @@ function RootShell({ children }: { children: ReactNode }) {
     // Theme is applied at runtime by ThemeProvider (post-hydration). The default
     // "Jarvis" palette lives in the CSS :root, so the first paint is already
     // themed for default-theme users with no flash and no hydration divergence.
-    <html lang="en">
+    //
+    // lang="fr": the public site is written in French and og:locale already says
+    // fr_FR. Declaring "en" contradicted both, and a document whose stated
+    // language does not match its content is exactly the kind of inconsistency
+    // that stalls a brand review.
+    <html lang="fr">
       <head>
         <HeadContent />
+        {/* schema.org identity for the brand + application. Rendered here rather
+            than through head() so the JSON body is emitted verbatim. */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData() }} />
       </head>
       <body>
         {children}

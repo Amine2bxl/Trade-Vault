@@ -11,6 +11,7 @@ import {
   YEARLY_SAVING,
 } from "../utils/pricing";
 import { SUPPORT_EMAIL } from "../types";
+import { SITE_DOMAIN } from "@/shared/site";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated
@@ -41,7 +42,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
       <span
         className={`font-display font-extrabold tracking-[-0.04em] text-[#ffffff] leading-none ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
       >
-        Trade Vault
+        TradeVault
       </span>
     </a>
   );
@@ -672,21 +673,13 @@ export default function Landing() {
     setAuthPlan(plan);
     setAuth(true);
   };
-  // Nav clicks land the section visually centered in the viewport (below the
-  // fixed 66px header). Sections taller than the viewport align to the top
-  // instead — centering those would hide their heading.
+  // Nav clicks scroll the section to the top of the viewport. Vertical
+  // centring is handled in CSS (each section is a full-height flex box that
+  // centres its own content), and `scroll-margin-top` clears the fixed header —
+  // so this stays a plain, reliable scrollIntoView at every screen size.
   const go = (id: string) => {
     setMenu(false);
-    const el = document.getElementById(id);
-    if (!el) return;
-    const header = 66;
-    const r = el.getBoundingClientRect();
-    const room = window.innerHeight - header;
-    const top =
-      r.height < room
-        ? window.scrollY + r.top - header - (room - r.height) / 2
-        : window.scrollY + r.top - header - 16;
-    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const onHeroMove = (e: RPointerEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -867,7 +860,7 @@ export default function Landing() {
               </div>
               {/* Trustpilot proof — visible on the very first screen, honest early-access framing */}
               <a
-                href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
+                href={`https://www.trustpilot.com/review/${SITE_DOMAIN}`}
                 target="_blank"
                 rel="noreferrer"
                 className="fade-up d4 mt-4 inline-flex items-center gap-2.5 rounded-full border border-white/[.08] bg-white/[.03] py-1.5 pl-2 pr-3.5 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]"

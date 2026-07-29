@@ -42,6 +42,67 @@ export function absoluteUrl(path = "/"): string {
 }
 
 /**
+ * One-sentence product definition, in English, reused by the structured data
+ * and the OAuth consent screen copy.
+ *
+ * English on purpose: this string is read by machines and by Google's brand
+ * reviewers, not by visitors — the visible page stays French. Keeping it here
+ * means the schema.org description, the manifest and the consent screen can
+ * never drift apart into three different claims about what the product is.
+ */
+export const PRODUCT_DESCRIPTION_EN =
+  "TradeVault is an AI-powered trading journal and trading coach that helps traders analyze performance, follow their trading plan and improve discipline.";
+
+/**
+ * schema.org graph for the homepage.
+ *
+ * Google's OAuth brand verification wants the homepage to identify the
+ * application unambiguously under the same name as the consent screen. Machine-
+ * readable Organization + SoftwareApplication nodes state that outright instead
+ * of leaving it to be inferred from marketing copy, and the `url` fields tie the
+ * brand to the domain being verified.
+ */
+export function structuredData(): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        name: SITE_NAME,
+        url: `${SITE_URL}/`,
+        logo: `${SITE_URL}/icon-512.png`,
+        email: "tradevault@outlook.fr",
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        name: SITE_NAME,
+        url: `${SITE_URL}/`,
+        inLanguage: "fr-FR",
+        publisher: { "@id": `${SITE_URL}/#organization` },
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: SITE_NAME,
+        url: `${SITE_URL}/`,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        description: PRODUCT_DESCRIPTION_EN,
+        image: `${SITE_URL}/icon-512.png`,
+        publisher: { "@id": `${SITE_URL}/#organization` },
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "EUR",
+          description: "Free plan, with an optional Premium subscription.",
+        },
+      },
+    ],
+  });
+}
+
+/**
  * Build the `head()` payload for a public route. Returns the exact shape
  * TanStack Router expects, so a route is `head: () => pageSeo({ … })`.
  */

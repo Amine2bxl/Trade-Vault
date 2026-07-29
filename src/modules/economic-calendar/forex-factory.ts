@@ -156,7 +156,7 @@ async function fetchWeek(url: string, signal: AbortSignal): Promise<CalendarEven
       accept: "application/json",
       // Identification honnête : la source doit pouvoir nous reconnaître et
       // nous contacter plutôt que nous bloquer en silence.
-      "user-agent": "TradeVault/1.0 (economic calendar sync; +https://tradevault.app)",
+      "user-agent": "TradeVault/1.0 (economic calendar sync; +https://tradevault.be)",
     },
   });
   if (!response.ok) {
