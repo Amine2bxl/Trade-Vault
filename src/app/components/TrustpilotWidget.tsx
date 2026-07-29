@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { SITE_DOMAIN } from "@/shared/site";
 
 // Official Trustpilot TrustBox — live rating + real review count, rendered by
 // Trustpilot's own script (CSP allows widget.trustpilot.com for script/frame).
@@ -66,7 +67,7 @@ export default function TrustpilotWidget({ className = "" }: { className?: strin
       data-theme="dark"
     >
       <a
-        href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
+        href={`https://www.trustpilot.com/review/${SITE_DOMAIN}`}
         target="_blank"
         rel="noreferrer"
       >

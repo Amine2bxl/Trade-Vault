@@ -1,0 +1,21 @@
+# Line endings.
+#
+# The repository already stores LF, and Prettier (which runs as an ESLint rule)
+# expects LF. Without this file, a Windows clone with the default
+# `core.autocrlf=true` checks every file out as CRLF, and `npm run lint` then
+# fails with thousands of "Delete ␍" errors on files nobody edited.
+#
+# `eol=lf` pins the working copy to LF on every platform, so the lint result is
+# the same for everyone. This changes no committed content — only what git
+# writes to disk on checkout.
+* text=auto eol=lf
+
+# Binary assets must never be touched.
+*.png binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary

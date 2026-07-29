@@ -1,9 +1,9 @@
 {
   "id": "/",
-  "name": "TradeVault — Trading Journal",
+  "name": "TradeVault",
   "short_name": "TradeVault",
-  "description": "Track your trades, analyze your performance, level up.",
-  "lang": "en",
+  "description": "TradeVault is an AI-powered trading journal and trading coach that helps traders analyze performance, follow their trading plan and improve discipline.",
+  "lang": "fr",
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",

@@ -11,6 +11,7 @@ import {
   YEARLY_SAVING,
 } from "../utils/pricing";
 import { SUPPORT_EMAIL } from "../types";
+import { SITE_DOMAIN } from "@/shared/site";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated
@@ -41,7 +42,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
       <span
         className={`font-display font-extrabold tracking-[-0.04em] text-[#ffffff] leading-none ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
       >
-        Trade Vault
+        TradeVault
       </span>
     </a>
   );
@@ -816,7 +817,17 @@ export default function Landing() {
                 <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />{" "}
                 Ton coach IA de trading personnel
               </div>
+              {/* The product name is the H1, on its own line and first in the
+                  reading order. Google's OAuth brand verification checks that
+                  the homepage clearly identifies the app under the exact name
+                  on the consent screen ("TradeVault") — burying it in body copy
+                  is what gets a submission rejected. The original emotional
+                  headline is kept immediately below, so the visual identity and
+                  the hierarchy of the page are unchanged. */}
               <h1 className="fade-up d1 font-display mt-6 text-[clamp(2.6rem,5.4vw,4.5rem)] font-extrabold leading-[1.02] tracking-[-0.045em] text-white">
+                TradeVault
+              </h1>
+              <p className="fade-up d1 font-display mt-3 text-[clamp(1.35rem,2.6vw,2rem)] font-bold leading-[1.15] tracking-[-0.03em] text-slate-200">
                 Deviens le trader{" "}
                 <span className="text-gradient relative inline-block">
                   discipliné
@@ -836,12 +847,17 @@ export default function Landing() {
                   </svg>
                 </span>{" "}
                 que tu veux devenir.
-              </h1>
-              <p className="fade-up d2 mt-6 text-base leading-7 text-slate-400 sm:text-lg max-w-[520px] mx-auto lg:mx-0">
-                TradeVault n'est pas un simple journal. C'est un{" "}
-                <strong className="text-slate-200">coach IA disponible 24h/24</strong> qui analyse
-                tes trades, détecte tes erreurs, comprend ta psychologie et t'accompagne vers une
-                progression réelle.
+              </p>
+              {/* One sentence that says what the product IS, in plain terms and
+                  without marketing framing — a reviewer (or a first-time
+                  visitor) has to understand it without scrolling. */}
+              <p className="fade-up d2 mt-5 text-base leading-7 text-slate-400 sm:text-lg max-w-[560px] mx-auto lg:mx-0">
+                <strong className="text-slate-200">
+                  TradeVault est un journal de trading et un coach IA
+                </strong>{" "}
+                qui aide les traders à analyser leurs performances, à suivre leur plan de trading et
+                à progresser en discipline. Connecte-toi avec Google pour retrouver ton journal, tes
+                statistiques et ton coach sur tous tes appareils.
               </p>
               <div className="fade-up d3 mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
                 <button
@@ -867,7 +883,7 @@ export default function Landing() {
               </div>
               {/* Trustpilot proof — visible on the very first screen, honest early-access framing */}
               <a
-                href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
+                href={`https://www.trustpilot.com/review/${SITE_DOMAIN}`}
                 target="_blank"
                 rel="noreferrer"
                 className="fade-up d4 mt-4 inline-flex items-center gap-2.5 rounded-full border border-white/[.08] bg-white/[.03] py-1.5 pl-2 pr-3.5 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]"

@@ -133,7 +133,7 @@ export function AuthModal({
               className="h-[30px] w-[30px] object-contain drop-shadow-[0_0_10px_rgba(56,189,248,.45)]"
             />
             <span className="font-display text-[1.05rem] font-extrabold leading-none tracking-[-0.04em] text-white">
-              Trade Vault
+              TradeVault
             </span>
           </div>
 
