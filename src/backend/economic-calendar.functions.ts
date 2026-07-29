@@ -81,6 +81,29 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // Le cron ne passe qu'une fois par jour (limite du plan) : c'est la
+    // consultation d'une semaine EN COURS qui entretient la fraîcheur.
+    //
+    // La synchro est ATTENDUE, et c'est délibéré : une fonction serverless est
+    // gelée dès la réponse envoyée, donc un `void promise` lancé après coup ne
+    // s'exécute tout simplement pas. Le coût reste borné — un seul visiteur
+    // toutes les 10 minutes remporte le créneau et paie l'attente (quelques
+    // centaines de ms, 15 s au pire absolu si la source ne répond pas) ; tous
+    // les autres lisent le cache sans rien payer. En échange, celui qui attend
+    // lit des données fraîches, puisque la synchro précède la lecture.
+    //
+    // Import dynamique : le module serveur ne doit pas entrer dans le bundle
+    // client, et il n'est de toute façon utile qu'ici.
+    if (Date.parse(data.from) <= Date.now() && Date.now() < Date.parse(data.to)) {
+      try {
+        const { syncIfStale } = await import("./economic-calendar.server");
+        await syncIfStale();
+      } catch (error) {
+        // Une synchro ratée ne doit jamais empêcher de servir le cache.
+        console.error("[economic-calendar] opportunistic sync failed", error);
+      }
+    }
+
     const [eventsResult, syncResult] = await Promise.all([
       sb
         .from("economic_events")
@@ -100,17 +123,6 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
     if (eventsResult.error) {
       console.error("[economic-calendar] read failed", eventsResult.error);
       return { events: [], lastSuccessAt: null, stale: true };
-    }
-
-    // Le cron ne passe qu'une fois par jour (limite du plan) : c'est la
-    // consultation d'une semaine EN COURS qui entretient la fraîcheur. Sans
-    // await — la page part immédiatement avec le cache, la synchro suit.
-    // Import dynamique : le module serveur ne doit pas entrer dans le bundle
-    // client, et il n'est de toute façon utile qu'ici.
-    if (Date.parse(data.from) <= Date.now() && Date.now() < Date.parse(data.to)) {
-      void import("./economic-calendar.server")
-        .then((m) => m.syncIfStale())
-        .catch((error) => console.error("[economic-calendar] opportunistic sync failed", error));
     }
 
     return {
