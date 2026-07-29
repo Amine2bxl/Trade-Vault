@@ -66,11 +66,7 @@ export default function TrustpilotWidget({ className = "" }: { className?: strin
       data-style-width="100%"
       data-theme="dark"
     >
-      <a
-        href={`https://www.trustpilot.com/review/${SITE_DOMAIN}`}
-        target="_blank"
-        rel="noreferrer"
-      >
+      <a href={`https://www.trustpilot.com/review/${SITE_DOMAIN}`} target="_blank" rel="noreferrer">
         Trustpilot
       </a>
     </div>

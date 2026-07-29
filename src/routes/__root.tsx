@@ -129,11 +129,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
         {/* schema.org identity for the brand + application. Rendered here rather
             than through head() so the JSON body is emitted verbatim. */}
-        <script
-          type="application/ld+json"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: structuredData() }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData() }} />
       </head>
       <body>
         {children}

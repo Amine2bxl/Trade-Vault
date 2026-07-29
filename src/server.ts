@@ -29,7 +29,10 @@ function robotsTxt(request: Request): Response {
     ? `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`
     : `User-agent: *\nDisallow: /\n`;
   return new Response(body, {
-    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" },
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+    },
   });
 }
 
@@ -42,7 +45,10 @@ function sitemapXml(): Response {
   }).join("\n");
   const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
   return new Response(body, {
-    headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" },
+    headers: {
+      "content-type": "application/xml; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+    },
   });
 }
 
