@@ -108,6 +108,10 @@ export default {
         }
         return response;
       }
+      if (pathname === "/api/cron/economic-calendar") {
+        const { handleEconomicCalendarCron } = await import("./backend/economic-calendar.server");
+        return await handleEconomicCalendarCron(request);
+      }
       if (pathname === "/api/emails/welcome" && request.method === "POST") {
         const { handleWelcomeEmail } = await import("./backend/lifecycle-emails.server");
         return await handleWelcomeEmail(request);

@@ -116,6 +116,78 @@ export type Database = {
         };
         Relationships: [];
       };
+      economic_calendar_sync: {
+        Row: {
+          consecutive_failures: number;
+          events_upserted: number | null;
+          id: boolean;
+          last_attempt_at: string | null;
+          last_error: string | null;
+          last_success_at: string | null;
+        };
+        Insert: {
+          consecutive_failures?: number;
+          events_upserted?: number | null;
+          id?: boolean;
+          last_attempt_at?: string | null;
+          last_error?: string | null;
+          last_success_at?: string | null;
+        };
+        Update: {
+          consecutive_failures?: number;
+          events_upserted?: number | null;
+          id?: boolean;
+          last_attempt_at?: string | null;
+          last_error?: string | null;
+          last_success_at?: string | null;
+        };
+        Relationships: [];
+      };
+      economic_events: {
+        Row: {
+          actual: string | null;
+          all_day: boolean;
+          country: string;
+          currency: string;
+          forecast: string | null;
+          id: string;
+          impact: string;
+          previous: string | null;
+          source: string;
+          starts_at: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          actual?: string | null;
+          all_day?: boolean;
+          country: string;
+          currency: string;
+          forecast?: string | null;
+          id: string;
+          impact: string;
+          previous?: string | null;
+          source?: string;
+          starts_at: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          actual?: string | null;
+          all_day?: boolean;
+          country?: string;
+          currency?: string;
+          forecast?: string | null;
+          id?: string;
+          impact?: string;
+          previous?: string | null;
+          source?: string;
+          starts_at?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       email_log: {
         Row: {
           email_key: string;

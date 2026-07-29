@@ -74,6 +74,13 @@ La carte complète de la documentation est dans [`README.md`](README.md).
   mémoire, rapports) avec **RLS owner-only**. Le bus d'événements est par-runtime.
 - **Migrations additives** : ne casse ni table ni donnée existante.
 
+## Style de réponse
+
+Concis. Pas de préambule, pas de récapitulatif de ce qui vient d'être demandé,
+pas d'options qu'on ne retiendra pas. Aller au fait, recommander plutôt
+qu'énumérer. Les exigences de justification ci-dessus tiennent en quelques
+lignes : elles demandent un raisonnement, pas un rapport.
+
 ## Stack
 
 TanStack Start · React 19 · TypeScript · Supabase (Postgres + RLS) ·

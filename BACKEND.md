@@ -102,6 +102,7 @@ détecte, logge l'erreur réelle capturée et rend une page d'erreur HTML).
 | --- | --- | --- | --- |
 | `/api/cron/monthly-reports` | GET | `monthly-reports.server` | Cron mensuel — rapports + e-mail + push |
 | `/api/cron/lifecycle-emails` | GET | `lifecycle-emails.server` | Cron quotidien — e-mails de cycle de vie, **puis** rappels d'objectifs (best-effort) |
+| `/api/cron/economic-calendar` | GET | `economic-calendar.server` | Synchro du calendrier économique dans le cache Postgres |
 | `/api/emails/welcome` | POST | `lifecycle-emails.server` | E-mail de bienvenue |
 | `/api/billing/checkout` | POST | `billing.server` | Création d'une session Stripe Checkout |
 | `/api/billing/portal` | POST | `billing.server` | Portail client Stripe |
@@ -122,6 +123,26 @@ Déclarées dans `vercel.json` :
 | --- | --- | --- |
 | `0 6 1 * *` | `/api/cron/monthly-reports` | Génère le rapport du mois écoulé pour chaque utilisateur ayant des trades, l'envoie par e-mail et pousse une notification avec deep-link `/?report=YYYY-MM` |
 | `0 8 * * *` | `/api/cron/lifecycle-emails` | Balayage des essais expirés → `free`/`expired` ; e-mail **trial-ending** (fin d'essai < 48 h) ; e-mail **winback** (essai expiré depuis 3 à 10 jours) ; **puis** rappels de plan à 6 mois (le handler ne s'exécute que le lundi) |
+
+| `0 5 * * *` | `/api/cron/economic-calendar` | Récupère l'export officiel du calendrier Forex Factory (semaine en cours + suivante) et l'upserte dans `economic_events`. La clé primaire est un hash stable de (instant, devise, titre) : les valeurs `actual` se remplissent d'elles-mêmes à la publication, sans doublon. Échec = aucune écriture destructive, cache précédent toujours servi, nouvelle tentative au passage suivant. Purge au-delà de 90 jours |
+
+> **Une fois par jour, et pourquoi ce n'est pas suffisant seul** — le plan
+> Vercel du projet (Hobby) n'autorise **qu'un passage de cron par jour** ; un
+> `*/15 * * * *` fait échouer le déploiement. Le cron quotidien est donc le
+> plancher garanti, et la fraîcheur réelle vient d'un **rafraîchissement
+> opportuniste** : la lecture d'une semaine en cours déclenche
+> `syncIfStale()` si la dernière tentative date de plus de 10 minutes.
+>
+> Le lecteur n'attend jamais ce rafraîchissement — la page est servie depuis
+> le cache et la synchro part sans `await`. La concurrence est réglée par un
+> compare-and-swap sur `last_attempt_at` : deux visiteurs simultanés ne
+> déclenchent qu'une seule synchro. Au pire, deux requêtes vers la source
+> toutes les 10 minutes, très en dessous de son plafond (~2 / 5 min).
+>
+> **Si le projet passe en Pro**, remplacer le planning par `*/15 * * * *` suffit
+> à retrouver une fraîcheur pilotée uniquement par le cron ; le rafraîchissement
+> opportuniste devient alors redondant mais reste inoffensif (il ne se
+> déclenchera quasiment jamais, le cache ayant toujours moins de 10 min).
 
 **Garde-fous des crons :**
 - Authentification par `Authorization: Bearer $CRON_SECRET`. **Sans `CRON_SECRET`
