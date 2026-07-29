@@ -86,8 +86,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: ROOT_DESCRIPTION },
       { name: "twitter:image", content: DEFAULT_OG_IMAGE },
     ],
+    // No canonical here: TanStack merges `meta` by name/property (child wins)
+    // but APPENDS `links`, so a root-level canonical would stack a second,
+    // conflicting canonical onto every child route. Each indexable route
+    // declares its own canonical via `pageSeo()` instead.
     links: [
-      { rel: "canonical", href: absoluteUrl("/") },
       {
         rel: "stylesheet",
         href: appCss,
