@@ -11,7 +11,7 @@
     },
     {
       "path": "/api/cron/economic-calendar",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 5 * * *"
     }
   ],
   "headers": [

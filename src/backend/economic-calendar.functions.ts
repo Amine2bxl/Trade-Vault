@@ -102,6 +102,17 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
       return { events: [], lastSuccessAt: null, stale: true };
     }
 
+    // Le cron ne passe qu'une fois par jour (limite du plan) : c'est la
+    // consultation d'une semaine EN COURS qui entretient la fraîcheur. Sans
+    // await — la page part immédiatement avec le cache, la synchro suit.
+    // Import dynamique : le module serveur ne doit pas entrer dans le bundle
+    // client, et il n'est de toute façon utile qu'ici.
+    if (Date.parse(data.from) <= Date.now() && Date.now() < Date.parse(data.to)) {
+      void import("./economic-calendar.server")
+        .then((m) => m.syncIfStale())
+        .catch((error) => console.error("[economic-calendar] opportunistic sync failed", error));
+    }
+
     return {
       events: ((eventsResult.data ?? []) as EventRow[]).map(rowToEvent),
       lastSuccessAt: syncResult.data?.last_success_at ?? null,

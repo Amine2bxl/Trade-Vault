@@ -126,6 +126,49 @@ export async function syncEconomicCalendar(): Promise<SyncResult> {
 }
 
 /**
+ * Délai minimal entre deux synchros déclenchées par la consultation de la page.
+ * 10 min laisse une marge confortable sous le plafond de la source (~2 requêtes
+ * / 5 min, et une synchro en consomme deux), quel que soit le nombre de
+ * lecteurs simultanés.
+ */
+const REFRESH_THROTTLE_MS = 10 * 60_000;
+
+/**
+ * Rafraîchissement opportuniste, déclenché par la lecture de la page.
+ *
+ * Le plan Vercel de ce projet ne permet qu'UN passage de cron par jour — trop
+ * lent pour voir arriver les valeurs réelles. La consultation prend donc le
+ * relais : la première visite après 10 minutes de silence relance une synchro.
+ * Personne n'attend le résultat (la page est servie depuis le cache), et
+ * personne ne déclenche deux synchros en même temps.
+ *
+ * L'anti-concurrence est un compare-and-swap : on ne réserve le créneau que si
+ * l'écriture conditionnelle de `last_attempt_at` touche effectivement la ligne.
+ * Deux requêtes simultanées ne peuvent pas gagner toutes les deux.
+ */
+export async function syncIfStale(): Promise<void> {
+  const sb = serviceClient();
+  if (!sb) return;
+
+  const cutoff = new Date(Date.now() - REFRESH_THROTTLE_MS).toISOString();
+  const { data, error } = await sb
+    .from("economic_calendar_sync")
+    .update({ last_attempt_at: new Date().toISOString() })
+    .eq("id", true)
+    .or(`last_attempt_at.is.null,last_attempt_at.lt.${cutoff}`)
+    .select("id");
+
+  if (error) {
+    console.error("[economic-calendar] refresh claim failed", error);
+    return;
+  }
+  // Créneau déjà pris par quelqu'un d'autre : il n'y a rien à faire.
+  if (!data || data.length === 0) return;
+
+  await syncEconomicCalendar();
+}
+
+/**
  * Purge des événements trop anciens pour intéresser qui que ce soit. Le cache
  * doit rester borné : sans cela la table grossit indéfiniment pour une donnée
  * que personne ne consulte.
