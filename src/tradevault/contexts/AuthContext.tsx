@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -133,11 +133,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, loading, login, signup, loginWithGoogle, loginWithDiscord, requestPasswordReset, updatePassword, deleteAccount, logout }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Memoised: this object used to be rebuilt on every AuthProvider render, so
+  // every consumer (the whole app tree) re-rendered even when nothing about the
+  // session had changed. All the callbacks below are already stable.
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      loading,
+      login,
+      signup,
+      loginWithGoogle,
+      loginWithDiscord,
+      requestPasswordReset,
+      updatePassword,
+      deleteAccount,
+      logout,
+    }),
+    [
+      user,
+      loading,
+      login,
+      signup,
+      loginWithGoogle,
+      loginWithDiscord,
+      requestPasswordReset,
+      updatePassword,
+      deleteAccount,
+      logout,
+    ],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

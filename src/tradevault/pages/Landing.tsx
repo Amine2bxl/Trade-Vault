@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import TrustpilotWidget, { TRUSTPILOT_BUSINESS_UNIT_ID } from "../components/TrustpilotWidget";
+import { CONTACT_EMAIL, SITE_DOMAIN, TRUSTPILOT_REVIEW_URL } from "@/lib/site";
 import logoSrc from "@/assets/tradevault-logo.png";
 
 /**
@@ -412,7 +413,18 @@ function AuthModal({ onClose, initialMode = "signup", plan }: { onClose: () => v
         <button onClick={onClose} aria-label="Fermer" className="absolute right-3.5 top-3.5 z-10 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-white/[.06] hover:text-white transition"><Icon n="close" cls="h-4 w-4" /></button>
 
         <div className="p-7 sm:p-8">
-          <img src={logoSrc} alt="TradeVault" width={32} height={32} className="h-8 w-8 object-contain" />
+          {/* Brand lockup — logo + wordmark + canonical domain. A form that asks
+              for a password must state whose it is; a bare logo doesn't. */}
+          <div className="flex items-center gap-2.5">
+            <span className="relative grid h-9 w-9 shrink-0 place-items-center">
+              <span className="absolute inset-0 rounded-xl bg-cyan-500/30 blur-lg" />
+              <img src={logoSrc} alt="" aria-hidden width={36} height={36} className="relative h-9 w-9 rounded-xl object-contain drop-shadow-[0_0_10px_rgba(6,182,212,.45)]" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-[15px] font-bold leading-none tracking-[-0.01em] text-white">TradeVault</span>
+              <span className="mt-1 block text-[9.5px] font-semibold uppercase tracking-[0.2em] text-cyan-400/70">{SITE_DOMAIN}</span>
+            </span>
+          </div>
 
           {plan && (
             <div className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/[.06] px-2.5 py-1 text-[11px] font-semibold text-cyan-300"><Icon n="sparkle" cls="h-3 w-3" />{plan}</div>
@@ -483,6 +495,14 @@ function AuthModal({ onClose, initialMode = "signup", plan }: { onClose: () => v
             {mode === "login" ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
             <button onClick={toggleMode} className="font-semibold text-cyan-300 hover:text-cyan-200 transition">{mode === "login" ? "Créer un compte" : "Se connecter"}</button>
           </p>
+          {/* Trust markers — reassurance at the exact moment credentials are asked for. */}
+          <div className="mt-5 flex items-center justify-center gap-3 border-t border-white/[.06] pt-4 text-[10.5px] font-semibold text-slate-500">
+            <span className="inline-flex items-center gap-1.5"><Icon n="lock" cls="h-3 w-3 text-emerald-400/70" />Chiffré</span>
+            <span className="text-slate-700">·</span>
+            <span className="inline-flex items-center gap-1.5"><Icon n="shield" cls="h-3 w-3 text-emerald-400/70" />Données RGPD</span>
+            <span className="text-slate-700">·</span>
+            <span>Sans carte bancaire</span>
+          </div>
           <p className="mt-3 text-center text-[10.5px] leading-4 text-slate-600">
             En continuant, tu acceptes nos <a href="/terms" className="underline hover:text-slate-400">Conditions</a> et notre <a href="/privacy" className="underline hover:text-slate-400">Politique de confidentialité</a>.
           </p>
@@ -950,7 +970,7 @@ export default function Landing() {
                 )}
                 <p className="text-sm font-bold text-slate-200">Sois parmi les tout premiers à laisser un avis.</p>
                 <p className="mt-2 text-xs leading-6 text-slate-500">Ton retour façonne directement la feuille de route du produit.</p>
-                <a href="https://www.trustpilot.com/review/tradevaultt.vercel.app" target="_blank" rel="noreferrer" className="btn-ghost mt-6 w-full">Voir sur Trustpilot <Icon n="arrow" cls="h-4 w-4" /></a>
+                <a href={TRUSTPILOT_REVIEW_URL} target="_blank" rel="noreferrer" className="btn-ghost mt-6 w-full">Voir sur Trustpilot <Icon n="arrow" cls="h-4 w-4" /></a>
               </div>
               <div onPointerMove={spot} className="spot glass-card flex flex-col justify-center p-8">
                 <h3 className="font-display text-lg font-bold text-white">Pourquoi on ne met pas de faux témoignages ici</h3>
@@ -1103,8 +1123,8 @@ export default function Landing() {
                 <a href="/terms" className="hover:text-slate-300 transition">Conditions</a>
                 <a href="/privacy" className="hover:text-slate-300 transition">Confidentialité</a>
               </div>
-              <a href="mailto:contact@tradevault.app" className="inline-flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-cyan-300 transition">
-                <Icon n="mail" cls="h-3.5 w-3.5" /> contact@tradevault.app
+              <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-cyan-300 transition">
+                <Icon n="mail" cls="h-3.5 w-3.5" /> {CONTACT_EMAIL}
               </a>
             </div>
           </div>

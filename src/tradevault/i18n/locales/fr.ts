@@ -511,6 +511,33 @@ const fr: Dict = {
   'news.today': "Aujourd'hui",
   'news.noEvents': 'Aucun événement pour ces filtres.',
   'news.approx': 'approx.',
+  // Provenance + fraîcheur des données
+  'news.source': 'Données : Forex Factory',
+  'news.sourceOffline': 'Données : calendrier intégré (flux Forex Factory indisponible)',
+  'news.updated': 'Mis à jour {t}',
+  'news.refresh': 'Actualiser',
+  'news.refreshing': 'Actualisation…',
+  // Hiérarchie
+  'news.nextUp': 'Prochain',
+  'news.inHours': 'dans {h} h {m} min',
+  'news.inMinutes': 'dans {m} min',
+  'news.now': 'maintenant',
+  'news.released': 'Publié',
+  'news.highImpactCount': '{n} à fort impact',
+  'news.eventCount': '{n} événements',
+  'news.allDay': 'Journée',
+  // Filtres rapides
+  'news.presetAll': 'Tout',
+  'news.presetHighOnly': 'Fort impact',
+  'news.presetMajors': 'Majeures',
+  'news.presetToday': "Aujourd'hui",
+  // Colonnes de valeurs
+  'news.actual': 'Réel',
+  'news.forecast': 'Prévu',
+  'news.previous': 'Précédent',
+  'news.beat': 'Au-dessus des prévisions',
+  'news.miss': 'En dessous des prévisions',
+  'news.inline': 'Conforme aux prévisions',
 
   // Comptes (switcher)
   'account.switch': 'Changer de compte',

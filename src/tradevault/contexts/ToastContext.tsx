@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -33,8 +33,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => remove(id), 4000);
   }, [remove]);
 
+  // Stable identity: a fresh `{ toast }` on every render (and this provider
+  // re-renders each time a toast appears or expires) invalidated every consumer.
+  const value = useMemo<Ctx>(() => ({ toast }), [toast]);
+
   return (
-    <ToastCtx.Provider value={{ toast }}>
+    <ToastCtx.Provider value={value}>
       {children}
       <div className="fixed z-[100] bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 flex flex-col gap-2 items-center md:items-end pointer-events-none px-4 md:px-0 w-full md:w-auto">
         {items.map((t) => (

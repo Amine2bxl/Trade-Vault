@@ -73,7 +73,10 @@ async function stripe(
 }
 
 function siteUrl(request: Request): string {
-  return process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  // Stripe/Coinbase return URLs must land on the canonical domain, otherwise the
+  // post-checkout session lookup happens on a different origin than the one the
+  // user signed in on.
+  return (process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin).replace(/\/+$/, "");
 }
 
 /** Finds (or creates) the Stripe customer for a user, persisting the id. */

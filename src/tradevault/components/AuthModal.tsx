@@ -1,9 +1,44 @@
 import { useState, FormEvent } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, BookOpen, BarChart3, Sparkles, Target, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, BookOpen, BarChart3, Sparkles, Target, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useT } from '../i18n/LanguageContext';
 import { cn } from '../utils/cn';
+import { SITE_DOMAIN, SITE_NAME } from '@/lib/site';
 import logoSrc from '@/assets/tradevault-logo.png';
+
+/**
+ * The brand lockup: logo, wordmark and the canonical domain. Repeated on both
+ * the desktop panel and the mobile card so the sign-in screen always identifies
+ * itself — a credential form that doesn't say whose it is reads as a phish.
+ */
+function BrandLockup({ size }: { size: 'sm' | 'lg' }) {
+  const box = size === 'lg' ? 'w-14 h-14' : 'w-11 h-11';
+  const radius = size === 'lg' ? 'rounded-2xl' : 'rounded-xl';
+  const px = size === 'lg' ? 56 : 44;
+  return (
+    <div className={cn('flex items-center gap-3', size === 'lg' && 'flex-col gap-3')}>
+      <div className={cn('relative shrink-0', box)}>
+        <div className={cn('absolute inset-0 bg-cyan-500/40 blur-lg opacity-70', radius)} />
+        <img
+          src={logoSrc}
+          alt=""
+          aria-hidden
+          width={px}
+          height={px}
+          className={cn('relative drop-shadow-[0_0_12px_rgba(6,182,212,0.5)]', box, radius)}
+        />
+      </div>
+      <div className={cn(size === 'lg' && 'text-center')}>
+        <div className={cn('font-bold text-white leading-none', size === 'lg' ? 'text-2xl' : 'text-xl')}>
+          {SITE_NAME}
+        </div>
+        <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/70">
+          {SITE_DOMAIN}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function useFeatures() {
   const { t } = useT();
@@ -100,12 +135,8 @@ export default function AuthModal({ initialMode = 'login', onBack }: AuthModalPr
           {/* Marketing / product intro — desktop only, so the mobile card always fits
               within one screen height without needing to scroll. */}
           <div className="hidden md:block text-left animate-fade-in-up">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="relative w-11 h-11 shrink-0">
-                <div className="absolute inset-0 rounded-xl bg-cyan-500/40 blur-lg opacity-70" />
-                <img src={logoSrc} alt="TradeVault" width={44} height={44} className="relative w-11 h-11 rounded-xl drop-shadow-[0_0_12px_rgba(6,182,212,0.5)]" />
-              </div>
-              <span className="text-xl font-bold text-white">TradeVault</span>
+            <div className="mb-5">
+              <BrandLockup size="sm" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-3">
               {t('auth.headline')}
@@ -129,20 +160,26 @@ export default function AuthModal({ initialMode = 'login', onBack }: AuthModalPr
           {/* Auth card */}
           <div className="w-full max-w-md mx-auto flex flex-col justify-center animate-slide-in">
         <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl shadow-black/40">
-          {/* Logo */}
-          <div className="text-center mb-8 md:hidden">
-            <div className="relative w-14 h-14 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-2xl bg-cyan-500/40 blur-xl opacity-70" />
-              <img
-                src={logoSrc}
-                alt="TradeVault"
-                width={56}
-                height={56}
-                className="relative w-14 h-14 rounded-2xl drop-shadow-[0_0_14px_rgba(6,182,212,0.5)]"
-              />
-            </div>
-            <h1 className="text-2xl font-bold text-white">TradeVault</h1>
-            <p className="text-sm text-slate-400 mt-1">{t('auth.headline')}</p>
+          {/* Brand — mobile only; the desktop panel to the left already carries it. */}
+          <div className="flex flex-col items-center text-center mb-8 md:hidden">
+            <BrandLockup size="lg" />
+            <p className="text-sm text-slate-400 mt-3">{t('auth.headline')}</p>
+          </div>
+
+          {/* Desktop: a compact brand line inside the card, so the credential
+              form is never visually detached from the identity it belongs to. */}
+          <div className="hidden md:flex items-center gap-2.5 mb-6 pb-5 border-b border-white/[0.06]">
+            <img
+              src={logoSrc}
+              alt=""
+              aria-hidden
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-lg shrink-0"
+            />
+            <span className="text-sm font-bold text-white">{SITE_NAME}</span>
+            <span className="text-[11px] text-slate-600">·</span>
+            <span className="text-[11px] font-medium text-slate-500">{SITE_DOMAIN}</span>
           </div>
 
           {/* Tab Switcher */}
@@ -294,10 +331,15 @@ export default function AuthModal({ initialMode = 'login', onBack }: AuthModalPr
             </button>
           </div>
 
-          {/* Footer */}
-          <p className="text-[10px] text-slate-600 text-center mt-6 leading-relaxed">
-            {t('auth.termsAgree')} <a href="/terms" className="underline hover:text-slate-400">{t('auth.termsOfService')}</a> {t('auth.and')} <a href="/privacy" className="underline hover:text-slate-400">{t('auth.privacyPolicy')}</a>.<br />
+          {/* Trust marker — reassures on a form that asks for a password. */}
+          <div className="flex items-center justify-center gap-1.5 mt-6 text-[10px] font-semibold text-slate-500">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
             {t('auth.dataStored')}
+          </div>
+
+          {/* Footer */}
+          <p className="text-[10px] text-slate-600 text-center mt-3 leading-relaxed">
+            {t('auth.termsAgree')} <a href="/terms" className="underline hover:text-slate-400">{t('auth.termsOfService')}</a> {t('auth.and')} <a href="/privacy" className="underline hover:text-slate-400">{t('auth.privacyPolicy')}</a>.
           </p>
         </div>
           </div>

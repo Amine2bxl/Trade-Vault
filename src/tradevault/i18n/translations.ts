@@ -763,6 +763,33 @@ const en = {
   'news.today': 'Today',
   'news.noEvents': 'No events match these filters.',
   'news.approx': 'approx.',
+  // Data provenance + freshness
+  'news.source': 'Data: Forex Factory',
+  'news.sourceOffline': 'Data: built-in schedule (Forex Factory feed unavailable)',
+  'news.updated': 'Updated {t}',
+  'news.refresh': 'Refresh',
+  'news.refreshing': 'Refreshing…',
+  // Hierarchy
+  'news.nextUp': 'Next up',
+  'news.inHours': 'in {h}h {m}m',
+  'news.inMinutes': 'in {m} min',
+  'news.now': 'now',
+  'news.released': 'Released',
+  'news.highImpactCount': '{n} high-impact',
+  'news.eventCount': '{n} events',
+  'news.allDay': 'All day',
+  // Quick filter presets
+  'news.presetAll': 'All',
+  'news.presetHighOnly': 'High impact',
+  'news.presetMajors': 'Majors',
+  'news.presetToday': 'Today',
+  // Value columns
+  'news.actual': 'Actual',
+  'news.forecast': 'Forecast',
+  'news.previous': 'Previous',
+  'news.beat': 'Beat forecast',
+  'news.miss': 'Missed forecast',
+  'news.inline': 'In line with forecast',
 
   // Accounts (switcher)
   'account.switch': 'Switch account',

@@ -18,6 +18,7 @@ import {
   Palette,
   CreditCard,
 } from "lucide-react";
+import { memo } from "react";
 import { Page } from "../types";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,7 +40,10 @@ interface NavItem {
   icon: typeof LayoutDashboard;
 }
 
-export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarProps) {
+// Memoised: the sidebar rebuilds its whole nav tree on render but only four
+// scalar props affect it, so it should not re-render when unrelated app state
+// (an open modal, a toast, a keystroke) changes.
+const Sidebar = memo(function Sidebar({ page, setPage, totalPnl, winRate }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t } = useT();
 
@@ -213,4 +217,6 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       )}
     </aside>
   );
-}
+});
+
+export default Sidebar;

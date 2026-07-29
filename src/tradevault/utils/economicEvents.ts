@@ -2,19 +2,26 @@
 //  Economic calendar — provider architecture.
 // ------------------------------------------------------------
 //  The UI only talks to `getEventsForWeek()`, which delegates to the
-//  active EventProvider. Today that is `builtinScheduleProvider`: a
-//  fully offline, rules-based generator of the recurring macro events
-//  every trader tracks (NFP, CPI, FOMC, jobless claims, PMIs…).
+//  active EventProvider.
 //
-//  Times are INDICATIVE (each event carries `approximate`) — the UI
-//  labels them as such. Swapping in a live data source later means
-//  implementing EventProvider once and changing `activeProvider`;
-//  no page code changes. Deliberately NOT scraping Forex Factory
-//  (ToS) — this module is the seam where a licensed API plugs in.
+//  PRIMARY source is Forex Factory's own public calendar feed, fetched
+//  server-side by `/api/economic-calendar` (see economic-calendar.server.ts).
+//  That is the JSON export Forex Factory publishes for syndication — no
+//  scraping, no ToS breach — and it carries confirmed release times plus
+//  actual / forecast / previous values.
+//
+//  FALLBACK (feed down, or a week outside the feed's ±1-week window) is
+//  `builtinScheduleProvider`: a fully offline, rules-based generator of the
+//  recurring macro events every trader tracks (NFP, CPI, FOMC, jobless
+//  claims, PMIs…). Its times are INDICATIVE — each event carries
+//  `approximate` and the UI labels them as such.
 // ============================================================
 
 export type ImpactLevel = "high" | "medium" | "low";
 export type Currency = "USD" | "EUR" | "GBP" | "JPY" | "CAD" | "AUD" | "NZD" | "CHF" | "CNY";
+
+/** Where a week's events came from — surfaced in the UI attribution line. */
+export type EventSource = "forexfactory" | "builtin";
 
 export interface EconomicEvent {
   id: string;
@@ -30,6 +37,28 @@ export interface EconomicEvent {
   approximate: boolean;
   /** Short plain-language note: what the release measures and how it typically moves markets. */
   note: string;
+  /**
+   * Exact release instant as an ISO-8601 string with offset. Present on
+   * feed-sourced events, where it is authoritative — the UI formats it in the
+   * viewer's real timezone instead of going through the ET/DST heuristic.
+   */
+  at?: string;
+  /** Published value, once released. Feed-sourced events only. */
+  actual?: string;
+  /** Consensus expectation ahead of the release. Feed-sourced events only. */
+  forecast?: string;
+  /** Prior period's value. Feed-sourced events only. */
+  previous?: string;
+  /** Bank holidays and other day-long entries carry no meaningful clock time. */
+  allDay?: boolean;
+}
+
+/** A week of events plus the provenance the UI needs to label them honestly. */
+export interface EconomicWeek {
+  events: EconomicEvent[];
+  source: EventSource;
+  /** ISO instant the underlying data was last pulled from the provider. */
+  fetchedAt: string;
 }
 
 export interface EventProvider {
@@ -78,6 +107,36 @@ export function formatLocalTime(dateIso: string, etHour: number, etMinute: numbe
   const utc = Date.UTC(y, m - 1, d, etHour + (isDst ? 4 : 5), etMinute);
   const local = new Date(utc);
   return `${String(local.getHours()).padStart(2, "0")}:${String(local.getMinutes()).padStart(2, "0")}`;
+}
+
+/**
+ * Display time for an event in the viewer's own timezone. Feed-sourced events
+ * carry an exact instant (`at`) so we format that directly; rules-based events
+ * fall back to the ET + DST-heuristic path above.
+ */
+export function formatEventTime(e: EconomicEvent): string {
+  if (e.allDay) return "—";
+  if (e.at) {
+    const d = new Date(e.at);
+    if (!Number.isNaN(d.getTime())) {
+      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    }
+  }
+  return formatLocalTime(e.date, e.etHour, e.etMinute);
+}
+
+/** Absolute release instant, used for "next event" logic and countdowns. */
+export function eventTimestamp(e: EconomicEvent): number {
+  if (e.at) {
+    const t = new Date(e.at).getTime();
+    if (!Number.isNaN(t)) return t;
+  }
+  const [y, m, d] = e.date.split("-").map(Number);
+  const dstStart = nthWeekdayOfMonth(y, 2, 0, 2);
+  const dstEnd = nthWeekdayOfMonth(y, 10, 0, 1);
+  const probe = new Date(y, m - 1, d);
+  const isDst = probe >= dstStart && probe < dstEnd;
+  return Date.UTC(y, m - 1, d, e.etHour + (isDst ? 4 : 5), e.etMinute);
 }
 
 // ---- built-in rules-based schedule -----------------------------------------
@@ -676,11 +735,66 @@ export const builtinScheduleProvider: EventProvider = {
   },
 };
 
-/** The seam: point this at a licensed API provider later — pages won't change. */
-const activeProvider: EventProvider = builtinScheduleProvider;
-
+/**
+ * Offline fallback, used when the Forex Factory feed is unreachable or the
+ * requested week falls outside its ±1-week coverage.
+ */
 export function getEventsForWeek(weekStart: Date): Promise<EconomicEvent[]> {
-  return activeProvider.getEventsForWeek(weekStart);
+  return builtinScheduleProvider.getEventsForWeek(weekStart);
 }
 
 export const CURRENCIES: Currency[] = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "CNY"];
+
+const CURRENCY_SET = new Set<string>(CURRENCIES);
+
+/** Narrow an arbitrary feed country code to a supported Currency. */
+export function asCurrency(code: string): Currency | null {
+  const c = code.toUpperCase();
+  return CURRENCY_SET.has(c) ? (c as Currency) : null;
+}
+
+// ---- plain-language notes for feed-sourced events ---------------------------
+
+/**
+ * The feed ships titles and numbers but no explanation. Traders learning the
+ * calendar need the "so what", so every rules-based note above is reused by
+ * keyword, with an impact-tiered default for anything unmatched. Keeping this
+ * in one table means a note improved for the built-in schedule automatically
+ * improves the live feed too.
+ */
+const NOTE_KEYWORDS: [RegExp, string][] = [
+  [/non-?farm|nfp\b/i, "US jobs added last month. The single most volatile monthly release for USD pairs and indices."],
+  [/\badp\b/i, "Private payrolls preview, two days before NFP. Sets expectations more than it moves price."],
+  [/core pce|pce price/i, "The Fed's preferred inflation gauge, released near month-end with personal income/spending."],
+  [/\bcpi\b|consumer price|inflation rate/i, "Inflation print. Drives rate expectations — large moves on any surprise vs forecast."],
+  [/\bppi\b|producer price/i, "Wholesale inflation, usually just after CPI. Confirms or fades the CPI narrative."],
+  [/retail sales/i, "Consumer spending. Strong beats lift yields and the currency; misses fuel rate-cut bets."],
+  [/\bism\b|manufacturing pmi|services pmi|\bpmi\b/i, "Business activity survey. Above 50 = expansion, below 50 = contraction."],
+  [/jobless claims/i, "Weekly unemployment filings. The trend matters more than any single week."],
+  [/\bjolts\b|job openings/i, "Open-positions count. A labour-tightness gauge central banks watch closely."],
+  [/unemployment rate|employment change|payroll|claimant count/i, "Labour-market read. Jobs strength feeds directly into rate expectations."],
+  [/\bfomc\b|fed(eral)? funds|rate (decision|statement)|interest rate|bank rate|cash rate|official cash/i, "Central-bank rate decision. The highest-volatility scheduled event for this currency."],
+  [/press conference|\bpresser\b/i, "Central-bank press conference — the tone here often moves price more than the decision itself."],
+  [/member|speaks|speech|testimony|governor|chair/i, "Policymaker remarks. Watch for hints on the rate path; unscripted Q&A can move markets."],
+  [/\bgdp\b|gross domestic/i, "Economic growth read. Big misses reprice the whole rate path."],
+  [/consumer confidence|consumer sentiment|business climate|\bifo\b|\bzew\b|sentiment index/i, "Survey of how confident households or businesses feel. Leads spending and investment."],
+  [/crude oil inventor|natural gas storage/i, "Weekly US energy stock change. Mostly an oil/energy-desk event."],
+  [/trade balance|current account/i, "Net exports vs imports. Persistent deficits weigh on a currency over time."],
+  [/durable goods/i, "New orders for long-lived manufactured goods — a business-investment proxy."],
+  [/housing|building permits|home sales|mortgage/i, "Housing-market activity. Rate-sensitive, so it reads as a lagging indicator of policy."],
+  [/bond auction|\bauction\b/i, "Government debt auction. Weak demand pushes yields up and can drag the currency."],
+  [/bank holiday|holiday/i, "Market holiday — thin liquidity means wider spreads and erratic moves."],
+];
+
+const NOTE_BY_IMPACT: Record<ImpactLevel, string> = {
+  high: "High-impact release: expect a fast repricing and wider spreads around the print.",
+  medium: "Medium-impact release. Usually a short-lived move unless it diverges sharply from forecast.",
+  low: "Low-impact release. Mostly background context — rarely moves price on its own.",
+};
+
+export function noteForEvent(title: string, impact: ImpactLevel): string {
+  for (const [re, note] of NOTE_KEYWORDS) {
+    if (re.test(title)) return note;
+  }
+  return NOTE_BY_IMPACT[impact];
+}

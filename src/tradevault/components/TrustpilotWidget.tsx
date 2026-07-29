@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { TRUSTPILOT_REVIEW_URL } from "@/lib/site";
 
 // Official Trustpilot TrustBox — live rating + real review count, rendered by
 // Trustpilot's own script (CSP allows widget.trustpilot.com for script/frame).
@@ -65,11 +66,7 @@ export default function TrustpilotWidget({ className = "" }: { className?: strin
       data-style-width="100%"
       data-theme="dark"
     >
-      <a
-        href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
-        target="_blank"
-        rel="noreferrer"
-      >
+      <a href={TRUSTPILOT_REVIEW_URL} target="_blank" rel="noreferrer">
         Trustpilot
       </a>
     </div>

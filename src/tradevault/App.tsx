@@ -1,8 +1,11 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import Sidebar from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
-import TradeModal from "./components/TradeModal";
+// Both modals are heavy (rich form + image handling) and only mount on demand —
+// keeping them out of the main chunk shortens the first paint of the shell.
+const TradeModal = lazy(() => import("./components/TradeModal"));
+const TradeDetailModal = lazy(() => import("./components/TradeDetailModal"));
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
 import Dashboard from "./pages/Dashboard";
@@ -27,7 +30,6 @@ const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
 const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
-import TradeDetailModal from "./components/TradeDetailModal";
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, Page } from "./types";
 import {
@@ -48,7 +50,10 @@ import { buildDemoTrades } from "./utils/demoTrades";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
-import Landing from "./pages/Landing";
+// The landing page (plus its inline icon set and Trustpilot widget) is ~200 kB
+// that a signed-in trader never renders. Splitting it out is the single biggest
+// win on the authenticated first load.
+const Landing = lazy(() => import("./pages/Landing"));
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import PushOnboardingBanner from "./components/PushOnboardingBanner";
@@ -154,7 +159,10 @@ function AppContent() {
     };
   }, [user?.id, activeId, accountsReady]);
 
-  const stats = computeStats(trades);
+  // computeStats walks every trade. It used to run on *every* AppContent
+  // render — including each keystroke in a child modal — which is what made
+  // large journals feel sluggish. It only depends on `trades`.
+  const stats = useMemo(() => computeStats(trades), [trades]);
 
   // Optimistic writes: the UI updates instantly and rolls back to the previous
   // snapshot if the request fails, so saving never blocks the workflow.
@@ -356,7 +364,12 @@ function AppContent() {
 
   // Signed-out visitors get the public landing page (its CTAs open the auth
   // screen). Signed-in users fall through straight into the product.
-  if (!isAuthenticated) return <Landing />;
+  if (!isAuthenticated)
+    return (
+      <Suspense fallback={<div className="min-h-dvh bg-[#060d16]" />}>
+        <Landing />
+      </Suspense>
+    );
 
   if (onboarding === "loading") {
     return (
@@ -456,10 +469,10 @@ function AppContent() {
       <Suspense fallback={null}>
         <AiAssistant trades={trades} />
       </Suspense>
-      {modalOpen && (
-        <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
-      )}
       <Suspense fallback={null}>
+        {modalOpen && (
+          <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
+        )}
         {paletteOpen && (
           <CommandPalette
             open={paletteOpen}
@@ -478,14 +491,14 @@ function AppContent() {
             onImport={handleImportTrades}
           />
         )}
+        {viewingTrade && (
+          <TradeDetailModal
+            trades={[viewingTrade]}
+            date={viewingTrade.date}
+            onClose={() => setViewingTrade(null)}
+          />
+        )}
       </Suspense>
-      {viewingTrade && (
-        <TradeDetailModal
-          trades={[viewingTrade]}
-          date={viewingTrade.date}
-          onClose={() => setViewingTrade(null)}
-        />
-      )}
     </div>
   );
 }

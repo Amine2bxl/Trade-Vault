@@ -453,6 +453,11 @@ input[type="number"] { -moz-appearance: textfield; }
 .stagger-6 { animation-delay: 360ms; }
 .stagger-7 { animation-delay: 420ms; }
 
+/* Horizontally-scrollable chip rows (filter presets) keep the swipe but drop
+   the scrollbar chrome, which otherwise reserves height and looks broken. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 .glass {
   /* Deep-navy glass — same blue family as the landing cards (#0a1625/#0b1727) */
   background: linear-gradient(135deg, rgba(13, 24, 40, 0.72) 0%, rgba(10, 19, 32, 0.44) 100%);

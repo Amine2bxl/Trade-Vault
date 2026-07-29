@@ -9,6 +9,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { absoluteUrl, SITE_NAME, SITE_URL } from "../lib/site";
 import { reportAppError } from "../lib/error-reporting";
 import { lockZoom } from "../lib/lock-zoom";
 import ErrorScreen from "../tradevault/components/ErrorScreen";
@@ -43,6 +44,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+const DEFAULT_DESCRIPTION =
+  "TradeVault is a comprehensive trading journal: log every trade, analyse your performance and build the discipline that compounds.";
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -53,23 +57,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "TradeVault" },
-      { title: "TradeVault" },
-      { name: "description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
-      { property: "og:title", content: "TradeVault" },
-      { property: "og:description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
+      { name: "apple-mobile-web-app-title", content: SITE_NAME },
+      { title: SITE_NAME },
+      { name: "description", content: DEFAULT_DESCRIPTION },
+      { property: "og:site_name", content: SITE_NAME },
+      { property: "og:title", content: SITE_NAME },
+      { property: "og:description", content: DEFAULT_DESCRIPTION },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/icon-512.png" },
+      // Crawlers and chat unfurlers reject relative image paths — these must be
+      // absolute, which is why they come from the shared site config.
+      { property: "og:url", content: SITE_URL },
+      { property: "og:image", content: absoluteUrl("/icon-512.png") },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "TradeVault" },
-      { name: "twitter:description", content: "Trade Tracker Pro is a comprehensive trading journal application for traders to log, analyze, and improve their performance." },
-      { name: "twitter:image", content: "/icon-512.png" },
+      { name: "twitter:title", content: SITE_NAME },
+      { name: "twitter:description", content: DEFAULT_DESCRIPTION },
+      { name: "twitter:image", content: absoluteUrl("/icon-512.png") },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "canonical", href: SITE_URL },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },

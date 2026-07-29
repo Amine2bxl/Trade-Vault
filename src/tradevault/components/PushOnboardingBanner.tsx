@@ -3,6 +3,7 @@ import { Bell, X, Loader2, Lock, ChevronDown, CheckCircle2 } from "lucide-react"
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
+import { SITE_DOMAIN } from "@/lib/site";
 
 // Non-intrusive dashboard banner that sells push notifications in one line
 // and enables them in one click. If the browser has them blocked, it swaps
@@ -130,9 +131,7 @@ export default function PushOnboardingBanner({ userId }: { userId: string }) {
                   1
                 </span>
               </span>
-              <span className="text-[11px] text-slate-500 font-mono truncate">
-                tradevaultt.vercel.app
-              </span>
+              <span className="text-[11px] text-slate-500 font-mono truncate">{SITE_DOMAIN}</span>
             </div>
             <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400">
               <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-black flex items-center justify-center shrink-0">

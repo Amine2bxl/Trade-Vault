@@ -63,6 +63,17 @@ export default {
         }
         return response;
       }
+      // Public economic calendar (Forex Factory feed, normalised + edge-cached).
+      // Unauthenticated on purpose: the payload is identical for every viewer.
+      if (pathname === "/api/economic-calendar" && request.method === "GET") {
+        const { handleEconomicCalendar } = await import("./lib/economic-calendar.server");
+        return await handleEconomicCalendar(request);
+      }
+      // Daily freshness check — alerts if the feed stops covering the current week.
+      if (pathname === "/api/cron/economic-calendar") {
+        const { handleEconomicCalendarCron } = await import("./lib/economic-calendar.server");
+        return await handleEconomicCalendarCron(request);
+      }
       if (pathname === "/api/emails/welcome" && request.method === "POST") {
         const { handleWelcomeEmail } = await import("./lib/lifecycle-emails.server");
         return await handleWelcomeEmail(request);

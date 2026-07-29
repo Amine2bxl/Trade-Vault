@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -33,7 +33,9 @@ interface MobileNavProps {
   onAddTrade: () => void;
 }
 
-export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps) {
+// Memoised for the same reason as the desktop Sidebar — all three props are
+// stable, so unrelated app-state churn should not re-render the bottom bar.
+const MobileNav = memo(function MobileNav({ page, setPage, onAddTrade }: MobileNavProps) {
   const { t } = useT();
   const { user } = useAuth();
   const hasDraft = useHasTradeDraft(user?.id);
@@ -222,4 +224,6 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       )}
     </>
   );
-}
+});
+
+export default MobileNav;

@@ -28,7 +28,10 @@ function json(body: unknown, status = 200): Response {
 }
 
 function siteUrl(request: Request): string {
-  return process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  // PUBLIC_SITE_URL pins links to the canonical domain (tradevault.be) even when
+  // the cron fires against a *.vercel.app deployment URL. The request origin is
+  // only a fallback for local dev.
+  return (process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin).replace(/\/+$/, "");
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {

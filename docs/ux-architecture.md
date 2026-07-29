@@ -95,11 +95,15 @@
 
 - **Objectif** — Calendrier économique intégré façon Forex Factory : semaine courante, filtres devises et niveau d'impact (codes couleur), heure locale, mise à jour hebdomadaire automatisée, vulgarisation de l'impact de chaque type d'annonce.
 - **Bénéfice utilisateur** — Plus d'aller-retour vers un site externe ; le contexte news vit à côté du journal (badge « jour de news » sur les trades du jour).
-- **Approche d'implémentation** — Table `economic_events` + Edge Function planifiée (cron hebdo) ingérant une **source de données licite** — API dédiée ou flux public ; ⚠️ ne pas scraper Forex Factory (violation ToS, fragile) : « style FF » = pattern UI, pas la source. UI native : tableau semaine, chips devise, pastilles impact (rouge/orange/jaune), fuseau via `date-fns` (présent), fiche par annonce avec explication statistique simplifiée (dictionnaire statique par type d'événement, i18n).
-- **Impact UX** — Transforme le journal en hub de préparation de séance — différenciateur majeur.
-- **Impact performance** — Une requête par semaine, cachée (TanStack Query présent) ; rendu tableau trivial.
+- **Approche d'implémentation** — ✅ **Livré.** Source = le **flux JSON public que Forex Factory publie pour la syndication** (`nfs.faireconomy.media/ff_calendar_thisweek.json`) : c'est l'export officiel destiné aux tiers, donc **aucun scraping** et aucune violation de ToS. `src/lib/economic-calendar.server.ts` récupère le flux, normalise vers `EconomicEvent` (devise, impact, prévu/précédent, instant exact) et met en cache à deux niveaux (mémoire process 30 min + CDN `s-maxage=900, stale-while-revalidate=86400`). Exposé sur `GET /api/economic-calendar?week=YYYY-MM-DD`, consommé côté client par `useEconomicWeek` (TanStack Query, préchargement des semaines ±1). Repli automatique sur le générateur de règles hors-ligne (`builtinScheduleProvider`). Vulgarisation conservée : `noteForEvent()` associe un texte pédagogique à chaque intitulé par mots-clés.
+- **Contraintes réelles du flux** (vérifiées le 29/07/2026) — ⚠️ à connaître avant toute modification :
+  - Seul `ff_calendar_thisweek.json` existe encore ; `_lastweek` et `_nextweek` renvoient **404**. La couverture live est donc **une seule semaine** (fenêtre dimanche→samedi en ET) ; toute autre semaine bascule sur le calendrier intégré, et l'UI l'annonce (« Données : calendrier intégré »).
+  - Le flux publie `forecast` et `previous` mais **jamais `actual`**, même pour des annonces passées de deux jours. Le champ reste parsé (inoffensif, et une future source pourra le fournir) mais la cellule « Réel » ne s'affiche que si une valeur existe réellement.
+  - Le flux est **rate-limité derrière Cloudflare** : 429 avec `Retry-After` (~271 s observé). D'où le TTL de 30 min, le respect de `Retry-After`, le service de données périmées plutôt que vides, et le fait que le cron ne vide **jamais** le cache. Le cache CDN est porteur : chaque hit edge est un fetch origine évité.
+- **Impact UX** — Transforme le journal en hub de préparation de séance — différenciateur majeur. Bandeau « prochain événement » + compte à rebours, filtres rapides (Tout / Fort impact / Majeures / Aujourd'hui), colonnes prévu/précédent (+ réel si disponible, coloré selon la surprise).
+- **Impact performance** — Une requête par semaine, cachée côté CDN et côté client ; navigation entre semaines instantanée (préchargement + `keepPreviousData`). Regroupement par jour en O(N).
 - **Priorité** — Haute
-- **Dépendances éventuelles** — Choix de la source de données (contrainte légale/coût — décision à prendre en premier) ; cron Supabase.
+- **Fraîcheur** — Cron Vercel quotidien `30 5 * * *` sur `/api/cron/economic-calendar` : vide le cache, refetch, et renvoie 503 si le flux ne couvre plus la semaine courante (alerte dans les logs Vercel avant que la page ne dégrade silencieusement vers le mode hors-ligne).
 
 ---
 
