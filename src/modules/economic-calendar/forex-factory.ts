@@ -18,6 +18,7 @@ import { countryForCurrency, type CalendarEvent, type CalendarProvider } from ".
 
 const THIS_WEEK = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
 const NEXT_WEEK = "https://nfs.faireconomy.media/ff_calendar_nextweek.json";
+const LAST_WEEK = "https://nfs.faireconomy.media/ff_calendar_lastweek.json";
 
 export const FOREX_FACTORY_SOURCE = "forexfactory";
 
@@ -48,6 +49,21 @@ function text(value: unknown): string | null {
   // La source utilise "" pour « pas encore publié » ; on normalise en null pour
   // que l'UI n'ait qu'un seul cas vide à traiter.
   return trimmed === "" ? null : trimmed;
+}
+
+/**
+ * Valeur chiffrée d'une release.
+ *
+ * La source encode parfois une révision derrière une barre verticale
+ * (`"3.09|1.0"` = valeur publiée, puis chiffre révisé). Afficher la chaîne
+ * brute donnerait un nombre incompréhensible : on ne garde que la valeur
+ * courante, celle que le trader lit sur le calendrier.
+ */
+function figure(value: unknown): string | null {
+  const raw = text(value);
+  if (raw === null) return null;
+  const [current] = raw.split("|");
+  return text(current);
 }
 
 function normalizeImpact(value: unknown): CalendarEvent["impact"] {
@@ -107,11 +123,11 @@ export function parseForexFactoryFeed(raw: unknown): CalendarEvent[] {
       country: countryForCurrency(currency),
       title,
       impact: normalizeImpact(item.impact),
-      previous: text(item.previous),
-      forecast: text(item.forecast),
+      previous: figure(item.previous),
+      forecast: figure(item.forecast),
       // `actual` n'est présent que si la source le fournit et que la donnée est
       // publiée. Absent = événement à venir, ce que l'UI affiche comme tel.
-      actual: text(item.actual),
+      actual: figure(item.actual),
       allDay: isAllDay(rawDate),
       source: FOREX_FACTORY_SOURCE,
     });
@@ -141,24 +157,35 @@ export const forexFactoryProvider: CalendarProvider = {
   id: FOREX_FACTORY_SOURCE,
 
   async fetchEvents() {
-    // 15 s : au-delà, la source est de toute façon considérée en échec et le
-    // cron suivant reprendra. Une fonction serverless ne doit pas attendre.
+    // 15 s : au-delà, la source est de toute façon considérée en échec et la
+    // tentative suivante reprendra. Une fonction serverless ne doit pas attendre.
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);
     try {
       const thisWeek = await fetchWeek(THIS_WEEK, controller.signal);
 
-      // La semaine suivante est un CONFORT, pas une exigence : son échec ne doit
+      // DEUX requêtes par synchro, pas trois : la source plafonne l'export à
+      // ~2 fichiers / 5 min, toutes extensions confondues. La semaine en cours
+      // est toujours récupérée ; le second créneau alterne entre la semaine
+      // suivante (planification) et la précédente (valeurs publiées). Chacune
+      // est donc rafraîchie une fois sur deux, ce qui est amplement suffisant :
+      // ni le passé ni la semaine prochaine ne bougent à la minute.
+      //
+      // L'alternance sort de l'horloge plutôt que d'un compteur en base : pas
+      // d'état à gérer, et le résultat reste déterministe.
+      const secondary = Math.floor(Date.now() / 600_000) % 2 === 0 ? NEXT_WEEK : LAST_WEEK;
+
+      // Ce second fichier est un CONFORT, pas une exigence : son échec ne doit
       // pas invalider la semaine en cours, qui est ce que le trader regarde.
-      let nextWeek: CalendarEvent[] = [];
+      let extra: CalendarEvent[] = [];
       try {
-        nextWeek = await fetchWeek(NEXT_WEEK, controller.signal);
+        extra = await fetchWeek(secondary, controller.signal);
       } catch (error) {
-        console.warn("[economic-calendar] next week feed unavailable", error);
+        console.warn(`[economic-calendar] secondary feed unavailable (${secondary})`, error);
       }
 
       const merged = new Map<string, CalendarEvent>();
-      for (const event of [...thisWeek, ...nextWeek]) merged.set(event.id, event);
+      for (const event of [...thisWeek, ...extra]) merged.set(event.id, event);
       return [...merged.values()].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     } finally {
       clearTimeout(timeout);
