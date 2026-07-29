@@ -36,25 +36,28 @@ const flagOf = (currency: string) => CURRENCY_FLAG[currency] ?? "🌐";
 
 const IMPACTS: EventImpact[] = ["high", "medium", "low"];
 
+// Rouge / orange / jaune / gris — le code couleur de la source, que tout trader
+// lit déjà d'un coup d'œil. En inventer un autre obligerait à réapprendre une
+// convention qui n'a aucune raison de différer.
 const IMPACT_STYLE: Record<EventImpact, { dot: string; text: string; ring: string; bg: string }> = {
-  high: { dot: "bg-red-400", text: "text-red-300", ring: "border-red-500/30", bg: "bg-red-500/10" },
+  high: { dot: "bg-red-500", text: "text-red-300", ring: "border-red-500/30", bg: "bg-red-500/10" },
   medium: {
-    dot: "bg-amber-400",
-    text: "text-amber-300",
-    ring: "border-amber-500/30",
-    bg: "bg-amber-500/10",
+    dot: "bg-orange-500",
+    text: "text-orange-300",
+    ring: "border-orange-500/30",
+    bg: "bg-orange-500/10",
   },
   low: {
-    dot: "bg-slate-400",
-    text: "text-slate-300",
-    ring: "border-slate-500/25",
-    bg: "bg-white/[0.04]",
+    dot: "bg-yellow-400",
+    text: "text-yellow-300",
+    ring: "border-yellow-500/25",
+    bg: "bg-yellow-500/10",
   },
   holiday: {
-    dot: "bg-violet-400",
-    text: "text-violet-300",
-    ring: "border-violet-500/25",
-    bg: "bg-violet-500/10",
+    dot: "bg-slate-500",
+    text: "text-slate-400",
+    ring: "border-slate-500/25",
+    bg: "bg-white/[0.04]",
   },
 };
 
@@ -121,40 +124,35 @@ function relativeFreshness(iso: string | null, t: (k: TKey) => string): string |
   return t("news.hoursAgo").replace("{value}", String(Math.floor(minutes / 60)));
 }
 
-/** Trio previous / forecast / actual. Le cœur informationnel d'une release. */
+/**
+ * Précédent et prévision — les deux seuls chiffres que la source publie.
+ *
+ * Pas de colonne « Réel » : l'export ne la fournit jamais, et une colonne
+ * remplie de tirets serait une promesse non tenue à chaque ligne. Elle
+ * réapparaîtra le jour où une source la donne, la donnée étant déjà prévue de
+ * bout en bout.
+ */
 function ValueGrid({
   event,
-  status,
   labels,
 }: {
   event: CalendarEvent;
-  status: EventStatus;
-  labels: { previous: string; forecast: string; actual: string };
+  labels: { previous: string; forecast: string };
 }) {
-  if (!event.previous && !event.forecast && !event.actual) return null;
+  if (!event.previous && !event.forecast) return null;
 
-  // Volontairement neutre en couleur : « au-dessus de la prévision » n'est ni
-  // bon ni mauvais dans l'absolu (chômage vs croissance). Colorer reviendrait à
-  // affirmer une lecture de marché que l'on n'a pas les moyens de tenir.
-  const cell = (label: string, value: string | null, strong: boolean) => (
-    <div className="min-w-0 flex-1">
-      <div className="text-[10px] uppercase tracking-wider text-slate-600 font-bold">{label}</div>
-      <div
-        className={cn(
-          "text-sm tabular-nums truncate",
-          strong && value ? "text-white font-bold" : "text-slate-400 font-semibold",
-        )}
-      >
-        {value ?? "—"}
+  const cell = (label: string, value: string | null) =>
+    value === null ? null : (
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] uppercase tracking-wider text-slate-600 font-bold">{label}</div>
+        <div className="text-sm font-semibold text-slate-300 tabular-nums truncate">{value}</div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-      {cell(labels.previous, event.previous, false)}
-      {cell(labels.forecast, event.forecast, false)}
-      {cell(labels.actual, event.actual, status !== "upcoming")}
+      {cell(labels.previous, event.previous)}
+      {cell(labels.forecast, event.forecast)}
     </div>
   );
 }
@@ -701,11 +699,6 @@ export default function EconomicNews() {
                                   {t("news.inMinutes").replace("{value}", formatCountdown(untilMs))}
                                 </span>
                               )}
-                              {status === "past" && e.actual && (
-                                <span className="h-5 px-1.5 rounded-md inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-slate-400 border border-white/[0.08]">
-                                  {t("news.released")}
-                                </span>
-                              )}
                             </div>
                             <div className="mt-1 text-sm font-medium text-slate-200 break-words">
                               {e.title}
@@ -724,11 +717,9 @@ export default function EconomicNews() {
                           <div className="relative px-3.5 pb-3.5 pl-[42px] animate-fade-in">
                             <ValueGrid
                               event={e}
-                              status={status}
                               labels={{
                                 previous: t("news.previous"),
                                 forecast: t("news.forecast"),
-                                actual: t("news.actual"),
                               }}
                             />
                             <div className="mt-2 text-[11px] text-slate-600 font-semibold">

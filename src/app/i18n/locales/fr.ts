@@ -846,8 +846,6 @@ const fr: Dict = {
   "news.approx": "approx.",
   "news.previous": "Précédent",
   "news.forecast": "Prévision",
-  "news.actual": "Réel",
-  "news.released": "Publié",
   "news.releasing": "Publication en cours",
   "news.upcoming": "À venir",
   "news.allDay": "Toute la journée",
