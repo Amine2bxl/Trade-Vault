@@ -102,6 +102,7 @@ détecte, logge l'erreur réelle capturée et rend une page d'erreur HTML).
 | --- | --- | --- | --- |
 | `/api/cron/monthly-reports` | GET | `monthly-reports.server` | Cron mensuel — rapports + e-mail + push |
 | `/api/cron/lifecycle-emails` | GET | `lifecycle-emails.server` | Cron quotidien — e-mails de cycle de vie, **puis** rappels d'objectifs (best-effort) |
+| `/api/cron/economic-calendar` | GET | `economic-calendar.server` | Synchro du calendrier économique dans le cache Postgres |
 | `/api/emails/welcome` | POST | `lifecycle-emails.server` | E-mail de bienvenue |
 | `/api/billing/checkout` | POST | `billing.server` | Création d'une session Stripe Checkout |
 | `/api/billing/portal` | POST | `billing.server` | Portail client Stripe |
@@ -122,6 +123,14 @@ Déclarées dans `vercel.json` :
 | --- | --- | --- |
 | `0 6 1 * *` | `/api/cron/monthly-reports` | Génère le rapport du mois écoulé pour chaque utilisateur ayant des trades, l'envoie par e-mail et pousse une notification avec deep-link `/?report=YYYY-MM` |
 | `0 8 * * *` | `/api/cron/lifecycle-emails` | Balayage des essais expirés → `free`/`expired` ; e-mail **trial-ending** (fin d'essai < 48 h) ; e-mail **winback** (essai expiré depuis 3 à 10 jours) ; **puis** rappels de plan à 6 mois (le handler ne s'exécute que le lundi) |
+
+| `*/15 * * * *` | `/api/cron/economic-calendar` | Récupère l'export officiel du calendrier Forex Factory (semaine en cours + suivante) et l'upserte dans `economic_events`. La clé primaire est un hash stable de (instant, devise, titre) : les valeurs `actual` se remplissent d'elles-mêmes à la publication, sans doublon. Échec = aucune écriture destructive, cache précédent toujours servi, nouvelle tentative au passage suivant. Purge au-delà de 90 jours |
+
+> **Pourquoi 15 minutes** — la source plafonne l'export à ~2 requêtes / 5 min,
+> tous fichiers confondus ; deux requêtes par quart d'heure restent largement
+> sous la limite tout en faisant apparaître les valeurs réelles peu après leur
+> publication. Aucune requête utilisateur ne touche jamais la source : c'est le
+> cron, et lui seul, qui parle au fournisseur.
 
 **Garde-fous des crons :**
 - Authentification par `Authorization: Bearer $CRON_SECRET`. **Sans `CRON_SECRET`

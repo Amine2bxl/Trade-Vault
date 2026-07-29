@@ -7,10 +7,14 @@
 //  every trader tracks (NFP, CPI, FOMC, jobless claims, PMIs…).
 //
 //  Times are INDICATIVE (each event carries `approximate`) — the UI
-//  labels them as such. Swapping in a live data source later means
-//  implementing EventProvider once and changing `activeProvider`;
-//  no page code changes. Deliberately NOT scraping Forex Factory
-//  (ToS) — this module is the seam where a licensed API plugs in.
+//  labels them as such.
+//
+//  ROLE TODAY: this is the LAST-RESORT FALLBACK, not the primary
+//  source. Live data comes from `modules/economic-calendar` (the
+//  official Forex Factory calendar export, synced by cron into
+//  Postgres). This generator only runs when that cache has nothing
+//  to show for the requested week — the calendar page must never
+//  render empty because of an outage on someone else's server.
 // ============================================================
 
 export type ImpactLevel = "high" | "medium" | "low";
@@ -67,16 +71,20 @@ function firstBusinessDay(year: number, month: number): Date {
   return d;
 }
 
-/** Convert an ET release time to the viewer's local HH:MM string (approximate: fixed ET−5 offset handled via UTC math with DST heuristic). */
-export function formatLocalTime(dateIso: string, etHour: number, etMinute: number): string {
-  // US Eastern is UTC−5 (winter) / UTC−4 (DST, second Sunday of March → first Sunday of November).
+/** Absolute instant of an ET release time (DST heuristic: 2nd Sun of March → 1st Sun of November). */
+export function etToInstant(dateIso: string, etHour: number, etMinute: number): Date {
+  // US Eastern is UTC−5 (winter) / UTC−4 (DST).
   const [y, m, d] = dateIso.split("-").map(Number);
   const dstStart = nthWeekdayOfMonth(y, 2, 0, 2); // 2nd Sunday of March
   const dstEndFirstSunNov = nthWeekdayOfMonth(y, 10, 0, 1); // 1st Sunday of November
   const probe = new Date(y, m - 1, d);
   const isDst = probe >= dstStart && probe < dstEndFirstSunNov;
-  const utc = Date.UTC(y, m - 1, d, etHour + (isDst ? 4 : 5), etMinute);
-  const local = new Date(utc);
+  return new Date(Date.UTC(y, m - 1, d, etHour + (isDst ? 4 : 5), etMinute));
+}
+
+/** Convert an ET release time to the viewer's local HH:MM string. */
+export function formatLocalTime(dateIso: string, etHour: number, etMinute: number): string {
+  const local = etToInstant(dateIso, etHour, etMinute);
   return `${String(local.getHours()).padStart(2, "0")}:${String(local.getMinutes()).padStart(2, "0")}`;
 }
 

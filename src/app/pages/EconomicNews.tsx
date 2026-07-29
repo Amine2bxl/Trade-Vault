@@ -7,25 +7,21 @@ import {
   ChevronRight,
   X,
   SlidersHorizontal,
-  Newspaper,
+  AlertTriangle,
+  Radio,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import { PageHeader, Card } from "@/shared/ui";
-import {
-  getEventsForWeek,
-  startOfWeek,
-  addDays,
-  isoDate,
-  formatLocalTime,
-  CURRENCIES,
-  type Currency,
-  type ImpactLevel,
-  type EconomicEvent,
-} from "../utils/economicEvents";
+import { useEconomicCalendar } from "../hooks/useEconomicCalendar";
+import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
+import type { TKey } from "../i18n/translations";
+import { startOfWeek, addDays, isoDate } from "../utils/economicEvents";
 
-// Emoji flags keep the currency chips readable with zero image weight.
-const CURRENCY_FLAG: Record<Currency, string> = {
+// La page ne connaît qu'une chose : `useEconomicCalendar`. Ni la source, ni le
+// cache, ni le repli. Tout ce qui suit est de la mise en scène.
+
+const CURRENCY_FLAG: Record<string, string> = {
   USD: "🇺🇸",
   EUR: "🇪🇺",
   GBP: "🇬🇧",
@@ -36,10 +32,11 @@ const CURRENCY_FLAG: Record<Currency, string> = {
   NZD: "🇳🇿",
   CNY: "🇨🇳",
 };
+const flagOf = (currency: string) => CURRENCY_FLAG[currency] ?? "🌐";
 
-const IMPACTS: ImpactLevel[] = ["high", "medium", "low"];
+const IMPACTS: EventImpact[] = ["high", "medium", "low"];
 
-const IMPACT_STYLE: Record<ImpactLevel, { dot: string; text: string; ring: string; bg: string }> = {
+const IMPACT_STYLE: Record<EventImpact, { dot: string; text: string; ring: string; bg: string }> = {
   high: { dot: "bg-red-400", text: "text-red-300", ring: "border-red-500/30", bg: "bg-red-500/10" },
   medium: {
     dot: "bg-amber-400",
@@ -52,6 +49,12 @@ const IMPACT_STYLE: Record<ImpactLevel, { dot: string; text: string; ring: strin
     text: "text-slate-300",
     ring: "border-slate-500/25",
     bg: "bg-white/[0.04]",
+  },
+  holiday: {
+    dot: "bg-violet-400",
+    text: "text-violet-300",
+    ring: "border-violet-500/25",
+    bg: "bg-violet-500/10",
   },
 };
 
@@ -70,124 +73,293 @@ const LOCALE_MAP: Record<string, string> = {
   hi: "hi-IN",
 };
 
+/** Fenêtre pendant laquelle un événement est considéré « en cours ». */
+const LIVE_WINDOW_MS = 15 * 60_000;
+
+type EventStatus = "past" | "live" | "upcoming";
+
+function statusOf(event: CalendarEvent, now: number): EventStatus {
+  const start = new Date(event.startsAt).getTime();
+  if (now >= start + LIVE_WINDOW_MS) return "past";
+  if (now >= start) return "live";
+  return "upcoming";
+}
+
+/**
+ * Horloge partagée. Une seule minuterie pour toute la page, et sa fréquence
+ * suit l'enjeu : la seconde n'a d'intérêt que dans l'heure qui précède une
+ * publication. Le reste du temps, un tick par minute suffit largement.
+ */
+function useNow(fast: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), fast ? 1_000 : 60_000);
+    return () => clearInterval(id);
+  }, [fast]);
+  return now;
+}
+
+function formatCountdown(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(total / 86_400);
+  const hours = Math.floor((total % 86_400) / 3_600);
+  const minutes = Math.floor((total % 3_600) / 60);
+  const seconds = total % 60;
+  if (days > 0) return `${days}j ${hours}h`;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+  if (minutes > 0) return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+  return `${seconds}s`;
+}
+
+function relativeFreshness(iso: string | null, t: (k: TKey) => string): string | null {
+  if (!iso) return null;
+  const delta = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(delta)) return null;
+  const minutes = Math.floor(delta / 60_000);
+  if (minutes < 1) return t("news.justNow");
+  if (minutes < 60) return t("news.minutesAgo").replace("{value}", String(minutes));
+  return t("news.hoursAgo").replace("{value}", String(Math.floor(minutes / 60)));
+}
+
+/** Trio previous / forecast / actual. Le cœur informationnel d'une release. */
+function ValueGrid({
+  event,
+  status,
+  labels,
+}: {
+  event: CalendarEvent;
+  status: EventStatus;
+  labels: { previous: string; forecast: string; actual: string };
+}) {
+  if (!event.previous && !event.forecast && !event.actual) return null;
+
+  // Volontairement neutre en couleur : « au-dessus de la prévision » n'est ni
+  // bon ni mauvais dans l'absolu (chômage vs croissance). Colorer reviendrait à
+  // affirmer une lecture de marché que l'on n'a pas les moyens de tenir.
+  const cell = (label: string, value: string | null, strong: boolean) => (
+    <div className="min-w-0 flex-1">
+      <div className="text-[10px] uppercase tracking-wider text-slate-600 font-bold">{label}</div>
+      <div
+        className={cn(
+          "text-sm tabular-nums truncate",
+          strong && value ? "text-white font-bold" : "text-slate-400 font-semibold",
+        )}
+      >
+        {value ?? "—"}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+      {cell(labels.previous, event.previous, false)}
+      {cell(labels.forecast, event.forecast, false)}
+      {cell(labels.actual, event.actual, status !== "upcoming")}
+    </div>
+  );
+}
+
 export default function EconomicNews() {
   const { t, lang } = useT();
   const locale = LOCALE_MAP[lang] || "en-US";
+  const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
 
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
-  const [events, setEvents] = useState<EconomicEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [currencyFilter, setCurrencyFilter] = useState<Set<Currency>>(new Set());
-  const [impactFilter, setImpactFilter] = useState<Set<ImpactLevel>>(new Set());
+  const [currencyFilter, setCurrencyFilter] = useState<Set<string>>(new Set());
+  const [impactFilter, setImpactFilter] = useState<Set<EventImpact>>(new Set());
+  const [dayFilter, setDayFilter] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const { events, loading, isFallback, lastSuccessAt, stale } = useEconomicCalendar(weekStart);
+
+  // Le compte à rebours ne bat à la seconde que si quelque chose arrive dans
+  // l'heure — sinon la page ferait travailler le processeur pour rien.
+  const hasImminent = useMemo(() => {
+    const now = Date.now();
+    return events.some((e) => {
+      const delta = new Date(e.startsAt).getTime() - now;
+      return delta > -LIVE_WINDOW_MS && delta < 3_600_000;
+    });
+  }, [events]);
+  const now = useNow(hasImminent);
+
   const todayIso = isoDate(new Date());
+  const isThisWeek = isoDate(weekStart) === isoDate(startOfWeek(new Date()));
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    getEventsForWeek(weekStart)
-      .then((ev) => {
-        if (active) setEvents(ev);
-      })
-      .catch(() => {
-        if (active) setEvents([]);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [weekStart]);
-
-  const toggleCurrency = (c: Currency) =>
-    setCurrencyFilter((prev) => {
+  const toggle = <T,>(set: (fn: (prev: Set<T>) => Set<T>) => void, value: T) =>
+    set((prev) => {
       const next = new Set(prev);
-      if (next.has(c)) next.delete(c);
-      else next.add(c);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
       return next;
     });
-  const toggleImpact = (i: ImpactLevel) =>
-    setImpactFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
+
   const clearFilters = () => {
     setCurrencyFilter(new Set());
     setImpactFilter(new Set());
+    setDayFilter(null);
     setSearch("");
   };
+
+  // Les devises proposées sortent des données réelles : ajouter un pays à la
+  // source suffit à le voir apparaître dans les filtres, sans toucher au code.
+  const availableCurrencies = useMemo(
+    () => [...new Set(events.map((e) => e.currency))].sort(),
+    [events],
+  );
+
+  const localDayIso = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return (event: CalendarEvent) => fmt.format(new Date(event.startsAt));
+  }, [timeZone]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return events.filter((e) => {
       if (currencyFilter.size > 0 && !currencyFilter.has(e.currency)) return false;
       if (impactFilter.size > 0 && !impactFilter.has(e.impact)) return false;
-      if (q && !e.name.toLowerCase().includes(q) && !e.currency.toLowerCase().includes(q))
-        return false;
+      if (dayFilter && localDayIso(e) !== dayFilter) return false;
+      if (q) {
+        const haystack = `${e.title} ${e.currency} ${e.country}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       return true;
     });
-  }, [events, currencyFilter, impactFilter, search]);
+  }, [events, currencyFilter, impactFilter, dayFilter, search, localDayIso]);
 
-  // Group into the 7 days of the week so empty days still render a marker.
+  // Regroupement par jour LOCAL : un événement à 22 h à New York peut tomber le
+  // lendemain à Paris, et c'est la journée du lecteur qui fait foi.
   const days = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
-      const d = addDays(weekStart, i);
-      const iso = isoDate(d);
-      return { date: d, iso, events: filtered.filter((e) => e.date === iso) };
+      const date = addDays(weekStart, i);
+      const iso = isoDate(date);
+      return {
+        date,
+        iso,
+        all: events.filter((e) => localDayIso(e) === iso),
+        events: filtered.filter((e) => localDayIso(e) === iso),
+      };
     });
-  }, [weekStart, filtered]);
+  }, [weekStart, events, filtered, localDayIso]);
 
-  const activeFilterCount = currencyFilter.size + impactFilter.size + (search.trim() ? 1 : 0);
+  const nextEvent = useMemo(() => {
+    return events
+      .filter((e) => new Date(e.startsAt).getTime() > now && e.impact !== "holiday")
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+  }, [events, now]);
 
-  // How the week is shaped, before any filter — the single most useful thing to
-  // know when you open an economic calendar ("is this a red week?").
   const weekCounts = useMemo(() => {
-    const c: Record<ImpactLevel, number> = { high: 0, medium: 0, low: 0 };
-    for (const e of events) c[e.impact]++;
-    return c;
+    const counts: Record<EventImpact, number> = { high: 0, medium: 0, low: 0, holiday: 0 };
+    for (const e of events) counts[e.impact]++;
+    return counts;
   }, [events]);
 
+  const activeFilterCount =
+    currencyFilter.size + impactFilter.size + (dayFilter ? 1 : 0) + (search.trim() ? 1 : 0);
+
   const weekLabel = useMemo(() => {
-    const end = addDays(weekStart, 6);
     const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
-    return `${fmt.format(weekStart)} – ${fmt.format(end)}`;
+    return `${fmt.format(weekStart)} – ${fmt.format(addDays(weekStart, 6))}`;
   }, [weekStart, locale]);
 
   const dayFmt = useMemo(
     () => new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "short" }),
     [locale],
   );
+  const shortDayFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { weekday: "short" }),
+    [locale],
+  );
+  const timeFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone }),
+    [locale, timeZone],
+  );
 
-  const isThisWeek = isoDate(weekStart) === isoDate(startOfWeek(new Date()));
+  const impactLabel = (i: EventImpact) =>
+    i === "holiday"
+      ? t("news.holiday")
+      : { high: t("news.impactHigh"), medium: t("news.impactMedium"), low: t("news.impactLow") }[i];
+
+  const freshness = relativeFreshness(lastSuccessAt, t);
+  const liveActive = isThisWeek && !isFallback && !stale;
 
   return (
     <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
-      {/* Header */}
       <PageHeader
         className="mb-4 stagger-0"
         title={t("news.title")}
         subtitle={t("news.subtitle")}
         actions={
-          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold shrink-0">
-            <span className="relative flex w-2 h-2">
-              <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-              <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
-            </span>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 h-8 px-3 rounded-xl border text-xs font-semibold shrink-0",
+              liveActive
+                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
+                : "bg-white/[0.04] border-white/[0.08] text-slate-400",
+            )}
+          >
+            {liveActive ? (
+              <span className="relative flex w-2 h-2">
+                <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
+              </span>
+            ) : (
+              <Radio className="w-3 h-3" />
+            )}
             {t("news.live")}
           </span>
         }
       />
 
-      {/* Week navigator */}
+      {/* Avertissements de qualité de donnée. Discrets mais jamais masqués :
+          afficher un calendrier dégradé sans le dire serait pire que rien. */}
+      {(isFallback || stale) && !loading && (
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90 animate-fade-in">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span>{isFallback ? t("news.fallbackWarning") : t("news.staleWarning")}</span>
+        </div>
+      )}
+
+      {/* Prochaine publication — la seule information que l'on veut voir sans
+          scroller quand on ouvre la page en séance. */}
+      {isThisWeek && nextEvent && (
+        <Card className="p-3 mb-3 flex items-center gap-3 animate-fade-in-up stagger-1">
+          <span
+            className={cn("w-1 h-9 rounded-full shrink-0", IMPACT_STYLE[nextEvent.impact].dot)}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+              {t("news.nextRelease")}
+            </div>
+            <div className="text-sm font-semibold text-slate-200 truncate">
+              {flagOf(nextEvent.currency)} {nextEvent.title}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="font-display text-lg font-extrabold text-cyan-300 tabular-nums leading-none">
+              {formatCountdown(new Date(nextEvent.startsAt).getTime() - now)}
+            </div>
+            <div className="text-[10px] text-slate-500 font-semibold tabular-nums">
+              {timeFmt.format(new Date(nextEvent.startsAt))}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Navigation de semaine */}
       <Card className="p-2.5 mb-3 flex items-center justify-between gap-2 animate-fade-in-up stagger-1">
         <button
-          onClick={() => setWeekStart((w) => addDays(w, -7))}
+          onClick={() => {
+            setWeekStart((w) => addDays(w, -7));
+            setDayFilter(null);
+          }}
           aria-label={t("news.prevWeek")}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
         >
@@ -200,7 +372,10 @@ export default function EconomicNews() {
           </div>
           {!isThisWeek && (
             <button
-              onClick={() => setWeekStart(startOfWeek(new Date()))}
+              onClick={() => {
+                setWeekStart(startOfWeek(new Date()));
+                setDayFilter(null);
+              }}
               className="text-[10px] font-semibold text-cyan-400 hover:text-cyan-300 transition"
             >
               {t("news.backToWeek")}
@@ -208,7 +383,10 @@ export default function EconomicNews() {
           )}
         </div>
         <button
-          onClick={() => setWeekStart((w) => addDays(w, 7))}
+          onClick={() => {
+            setWeekStart((w) => addDays(w, 7));
+            setDayFilter(null);
+          }}
           aria-label={t("news.nextWeek")}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
         >
@@ -216,21 +394,60 @@ export default function EconomicNews() {
         </button>
       </Card>
 
-      {/* Week shape at a glance — doubles as an impact legend and as a filter. */}
+      {/* Filtre par jour — barre défilante sur mobile, 8 colonnes au-delà. */}
+      {!loading && events.length > 0 && (
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 animate-fade-in-up stagger-1">
+          <button
+            onClick={() => setDayFilter(null)}
+            className={cn(
+              "shrink-0 h-12 px-3 rounded-xl border text-xs font-bold transition",
+              dayFilter === null
+                ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
+                : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:bg-white/[0.05]",
+            )}
+          >
+            {t("news.allDays")}
+          </button>
+          {days.map(({ iso, date, all }) => {
+            const on = dayFilter === iso;
+            const isToday = iso === todayIso;
+            return (
+              <button
+                key={iso}
+                onClick={() => setDayFilter(on ? null : iso)}
+                disabled={all.length === 0}
+                className={cn(
+                  "shrink-0 w-14 h-12 rounded-xl border flex flex-col items-center justify-center transition",
+                  on
+                    ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
+                    : all.length === 0
+                      ? "bg-white/[0.01] border-white/[0.04] text-slate-700 cursor-not-allowed"
+                      : "bg-white/[0.02] border-white/[0.06] text-slate-300 hover:bg-white/[0.05]",
+                  isToday && !on && all.length > 0 && "border-cyan-500/20",
+                )}
+              >
+                <span className="text-[10px] font-bold uppercase leading-none">
+                  {shortDayFmt.format(date)}
+                </span>
+                <span className="font-display text-sm font-extrabold tabular-nums leading-none mt-1">
+                  {date.getDate()}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Forme de la semaine — sert de légende ET de filtre d'importance. */}
       {!loading && events.length > 0 && (
         <div className="flex items-center gap-1.5 mb-3 animate-fade-in-up stagger-1">
           {IMPACTS.map((i) => {
             const st = IMPACT_STYLE[i];
             const on = impactFilter.has(i);
-            const label = {
-              high: t("news.impactHigh"),
-              medium: t("news.impactMedium"),
-              low: t("news.impactLow"),
-            }[i];
             return (
               <button
                 key={i}
-                onClick={() => toggleImpact(i)}
+                onClick={() => toggle(setImpactFilter, i)}
                 aria-pressed={on}
                 className={cn(
                   "flex-1 rounded-xl border px-3 py-2 text-left transition-all",
@@ -247,7 +464,7 @@ export default function EconomicNews() {
                       on ? st.text : "text-slate-500",
                     )}
                   >
-                    {label}
+                    {impactLabel(i)}
                   </span>
                 </span>
                 <span
@@ -264,7 +481,7 @@ export default function EconomicNews() {
         </div>
       )}
 
-      {/* Search + filter toggle */}
+      {/* Recherche + filtres */}
       <div className="flex items-center gap-2 mb-3 animate-fade-in-up stagger-1">
         <div className="relative flex-1 min-w-0">
           <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -304,7 +521,6 @@ export default function EconomicNews() {
         </button>
       </div>
 
-      {/* Filter panel */}
       {filtersOpen && (
         <Card className="p-4 mb-3 space-y-4 animate-fade-in-up">
           <div>
@@ -312,12 +528,12 @@ export default function EconomicNews() {
               {t("news.currency")}
             </div>
             <div className="flex flex-wrap gap-2">
-              {CURRENCIES.map((c) => {
+              {availableCurrencies.map((c) => {
                 const on = currencyFilter.has(c);
                 return (
                   <button
                     key={c}
-                    onClick={() => toggleCurrency(c)}
+                    onClick={() => toggle(setCurrencyFilter, c)}
                     className={cn(
                       "h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold border transition",
                       on
@@ -325,7 +541,7 @@ export default function EconomicNews() {
                         : "bg-white/[0.03] border-white/[0.07] text-slate-400 hover:bg-white/[0.06]",
                     )}
                   >
-                    <span>{CURRENCY_FLAG[c]}</span>
+                    <span>{flagOf(c)}</span>
                     {c}
                   </button>
                 );
@@ -340,15 +556,10 @@ export default function EconomicNews() {
               {IMPACTS.map((i) => {
                 const on = impactFilter.has(i);
                 const s = IMPACT_STYLE[i];
-                const label = {
-                  high: t("news.impactHigh"),
-                  medium: t("news.impactMedium"),
-                  low: t("news.impactLow"),
-                }[i];
                 return (
                   <button
                     key={i}
-                    onClick={() => toggleImpact(i)}
+                    onClick={() => toggle(setImpactFilter, i)}
                     className={cn(
                       "h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold border transition",
                       on
@@ -357,7 +568,7 @@ export default function EconomicNews() {
                     )}
                   >
                     <span className={cn("w-2 h-2 rounded-full", s.dot)} />
-                    {label}
+                    {impactLabel(i)}
                   </button>
                 );
               })}
@@ -374,7 +585,7 @@ export default function EconomicNews() {
         </Card>
       )}
 
-      {/* Days */}
+      {/* Timeline */}
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
@@ -390,8 +601,6 @@ export default function EconomicNews() {
             const isToday = iso === todayIso;
             return (
               <div key={iso} className="animate-fade-in-up">
-                {/* Day header — sticks while its events scroll past, so you
-                    always know which session you are reading. */}
                 <div className="sticky top-0 z-10 flex items-center gap-2 mb-2 px-1 py-1.5 -mx-1 bg-[#070d18]/85 backdrop-blur-md rounded-lg">
                   <span
                     className={cn(
@@ -412,60 +621,119 @@ export default function EconomicNews() {
                   </span>
                 </div>
 
-                {/* Events */}
-                <Card className="overflow-hidden divide-y divide-white/[0.04]">
-                  {dayEvents.map((e) => {
+                <Card className="overflow-hidden">
+                  {dayEvents.map((e, index) => {
                     const s = IMPACT_STYLE[e.impact];
                     const open = expanded === e.id;
-                    const time = formatLocalTime(e.date, e.etHour, e.etMinute);
+                    const start = new Date(e.startsAt);
+                    const status = statusOf(e, now);
+                    const untilMs = start.getTime() - now;
+
                     return (
-                      <div key={e.id}>
+                      <div
+                        key={e.id}
+                        className={cn(
+                          "relative",
+                          index > 0 && "border-t border-white/[0.04]",
+                          status === "past" && "opacity-55",
+                          status === "live" && "bg-emerald-500/[0.05]",
+                        )}
+                      >
+                        {/* Rail de timeline : le fil vertical qui relie les
+                            événements de la journée, coupé aux extrémités. */}
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "absolute left-[26px] w-px bg-white/[0.07]",
+                            index === 0 ? "top-6 bottom-0" : "top-0 bottom-0",
+                            index === dayEvents.length - 1 && "bottom-auto h-6",
+                          )}
+                        />
                         <button
                           onClick={() => setExpanded(open ? null : e.id)}
+                          aria-expanded={open}
                           className={cn(
-                            "w-full flex items-center gap-3 px-3.5 py-3.5 text-left transition-colors",
+                            "relative w-full flex items-start gap-3 px-3.5 py-3.5 text-left transition-colors",
                             open ? "bg-white/[0.03]" : "hover:bg-white/[0.02]",
                           )}
                         >
-                          {/* Impact rail */}
-                          <span className={cn("w-1 h-10 rounded-full shrink-0", s.dot)} />
-                          {/* Time */}
-                          <div className="w-14 shrink-0">
-                            <div className="text-sm font-bold text-white tabular-nums">{time}</div>
-                            {e.approximate && (
-                              <div className="text-[11px] text-slate-600 uppercase font-semibold">
-                                {t("news.approx")}
-                              </div>
+                          {/* Pastille de timeline */}
+                          <span className="relative shrink-0 w-5 flex justify-center pt-1.5">
+                            <span
+                              className={cn(
+                                "w-2.5 h-2.5 rounded-full ring-4 ring-[#0a1120]",
+                                s.dot,
+                              )}
+                            />
+                            {status === "live" && (
+                              <span
+                                className={cn(
+                                  "absolute top-1.5 w-2.5 h-2.5 rounded-full animate-ping opacity-70",
+                                  s.dot,
+                                )}
+                              />
                             )}
+                          </span>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-bold text-white tabular-nums">
+                                {e.allDay ? t("news.allDay") : timeFmt.format(start)}
+                              </span>
+                              <span
+                                className={cn(
+                                  "h-5 px-1.5 rounded-md inline-flex items-center gap-1 text-[11px] font-bold border",
+                                  s.bg,
+                                  s.ring,
+                                  s.text,
+                                )}
+                              >
+                                <span>{flagOf(e.currency)}</span>
+                                {e.currency}
+                              </span>
+                              {status === "live" && (
+                                <span className="h-5 px-1.5 rounded-md inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                                  {t("news.releasing")}
+                                </span>
+                              )}
+                              {status === "upcoming" && untilMs < 3_600_000 && (
+                                <span className="h-5 px-1.5 rounded-md inline-flex items-center text-[10px] font-bold tabular-nums bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                                  {t("news.inMinutes").replace("{value}", formatCountdown(untilMs))}
+                                </span>
+                              )}
+                              {status === "past" && e.actual && (
+                                <span className="h-5 px-1.5 rounded-md inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-slate-400 border border-white/[0.08]">
+                                  {t("news.released")}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1 text-sm font-medium text-slate-200 break-words">
+                              {e.title}
+                            </div>
                           </div>
-                          {/* Currency */}
-                          <span
-                            className={cn(
-                              "h-6 px-2 rounded-md flex items-center gap-1 text-[11px] font-bold shrink-0 border",
-                              s.bg,
-                              s.ring,
-                              s.text,
-                            )}
-                          >
-                            <span>{CURRENCY_FLAG[e.currency]}</span>
-                            {e.currency}
-                          </span>
-                          {/* Name */}
-                          <span className="flex-1 min-w-0 text-sm font-medium text-slate-200 truncate">
-                            {e.name}
-                          </span>
+
                           <ChevronRight
                             className={cn(
-                              "w-4 h-4 text-slate-600 shrink-0 transition-transform",
+                              "w-4 h-4 text-slate-600 shrink-0 mt-1 transition-transform",
                               open && "rotate-90",
                             )}
                           />
                         </button>
+
                         {open && (
-                          <div className="px-3.5 pb-3.5 pl-[74px] animate-fade-in">
-                            <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs leading-relaxed text-slate-400">
-                              {e.note}
-                            </p>
+                          <div className="relative px-3.5 pb-3.5 pl-[42px] animate-fade-in">
+                            <ValueGrid
+                              event={e}
+                              status={status}
+                              labels={{
+                                previous: t("news.previous"),
+                                forecast: t("news.forecast"),
+                                actual: t("news.actual"),
+                              }}
+                            />
+                            <div className="mt-2 text-[11px] text-slate-600 font-semibold">
+                              {e.country}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -478,11 +746,14 @@ export default function EconomicNews() {
         </div>
       )}
 
-      {/* Indicative-times notice — a footnote, not a banner: it explains the
-          data, it should never be the first thing the eye lands on. */}
       <p className="mt-5 flex items-start gap-2 px-1 text-[11px] leading-relaxed text-slate-600">
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-        {t("news.notice")}
+        <span>
+          {t("news.timezone").replace("{zone}", timeZone)}
+          {" · "}
+          {freshness ? t("news.updated").replace("{value}", freshness) : t("news.updatedNever")}
+          {isFallback && ` · ${t("news.notice")}`}
+        </span>
       </p>
     </div>
   );
