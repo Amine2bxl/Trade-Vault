@@ -6,8 +6,21 @@
 //  de calendrier. Ce n'est pas du scraping HTML : pas de parsing
 //  de DOM, pas de contournement, un endpoint machine-readable
 //  prévu pour ça. Il est plafonné à ~2 requêtes / 5 minutes tous
-//  fichiers confondus — d'où un cron à quelques passages par jour
-//  et un cache en base, jamais d'appel par requête utilisateur.
+//  fichiers confondus — d'où un cache en base et jamais d'appel par
+//  requête utilisateur.
+//
+//  CE QUE CETTE SOURCE DONNE, ET CE QU'ELLE NE DONNE PAS. Vérifié en
+//  production le 29/07/2026 :
+//    ✅ semaine en cours — date, heure, devise, importance, titre,
+//       `previous`, `forecast`
+//    ❌ `actual` : jamais publié dans ce fichier (31 événements passés,
+//       zéro valeur réelle)
+//    ❌ `ff_calendar_nextweek.json` et `ff_calendar_lastweek.json` :
+//       404 tous les deux — seul `thisweek` existe encore
+//  Autrement dit, l'horizon est d'UNE semaine et les valeurs réelles
+//  demandent une seconde source. Le format normalisé et la table sont
+//  déjà prêts à les recevoir : `actual` n'est jamais écrit en null,
+//  n'importe quel provider peut le remplir.
 //
 //  Le parsing est une fonction PURE, testée sur fixture : c'est la
 //  partie qui casse quand la source change de forme, elle doit être
@@ -17,8 +30,6 @@
 import { countryForCurrency, type CalendarEvent, type CalendarProvider } from "./types";
 
 const THIS_WEEK = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
-const NEXT_WEEK = "https://nfs.faireconomy.media/ff_calendar_nextweek.json";
-const LAST_WEEK = "https://nfs.faireconomy.media/ff_calendar_lastweek.json";
 
 export const FOREX_FACTORY_SOURCE = "forexfactory";
 
@@ -162,31 +173,11 @@ export const forexFactoryProvider: CalendarProvider = {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);
     try {
-      const thisWeek = await fetchWeek(THIS_WEEK, controller.signal);
-
-      // DEUX requêtes par synchro, pas trois : la source plafonne l'export à
-      // ~2 fichiers / 5 min, toutes extensions confondues. La semaine en cours
-      // est toujours récupérée ; le second créneau alterne entre la semaine
-      // suivante (planification) et la précédente (valeurs publiées). Chacune
-      // est donc rafraîchie une fois sur deux, ce qui est amplement suffisant :
-      // ni le passé ni la semaine prochaine ne bougent à la minute.
-      //
-      // L'alternance sort de l'horloge plutôt que d'un compteur en base : pas
-      // d'état à gérer, et le résultat reste déterministe.
-      const secondary = Math.floor(Date.now() / 600_000) % 2 === 0 ? NEXT_WEEK : LAST_WEEK;
-
-      // Ce second fichier est un CONFORT, pas une exigence : son échec ne doit
-      // pas invalider la semaine en cours, qui est ce que le trader regarde.
-      let extra: CalendarEvent[] = [];
-      try {
-        extra = await fetchWeek(secondary, controller.signal);
-      } catch (error) {
-        console.warn(`[economic-calendar] secondary feed unavailable (${secondary})`, error);
-      }
-
-      const merged = new Map<string, CalendarEvent>();
-      for (const event of [...thisWeek, ...extra]) merged.set(event.id, event);
-      return [...merged.values()].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+      // UNE seule requête. Les fichiers `nextweek` et `lastweek` répondaient
+      // autrefois ; ils renvoient 404 aujourd'hui (constaté en production, les
+      // deux). Continuer à les demander ne ferait que gaspiller le quota de la
+      // source et remplir les logs d'avertissements sans issue.
+      return await fetchWeek(THIS_WEEK, controller.signal);
     } finally {
       clearTimeout(timeout);
     }

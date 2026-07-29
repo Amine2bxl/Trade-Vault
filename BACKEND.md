@@ -124,7 +124,19 @@ Déclarées dans `vercel.json` :
 | `0 6 1 * *` | `/api/cron/monthly-reports` | Génère le rapport du mois écoulé pour chaque utilisateur ayant des trades, l'envoie par e-mail et pousse une notification avec deep-link `/?report=YYYY-MM` |
 | `0 8 * * *` | `/api/cron/lifecycle-emails` | Balayage des essais expirés → `free`/`expired` ; e-mail **trial-ending** (fin d'essai < 48 h) ; e-mail **winback** (essai expiré depuis 3 à 10 jours) ; **puis** rappels de plan à 6 mois (le handler ne s'exécute que le lundi) |
 
-| `0 5 * * *` | `/api/cron/economic-calendar` | Récupère l'export officiel du calendrier Forex Factory (semaine en cours + suivante) et l'upserte dans `economic_events`. La clé primaire est un hash stable de (instant, devise, titre) : les valeurs `actual` se remplissent d'elles-mêmes à la publication, sans doublon. Échec = aucune écriture destructive, cache précédent toujours servi, nouvelle tentative au passage suivant. Purge au-delà de 90 jours |
+| `0 5 * * *` | `/api/cron/economic-calendar` | Récupère l'export officiel du calendrier Forex Factory (semaine en cours) et l'upserte dans `economic_events`. La clé primaire est un hash stable de (instant, devise, titre), donc la même semaine peut être ré-ingérée indéfiniment sans doublon. Échec = aucune écriture destructive, cache précédent toujours servi, nouvelle tentative au passage suivant. Purge au-delà de 90 jours |
+
+> **Ce que la source donne, et ce qu'elle ne donne pas** (vérifié en production
+> le 29/07/2026) : l'export publie la semaine en cours avec `previous` et
+> `forecast`, mais **jamais `actual`** — 31 événements déjà passés, zéro valeur
+> réelle. Les fichiers `ff_calendar_nextweek.json` et `ff_calendar_lastweek.json`
+> répondent **404** : seul `thisweek` existe encore, d'où un horizon d'une
+> semaine et une seule requête par synchro.
+>
+> Les valeurs réelles demandent donc **une seconde source** (Trading Economics,
+> FMP…). Tout est prêt à les recevoir : `actual` est écrit par un lot séparé et
+> jamais mis à null, si bien qu'un second provider peut remplir la colonne sans
+> que celui-ci l'écrase au passage suivant.
 
 > **Une fois par jour, et pourquoi ce n'est pas suffisant seul** — le plan
 > Vercel du projet (Hobby) n'autorise **qu'un passage de cron par jour** ; un
@@ -142,8 +154,8 @@ Déclarées dans `vercel.json` :
 > précédant la lecture.
 >
 > La concurrence est réglée par un compare-and-swap sur `last_attempt_at` :
-> deux visiteurs simultanés ne déclenchent qu'une seule synchro. Au pire, deux
-> requêtes vers la source toutes les 10 minutes, très en dessous de son
+> deux visiteurs simultanés ne déclenchent qu'une seule synchro. Au pire, une
+> requête vers la source toutes les 10 minutes, très en dessous de son
 > plafond (~2 / 5 min).
 >
 > **Si le projet passe en Pro**, remplacer le planning par `*/15 * * * *` suffit
