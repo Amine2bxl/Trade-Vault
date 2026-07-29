@@ -122,8 +122,9 @@ export function parseForexFactoryFeed(raw: unknown): CalendarEvent[] {
 
     const startsAt = parsed.toISOString();
     const id = stableId(`${startsAt}|${currency}|${title}`);
-    // Le flux peut répéter un événement entre « cette semaine » et « la semaine
-    // prochaine » sur la charnière : on garde la première occurrence.
+    // Un même événement peut apparaître deux fois dans un flux (ou dans deux
+    // flux, si une seconde source vient s'ajouter) : on garde la première
+    // occurrence, l'id étant déterministe.
     if (seen.has(id)) continue;
     seen.add(id);
 

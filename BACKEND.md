@@ -123,7 +123,6 @@ Déclarées dans `vercel.json` :
 | --- | --- | --- |
 | `0 6 1 * *` | `/api/cron/monthly-reports` | Génère le rapport du mois écoulé pour chaque utilisateur ayant des trades, l'envoie par e-mail et pousse une notification avec deep-link `/?report=YYYY-MM` |
 | `0 8 * * *` | `/api/cron/lifecycle-emails` | Balayage des essais expirés → `free`/`expired` ; e-mail **trial-ending** (fin d'essai < 48 h) ; e-mail **winback** (essai expiré depuis 3 à 10 jours) ; **puis** rappels de plan à 6 mois (le handler ne s'exécute que le lundi) |
-
 | `0 5 * * *` | `/api/cron/economic-calendar` | Récupère l'export officiel du calendrier Forex Factory (semaine en cours) et l'upserte dans `economic_events`. La clé primaire est un hash stable de (instant, devise, titre), donc la même semaine peut être ré-ingérée indéfiniment sans doublon. Échec = aucune écriture destructive, cache précédent toujours servi, nouvelle tentative au passage suivant. Purge au-delà de 90 jours |
 
 > **Ce que la source donne, et ce qu'elle ne donne pas** (vérifié en production
