@@ -133,11 +133,18 @@ Déclarées dans `vercel.json` :
 > opportuniste** : la lecture d'une semaine en cours déclenche
 > `syncIfStale()` si la dernière tentative date de plus de 10 minutes.
 >
-> Le lecteur n'attend jamais ce rafraîchissement — la page est servie depuis
-> le cache et la synchro part sans `await`. La concurrence est réglée par un
-> compare-and-swap sur `last_attempt_at` : deux visiteurs simultanés ne
-> déclenchent qu'une seule synchro. Au pire, deux requêtes vers la source
-> toutes les 10 minutes, très en dessous de son plafond (~2 / 5 min).
+> La synchro est **attendue**, et c'est délibéré : une fonction serverless est
+> gelée dès la réponse envoyée, donc un `void promise` lancé après coup ne
+> s'exécute pas du tout (constaté en production : `last_attempt_at` restait
+> `null`). Le coût reste borné — un seul visiteur toutes les 10 minutes
+> remporte le créneau et paie l'attente ; tous les autres lisent le cache sans
+> rien payer. En échange, celui qui attend lit des données fraîches, la synchro
+> précédant la lecture.
+>
+> La concurrence est réglée par un compare-and-swap sur `last_attempt_at` :
+> deux visiteurs simultanés ne déclenchent qu'une seule synchro. Au pire, deux
+> requêtes vers la source toutes les 10 minutes, très en dessous de son
+> plafond (~2 / 5 min).
 >
 > **Si le projet passe en Pro**, remplacer le planning par `*/15 * * * *` suffit
 > à retrouver une fraîcheur pilotée uniquement par le cron ; le rafraîchissement
