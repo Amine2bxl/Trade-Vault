@@ -4,10 +4,10 @@ import { activeProvider, type CalendarEvent } from "@/modules/economic-calendar"
 // ============================================================
 //  Synchronisation du calendrier économique.
 // ------------------------------------------------------------
-//  Un seul chemin d'écriture : ce fichier, exécuté par le cron Vercel avec la
-//  clé service role. Aucune requête utilisateur ne déclenche jamais un appel à
-//  la source — c'est ce qui rend le plafond de requêtes du fournisseur (2 / 5
-//  min) sans objet, et le temps de réponse de la page indépendant de lui.
+//  Un seul chemin d'écriture : ce fichier, exécuté avec la clé service role,
+//  par le cron quotidien ou par le rafraîchissement opportuniste. Deux requêtes
+//  vers la source au maximum toutes les 10 minutes — le plafond du fournisseur
+//  (~2 fichiers / 5 min) est respecté par construction, pas par chance.
 //
 //  Règle de survie : un échec ne détruit rien. Les lignes déjà en base restent
 //  servies, l'erreur est journalisée, le cron suivant réessaie. La page ne peut
@@ -42,7 +42,6 @@ function toRow(event: CalendarEvent) {
     impact: event.impact,
     previous: event.previous,
     forecast: event.forecast,
-    actual: event.actual,
     all_day: event.allDay,
     source: event.source,
     updated_at: new Date().toISOString(),
@@ -104,14 +103,35 @@ export async function syncEconomicCalendar(): Promise<SyncResult> {
     return { ok: false, upserted: 0, error: message };
   }
 
-  const { error } = await sb
-    .from("economic_events")
-    .upsert(events.map(toRow), { onConflict: "id" });
+  // `actual` est écrit SÉPARÉMENT, et jamais en null.
+  //
+  // Les fichiers de la source ne portent pas tous la valeur publiée : celui de
+  // la semaine en cours ne la donne jamais. Un upsert unique incluant la
+  // colonne l'écraserait donc à chaque passage, effaçant une valeur déjà
+  // connue. En omettant la colonne du premier lot, PostgREST ne la touche pas
+  // du tout ; le second lot ne concerne que les événements pour lesquels la
+  // source a effectivement publié un chiffre.
+  const { error } = await sb.from("economic_events").upsert(events.map(toRow), {
+    onConflict: "id",
+  });
 
   if (error) {
     console.error("[economic-calendar] upsert failed", error);
     await recordAttempt(sb, { last_attempt_at: attemptAt, last_error: error.message });
     return { ok: false, upserted: 0, error: error.message };
+  }
+
+  const released = events.filter((event) => event.actual !== null);
+  if (released.length > 0) {
+    const { error: actualError } = await sb.from("economic_events").upsert(
+      released.map((event) => ({ ...toRow(event), actual: event.actual })),
+      {
+        onConflict: "id",
+      },
+    );
+    // Non bloquant : le calendrier reste juste, il lui manque des valeurs
+    // réelles. Mieux vaut cela qu'une synchro marquée en échec.
+    if (actualError) console.error("[economic-calendar] actual upsert failed", actualError);
   }
 
   await recordAttempt(sb, {
@@ -139,8 +159,8 @@ const REFRESH_THROTTLE_MS = 10 * 60_000;
  * Le plan Vercel de ce projet ne permet qu'UN passage de cron par jour — trop
  * lent pour voir arriver les valeurs réelles. La consultation prend donc le
  * relais : la première visite après 10 minutes de silence relance une synchro.
- * Personne n'attend le résultat (la page est servie depuis le cache), et
- * personne ne déclenche deux synchros en même temps.
+ * Ce visiteur-là l'attend (une lambda gelée n'exécute pas de promesse
+ * détachée), les autres lisent le cache sans rien payer.
  *
  * L'anti-concurrence est un compare-and-swap : on ne réserve le créneau que si
  * l'écriture conditionnelle de `last_attempt_at` touche effectivement la ligne.

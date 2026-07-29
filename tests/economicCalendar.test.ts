@@ -60,6 +60,16 @@ test("actual est repris dès que la source le publie", () => {
   expect(released.actual).toBe("203K");
 });
 
+test("ne garde que la valeur courante quand la source encode une révision", () => {
+  // La source écrit "publié|révisé" sur certaines lignes (ex. adjudications).
+  const [event] = parseForexFactoryFeed([
+    { ...FEED[0], previous: "3.09|1.0", forecast: "2.8|2.9", actual: "3.1|3.0" },
+  ]);
+  expect(event.previous).toBe("3.09");
+  expect(event.forecast).toBe("2.8");
+  expect(event.actual).toBe("3.1");
+});
+
 test("détecte les événements sans heure précise", () => {
   expect(byCurrency("GBP").allDay).toBe(true);
   expect(byCurrency("USD").allDay).toBe(false);
