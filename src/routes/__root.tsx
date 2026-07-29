@@ -69,6 +69,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "TradeVault" },
+      // Exact product name for OS/browser surfaces — must match the OAuth
+      // consent screen name character for character.
+      { name: "application-name", content: SITE_NAME },
       // Site-wide defaults. Public routes override them via `pageSeo()`;
       // the authenticated app inherits these. Absolute URLs are mandatory —
       // Open Graph scrapers have no base to resolve a relative path against.

@@ -805,9 +805,13 @@ export default function Landing() {
         >
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-5 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-8">
             <div className="text-center lg:text-left">
+              {/* Eyebrow carries the exact product name, first thing in the
+                  hero. Google's OAuth brand review checks that the homepage
+                  names the app the same way as the consent screen; the visual
+                  identity is untouched — same pill, same styling. */}
               <div className="fade-up inline-flex items-center gap-2.5 rounded-full border border-cyan-400/22 bg-cyan-400/[.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[.13em] text-cyan-300">
                 <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />{" "}
-                Ton coach IA de trading personnel
+                TradeVault · Ton coach IA de trading personnel
               </div>
               <h1 className="fade-up d1 font-display mt-6 text-[clamp(2.6rem,5.4vw,4.5rem)] font-extrabold leading-[1.02] tracking-[-0.045em] text-white">
                 Deviens le trader{" "}
@@ -830,11 +834,12 @@ export default function Landing() {
                 </span>{" "}
                 que tu veux devenir.
               </h1>
-              <p className="fade-up d2 mt-6 text-base leading-7 text-slate-400 sm:text-lg max-w-[520px] mx-auto lg:mx-0">
-                TradeVault n'est pas un simple journal. C'est un{" "}
-                <strong className="text-slate-200">coach IA disponible 24h/24</strong> qui analyse
-                tes trades, détecte tes erreurs, comprend ta psychologie et t'accompagne vers une
-                progression réelle.
+              <p className="fade-up d2 mt-6 text-base leading-7 text-slate-400 sm:text-lg max-w-[540px] mx-auto lg:mx-0">
+                <strong className="text-slate-200">TradeVault</strong> n'est pas un simple journal.
+                C'est un <strong className="text-slate-200">coach IA disponible 24h/24</strong> qui
+                réunit journal de trading, analytics quantitatives, calendrier économique et
+                checklist pré-market pour analyser tes trades, détecter tes erreurs et t'accompagner
+                vers une progression réelle.
               </p>
               <div className="fade-up d3 mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
                 <button
@@ -858,6 +863,16 @@ export default function Landing() {
                   </span>
                 ))}
               </div>
+              {/* States plainly why Google sign-in is offered — Google's OAuth
+                  review wants the homepage to explain that the connection only
+                  creates a secure account and syncs data, nothing more. */}
+              <p className="fade-up d4 mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500 max-w-[520px] mx-auto lg:mx-0">
+                <Icon n="lock" cls="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-400" />
+                <span>
+                  La connexion Google sert uniquement à créer ton compte TradeVault en toute
+                  sécurité et à synchroniser tes données sur tous tes appareils.
+                </span>
+              </p>
               {/* Trustpilot proof — visible on the very first screen, honest early-access framing */}
               <a
                 href={`https://www.trustpilot.com/review/${SITE_DOMAIN}`}
