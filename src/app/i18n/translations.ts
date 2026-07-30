@@ -889,6 +889,10 @@ const en = {
   // Generic a11y / actions
   "common.remove": "Remove",
   "common.send": "Send",
+  "common.7d": "7 days",
+  "common.30d": "30 days",
+  "common.90d": "3 months",
+  "common.1y": "Year",
   "common.voiceInput": "Voice input",
   "common.previous": "Previous",
   "common.next": "Next",
@@ -1144,6 +1148,10 @@ const en = {
     "A quick Trustpilot review helps other traders find us — and keeps everything free.",
   "trustpilot.cta": "Leave a review",
   "trustpilot.never": "No thanks",
+
+  // Journal
+  "journal.searchPlaceholder": "Symbol, strategy, notes…",
+  "journal.searchResultsNone": "No trades match your search.",
 
   // Demo / example trades
   "journal.exampleBadge": "Example",

@@ -815,6 +815,10 @@ const fr: Dict = {
   // Générique a11y / actions
   "common.remove": "Supprimer",
   "common.send": "Envoyer",
+  "common.7d": "7 jours",
+  "common.30d": "30 jours",
+  "common.90d": "3 mois",
+  "common.1y": "Année",
   "common.voiceInput": "Saisie vocale",
   "common.previous": "Précédent",
   "common.next": "Suivant",
@@ -1079,6 +1083,9 @@ const fr: Dict = {
   "trustpilot.never": "Non merci",
 
   // Trades démo / exemple
+  "journal.searchPlaceholder": "Symbole, stratégie, notes…",
+  "journal.searchResultsNone": "Aucun trade ne correspond à ta recherche.",
+
   "journal.exampleBadge": "Exemple",
   "journal.exampleNote":
     "Trade d'exemple inséré par la démo — modifie-le ou supprime-le quand tu veux.",
