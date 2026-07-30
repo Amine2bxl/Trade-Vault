@@ -423,16 +423,16 @@ connexion — strictement préférable à l'échec actuel.
 
 ### 13.4 Migration vers un domaine personnalisé
 
-Le jour où `tradevault.app` est acheté, il y a **cinq** changements — et un seul
+Le jour où `tradevault.be` est acheté, il y a **cinq** changements — et un seul
 dans le code.
 
 | # | Où | Changement |
 | --- | --- | --- |
 | 1 | **Vercel** | Ajouter le domaine au projet, le passer en domaine de production |
-| 2 | **Vercel → Env** | `VITE_SITE_URL=https://tradevault.app`, puis **redéployer** (Vite inline la valeur au build : sans redéploiement, rien ne change) |
-| 3 | **Supabase → URL Configuration** | Site URL → `https://tradevault.app` · Redirect URLs → `https://tradevault.app/**` |
-| 4 | **Google → Client OAuth** | Authorized JavaScript origins → `https://tradevault.app`. **Ne pas toucher au redirect URI** : il pointe sur Supabase, pas sur l'app |
-| 5 | **Google → Branding** | Home page, Privacy, Terms sur le nouveau domaine · Authorized domain → `tradevault.app` (remplace `vercel.app`) |
+| 2 | **Vercel → Env** | `VITE_SITE_URL=https://tradevault.be`, puis **redéployer** (Vite inline la valeur au build : sans redéploiement, rien ne change) |
+| 3 | **Supabase → URL Configuration** | Site URL → `https://tradevault.be` · Redirect URLs → `https://tradevault.be/**` |
+| 4 | **Google → Client OAuth** | Authorized JavaScript origins → `https://tradevault.be`. **Ne pas toucher au redirect URI** : il pointe sur Supabase, pas sur l'app |
+| 5 | **Google → Branding** | Home page, Privacy, Terms sur le nouveau domaine · Authorized domain → `tradevault.be` (remplace `vercel.app`) |
 
 **Rien d'autre dans le code n'est à modifier** : `src/shared/site.ts` est le
 seul fichier qui connaît un domaine. En dérivent automatiquement les URL
