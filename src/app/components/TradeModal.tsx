@@ -327,11 +327,23 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     });
   };
 
+  const timeError =
+    form.entryTime && form.exitTime && form.entryTime >= form.exitTime
+      ? "L'heure d'entrée doit être antérieure à l'heure de sortie."
+      : null;
+  const rMultipleError =
+    form.direction !== "be" &&
+    form.rMultiple !== "" &&
+    (isNaN(parseFloat(form.rMultiple)) || parseFloat(form.rMultiple) <= 0)
+      ? "Le R multiple doit être un nombre positif."
+      : null;
   const isValid =
     form.symbol &&
     form.date &&
     parseFloat(form.riskAmount) > 0 &&
-    (form.direction === "be" || form.rMultiple !== "");
+    (form.direction === "be" || form.rMultiple !== "") &&
+    !timeError &&
+    !rMultipleError;
 
   // Shared visual base so every field reads as one system. `inputClass` locks a
   // single control height (h-11 / 44px touch target) so text, number, date, time
@@ -955,6 +967,14 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <span className="truncate">{t("trade.fillRequired")}</span>
             )}
           </div>
+        </div>
+        {(timeError || rMultipleError) && (
+          <div className="px-4 md:px-6 pb-2 space-y-1">
+            {timeError && <p className="text-xs text-red-400">{timeError}</p>}
+            {rMultipleError && <p className="text-xs text-red-400">{rMultipleError}</p>}
+          </div>
+        )}
+        <div className="sticky bottom-0 bg-[#0a1220] border-t border-white/[.06] px-4 md:px-6 py-3 md:py-4 flex items-center justify-end gap-2 z-10">
           <button
             onClick={onClose}
             className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"

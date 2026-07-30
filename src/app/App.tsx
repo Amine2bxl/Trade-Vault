@@ -241,6 +241,7 @@ function AppContent() {
     try {
       await deleteAllTrades(user.id);
       setTrades([]);
+      AutomationEngine.tradeDeleted(user.id, "all");
     } catch (e) {
       console.error("Failed to delete trades", e);
       toast(t("app.saveTradeFailed"), "error");
@@ -434,6 +435,17 @@ function AppContent() {
               {page === "appearance" && <Appearance />}
               {page === "subscription" && <Subscription />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+              {!["dashboard","journal","checklist","calendar","analytics","mistakes","missed","insights","news","seasonality","calculator","settings","reports","goals","tradingplan","appearance","subscription","profile"].includes(page) && (
+                <Dashboard
+                  trades={trades}
+                  stats={stats}
+                  onAddTrade={handleAdd}
+                  onEditTrade={handleEdit}
+                  onOpenJournal={() => setPage("journal")}
+                  onOpenMissed={() => setPage("missed")}
+                  onOpenChecklist={() => setPage("checklist")}
+                />
+              )}
             </Suspense>
           </PageErrorBoundary>
         </div>

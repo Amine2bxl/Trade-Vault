@@ -15,7 +15,7 @@ import {
   Target,
   BookOpen,
 } from "lucide-react";
-import { Trade, isBreakEven } from "../types";
+import { Trade, isBreakEven, STRATEGIES } from "../types";
 import {
   computeStats,
   formatPct,
@@ -71,10 +71,7 @@ export default function Journal({
 }: JournalProps) {
   const { t } = useT();
   const stored = useMemo(loadStoredFilters, []);
-  // strategyFilter is applied from persisted filters; there is no live control
-  // for it (the setter was dropped with the old strategy dropdown), so it stays
-  // at whatever was last stored — hence no setter here.
-  const [strategyFilter] = useState(stored.strategyFilter ?? "all");
+  const [strategyFilter, setStrategyFilter] = useState(stored.strategyFilter ?? "all");
   const [resultFilter, setResultFilter] = useState<ResultFilter>(stored.resultFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? "date");
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
@@ -202,8 +199,21 @@ export default function Journal({
         </div>
       )}
 
-      {/* Result filter pill group + Missed Setups shortcut */}
-      <div className="flex items-center gap-1.5 mb-2.5 md:mb-3">
+      {/* Strategy filter + Result filter pill group + Missed Setups shortcut */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-2.5 md:mb-3">
+        {/* Strategy filter */}
+        <select
+          value={strategyFilter}
+          onChange={(e) => setStrategyFilter(e.target.value)}
+          className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+        >
+          <option value="all">{t("common.all")}</option>
+          {STRATEGIES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
         <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
           {(
             [
