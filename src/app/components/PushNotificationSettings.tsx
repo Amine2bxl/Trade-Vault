@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell, BellOff, Smartphone, AlertCircle, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -22,7 +22,9 @@ function loadPrefs(): Record<NotifCategory, boolean> {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (raw) return { ...defaultPrefs(), ...JSON.parse(raw) };
-  } catch {}
+  } catch {
+    /* localStorage unavailable */
+  }
   return defaultPrefs();
 }
 
@@ -33,7 +35,9 @@ function defaultPrefs(): Record<NotifCategory, boolean> {
 function savePrefs(p: Record<NotifCategory, boolean>): void {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify(p));
-  } catch {}
+  } catch {
+    /* localStorage unavailable */
+  }
 }
 
 export { loadPrefs, type NotifCategory, PREFS_KEY };
