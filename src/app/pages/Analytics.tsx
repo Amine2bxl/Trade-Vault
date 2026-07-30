@@ -65,13 +65,26 @@ const LOCALE_MAP: Record<string, string> = {
   hi: "hi-IN",
 };
 
+type AnalyticsPeriod = "all" | "7d" | "30d" | "90d" | "1y";
+
 export default function Analytics({ trades }: AnalyticsProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
   const { activeId } = useAccounts();
   const locale = LOCALE_MAP[lang] || "en-US";
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("all");
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const [startingBalance, setStartingBalance] = useState(0);
+
+  const cutoffTrades = useMemo(() => {
+    if (analyticsPeriod === "all") return trades;
+    const cutoff = new Date();
+    if (analyticsPeriod === "7d") cutoff.setDate(cutoff.getDate() - 7);
+    else if (analyticsPeriod === "30d") cutoff.setDate(cutoff.getDate() - 30);
+    else if (analyticsPeriod === "90d") cutoff.setDate(cutoff.getDate() - 90);
+    else if (analyticsPeriod === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
+    return trades.filter((t) => new Date(t.date) >= cutoff);
+  }, [trades, analyticsPeriod]);
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
@@ -98,7 +111,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
       ),
     [locale],
   );
-  const stats = computeStats(trades);
+  const stats = computeStats(cutoffTrades);
   const dayOfWeekData = useMemo(
     () =>
       Object.entries(stats.pnlByDayOfWeek)
@@ -300,6 +313,24 @@ export default function Analytics({ trades }: AnalyticsProps) {
         title={t("analytics.title")}
         subtitle={t("analytics.subtitle")}
       />
+
+      {/* Period filter */}
+      <div className="flex items-center gap-1.5 mb-4">
+        {(["all", "7d", "30d", "90d", "1y"] as AnalyticsPeriod[]).map((p) => (
+          <button
+            key={p}
+            onClick={() => setAnalyticsPeriod(p)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+              analyticsPeriod === p
+                ? "bg-cyan-500/15 text-cyan-400"
+                : "text-slate-500 hover:text-slate-300",
+            )}
+          >
+            {p === "all" ? t("common.all") : t(`common.${p}`)}
+          </button>
+        ))}
+      </div>
 
       <div className="space-y-4 md:space-y-6">
         {/* Profit Factor — desktop hero card. On mobile it collapses into a
