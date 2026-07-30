@@ -9,7 +9,9 @@ import type { AIProvider, AIRequest, AIResponse, FinishReason, ProviderToolCall 
  * into normalized `res.toolCalls`. Without tools the behaviour is unchanged.
  */
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+function getModel(): string {
+  return process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+}
 
 interface AnthropicBlock {
   type?: string;
@@ -64,7 +66,7 @@ export const AnthropicProvider: AIProvider = {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: getModel(),
         max_tokens: req.maxTokens ?? 4096,
         ...(system && { system }),
         ...(req.temperature !== undefined && { temperature: req.temperature }),
@@ -96,7 +98,7 @@ export const AnthropicProvider: AIProvider = {
     return {
       text,
       provider: "anthropic",
-      model: MODEL,
+      model: getModel(),
       usage: {
         inputTokens: json.usage?.input_tokens,
         outputTokens: json.usage?.output_tokens,
