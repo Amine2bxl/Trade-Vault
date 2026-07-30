@@ -96,6 +96,8 @@ export async function loadUserTrades(userId: string): Promise<Trade[]> {
 }
 
 export async function upsertTrade(userId: string, trade: Trade): Promise<void> {
+  // RLS ensures auth.uid() = user_id on both INSERT and UPDATE.
+  // The row's user_id is always set from the authenticated userId param.
   const { error } = await supabase.from("trades").upsert(tradeToRow(trade, userId));
   if (error) throw error;
 }
