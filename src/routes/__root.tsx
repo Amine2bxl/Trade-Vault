@@ -123,10 +123,9 @@ function RootShell({ children }: { children: ReactNode }) {
     // "Jarvis" palette lives in the CSS :root, so the first paint is already
     // themed for default-theme users with no flash and no hydration divergence.
     //
-    // lang="fr": the public site is written in French and og:locale already says
-    // fr_FR. Declaring "en" contradicted both, and a document whose stated
-    // language does not match its content is exactly the kind of inconsistency
-    // that stalls a brand review.
+    // lang="fr" for now: the public site is written in French and og:locale
+    // says fr_FR. When i18n lands for SSR this should read the user's
+    // preference from cookie/session.
     <html lang="fr">
       <head>
         <HeadContent />
