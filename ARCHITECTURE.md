@@ -107,6 +107,12 @@ shared/  ne dépend JAMAIS de app/ ni de modules/.     ⚠️ invariant
 | `src/backend/` | Exécution serveur, secrets, crons, e-mails, paiement | `modules/`, `integrations/`, `process.env` | code client |
 | `src/integrations/supabase/` | Client typé, attache d'auth, middleware | `shared/` | `app/` |
 | `src/shared/` | Helpers neutres + primitives UI feuilles | rien de métier | `app/`, `modules/` |
+| `src/assets/` | Ressources statiques importées par le bundle (logo, images) | — | tout code |
+
+**Fichiers racine de `src/`** : `router.tsx` (fabrique du routeur TanStack +
+défauts React Query), `start.ts` (entrée serveur TanStack Start), `server.ts`
+(routes serveur robots/sitemap), `styles.css` (tokens + Tailwind),
+`routeTree.gen.ts` (généré, commité pour des builds reproductibles).
 
 **Exception encadrée** : `src/shared/ui/` utilise React (ce sont des primitives
 feuilles) mais n'importe jamais `app/`.

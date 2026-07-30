@@ -126,6 +126,9 @@ Trade-Vault/
 │   ├── backend/             # Frontière serveur (server functions, crons, secrets)
 │   ├── integrations/        # Client Supabase typé + middlewares d'auth
 │   ├── shared/              # Helpers neutres + `shared/ui` (Design System)
+│   ├── assets/              # Ressources statiques importées par le bundle (logo)
+│   ├── router.tsx           # Fabrique du routeur TanStack + défauts React Query
+│   ├── start.ts             # Entrée serveur TanStack Start
 │   ├── server.ts            # Entrée serveur : endpoints HTTP bruts + crons
 │   └── styles.css           # Tokens `--tv-*`, glass, animations
 ├── supabase/                # Migrations SQL (additives) + edge function
