@@ -112,7 +112,7 @@ html {
      so marketing site and product read as ONE surface. */
   background: #060d16;
   /* App-like: allow scroll panning but kill pinch-zoom and double-tap zoom. */
-  touch-action: pan-x pan-y;
+  touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   /* Native-app feel: the page itself never scrolls sideways. Wide content
