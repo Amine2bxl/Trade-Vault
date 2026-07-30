@@ -152,7 +152,9 @@ export default function Profile({ trades, setPage }: ProfileProps) {
             const { supabase } = await import("@/integrations/supabase/client");
             await supabase.from("profiles").update({ onboarded_at: null }).eq("id", user?.id);
             window.location.reload();
-          } catch {}
+          } catch {
+            /* ignore */
+          }
         }}
         className="w-full mt-3 flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] transition text-xs text-slate-500"
       >

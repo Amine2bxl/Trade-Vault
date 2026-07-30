@@ -135,7 +135,9 @@ export async function deleteAllTrades(userId: string): Promise<void> {
   let selectQ = supabase.from("trades").select("screenshots").eq("user_id", userId);
   if (activeId) selectQ = selectQ.eq("account_id", activeId);
   const { data } = await selectQ;
-  const allPaths = (data ?? []).flatMap((r: { screenshots: string[] }) => storagePathsOf(r.screenshots));
+  const allPaths = (data ?? []).flatMap((r: { screenshots: string[] }) =>
+    storagePathsOf(r.screenshots),
+  );
   if (allPaths.length) {
     await removeScreenshotFiles(allPaths);
   }

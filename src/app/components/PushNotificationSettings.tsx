@@ -31,7 +31,9 @@ function defaultPrefs(): Record<NotifCategory, boolean> {
 }
 
 function savePrefs(p: Record<NotifCategory, boolean>): void {
-  try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch {}
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+  } catch {}
 }
 
 export { loadPrefs, type NotifCategory, PREFS_KEY };

@@ -436,7 +436,26 @@ function AppContent() {
               {page === "appearance" && <Appearance />}
               {page === "subscription" && <Subscription />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-              {!["dashboard","journal","checklist","calendar","analytics","mistakes","missed","insights","news","seasonality","calculator","settings","reports","goals","tradingplan","appearance","subscription","profile"].includes(page) && (
+              {![
+                "dashboard",
+                "journal",
+                "checklist",
+                "calendar",
+                "analytics",
+                "mistakes",
+                "missed",
+                "insights",
+                "news",
+                "seasonality",
+                "calculator",
+                "settings",
+                "reports",
+                "goals",
+                "tradingplan",
+                "appearance",
+                "subscription",
+                "profile",
+              ].includes(page) && (
                 <Dashboard
                   trades={trades}
                   stats={stats}

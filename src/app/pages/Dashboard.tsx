@@ -100,18 +100,28 @@ export default function Dashboard({
     let active = true;
     Promise.allSettled([
       loadStartingBalance(user.id)
-        .then((b) => { if (active) setStartingBalance(b); })
-        .catch(() => { if (active) toast(t("dashboard.loadError"), "error"); }),
+        .then((b) => {
+          if (active) setStartingBalance(b);
+        })
+        .catch(() => {
+          if (active) toast(t("dashboard.loadError"), "error");
+        }),
       loadTradingPlan(user.id)
         .then((p) => {
           if (!active) return;
           const pct = parseFloat(p.risk.maxRiskPerTradePct);
           setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
         })
-        .catch(() => { if (active) toast(t("dashboard.loadError"), "error"); }),
+        .catch(() => {
+          if (active) toast(t("dashboard.loadError"), "error");
+        }),
       loadOnboarding(user.id)
-        .then((o) => { if (active) setMonthlyTarget(o.monthlyTarget ?? null); })
-        .catch(() => { if (active) toast(t("dashboard.loadError"), "error"); }),
+        .then((o) => {
+          if (active) setMonthlyTarget(o.monthlyTarget ?? null);
+        })
+        .catch(() => {
+          if (active) toast(t("dashboard.loadError"), "error");
+        }),
     ]);
     return () => {
       active = false;
