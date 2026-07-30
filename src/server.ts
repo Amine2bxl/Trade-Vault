@@ -3,6 +3,7 @@ import "./shared/error-capture";
 import { consumeLastCapturedError } from "./shared/error-capture";
 import { renderErrorPage } from "./shared/error-page";
 import { SITE_URL } from "./shared/site";
+import { checkRateLimit } from "./backend/rate-limit.server";
 
 /** Public routes worth indexing. The authenticated app is behind `/` and is
  *  client-rendered, so there is nothing else for a crawler to see. */
@@ -89,9 +90,24 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const { pathname } = new URL(request.url);
+
+      // Rate limit on API endpoints (not crons, not static files).
+      if (pathname.startsWith("/api/") && !pathname.startsWith("/api/cron/")) {
+        const { allowed, retryAfter } = checkRateLimit(request);
+        if (!allowed) {
+          return new Response("Too many requests", {
+            status: 429,
+            headers: {
+              "retry-after": String(retryAfter ?? 60),
+              "content-type": "text/plain; charset=utf-8",
+            },
+          });
+        }
+      }
+
       // Raw HTTP endpoints (no file-route support in this router version).
       // The Vercel cron hits this path on the 1st of each month.
-      const { pathname } = new URL(request.url);
       if (pathname === "/robots.txt") return robotsTxt(request);
       if (pathname === "/sitemap.xml") return sitemapXml();
       if (pathname === "/api/cron/monthly-reports") {
