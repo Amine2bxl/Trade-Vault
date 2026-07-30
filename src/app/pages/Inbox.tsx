@@ -51,26 +51,20 @@ export default function Inbox() {
             <div
               key={n.id}
               className={`rounded-xl border px-4 py-3 transition ${
-                n.readAt
-                  ? "border-white/[.04] bg-white/[.02]"
-                  : "border-cyan-500/15 bg-cyan-500/05"
+                n.readAt ? "border-white/[.04] bg-white/[.02]" : "border-cyan-500/15 bg-cyan-500/05"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    {!n.readAt && (
-                      <span className="h-2 w-2 rounded-full bg-cyan-400 shrink-0" />
-                    )}
+                    {!n.readAt && <span className="h-2 w-2 rounded-full bg-cyan-400 shrink-0" />}
                     <p
                       className={`text-sm truncate ${n.readAt ? "text-slate-400" : "text-white font-medium"}`}
                     >
                       {n.title}
                     </p>
                   </div>
-                  {n.body && (
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.body}</p>
-                  )}
+                  {n.body && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.body}</p>}
                   <p className="text-[10px] text-slate-600 mt-1.5">
                     {new Date(n.createdAt).toLocaleDateString()}
                   </p>
