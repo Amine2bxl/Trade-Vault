@@ -18,7 +18,7 @@ import { SITE_URL } from "./site";
 
 export const SITE_NAME = "TradeVault";
 
-/** Default social preview. Square, works as both `summary` and app icon. */
+/** Default social preview. Square 512×512 works for both summary and app icon. */
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/icon-512.png`;
 
 export interface PageSeo {

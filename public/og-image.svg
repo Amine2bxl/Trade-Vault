@@ -1,0 +1,7 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#060810"/>
+  <rect x="0" y="0" width="1200" height="4" fill="#22d3ee" opacity="0.7"/>
+  <text x="600" y="280" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="72" font-weight="800" fill="#ffffff" letter-spacing="-2">TradeVault</text>
+  <text x="600" y="340" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="24" fill="#94a3b8" letter-spacing="0.5">Ton coach IA de trading personnel</text>
+  <rect x="520" y="400" width="160" height="3" rx="1.5" fill="#22d3ee" opacity="0.5"/>
+</svg>
