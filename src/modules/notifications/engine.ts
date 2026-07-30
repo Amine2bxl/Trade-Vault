@@ -102,42 +102,47 @@ export const NotificationEngine = {
 
 // ── Domain wiring — the ONLY place discipline events become user-facing ──────
 
-events.on("DISCIPLINE_WARNING", async ({ userId, violation }) => {
-  await NotificationEngine.notify(userId, {
-    kind: "discipline_warning",
-    title: isFr() ? "Rappel de règle" : "Rule check",
-    body: violation.message,
-    severity: "warning",
-    channels: ["dashboard", "toast", "push"],
-    url: "/",
-    // One push per broken rule kind per day — recurring breaks don't spam.
-    dedupKey: `discipline_warning:${violation.rule.kind}`,
-  });
-});
+let wired = false;
+export function initNotificationListeners(): void {
+  if (wired) return;
+  wired = true;
 
-events.on("DISCIPLINE_LIMIT_REACHED", async ({ userId, violation }) => {
-  await NotificationEngine.notify(userId, {
-    kind: "discipline_limit",
-    title: isFr() ? "Limite atteinte" : "Limit reached",
-    body: violation.message,
-    severity: "error",
-    channels: ["dashboard", "toast", "push"],
-    url: "/",
-    dedupKey: `discipline_limit:${violation.rule.kind}`,
+  events.on("DISCIPLINE_WARNING", async ({ userId, violation }) => {
+    await NotificationEngine.notify(userId, {
+      kind: "discipline_warning",
+      title: isFr() ? "Rappel de règle" : "Rule check",
+      body: violation.message,
+      severity: "warning",
+      channels: ["dashboard", "toast", "push"],
+      url: "/",
+      dedupKey: `discipline_warning:${violation.rule.kind}`,
+    });
   });
-});
 
-events.on("DISCIPLINE_SUCCESS", async ({ userId, summary }) => {
-  await NotificationEngine.notify(userId, {
-    kind: "discipline_success",
-    title: isFr() ? "Séance propre" : "Clean session",
-    body: isFr()
-      ? `Journée clôturée : ${summary.tradesToday} trade(s), zéro écart.`
-      : `Day closed with ${summary.tradesToday} trade(s) and zero rule breaks.`,
-    severity: "success",
-    channels: ["dashboard"],
+  events.on("DISCIPLINE_LIMIT_REACHED", async ({ userId, violation }) => {
+    await NotificationEngine.notify(userId, {
+      kind: "discipline_limit",
+      title: isFr() ? "Limite atteinte" : "Limit reached",
+      body: violation.message,
+      severity: "error",
+      channels: ["dashboard", "toast", "push"],
+      url: "/",
+      dedupKey: `discipline_limit:${violation.rule.kind}`,
+    });
   });
-});
+
+  events.on("DISCIPLINE_SUCCESS", async ({ userId, summary }) => {
+    await NotificationEngine.notify(userId, {
+      kind: "discipline_success",
+      title: isFr() ? "Séance propre" : "Clean session",
+      body: isFr()
+        ? `Journée clôturée : ${summary.tradesToday} trade(s), zéro écart.`
+        : `Day closed with ${summary.tradesToday} trade(s) and zero rule breaks.`,
+      severity: "success",
+      channels: ["dashboard"],
+    });
+  });
+}
 
 export function activeNotificationUser(): string | null {
   return currentUserId;
