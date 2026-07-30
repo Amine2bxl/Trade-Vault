@@ -31,7 +31,7 @@
 
 ## 2. Cartographie des tables
 
-18 tables applicatives, en trois familles.
+20 tables applicatives, en quatre familles.
 
 ### 2.1 Cœur trading
 
@@ -73,6 +73,19 @@
 > bouton « générer »). `ai_reports` est le schéma prévu pour les briefs/reviews
 > IA à venir (Daily Brief, Weekly Review). La fusion des deux chaînes de
 > génération est un chantier planifié ([`ROADMAP.md`](ROADMAP.md)).
+
+### 2.4 Calendrier économique
+
+Modèle atypique : **lecture publique** (`anon` + `authenticated`), **écriture
+service-role uniquement** (cron `economic-calendar`). Aucune donnée par
+utilisateur, donc pas de RLS owner-only ici.
+
+| Table | Contenu | Notes |
+| --- | --- | --- |
+| `economic_events` | Événements Forex Factory (impact, devise, valeurs) | Lecture publique ; index `economic_events_starts_at_idx` sur `starts_at` |
+| `economic_calendar_sync` | État de la dernière synchro (curseur, horodatage) | Lecture publique ; écrit par le cron |
+
+Migration : `20260729120000_economic_calendar.sql`.
 
 ---
 
@@ -210,6 +223,14 @@ create policy "<t>_delete_own" on public.<t> for delete using (auth.uid() = user
 | `…140000_security_gating` | `ai_rate_limits` + `consume_ai_quota()`, `processed_webhook_events` |
 | `…150000_lockdown_trigger_functions` | Révocation `EXECUTE` sur `handle_new_user_billing()` |
 | `…160000_ai_os_foundation` | ⚪ `ai_embeddings`, `ai_jobs`, `ai_agent_runs`, extension `vector` — **prête, non appliquée** |
+| `20260729120000_economic_calendar` | `economic_events`, `economic_calendar_sync` (lecture publique, écriture service-role) |
+
+> ⚠️ **`monthly_reports` sans migration.** La table est utilisée en production
+> (`store/reports.ts`, cron `monthly-reports`) et présente dans les types
+> générés, mais **aucun fichier `create table monthly_reports` n'existe** dans
+> `supabase/migrations/` — un environnement neuf ne la recrée pas. Migration
+> additive à ajouter (suivi dans [`ROADMAP.md`](ROADMAP.md) /
+> [`MASTER_PLAN_TRADEVAULT.md`](MASTER_PLAN_TRADEVAULT.md)).
 
 ---
 
