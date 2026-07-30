@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./shared/error-capture";
 import { renderErrorPage } from "./shared/error-page";
 import { SITE_URL } from "./shared/site";
 import { checkRateLimit } from "./backend/rate-limit.server";
+import { logger } from "./shared/logger";
 
 /** Public routes worth indexing. The authenticated app is behind `/` and is
  *  client-rendered, so there is nothing else for a crawler to see. */
@@ -91,6 +92,13 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const { pathname } = new URL(request.url);
+
+      // Health check — no auth, no rate limit.
+      if (pathname === "/api/health") {
+        return new Response(JSON.stringify({ status: "ok" }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
 
       // Rate limit on API endpoints (not crons, not static files).
       if (pathname.startsWith("/api/") && !pathname.startsWith("/api/cron/")) {
