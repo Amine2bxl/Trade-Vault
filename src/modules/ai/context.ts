@@ -106,9 +106,12 @@ export function contextBlocks(ctx: AIUserContext): string {
     );
   }
   if (ctx.trades?.length) {
-    blocks.push(
-      `RECENT TRADES (${ctx.trades.length}, JSON):\n${JSON.stringify(ctx.trades, null, 1)}`,
-    );
+    const maxTrades = 30;
+    const display = ctx.trades.slice(0, maxTrades);
+    const omitted = ctx.trades.length - maxTrades;
+    const json = JSON.stringify(display, null, 1);
+    const suffix = omitted > 0 ? `\n<${omitted} older trades omitted>` : "";
+    blocks.push(`RECENT TRADES (${ctx.trades.length}, JSON):\n${json}${suffix}`);
   } else if (ctx.trades) {
     blocks.push("The user has no trades logged yet.");
   }
