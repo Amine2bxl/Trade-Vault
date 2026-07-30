@@ -24,6 +24,7 @@ const Goals = lazy(() => import("./pages/Goals"));
 const TradingPlan = lazy(() => import("./pages/TradingPlan"));
 const Appearance = lazy(() => import("./pages/Appearance"));
 const Subscription = lazy(() => import("./pages/Subscription"));
+const Inbox = lazy(() => import("./pages/Inbox"));
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
@@ -241,6 +242,7 @@ function AppContent() {
     try {
       await deleteAllTrades(user.id);
       setTrades([]);
+      AutomationEngine.tradeDeleted(user.id, "all");
     } catch (e) {
       console.error("Failed to delete trades", e);
       toast(t("app.saveTradeFailed"), "error");
@@ -397,6 +399,7 @@ function AppContent() {
                   onAddTrade={handleAdd}
                   tradesLoading={tradesLoading}
                   onOpenChecklist={() => setPage("checklist")}
+                  onOpenImport={() => setImportOpen(true)}
                 />
               )}
               {page === "journal" && (
@@ -433,7 +436,40 @@ function AppContent() {
               {page === "tradingplan" && <TradingPlan setPage={setPage} />}
               {page === "appearance" && <Appearance />}
               {page === "subscription" && <Subscription />}
+              {page === "inbox" && <Inbox />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+              {![
+                "dashboard",
+                "journal",
+                "checklist",
+                "calendar",
+                "analytics",
+                "mistakes",
+                "missed",
+                "insights",
+                "news",
+                "seasonality",
+                "calculator",
+                "settings",
+                "reports",
+                "goals",
+                "tradingplan",
+                "appearance",
+                "subscription",
+                "inbox",
+                "profile",
+              ].includes(page) && (
+                <Dashboard
+                  trades={trades}
+                  stats={stats}
+                  onAddTrade={handleAdd}
+                  onEditTrade={handleEdit}
+                  onOpenJournal={() => setPage("journal")}
+                  onOpenMissed={() => setPage("missed")}
+                  onOpenChecklist={() => setPage("checklist")}
+                  onOpenImport={() => setImportOpen(true)}
+                />
+              )}
             </Suspense>
           </PageErrorBoundary>
         </div>

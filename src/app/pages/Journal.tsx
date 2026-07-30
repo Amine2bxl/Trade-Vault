@@ -15,7 +15,7 @@ import {
   Target,
   BookOpen,
 } from "lucide-react";
-import { Trade, isBreakEven } from "../types";
+import { Trade, isBreakEven, STRATEGIES } from "../types";
 import {
   computeStats,
   formatPct,
@@ -71,10 +71,9 @@ export default function Journal({
 }: JournalProps) {
   const { t } = useT();
   const stored = useMemo(loadStoredFilters, []);
-  // strategyFilter is applied from persisted filters; there is no live control
-  // for it (the setter was dropped with the old strategy dropdown), so it stays
-  // at whatever was last stored — hence no setter here.
-  const [strategyFilter] = useState(stored.strategyFilter ?? "all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
+  const [strategyFilter, setStrategyFilter] = useState(stored.strategyFilter ?? "all");
   const [resultFilter, setResultFilter] = useState<ResultFilter>(stored.resultFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? "date");
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
@@ -99,6 +98,23 @@ export default function Journal({
 
   const filtered = useMemo(() => {
     let list = [...trades];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (t) =>
+          t.symbol.toLowerCase().includes(q) ||
+          t.strategy.toLowerCase().includes(q) ||
+          t.notes.toLowerCase().includes(q),
+      );
+    }
+    if (periodFilter !== "all") {
+      const cutoff = new Date();
+      if (periodFilter === "7d") cutoff.setDate(cutoff.getDate() - 7);
+      else if (periodFilter === "30d") cutoff.setDate(cutoff.getDate() - 30);
+      else if (periodFilter === "90d") cutoff.setDate(cutoff.getDate() - 90);
+      else if (periodFilter === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
+      list = list.filter((t) => new Date(t.date) >= cutoff);
+    }
     if (strategyFilter !== "all") list = list.filter((t) => t.strategy === strategyFilter);
     if (resultFilter === "win") list = list.filter((t) => !isBreakEven(t) && t.pnl > 0);
     if (resultFilter === "loss") list = list.filter((t) => !isBreakEven(t) && t.pnl < 0);
@@ -113,7 +129,7 @@ export default function Journal({
       return sortDir === "desc" ? -cmp : cmp;
     });
     return list;
-  }, [trades, strategyFilter, resultFilter, sortKey, sortDir]);
+  }, [trades, searchQuery, periodFilter, strategyFilter, resultFilter, sortKey, sortDir]);
 
   // Counts per result filter — shown inside the pills so the trader sees the
   // shape of their journal before clicking, not after.
@@ -202,8 +218,41 @@ export default function Journal({
         </div>
       )}
 
-      {/* Result filter pill group + Missed Setups shortcut */}
-      <div className="flex items-center gap-1.5 mb-2.5 md:mb-3">
+      {/* Search + Period + Strategy + Result filter */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-2.5 md:mb-3">
+        {/* Search */}
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t("journal.searchPlaceholder")}
+          className="w-full md:w-auto bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm text-slate-200 placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-400/30"
+        />
+        {/* Period filter */}
+        <select
+          value={periodFilter}
+          onChange={(e) => setPeriodFilter(e.target.value)}
+          className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+        >
+          <option value="all">{t("common.all")}</option>
+          <option value="7d">{t("common.7d")}</option>
+          <option value="30d">{t("common.30d")}</option>
+          <option value="90d">{t("common.90d")}</option>
+          <option value="1y">{t("common.1y")}</option>
+        </select>
+        {/* Strategy filter */}
+        <select
+          value={strategyFilter}
+          onChange={(e) => setStrategyFilter(e.target.value)}
+          className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+        >
+          <option value="all">{t("common.all")}</option>
+          {STRATEGIES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
         <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
           {(
             [

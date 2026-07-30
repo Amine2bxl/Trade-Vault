@@ -122,9 +122,11 @@ export async function deleteTrade(userId: string, id: string): Promise<void> {
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
+  if (data?.screenshots?.length) {
+    await removeScreenshotFiles(storagePathsOf(data.screenshots));
+  }
   const { error } = await supabase.from("trades").delete().eq("id", id).eq("user_id", userId);
   if (error) throw error;
-  await removeScreenshotFiles(storagePathsOf(data?.screenshots));
 }
 
 // Scoped to the active account: "delete all" only clears the current account.
@@ -133,12 +135,16 @@ export async function deleteAllTrades(userId: string): Promise<void> {
   let selectQ = supabase.from("trades").select("screenshots").eq("user_id", userId);
   if (activeId) selectQ = selectQ.eq("account_id", activeId);
   const { data } = await selectQ;
+  const allPaths = (data ?? []).flatMap((r: { screenshots: string[] }) =>
+    storagePathsOf(r.screenshots),
+  );
+  if (allPaths.length) {
+    await removeScreenshotFiles(allPaths);
+  }
   let delQ = supabase.from("trades").delete().eq("user_id", userId);
   if (activeId) delQ = delQ.eq("account_id", activeId);
   const { error } = await delQ;
   if (error) throw error;
-  const all = (data ?? []).flatMap((r: { screenshots: string[] }) => storagePathsOf(r.screenshots));
-  await removeScreenshotFiles(all);
 }
 
 // ── Legacy base64 → Storage migration ──

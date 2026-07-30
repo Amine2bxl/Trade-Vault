@@ -4,6 +4,7 @@ import { computeStats, formatPnl, formatPct } from "../utils/tradeCalcs";
 import {
   LogOut,
   Mail,
+  RotateCcw,
   Target,
   TrendingUp,
   Hash,
@@ -144,6 +145,22 @@ export default function Profile({ trades, setPage }: ProfileProps) {
         <span>{t("common.signOut")}</span>
         <LogOut className="h-4 w-4" />
       </Button>
+      <button
+        onClick={async () => {
+          try {
+            // @ts-expect-error — supabase client via global for simplicity
+            const { supabase } = await import("@/integrations/supabase/client");
+            await supabase.from("profiles").update({ onboarded_at: null }).eq("id", user?.id);
+            window.location.reload();
+          } catch {
+            /* ignore */
+          }
+        }}
+        className="w-full mt-3 flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] transition text-xs text-slate-500"
+      >
+        <span>{t("profile.redoOnboarding")}</span>
+        <RotateCcw className="h-3.5 w-3.5" />
+      </button>
     </PageContainer>
   );
 }

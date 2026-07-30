@@ -81,6 +81,7 @@ const fr: Dict = {
   "profile.improvements": "Améliorations",
   "profile.improvementsSub": "Idées & retours",
   "profile.account": "Compte",
+  "profile.redoOnboarding": "Refaire le tutoriel d'onboarding",
   "profile.deleteAllTrades": "Supprimer tous les trades",
   "pushBanner.title": "Reçois un feedback immédiat quand tu enfreins une de tes règles de trading",
   "pushBanner.sub":
@@ -180,6 +181,12 @@ const fr: Dict = {
   "profile.confirmDeleteAll": "⚠️ Supprimer TOUS les trades ? Action irréversible.",
   "appearance.title": "Apparence",
   "appearance.subtitle": "Choisis un thème ou crée le tien. Appliqué partout, instantanément.",
+
+  // Inbox notifications
+  "inbox.title": "Boîte de réception",
+  "inbox.subtitle": "Tous tes signaux, alertes et insights en un seul endroit.",
+  "inbox.empty": "Aucune notification pour le moment. Elles apparaîtront ici au fil de ta session.",
+  "inbox.markRead": "Marquer comme lu",
   "appearance.presets": "Prédéfinis",
   "appearance.yours": "Tes thèmes",
   "appearance.new": "Nouveau thème",
@@ -318,6 +325,7 @@ const fr: Dict = {
   "dashboard.riskSuffix": "de risque",
   "dashboard.avgRR": "R:R moyen",
   "dashboard.bestWorst": "Meilleur / Pire",
+  "dashboard.loadError": "Certaines données n'ont pas pu être chargées — vérifie ta connexion.",
 
   // Dashboard — bloc Copilote (Score d'Edge, règle du jour, objectif)
   "copilot.title": "Copilote du jour",
@@ -486,6 +494,12 @@ const fr: Dict = {
   "push.testNoSub": "Aucun abonnement actif sur cet appareil.",
   "push.unsupported": "Les notifications push ne sont pas supportées sur ce navigateur.",
   "push.denied": "Permission refusée — activez les notifications dans les réglages du navigateur.",
+  "push.categories": "M'avertir de",
+  "push.catDiscipline": "Discipline & règles",
+  "push.catGoals": "Objectifs & streaks",
+  "push.catRisk": "Risque & perte max",
+  "push.catAi": "Insights IA",
+  "push.catEconomic": "Calendrier économique",
   "push.hint":
     "Vous pouvez désactiver les notifications à tout moment depuis cet écran ou les réglages système.",
   "push.iosInstallTitle": "Installez d'abord l'application",
@@ -601,6 +615,7 @@ const fr: Dict = {
   "nav.calculator": "Calculateur de lots",
   "nav.settings": "Réglages",
   "nav.checklist": "Checklist pré-market",
+  "nav.inbox": "Boîte de réception",
 
   "news.title": "News économiques",
 
@@ -814,6 +829,10 @@ const fr: Dict = {
   // Générique a11y / actions
   "common.remove": "Supprimer",
   "common.send": "Envoyer",
+  "common.7d": "7 jours",
+  "common.30d": "30 jours",
+  "common.90d": "3 mois",
+  "common.1y": "Année",
   "common.voiceInput": "Saisie vocale",
   "common.previous": "Précédent",
   "common.next": "Suivant",
@@ -1078,6 +1097,9 @@ const fr: Dict = {
   "trustpilot.never": "Non merci",
 
   // Trades démo / exemple
+  "journal.searchPlaceholder": "Symbole, stratégie, notes…",
+  "journal.searchResultsNone": "Aucun trade ne correspond à ta recherche.",
+
   "journal.exampleBadge": "Exemple",
   "journal.exampleNote":
     "Trade d'exemple inséré par la démo — modifie-le ou supprime-le quand tu veux.",

@@ -1,5 +1,6 @@
 export type Page =
   | "dashboard"
+  | "inbox"
   | "journal"
   | "checklist"
   | "calendar"

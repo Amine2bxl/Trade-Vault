@@ -53,6 +53,7 @@ const en = {
   "nav.tradingPlan": "Trading Plan",
   "nav.reports": "Monthly Reports",
   "nav.appearance": "Appearance",
+  "nav.inbox": "Inbox",
   "nav.subscription": "Subscription",
   "nav.ai": "AI",
   "nav.more": "More",
@@ -214,12 +215,19 @@ const en = {
   "plan.current": "Your current plan",
   "plan.sameAsYearly": "Exactly the same features as yearly — only the billing changes.",
   "plan.forever": "/ forever",
+  "profile.redoOnboarding": "Redo onboarding tutorial",
   "profile.deleteAllTrades": "Delete all trades",
   "profile.confirmDeleteAll": "⚠️ Delete ALL trades? This cannot be undone.",
 
   // Appearance / themes
   "appearance.title": "Appearance",
   "appearance.subtitle": "Pick a theme or craft your own. Applies everywhere, instantly.",
+
+  // Inbox notifications
+  "inbox.title": "Inbox",
+  "inbox.subtitle": "Stay aware without scrolling. One place for every signal, alert and insight.",
+  "inbox.empty": "No notifications yet. They'll appear here as your trading day unfolds.",
+  "inbox.markRead": "Mark as read",
   "appearance.presets": "Presets",
   "appearance.yours": "Your themes",
   "appearance.new": "New theme",
@@ -545,6 +553,12 @@ const en = {
   "push.testNoSub": "No active subscription on this device.",
   "push.unsupported": "Push notifications are not supported on this browser.",
   "push.denied": "Permission denied — enable notifications in your browser settings.",
+  "push.categories": "Notify me about",
+  "push.catDiscipline": "Discipline & rules",
+  "push.catGoals": "Goals & streaks",
+  "push.catRisk": "Risk & max loss",
+  "push.catAi": "AI insights",
+  "push.catEconomic": "Economic calendar",
   "push.hint": "You can disable notifications anytime from this screen or your system settings.",
   "push.iosInstallTitle": "Install the app first",
   "push.iosStep1": "Tap the Share button in Safari",
@@ -553,6 +567,7 @@ const en = {
 
   // Dashboard v2
   "dashboard.noTradesInPeriod": "No trades in this period",
+  "dashboard.loadError": "Some data failed to load — check your connection.",
 
   // Empty states
   "empty.title": "Your journal starts here",
@@ -888,6 +903,10 @@ const en = {
   // Generic a11y / actions
   "common.remove": "Remove",
   "common.send": "Send",
+  "common.7d": "7 days",
+  "common.30d": "30 days",
+  "common.90d": "3 months",
+  "common.1y": "Year",
   "common.voiceInput": "Voice input",
   "common.previous": "Previous",
   "common.next": "Next",
@@ -1143,6 +1162,10 @@ const en = {
     "A quick Trustpilot review helps other traders find us — and keeps everything free.",
   "trustpilot.cta": "Leave a review",
   "trustpilot.never": "No thanks",
+
+  // Journal
+  "journal.searchPlaceholder": "Symbol, strategy, notes…",
+  "journal.searchResultsNone": "No trades match your search.",
 
   // Demo / example trades
   "journal.exampleBadge": "Example",

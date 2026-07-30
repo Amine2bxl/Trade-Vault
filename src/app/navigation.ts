@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   BarChart3,
+  Bell,
   BookOpen,
   Bot,
   Calculator,
@@ -82,6 +83,7 @@ export const NAV_GROUPS: NavGroup[] = [
     labelKey: "nav.groupAccount",
     items: [
       { id: "settings", labelKey: "nav.settings", icon: SettingsIcon },
+      { id: "inbox", labelKey: "nav.inbox", icon: Bell },
       { id: "profile", labelKey: "nav.profile", icon: User },
       { id: "appearance", labelKey: "nav.appearance", icon: Palette },
       { id: "subscription", labelKey: "nav.subscription", icon: CreditCard },
