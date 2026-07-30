@@ -58,10 +58,20 @@ const CoachAsk = z.object({
     .optional(),
 });
 
+function sanitizePrompt(text: string): string {
+  return text
+    .replace(/ignore\s+all\s+(previous|prior)\s+(instructions|directives|commands)/gi, "[redacted]")
+    .replace(/you\s+are\s+(now|from\s+now\s+on)\s+(a\s+|an\s+)?/gi, "")
+    .replace(/system\s*(prompt|message|instruction)/gi, "[system directive]")
+    .replace(/<\|im_start\|>|<\|im_end\|>|<\||\|>/g, "")
+    .trim();
+}
+
 export const askCoach = createServerFn({ method: "POST" })
   .middleware([requireProAccess])
   .inputValidator((input: unknown) => CoachAsk.parse(input))
   .handler(async ({ data }) => {
+    data.question = sanitizePrompt(data.question);
     // The trader must always get a grounded answer. When no provider is
     // configured (beta with no key) or the call fails, we answer deterministically
     // from the very same payload — zero cost, same grounding rules, no error
