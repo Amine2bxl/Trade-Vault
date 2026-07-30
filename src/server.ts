@@ -110,11 +110,11 @@ export default {
       // The Vercel cron hits this path on the 1st of each month.
       if (pathname === "/robots.txt") return robotsTxt(request);
       if (pathname === "/sitemap.xml") return sitemapXml();
-      if (pathname === "/api/cron/monthly-reports") {
+      if (pathname === "/api/cron/monthly-reports" && request.method === "POST") {
         const { handleMonthlyReportsCron } = await import("./backend/monthly-reports.server");
         return await handleMonthlyReportsCron(request);
       }
-      if (pathname === "/api/cron/lifecycle-emails") {
+      if (pathname === "/api/cron/lifecycle-emails" && request.method === "POST") {
         const { handleLifecycleCron } = await import("./backend/lifecycle-emails.server");
         // Same daily tick also drives the weekly goal-plan push reminders
         // (Mondays only — the handler itself gates the day). Best-effort:
@@ -130,9 +130,15 @@ export default {
         }
         return response;
       }
-      if (pathname === "/api/cron/economic-calendar") {
+      if (pathname === "/api/cron/economic-calendar" && request.method === "POST") {
         const { handleEconomicCalendarCron } = await import("./backend/economic-calendar.server");
         return await handleEconomicCalendarCron(request);
+      }
+      if (pathname.startsWith("/api/cron/") && !pathname.startsWith("/api/cron/__")) {
+        return new Response("Method not allowed", {
+          status: 405,
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
       }
       if (pathname === "/api/emails/welcome" && request.method === "POST") {
         const { handleWelcomeEmail } = await import("./backend/lifecycle-emails.server");
