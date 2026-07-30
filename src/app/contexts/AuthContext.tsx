@@ -113,7 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       sessionStorage.setItem("tv.last-pwd-reset", String(Date.now()));
-    } catch { /* sessionStorage not available */ }
+    } catch {
+      /* sessionStorage not available */
+    }
     return null;
   }, []);
 
