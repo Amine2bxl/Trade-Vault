@@ -90,7 +90,12 @@ export async function loadUserTrades(
   userId: string,
   opts?: { limit?: number; offset?: number },
 ): Promise<Trade[]> {
-  let q = supabase.from("trades").select("*").eq("user_id", userId);
+  let q = supabase
+    .from("trades")
+    .select(
+      "id,user_id,account_id,trade_date,symbol,direction,pnl,risk_amount,r_multiple,strategy,mistakes,setup_quality,notes,screenshots,entry_time,exit_time,confluences,confidence,mae,mfe,slippage,is_example,created_at,updated_at",
+    )
+    .eq("user_id", userId);
   const activeId = getActiveAccountId();
   if (activeId) q = q.eq("account_id", activeId);
   if (opts?.limit || opts?.offset) {

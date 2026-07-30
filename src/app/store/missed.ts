@@ -49,7 +49,12 @@ function missedToRow(m: MissedOpportunity, userId: string): MissedRow {
 }
 
 export async function loadMissedOpportunities(userId: string): Promise<MissedOpportunity[]> {
-  let q = supabase.from("missed_opportunities").select("*").eq("user_id", userId);
+  let q = supabase
+    .from("missed_opportunities")
+    .select(
+      "id,user_id,account_id,opportunity_date,symbol,reason_not_taken,what_happened,lesson_learned,next_time_plan,estimated_r,screenshots",
+    )
+    .eq("user_id", userId);
   const activeId = getActiveAccountId();
   if (activeId) q = q.eq("account_id", activeId);
   const { data, error } = await q.order("opportunity_date", { ascending: false });
