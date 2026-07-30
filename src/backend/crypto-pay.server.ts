@@ -94,7 +94,12 @@ export async function handleCryptoWebhook(request: Request): Promise<Response> {
   const sb = serviceClient();
   if (!sb) return json({ error: "server misconfigured" }, 500);
 
-  const event = JSON.parse(payload).event;
+  let event: Record<string, unknown> | undefined;
+  try {
+    event = JSON.parse(payload).event;
+  } catch {
+    return json({ error: "invalid payload" }, 400);
+  }
   if (event?.type !== "charge:confirmed") return json({ received: true });
 
   // Drop duplicate deliveries before extending the paid period.
