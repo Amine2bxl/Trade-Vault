@@ -290,13 +290,13 @@ function AppContent() {
   const handleImportTrades = useCallback(
     async (imported: Trade[]): Promise<number> => {
       if (!user) return 0;
+      const results = await Promise.allSettled(imported.map((tr) => upsertTrade(user.id, tr)));
       const saved: Trade[] = [];
-      for (const tr of imported) {
-        try {
-          await upsertTrade(user.id, tr);
-          saved.push(tr);
-        } catch (e) {
-          console.error("Failed to import trade", e);
+      for (let i = 0; i < results.length; i++) {
+        if (results[i].status === "fulfilled") {
+          saved.push(imported[i]);
+        } else {
+          console.error("Failed to import trade", results[i].reason);
         }
       }
       if (saved.length > 0) {
