@@ -9,23 +9,22 @@
  * project answers on several (the production alias, the project default domain,
  * and one domain per preview branch).
  *
- * Production evidence (Supabase auth logs, 24 h to 2026-07-28): every single
- * "OAuth state not found or expired" came from the project default domain
- * `tradevault-…-projects.vercel.app`, while every successful Google login came
- * from `tradevaultt.vercel.app`. Same code, different origin — the PKCE
- * verifier is stored per-origin, so a flow started on one domain can never be
- * completed on another.
+ * Why a single fixed origin matters (Supabase auth logs, 24 h to 2026-07-28):
+ * every "OAuth state not found or expired" came from a non-canonical origin
+ * (the project default `tradevault-…-projects.vercel.app`), while successful
+ * logins came from the canonical one. The PKCE verifier is stored per-origin,
+ * so a flow started on one origin can never be completed on another — hence a
+ * single canonical origin (now `tradevault.be`) for every auth redirect.
  *
- * MIGRATION TO A CUSTOM DOMAIN: set `VITE_SITE_URL` in Vercel (or edit the
- * fallback below) and redeploy. Nothing else in the app hardcodes a domain.
- * The matching console changes are listed in BACKEND.md §12.
+ * CHANGING THE DOMAIN: set `VITE_SITE_URL` in Vercel and redeploy. Nothing else
+ * in the app hardcodes a domain. The matching console changes are in BACKEND.md §12.
  *
- * CURRENT CANONICAL DOMAIN: `tradevaultt.vercel.app`. The move to
- * `tradevault.be` is prepared but deliberately NOT active — the custom domain
- * is not connected on Vercel yet, and pointing canonicals, auth redirects and
- * the sitemap at a host that does not serve the app would break sign-in and
- * de-index the site. Flip it by setting `VITE_SITE_URL=https://tradevault.be`
- * in Vercel (or editing the fallback) once the domain actually resolves.
+ * CURRENT CANONICAL DOMAIN: `tradevault.be` — connected on Vercel and serving
+ * the app (HTTP 200). The old project domain `tradevaultt.vercel.app` now issues
+ * a 307 redirect to `tradevault.be`, so every canonical, `og:url`, sitemap entry
+ * and auth redirect resolves to the custom domain. Production already runs with
+ * `VITE_SITE_URL=https://tradevault.be`; the fallback below matches it so the
+ * source of truth cannot drift back to the old host if the env var is ever lost.
  *
  * Whatever value is active must match, character for character, the Homepage /
  * Privacy / Terms URLs and the Authorized Domain on the Google OAuth consent
@@ -33,7 +32,7 @@
  */
 
 /** Canonical origin, no trailing slash. Build-time value (Vite inlines it). */
-export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://tradevaultt.vercel.app").replace(
+export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://tradevault.be").replace(
   /\/+$/,
   "",
 );
