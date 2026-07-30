@@ -8,7 +8,13 @@ interface TradingRulesContextValue {
 
 const TradingRulesContext = createContext<TradingRulesContextValue | null>(null);
 
-export function TradingRulesProvider({ userId, children }: { userId: string; children: ReactNode }) {
+export function TradingRulesProvider({
+  userId,
+  children,
+}: {
+  userId: string;
+  children: ReactNode;
+}) {
   const [rules, setRules] = useState<TradingRule[]>([]);
 
   const refresh = useCallback(async () => {

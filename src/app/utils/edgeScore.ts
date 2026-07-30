@@ -68,7 +68,7 @@ function tradedDates(trades: Trade[]): string[] {
  * (`maxRiskPct` × starting balance); falls back to 1.5 × median historical
  * risk when the rule or balance is missing. Returns null if neither is usable.
  */
-function riskThreshold(
+export function riskThreshold(
   trades: Trade[],
   maxRiskPct?: number | null,
   startingBalance?: number | null,

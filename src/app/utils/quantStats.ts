@@ -244,7 +244,7 @@ export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
 }
 
 /** day-of-week (0–6) × hour matrix for the Analytics heatmap */
-function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
+export function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
     if (!t.entryTime) continue;
