@@ -12,6 +12,7 @@ import {
 } from "../utils/pricing";
 import { SUPPORT_EMAIL } from "../types";
 import { CookieConsent } from "../components/CookieConsent";
+import "./landing.css";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated

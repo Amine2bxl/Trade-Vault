@@ -54,7 +54,7 @@ import { buildDemoTrades } from "./utils/demoTrades";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
-import Landing from "./pages/Landing";
+const Landing = lazy(() => import("./pages/Landing"));
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { SkeletonForPage } from "./components/Skeleton";
