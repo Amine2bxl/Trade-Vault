@@ -24,6 +24,7 @@ const Goals = lazy(() => import("./pages/Goals"));
 const TradingPlan = lazy(() => import("./pages/TradingPlan"));
 const Appearance = lazy(() => import("./pages/Appearance"));
 const Subscription = lazy(() => import("./pages/Subscription"));
+const Inbox = lazy(() => import("./pages/Inbox"));
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
@@ -435,6 +436,7 @@ function AppContent() {
               {page === "tradingplan" && <TradingPlan setPage={setPage} />}
               {page === "appearance" && <Appearance />}
               {page === "subscription" && <Subscription />}
+              {page === "inbox" && <Inbox />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
               {![
                 "dashboard",
@@ -454,6 +456,7 @@ function AppContent() {
                 "tradingplan",
                 "appearance",
                 "subscription",
+                "inbox",
                 "profile",
               ].includes(page) && (
                 <Dashboard

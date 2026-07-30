@@ -181,6 +181,12 @@ const fr: Dict = {
   "profile.confirmDeleteAll": "⚠️ Supprimer TOUS les trades ? Action irréversible.",
   "appearance.title": "Apparence",
   "appearance.subtitle": "Choisis un thème ou crée le tien. Appliqué partout, instantanément.",
+
+  // Inbox notifications
+  "inbox.title": "Boîte de réception",
+  "inbox.subtitle": "Tous tes signaux, alertes et insights en un seul endroit.",
+  "inbox.empty": "Aucune notification pour le moment. Elles apparaîtront ici au fil de ta session.",
+  "inbox.markRead": "Marquer comme lu",
   "appearance.presets": "Prédéfinis",
   "appearance.yours": "Tes thèmes",
   "appearance.new": "Nouveau thème",
@@ -609,6 +615,7 @@ const fr: Dict = {
   "nav.calculator": "Calculateur de lots",
   "nav.settings": "Réglages",
   "nav.checklist": "Checklist pré-market",
+  "nav.inbox": "Boîte de réception",
 
   "news.title": "News économiques",
 

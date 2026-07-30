@@ -53,6 +53,7 @@ const en = {
   "nav.tradingPlan": "Trading Plan",
   "nav.reports": "Monthly Reports",
   "nav.appearance": "Appearance",
+  "nav.inbox": "Inbox",
   "nav.subscription": "Subscription",
   "nav.ai": "AI",
   "nav.more": "More",
@@ -221,6 +222,12 @@ const en = {
   // Appearance / themes
   "appearance.title": "Appearance",
   "appearance.subtitle": "Pick a theme or craft your own. Applies everywhere, instantly.",
+
+  // Inbox notifications
+  "inbox.title": "Inbox",
+  "inbox.subtitle": "Stay aware without scrolling. One place for every signal, alert and insight.",
+  "inbox.empty": "No notifications yet. They'll appear here as your trading day unfolds.",
+  "inbox.markRead": "Mark as read",
   "appearance.presets": "Presets",
   "appearance.yours": "Your themes",
   "appearance.new": "New theme",
