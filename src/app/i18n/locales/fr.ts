@@ -81,6 +81,7 @@ const fr: Dict = {
   "profile.improvements": "Améliorations",
   "profile.improvementsSub": "Idées & retours",
   "profile.account": "Compte",
+  "profile.redoOnboarding": "Refaire le tutoriel d'onboarding",
   "profile.deleteAllTrades": "Supprimer tous les trades",
   "pushBanner.title": "Reçois un feedback immédiat quand tu enfreins une de tes règles de trading",
   "pushBanner.sub":
@@ -487,6 +488,12 @@ const fr: Dict = {
   "push.testNoSub": "Aucun abonnement actif sur cet appareil.",
   "push.unsupported": "Les notifications push ne sont pas supportées sur ce navigateur.",
   "push.denied": "Permission refusée — activez les notifications dans les réglages du navigateur.",
+  "push.categories": "M'avertir de",
+  "push.catDiscipline": "Discipline & règles",
+  "push.catGoals": "Objectifs & streaks",
+  "push.catRisk": "Risque & perte max",
+  "push.catAi": "Insights IA",
+  "push.catEconomic": "Calendrier économique",
   "push.hint":
     "Vous pouvez désactiver les notifications à tout moment depuis cet écran ou les réglages système.",
   "push.iosInstallTitle": "Installez d'abord l'application",

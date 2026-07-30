@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, BellOff, Smartphone, AlertCircle, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -6,12 +6,43 @@ import { usePushNotifications } from "../hooks/usePushNotifications";
 import { sendPushToSelf } from "@/backend/push.functions";
 import { useT } from "../i18n/LanguageContext";
 
+type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
+
+const CATEGORIES: { key: NotifCategory; labelKey: string }[] = [
+  { key: "discipline", labelKey: "push.catDiscipline" },
+  { key: "goals", labelKey: "push.catGoals" },
+  { key: "risk", labelKey: "push.catRisk" },
+  { key: "ai", labelKey: "push.catAi" },
+  { key: "economic", labelKey: "push.catEconomic" },
+];
+
+const PREFS_KEY = "tv.notif.prefs";
+
+function loadPrefs(): Record<NotifCategory, boolean> {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) return { ...defaultPrefs(), ...JSON.parse(raw) };
+  } catch {}
+  return defaultPrefs();
+}
+
+function defaultPrefs(): Record<NotifCategory, boolean> {
+  return { discipline: true, goals: true, risk: true, ai: true, economic: true };
+}
+
+function savePrefs(p: Record<NotifCategory, boolean>): void {
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch {}
+}
+
+export { loadPrefs, type NotifCategory, PREFS_KEY };
+
 export function PushNotificationSettings() {
   const { t } = useT();
   const { isSupported, isSubscribed, permission, isLoading, isiOS, isPWA, subscribe, unsubscribe } =
     usePushNotifications();
   const sendPush = useServerFn(sendPushToSelf);
   const [isSending, setIsSending] = useState(false);
+  const [prefs, setPrefs] = useState<Record<NotifCategory, boolean>>(loadPrefs);
 
   const handleToggle = async () => {
     try {
@@ -120,6 +151,33 @@ export function PushNotificationSettings() {
           <p className="text-[10px] text-slate-600">{t("push.hint")}</p>
         </>
       )}
+
+      {/* Notification category preferences */}
+      <div className="space-y-2 pt-2 border-t border-white/[.06]">
+        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+          {t("push.categories")}
+        </p>
+        {CATEGORIES.map((cat) => (
+          <label
+            key={cat.key}
+            className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition cursor-pointer"
+          >
+            <span className="text-xs text-slate-300">{t(cat.labelKey)}</span>
+            <input
+              type="checkbox"
+              checked={prefs[cat.key]}
+              onChange={() =>
+                setPrefs((p) => {
+                  const next = { ...p, [cat.key]: !p[cat.key] };
+                  savePrefs(next);
+                  return next;
+                })
+              }
+              className="h-4 w-4 rounded border-white/20 bg-white/5 checked:bg-cyan-500"
+            />
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
