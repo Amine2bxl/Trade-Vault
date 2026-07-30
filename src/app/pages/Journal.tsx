@@ -217,7 +217,7 @@ export default function Journal({
               key={opt.v}
               onClick={() => setResultFilter(opt.v)}
               className={cn(
-                "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
+                "flex-1 md:flex-none md:px-4 py-2.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
                 resultFilter === opt.v
                   ? opt.v === "win"
                     ? "bg-emerald-500/15 text-emerald-400"
@@ -235,7 +235,7 @@ export default function Journal({
                   "tabular-nums text-[10px] font-bold",
                   resultFilter === opt.v ? "opacity-70" : "text-slate-600",
                 )}
-              >
+        >
                 {counts[opt.v]}
               </span>
             </button>
@@ -374,6 +374,20 @@ export default function Journal({
           })
         )}
       </div>
+
+      {/* Mobile add-trade FAB — visible when trades exist */}
+      {trades.length > 0 && (
+      <div className="md:hidden fixed z-40 bottom-40 right-4">
+        <button
+          onClick={onAdd}
+          aria-label={t("common.addTrade")}
+          className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-cyan-500/90 hover:bg-cyan-400 active:bg-cyan-300 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/30 active:scale-95 transition-all"
+        >
+          <Plus className="w-5 h-5" />
+          <span>{t("common.addTrade")}</span>
+        </button>
+      </div>
+      )}
 
       {/* ── Desktop: Table ── */}
       <Card className="hidden md:block overflow-hidden animate-fade-in-up stagger-2">

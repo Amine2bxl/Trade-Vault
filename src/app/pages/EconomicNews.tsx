@@ -189,7 +189,7 @@ export default function EconomicNews() {
         <button
           onClick={() => setWeekStart((w) => addDays(w, -7))}
           aria-label={t("news.prevWeek")}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
+          className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -210,7 +210,7 @@ export default function EconomicNews() {
         <button
           onClick={() => setWeekStart((w) => addDays(w, 7))}
           aria-label={t("news.nextWeek")}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
+          className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 transition"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

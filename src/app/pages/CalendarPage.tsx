@@ -529,7 +529,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
         </div>
       </Card>
 
-      <div className="hidden md:flex items-center gap-6 mt-4 px-2 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3 md:gap-6 mt-4 px-2">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20" />
           <span className="text-[10px] text-slate-500">{t("calendar.legendWinningDay")}</span>

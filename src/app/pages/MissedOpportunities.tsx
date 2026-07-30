@@ -706,7 +706,7 @@ function FieldInput({
         step={step}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className={cn(FIELD_BASE, "h-9 sm:h-11 text-xs sm:text-sm")}
+        className={cn(FIELD_BASE, "h-11 text-xs sm:text-sm")}
       />
     </label>
   );

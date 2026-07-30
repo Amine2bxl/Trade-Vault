@@ -400,6 +400,18 @@ export default function Dashboard({
         </div>
       ) : (
         <>
+
+          {/* Mobile add-trade FAB — visible only when trades exist, above AI coach */}
+          <div className="md:hidden fixed z-40 bottom-40 right-4">
+            <button
+              onClick={onAddTrade}
+              aria-label={t("common.addTrade")}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-cyan-500/90 hover:bg-cyan-400 active:bg-cyan-300 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/30 active:scale-95 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              <span>{t("common.addTrade")}</span>
+            </button>
+          </div>
           {/* ── Hero: Equity Curve ── */}
           <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
@@ -446,7 +458,7 @@ export default function Dashboard({
                     key={p}
                     onClick={() => changePeriod(p)}
                     className={cn(
-                      "px-2.5 md:px-3.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition-all",
+                      "px-2.5 md:px-3.5 py-2 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition-all",
                       period === p
                         ? "bg-cyan-500/15 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
                         : "text-slate-500 hover:text-slate-300",

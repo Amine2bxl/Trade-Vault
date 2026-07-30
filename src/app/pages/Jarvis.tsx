@@ -328,7 +328,7 @@ export default function Jarvis({ trades }: JarvisProps) {
               aria-pressed={voiceOn}
               title={voiceOn ? t("jarvis.voiceOff") : t("jarvis.voiceOn")}
               className={cn(
-                "flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold border transition-all",
+                "flex items-center gap-1.5 h-11 px-4 rounded-xl text-xs font-semibold border transition-all",
                 voiceOn
                   ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
                   : "bg-white/[0.04] border-white/[0.08] text-slate-400 hover:text-white",
@@ -343,7 +343,7 @@ export default function Jarvis({ trades }: JarvisProps) {
               <button
                 onClick={clearChat}
                 title={t("jarvis.newChat")}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-red-400 hover:border-red-500/30 transition-all"
+                className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-red-400 hover:border-red-500/30 transition-all"
               >
                 <Eraser className="w-4 h-4" />
               </button>

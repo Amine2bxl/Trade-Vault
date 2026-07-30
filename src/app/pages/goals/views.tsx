@@ -417,7 +417,7 @@ export function PlanView({
             onClick={onDelete}
             disabled={busy}
             aria-label={tr("Supprimer le plan", "Delete plan")}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
+            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
           >
             <Trash2 className="w-4 h-4" />
           </button>

@@ -72,7 +72,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
             key={id}
             onClick={() => setTab(id)}
             className={cn(
-              "h-9 px-4 md:px-5 rounded-xl text-xs font-bold transition-all",
+              "h-11 px-4 md:px-5 rounded-xl text-xs font-bold transition-all",
               tab === id
                 ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20"
                 : "text-slate-500 hover:text-slate-300",
@@ -173,7 +173,7 @@ function AssetSeasonality() {
             key={a.symbol}
             onClick={() => setSymbol(a.symbol)}
             className={cn(
-              "h-9 px-3.5 rounded-xl border text-xs font-bold transition-all",
+              "h-11 px-3.5 rounded-xl border text-xs font-bold transition-all",
               a.symbol === asset.symbol
                 ? "bg-white/[0.06] border-cyan-500/30 text-white shadow-sm"
                 : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300",

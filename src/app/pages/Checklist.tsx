@@ -1204,7 +1204,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             <button
               onClick={() => askCoach(coach.checklistReview)}
               title="Jarvis"
-              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition-all"
+              className="shrink-0 inline-flex items-center gap-1.5 h-11 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition-all"
             >
               <Bot className="w-4 h-4" />
               <span className="hidden sm:inline">{t("chk.askJarvis")}</span>
@@ -1248,7 +1248,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 onClick={toggleAudio}
                 title={`${t("chk.voice")} · ${audioOn ? "on" : "off"}`}
                 className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  "w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center border transition-all",
                   audioOn
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                     : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
@@ -1260,7 +1260,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 onClick={toggleEdit}
                 title={t("chk.editor")}
                 className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  "w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center border transition-all",
                   editMode
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                     : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
@@ -1272,7 +1272,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 onClick={() => setShowConfig((v) => !v)}
                 title={t("chk.customize")}
                 className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  "w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center border transition-all",
                   showConfig
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                     : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
@@ -1299,7 +1299,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
             <button
               onClick={() => setShowWizard(true)}
-              className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-cyan-300 border border-cyan-500/25 bg-cyan-500/10 hover:bg-cyan-500/15 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl text-xs font-semibold text-cyan-300 border border-cyan-500/25 bg-cyan-500/10 hover:bg-cyan-500/15 transition-all"
             >
               <Wand2 className="w-4 h-4" /> {t("chk.guidedSetup")}
             </button>

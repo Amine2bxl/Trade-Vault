@@ -116,7 +116,7 @@ export function AuthModal({
         <button
           onClick={onClose}
           aria-label="Fermer"
-          className="absolute right-3.5 top-3.5 z-10 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-white/[.06] hover:text-white transition"
+          className="absolute right-3.5 top-3.5 z-10 grid h-11 w-11 md:h-9 md:w-9 place-items-center rounded-lg text-slate-500 hover:bg-white/[.06] hover:text-white transition"
         >
           <Icon n="close" cls="h-4 w-4" />
         </button>
@@ -278,7 +278,7 @@ export function AuthModal({
                   type="button"
                   onClick={() => setShow((s) => !s)}
                   aria-label={show ? "Masquer" : "Afficher"}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-md text-slate-500 hover:text-slate-300 transition"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 grid h-10 w-10 md:h-7 md:w-7 place-items-center rounded-md text-slate-500 hover:text-slate-300 transition"
                 >
                   <Icon n="eye" cls="h-4 w-4" />
                 </button>

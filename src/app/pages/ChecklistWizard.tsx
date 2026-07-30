@@ -413,13 +413,13 @@ export default function ChecklistWizard({
       onClick={onClose}
     >
       <div
-        className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5 animate-slide-in"
+        className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] md:pb-5 animate-slide-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header + progress */}
         <div className="flex items-center gap-3 mb-5">
           {step > 0 ? (
-            <button onClick={back} className="text-slate-400 hover:text-white transition-colors">
+            <button onClick={back} className="flex items-center justify-center w-11 h-11 md:w-9 md:h-9 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </button>
           ) : (
@@ -436,7 +436,7 @@ export default function ChecklistWizard({
               />
             ))}
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="flex items-center justify-center w-11 h-11 md:w-9 md:h-9 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

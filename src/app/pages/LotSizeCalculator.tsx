@@ -150,7 +150,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
             key={m}
             onClick={() => setMode(m)}
             className={cn(
-              "h-9 px-5 rounded-xl text-xs font-bold transition-all",
+              "h-11 px-5 rounded-xl text-xs font-bold transition-all",
               mode === m
                 ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20"
                 : "text-slate-500 hover:text-slate-300",
