@@ -28,7 +28,7 @@ const REQUIRE_PRO = process.env.AI_REQUIRE_PRO === "true";
 
 /** Thrown when the caller has no active plan or trial. Surfaces to the client
  *  so the UI can prompt an upgrade. */
-export class ProRequiredError extends Error {
+class ProRequiredError extends Error {
   constructor() {
     super("PRO_REQUIRED: an active TradeVault Pro plan or trial is required to use AI features.");
     this.name = "ProRequiredError";
@@ -36,7 +36,7 @@ export class ProRequiredError extends Error {
 }
 
 /** Thrown when the caller exceeds their hourly AI quota. */
-export class RateLimitError extends Error {
+class RateLimitError extends Error {
   constructor() {
     super("RATE_LIMITED: too many AI requests in a short window — please wait a moment.");
     this.name = "RateLimitError";

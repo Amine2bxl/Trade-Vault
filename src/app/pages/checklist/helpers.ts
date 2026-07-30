@@ -58,7 +58,7 @@ export function getTimeZoneOptions(): string[] {
   if (!zones.includes(local)) zones.unshift(local);
   return [...new Set(zones)].sort();
 }
-export function dayOfYear() {
+function dayOfYear() {
   const d = new Date();
   const s = new Date(d.getFullYear(), 0, 0);
   return Math.floor((d.getTime() - s.getTime()) / 864e5);

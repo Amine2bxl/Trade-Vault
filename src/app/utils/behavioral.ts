@@ -22,11 +22,11 @@ export const MISTAKE_SEVERITY: Record<string, Severity> = {
   "Low liquidity": "low",
 };
 
-export function severityOf(mistake: string): Severity {
+function severityOf(mistake: string): Severity {
   return MISTAKE_SEVERITY[mistake] ?? "medium";
 }
 
-export interface MistakeRow {
+interface MistakeRow {
   mistake: string;
   severity: Severity;
   count: number;
@@ -34,7 +34,7 @@ export interface MistakeRow {
   avgPnl: number;
 }
 
-export interface BehavioralReport {
+interface BehavioralReport {
   rows: MistakeRow[];
   totalIncidents: number;
   totalCost: number;

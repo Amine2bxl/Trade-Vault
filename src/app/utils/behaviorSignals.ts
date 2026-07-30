@@ -242,6 +242,6 @@ export function computeBehaviorSignals(trades: Trade[]): BehaviorSignals {
 }
 
 /** True when there is enough signal for the coach to be specific at all. */
-export function hasBehaviorSignals(s: BehaviorSignals): boolean {
+function hasBehaviorSignals(s: BehaviorSignals): boolean {
   return Object.keys(s).length > 1;
 }

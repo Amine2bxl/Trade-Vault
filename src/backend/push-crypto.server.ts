@@ -15,7 +15,7 @@ export interface PushMessage {
   icon: string;
 }
 
-export function b64UrlToBytes(input: string): Uint8Array {
+function b64UrlToBytes(input: string): Uint8Array {
   const cleaned = input.replace(/=+$/g, "");
   const b64 = cleaned.replace(/-/g, "+").replace(/_/g, "/");
   const pad = "=".repeat((4 - (b64.length % 4)) % 4);
@@ -25,13 +25,13 @@ export function b64UrlToBytes(input: string): Uint8Array {
   return out;
 }
 
-export function bytesToB64Url(bytes: Uint8Array): string {
+function bytesToB64Url(bytes: Uint8Array): string {
   let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
@@ -200,7 +200,7 @@ export async function encryptPayload(
   return out;
 }
 
-export function getVapidConfig(): {
+function getVapidConfig(): {
   publicKey: string;
   privateKey: string;
   subject: string;

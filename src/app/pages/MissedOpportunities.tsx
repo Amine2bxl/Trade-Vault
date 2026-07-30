@@ -468,7 +468,7 @@ export function ScreenshotsView({
   );
 }
 
-export function MissedEditor({
+function MissedEditor({
   value,
   onClose,
   onSave,
