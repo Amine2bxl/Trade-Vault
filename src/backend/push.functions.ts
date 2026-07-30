@@ -1,20 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendWebPush, type PushSubRow } from "./push-crypto.server";
 
 // Web Push sender for the currently signed-in user. The RFC 8291 encryption
 // lives in push-crypto.server.ts, shared with the monthly-report cron.
 
-interface SendInput {
-  title?: string;
-  body?: string;
-  url?: string;
-  icon?: string;
-}
+const sendInputSchema = z.object({
+  title: z.string().max(100).optional(),
+  body: z.string().max(500).optional(),
+  url: z.string().max(500).optional(),
+  icon: z.string().max(200).optional(),
+});
 
 export const sendPushToSelf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: SendInput) => input)
+  .inputValidator((input) => sendInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = context.supabase as any;
