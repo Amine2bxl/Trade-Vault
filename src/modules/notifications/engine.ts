@@ -23,6 +23,7 @@ function toToastType(sev: AppNotification["severity"]): "success" | "error" | "i
 /** UI language for notification copy — same source as the rule messages (tv.lang).
  *  Only fr/en, matching what the localized rule `body` actually produces. */
 function isFr(): boolean {
+  if (typeof window === "undefined") return false;
   try {
     return (localStorage.getItem("tv.lang") ?? "en") === "fr";
   } catch {
@@ -37,6 +38,7 @@ function isFr(): boolean {
  */
 const PUSH_LOG_KEY = "tv.notif.pushed";
 function alreadyPushedToday(dedupKey: string): boolean {
+  if (typeof window === "undefined") return false;
   try {
     const today = new Date().toISOString().slice(0, 10);
     const raw = localStorage.getItem(PUSH_LOG_KEY);
