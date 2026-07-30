@@ -229,43 +229,47 @@ export async function sendWebPush(
   if (subscriptions.length === 0) return { sent: 0, total: 0 };
 
   const body = JSON.stringify(message);
-  let sent = 0;
-  for (const sub of subscriptions) {
-    try {
-      const pub = b64UrlToBytes(sub.p256dh);
-      const auth = b64UrlToBytes(sub.auth);
-      const encrypted = await encryptPayload(body, pub, auth);
-      const jwt = await generateVapidJWT(
-        sub.endpoint,
-        vapid.publicKey,
-        vapid.privateKey,
-        vapid.subject,
-      );
 
-      const res = await fetch(sub.endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "Content-Encoding": "aes128gcm",
-          "Content-Length": encrypted.length.toString(),
-          TTL: "86400",
-          Authorization: `vapid t=${jwt}, k=${vapid.publicKey}`,
-        },
-        body: toArrayBuffer(encrypted),
-      });
+  const results = await Promise.allSettled(
+    subscriptions.map(async (sub) => {
+      try {
+        const pub = b64UrlToBytes(sub.p256dh);
+        const auth = b64UrlToBytes(sub.auth);
+        const encrypted = await encryptPayload(body, pub, auth);
+        const jwt = await generateVapidJWT(
+          sub.endpoint,
+          vapid.publicKey,
+          vapid.privateKey,
+          vapid.subject,
+        );
 
-      if (res.ok || res.status === 201) {
-        sent++;
-      } else if (res.status === 404 || res.status === 410) {
-        await onGone?.(sub.id);
-      } else {
+        const res = await fetch(sub.endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/octet-stream",
+            "Content-Encoding": "aes128gcm",
+            "Content-Length": encrypted.length.toString(),
+            TTL: "86400",
+            Authorization: `vapid t=${jwt}, k=${vapid.publicKey}`,
+          },
+          body: toArrayBuffer(encrypted),
+        });
+
+        if (res.ok || res.status === 201) return true;
+        if (res.status === 404 || res.status === 410) {
+          await onGone?.(sub.id);
+          return false;
+        }
         const text = await res.text().catch(() => "");
         console.error("[push] send failed", res.status, text);
+        return false;
+      } catch (e) {
+        console.error("[push] error sending to subscription", e);
+        return false;
       }
-    } catch (e) {
-      console.error("[push] error sending to subscription", e);
-    }
-  }
+    }),
+  );
 
+  const sent = results.filter((r) => r.status === "fulfilled" && r.value === true).length;
   return { sent, total: subscriptions.length };
 }
