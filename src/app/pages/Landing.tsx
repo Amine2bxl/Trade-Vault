@@ -11,7 +11,6 @@ import {
   YEARLY_SAVING,
 } from "../utils/pricing";
 import { SUPPORT_EMAIL } from "../types";
-import { SITE_DOMAIN } from "@/shared/site";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated
@@ -875,7 +874,7 @@ export default function Landing() {
               </p>
               {/* Trustpilot proof — visible on the very first screen, honest early-access framing */}
               <a
-                href={`https://www.trustpilot.com/review/${SITE_DOMAIN}`}
+                href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
                 target="_blank"
                 rel="noreferrer"
                 className="fade-up d4 mt-4 inline-flex items-center gap-2.5 rounded-full border border-white/[.08] bg-white/[.03] py-1.5 pl-2 pr-3.5 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]"
