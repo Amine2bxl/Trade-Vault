@@ -99,10 +99,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const requestPasswordReset = useCallback(async (email: string): Promise<string | null> => {
     if (!email) return "Please enter your email";
+
+    // Client-side rate limit: at most one reset per 60 seconds.
+    const lastReset = Number(sessionStorage.getItem("tv.last-pwd-reset") ?? "0");
+    if (Date.now() - lastReset < 60_000) {
+      return "Too many requests. Please wait 1 minute before trying again.";
+    }
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: authRedirectTo("/reset-password"),
     });
     if (error) return error.message;
+
+    try {
+      sessionStorage.setItem("tv.last-pwd-reset", String(Date.now()));
+    } catch { /* sessionStorage not available */ }
     return null;
   }, []);
 
