@@ -1,5 +1,5 @@
 -- Profiles
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null default '',
   email text not null default '',
@@ -20,7 +20,7 @@ create policy "Users can insert their own profile" on public.profiles for insert
 create policy "Users can update their own profile" on public.profiles for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
 
 -- Trades
-create table public.trades (
+create table if not exists public.trades (
   id text primary key default gen_random_uuid()::text,
   user_id uuid not null default auth.uid(),
   trade_date date not null,
