@@ -44,8 +44,12 @@ import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { useTradeStats } from "./hooks/useTradeStats";
 import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
 import { sendPushToSelf } from "@/backend/push.functions";
-import { AutomationEngine } from "@/modules/automation";
-import { NotificationEngine, persistNotification } from "@/modules/notifications";
+import { AutomationEngine, initAutomationListeners } from "@/modules/automation";
+import {
+  NotificationEngine,
+  persistNotification,
+  initNotificationListeners,
+} from "@/modules/notifications";
 import { buildDemoTrades } from "./utils/demoTrades";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -477,6 +481,11 @@ function AppContent() {
 }
 
 export default function App() {
+  useEffect(() => {
+    initNotificationListeners();
+    initAutomationListeners();
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>

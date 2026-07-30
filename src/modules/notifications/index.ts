@@ -1,4 +1,4 @@
-export { NotificationEngine } from "./engine";
+export { NotificationEngine, initNotificationListeners } from "./engine";
 export { persistNotification, loadNotifications, markNotificationRead } from "./store";
 export type {
   AppNotification,

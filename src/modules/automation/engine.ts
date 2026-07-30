@@ -64,48 +64,52 @@ export const AutomationEngine = {
 
 // ── Default pipeline ─────────────────────────────────────────────────────────
 
-registerStep({
-  name: "validate",
-  order: 10,
-  run(ctx) {
-    // Minimal integrity gate — malformed trades never reach the engines.
-    if (!ctx.trade.id || !ctx.trade.date || !ctx.userId) return false;
-  },
-});
+let wired = false;
+export function initAutomationListeners(): void {
+  if (wired) return;
+  wired = true;
 
-registerStep({
-  name: "analyze",
-  order: 20,
-  run(ctx) {
-    const sameDay = ctx.previousTrades.filter(
-      (t) => t.date === ctx.trade.date && t.id !== ctx.trade.id,
-    );
-    ctx.analysis = analyzeTrade(ctx.trade, {
-      sameDayTrades: sameDay,
-      accountBalance: ctx.accountBalance,
-    });
-    events.emit("TradeAnalyzed", {
-      userId: ctx.userId,
-      trade: ctx.trade,
-      analysis: ctx.analysis,
-    });
-  },
-});
+  registerStep({
+    name: "validate",
+    order: 10,
+    run(ctx) {
+      if (!ctx.trade.id || !ctx.trade.date || !ctx.userId) return false;
+    },
+  });
 
-registerStep({
-  name: "discipline",
-  order: 30,
-  run(ctx) {
-    // Edits don't re-trigger coaching — only fresh decisions do.
-    if (!ctx.isNew) return;
-    const sameDay = ctx.previousTrades.filter(
-      (t) => t.date === ctx.trade.date && t.id !== ctx.trade.id,
-    );
-    ctx.violations = DisciplineEngine.checkTrade(ctx.trade, {
-      userId: ctx.userId,
-      sameDayTrades: sameDay,
-      accountBalance: ctx.accountBalance,
-      rules: ctx.rules,
-    });
-  },
-});
+  registerStep({
+    name: "analyze",
+    order: 20,
+    run(ctx) {
+      const sameDay = ctx.previousTrades.filter(
+        (t) => t.date === ctx.trade.date && t.id !== ctx.trade.id,
+      );
+      ctx.analysis = analyzeTrade(ctx.trade, {
+        sameDayTrades: sameDay,
+        accountBalance: ctx.accountBalance,
+      });
+      events.emit("TradeAnalyzed", {
+        userId: ctx.userId,
+        trade: ctx.trade,
+        analysis: ctx.analysis,
+      });
+    },
+  });
+
+  registerStep({
+    name: "discipline",
+    order: 30,
+    run(ctx) {
+      if (!ctx.isNew) return;
+      const sameDay = ctx.previousTrades.filter(
+        (t) => t.date === ctx.trade.date && t.id !== ctx.trade.id,
+      );
+      ctx.violations = DisciplineEngine.checkTrade(ctx.trade, {
+        userId: ctx.userId,
+        sameDayTrades: sameDay,
+        accountBalance: ctx.accountBalance,
+        rules: ctx.rules,
+      });
+    },
+  });
+}
