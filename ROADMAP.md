@@ -43,7 +43,7 @@ se souvient, un produit qui vient à toi, une valeur démontrée en euros — et
 | **Preuve sociale** | Pas de faux avis. Trustpilot **conservé en l'état** — zone gelée, vrais avis en cours |
 | **Identité IA** | **Une seule** : Jarvis. Plus jamais de « AI Coach » / « Assistant » / « Insights » en parallèle |
 | **Voix** | Une seule voix, toujours en anglais ; locale par défaut, hébergée en option |
-| **Documentation** | 11 documents à la racine, **un propriétaire par sujet**, zéro duplication |
+| **Documentation** | un propriétaire par sujet à la racine, **zéro duplication** |
 
 ---
 

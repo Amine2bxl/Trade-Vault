@@ -84,6 +84,7 @@ lignes : elles demandent un raisonnement, pas un rapport.
 ## Stack
 
 TanStack Start · React 19 · TypeScript · Supabase (Postgres + RLS) ·
-Tailwind v4 · Radix UI · Vite · Bun.
+Tailwind v4 · primitives UI maison (`src/shared/ui`, ni Radix ni shadcn) ·
+Vite · Bun.
 
 Commandes : `bun run dev` · `bun run build` · `bun run lint` · `bun run format`.
