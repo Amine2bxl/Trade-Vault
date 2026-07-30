@@ -95,23 +95,19 @@ export default function Dashboard({
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
-    loadStartingBalance(user.id)
-      .then((b) => {
+    Promise.allSettled([
+      loadStartingBalance(user.id).then((b) => {
         if (active) setStartingBalance(b);
-      })
-      .catch(() => {});
-    loadTradingPlan(user.id)
-      .then((p) => {
+      }),
+      loadTradingPlan(user.id).then((p) => {
         if (!active) return;
         const pct = parseFloat(p.risk.maxRiskPerTradePct);
         setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
-      })
-      .catch(() => {});
-    loadOnboarding(user.id)
-      .then((o) => {
+      }),
+      loadOnboarding(user.id).then((o) => {
         if (active) setMonthlyTarget(o.monthlyTarget ?? null);
-      })
-      .catch(() => {});
+      }),
+    ]);
     return () => {
       active = false;
     };
