@@ -279,9 +279,14 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
   const sb = serviceClient();
   if (!sb) return json({ error: "server misconfigured" }, 500);
 
-  const event = JSON.parse(payload);
-  const type: string = event.type;
-  const obj = event.data.object;
+  let event: Record<string, unknown>;
+  try {
+    event = JSON.parse(payload);
+  } catch {
+    return json({ error: "invalid payload" }, 400);
+  }
+  const type: string = (event.type as string) ?? "";
+  const obj = ((event.data as Record<string, unknown>)?.object as Record<string, unknown>) ?? {};
 
   // Drop duplicate deliveries before touching subscription state.
   if (await markWebhookProcessed(sb, "stripe", event.id)) {
