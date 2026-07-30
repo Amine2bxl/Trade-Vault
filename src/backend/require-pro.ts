@@ -10,10 +10,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 //   1. an active entitlement — a paid plan, or a signup trial still running;
 //   2. a per-user hourly rate limit on AI calls (atomic fixed-window in SQL).
 //
-// Both checks FAIL OPEN on infrastructure errors: a transient DB problem, or a
-// migration not yet applied, must never lock a paying user out of the product.
-// They deny only on a definitively-read "no entitlement" / "quota exceeded"
-// outcome. The matching migration adds `ai_rate_limits` + `consume_ai_quota`.
+// The entitlement check FAILS CLOSED: if the DB cannot be read, the user is
+// denied access rather than silently let through. This is a hard business
+// requirement — the paywall must never be bypassable during an outage.
+// The rate-limit check (cost/abuse protection, not a paywall) still fails
+// open: a transient RPC failure lets the request through.
+// The matching migration adds `ai_rate_limits` + `consume_ai_quota`.
 
 const RATE_LIMIT_PER_HOUR = Number(process.env.AI_RATE_LIMIT_PER_HOUR ?? "60");
 
@@ -62,20 +64,14 @@ export const requireProAccess = createMiddleware({ type: "function" })
     // 1) Entitlement — enforced only when monetization is switched on. During
     //    free early access this whole block is skipped, so every signed-in
     //    user has full AI access.
+    //    Fail-closed on DB error: if we can't read subscriptions, deny access.
     if (REQUIRE_PRO) {
-      try {
-        const { data, error } = await supabase
-          .from("subscriptions")
-          .select("status, trial_ends_at")
-          .eq("user_id", userId)
-          .maybeSingle();
-        // On a read error we fail open (transient infra); we deny only when the
-        // row was read successfully and is not an active entitlement.
-        if (!error && !isEntitled(data)) throw new ProRequiredError();
-      } catch (e) {
-        if (e instanceof ProRequiredError) throw e;
-        // Unexpected failure → fail open rather than block a legitimate user.
-      }
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("status, trial_ends_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error || !isEntitled(data)) throw new ProRequiredError();
     }
 
     // 2) Rate limit — atomic fixed-window counter in Postgres.
