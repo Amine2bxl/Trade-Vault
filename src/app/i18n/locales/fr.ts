@@ -983,7 +983,7 @@ const fr: Dict = {
   "landing.finalSubtitle":
     "Rejoins la communauté early. Gratuit, sans carte bancaire, données privées.",
 
-  // Landing v2 — inspirée de focuspips
+  // Landing v2 — section hero et CTA
   "landing.heroCta": "Analyser mes trades — gratuit",
   "landing.heroTrust": "Gratuit pendant l'accès anticipé · Accès immédiat",
   "landing.ratingText": "Adopté par les traders disciplinés",
