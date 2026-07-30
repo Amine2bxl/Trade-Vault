@@ -398,6 +398,7 @@ function AppContent() {
                   onAddTrade={handleAdd}
                   tradesLoading={tradesLoading}
                   onOpenChecklist={() => setPage("checklist")}
+                  onOpenImport={() => setImportOpen(true)}
                 />
               )}
               {page === "journal" && (
@@ -444,6 +445,7 @@ function AppContent() {
                   onOpenJournal={() => setPage("journal")}
                   onOpenMissed={() => setPage("missed")}
                   onOpenChecklist={() => setPage("checklist")}
+                  onOpenImport={() => setImportOpen(true)}
                 />
               )}
             </Suspense>

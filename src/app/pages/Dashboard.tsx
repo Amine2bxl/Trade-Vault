@@ -31,6 +31,7 @@ import { loadOnboarding } from "../store/profile";
 import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/edgeScore";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
+import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
 import { PageSkeleton } from "../components/Skeleton";
@@ -48,6 +49,7 @@ interface DashboardProps {
   onAddTrade: () => void;
   tradesLoading?: boolean;
   onOpenChecklist?: () => void;
+  onOpenImport?: () => void;
 }
 
 type Period = "7d" | "30d" | "ytd" | "all";
@@ -77,9 +79,9 @@ export default function Dashboard({
   onOpenChecklist,
 }: DashboardProps) {
   const { t } = useT();
+  const { toast } = useToast();
   const { user } = useAuth();
   const { activeId } = useAccounts();
-  const hasDraft = useHasTradeDraft(user?.id);
   const [period, setPeriod] = useState<Period>(() => {
     try {
       const saved = localStorage.getItem(PERIOD_STORAGE_KEY);
@@ -91,22 +93,25 @@ export default function Dashboard({
   const [startingBalance, setStartingBalance] = useState(0);
   const [maxRiskPct, setMaxRiskPct] = useState<number | null>(null);
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
+  const hasDraft = useHasTradeDraft(user?.id);
 
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
     Promise.allSettled([
-      loadStartingBalance(user.id).then((b) => {
-        if (active) setStartingBalance(b);
-      }),
-      loadTradingPlan(user.id).then((p) => {
-        if (!active) return;
-        const pct = parseFloat(p.risk.maxRiskPerTradePct);
-        setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
-      }),
-      loadOnboarding(user.id).then((o) => {
-        if (active) setMonthlyTarget(o.monthlyTarget ?? null);
-      }),
+      loadStartingBalance(user.id)
+        .then((b) => { if (active) setStartingBalance(b); })
+        .catch(() => { if (active) toast(t("dashboard.loadError"), "error"); }),
+      loadTradingPlan(user.id)
+        .then((p) => {
+          if (!active) return;
+          const pct = parseFloat(p.risk.maxRiskPerTradePct);
+          setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
+        })
+        .catch(() => { if (active) toast(t("dashboard.loadError"), "error"); }),
+      loadOnboarding(user.id)
+        .then((o) => { if (active) setMonthlyTarget(o.monthlyTarget ?? null); })
+        .catch(() => { if (active) toast(t("dashboard.loadError"), "error"); }),
     ]);
     return () => {
       active = false;
@@ -366,6 +371,14 @@ export default function Dashboard({
           <Button onClick={onAddTrade}>
             <Plus className="w-4 h-4" /> {t("empty.cta")}
           </Button>
+          {onOpenImport && (
+            <button
+              onClick={onOpenImport}
+              className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+            >
+              {t("import.importCsv")}
+            </button>
+          )}
           {/* Ghost example of what a logged trade looks like */}
           <div
             className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"

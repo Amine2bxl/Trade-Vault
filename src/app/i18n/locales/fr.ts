@@ -318,6 +318,7 @@ const fr: Dict = {
   "dashboard.riskSuffix": "de risque",
   "dashboard.avgRR": "R:R moyen",
   "dashboard.bestWorst": "Meilleur / Pire",
+  "dashboard.loadError": "Certaines données n'ont pas pu être chargées — vérifie ta connexion.",
 
   // Dashboard — bloc Copilote (Score d'Edge, règle du jour, objectif)
   "copilot.title": "Copilote du jour",

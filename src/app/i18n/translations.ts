@@ -553,6 +553,7 @@ const en = {
 
   // Dashboard v2
   "dashboard.noTradesInPeriod": "No trades in this period",
+  "dashboard.loadError": "Some data failed to load — check your connection.",
 
   // Empty states
   "empty.title": "Your journal starts here",
