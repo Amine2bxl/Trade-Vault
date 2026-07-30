@@ -17,9 +17,11 @@ export interface Account {
 // AccountContext keeps it in sync and triggers re-fetches on switch.
 let _activeAccountId: string | null = null;
 export function setActiveAccountId(id: string | null): void {
+  if (typeof window === "undefined") return;
   _activeAccountId = id;
 }
 export function getActiveAccountId(): string | null {
+  if (typeof window === "undefined") return null;
   return _activeAccountId;
 }
 
