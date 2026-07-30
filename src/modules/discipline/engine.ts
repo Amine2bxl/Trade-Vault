@@ -1,4 +1,4 @@
-import type { Trade } from "@/app/types";
+import type { Trade } from "@/domain";
 import { checkTradeAgainstRules } from "@/app/utils/tradingRules";
 // (Trade import used in public method signatures below.)
 import { events } from "@/modules/events";

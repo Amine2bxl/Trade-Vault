@@ -1,3 +1,4 @@
+import { json } from "../shared/response";
 import {
   markWebhookProcessed,
   serviceClient,
@@ -20,13 +21,6 @@ const PLAN_PRICING: Record<PaidPlan, { amount: string; label: string; days: numb
   pro_monthly: { amount: "19.99", label: "TradeVault Pro — 1 mois", days: 31 },
   pro_yearly: { amount: "199.00", label: "TradeVault Pro — 1 an", days: 366 },
 };
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
 
 // ── POST /api/crypto/checkout  { plan } ──────────────────────────────────────
 // Creates a Commerce charge and returns { url } to its hosted payment page.

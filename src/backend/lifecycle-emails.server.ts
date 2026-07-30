@@ -18,14 +18,7 @@ import {
 // email_log's (user_id, email_key) primary key is the dedupe: an insert that
 // conflicts means "already sent", so reruns and overlapping crons are safe.
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
+import { json } from "../shared/response";
 
 function siteUrl(request: Request): string {
   return process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin;
