@@ -86,10 +86,18 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
 }
 
 // ── Trades ──
-export async function loadUserTrades(userId: string): Promise<Trade[]> {
+export async function loadUserTrades(
+  userId: string,
+  opts?: { limit?: number; offset?: number },
+): Promise<Trade[]> {
   let q = supabase.from("trades").select("*").eq("user_id", userId);
   const activeId = getActiveAccountId();
   if (activeId) q = q.eq("account_id", activeId);
+  if (opts?.limit || opts?.offset) {
+    const start = opts?.offset ?? 0;
+    const end = start + (opts?.limit ?? 50) - 1;
+    q = q.range(start, end);
+  }
   const { data, error } = await q.order("trade_date", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((r: TradeRow) => rowToTrade(r));
