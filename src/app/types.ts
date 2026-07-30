@@ -161,4 +161,4 @@ export const SUPPORT_EMAIL = "tradevault@outlook.fr";
 
 // Public review page. The domain must match the one verified via the
 // trustpilot-one-time-domain-verification-id meta tag in __root.tsx.
-export const TRUSTPILOT_REVIEW_URL = "https://www.trustpilot.com/evaluate/tradevault.cc";
+export const TRUSTPILOT_REVIEW_URL = "https://www.trustpilot.com/evaluate/tradevaultt.vercel.app";
