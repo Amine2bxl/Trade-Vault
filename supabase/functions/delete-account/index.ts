@@ -57,6 +57,18 @@ Deno.serve(async (req) => {
     await admin.from("trades").delete().eq("user_id", uid);
     await admin.from("missed_opportunities").delete().eq("user_id", uid);
     await admin.from("push_subscriptions").delete().eq("user_id", uid);
+    await admin.from("notifications").delete().eq("user_id", uid);
+    await admin.from("six_month_goals").delete().eq("user_id", uid);
+    await admin.from("goal_plans").delete().eq("user_id", uid);
+    await admin.from("habits").delete().eq("user_id", uid);
+    await admin.from("user_preferences").delete().eq("user_id", uid);
+    await admin.from("ai_memory").delete().eq("user_id", uid);
+    await admin.from("ai_reports").delete().eq("user_id", uid);
+    await admin.from("ai_rate_limits").delete().eq("user_id", uid);
+    await admin.from("subscriptions").delete().eq("user_id", uid);
+    await admin.from("email_log").delete().eq("user_id", uid);
+    await admin.from("monthly_reports").delete().eq("user_id", uid);
+    await admin.from("accounts").delete().eq("user_id", uid);
     await admin.from("profiles").delete().eq("id", uid);
 
     // 3. The auth account itself. This is the point of no return.
