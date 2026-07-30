@@ -28,18 +28,26 @@ class EventBus {
     this.handlers.get(event)?.delete(handler as EventHandler<DomainEventName>);
   }
 
-  emit<K extends DomainEventName>(event: K, payload: DomainEvents[K]): void {
+  async emit<K extends DomainEventName>(event: K, payload: DomainEvents[K]): Promise<void> {
     const set = this.handlers.get(event);
     if (!set || set.size === 0) return;
+    const promises: Promise<unknown>[] = [];
     for (const handler of [...set]) {
       try {
         const out = handler(payload);
-        // Swallow (but log) async failures so emitters never await listeners.
         if (out instanceof Promise) {
-          out.catch((e) => console.error(`[events] async handler failed for ${event}`, e));
+          promises.push(out);
         }
       } catch (e) {
         console.error(`[events] handler failed for ${event}`, e);
+      }
+    }
+    if (promises.length > 0) {
+      const results = await Promise.allSettled(promises);
+      for (const r of results) {
+        if (r.status === "rejected") {
+          console.error(`[events] async handler failed for ${event}`, r.reason);
+        }
       }
     }
   }
