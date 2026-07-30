@@ -5,7 +5,9 @@ import type { AIProvider, AIRequest, AIResponse } from "./types";
  * Mirrors the REST mechanics of the legacy inlined insights endpoint.
  */
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+function getModel(): string {
+  return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+}
 
 export const GeminiProvider: AIProvider = {
   id: "gemini",
@@ -24,7 +26,7 @@ export const GeminiProvider: AIProvider = {
     const res = await fetch(
       // API key goes in a header, not the query string, so it never lands in
       // URL-based access logs.
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${getModel()}:generateContent`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -48,7 +50,8 @@ export const GeminiProvider: AIProvider = {
     if (!res.ok) {
       const text = await res.text();
       if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-      if (res.status === 402 || res.status === 403)
+      if (res.status === 403) throw new Error("AI access denied. Check API key and permissions.");
+      if (res.status === 402)
         throw new Error("AI credits exhausted. Please add credits to continue.");
       throw new Error(`AI request failed: ${text.slice(0, 200)}`);
     }
@@ -60,7 +63,7 @@ export const GeminiProvider: AIProvider = {
     return {
       text,
       provider: "gemini",
-      model: MODEL,
+      model: getModel(),
       usage: {
         inputTokens: json?.usageMetadata?.promptTokenCount,
         outputTokens: json?.usageMetadata?.candidatesTokenCount,

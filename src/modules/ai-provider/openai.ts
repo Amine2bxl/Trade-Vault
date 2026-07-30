@@ -14,8 +14,12 @@ import type { AIProvider, AIRequest, AIResponse, FinishReason, ProviderToolCall 
  * `tool_calls` → normalized `res.toolCalls`.
  */
 
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const BASE_URL = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
+function getModel(): string {
+  return process.env.OPENAI_MODEL || "gpt-4o-mini";
+}
+function getBaseUrl(): string {
+  return (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
+}
 
 interface OpenAIToolCall {
   id?: string;
@@ -69,14 +73,14 @@ export const OpenAIProvider: AIProvider = {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("AI is not configured (missing OPENAI_API_KEY).");
 
-    const res = await fetch(`${BASE_URL}/chat/completions`, {
+    const res = await fetch(`${getBaseUrl()}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: getModel(),
         max_tokens: req.maxTokens ?? 4096,
         ...(req.temperature !== undefined && { temperature: req.temperature }),
         ...(req.json && { response_format: { type: "json_object" } }),
@@ -114,7 +118,7 @@ export const OpenAIProvider: AIProvider = {
     return {
       text,
       provider: "openai",
-      model: MODEL,
+      model: getModel(),
       usage: {
         inputTokens: json.usage?.prompt_tokens,
         outputTokens: json.usage?.completion_tokens,
