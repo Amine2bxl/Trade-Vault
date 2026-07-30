@@ -11,6 +11,7 @@ import {
   YEARLY_SAVING,
 } from "../utils/pricing";
 import { SUPPORT_EMAIL } from "../types";
+import { CookieConsent } from "../components/CookieConsent";
 
 /**
  * Public landing page shown at "/" for signed-out visitors. Authenticated
@@ -1408,6 +1409,7 @@ export default function Landing() {
         </div>
       </footer>
 
+      <CookieConsent />
       {/* ── STICKY MOBILE CTA ── */}
       {y > 500 && !auth && !menu && (
         <div className="sticky-bar-in fixed inset-x-0 bottom-0 z-40 border-t border-white/[.08] bg-[#060d16]/92 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl xl:hidden">
