@@ -1054,7 +1054,7 @@ const en = {
   "landing.finalSubtitle":
     "Join the early community. Free, no credit card, your data stays private.",
 
-  // Public landing v2 — focuspips-inspired sections
+  // Public landing v2 — hero and CTA sections
   "landing.heroCta": "Analyze my trades — free",
   "landing.heroTrust": "Free during early access · Instant access",
   "landing.ratingText": "Loved by disciplined traders",
