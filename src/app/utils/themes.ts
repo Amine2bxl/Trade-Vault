@@ -118,7 +118,7 @@ export function harmonize(hex: string): string {
 }
 
 // OKLCH → sRGB hex (needed to synthesise harmonised swatches in the editor).
-export function oklchToHex(L: number, C: number, H: number): string {
+function oklchToHex(L: number, C: number, H: number): string {
   const h = (H * Math.PI) / 180;
   const a = Math.cos(h) * C,
     b = Math.sin(h) * C;

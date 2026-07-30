@@ -748,7 +748,7 @@ function centralBankEventsForWeek(weekStart: Date): EconomicEvent[] {
   return out;
 }
 
-export const builtinScheduleProvider: EventProvider = {
+const builtinScheduleProvider: EventProvider = {
   async getEventsForWeek(weekStart: Date): Promise<EconomicEvent[]> {
     const events: EconomicEvent[] = [
       ...fomcEventsForWeek(weekStart),
