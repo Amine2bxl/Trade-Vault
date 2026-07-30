@@ -22,12 +22,7 @@ function stripePriceId(plan: PaidPlan): string | undefined {
     : process.env.STRIPE_PRICE_PRO_YEARLY;
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
+import { json } from "../shared/response";
 
 export function serviceClient(): AnyClient | null {
   const url = process.env.SUPABASE_URL;

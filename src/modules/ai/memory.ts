@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { generateId } from "@/app/store";
+import { generateId } from "@/domain";
 
 /**
  * Persistent AI memory (ai_memory table) — what makes the coach KNOW the

@@ -1,4 +1,4 @@
-import { generateId } from "@/app/store";
+import { generateId } from "@/domain";
 import { events } from "@/modules/events";
 import type { AppNotification, NotificationAdapters, NotificationInput } from "./types";
 
