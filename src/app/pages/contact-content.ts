@@ -133,5 +133,3 @@ const byLang: Partial<Record<Lang, ContactDoc>> = {
 export function getContactDoc(lang: Lang): ContactDoc {
   return byLang[lang] ?? byLang.en!;
 }
-
-export { SUPPORT_EMAIL };
