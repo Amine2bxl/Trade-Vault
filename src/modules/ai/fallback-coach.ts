@@ -1,16 +1,14 @@
 /**
  * Deterministic coach — the zero-cost safety net behind Jarvis.
  *
- * When no AI provider is configured (beta with no key set) or the provider call
- * fails, the trader must still get a useful, grounded answer instead of an error
- * bubble. This module answers **from the exact same payload** the AI would have
- * received: precomputed stats, the recurring-mistake breakdown and recent trades.
- *
- * Guarantees, identical to the AI path:
+ * When no AI provider answers (down, quota, timeout, empty response), the
+ * trader must still get a useful, GROUNDED answer — not an error, and not a
+ * stats dump. This module answers the QUESTION conversationally: a diagnosis
+ * driven by the question's intent, the numbers as evidence, a short plan, and
+ * a closing question. Same guarantees as the AI path:
  *   • never invents a number — every figure comes from the payload
  *   • says plainly when the data isn't there
  *   • never predicts the market, never gives financial advice
- *   • costs nothing (pure function, no IO, no model call)
  */
 
 export interface FallbackPayload {
@@ -32,20 +30,33 @@ function money(v: number): string {
   return `${v < 0 ? "-" : ""}$${s.replace("-", "")}`;
 }
 
-/**
- * Build a grounded Markdown answer. Sections mirror the AI format so the two
- * paths look like the same coach.
- */
+/** Coûteuse fuite récurrente — le fait le plus actionnable. */
+function worstLeak(p: FallbackPayload) {
+  return (p.mistakes ?? [])
+    .filter((m) => m.totalPnl < 0)
+    .sort((a, b) => a.totalPnl - b.totalPnl)[0];
+}
+
+type Intent = "mistake" | "plan" | "improve" | "winloss" | "week" | "generic";
+
+function detectIntent(q: string): Intent {
+  if (/erreur|mistake|perd|pourquoi|why|fuite|leak|fomo/i.test(q)) return "mistake";
+  if (/plan|prépar|prepare|session|règle|rule|discipline/i.test(q)) return "plan";
+  if (/amélior|improve|progress|avancer|better/i.test(q)) return "improve";
+  if (/gain|perte|win|loss|winrate|taux/i.test(q)) return "winloss";
+  if (/semaine|week|mois|month|bilan/i.test(q)) return "week";
+  return "generic";
+}
+
 export function fallbackCoachAnswer(p: FallbackPayload): string {
   const fr = FR(p.language);
   const s = p.stats ?? {};
   const total = num(s.totalTrades);
 
-  // No data at all → say so, don't fabricate coaching.
   if (!total || total === 0) {
     return fr
-      ? "## 🎯 L'essentiel\n\nJe n'ai pas encore de trades à lire. Enregistre tes premières opérations et je te dirai, chiffres à l'appui, ce qui marche et ce qui te coûte.\n\n## 🧭 Prochaine étape\n\n1. Logge tes 10 derniers trades (symbole, R, erreurs éventuelles).\n2. Reviens me voir : je lirai ton edge dans les données."
-      : "## 🎯 Key Takeaways\n\nI have no trades to read yet. Log your first trades and I'll tell you — with real numbers — what works and what costs you.\n\n## 🧭 Action Plan\n\n1. Log your last 10 trades (symbol, R, any mistakes).\n2. Come back: I'll read your edge from the data.";
+      ? "Je n'ai pas encore de trades à lire. Enregistre tes premières opérations, et je te dirai — chiffres à l'appui — ce qui marche et ce qui te coûte. Tu peux commencer par tes 10 derniers trades."
+      : "I have no trades to read yet. Log your first trades and I'll tell you — with real numbers — what works and what costs you. Start with your last 10 trades.";
   }
 
   const pnl = num(s.totalPnl);
@@ -53,129 +64,101 @@ export function fallbackCoachAnswer(p: FallbackPayload): string {
   const pf = num(s.profitFactor);
   const avgWin = num(s.avgWin);
   const avgLoss = num(s.avgLoss);
-  const avgRR = num(s.avgRR);
-  const dd = num(s.maxDrawdown);
+  const leak = worstLeak(p);
   const streak = num(s.currentStreak);
   const streakType = typeof s.currentStreakType === "string" ? s.currentStreakType : null;
+  const q = (p.question ?? "").toLowerCase();
+  const intent = detectIntent(q);
 
-  // The costliest recurring leak — the single most actionable fact we hold.
-  const leak = (p.mistakes ?? [])
-    .filter((m) => m.totalPnl < 0)
-    .sort((a, b) => a.totalPnl - b.totalPnl)[0];
+  const pct = (n: number | null) => (n != null ? `${n.toFixed(1)}%` : "n/a");
+  const ratio = (n: number | null) => (n != null ? n.toFixed(2) : "n/a");
+  /** Chiffres disponibles, cités comme preuve (jamais de $0.00 inventé). */
+  const metrics: string[] = [];
+  if (pnl !== null) metrics.push(fr ? `P&L **${money(pnl)}**` : `P&L **${money(pnl)}**`);
+  if (wr !== null) metrics.push(`win rate **${pct(wr)}**`);
+  if (pf !== null) metrics.push(`profit factor **${ratio(pf)}**`);
+  const ctx = metrics.length ? ` ${metrics.join(", ")}.` : "";
+  const leakLine = leak
+    ? fr
+      ? `la plus coûteuse est **${leak.name}**, qui représente **${money(leak.totalPnl)}** sur **${leak.count}** trades.`
+      : `the most expensive is **${leak.name}**, worth **${money(leak.totalPnl)}** across **${leak.count}** trades.`
+    : null;
 
   const lines: string[] = [];
 
-  lines.push(fr ? "## 🎯 L'essentiel" : "## 🎯 Key Takeaways");
-  const takeaways: string[] = [];
-  if (pnl !== null)
-    takeaways.push(
-      fr
-        ? `Résultat cumulé : **${money(pnl)}** sur **${total}** trades.`
-        : `Cumulative result: **${money(pnl)}** across **${total}** trades.`,
-    );
-  if (wr !== null && pf !== null)
-    takeaways.push(
-      fr
-        ? `Win rate **${wr.toFixed(1)}%**, profit factor **${pf.toFixed(2)}** ${pf >= 1.5 ? "(solide)" : pf >= 1 ? "(à consolider)" : "(sous 1 — les pertes dominent)"}.`
-        : `Win rate **${wr.toFixed(1)}%**, profit factor **${pf.toFixed(2)}** ${pf >= 1.5 ? "(solid)" : pf >= 1 ? "(needs consolidating)" : "(below 1 — losses dominate)"}.`,
-    );
-  if (avgWin !== null && avgLoss !== null && avgLoss !== 0)
-    takeaways.push(
-      fr
-        ? `Gain moyen **${money(avgWin)}** contre perte moyenne **${money(avgLoss)}**.`
-        : `Average win **${money(avgWin)}** vs average loss **${money(avgLoss)}**.`,
-    );
-  if (leak)
-    takeaways.push(
-      fr
-        ? `Ta fuite n°1 : **${leak.name}** — **${money(leak.totalPnl)}** sur **${leak.count}** trades.`
-        : `Your #1 leak: **${leak.name}** — **${money(leak.totalPnl)}** across **${leak.count}** trades.`,
-    );
-  lines.push(takeaways.map((x) => `- ${x}`).join("\n"));
-
-  // Compact stats table — the numbers the answer is allowed to cite.
-  lines.push("");
-  lines.push(fr ? "## 📊 Tes chiffres" : "## 📊 Stats Snapshot");
-  const rows: [string, string][] = [];
-  if (wr !== null) rows.push([fr ? "Win rate" : "Win rate", `${wr.toFixed(1)}%`]);
-  if (pf !== null) rows.push(["Profit factor", pf.toFixed(2)]);
-  if (avgRR !== null) rows.push([fr ? "R:R moyen" : "Avg R:R", avgRR.toFixed(2)]);
-  if (dd !== null) rows.push([fr ? "Drawdown max" : "Max drawdown", money(-Math.abs(dd))]);
-  if (streak !== null && streakType)
-    rows.push([
-      fr ? "Série en cours" : "Current streak",
-      `${streak}${streakType === "win" ? "W" : streakType === "loss" ? "L" : ""}`,
-    ]);
-  if (rows.length) {
-    lines.push(`| ${fr ? "Métrique" : "Metric"} | ${fr ? "Valeur" : "Value"} |`);
-    lines.push("| --- | --- |");
-    rows.forEach(([k, v]) => lines.push(`| ${k} | ${v} |`));
+  // 1. Diagnostic — répond à la question, chiffres à l'appui.
+  switch (intent) {
+    case "mistake":
+      lines.push(
+        leak
+          ? fr
+            ? `Oui, je vois précisément ce qui te coûte : ${leakLine}${ctx} C'est ta première erreur à éliminer.`
+            : `Yes — I can see exactly what costs you: ${leakLine}${ctx} That's the first mistake to eliminate.`
+          : fr
+            ? `Je ne détecte pas d'erreur récurrente coûteuse.${ctx} Le problème est peut-être plus structurel (sizing, sélection).`
+            : `I don't see a costly recurring mistake.${ctx} The problem may be more structural (sizing, selection).`,
+      );
+      break;
+    case "plan":
+      lines.push(
+        fr
+          ? `Voici ta priorité : ${leak ? `supprimer **${leak.name}**` : "protéger ton process actuel"}.${ctx} La discipline est ton levier n°1.`
+          : `Here's your priority: ${leak ? `cut **${leak.name}**` : "protect your current process"}.${ctx} Discipline is your #1 lever.`,
+      );
+      break;
+    case "improve":
+      lines.push(
+        fr
+          ? `Pour progresser : ${leak ? `éliminer **${leak.name}** (${money(leak.totalPnl)} perdus)` : "renforcer ce qui marche déjà"}.${ctx}`
+          : `To improve: ${leak ? `eliminate **${leak.name}** (${money(leak.totalPnl)} lost)` : "reinforce what already works"}.${ctx}`,
+      );
+      break;
+    case "winloss":
+      lines.push(
+        fr
+          ? `Ton win rate est de **${pct(wr)}** : tu gagnes **${money(avgWin ?? 0)}** par trade gagnant mais perds **${money(Math.abs(avgLoss ?? 0))}** par perdant. ${(avgWin ?? 0) > Math.abs(avgLoss ?? 0) ? "Tes gains dépassent tes pertes — c'est ta force." : "Tes pertes dépassent tes gains — regarde tes sorties et ton sizing."}`
+          : `Your win rate is **${pct(wr)}**: you make **${money(avgWin ?? 0)}** per winning trade but lose **${money(Math.abs(avgLoss ?? 0))}** per loser. ${(avgWin ?? 0) > Math.abs(avgLoss ?? 0) ? "Your wins beat your losses — that's your strength." : "Your losses beat your wins — review exits and sizing."}`,
+      );
+      break;
+    case "week":
+      lines.push(
+        fr
+          ? `Sur **${total}** trades${ctx} ${leak ? `Le point noir : **${leak.name}** (${leak.count} fois, ${money(leak.totalPnl)}).` : "Pas d'erreur récurrente dominante — bon process."}`
+          : `Across **${total}** trades${ctx} ${leak ? `The dark spot: **${leak.name}** (${leak.count} times, ${money(leak.totalPnl)}).` : "No dominant recurring mistake — solid process."}`,
+      );
+      break;
+    default:
+      lines.push(
+        leak
+          ? fr
+            ? `En clair : ${leakLine}${ctx} C'est le levier le plus rentable à actionner.`
+            : `Plainly: ${leakLine}${ctx} That's the most profitable lever to pull.`
+          : fr
+            ? `Ton trading est sain sur le plan des erreurs.${ctx}`
+            : `Your error discipline is clean.${ctx}`,
+      );
   }
 
-  // Strength / weakness read, strictly from the numbers above.
-  const strengths: string[] = [];
-  const weaknesses: string[] = [];
-  if (pf !== null && pf >= 1.5)
-    strengths.push(fr ? "Ton profit factor tient la route." : "Your profit factor holds up.");
-  if (wr !== null && wr >= 50)
-    strengths.push(
-      fr ? "Tu gagnes plus d'un trade sur deux." : "You win more than half your trades.",
-    );
-  if (avgWin !== null && avgLoss !== null && Math.abs(avgWin) > Math.abs(avgLoss))
-    strengths.push(
-      fr
-        ? "Tes gains moyens dépassent tes pertes moyennes."
-        : "Your average win beats your average loss.",
-    );
-  if (pf !== null && pf < 1)
-    weaknesses.push(
-      fr ? "Profit factor sous 1 : les pertes l'emportent." : "Profit factor below 1: losses win.",
-    );
-  if (avgWin !== null && avgLoss !== null && Math.abs(avgLoss) > Math.abs(avgWin))
-    weaknesses.push(
-      fr
-        ? "Tes pertes moyennes dépassent tes gains — sizing ou sorties à revoir."
-        : "Average loss exceeds average win — review sizing or exits.",
-    );
-  if (leak)
-    weaknesses.push(
-      fr
-        ? `« ${leak.name} » revient ${leak.count} fois.`
-        : `"${leak.name}" shows up ${leak.count} times.`,
-    );
-  if (streakType === "loss" && streak && streak >= 3)
-    weaknesses.push(
-      fr
-        ? `Série de ${streak} pertes en cours — réduis la taille.`
-        : `${streak}-loss streak running — cut size.`,
-    );
-
-  if (strengths.length) {
-    lines.push("");
-    lines.push(fr ? "## ✅ Points forts" : "## ✅ Strengths");
-    lines.push(strengths.map((x) => `- ${x}`).join("\n"));
-  }
-  if (weaknesses.length) {
-    lines.push("");
-    lines.push(fr ? "## ⚠️ Points faibles" : "## ⚠️ Weaknesses");
-    lines.push(weaknesses.map((x) => `- ${x}`).join("\n"));
-  }
-
-  // Concrete, measurable next steps.
-  lines.push("");
-  lines.push(fr ? "## 🧭 Plan d'action" : "## 🧭 Action Plan");
+  // 2. Plan concret — 1 à 3 actions mesurables.
+  lines.push(fr ? "**Plan**" : "**Plan**");
   const plan: string[] = [];
   if (leak)
     plan.push(
       fr
-        ? `Cible **${leak.name}** : avant chaque entrée, vérifie explicitement ce point. Objectif : 0 occurrence sur tes 10 prochains trades.`
-        : `Target **${leak.name}**: check for it explicitly before every entry. Goal: zero occurrences over your next 10 trades.`,
+        ? `Dès maintenant : écris « ${leak.name} » sur un post-it et vérifie-le avant chaque entrée. Objectif : 0 occurrence sur les 10 prochains trades.`
+        : `Right now: write "${leak.name}" on a sticky note and check it before every entry. Goal: zero occurrences in your next 10 trades.`,
     );
-  if (pf !== null && pf < 1.5)
+  if ((pf ?? 0) < 1.5)
     plan.push(
       fr
         ? "Ne prends que les setups à R:R ≥ 2 pendant 2 semaines, puis recompare ton profit factor."
         : "Take only setups with R:R ≥ 2 for two weeks, then re-check your profit factor.",
+    );
+  if (streakType === "loss" && streak && streak >= 3)
+    plan.push(
+      fr
+        ? `Série de **${streak}** pertes — réduis ta taille de moitié jusqu'à la prochaine victoire.`
+        : `**${streak}**-loss streak — cut your size in half until your next win.`,
     );
   plan.push(
     fr
@@ -184,17 +167,16 @@ export function fallbackCoachAnswer(p: FallbackPayload): string {
   );
   lines.push(plan.map((x, i) => `${i + 1}. ${x}`).join("\n"));
 
-  lines.push("");
-  lines.push(fr ? "## 💡 En une phrase" : "## 💡 Bottom Line");
+  // 3. Relance — pour garder la conversation.
   lines.push(
     leak
       ? fr
-        ? `Supprime « ${leak.name} » et tu récupères ${money(Math.abs(leak.totalPnl))} de performance déjà perdue.`
-        : `Cut "${leak.name}" and you reclaim ${money(Math.abs(leak.totalPnl))} of performance you've already lost.`
+        ? `Quand reviens-tu sur le marché ? Je veux qu'on mesure l'impact de « ${leak.name} » sur tes 10 prochains trades.`
+        : `When are you back in the market? I want us to measure the impact of "${leak.name}" on your next 10 trades.`
       : fr
-        ? "Aucune erreur récurrente coûteuse détectée — protège ce processus, c'est lui ton edge."
-        : "No costly recurring mistake detected — protect this process, it *is* your edge.",
+        ? "Quel est ton objectif pour cette semaine — et comment saurai-je si tu l'as atteint vendredi ?"
+        : "What's your goal for this week — and how will I know on Friday that you reached it?",
   );
 
-  return lines.join("\n");
+  return lines.join("\n\n");
 }
