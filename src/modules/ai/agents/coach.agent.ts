@@ -150,6 +150,12 @@ export async function runCoach(
   const messages = buildCoachMessages(input);
   // Coaching answers are short by design; the ceiling only has to leave room
   // for the occasional explicit "full review" request.
-  const res = await generate({ messages, maxTokens: 2048 }, opts);
+  const res = await generate(
+    { messages, maxTokens: 2048 },
+    {
+      ...opts,
+      meta: { trades: input.trades?.length, ...opts?.meta },
+    },
+  );
   return toFormatted(res);
 }

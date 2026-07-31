@@ -50,6 +50,8 @@ export interface AIRequest {
   tools?: ProviderTool[];
   /** Tool-calling policy (default provider behaviour when omitted). */
   toolChoice?: ToolChoice;
+  /** Abort signal — used by the runtime to enforce per-provider timeouts. */
+  signal?: AbortSignal;
 }
 
 /** Why the model stopped — normalized. `tool_calls` means it wants tools run. */

@@ -346,11 +346,14 @@ const fr: Dict = {
   "jarvisSide.tags": "Tags",
   "jarvisSide.calendar": "Calendrier économique",
   "jarvisSide.news": "Actualités",
-  "jarvisSide.promptAnalyse": "Analyse ma semaine de trading : points forts, points faibles, et le levier n°1 à actionner.",
-  "jarvisSide.promptNotes": "Aide-moi à organiser mes notes de trading pour apprendre de chaque trade.",
+  "jarvisSide.promptAnalyse":
+    "Analyse ma semaine de trading : points forts, points faibles, et le levier n°1 à actionner.",
+  "jarvisSide.promptNotes":
+    "Aide-moi à organiser mes notes de trading pour apprendre de chaque trade.",
   "jarvisSide.promptPlans": "Prépare mon plan de trading pour ma prochaine session.",
   "jarvisSide.promptTags": "Quels tags ou erreurs devrais-je suivre pour détecter mes schémas ?",
-  "jarvisSide.promptCalendar": "Quels événements économiques importants cette semaine, et comment m'y préparer ?",
+  "jarvisSide.promptCalendar":
+    "Quels événements économiques importants cette semaine, et comment m'y préparer ?",
   "jarvisSide.promptNews": "Résume les actualités de marché qui comptent pour mon trading.",
 
   // Crédits Jarvis (Jarvis Intelligence)

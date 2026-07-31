@@ -391,11 +391,13 @@ const en = {
   "jarvisSide.tags": "Tags",
   "jarvisSide.calendar": "Economic calendar",
   "jarvisSide.news": "News",
-  "jarvisSide.promptAnalyse": "Analyse my trading week: strengths, weaknesses, and the one lever to pull next.",
+  "jarvisSide.promptAnalyse":
+    "Analyse my trading week: strengths, weaknesses, and the one lever to pull next.",
   "jarvisSide.promptNotes": "Help me organise my trading notes so I learn from every trade.",
   "jarvisSide.promptPlans": "Prepare my trading plan for my next session.",
   "jarvisSide.promptTags": "Which tags or mistakes should I track to spot my patterns?",
-  "jarvisSide.promptCalendar": "Which important economic events this week, and how should I prepare?",
+  "jarvisSide.promptCalendar":
+    "Which important economic events this week, and how should I prepare?",
   "jarvisSide.promptNews": "Summarise the market news that matters for my trading.",
 
   // Jarvis credits (Jarvis Intelligence)
@@ -1004,7 +1006,8 @@ const en = {
   "ai.genericError": "Something went wrong. Please try again.",
   "ai.rateLimited": "Too many requests in a short window. Wait a moment and try again.",
   "ai.sessionExpired": "Your session expired. Reconnect and try again.",
-  "ai.validationError": "The request could not be processed. Try rephrasing or log out and back in.",
+  "ai.validationError":
+    "The request could not be processed. Try rephrasing or log out and back in.",
 
   // Economic news
   "news.subtitle": "Upcoming macro events — impact, currency and times in your timezone.",

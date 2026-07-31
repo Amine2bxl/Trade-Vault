@@ -44,6 +44,7 @@ export const GeminiProvider: AIProvider = {
             ...(req.json && { responseMimeType: "application/json" }),
           },
         }),
+        ...(req.signal ? { signal: req.signal } : {}),
       },
     );
 

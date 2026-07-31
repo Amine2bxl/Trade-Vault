@@ -73,3 +73,14 @@ export function resolveToolCapableProvider(): AIProvider {
   }
   return first;
 }
+
+/** Ids de toutes les providers connues (même non configurées). */
+export function providerIds(): string[] {
+  return PROVIDERS.map((p) => p.id);
+}
+
+/** Présence d'une clé pour un provider — diagnostic uniquement, jamais la valeur. */
+export function isProviderConfigured(id: string): boolean {
+  const provider = PROVIDERS.find((p) => p.id === id);
+  return provider ? provider.isConfigured() : false;
+}

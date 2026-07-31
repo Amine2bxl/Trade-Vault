@@ -79,6 +79,7 @@ export const AnthropicProvider: AIProvider = {
         }),
         messages: turns.map((m) => ({ role: m.role, content: m.content })),
       }),
+      ...(req.signal ? { signal: req.signal } : {}),
     });
 
     if (!res.ok) {
