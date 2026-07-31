@@ -552,13 +552,17 @@ input[type="number"] {
   }
 }
 
+/* Entrance animations (.animate-fade-in-up / .animate-fade-in) are INTENTIONALLY
+ * disabled. On a full reload (F5) every card started at opacity:0 + translateY(16px)
+ * and cascaded up one by one (stagger), which read as a visible "shake" and held the
+ * first paint back. Content now renders static and instantly visible on load. The
+ * keyframes stay defined for any explicit future opt-in; .animate-slide-in /
+ * .animate-slide-up (modal/sheet entrances) are unaffected. */
 .animate-fade-in-up {
-  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
+  opacity: 1;
 }
 .animate-fade-in {
-  animation: fadeIn 0.25s ease-out forwards;
-  opacity: 0;
+  opacity: 1;
 }
 .animate-slide-in {
   animation: slideInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;

@@ -422,7 +422,7 @@ function AppContent() {
       <main className="app-main relative flex-1 overflow-y-auto">
         {/* Push opt-in now lives in onboarding (and Settings), not as a
             dashboard banner. */}
-        <div key={page} className="animate-fade-in">
+        <div key={page}>
           {/* Contextual skeleton: the loading frame mimics the destination
               page's real layout (chart grid, trade list, calendar…). */}
           <PageErrorBoundary resetKey={page}>

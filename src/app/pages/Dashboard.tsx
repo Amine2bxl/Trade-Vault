@@ -300,7 +300,7 @@ export default function Dashboard({
   return (
     <PageContainer>
       <PageHeader
-        className="items-center stagger-0"
+        className="items-center"
         eyebrow={
           <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-1">
             <Sparkles className="w-3.5 h-3.5" />
@@ -309,10 +309,7 @@ export default function Dashboard({
         }
         title={t("dashboard.title")}
         actions={
-          <Button
-            onClick={onAddTrade}
-            className="relative hidden md:flex animate-fade-in-up stagger-1"
-          >
+          <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
             <Plus className="w-4 h-4" /> {t("common.addTrade")}
             {hasDraft && (
               <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
@@ -352,7 +349,7 @@ export default function Dashboard({
 
           {trades.length === 0 ? (
             /* ── Empty state: first-run experience ── */
-            <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium animate-fade-in-up stagger-1 relative overflow-hidden">
+            <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium  relative overflow-hidden">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
               <svg
                 viewBox="0 0 200 80"
@@ -389,7 +386,7 @@ export default function Dashboard({
               </svg>
               <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
               <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
-              <Button onClick={onAddTrade}>
+              <Button variant="accent" onClick={onAddTrade}>
                 <Plus className="w-4 h-4" /> {t("empty.cta")}
               </Button>
               {onOpenImport && (
@@ -431,7 +428,7 @@ export default function Dashboard({
           ) : (
             <>
               {/* ── Hero: Equity Curve ── */}
-              <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
+              <div className="relative glass rounded-3xl p-4 md:p-5 card-premium  overflow-hidden mb-4 md:mb-6">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
                 <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
                   <div>
@@ -627,7 +624,7 @@ export default function Dashboard({
 
               <div>
                 {/* Recent Trades */}
-                <Card hover className="overflow-hidden animate-fade-in-up stagger-4">
+                <Card hover className="overflow-hidden ">
                   <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
                     <h3 className="text-sm font-semibold text-white">
                       {t("dashboard.recentTrades")}
