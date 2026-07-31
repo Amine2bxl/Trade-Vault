@@ -10,7 +10,7 @@ import { cn } from "./cn";
  * `className` is merged last (twMerge), so any caller override wins.
  */
 
-export type ButtonVariant = "primary" | "ghost" | "subtle" | "danger";
+export type ButtonVariant = "primary" | "ghost" | "subtle" | "danger" | "accent";
 export type ButtonSize = "md" | "sm";
 
 const VARIANT: Record<ButtonVariant, string> = {
@@ -24,6 +24,11 @@ const VARIANT: Record<ButtonVariant, string> = {
   danger:
     "inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 " +
     "bg-red-500/10 font-semibold text-red-400 transition-all hover:bg-red-500/15 hover:text-red-300",
+  // Same toolbar shape as `subtle` (Export CSV / Delete all) but tinted with the
+  // product accent so the primary action stands out while staying in the family.
+  accent:
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/30 " +
+    "bg-cyan-500/10 font-semibold text-cyan-300 transition-all hover:bg-cyan-500/20 hover:text-cyan-200",
 };
 
 // Composed variants get Tailwind sizing; the CSS-class variants (`.btn-*`)
@@ -43,7 +48,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   { variant = "primary", size = "md", type = "button", className, ...rest },
   ref,
 ) {
-  const composed = variant === "subtle" || variant === "danger";
+  const composed = variant === "subtle" || variant === "danger" || variant === "accent";
   return (
     <button
       ref={ref}

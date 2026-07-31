@@ -81,27 +81,20 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // Le cron ne passe qu'une fois par jour (limite du plan) : c'est la
-    // consultation d'une semaine EN COURS qui entretient la fraîcheur.
+    // 1. SERVE THE CACHE FIRST — the read is a fast local DB round-trip and
+    // nothing the sync could bring back justifies blocking it. Forex Factory's
+    // this-week export never publishes `actual` anyway (verified in production),
+    // so the opportunistic sync only refreshes `previous`/`forecast`, which the
+    // daily 05:00 cron already keeps current. Making every 10-min visitor wait
+    // seconds for that is a strict UX loss.
     //
-    // La synchro est ATTENDUE, et c'est délibéré : une fonction serverless est
-    // gelée dès la réponse envoyée, donc un `void promise` lancé après coup ne
-    // s'exécute tout simplement pas. Le coût reste borné — un seul visiteur
-    // toutes les 10 minutes remporte le créneau et paie l'attente (quelques
-    // centaines de ms, 15 s au pire absolu si la source ne répond pas) ; tous
-    // les autres lisent le cache sans rien payer. En échange, celui qui attend
-    // lit des données fraîches, puisque la synchro précède la lecture.
-    //
-    // Import dynamique : le module serveur ne doit pas entrer dans le bundle
-    // client, et il n'est de toute façon utile qu'ici.
+    // 2. KICK THE SYNC OFF IN THE BACKGROUND, DO NOT AWAIT IT HERE. A single
+    // in-flight promise is kept at module scope so the runtime can't GC it and
+    // a warm serverless instance sees it settle; if the instance freezes before
+    // completion the cached data is still correct (just momentarily staler),
+    // and the freshness indicator surfaces that honestly. Next read → fresh.
     if (Date.parse(data.from) <= Date.now() && Date.now() < Date.parse(data.to)) {
-      try {
-        const { syncIfStale } = await import("./economic-calendar.server");
-        await syncIfStale();
-      } catch (error) {
-        // Une synchro ratée ne doit jamais empêcher de servir le cache.
-        console.error("[economic-calendar] opportunistic sync failed", error);
-      }
+      triggerBackgroundSync();
     }
 
     const [eventsResult, syncResult] = await Promise.all([
@@ -131,3 +124,26 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
       stale: !!syncResult.data?.last_error,
     };
   });
+
+/**
+ * Synchronisation opportuniste déclenchée par la lecture, sans bloquer la
+ * réponse. Une seule synchro en vol à la fois : les visites suivantes pendant
+ * qu'elle tourne la réutilisent au lieu d'en lancer une seconde. Voir le
+ * commentaire dans le handler pour la justification complète.
+ */
+let pendingSync: Promise<void> | null = null;
+
+function triggerBackgroundSync(): void {
+  if (pendingSync) return;
+  const run = async () => {
+    try {
+      const { syncIfStale } = await import("./economic-calendar.server");
+      await syncIfStale();
+    } catch (error) {
+      console.error("[economic-calendar] opportunistic sync failed", error);
+    }
+  };
+  pendingSync = run().finally(() => {
+    pendingSync = null;
+  });
+}

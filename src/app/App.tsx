@@ -408,7 +408,7 @@ function AppContent() {
     <div className="relative flex h-dvh text-white overflow-hidden">
       <CursorGlow />
       {/* Ambient background glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div className="shell-bg-orbs pointer-events-none fixed inset-0 overflow-hidden">
         <div
           className="auth-orb w-[600px] h-[600px] bg-cyan-600 -top-64 -right-64"
           style={{ animationDelay: "0s" }}
@@ -422,7 +422,7 @@ function AppContent() {
       <main className="app-main relative flex-1 overflow-y-auto">
         {/* Push opt-in now lives in onboarding (and Settings), not as a
             dashboard banner. */}
-        <div key={page} className="animate-fade-in">
+        <div key={page}>
           {/* Contextual skeleton: the loading frame mimics the destination
               page's real layout (chart grid, trade list, calendar…). */}
           <PageErrorBoundary resetKey={page}>

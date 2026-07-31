@@ -29,7 +29,13 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
     // (e.g. the Checklist's fixed particle/grid canvas), so the navbar keeps
     // the exact same solid style on every page and never looks tinted or
     // transparent — while staying below modals, the palette and the AI FAB.
-    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 z-30 bg-[#08111e]/85 border-r border-white/[0.05] flex-col shrink-0 backdrop-blur-xl">
+    //
+    // SOLID background (no `backdrop-blur`): the ambient orbs behind the shell
+    // animate continuously (orb-float, blur(80px)). A translucent rail with
+    // backdrop-filter re-blurs that moving content every frame — expensive on
+    // a cold start (the F5 stutter). Solid #08111e keeps the rail pixel-stable
+    // on refresh and on every page, with zero per-frame repaint.
+    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 z-30 bg-[#08111e] border-r border-white/[0.05] flex-col shrink-0">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/[0.05] flex items-center gap-3 shrink-0">
         <div className="relative shrink-0">

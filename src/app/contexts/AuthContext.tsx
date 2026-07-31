@@ -81,9 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  // Pinned to the canonical origin, never `window.location.origin`: a Vercel
-  // project answers on several domains, and a PKCE flow started on one origin
-  // cannot be completed on another ("OAuth state not found or expired").
+  // Redirects back to the origin where the flow started (see authRedirectTo in
+  // shared/site.ts): the PKCE verifier is per-origin, so ending on the same
+  // origin is what lets the flow complete — on production AND on previews.
   // Scopes are left at the Supabase default (email + profile) on purpose —
   // both are non-sensitive, so Google requires no security review for them.
   const loginWithGoogle = useCallback(async (): Promise<string | null> => {

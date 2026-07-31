@@ -173,11 +173,11 @@ export default function Journal({
   return (
     <PageContainer>
       <PageHeader
-        className="mb-3 md:mb-4 items-center stagger-0"
+        className="mb-3 md:mb-4 items-center"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
         actions={
-          <div className="flex items-center gap-1.5 md:gap-2 animate-fade-in-up stagger-1 shrink-0">
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
               <Download className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.exportCsv")}</span>
@@ -191,7 +191,7 @@ export default function Journal({
               <Trash className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.deleteAll")}</span>
             </Button>
-            <Button size="sm" onClick={onAdd} className="hidden md:inline-flex">
+            <Button variant="accent" size="sm" onClick={onAdd} className="hidden md:inline-flex">
               <Plus className="w-4 h-4" /> {t("common.addTrade")}
             </Button>
           </div>
@@ -201,7 +201,7 @@ export default function Journal({
       {/* Summary of the CURRENT selection — the journal reads as an analysis,
           not just a list. Recomputed from the same deterministic engine. */}
       {filtered.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5 animate-fade-in-up stagger-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5 ">
           <SummaryTile
             label={t("stats.totalPnl")}
             value={formatPnl(summary.totalPnl)}
@@ -303,14 +303,14 @@ export default function Journal({
       </div>
 
       {/* ── Mobile: Card List ── */}
-      <div className="md:hidden space-y-1.5 animate-fade-in-up stagger-2">
+      <div className="md:hidden space-y-1.5 ">
         {trades.length === 0 ? (
           <EmptyState
             icon={<Target className="w-7 h-7" />}
             title={t("empty.title")}
             description={t("empty.subtitle")}
             action={
-              <Button size="sm" onClick={onAdd}>
+              <Button variant="accent" size="sm" onClick={onAdd}>
                 <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
               </Button>
             }
@@ -427,7 +427,7 @@ export default function Journal({
       </div>
 
       {/* ── Desktop: Table ── */}
-      <Card className="hidden md:block overflow-hidden animate-fade-in-up stagger-2">
+      <Card className="hidden md:block overflow-hidden ">
         <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[880px]">
             <thead className="sticky top-0 z-10 bg-[#0a0f1e]/85 backdrop-blur-md">
@@ -469,7 +469,7 @@ export default function Journal({
                   <td colSpan={8} className="px-5 py-10 text-center">
                     <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
                     <p className="text-xs text-slate-500 mb-3">{t("empty.subtitle")}</p>
-                    <Button size="sm" onClick={onAdd}>
+                    <Button variant="accent" size="sm" onClick={onAdd}>
                       <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
                     </Button>
                   </td>
