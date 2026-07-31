@@ -1,16 +1,22 @@
 import type { AIProvider } from "./types";
 import { GeminiProvider } from "./gemini";
 import { AnthropicProvider } from "./anthropic";
-import { OpenAIProvider } from "./openai";
+import { OpenAIProvider, GroqProvider, OpenRouterProvider } from "./openai";
 
 /**
  * Provider registry — resolution order:
  *   1. AI_PROVIDER env var when set AND configured
  *   2. first configured provider in PROVIDERS order
- * Adding Mistral/DeepSeek/Ollama = one file + one line here.
+ * Adding a provider = one factory call + one line here.
  */
 
-const PROVIDERS: AIProvider[] = [GeminiProvider, AnthropicProvider, OpenAIProvider];
+const PROVIDERS: AIProvider[] = [
+  GeminiProvider,
+  AnthropicProvider,
+  OpenAIProvider,
+  GroqProvider,
+  OpenRouterProvider,
+];
 
 export function resolveProvider(): AIProvider {
   const wanted = process.env.AI_PROVIDER?.toLowerCase();

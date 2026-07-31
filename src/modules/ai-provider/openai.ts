@@ -1,24 +1,25 @@
 import type { AIProvider, AIRequest, AIResponse, FinishReason, ProviderToolCall } from "./types";
 
 /**
- * OpenAI-compatible provider. Talks the Chat Completions API, so it works with
- * OpenAI itself AND any OpenAI-compatible endpoint (OpenRouter, Together, Groq,
- * a local Ollama/vLLM server…) by pointing OPENAI_BASE_URL at it.
+ * Fournisseurs OpenAI-compatibles (Chat Completions API).
  *
- * Env:
- *   OPENAI_API_KEY   — credential (required to activate)
- *   OPENAI_MODEL     — model id (default "gpt-4o-mini")
- *   OPENAI_BASE_URL  — API root (default "https://api.openai.com/v1")
+ * Le même protocole sert OpenAI, Groq, OpenRouter, Together, un Ollama/vLLM
+ * local… : une seule fabrique, une instance par fournisseur. Chaque instance
+ * lit sa propre clé (jamais partagée) et son propre endpoint/modèle.
  *
- * Supports native function calling: `req.tools` → `tools`, and the model's
- * `tool_calls` → normalized `res.toolCalls`.
+ * Env par instance :
+ *   openai      → OPENAI_API_KEY · OPENAI_BASE_URL · OPENAI_MODEL
+ *   groq        → GROQ_API_KEY · GROQ_BASE_URL · GROQ_MODEL
+ *   openrouter  → OPENROUTER_API_KEY · OPENROUTER_BASE_URL · OPENROUTER_MODEL
  */
 
-function getModel(): string {
-  return process.env.OPENAI_MODEL || "gpt-4o-mini";
-}
-function getBaseUrl(): string {
-  return (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
+interface OpenAIProviderConfig {
+  id: string;
+  apiKeyEnv: string;
+  baseUrlEnv: string;
+  modelEnv: string;
+  defaultModel: string;
+  defaultBaseUrl: string;
 }
 
 interface OpenAIToolCall {
@@ -61,70 +62,107 @@ function parseArguments(raw: string | undefined): Record<string, unknown> {
   }
 }
 
-export const OpenAIProvider: AIProvider = {
-  id: "openai",
-  supportsTools: true,
+function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
+  const getModel = (): string => process.env[cfg.modelEnv] || cfg.defaultModel;
+  const getBaseUrl = (): string =>
+    (process.env[cfg.baseUrlEnv] || cfg.defaultBaseUrl).replace(/\/$/, "");
 
-  isConfigured() {
-    return Boolean(process.env.OPENAI_API_KEY);
-  },
+  return {
+    id: cfg.id,
+    supportsTools: true,
 
-  async complete(req: AIRequest): Promise<AIResponse> {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("AI is not configured (missing OPENAI_API_KEY).");
+    isConfigured() {
+      return Boolean(process.env[cfg.apiKeyEnv]);
+    },
 
-    const res = await fetch(`${getBaseUrl()}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: getModel(),
-        max_tokens: req.maxTokens ?? 4096,
-        ...(req.temperature !== undefined && { temperature: req.temperature }),
-        ...(req.json && { response_format: { type: "json_object" } }),
-        ...(req.tools?.length && {
-          tools: req.tools.map((t) => ({
-            type: "function",
-            function: { name: t.name, description: t.description, parameters: t.parameters },
-          })),
-          tool_choice: req.toolChoice ?? "auto",
+    async complete(req: AIRequest): Promise<AIResponse> {
+      const apiKey = process.env[cfg.apiKeyEnv];
+      if (!apiKey) throw new Error(`AI is not configured (missing ${cfg.apiKeyEnv}).`);
+
+      const res = await fetch(`${getBaseUrl()}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          ...(cfg.id === "openrouter" ? { "HTTP-Referer": "https://tradevault.be" } : {}),
+        },
+        body: JSON.stringify({
+          model: getModel(),
+          max_tokens: req.maxTokens ?? 4096,
+          ...(req.temperature !== undefined && { temperature: req.temperature }),
+          ...(req.json && { response_format: { type: "json_object" } }),
+          ...(req.tools?.length && {
+            tools: req.tools.map((t) => ({
+              type: "function",
+              function: { name: t.name, description: t.description, parameters: t.parameters },
+            })),
+            tool_choice: req.toolChoice ?? "auto",
+          }),
+          messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
         }),
-        messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
+      });
 
-    if (!res.ok) {
-      const text = await res.text();
-      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-      if (res.status === 402 || res.status === 403)
-        throw new Error("AI credits exhausted. Please add credits to continue.");
-      throw new Error(`AI request failed: ${text.slice(0, 200)}`);
-    }
+      if (!res.ok) {
+        const text = await res.text();
+        if (res.status === 429)
+          throw new Error("Rate limit reached. Please try again in a moment.");
+        if (res.status === 402 || res.status === 403)
+          throw new Error("AI credits exhausted. Please add credits to continue.");
+        throw new Error(`AI request failed: ${text.slice(0, 200)}`);
+      }
 
-    const json = (await res.json()) as OpenAIResponse;
-    const choice = json.choices?.[0];
-    const text = choice?.message?.content ?? "";
+      const json = (await res.json()) as OpenAIResponse;
+      const choice = json.choices?.[0];
+      const text = choice?.message?.content ?? "";
 
-    const toolCalls: ProviderToolCall[] | undefined = choice?.message?.tool_calls
-      ?.filter((c) => c.function?.name)
-      .map((c) => ({
-        id: c.id,
-        name: c.function?.name ?? "",
-        arguments: parseArguments(c.function?.arguments),
-      }));
+      const toolCalls: ProviderToolCall[] | undefined = choice?.message?.tool_calls
+        ?.filter((c) => c.function?.name)
+        .map((c) => ({
+          id: c.id,
+          name: c.function?.name ?? "",
+          arguments: parseArguments(c.function?.arguments),
+        }));
 
-    return {
-      text,
-      provider: "openai",
-      model: getModel(),
-      usage: {
-        inputTokens: json.usage?.prompt_tokens,
-        outputTokens: json.usage?.completion_tokens,
-      },
-      ...(toolCalls?.length && { toolCalls }),
-      finishReason: mapFinish(choice?.finish_reason),
-    };
-  },
-};
+      return {
+        text,
+        provider: cfg.id,
+        model: getModel(),
+        usage: {
+          inputTokens: json.usage?.prompt_tokens,
+          outputTokens: json.usage?.completion_tokens,
+        },
+        ...(toolCalls?.length && { toolCalls }),
+        finishReason: mapFinish(choice?.finish_reason),
+      };
+    },
+  };
+}
+
+export const OpenAIProvider = createOpenAICompatibleProvider({
+  id: "openai",
+  apiKeyEnv: "OPENAI_API_KEY",
+  baseUrlEnv: "OPENAI_BASE_URL",
+  modelEnv: "OPENAI_MODEL",
+  defaultModel: "gpt-4o-mini",
+  defaultBaseUrl: "https://api.openai.com/v1",
+});
+
+/** Groq — modèles libres ultra-rapides (Llama, Mixtral…), OpenAI-compatible. */
+export const GroqProvider = createOpenAICompatibleProvider({
+  id: "groq",
+  apiKeyEnv: "GROQ_API_KEY",
+  baseUrlEnv: "GROQ_BASE_URL",
+  modelEnv: "GROQ_MODEL",
+  defaultModel: "llama-3.3-70b-versatile",
+  defaultBaseUrl: "https://api.groq.com/openai/v1",
+});
+
+/** OpenRouter — des dizaines de modèles libres (:free) derrière une clé. */
+export const OpenRouterProvider = createOpenAICompatibleProvider({
+  id: "openrouter",
+  apiKeyEnv: "OPENROUTER_API_KEY",
+  baseUrlEnv: "OPENROUTER_BASE_URL",
+  modelEnv: "OPENROUTER_MODEL",
+  defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+  defaultBaseUrl: "https://openrouter.ai/api/v1",
+});
