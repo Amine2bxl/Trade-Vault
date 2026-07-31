@@ -12,6 +12,7 @@
  */
 import {
   resolveProvider,
+  resolveProviders,
   resolveToolCapableProvider,
   type AIProvider,
   type AIRequest,
@@ -82,23 +83,36 @@ async function callOnce(
   }
 }
 
-/** One completion, with provider resolution, retry and telemetry. */
+/** One completion, with provider resolution, retry and telemetry.
+ *  Multi-clés : si la provider active échoue (quota, panne), on bascule
+ *  automatiquement sur la suivante configurée — toutes les clés gratuites
+ *  sont réellement utilisées, aucune erreur ne se voit dans le chat. */
 export async function generate(req: AIRequest, opts: GenerateOptions = {}): Promise<AIResponse> {
-  const provider = opts.provider ?? resolveProvider();
+  // Un override explicite (tests/routage) reste dédié : pas de bascule.
+  const providers = opts.provider ? [opts.provider] : resolveProviders();
   const maxRetries = opts.retries ?? 1;
-  let attempt = 0;
+  let lastErr: unknown;
 
-  while (true) {
-    try {
-      return await callOnce(provider, req, opts.onUsage);
-    } catch (e) {
-      if (attempt < maxRetries && isTransient(e)) {
-        attempt += 1;
-        continue;
+  for (const provider of providers) {
+    let attempt = 0;
+    while (true) {
+      try {
+        return await callOnce(provider, req, opts.onUsage);
+      } catch (e) {
+        lastErr = e;
+        if (attempt < maxRetries && isTransient(e)) {
+          attempt += 1;
+          continue;
+        }
+        break; // provider en échec → suivante
       }
-      throw e;
     }
+    console.warn(`[ai] provider "${provider.id}" failed — trying the next one`, lastErr);
   }
+
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error("AI coach is not configured yet. Add a GEMINI_API_KEY (or another provider key).");
 }
 
 export interface ToolLoopOptions extends GenerateOptions {

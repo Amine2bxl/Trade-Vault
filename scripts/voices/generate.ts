@@ -16,7 +16,7 @@
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LINES } from "../../src/app/pages/checklist/voice";
@@ -32,13 +32,13 @@ const SYNTH = join(ROOT, "scripts/voices/synthesize.py");
 const GREETINGS = ["Good morning", "Good afternoon", "Good evening"] as const;
 
 /** Expand a %G placeholder into the three greeting variants. */
-function expand(line: string): string[] {
+export function expand(line: string): string[] {
   if (!line.includes("%G")) return [line];
   return GREETINGS.map((g) => line.replace("%G", g));
 }
 
 /** Build the full set of unique spoken lines from every source. */
-function buildCatalog(): string[] {
+export function buildCatalog(): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
 
@@ -102,11 +102,9 @@ function main(): void {
     for (const item of need) {
       const wav = join(TMP_DIR, `${item.id}.wav`);
       const mp3 = join(OUT_DIR, `voice-${item.id}.mp3`);
-      execFileSync(
-        "ffmpeg",
-        ["-y", "-i", wav, "-ar", "24000", "-ac", "1", "-b:a", "64k", mp3],
-        { stdio: "ignore" },
-      );
+      execFileSync("ffmpeg", ["-y", "-i", wav, "-ar", "24000", "-ac", "1", "-b:a", "64k", mp3], {
+        stdio: "ignore",
+      });
       rmSync(wav);
     }
   } else {
@@ -117,4 +115,8 @@ function main(): void {
   console.log(`[voices] manifest written: ${Object.keys(manifest).length} clips`);
 }
 
-main();
+// Guard so importing this module in tests builds the catalog without running
+// the (heavy) synthesis pipeline.
+export { main as generateVoices };
+
+if (import.meta.main) main();

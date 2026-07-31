@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ttsCapabilities, ttsSpeak } from "@/backend/tts.functions";
+import { clipFor, loadVoiceClips } from "@/modules/voice/clips";
 import { JARVIS_VOICE, pickJarvisVoice, toSpeechSegments } from "@/modules/voice";
 
 /**
@@ -61,6 +62,11 @@ export function useJarvisVoice(): JarvisVoice {
     load();
     speechSynthesis.addEventListener("voiceschanged", load);
     return () => speechSynthesis.removeEventListener("voiceschanged", load);
+  }, []);
+
+  // Preload the cloned-voice clip map — fixed lines play the exact voice.
+  useEffect(() => {
+    void loadVoiceClips();
   }, []);
 
   const stop = useCallback(() => {
@@ -125,6 +131,27 @@ export function useJarvisVoice(): JarvisVoice {
     async (text: string) => {
       const line = text.trim();
       if (!line) return;
+
+      // Cloned voice first: pre-rendered fixed lines play their static clip —
+      // exact identity, zero network, zero per-utterance cost.
+      await loadVoiceClips();
+      const clip = clipFor(line);
+      if (clip) {
+        const run = ++runRef.current;
+        audioRef.current?.pause();
+        const el = new Audio(clip);
+        audioRef.current = el;
+        el.volume = 0.95;
+        el.onended = () => {
+          if (run === runRef.current) setSpeaking(false);
+        };
+        el.onerror = () => {
+          if (run === runRef.current) setSpeaking(false);
+        };
+        setSpeaking(true);
+        await el.play();
+        return;
+      }
 
       if (!(await hostedAvailable())) {
         speakLocal(line);

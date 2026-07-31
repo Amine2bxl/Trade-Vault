@@ -21,6 +21,7 @@ import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { ttsSpeak } from "@/backend/tts.functions";
+import { clipFor, loadVoiceClips } from "@/modules/voice/clips";
 import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
 import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {
@@ -532,6 +533,37 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const ttsAvailableRef = useRef<boolean | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
 
+  // Preload the cloned-voice clip map once — every fixed line plays it.
+  useEffect(() => {
+    void loadVoiceClips();
+  }, []);
+
+  /* Play a pre-rendered audio URL with the same widget + comms choreography as
+     the hosted path. `onBeforePlay` lets callers remember that the hosted
+     provider answered, so we only probe the network once per session. */
+  const playUrl = useCallback(
+    (url: string, txt: string, onBeforePlay?: () => void): Promise<void> => {
+      onBeforePlay?.();
+      audioElRef.current?.pause();
+      const el = new Audio(url);
+      audioElRef.current = el;
+      el.volume = 0.95;
+      showVoiceWidget(txt);
+      commOn();
+      el.onended = () => {
+        radioClick();
+        commOff();
+        hideVoiceWidget();
+      };
+      el.onerror = () => {
+        commOff();
+        hideVoiceWidget();
+      };
+      return el.play();
+    },
+    [radioClick, commOn, commOff, showVoiceWidget, hideVoiceWidget],
+  );
+
   const speakHosted = useCallback(
     async (txt: string): Promise<boolean> => {
       if (ttsAvailableRef.current === false) return false;
@@ -542,22 +574,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           return false;
         }
         ttsAvailableRef.current = true;
-        audioElRef.current?.pause();
-        const el = new Audio(res.audio);
-        audioElRef.current = el;
-        el.volume = 0.95;
-        showVoiceWidget(txt);
-        commOn();
-        el.onended = () => {
-          radioClick();
-          commOff();
-          hideVoiceWidget();
-        };
-        el.onerror = () => {
-          commOff();
-          hideVoiceWidget();
-        };
-        await el.play();
+        await playUrl(res.audio, txt);
         return true;
       } catch {
         // Network/autoplay refusal → fall back to the browser voice.
@@ -566,7 +583,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         return false;
       }
     },
-    [showVoiceWidget, hideVoiceWidget, commOn, commOff, radioClick],
+    [playUrl, commOff],
   );
 
   const speakBrowser = useCallback(
@@ -622,9 +639,18 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   );
 
   const speak = useCallback(
-    (txt: string, tone: Tone) => {
+    async (txt: string, tone: Tone) => {
       if (!audioOnRef.current) return;
-      // Hosted voice first — identical everywhere. Browser voice is the fallback.
+      // The cloned voice first: any pre-rendered line plays its static clip —
+      // zero network, zero per-utterance cost, identical on every OS. Wait for
+      // the (tiny, cached) manifest so the first line never races past it.
+      await loadVoiceClips();
+      const clip = clipFor(txt);
+      if (clip) {
+        void playUrl(clip, txt);
+        return;
+      }
+      // Hosted voice next — identical everywhere. Browser voice is the fallback.
       if (ttsAvailableRef.current !== false) {
         void speakHosted(txt).then((ok) => {
           if (ok || !("speechSynthesis" in window)) return;
@@ -634,7 +660,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       }
       speakBrowser(txt, tone);
     },
-    [speakHosted, speakBrowser],
+    [playUrl, speakHosted, speakBrowser],
   );
 
   const say = useCallback(
@@ -647,7 +673,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       const h = new Date().getHours();
       const greet = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
       const txt = arr[Math.floor(Math.random() * arr.length)].replace("%G", greet);
-      speak(txt, o.tone);
+      void speak(txt, o.tone);
     },
     [speak],
   );

@@ -12,8 +12,7 @@
 export const JARVIS_GREETINGS = ["Good morning", "Good afternoon", "Good evening"] as const;
 
 /** Fixed English brief sentences (the dynamic "Your priority…" stays a fallback). */
-export const JARVIS_BRIEF_LOG =
-  "Log your trades and I will read your edge from the data." as const;
+export const JARVIS_BRIEF_LOG = "Log your trades and I will read your edge from the data." as const;
 export const JARVIS_BRIEF_KEEP =
   "No recurring leak. Protect the streak — run the same process today." as const;
 

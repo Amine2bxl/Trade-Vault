@@ -29,6 +29,24 @@ export function resolveProvider(): AIProvider {
 }
 
 /**
+ * Toutes les providers CONFIGURÉES, dans l'ordre : la préférée (AI_PROVIDER)
+ * d'abord, puis les autres. C'est la base de la chaîne de repli multi-clés :
+ * avec plusieurs clés gratuites (Gemini + Groq + …), une provider qui échoue
+ * (quota, panne) laisse la suivante répondre. Vide si aucune n'est configurée.
+ */
+export function resolveProviders(): AIProvider[] {
+  const configured = PROVIDERS.filter((p) => p.isConfigured());
+  const wanted = process.env.AI_PROVIDER?.toLowerCase();
+  if (wanted) {
+    const preferred = configured.find((p) => p.id === wanted);
+    if (preferred) {
+      return [preferred, ...configured.filter((p) => p.id !== wanted)];
+    }
+  }
+  return configured;
+}
+
+/**
  * Resolve a provider that natively supports tool calling, honoring AI_PROVIDER
  * when it points at a tool-capable, configured provider; otherwise the first
  * configured tool-capable provider. Throws if none is available, so tool-driven
