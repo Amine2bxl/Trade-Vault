@@ -370,6 +370,11 @@ const en = {
   "jarvisProfile.save": "Save",
   "jarvisProfile.saveError": "Could not save your profile. Please try again.",
 
+  // Jarvis Home (Phase 1)
+  "jarvisHome.greeting": "Hello",
+  "jarvisHome.trader": "Trader",
+  "jarvisHome.subtitle": "I analysed your trading — here is what matters today.",
+
   // Dashboard
   "dashboard.greetingStillUp": "Still up",
   "dashboard.greetingMorning": "Good morning",

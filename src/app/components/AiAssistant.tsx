@@ -8,6 +8,7 @@ import { loadJarvisProfile, saveJarvisProfile, type JarvisProfile } from "../sto
 import JarvisProfileModal from "./JarvisProfileModal";
 import JarvisShell from "./jarvis/JarvisShell";
 import type { JarvisContext } from "./jarvis/context";
+import type { JarvisWorkspaceId } from "./jarvis/workspaces";
 
 interface AiAssistantProps {
   trades: Trade[];
@@ -26,6 +27,14 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>(undefined);
+  // Le workspace actif : l'Accueil par défaut, la Conversation sur prompt externe.
+  const [activeWorkspace, setActiveWorkspace] = useState<JarvisWorkspaceId>("home");
+
+  // Le dock ouvre toujours sur l'Accueil intelligent (jamais de chat vide).
+  const toggleOpen = () => {
+    if (!open) setActiveWorkspace("home");
+    setOpen((v) => !v);
+  };
 
   // First-open gate: the "Profile Jarvis remembers" card shows until the trader
   // completes it. Re-checked on every open so a dismissed card comes back until
@@ -56,6 +65,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
       if (!prompt) return;
       setPendingPrompt(prompt);
+      setActiveWorkspace("conversation");
       setOpen(true);
     };
     window.addEventListener("tv:ask-coach", onAsk);
@@ -92,7 +102,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
           status dot. On mobile it collapses to the mark alone to stay out of
           the thumb zone, but keeps the identical surface. */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
@@ -138,7 +148,8 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         <JarvisShell
           open
           onClose={() => setOpen(false)}
-          activeWorkspace="conversation"
+          activeWorkspace={activeWorkspace}
+          onNavigateWorkspace={setActiveWorkspace}
           context={context}
           initialPrompt={pendingPrompt}
         />

@@ -325,6 +325,11 @@ const fr: Dict = {
   "jarvisProfile.save": "Sauvegarder",
   "jarvisProfile.saveError": "Impossible d'enregistrer ton profil. Réessaie.",
 
+  // Accueil Jarvis (Phase 1)
+  "jarvisHome.greeting": "Bonjour",
+  "jarvisHome.trader": "Trader",
+  "jarvisHome.subtitle": "J'ai analysé ton trading — voici ce qui compte aujourd'hui.",
+
   "dashboard.greetingStillUp": "Encore debout",
   "dashboard.greetingMorning": "Bonjour",
   "dashboard.greetingAfternoon": "Bon après-midi",

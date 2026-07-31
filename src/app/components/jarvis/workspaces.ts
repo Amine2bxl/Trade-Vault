@@ -40,6 +40,7 @@ export interface JarvisWorkspaceProps {
 export const JARVIS_WORKSPACES: Partial<
   Record<JarvisWorkspaceId, LazyExoticComponent<ComponentType<JarvisWorkspaceProps>>>
 > = {
+  home: lazy(() => import("./workspaces/HomeWorkspace")),
   conversation: lazy(() => import("./workspaces/ConversationWorkspace")),
-  // home (Phase 1), reports, analyses, memory, goals, history, tools — à venir
+  // reports, analyses, memory, goals, history, tools — à venir
 };
