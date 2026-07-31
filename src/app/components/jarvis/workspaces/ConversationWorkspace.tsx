@@ -50,6 +50,22 @@ function textOf(m: JarvisMessage): string {
   return md && md.type === "markdown" ? md.content : "";
 }
 
+/** 4xx (quota, validation, auth) → non rétentable ; 5xx/réseau → rétentable. */
+function isTransient(err: unknown): boolean {
+  const status = (err as { status?: number })?.status;
+  if (typeof status === "number") return status >= 500 || status === 0;
+  const msg = err instanceof Error ? err.message : String(err);
+  return !/RATE_LIMITED|PRO_REQUIRED|Unauthorized|400|422/i.test(msg);
+}
+
+function classifyError(err: unknown): "rate" | "auth" | "validation" | "generic" {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/RATE_LIMITED|429/i.test(msg)) return "rate";
+  if (/Unauthorized|401/i.test(msg)) return "auth";
+  if (/400|422/i.test(msg)) return "validation";
+  return "generic";
+}
+
 const seededUsers = new Set<string>();
 
 export default function ConversationWorkspace({ context, initialPrompt }: JarvisWorkspaceProps) {
@@ -176,15 +192,26 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         try {
           res = await askCoach({ data: { question: query, ...payload } });
         } catch (firstErr) {
-          // One automatic retry after a short backoff.
+          // Une erreur 4xx (quota, validation, session) ne se résout pas avec un
+          // retry — on ne double pas la consommation de quota.
+          if (!isTransient(firstErr)) throw firstErr;
           console.warn("[coach] first attempt failed, retrying", firstErr);
           await new Promise((r) => setTimeout(r, 1500));
           res = await askCoach({ data: { question: query, ...payload } });
         }
         push("assistant", res.answer || t("ai.noResponse"));
       } catch (e) {
-        console.error("[coach] request failed after retry", e);
-        push("error", t("ai.genericError"));
+        console.error("[coach] request failed", e);
+        const kind = classifyError(e);
+        const msg =
+          kind === "rate"
+            ? t("ai.rateLimited")
+            : kind === "auth"
+              ? t("ai.sessionExpired")
+              : kind === "validation"
+                ? t("ai.validationError")
+                : t("ai.genericError");
+        push("error", msg);
       } finally {
         setLoading(false);
       }

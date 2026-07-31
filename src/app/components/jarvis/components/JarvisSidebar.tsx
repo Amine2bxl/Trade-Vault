@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { cn } from "../../../utils/cn";
+import AccountSwitcher from "../../AccountSwitcher";
 import type { ConversationMeta } from "../conversations";
 
 /**
@@ -162,6 +163,11 @@ export default function JarvisSidebar({
             {t("jarvisConv.empty")}
           </p>
         )}
+      </div>
+
+      {/* Compte actif — bas gauche de la sidebar (carte CTA premium) */}
+      <div className="shrink-0 border-t border-white/[0.05] px-2 py-2.5">
+        <AccountSwitcher variant="card" />
       </div>
     </div>
   );

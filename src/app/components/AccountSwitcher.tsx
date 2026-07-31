@@ -379,7 +379,7 @@ export default function AccountSwitcher({
     );
   }
 
-  // Trading Account — carte premium (footer Jarvis), style CTA : liseré
+  // Trading Account — carte premium (footer/sidebar Jarvis), style CTA : liseré
   // gradient cyan + glow, comme les boutons d'action du produit.
   if (variant === "card") {
     if (!activeAccount) return null;
@@ -391,39 +391,37 @@ export default function AccountSwitcher({
           onClick={() => setOpen((v) => !v)}
           title={t("account.switch")}
           className={cn(
-            "relative w-full flex items-center gap-2.5 rounded-2xl px-3 py-2 transition-all overflow-hidden",
+            "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all overflow-hidden",
             "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
             "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5",
           )}
         >
-          <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+          <span className="pointer-events-none absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
           <span
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border"
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
             style={{
               background: `${activeAccount.color}22`,
               color: activeAccount.color,
               borderColor: `${activeAccount.color}44`,
             }}
           >
-            <ActiveIcon className="w-4.5 h-4.5" />
+            <ActiveIcon className="w-4 h-4" />
           </span>
           <span className="flex-1 min-w-0 text-left">
-            <span className="block text-[9px] uppercase tracking-[0.14em] text-slate-500 font-bold">
+            <span className="block text-[8px] uppercase tracking-[0.14em] text-slate-500 font-bold">
               {t("account.active")}
             </span>
-            <span className="block text-sm font-bold text-white truncate leading-tight">
+            <span className="block text-[13px] font-bold text-white truncate leading-tight">
               {activeAccount.name}
             </span>
           </span>
           <span className="text-right shrink-0">
-            <span className="block font-display text-sm font-extrabold text-white tabular-nums leading-tight">
+            <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
               {balance}
             </span>
-            <span className="mt-1 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
+            <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
               {t("account.switchShort")}
-              <ChevronDown
-                className={cn("w-2.5 h-2.5 transition-transform", open && "rotate-180")}
-              />
+              <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
             </span>
           </span>
         </button>

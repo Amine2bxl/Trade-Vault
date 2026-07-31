@@ -250,14 +250,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
               onAsk={askJarvis}
             />
           }
-          footer={
-            <>
-              <div className="flex items-center px-3 py-1.5 min-w-0 max-w-[280px]">
-                <AccountSwitcher variant="card" />
-              </div>
-              <CreditsBar />
-            </>
-          }
+          footer={<CreditsBar />}
         />
       )}
 

@@ -1002,6 +1002,9 @@ const en = {
   // AI generic
   "ai.noResponse": "No response.",
   "ai.genericError": "Something went wrong. Please try again.",
+  "ai.rateLimited": "Too many requests in a short window. Wait a moment and try again.",
+  "ai.sessionExpired": "Your session expired. Reconnect and try again.",
+  "ai.validationError": "The request could not be processed. Try rephrasing or log out and back in.",
 
   // Economic news
   "news.subtitle": "Upcoming macro events — impact, currency and times in your timezone.",

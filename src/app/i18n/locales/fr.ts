@@ -930,6 +930,9 @@ const fr: Dict = {
   // IA générique
   "ai.noResponse": "Pas de réponse.",
   "ai.genericError": "Une erreur est survenue. Réessaie.",
+  "ai.rateLimited": "Trop de requêtes sur un court instant. Attends un moment puis réessaie.",
+  "ai.sessionExpired": "Ta session a expiré. Reconnecte-toi puis réessaie.",
+  "ai.validationError": "La requête n'a pas pu être traitée. Reformule ou reconnecte-toi.",
 
   // Actus économiques
   "news.subtitle": "Événements macro à venir — impact, devise et horaires dans ton fuseau.",
