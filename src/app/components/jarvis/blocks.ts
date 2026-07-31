@@ -81,6 +81,34 @@ export interface JarvisAlertBlock {
   message: string;
 }
 
+/** Ligne du Hero : la voix de Jarvis, structurée. */
+export interface JarvisHeroLine {
+  kind: "context" | "observation" | "impact" | "action";
+  text: string;
+}
+
+/** Le briefing vocal d'ouverture (≤ 5 phrases : Contexte → Observation → Impact → Action). */
+export interface JarvisHeroBlock {
+  type: "hero";
+  lines: JarvisHeroLine[];
+}
+
+/** La preuve chiffrée d'un pattern détecté. */
+export interface JarvisInsightBlock {
+  type: "insight";
+  patternLabel: string;
+  metrics: { label: string; value: string; tone?: "up" | "down" | "neutral" }[];
+  impact?: string;
+}
+
+/** La mission du jour : actions immédiates, éventuellement exécutables (ToolBlock futur). */
+export interface JarvisMissionBlock {
+  type: "mission";
+  title: string;
+  items: string[];
+  cta?: { label: string; tool?: JarvisToolKind };
+}
+
 /**
  * Message produit par Jarvis : une liste de blocs (jamais un blob de texte
  * seul). `text` reste supporté comme repli pour les réponses markdown simples.
@@ -98,6 +126,9 @@ export type JarvisBlock =
   | JarvisCardBlock
   | JarvisChecklistBlock
   | JarvisAlertBlock
+  | JarvisHeroBlock
+  | JarvisInsightBlock
+  | JarvisMissionBlock
   | JarvisToolBlock
   | { type: "table"; columns: string[]; rows: string[][] }
   | { type: "chart"; kind: "line" | "bar" | "area"; data: unknown }
