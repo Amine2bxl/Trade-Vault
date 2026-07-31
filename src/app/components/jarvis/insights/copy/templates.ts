@@ -102,3 +102,20 @@ export function actionLine(insight: JarvisInsight, lang: "fr" | "en"): string {
 
 /** Nombre (evidence) → nombre, sécurisé. */
 export const num = (v: unknown): number => Number(v) || 0;
+
+/** Labels courts des patterns (pour le bloc insight). */
+export const PATTERN_LABELS: Record<string, { fr: string; en: string }> = {
+  risk_after_loss: { fr: "Risque après perte", en: "Risk after a loss" },
+  overtrading: { fr: "Journées chargées", en: "Busy days" },
+  costliest_mistake: { fr: "Erreur la plus coûteuse", en: "Costliest mistake" },
+  discipline_streak: { fr: "Série de discipline", en: "Discipline streak" },
+};
+
+export function patternLabel(pattern: string, lang: "fr" | "en"): string {
+  const t = PATTERN_LABELS[pattern];
+  return t ? (t[lang] ?? t.en) : pattern;
+}
+
+/** Court label localisé. */
+export const uiLabel = (lang: "fr" | "en", fr: string, en: string): string =>
+  lang === "fr" ? fr : en;
