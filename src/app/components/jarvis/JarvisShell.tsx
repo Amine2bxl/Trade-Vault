@@ -167,7 +167,7 @@ export default function JarvisShell({
             </Suspense>
           </div>
           {footer && (
-            <div className="shrink-0 border-t border-white/[0.05] flex items-center justify-between gap-2">
+            <div className="shrink-0 border-t border-white/[0.05] bg-gradient-to-b from-transparent to-white/[0.02] flex items-center justify-between gap-2">
               {footer}
             </div>
           )}

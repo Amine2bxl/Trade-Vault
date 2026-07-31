@@ -330,6 +330,7 @@ const fr: Dict = {
   "jarvisHome.greeting": "Bonjour",
   "jarvisHome.trader": "Trader",
   "jarvisHome.subtitle": "Voici ton état trading aujourd'hui.",
+  "jarvisHome.presence": "Jarvis analyse tes trades, détecte tes erreurs et t'accompagne chaque jour.",
   "jarvisHome.suggestions": "Questions à explorer",
 
   // Conversations Jarvis
@@ -941,6 +942,7 @@ const fr: Dict = {
 
   // Comptes (switcher)
   "account.switch": "Changer de compte",
+  "account.switchShort": "Changer",
   "account.title": "Comptes",
   "account.subtitle": "Change de sous-compte en un tap",
   "account.rename": "Renommer",

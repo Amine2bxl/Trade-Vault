@@ -62,6 +62,107 @@ export default function AccountSwitcher({
     }
   };
 
+  /**
+   * AccountSheet — sélecteur de comptes dans un Modal PARTAGÉ (portal vers
+   * document.body). C'est ce qui rend le changement de compte fiable partout :
+   * un dropdown `absolute`/`fixed` rendu dans le panneau du Modal Jarvis
+   * (transform + overflow-hidden) était clippé/invisible — le bug « le sous-
+   * compte ne s'ouvre pas ». Le portal n'est jamais contenu ni clippé.
+   */
+  const AccountSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
+    <Modal
+      open={open}
+      onClose={onClose}
+      wrapperClassName="z-[70]"
+      className="md:max-w-sm max-h-[80vh] overflow-hidden"
+    >
+      <div className="px-5 py-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-white">{t("account.title")}</h2>
+            <p className="text-[11px] text-slate-500">{t("account.subtitle")}</p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label={t("common.close")}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="p-3 max-h-[60vh] overflow-y-auto">
+        {accounts.map((a) => {
+          const Icon = TYPE_ICON[a.type];
+          const active = a.id === activeAccount?.id;
+          return (
+            <div
+              key={a.id}
+              className={cn(
+                "group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors",
+                active ? "bg-cyan-500/15" : "hover:bg-white/[0.06]",
+              )}
+            >
+              <button
+                onClick={() => {
+                  switchAccount(a.id);
+                  onClose();
+                }}
+                className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
+              >
+                <span
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${a.color}22`, color: a.color }}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span
+                    className={cn(
+                      "block text-sm font-medium truncate",
+                      active ? "text-white" : "text-slate-300",
+                    )}
+                  >
+                    {a.name}
+                  </span>
+                  <span className="block text-[10px] text-slate-500">
+                    {t(TYPE_LABEL_KEY[a.type])}
+                  </span>
+                </span>
+              </button>
+              {accounts.length > 1 && (
+                <button
+                  onClick={() => {
+                    setDeleting(a);
+                    onClose();
+                  }}
+                  aria-label={t("account.delete")}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
+            </div>
+          );
+        })}
+        <div className="h-px bg-white/[0.06] my-1.5 mx-1" />
+        <button
+          onClick={() => {
+            setCreateOpen(true);
+            onClose();
+          }}
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-cyan-300 hover:bg-cyan-500/10 transition-colors"
+        >
+          <span className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
+            <Plus className="w-4 h-4" />
+          </span>
+          <span className="text-sm font-semibold">{t("account.new")}</span>
+        </button>
+      </div>
+    </Modal>
+  );
+
   // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
   // that opens a premium bottom sheet of tappable account cards — one tap to
   // switch sub-accounts. Original layout, no dropdown crowding the top bar.
@@ -296,15 +397,17 @@ export default function AccountSwitcher({
     );
   }
   const ActiveIcon = TYPE_ICON[activeAccount.type];
+  const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
 
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
+        title={t("account.switch")}
         className={cn(
           "w-full flex items-center gap-2.5 rounded-2xl border transition-all",
-          compact ? "px-3 py-2" : "px-3 py-2.5",
-          "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
+          compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
+          "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
         )}
       >
         <span
@@ -317,95 +420,17 @@ export default function AccountSwitcher({
           <span className="block text-sm font-semibold text-white truncate">
             {activeAccount.name}
           </span>
-          <span className="block text-[10px] text-slate-500 truncate">
-            {t(TYPE_LABEL_KEY[activeAccount.type])}
+          <span className="block text-[10px] text-slate-500 truncate tabular-nums">
+            {balance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
           </span>
         </span>
-        <ChevronDown
-          className={cn(
-            "w-4 h-4 text-slate-500 shrink-0 transition-transform",
-            open && "rotate-180",
-          )}
-        />
+        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
+          {t("account.switchShort")}
+          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+        </span>
       </button>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 right-0 mt-2 z-[61] glass-strong rounded-2xl p-1.5 shadow-2xl shadow-black/50 animate-fade-in max-h-[60vh] overflow-y-auto">
-            <div className="px-2.5 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-600 font-bold">
-              {t("account.title")}
-            </div>
-            {accounts.map((a) => {
-              const Icon = TYPE_ICON[a.type];
-              const active = a.id === activeAccount.id;
-              return (
-                <div
-                  key={a.id}
-                  className={cn(
-                    "group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors",
-                    active ? "bg-cyan-500/15" : "hover:bg-white/[0.06]",
-                  )}
-                >
-                  <button
-                    onClick={() => {
-                      switchAccount(a.id);
-                      setOpen(false);
-                    }}
-                    className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
-                  >
-                    <span
-                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: `${a.color}22`, color: a.color }}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span
-                        className={cn(
-                          "block text-sm font-medium truncate",
-                          active ? "text-white" : "text-slate-300",
-                        )}
-                      >
-                        {a.name}
-                      </span>
-                      <span className="block text-[10px] text-slate-500">
-                        {t(TYPE_LABEL_KEY[a.type])}
-                      </span>
-                    </span>
-                  </button>
-                  {accounts.length > 1 && (
-                    <button
-                      onClick={() => {
-                        setDeleting(a);
-                        setOpen(false);
-                      }}
-                      aria-label={t("account.delete")}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
-                </div>
-              );
-            })}
-            <div className="h-px bg-white/[0.06] my-1.5 mx-1" />
-            <button
-              onClick={() => {
-                setCreateOpen(true);
-                setOpen(false);
-              }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-cyan-300 hover:bg-cyan-500/10 transition-colors"
-            >
-              <span className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
-                <Plus className="w-4 h-4" />
-              </span>
-              <span className="text-sm font-semibold">{t("account.new")}</span>
-            </button>
-          </div>
-        </>
-      )}
+      <AccountSheet open={open} onClose={() => setOpen(false)} />
 
       {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
       {deleting && (

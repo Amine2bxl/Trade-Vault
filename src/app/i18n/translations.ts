@@ -375,6 +375,7 @@ const en = {
   "jarvisHome.greeting": "Hello",
   "jarvisHome.trader": "Trader",
   "jarvisHome.subtitle": "Here is your trading state today.",
+  "jarvisHome.presence": "Jarvis analyses your trades, spots your mistakes and walks you through every day.",
   "jarvisHome.suggestions": "Questions to explore",
 
   // Jarvis conversations
@@ -1013,6 +1014,7 @@ const en = {
 
   // Accounts (switcher)
   "account.switch": "Switch account",
+  "account.switchShort": "Change",
   "account.title": "Accounts",
   "account.subtitle": "Switch sub-account in one tap",
   "account.rename": "Rename",
