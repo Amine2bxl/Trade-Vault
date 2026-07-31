@@ -16,6 +16,7 @@ import type { JarvisContext } from "./context";
 export type JarvisWorkspaceId =
   | "home" // Accueil intelligent (Phase 1)
   | "conversation" // Chat (existant, extrait en module)
+  | "settings" // Configuration Jarvis (profil, préférences, mémoire)
   | "reports" // à venir
   | "analyses" // à venir
   | "memory" // à venir
@@ -42,5 +43,6 @@ export const JARVIS_WORKSPACES: Partial<
 > = {
   home: lazy(() => import("./workspaces/HomeWorkspace")),
   conversation: lazy(() => import("./workspaces/ConversationWorkspace")),
+  settings: lazy(() => import("./workspaces/SettingsWorkspace")),
   // reports, analyses, memory, goals, history, tools — à venir
 };

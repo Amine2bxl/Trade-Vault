@@ -24,6 +24,8 @@ export interface JarvisContext {
   page?: string;
   /** Compte actif (id + solde) — P4. */
   activeAccount?: { id?: string | null; balance?: number } | null;
+  /** Conversation active (workspace Conversation). */
+  conversationId?: string | null;
   /**
    * Prompt fourni par une page externe (`tv:ask-coach`) : le workspace actif
    * le consomme à l'ouverture, sans refonte.

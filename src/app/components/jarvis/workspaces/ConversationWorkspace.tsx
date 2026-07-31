@@ -1,26 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eraser, Send, Loader2, Mic, MicOff } from "lucide-react";
+import { Bot, Eraser, Send, Loader2, Mic, MicOff } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { cn } from "../../../utils/cn";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
-import { nsKey, readJSON, writeJSON, removeKey } from "../../../utils/persistence";
 import { loadOnboarding, type OnboardingData } from "../../../store";
+import { effectiveCopyLang } from "../prefs";
+import { sessionConversationStore } from "../conversations";
 import { BlockList } from "../BlockRenderer";
 import type { JarvisMessage } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
 
 /**
- * ConversationWorkspace — le module CHAT de Jarvis (Phase 0, verrouillage).
+ * ConversationWorkspace — le module CHAT de Jarvis (multi-conversations).
  *
  * Jarvis est une plateforme ; le chat n'est qu'UN workspace parmi d'autres.
- * Ce module est autonome (état, persistance, voix, appel `askCoach`) et ne
- * reçoit du Shell que le contexte agrégé + le prompt initial éventuel.
- *
- * Règle : aucun contenu IA n'est rendu directement — tout passe par
- * `BlockList`/`BlockRenderer` (markdown aujourd'hui, blocs riches à venir).
+ * Chaque conversation est identifiée par `context.conversationId` et persistée
+ * via le ConversationStore. Aucun contenu IA n'est rendu directement — tout
+ * passe par `BlockList`.
  */
 
 // Minimal typing for the Web Speech API — not in lib.dom.d.ts.
@@ -46,23 +45,6 @@ function genId(): string {
     : `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Migre un chat enregistré avant le modèle à blocs ({role,text}) vers JarvisMessage. */
-function normalizeMessages(raw: unknown): JarvisMessage[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((m, i) => {
-    const r = m as Partial<JarvisMessage> & { text?: string };
-    if (r.blocks && Array.isArray(r.blocks) && r.blocks.length > 0) {
-      return r as JarvisMessage;
-    }
-    return {
-      role: (r.role as JarvisMessage["role"]) ?? "assistant",
-      id: genId() + `-${i}`,
-      blocks: [{ type: "markdown", content: typeof r.text === "string" ? r.text : "" }],
-      createdAt: new Date().toISOString(),
-    };
-  });
-}
-
 function textOf(m: JarvisMessage): string {
   const md = m.blocks.find((b) => b.type === "markdown");
   return md && md.type === "markdown" ? md.content : "";
@@ -75,38 +57,59 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const { user } = useAuth();
   const rules = useTradingRules();
   const userId = user?.id ?? context.userId;
-  const chatKey = nsKey(userId, "ai.chat");
-  const inputKey = nsKey(userId, "ai.input");
+  const conversationId = context.conversationId ?? null;
+  const store = userId ? sessionConversationStore(userId) : null;
 
-  const [messages, setMessages] = useState<JarvisMessage[]>(() =>
-    normalizeMessages(readJSON<unknown>(chatKey, [])),
-  );
-  const [question, setQuestion] = useState(() => readJSON<string>(inputKey, ""));
+  const [messages, setMessages] = useState<JarvisMessage[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const SpeechRecognitionCtor = getSpeechRecognition();
+  const draftKey = conversationId ? `tv:jarvis:draft:${userId ?? "anon"}:${conversationId}` : null;
 
-  // Reload the stored conversation when the signed-in user changes.
+  // Charge la conversation active + son brouillon.
   useEffect(() => {
-    setMessages(normalizeMessages(readJSON<unknown>(chatKey, [])));
-    setQuestion(readJSON<string>(inputKey, ""));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+    if (!store || !conversationId) {
+      setMessages([]);
+      setLoaded(true);
+      return;
+    }
+    let active = true;
+    setLoaded(false);
+    setQuestion(readDraft(draftKey));
+    void store
+      .get(conversationId)
+      .then((conv) => {
+        if (!active) return;
+        setMessages(conv?.messages ?? []);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [store, conversationId, draftKey]);
 
-  // Persist conversation + draft input on every change.
+  // Sauvegarde les messages dans la conversation (titrée automatiquement).
   useEffect(() => {
-    writeJSON(chatKey, messages);
-  }, [chatKey, messages]);
+    if (!store || !conversationId || !loaded) return;
+    void store.saveMessages(conversationId, messages).catch(() => {});
+  }, [store, conversationId, messages, loaded]);
+
+  // Brouillon de saisie par conversation.
   useEffect(() => {
-    writeJSON(inputKey, question);
-  }, [inputKey, question]);
+    if (draftKey) writeDraft(draftKey, question);
+  }, [draftKey, question]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
-    removeKey(chatKey);
-  }, [chatKey]);
+    if (store && conversationId) void store.saveMessages(conversationId, []);
+  }, [store, conversationId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -120,7 +123,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     void seedProfileMemory(userId);
   }, [userId]);
 
-  // The onboarding answers travel with every coach call.
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
   useEffect(() => {
     if (!userId) {
@@ -141,7 +143,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const ask = useCallback(
     async (q: string) => {
       const query = q.trim();
-      if (!query || loading) return;
+      if (!query || loading || !loaded) return;
       const priorTurns = messages
         .filter((m) => m.role !== "error")
         .map((m) => ({ role: m.role as "user" | "assistant", content: textOf(m) }));
@@ -161,7 +163,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       const payload = buildCoachV1Payload({
         trades: context.trades,
         conversation: priorTurns,
-        language: lang,
+        language: effectiveCopyLang(lang),
         onboarding,
         jarvisProfile: context.profile,
         rules,
@@ -171,32 +173,30 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         try {
           res = await askCoach({ data: { question: query, ...payload } });
         } catch (firstErr) {
-          // One automatic retry after a short backoff — most coach failures are
-          // transient (cold serverless function, network blip, brief 5xx).
+          // One automatic retry after a short backoff.
           console.warn("[coach] first attempt failed, retrying", firstErr);
           await new Promise((r) => setTimeout(r, 1500));
           res = await askCoach({ data: { question: query, ...payload } });
         }
         push("assistant", res.answer || t("ai.noResponse"));
       } catch (e) {
-        // Never surface raw provider/rate-limit text — one calm message.
         console.error("[coach] request failed after retry", e);
         push("error", t("ai.genericError"));
       } finally {
         setLoading(false);
       }
     },
-    [loading, messages, context.trades, context.profile, lang, t, onboarding, rules],
+    [loading, messages, loaded, context.trades, context.profile, lang, t, onboarding, rules],
   );
 
   // A page (Checklist, Missed…) opened Jarvis with a ready-made prompt.
   const askedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (initialPrompt && askedRef.current !== initialPrompt) {
+    if (initialPrompt && askedRef.current !== initialPrompt && loaded) {
       askedRef.current = initialPrompt;
       void ask(initialPrompt);
     }
-  }, [initialPrompt, ask]);
+  }, [initialPrompt, ask, loaded]);
 
   const toggleMic = useCallback(() => {
     if (!SpeechRecognitionCtor) return;
@@ -221,7 +221,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Toolbar du workspace (actions propres à la conversation) */}
+      {/* Toolbar du workspace */}
       <div className="flex items-center gap-2 px-4 md:px-6 py-2 border-b border-white/[0.04] shrink-0">
         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-600">
           {t("jarvis.conversation")}
@@ -239,35 +239,50 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       </div>
 
       {/* Messages — rendus UNIQUEMENT via les blocs */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-3">
-        {messages.length === 0 && (
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4">
+        {!loaded ? (
+          <div className="text-sm text-slate-500">{t("assistant.empty")}</div>
+        ) : messages.length === 0 ? (
           <div className="text-sm text-slate-500 leading-relaxed">{t("assistant.empty")}</div>
-        )}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
-          >
+        ) : (
+          messages.map((m) => (
             <div
+              key={m.id}
               className={cn(
-                "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-                m.role === "user" &&
-                  "bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium",
-                m.role === "assistant" &&
-                  "bg-white/[0.04] border border-white/[0.08] text-slate-200",
-                m.role === "error" && "bg-red-500/10 border border-red-500/20 text-red-300",
+                "flex items-end gap-2",
+                m.role === "user" ? "justify-end" : "justify-start",
               )}
             >
-              {m.role === "assistant" ? (
-                <BlockList blocks={m.blocks} />
-              ) : (
-                textOf(m) || m.blocks.map((b) => (b.type === "markdown" ? b.content : "")).join(" ")
+              {m.role !== "user" && (
+                <div className="relative shrink-0 mb-1">
+                  <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+                  <div className="relative grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+                    <Bot className="w-3.5 h-3.5 text-white" />
+                  </div>
+                </div>
               )}
+              <div
+                className={cn(
+                  "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                  m.role === "user" &&
+                    "bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium",
+                  m.role === "assistant" &&
+                    "bg-white/[0.04] border border-white/[0.08] text-slate-200",
+                  m.role === "error" && "bg-red-500/10 border border-red-500/20 text-red-300",
+                )}
+              >
+                {m.role === "assistant" ? <BlockList blocks={m.blocks} /> : textOf(m) || ""}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
         {loading && (
-          <div className="flex justify-start">
+          <div className="flex items-end gap-2 justify-start">
+            <div className="relative shrink-0 mb-1">
+              <div className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
+                <Bot className="w-3.5 h-3.5 text-white" />
+              </div>
+            </div>
             <div className="rounded-2xl px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.08] flex items-center gap-2 text-sm text-slate-400">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("assistant.thinking")}
             </div>
@@ -322,4 +337,22 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       </div>
     </div>
   );
+}
+
+function readDraft(key: string | null): string {
+  if (!key || typeof sessionStorage === "undefined") return "";
+  try {
+    return sessionStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeDraft(key: string, value: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    /* best-effort */
+  }
 }

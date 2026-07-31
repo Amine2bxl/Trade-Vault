@@ -298,6 +298,7 @@ const fr: Dict = {
   "jarvis.pf": "Profit factor",
   "jarvis.streak": "Série",
   "assistant.title": "Jarvis",
+  "jarvis.copilot": "Ton copilote IA trading",
   "assistant.subtitle": "Ton intelligence de performance trading",
   "assistant.placeholder": "Demande à Jarvis…",
   "assistant.empty":
@@ -328,8 +329,34 @@ const fr: Dict = {
   // Accueil Jarvis (Phase 1)
   "jarvisHome.greeting": "Bonjour",
   "jarvisHome.trader": "Trader",
-  "jarvisHome.subtitle": "J'ai analysé ton trading — voici ce qui compte aujourd'hui.",
+  "jarvisHome.subtitle": "Voici ton état trading aujourd'hui.",
   "jarvisHome.suggestions": "Questions à explorer",
+
+  // Conversations Jarvis
+  "jarvisConv.new": "Nouvelle discussion",
+  "jarvisConv.today": "Aujourd'hui",
+  "jarvisConv.thisWeek": "Cette semaine",
+  "jarvisConv.older": "Anciennes",
+  "jarvisConv.empty": "Lance une conversation — Jarvis s'en souviendra ici.",
+  "jarvisConv.toggle": "Afficher les conversations",
+  "jarvisConv.credits": "Crédits Jarvis",
+
+  // Paramètres Jarvis
+  "jarvisSettings.title": "Paramètres",
+  "jarvisSettings.profileTitle": "Profil mémorisé par Jarvis",
+  "jarvisSettings.profileSubtitle": "Ce que Jarvis connaît de toi pour personnaliser ses conseils.",
+  "jarvisSettings.edit": "Modifier",
+  "jarvisSettings.prefTitle": "Préférences",
+  "jarvisSettings.responseLang": "Langue de réponse",
+  "jarvisSettings.langAuto": "Automatique",
+  "jarvisSettings.langFr": "Français",
+  "jarvisSettings.langEn": "Anglais",
+  "jarvisSettings.memoryTitle": "Mémoire Jarvis",
+  "jarvisSettings.memorySubtitle": "Jarvis utilise ta mémoire pour personnaliser ses analyses.",
+  "jarvisSettings.memoryPattern": "Dernier insight affiché :",
+  "jarvisSettings.memorySeen": "Ouvertures aujourd'hui :",
+  "jarvisSettings.memoryIgnored": "Ignorés :",
+  "jarvisSettings.memoryReset": "Réinitialiser la mémoire Jarvis",
 
   "dashboard.greetingStillUp": "Encore debout",
   "dashboard.greetingMorning": "Bonjour",

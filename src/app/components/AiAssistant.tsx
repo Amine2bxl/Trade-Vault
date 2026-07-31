@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Bot, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, Settings, X } from "lucide-react";
 import { Trade, Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -9,6 +9,14 @@ import JarvisProfileModal from "./JarvisProfileModal";
 import JarvisShell from "./jarvis/JarvisShell";
 import type { JarvisContext } from "./jarvis/context";
 import type { JarvisWorkspaceId } from "./jarvis/workspaces";
+import {
+  migrateLegacyChat,
+  sessionConversationStore,
+  useConversations,
+} from "./jarvis/conversations";
+import ConversationSidebar from "./jarvis/components/ConversationSidebar";
+import CreditsBar from "./jarvis/components/CreditsBar";
+import AccountSwitcher from "./AccountSwitcher";
 
 interface AiAssistantProps {
   trades: Trade[];
@@ -31,6 +39,42 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>(undefined);
   // Le workspace actif : l'Accueil par défaut, la Conversation sur prompt externe.
   const [activeWorkspace, setActiveWorkspace] = useState<JarvisWorkspaceId>("home");
+
+  // Conversations (couche de données dédiée, multi-sessions).
+  const conversations = useConversations(user?.id);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
+  conversationIdRef.current = conversationId;
+
+  // Migration one-shot de l'ancien chat unique vers le store.
+  useEffect(() => {
+    if (!user?.id) return;
+    void migrateLegacyChat(sessionConversationStore(user.id), user.id);
+  }, [user?.id]);
+
+  const openConversation = useCallback((id: string) => {
+    setConversationId(id);
+    setActiveWorkspace("conversation");
+  }, []);
+
+  const newConversation = useCallback(async () => {
+    if (!user?.id) return;
+    const conv = await sessionConversationStore(user.id).create();
+    openConversation(conv.id);
+  }, [user?.id, openConversation]);
+
+  const deleteConversation = useCallback(
+    async (id: string) => {
+      if (!user?.id) return;
+      await sessionConversationStore(user.id).remove(id);
+      if (conversationId === id) {
+        const list = await sessionConversationStore(user.id).list();
+        setConversationId(list[0]?.id ?? null);
+        if (list.length === 0) setActiveWorkspace("home");
+      }
+    },
+    [user?.id, conversationId],
+  );
 
   // Le dock ouvre toujours sur l'Accueil intelligent (jamais de chat vide).
   const toggleOpen = () => {
@@ -68,11 +112,17 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       if (!prompt) return;
       setPendingPrompt(prompt);
       setActiveWorkspace("conversation");
+      if (user?.id && !conversationIdRef.current) {
+        void sessionConversationStore(user.id)
+          .create()
+          .then((conv) => setConversationId(conv.id))
+          .catch(() => {});
+      }
       setOpen(true);
     };
     window.addEventListener("tv:ask-coach", onAsk);
     return () => window.removeEventListener("tv:ask-coach", onAsk);
-  }, []);
+  }, [user?.id]);
 
   // The workspace consumes `pendingPrompt` at mount (initialPrompt). Clear it
   // right after so a re-open without a new event never re-asks the old prompt.
@@ -89,9 +139,10 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       trades,
       profile: jarvisProfile,
       page,
+      conversationId,
       pendingPrompt,
     }),
-    [user?.id, trades, jarvisProfile, page, pendingPrompt],
+    [user?.id, trades, jarvisProfile, page, conversationId, pendingPrompt],
   );
 
   return (
@@ -155,6 +206,33 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           onNavigateWorkspace={setActiveWorkspace}
           context={context}
           initialPrompt={pendingPrompt}
+          actions={
+            <button
+              onClick={() => setActiveWorkspace("settings")}
+              aria-label={t("jarvisSettings.title")}
+              title={t("jarvisSettings.title")}
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+            >
+              <Settings className="w-4.5 h-4.5" />
+            </button>
+          }
+          sidebar={
+            <ConversationSidebar
+              conversations={conversations}
+              activeId={conversationId}
+              onNew={() => void newConversation()}
+              onOpen={openConversation}
+              onDelete={(id) => void deleteConversation(id)}
+            />
+          }
+          footer={
+            <>
+              <CreditsBar />
+              <div className="flex items-center px-2">
+                <AccountSwitcher compact />
+              </div>
+            </>
+          }
         />
       )}
 

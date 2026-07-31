@@ -345,6 +345,7 @@ const en = {
   // Jarvis (floating panel)
   "assistant.title": "Jarvis",
   "assistant.subtitle": "Your trading performance intelligence",
+  "jarvis.copilot": "Your AI trading copilot",
   "assistant.placeholder": "Ask Jarvis…",
   "assistant.empty":
     "Ask Jarvis anything about your trading — stats, patterns, mistakes, or a specific trade.",
@@ -373,8 +374,34 @@ const en = {
   // Jarvis Home (Phase 1)
   "jarvisHome.greeting": "Hello",
   "jarvisHome.trader": "Trader",
-  "jarvisHome.subtitle": "I analysed your trading — here is what matters today.",
+  "jarvisHome.subtitle": "Here is your trading state today.",
   "jarvisHome.suggestions": "Questions to explore",
+
+  // Jarvis conversations
+  "jarvisConv.new": "New conversation",
+  "jarvisConv.today": "Today",
+  "jarvisConv.thisWeek": "This week",
+  "jarvisConv.older": "Earlier",
+  "jarvisConv.empty": "Start a conversation — Jarvis will remember it here.",
+  "jarvisConv.toggle": "Toggle conversations",
+  "jarvisConv.credits": "Jarvis Credits",
+
+  // Jarvis settings
+  "jarvisSettings.title": "Settings",
+  "jarvisSettings.profileTitle": "Profile Jarvis remembers",
+  "jarvisSettings.profileSubtitle": "What Jarvis knows about you to personalise its advice.",
+  "jarvisSettings.edit": "Edit",
+  "jarvisSettings.prefTitle": "Preferences",
+  "jarvisSettings.responseLang": "Response language",
+  "jarvisSettings.langAuto": "Automatic",
+  "jarvisSettings.langFr": "French",
+  "jarvisSettings.langEn": "English",
+  "jarvisSettings.memoryTitle": "Jarvis memory",
+  "jarvisSettings.memorySubtitle": "Jarvis uses your memory to personalise its analyses.",
+  "jarvisSettings.memoryPattern": "Last insight shown:",
+  "jarvisSettings.memorySeen": "Opens today:",
+  "jarvisSettings.memoryIgnored": "Ignored:",
+  "jarvisSettings.memoryReset": "Reset Jarvis memory",
 
   // Dashboard
   "dashboard.greetingStillUp": "Still up",

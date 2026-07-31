@@ -6,6 +6,7 @@ import { computeStats } from "../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { deriveDailyRule } from "../../../utils/edgeScore";
 import { loadOnboarding, type OnboardingData } from "../../../store";
+import { effectiveCopyLang } from "../prefs";
 import { sessionJarvisMemory } from "../insights/memory";
 import { buildHomeBlocks } from "../insights/buildHome";
 import { buildSuggestions } from "../insights/suggestions";
@@ -95,7 +96,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   }, [data, lang, onboarding?.experience]);
 
   const firstName = context.profile?.firstName || t("jarvisHome.trader");
-  const copyLang: "fr" | "en" = lang === "fr" ? "fr" : "en";
+  const copyLang: "fr" | "en" = effectiveCopyLang(lang);
 
   // Suggestions intelligentes : page active + situation réelle (pur).
   const suggestions = useMemo(
