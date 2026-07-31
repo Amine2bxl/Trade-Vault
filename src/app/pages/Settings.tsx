@@ -152,7 +152,7 @@ export default function Settings({
       </div>
 
       {!anyVisible && (
-        <p className="text-sm text-slate-500 text-center py-8">{t("settings.noResults")}</p>
+        <p className="text-sm text-slate-500 text-center py-6">{t("settings.noResults")}</p>
       )}
 
       {/* Preferences */}

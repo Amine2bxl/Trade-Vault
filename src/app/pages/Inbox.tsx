@@ -105,26 +105,16 @@ export default function Inbox() {
     window.dispatchEvent(new CustomEvent("tv:notif-updated"));
   }, [user?.id, filtered, handleMarkRead]);
 
-  // Cliquer une notification → rediriger vers la bonne page + ouvrir le popup.
+  // Cliquer une notification → OUVRE LE POPUP uniquement. La redirection vers
+  // la page cible ne se fait QUE quand l'utilisateur appuie sur le bouton CTA
+  // (dans le popup) — pas de navigation surprise au clic.
   const openNotification = useCallback((n: AppNotification) => {
-    const page =
-      (n.data?.ctaPage as string | undefined) ??
-      (n.url?.startsWith("/journal")
-        ? "journal"
-        : n.url?.startsWith("/mistakes")
-          ? "mistakes"
-          : n.url?.startsWith("/checklist")
-            ? "checklist"
-            : n.url?.startsWith("/reports")
-              ? "reports"
-              : "dashboard");
-    window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page } }));
     window.dispatchEvent(new CustomEvent("tv:open-notification", { detail: { notification: n } }));
   }, []);
 
   return (
     <PageContainer>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-xl font-bold text-white">{t("inbox.title")}</h1>
           <p className="text-sm text-slate-500 mt-1">{t("inbox.subtitle")}</p>
@@ -138,7 +128,7 @@ export default function Inbox() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
         {FILTER_KINDS.map((k) => (
           <button
             key={k}
@@ -187,7 +177,7 @@ export default function Inbox() {
                 onClick={() => openNotification(n)}
                 onKeyDown={(e) => e.key === "Enter" && openNotification(n)}
                 className={cn(
-                  "group relative w-full text-left rounded-2xl border px-4 py-3 transition-all cursor-pointer",
+                  "group relative w-full text-left rounded-2xl border px-3.5 py-2.5 transition-all cursor-pointer",
                   "hover:border-cyan-500/25 hover:bg-white/[0.03]",
                   n.readAt
                     ? "border-white/[.04] bg-white/[.02]"

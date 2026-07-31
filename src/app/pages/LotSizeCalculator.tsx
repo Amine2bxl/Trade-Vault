@@ -163,7 +163,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
 
       <div className="grid md:grid-cols-[1fr_320px] gap-5 items-start">
         {/* Inputs */}
-        <div className="glass-strong rounded-3xl p-4 md:p-5 space-y-4 animate-fade-in-up stagger-2">
+        <div className="glass-strong rounded-3xl p-4 md:p-5 space-y-3.5 animate-fade-in-up stagger-2">
           {/* Risk budget — shared by both modes */}
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
             {t("calc.sectionRisk")}
@@ -371,7 +371,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           </div>
 
           {!hasResult ? (
-            <p className="text-xs text-slate-500 leading-relaxed py-6 text-center">
+            <p className="text-xs text-slate-500 leading-relaxed py-4 text-center">
               {t("calc.fillHint")}
             </p>
           ) : mode === "forex" && forex ? (

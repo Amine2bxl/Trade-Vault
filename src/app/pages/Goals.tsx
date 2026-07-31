@@ -217,7 +217,6 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   return (
     <div className="p-4 md:p-5 max-w-3xl mx-auto">
       <PageHeader
-        className="mb-6"
         title={tr("Objectifs", "Goals")}
         subtitle={tr(
           "Choisis tes objectifs — TradeVault génère ton plan d'action mensuel, concret et progressif.",

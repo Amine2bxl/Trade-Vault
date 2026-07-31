@@ -53,13 +53,13 @@ export default function Profile({ trades, setPage }: ProfileProps) {
   return (
     <PageContainer className="max-w-2xl space-y-3">
       {/* Identity */}
-      <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.45),rgba(7,14,24,.9)_60%)] p-5 sm:p-6 animate-fade-in-up">
+      <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.45),rgba(7,14,24,.9)_60%)] p-4 sm:p-5 animate-fade-in-up">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
         <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="relative flex items-center gap-4">
+        <div className="relative flex items-center gap-3.5">
           <div className="relative shrink-0">
             <div className="absolute -inset-1 rounded-2xl bg-cyan-500/40 blur-lg opacity-60" />
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 text-xl font-bold text-white shadow-lg shadow-cyan-500/25">
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 text-lg font-bold text-white shadow-lg shadow-cyan-500/25">
               {user.name.charAt(0).toUpperCase()}
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function Profile({ trades, setPage }: ProfileProps) {
             <button
               key={page}
               onClick={() => setPage(page)}
-              className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+              className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.03]"
             >
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
                 <Icon className="h-4 w-4" />
