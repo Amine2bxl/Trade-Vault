@@ -116,8 +116,8 @@ export default function JarvisSidebar({
   );
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex-1 overflow-y-auto px-2 py-3 min-h-0">
+    <div className="flex flex-col h-full min-h-0 w-full min-w-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3 min-h-0">
         {renderSection(t("jarvisSide.principal"), principal)}
 
         {/* Conversations */}

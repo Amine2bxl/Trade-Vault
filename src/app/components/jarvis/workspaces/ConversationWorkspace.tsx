@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Eraser, Send, Loader2, Mic, MicOff } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
@@ -58,7 +58,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const rules = useTradingRules();
   const userId = user?.id ?? context.userId;
   const conversationId = context.conversationId ?? null;
-  const store = userId ? sessionConversationStore(userId) : null;
+  // Store STABLE par utilisateur : le recréer à chaque rendu ferait tourner
+  // l'effet de sauvegarde en boucle (save → événement → re-render → nouveau
+  // store → save…), ce qui gelait le site au changement de workspace.
+  const store = useMemo(() => (userId ? sessionConversationStore(userId) : null), [userId]);
 
   const [messages, setMessages] = useState<JarvisMessage[]>([]);
   const [loaded, setLoaded] = useState(false);

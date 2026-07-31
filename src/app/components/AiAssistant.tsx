@@ -252,10 +252,10 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           }
           footer={
             <>
-              <CreditsBar />
-              <div className="flex items-center px-2 min-w-[220px]">
+              <div className="flex items-center px-3 py-1.5 min-w-0 max-w-[280px]">
                 <AccountSwitcher variant="card" />
               </div>
+              <CreditsBar />
             </>
           }
         />

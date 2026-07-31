@@ -121,8 +121,8 @@ export default function JarvisShell({
       <div className="relative flex-1 min-h-0 flex">
         {sidebar && (
           <>
-            {/* Desktop : colonne fixe */}
-            <aside className="hidden md:flex w-64 shrink-0 border-r border-white/[0.05] bg-white/[0.01] min-h-0">
+            {/* Desktop : colonne fixe, étroite, sans débordement dans la zone */}
+            <aside className="hidden md:flex w-56 shrink-0 min-w-0 overflow-hidden border-r border-white/[0.05] bg-white/[0.01] min-h-0">
               {sidebar}
             </aside>
             {/* Mobile : drawer superposé */}
