@@ -103,11 +103,12 @@ function main(): void {
   const refHash = referenceHash(reference);
   // Render config is part of the filename: changing engine or speed re-renders
   // every line instead of silently reusing clips rendered with old settings.
-  const speed = process.env.F5_SPEED ?? "0.86";
-  const steps = process.env.F5_STEPS ?? "24";
-  const cfgHash = sha256(`${engine}:${speed}:${steps}`).slice(0, 4);
+  const speed = process.env.F5_SPEED ?? "0.80";
+  const steps = process.env.F5_STEPS ?? "32";
+  const cfg = process.env.F5_CFG ?? "3.0";
+  const cfgHash = sha256(`${engine}:${speed}:${steps}:${cfg}`).slice(0, 4);
   console.log(
-    `[voices] engine=${label} reference=${reference} (${refHash}) speed=${speed} steps=${steps} cfg=${cfgHash}`,
+    `[voices] engine=${label} reference=${reference} (${refHash}) speed=${speed} steps=${steps} cfg=${cfg} cfg=${cfgHash}`,
   );
 
   const catalog = buildCatalog();
@@ -139,10 +140,11 @@ function main(): void {
     for (const item of need) {
       const wav = join(TMP_DIR, `${item.id}.wav`);
       const mp3 = join(OUT_DIR, `voice-${refHash}-${cfgHash}-${item.id}.mp3`);
-      // Trim edge silence and normalise loudness so playback is tight and even.
+      // Gentle edge trim (-50 dB, long window) so only true dead air is
+      // removed — never a soft consonant — then even loudness.
       const filter =
-        "silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.15," +
-        "areverse,silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.15," +
+        "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.2," +
+        "areverse,silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.2," +
         "areverse,loudnorm=I=-16:TP=-1.5:LRA=11";
       execFileSync(
         "ffmpeg",

@@ -561,6 +561,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           settle(false);
         };
         el.volume = 0.95;
+        // Deterministic playback: the clip already carries the right pace and
+        // tone — never let the element re-scale it.
+        el.playbackRate = 1;
+        el.preservesPitch = true;
         showVoiceWidget(txt);
         commOn();
         el.onended = () => {

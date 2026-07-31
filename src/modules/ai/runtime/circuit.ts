@@ -69,6 +69,15 @@ export class CircuitBreaker {
     }
   }
 
+  /** Ouvre le circuit immédiatement (échec définitif : réponse vide, clé morte). */
+  trip(id: string): void {
+    const s = this.state(id);
+    s.state = "open";
+    s.failures = this.threshold;
+    s.testing = false;
+    s.cooldownUntil = Date.now() + this.cooldownMs;
+  }
+
   /** État courant, pour la page de diagnostic. */
   status(id: string): CircuitStatus {
     const s = this.state(id);

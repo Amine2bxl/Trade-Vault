@@ -111,9 +111,44 @@ export async function routeCompletion(
     while (true) {
       try {
         const res = await provider.complete({ ...req, signal: controller.signal });
+        const latencyMs = Date.now() - attemptStart;
+        // Réponse VIDE SANS appels d'outils = échec utile (rien à montrer au
+        // trader) : on ouvre le circuit et on passe au provider suivant. Une
+        // réponse d'outils (texte vide + toolCalls) est valide et conservée.
+        if (!res.text?.trim() && !res.toolCalls?.length) {
+          clearTimeout(timer);
+          circuit.trip(provider.id);
+          const err: RuntimeError = {
+            type: "unknown",
+            provider: provider.id,
+            userMessage: "Réponse vide du fournisseur.",
+            technicalMessage: `empty response from ${provider.id}`,
+          };
+          lastErr = err;
+          metrics.record(provider.id, res.model || "unknown", latencyMs, false);
+          if (provider.id !== requested) metrics.recordFallback(provider.id, "empty_response");
+          opts.onUsage?.({
+            provider: provider.id,
+            model: res.model || "unknown",
+            latencyMs,
+            ok: false,
+          });
+          logRuntime({
+            requested,
+            used: provider.id,
+            model: res.model,
+            latencyMs,
+            payloadBytes,
+            messages: req.messages.length,
+            trades: opts.meta?.trades,
+            fallbackReason: "empty_response",
+            errorType: "empty_response",
+            totalMs: Date.now() - started,
+          });
+          break; // provider suivant
+        }
         clearTimeout(timer);
         circuit.recordSuccess(provider.id);
-        const latencyMs = Date.now() - attemptStart;
         metrics.record(provider.id, res.model, latencyMs, true);
         opts.onUsage?.({
           provider: res.provider,

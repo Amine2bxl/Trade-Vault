@@ -61,10 +61,12 @@ def main() -> int:
     ap.add_argument("--ref", required=True, help="reference voice sample (mp3/wav)")
     ap.add_argument("--cache", required=True, help="cache dir for the transcript")
     ap.add_argument("--device", default="auto", help="auto | cpu | mps | cuda")
-    ap.add_argument("--speed", type=float, default=float(os.environ.get("F5_SPEED", "0.86")),
+    ap.add_argument("--speed", type=float, default=float(os.environ.get("F5_SPEED", "0.80")),
                     help="speaking pace, <1 is slower and more deliberate")
-    ap.add_argument("--steps", type=int, default=int(os.environ.get("F5_STEPS", "24")),
+    ap.add_argument("--steps", type=int, default=int(os.environ.get("F5_STEPS", "32")),
                     help="diffusion steps (32 = best quality, 24 = fast, 16 = quick)")
+    ap.add_argument("--cfg", type=float, default=float(os.environ.get("F5_CFG", "3.0")),
+                    help="text-adherence strength; higher = fewer dropped words")
     args = ap.parse_args()
 
     with open(args.lines, encoding="utf-8") as f:
@@ -73,7 +75,7 @@ def main() -> int:
     os.makedirs(args.outdir, exist_ok=True)
     device = pick_device() if args.device == "auto" else args.device
     ref_text = transcript_of(args.ref, args.cache)
-    print(f"[voices] engine=f5 device={device} speed={args.speed} steps={args.steps} lines={len(lines)} ref={args.ref}", flush=True)
+    print(f"[voices] engine=f5 device={device} speed={args.speed} steps={args.steps} cfg={args.cfg} lines={len(lines)} ref={args.ref}", flush=True)
 
     from f5_tts.api import F5TTS
 
@@ -90,15 +92,20 @@ def main() -> int:
             continue
         t0 = time.time()
         try:
+            # Deterministic render: a fixed seed per line makes every
+            # regeneration byte-stable — the "cadre" the product guarantees.
+            seed = int(hashlib.sha256(text.encode()).hexdigest()[:8], 16)
             tts.infer(
                 ref_file=args.ref,
                 ref_text=ref_text,
                 gen_text=text,
                 file_wave=out,
-                remove_silence=True,
+                remove_silence=False,  # silence handled by ffmpeg, destructively-free
                 target_rms=0.1,
                 speed=args.speed,
                 nfe_step=args.steps,
+                cfg_strength=args.cfg,
+                seed=seed,
             )
         except Exception as e:  # noqa: BLE001
             print(f"[voices] {i}/{len(lines)} FAILED {item['id']}: {e}", flush=True)

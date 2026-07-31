@@ -143,6 +143,9 @@ export function useJarvisVoice(): JarvisVoice {
           const el = new Audio(clip);
           audioRef.current = el;
           el.volume = 0.95;
+          // Deterministic playback — the clip carries the right pace and tone.
+          el.playbackRate = 1;
+          el.preservesPitch = true;
           const done = (started: boolean) => {
             if (run === runRef.current && !started) setSpeaking(false);
             resolve(started);
@@ -167,6 +170,8 @@ export function useJarvisVoice(): JarvisVoice {
           const el = new Audio(healed);
           audioRef.current = el;
           el.volume = 0.95;
+          el.playbackRate = 1;
+          el.preservesPitch = true;
           el.onended = () => {
             if (run === runRef.current) setSpeaking(false);
           };
