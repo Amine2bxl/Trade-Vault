@@ -158,12 +158,14 @@ export const GroqProvider = createOpenAICompatibleProvider({
   defaultBaseUrl: "https://api.groq.com/openai/v1",
 });
 
-/** OpenRouter — des dizaines de modèles libres (:free) derrière une clé. */
+/** OpenRouter — des dizaines de modèles libres (:free) derrière une clé.
+ *  Les modèles `:free` changent chez OpenRouter ; ce slug est un choix fiable
+ *  actuel, remplaçable via OPENROUTER_MODEL. */
 export const OpenRouterProvider = createOpenAICompatibleProvider({
   id: "openrouter",
   apiKeyEnv: "OPENROUTER_API_KEY",
   baseUrlEnv: "OPENROUTER_BASE_URL",
   modelEnv: "OPENROUTER_MODEL",
-  defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+  defaultModel: "deepseek/deepseek-chat-v3-0324:free",
   defaultBaseUrl: "https://openrouter.ai/api/v1",
 });
