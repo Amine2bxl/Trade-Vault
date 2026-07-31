@@ -229,11 +229,15 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           Ex. « La fuite qui te coûte le plus = overtrading → ajouter une règle
           à ta checklist. » Un clic → la règle entre dans sa discipline. */}
       {worstMistake && !ruleAdded && (
-        <div className="mt-5 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-4">
+        <div className="relative mt-5 overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-r from-cyan-500/[0.08] to-teal-500/[0.04] p-4">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
           <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-md shadow-cyan-500/20">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
+            <span className="relative shrink-0">
+              <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+                <Sparkles className="w-4.5 h-4.5 text-white" />
+              </span>
+            </span>
             <div className="min-w-0 flex-1">
               <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1">
                 {t("jarvisHome.proposal")}
@@ -256,13 +260,13 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 onClick={addMistakeRule}
                 disabled={ruleSaving}
                 className={cn(
-                  "mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold",
-                  "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25",
-                  "transition-colors disabled:opacity-60",
+                  "mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white",
+                  "bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110",
+                  "shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-60",
                 )}
               >
                 {ruleSaving ? (
-                  <span className="h-3.5 w-3.5 rounded-full border-2 border-cyan-300/30 border-t-cyan-300 animate-spin" />
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 ) : (
                   <Plus className="w-3.5 h-3.5" />
                 )}
@@ -273,10 +277,10 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
         </div>
       )}
       {ruleAdded && (
-        <div className="mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 flex items-center gap-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15">
+        <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4 flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15">
             <Check className="w-4 h-4 text-emerald-400" />
-          </div>
+          </span>
           <p className="text-[13px] text-emerald-300">{t("jarvisHome.ruleAdded")}</p>
         </div>
       )}
@@ -284,11 +288,11 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       {/* Suggestions — écrites depuis la situation + la page, jamais génériques. */}
       {suggestions.length > 0 && (
         <div className="mt-7">
-          <div className="flex items-center gap-2 mb-2.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
               {t("jarvisHome.suggestions")}
             </span>
-            <span className="h-px flex-1 bg-white/[0.05]" />
+            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
           </div>
           <div className="flex flex-wrap gap-2">
             {suggestions.map((s) => (
@@ -296,8 +300,8 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 key={s.id}
                 onClick={() => askSuggestion(s.prompt)}
                 className={cn(
-                  "px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08]",
-                  "text-xs text-slate-300 hover:bg-white/[0.08] hover:border-cyan-500/30 hover:text-white",
+                  "group px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08]",
+                  "text-xs text-slate-300 hover:bg-white/[0.07] hover:border-cyan-500/30 hover:text-white",
                   "transition-all text-left",
                 )}
               >
