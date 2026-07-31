@@ -53,11 +53,22 @@ export const GOOGLE_CALLBACK_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co/
 /**
  * Absolute URL to send the user back to after an auth round-trip.
  *
- * Always the canonical origin: the flow must end where it started, and the
- * allow-list has to contain a finite set of URLs. A preview deployment
- * therefore lands on production after signing in — deliberate, and strictly
- * better than the current behaviour, where previews fail outright.
+ * Redirects to the CURRENT origin (`window.location.origin`), not a fixed
+ * canonical one. Why: the Supabase PKCE verifier is stored per-origin, so a
+ * flow started on one origin can ONLY complete on that same origin. Pointing
+ * the redirect at a fixed `tradevault.be` worked on production but silently
+ * shipped every preview login off to production — the developer never saw the
+ * branch they were testing. Ending where the flow started keeps previews on
+ * the preview and production on production, and satisfies PKCE in both cases.
+ *
+ * The production fallback (`SITE_URL`) only applies outside the browser (SSR),
+ * where there is no current origin; it matches the live domain anyway.
+ *
+ * REQUIRES the Supabase redirect allow-list to accept the preview domains —
+ * add `https://tradevault-*.vercel.app/**` (Authentication → URL Configuration
+ * → Redirect URLs). Production (`tradevault.be`) is already listed.
  */
 export function authRedirectTo(path = "/"): string {
-  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  const base = typeof window !== "undefined" ? window.location.origin : SITE_URL;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
