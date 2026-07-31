@@ -86,7 +86,22 @@ function AppContent() {
     },
     [queryClient, user?.id, activeId],
   );
-  const [page, setPage] = useState<Page>("dashboard");
+  const [page, setPage] = useState<Page>(() => {
+    try {
+      const saved = sessionStorage.getItem("tv.page");
+      if (saved && ["dashboard","inbox","journal","checklist","calendar","analytics","mistakes","missed","insights","news","seasonality","calculator","settings","reports","goals","tradingplan","appearance","subscription","profile"].includes(saved)) {
+        return saved as Page;
+      }
+    } catch {}
+    return "dashboard";
+  });
+
+  // Persist page changes to sessionStorage (survives refresh, not tabs)
+  const pageRef = useRef(page);
+  pageRef.current = page;
+  useEffect(() => {
+    try { sessionStorage.setItem("tv.page", page); } catch {}
+  }, [page]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
