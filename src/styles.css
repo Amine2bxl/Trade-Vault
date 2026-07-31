@@ -553,18 +553,18 @@ input[type="number"] {
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.25s ease-out forwards;
   opacity: 0;
 }
 .animate-slide-in {
-  animation: slideInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .animate-slide-up {
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .animate-glow {
   animation: glow 3s ease-in-out infinite;
@@ -574,25 +574,25 @@ input[type="number"] {
   animation-delay: 0ms;
 }
 .stagger-1 {
-  animation-delay: 60ms;
+  animation-delay: 30ms;
 }
 .stagger-2 {
-  animation-delay: 120ms;
+  animation-delay: 60ms;
 }
 .stagger-3 {
-  animation-delay: 180ms;
+  animation-delay: 90ms;
 }
 .stagger-4 {
-  animation-delay: 240ms;
+  animation-delay: 120ms;
 }
 .stagger-5 {
-  animation-delay: 300ms;
+  animation-delay: 150ms;
 }
 .stagger-6 {
-  animation-delay: 360ms;
+  animation-delay: 180ms;
 }
 .stagger-7 {
-  animation-delay: 420ms;
+  animation-delay: 210ms;
 }
 
 .glass {

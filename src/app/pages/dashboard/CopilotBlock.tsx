@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useT } from "../../i18n/LanguageContext";
@@ -78,7 +79,7 @@ function EdgeDial({ score }: { score: number }) {
   );
 }
 
-export default function CopilotBlock({
+function CopilotBlock({
   edge,
   edgeDelta,
   rule,
@@ -272,3 +273,5 @@ export default function CopilotBlock({
     </div>
   );
 }
+
+export default memo(CopilotBlock);

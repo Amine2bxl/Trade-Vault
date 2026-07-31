@@ -29,7 +29,9 @@ import { formatShortDate } from "../utils/tradeCalcs";
 // faint area wash, a hairline horizontal grid and a single break-even
 // reference. No gradient stroke, no drop-shadow, no breathing glow — the shape
 // of the curve is the only thing asking for attention.
-export default function EquityChart({ data }: { data: { date: string; equity: number }[] }) {
+import { memo } from "react";
+
+function EquityChart({ data }: { data: { date: string; equity: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
@@ -80,3 +82,5 @@ export default function EquityChart({ data }: { data: { date: string; equity: nu
     </ResponsiveContainer>
   );
 }
+
+export default memo(EquityChart);

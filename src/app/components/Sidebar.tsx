@@ -33,7 +33,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/[0.05] flex items-center gap-3 shrink-0">
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-xl bg-cyan-500/40 blur-xl opacity-70 animate-pulse" />
+          <div className="absolute inset-0 rounded-xl bg-cyan-500/40 blur-xl opacity-70" />
           <img
             src={logoSrc}
             alt="TradeVault"
@@ -91,7 +91,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                   </div>
                   <span className="truncate">{t(labelKey)}</span>
                   {page === id && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
                   )}
                 </button>
               ))}
