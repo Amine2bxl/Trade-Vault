@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Eraser, Send, Loader2, Mic, MicOff } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
+import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { cn } from "../../../utils/cn";
 import { useT } from "../../../i18n/LanguageContext";
@@ -56,14 +57,6 @@ function isTransient(err: unknown): boolean {
   if (typeof status === "number") return status >= 500 || status === 0;
   const msg = err instanceof Error ? err.message : String(err);
   return !/RATE_LIMITED|PRO_REQUIRED|Unauthorized|400|422/i.test(msg);
-}
-
-function classifyError(err: unknown): "rate" | "auth" | "validation" | "generic" {
-  const msg = err instanceof Error ? err.message : String(err);
-  if (/RATE_LIMITED|429/i.test(msg)) return "rate";
-  if (/Unauthorized|401/i.test(msg)) return "auth";
-  if (/400|422/i.test(msg)) return "validation";
-  return "generic";
 }
 
 const seededUsers = new Set<string>();
@@ -201,17 +194,21 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         }
         push("assistant", res.answer || t("ai.noResponse"));
       } catch (e) {
-        console.error("[coach] request failed", e);
-        const kind = classifyError(e);
-        const msg =
-          kind === "rate"
-            ? t("ai.rateLimited")
-            : kind === "auth"
-              ? t("ai.sessionExpired")
-              : kind === "validation"
-                ? t("ai.validationError")
-                : t("ai.genericError");
-        push("error", msg);
+        // Jamais d'erreur visible : on répond de façon déterministe depuis les
+        // mêmes données (quota, session, transport…). La console garde la cause.
+        console.error("[coach] request failed — serving deterministic answer", e);
+        try {
+          const fallbackPayload: FallbackPayload = {
+            question: query,
+            language: effectiveCopyLang(lang),
+            stats: payload.stats,
+            mistakes: payload.mistakes,
+            trades: payload.trades as FallbackPayload["trades"],
+          };
+          push("assistant", fallbackCoachAnswer(fallbackPayload));
+        } catch {
+          push("error", t("ai.genericError"));
+        }
       } finally {
         setLoading(false);
       }

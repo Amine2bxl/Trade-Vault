@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "preview": "node scripts/preview.mjs",
     "test": "bun test",
+    "voices": "bun run scripts/voices/generate.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

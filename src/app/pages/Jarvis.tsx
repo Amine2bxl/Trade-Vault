@@ -27,6 +27,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
 import { useJarvisVoice } from "../utils/jarvisVoice";
+import { JARVIS_BRIEF_KEEP, JARVIS_BRIEF_LOG, JARVIS_GREETINGS } from "@/modules/voice/brief";
 import { PageHeader, Metric, Card, Button } from "@/shared/ui";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 
@@ -160,13 +161,13 @@ export default function Jarvis({ trades }: JarvisProps) {
   /** English briefing line — the voice speaks English regardless of UI locale. */
   const englishBrief = useMemo(() => {
     const h = new Date().getHours();
-    const greet = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    const greet = JARVIS_GREETINGS[h < 12 ? 0 : h < 18 ? 1 : 2];
     const p = briefing.priority;
     let line: string;
     if (p.kind === "log") {
-      line = "Log your trades and I will read your edge from the data.";
+      line = JARVIS_BRIEF_LOG;
     } else if (p.kind === "keep") {
-      line = "No recurring leak. Protect the streak — run the same process today.";
+      line = JARVIS_BRIEF_KEEP;
     } else {
       line = `Your priority: cut ${p.mistake}. It cost you around ${Math.round(
         p.amount,
