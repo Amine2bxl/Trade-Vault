@@ -810,6 +810,10 @@ const fr: Dict = {
   "calc.sectionRisk": "1 · Ce que tu acceptes de perdre",
   "calc.sectionInstrument": "2 · L'instrument et ton stop",
   "calc.perTrade": "par trade",
+  "calc.resultLive": "Taille en direct",
+  "calc.riskGauge": "du budget conseillé (2 %)",
+  "calc.riskOfAccount": "du compte",
+  "calc.riskSuggestion": "Le budget conseillé : 2 % du compte, jamais plus.",
 
   "settings.title": "Réglages",
   "settings.subtitle": "Préférences, notifications et données",

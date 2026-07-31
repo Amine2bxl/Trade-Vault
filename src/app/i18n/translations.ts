@@ -881,6 +881,10 @@ const en = {
   "calc.sectionRisk": "1 · What you are willing to lose",
   "calc.sectionInstrument": "2 · The instrument and your stop",
   "calc.perTrade": "per trade",
+  "calc.resultLive": "Live size",
+  "calc.riskGauge": "of the recommended budget (2%)",
+  "calc.riskOfAccount": "of account",
+  "calc.riskSuggestion": "The recommended budget: 2% of the account, never more.",
 
   // Settings
   "settings.title": "Settings",
