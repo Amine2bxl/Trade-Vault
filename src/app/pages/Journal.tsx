@@ -599,6 +599,10 @@ export default function Journal({
           trades={[viewing]}
           date={viewing.date}
           onClose={() => setViewingIdx(null)}
+          onDelete={(id) => {
+            onDelete(id);
+            setViewingIdx(null);
+          }}
           onNavigate={(dir) => {
             const next = viewingIdx + dir;
             if (next < 0 || next >= filtered.length) return;

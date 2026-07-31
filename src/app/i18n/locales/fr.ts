@@ -309,6 +309,21 @@ const fr: Dict = {
   "assistant.dockStatus": "Coach en ligne",
   "assistant.close": "Fermer",
   "assistant.clear": "Effacer la conversation",
+
+  // Profil mémorisé par Jarvis (carte de première ouverture)
+  "jarvisProfile.title": "Profil mémorisé par Jarvis",
+  "jarvisProfile.subtitle": "Ce que Jarvis sait de toi afin de personnaliser chacune de ses réponses.",
+  "jarvisProfile.firstName": "Prénom",
+  "jarvisProfile.style": "Style de trading",
+  "jarvisProfile.weakness": "Faiblesse principale",
+  "jarvisProfile.weaknessPh": "ex. vengeance trading",
+  "jarvisProfile.strength": "Force principale",
+  "jarvisProfile.strengthPh": "ex. patience aux niveaux clés",
+  "jarvisProfile.goal": "Objectif actuel",
+  "jarvisProfile.goalPh": "ex. +5R par mois",
+  "jarvisProfile.save": "Sauvegarder",
+  "jarvisProfile.saveError": "Impossible d'enregistrer ton profil. Réessaie.",
+
   "dashboard.greetingStillUp": "Encore debout",
   "dashboard.greetingMorning": "Bonjour",
   "dashboard.greetingAfternoon": "Bon après-midi",

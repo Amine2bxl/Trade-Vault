@@ -7,6 +7,7 @@ import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { useUnreadCount } from "../hooks/useUnreadCount";
+import { Modal } from "@/shared/ui";
 
 interface MobileNavProps {
   page: Page;
@@ -112,57 +113,54 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       </div>
 
       {moreOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end md:hidden bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setMoreOpen(false)}
+        <Modal
+          open
+          onClose={() => setMoreOpen(false)}
+          wrapperClassName="md:hidden"
+          className="border-t border-white/[0.08] pb-[calc(env(safe-area-inset-bottom,0px)+12px)]"
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full glass-strong rounded-t-3xl border-t border-white/[0.08] pb-[calc(env(safe-area-inset-bottom,0px)+12px)] animate-slide-up"
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-              <h2 className="text-sm font-bold text-white">{t("nav.more")}</h2>
-              <button
-                onClick={() => setMoreOpen(false)}
-                aria-label={t("common.close")}
-                className="w-11 h-11 -m-1.5 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-4 pt-2 max-h-[70dvh] overflow-y-auto">
-              {MOBILE_MORE_GROUPS.map((g) => (
-                <div key={g.labelKey} className="mb-1.5">
-                  <div className="px-1 pt-2 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
-                    {t(g.labelKey)}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {g.items.map(({ id, labelKey, icon: Icon }) => (
-                      <button
-                        key={id}
-                        onClick={() => {
-                          setPage(id);
-                          setMoreOpen(false);
-                        }}
-                        className={cn(
-                          "flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border transition-all",
-                          page === id
-                            ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
-                            : "bg-white/[0.03] border-white/[0.06] text-slate-400",
-                        )}
-                      >
-                        <Icon className="w-5 h-5" />
-                        <span className="text-[11px] font-semibold text-center leading-tight">
-                          {t(labelKey)}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+            <h2 className="text-sm font-bold text-white">{t("nav.more")}</h2>
+            <button
+              onClick={() => setMoreOpen(false)}
+              aria-label={t("common.close")}
+              className="w-11 h-11 -m-1.5 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        </div>
+          <div className="p-4 pt-2 max-h-[70dvh] overflow-y-auto">
+            {MOBILE_MORE_GROUPS.map((g) => (
+              <div key={g.labelKey} className="mb-1.5">
+                <div className="px-1 pt-2 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+                  {t(g.labelKey)}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {g.items.map(({ id, labelKey, icon: Icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        setPage(id);
+                        setMoreOpen(false);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border transition-all",
+                        page === id
+                          ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
+                          : "bg-white/[0.03] border-white/[0.06] text-slate-400",
+                      )}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-[11px] font-semibold text-center leading-tight">
+                        {t(labelKey)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Modal>
       )}
     </>
   );

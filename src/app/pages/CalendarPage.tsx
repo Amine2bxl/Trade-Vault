@@ -14,6 +14,8 @@ import { PageHeader, PageContainer, Card } from "@/shared/ui";
 
 interface CalendarPageProps {
   trades: Trade[];
+  /** Deletes a trade from the day-detail modal (confirm handled by caller). */
+  onDelete?: (id: string) => void;
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -31,7 +33,7 @@ const LOCALE_MAP: Record<string, string> = {
   hi: "hi-IN",
 };
 
-export default function CalendarPage({ trades }: CalendarPageProps) {
+export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   const { user } = useAuth();
   const { activeId } = useAccounts();
   const { t, lang } = useT();
@@ -564,6 +566,7 @@ export default function CalendarPage({ trades }: CalendarPageProps) {
           trades={selectedTrades}
           date={selectedDate}
           onClose={() => setSelectedDate(null)}
+          onDelete={onDelete}
           missed={missedByDate[selectedDate] || []}
           onOpenMissed={(m) => {
             setSelectedDate(null);

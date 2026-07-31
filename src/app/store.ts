@@ -44,6 +44,9 @@ export {
   type OnboardingData,
   loadOnboarding,
   saveOnboarding,
+  type JarvisProfile,
+  loadJarvisProfile,
+  saveJarvisProfile,
 } from "./store/profile";
 export { type MonthlyReportRow, loadMonthlyReports } from "./store/reports";
 export {

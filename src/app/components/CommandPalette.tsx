@@ -7,6 +7,7 @@ import { formatPnl, formatShortDate } from "../utils/tradeCalcs";
 import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { Modal } from "@/shared/ui";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -59,8 +60,14 @@ export default function CommandPalette({
     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 cursor-pointer data-[selected=true]:bg-cyan-500/10 data-[selected=true]:text-white transition-colors";
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center pt-[12vh] px-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <Modal
+      open={open}
+      onClose={onClose}
+      // Command palettes sit near the top (pt-[12vh]), not dead-centre — keep
+      // that convention via the wrapper override. The panel keeps its own shape.
+      wrapperClassName="z-[70] items-start justify-center pt-[12vh] px-4 md:items-start md:pt-[12vh]"
+      focusPanel={false}
+    >
       <Command
         label={t("palette.title")}
         shouldFilter={matchingTrades.length === 0}
@@ -174,6 +181,6 @@ export default function CommandPalette({
           </Command.Group>
         </Command.List>
       </Command>
-    </div>
+    </Modal>
   );
 }

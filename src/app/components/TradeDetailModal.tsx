@@ -1,5 +1,6 @@
 import {
   X,
+  Trash2,
   ArrowUpRight,
   ArrowDownRight,
   Clock,
@@ -18,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/LanguageContext";
 import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
+import { Modal } from "@/shared/ui";
 
 interface TradeDetailModalProps {
   trades: Trade[];
@@ -30,6 +32,8 @@ interface TradeDetailModalProps {
   hasPrev?: boolean;
   hasNext?: boolean;
   positionLabel?: string;
+  /** Deletes one of the shown trades (confirm handled by the caller). */
+  onDelete?: (id: string) => void;
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -57,6 +61,7 @@ export default function TradeDetailModal({
   hasPrev,
   hasNext,
   positionLabel,
+  onDelete,
 }: TradeDetailModalProps) {
   const { t, lang } = useT();
   const locale = LOCALE_MAP[lang] || "en-US";
@@ -96,13 +101,13 @@ export default function TradeDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-      <div
-        className="relative glass-strong rounded-t-3xl md:rounded-3xl max-w-3xl w-full max-h-[96vh] md:max-h-[88vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
+    <Modal
+      open
+      onClose={onClose}
+      className="md:max-w-3xl max-h-[96vh] md:max-h-[88vh] overflow-hidden"
+      backdropClassName="bg-black/70 backdrop-blur-md"
+    >
+      <div className="h-full" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mt-2 md:hidden" />
         <div className="px-4 md:px-6 pt-2 md:p-6 pb-3 md:pb-6 border-b border-white/[0.06]">
           <div className="flex items-start justify-between">
@@ -170,6 +175,16 @@ export default function TradeDetailModal({
               >
                 {formatPnl(dayPnl)}
               </div>
+              {onDelete && trades.length === 1 && (
+                <button
+                  onClick={() => onDelete(trades[0].id)}
+                  aria-label={t("common.delete")}
+                  title={t("common.delete")}
+                  className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="w-4.5 h-4.5" />
+                </button>
+              )}
               <button
                 onClick={onClose}
                 aria-label={t("common.close")}
@@ -490,6 +505,6 @@ export default function TradeDetailModal({
           onIndexChange={(i) => setLightbox((prev) => (prev ? { ...prev, index: i } : prev))}
         />
       )}
-    </div>
+    </Modal>
   );
 }

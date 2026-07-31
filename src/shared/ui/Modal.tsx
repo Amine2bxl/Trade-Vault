@@ -44,6 +44,9 @@ export interface ModalProps {
   closeOnBackdrop?: boolean;
   /** Lock background scroll while open (default true). */
   lockScroll?: boolean;
+  /** Move focus onto the panel on open (default true). Disable when a child
+   *  input needs focus instead (e.g. the command palette). */
+  focusPanel?: boolean;
   children: ReactNode;
 }
 
@@ -57,6 +60,7 @@ export function Modal({
   labelledBy,
   closeOnBackdrop = true,
   lockScroll = true,
+  focusPanel = true,
   children,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -70,12 +74,12 @@ export function Modal({
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
     if (lockScroll) document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
+    if (focusPanel) panelRef.current?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       if (lockScroll) document.body.style.overflow = prevOverflow;
     };
-  }, [open, onClose, lockScroll]);
+  }, [open, onClose, lockScroll, focusPanel]);
 
   if (!open) return null;
 
