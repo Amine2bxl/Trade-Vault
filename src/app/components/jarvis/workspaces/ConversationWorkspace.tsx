@@ -223,18 +223,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             mistakes: payload.mistakes,
             trades: payload.trades as FallbackPayload["trades"],
           };
-          // DEBUG (temporaire, pré-lancement) : la cause de l'échec est visible
-          // dans la réponse pour identifier le blocage sur la preview.
-          const reason =
-            e instanceof Error
-              ? e.message
-              : typeof e === "string"
-                ? e
-                : (JSON.stringify(e) ?? "[erreur]");
-          push(
-            "assistant",
-            `${fallbackCoachAnswer(fallbackPayload)}\n\n> ⚠️ debug IA : ${reason.slice(0, 300)}`,
-          );
+          push("assistant", fallbackCoachAnswer(fallbackPayload));
         } catch {
           push("error", t("ai.genericError"));
         }

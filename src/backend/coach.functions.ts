@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireProAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
 import { fallbackCoachAnswer } from "@/modules/ai/fallback-coach";
-import { normalizeError } from "@/modules/ai/runtime/errors";
 
 /**
  * AI Coach V1 — server function. Validates the trader's real data (Zod, with
@@ -77,24 +76,19 @@ export const askCoach = createServerFn({ method: "POST" })
     // configured (beta with no key) or the call fails, we answer deterministically
     // from the very same payload — zero cost, same grounding rules, no error
     // bubble in the conversation.
-    //
-    // DEBUG : la vraie cause est ajoutée au repli (pré-lancement) pour que
-    // l'échec soit visible et corrigeable. À retirer avant la mise en prod.
     try {
       const res = await runCoach(data);
       const text = res.text?.trim();
       if (text) return { answer: text, source: "ai" as const };
       console.warn("[coach] provider answered but text was empty — serving fallback", res);
-      // DEBUG (pré-lancement) : un provider qui répond VIDE déclenche le repli.
       return {
-        answer: `${fallbackCoachAnswer(data)}\n\n> ⚠️ debug IA : réponse vide du provider (${res.provider ?? "?"})`,
+        answer: fallbackCoachAnswer(data),
         source: "deterministic" as const,
       };
     } catch (err) {
       console.warn("[coach] provider unavailable — deterministic answer served", err);
-      const reason = normalizeError(err, "runtime").technicalMessage;
       return {
-        answer: `${fallbackCoachAnswer(data)}\n\n> ⚠️ debug IA : ${reason}`,
+        answer: fallbackCoachAnswer(data),
         source: "deterministic" as const,
       };
     }
