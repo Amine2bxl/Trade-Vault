@@ -115,6 +115,18 @@ export function welcomeEmail(p: OnboardingProfile, siteUrl: string) {
     <p style="margin:0 0 28px;font-size:13px;color:${MUTED};">
       Tu as <strong style="color:${ACCENT};">14 jours d'accès Pro complet</strong>, sans carte bancaire. Profite.
     </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr><td style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.18);border-radius:12px;padding:18px 20px;">
+        <p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${ACCENT};">Ta première session — en 3 étapes</p>
+        <p style="margin:0;font-size:14px;color:${TEXT};line-height:2;">
+          1️⃣ &nbsp;Ouvre ta <strong style="color:#ffffff;">checklist sur-mesure</strong> et lance la session<br>
+          2️⃣ &nbsp;Logge un seul trade : setup, setup quality, R-multiple<br>
+          3️⃣ &nbsp;Reviens demain — Jarvis aura un constat à te donner
+        </p>
+      </td></tr>
+    </table>
+
     <div style="text-align:center;">${cta("Découvrir ma checklist", siteUrl)}</div>`;
 
   return {

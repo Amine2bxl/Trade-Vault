@@ -368,3 +368,34 @@ export async function saveOnboarding(
     }
   })();
 }
+
+// ── Checklist config (Phase 5 — l'app se souvient) ───────────────────────────
+// La config de la checklist pré-marché (items, startTime, timeZone) est
+// synchronisée en base (profiles.checklist_config jsonb). BEST-EFFORT : si la
+// colonne n'existe pas (migration non appliquée), le localStorage continue de
+// fonctionner — jamais d'erreur bloquante.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const profilesAny = supabase.from("profiles") as any;
+
+export async function saveChecklistConfig(userId: string, config: unknown): Promise<void> {
+  try {
+    await profilesAny.update({ checklist_config: config }).eq("id", userId);
+  } catch (e) {
+    // Migration absente → on garde le localStorage, silencieux.
+    console.error("[checklist-config] DB write skipped", e);
+  }
+}
+
+export async function loadChecklistConfig(userId: string): Promise<unknown> {
+  try {
+    const { data, error } = await profilesAny
+      .select("checklist_config")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.checklist_config ?? null;
+  } catch (e) {
+    console.error("[checklist-config] DB read skipped", e);
+    return null;
+  }
+}

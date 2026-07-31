@@ -63,6 +63,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import NotificationDetailModal from "./components/NotificationDetailModal";
+import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -507,6 +508,7 @@ function AppContent() {
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
     // scrolls inside <main>, so the sidebar rail never moves on any page.
     <div className="relative flex h-dvh text-white overflow-hidden">
+      <FirstSessionWelcome />
       <CursorGlow />
       {/* Ambient background glow */}
       <div className="shell-bg-orbs pointer-events-none fixed inset-0 overflow-hidden">

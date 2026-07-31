@@ -20,7 +20,12 @@ import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
-import { loadOnboarding, type OnboardingData } from "../store";
+import {
+  loadOnboarding,
+  loadChecklistConfig,
+  saveChecklistConfig,
+  type OnboardingData,
+} from "../store";
 import { ttsSpeak } from "@/backend/tts.functions";
 import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
@@ -347,6 +352,44 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       /* quota */
     }
   }, [config, CFG_KEY]);
+
+  /* Phase 5 — l'app se souvient : la config remonte en base (best-effort,
+     debounced) pour survivre au changement d'appareil / vidage du cache. */
+  useEffect(() => {
+    if (!touchedRef.current || !uid) return;
+    const t = window.setTimeout(() => {
+      void saveChecklistConfig(uid, config);
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [config, uid]);
+
+  /* Hydratation depuis la base : 1re visite sur cet appareil (localStorage
+     vide) mais config existante en base → on la restaure. Jamais bloquant. */
+  useEffect(() => {
+    if (!uid) return;
+    let local: ChkConfig | null = null;
+    try {
+      const raw = localStorage.getItem(CFG_KEY);
+      if (raw) local = JSON.parse(raw) as ChkConfig;
+    } catch {
+      /* noop */
+    }
+    if (local || !touchedRef.current) return;
+    let active = true;
+    void loadChecklistConfig(uid).then((saved) => {
+      if (!active || !saved) return;
+      const cfg = saved as ChkConfig;
+      if (Array.isArray(cfg?.items) && cfg.items.length > 0) {
+        setConfig(cfg);
+        markTouched();
+      }
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
+
   useEffect(() => {
     try {
       localStorage.setItem(DAY_KEY, JSON.stringify(day));
