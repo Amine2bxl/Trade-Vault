@@ -165,7 +165,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
       { range: "$200~$500", count: 0, fill: "#4ade80" },
       { range: "> $500", count: 0, fill: "#10b981" },
     ];
-    for (const trade of trades) {
+    for (const trade of cutoffTrades) {
       if (trade.direction === "be") b[3].count++;
       else if (trade.pnl < -500) b[0].count++;
       else if (trade.pnl < -200) b[1].count++;
@@ -175,10 +175,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
       else b[6].count++;
     }
     return b;
-  }, [trades, t]);
+  }, [cutoffTrades, t]);
   const symbolData = useMemo(() => {
     const map: Record<string, { pnl: number; count: number }> = {};
-    for (const t of trades) {
+    for (const t of cutoffTrades) {
       if (!map[t.symbol]) map[t.symbol] = { pnl: 0, count: 0 };
       map[t.symbol].pnl += t.pnl;
       map[t.symbol].count++;
@@ -190,13 +190,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
         trades: data.count,
       }))
       .sort((a, b) => b.pnl - a.pnl);
-  }, [trades]);
+  }, [cutoffTrades]);
   const monthlyData = useMemo(() => {
     const map: Record<
       string,
       { pnl: number; count: number; wins: number; be: number; totalRR: number }
     > = {};
-    for (const t of trades) {
+    for (const t of cutoffTrades) {
       const k = t.date.substring(0, 7);
       if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0 };
       map[k].pnl += t.pnl;
@@ -218,27 +218,27 @@ export default function Analytics({ trades }: AnalyticsProps) {
           avgRR: data.count > 0 ? +(data.totalRR / data.count).toFixed(2) : 0,
         };
       });
-  }, [trades]);
+  }, [cutoffTrades]);
   const profitFactorData = useMemo(() => {
-    const tp = trades
+    const tp = cutoffTrades
       .filter((t) => t.direction !== "be" && t.pnl > 0)
       .reduce((s, t) => s + t.pnl, 0);
     const tl = Math.abs(
-      trades.filter((t) => t.direction !== "be" && t.pnl < 0).reduce((s, t) => s + t.pnl, 0),
+      cutoffTrades.filter((t) => t.direction !== "be" && t.pnl < 0).reduce((s, t) => s + t.pnl, 0),
     );
     const pf = tl > 0 ? tp / tl : tp > 0 ? 99 : 0;
     return { totalProfits: tp, totalLosses: tl, profitFactor: pf, isProfitable: pf > 1 };
-  }, [trades]);
+  }, [cutoffTrades]);
 
   const quant = useMemo(
-    () => computeQuantStats(trades, startingBalance),
-    [trades, startingBalance],
+    () => computeQuantStats(cutoffTrades, startingBalance),
+    [cutoffTrades, startingBalance],
   );
 
   // Per-setup table: WR / expectancy / PF / avg R for every strategy used
   const setupTable = useMemo(() => {
     const byStrategy: Record<string, Trade[]> = {};
-    for (const tr of trades) {
+    for (const tr of cutoffTrades) {
       (byStrategy[tr.strategy] ??= []).push(tr);
     }
     return Object.entries(byStrategy)
@@ -263,14 +263,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
         };
       })
       .sort((a, b) => b.pnl - a.pnl);
-  }, [trades]);
+  }, [cutoffTrades]);
 
   // Session (rows) × weekday (columns) PnL heatmap
   const SESSIONS: TradingSession[] = ["london", "newyork", "asia"];
   const heatmap = useMemo(() => {
     const map: Record<string, { pnl: number; count: number }> = {};
     let maxAbs = 0;
-    for (const tr of trades) {
+    for (const tr of cutoffTrades) {
       const s = getSession(tr.entryTime);
       if (!s) continue;
       const dow = new Date(tr.date + "T12:00:00").getDay();
@@ -282,11 +282,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
     }
     for (const v of Object.values(map)) maxAbs = Math.max(maxAbs, Math.abs(v.pnl));
     return { map, maxAbs };
-  }, [trades]);
+  }, [cutoffTrades]);
 
   // Win rate per entry hour
   const hourData = useMemo(() => {
-    const byHour = statsByHour(trades);
+    const byHour = statsByHour(cutoffTrades);
     return Object.entries(byHour)
       .map(([h, b]) => ({
         hour: `${h}h`,
@@ -296,7 +296,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         trades: b.count,
       }))
       .sort((a, b) => a.h - b.h);
-  }, [trades]);
+  }, [cutoffTrades]);
 
   if (trades.length === 0)
     return (
