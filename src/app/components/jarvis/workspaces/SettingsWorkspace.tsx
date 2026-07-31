@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Settings, User, Brain, Languages, Pencil, Trash2 } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
-import { loadJarvisProfile, saveJarvisProfile, type JarvisProfile } from "../../../store";
+import {
+  loadJarvisProfile,
+  saveJarvisProfile,
+  buildJarvisPrefill,
+  type JarvisProfile,
+} from "../../../store";
 import { sessionJarvisMemory } from "../insights/memory";
 import type { JarvisMemory } from "../insights/types";
 import { readResponseLang, writeResponseLang, type JarvisResponseLang } from "../prefs";
@@ -31,6 +36,11 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
 
   const [profile, setProfile] = useState<JarvisProfile | null>(context.profile ?? null);
   const [editProfile, setEditProfile] = useState(false);
+  const [prefill, setPrefill] = useState<{
+    style?: string;
+    weakness?: string;
+    goal?: string;
+  } | null>(null);
   const [respLang, setRespLang] = useState<JarvisResponseLang>(() => readResponseLang());
   const [memory, setMemory] = useState<JarvisMemory | null>(null);
 
@@ -100,7 +110,14 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
           ))}
         </div>
         <button
-          onClick={() => setEditProfile(true)}
+          onClick={() => {
+            setEditProfile(true);
+            if (userId) {
+              void buildJarvisPrefill(userId)
+                .then(setPrefill)
+                .catch(() => {});
+            }
+          }}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 text-cyan-300 text-xs font-bold hover:bg-cyan-500/20 transition-colors"
         >
           <Pencil className="w-3.5 h-3.5" /> {t("jarvisSettings.edit")}
@@ -172,6 +189,8 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
         <JarvisProfileModal
           open
           onClose={() => setEditProfile(false)}
+          initial={profile}
+          suggested={prefill}
           onSave={async (p) => {
             if (!userId) return;
             await saveJarvisProfile(userId, p);

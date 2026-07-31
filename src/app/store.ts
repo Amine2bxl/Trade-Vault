@@ -47,6 +47,7 @@ export {
   type JarvisProfile,
   loadJarvisProfile,
   saveJarvisProfile,
+  buildJarvisPrefill,
 } from "./store/profile";
 export { type MonthlyReportRow, loadMonthlyReports } from "./store/reports";
 export {

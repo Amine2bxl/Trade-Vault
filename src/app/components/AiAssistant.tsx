@@ -4,7 +4,12 @@ import { Trade, Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
-import { loadJarvisProfile, saveJarvisProfile, type JarvisProfile } from "../store";
+import {
+  loadJarvisProfile,
+  saveJarvisProfile,
+  buildJarvisPrefill,
+  type JarvisProfile,
+} from "../store";
 import JarvisProfileModal from "./JarvisProfileModal";
 import JarvisShell from "./jarvis/JarvisShell";
 import type { JarvisContext } from "./jarvis/context";
@@ -87,6 +92,11 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   // it is saved (jarvis_completed_at non-NULL).
   const [profileOpen, setProfileOpen] = useState(false);
   const [jarvisProfile, setJarvisProfile] = useState<JarvisProfile | null>(null);
+  const [prefill, setPrefill] = useState<{
+    style?: string;
+    weakness?: string;
+    goal?: string;
+  } | null>(null);
   useEffect(() => {
     if (!open || !user?.id) return;
     let active = true;
@@ -99,6 +109,12 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       .catch(() => {
         // Best-effort: a failed read never blocks the coach.
       });
+    // Suggestions depuis les Objectifs / Onboarding pour pré-remplir le profil.
+    buildJarvisPrefill(user.id)
+      .then((s) => {
+        if (active) setPrefill(s);
+      })
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -241,6 +257,8 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         <JarvisProfileModal
           open
           onClose={() => setProfileOpen(false)}
+          initial={jarvisProfile}
+          suggested={prefill}
           onSave={async (p) => {
             if (!user?.id) return;
             await saveJarvisProfile(user.id, p);
