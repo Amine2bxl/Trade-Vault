@@ -391,10 +391,9 @@ function AppContent() {
   // screen). Signed-in users fall through straight into the product.
   if (!isAuthenticated) return <Landing />;
 
-  if (onboarding === "loading") {
-    return <LoadingScreen message="Préparation de ton espace…" />;
-  }
-
+  // First-time users get the onboarding; everyone else goes straight into the
+  // shell (no intermediate loading screen — the dashboard is visible as soon
+  // as auth resolves; data streams in behind the already-painted frame).
   if (onboarding === "needed" && user) {
     return (
       <Suspense fallback={<LoadingScreen message="Chargement de l'onboarding…" />}>

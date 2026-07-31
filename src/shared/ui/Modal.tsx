@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "./cn";
 
 /**
@@ -78,7 +79,13 @@ export function Modal({
 
   if (!open) return null;
 
-  return (
+  // Render via portal so a `fixed` overlay is never trapped inside a parent
+  // with `backdrop-filter`/`transform` (which creates a containing block for
+  // fixed descendants — the sidebar's `backdrop-blur` trapped sub-account
+  // modals on the left side of the screen). SSR returns null (client-only).
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       className={cn(
         "fixed inset-0 z-50 flex items-end justify-center p-0 md:items-center md:p-4",
@@ -104,6 +111,7 @@ export function Modal({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

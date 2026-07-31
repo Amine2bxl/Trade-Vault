@@ -34,7 +34,6 @@ import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
-import { PageSkeleton } from "../components/Skeleton";
 import CopilotBlock from "./dashboard/CopilotBlock";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -281,8 +280,6 @@ export default function Dashboard({
     return t("dashboard.greetingEvening");
   };
 
-  if (tradesLoading) return <PageSkeleton />;
-
   const gain = stats.totalPnl >= 0;
   const streakLabel = `${stats.currentStreak}${
     stats.currentStreakType === "win"
@@ -327,369 +324,391 @@ export default function Dashboard({
         }
       />
 
-      {/* Copilot block — the day's focus (Edge Score, rule, checklist, objective) */}
-      {trades.length > 0 && (
-        <CopilotBlock
-          edge={edge}
-          edgeDelta={edgeDelta}
-          rule={dailyRule}
-          checklist={chkStatus}
-          objective={objective}
-          onOpenChecklist={onOpenChecklist}
-        />
-      )}
-
-      {trades.length === 0 ? (
-        /* ── Empty state: first-run experience ── */
-        <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium animate-fade-in-up stagger-1 relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
-          <svg
-            viewBox="0 0 200 80"
-            className="w-48 md:w-64 mx-auto mb-6 opacity-80"
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22"
-              fill="none"
-              stroke="var(--tv-highlight)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ filter: "drop-shadow(0 0 6px rgb(var(--tv-highlight-rgb) / 0.5))" }}
-            />
-            <path
-              d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
-              fill="url(#emptyGrad)"
-              stroke="none"
-            />
-            <circle
-              cx="162"
-              cy="14"
-              r="3.5"
-              fill="var(--tv-highlight)"
-              style={{ filter: "drop-shadow(0 0 5px rgb(var(--tv-highlight-rgb) / 0.9))" }}
-            />
-          </svg>
-          <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
-          <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
-          <Button onClick={onAddTrade}>
-            <Plus className="w-4 h-4" /> {t("empty.cta")}
-          </Button>
-          {onOpenImport && (
-            <button
-              onClick={onOpenImport}
-              className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
-            >
-              {t("import.importCsv")}
-            </button>
-          )}
-          {/* Ghost example of what a logged trade looks like */}
-          <div
-            className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
-            aria-hidden="true"
-          >
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
-              {t("empty.example")}
-            </div>
-            <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 border-dashed">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white">NQ</span>
-                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
-                    L
-                  </span>
-                  <span className="text-[10px] text-slate-600">Silver Bullet</span>
-                </div>
-                <div className="text-[10px] text-slate-600">
-                  10:03 · 2R · $150 {t("dashboard.riskSuffix")}
-                </div>
-              </div>
-              <div className="text-sm font-bold text-emerald-400">+$300.00</div>
-            </div>
+      {/* Frame paints instantly; data sections show a skeleton only while the
+          first trades load. No full-page blocker. */}
+      {tradesLoading ? (
+        <div className="space-y-4">
+          <div className="glass rounded-3xl p-5 animate-pulse">
+            <div className="h-4 w-1/3 bg-white/10 rounded-lg mb-3" />
+            <div className="h-20 bg-white/[0.06] rounded-2xl" />
+          </div>
+          <div className="glass rounded-3xl p-5 animate-pulse">
+            <div className="h-32 bg-white/[0.06] rounded-2xl" />
           </div>
         </div>
       ) : (
         <>
-          {/* ── Hero: Equity Curve ── */}
-          <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
-            <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-              <div>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
-                  <LineChart className="w-3.5 h-3.5 text-cyan-400/70" />
-                  {t("dashboard.equityCurve")}
+          {/* Copilot block — the day's focus (Edge Score, rule, checklist, objective) */}
+          {trades.length > 0 && (
+            <CopilotBlock
+              edge={edge}
+              edgeDelta={edgeDelta}
+              rule={dailyRule}
+              checklist={chkStatus}
+              objective={objective}
+              onOpenChecklist={onOpenChecklist}
+            />
+          )}
+
+          {trades.length === 0 ? (
+            /* ── Empty state: first-run experience ── */
+            <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium animate-fade-in-up stagger-1 relative overflow-hidden">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+              <svg
+                viewBox="0 0 200 80"
+                className="w-48 md:w-64 mx-auto mb-6 opacity-80"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22"
+                  fill="none"
+                  stroke="var(--tv-highlight)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ filter: "drop-shadow(0 0 6px rgb(var(--tv-highlight-rgb) / 0.5))" }}
+                />
+                <path
+                  d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
+                  fill="url(#emptyGrad)"
+                  stroke="none"
+                />
+                <circle
+                  cx="162"
+                  cy="14"
+                  r="3.5"
+                  fill="var(--tv-highlight)"
+                  style={{ filter: "drop-shadow(0 0 5px rgb(var(--tv-highlight-rgb) / 0.9))" }}
+                />
+              </svg>
+              <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
+              <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
+              <Button onClick={onAddTrade}>
+                <Plus className="w-4 h-4" /> {t("empty.cta")}
+              </Button>
+              {onOpenImport && (
+                <button
+                  onClick={onOpenImport}
+                  className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+                >
+                  {t("import.importCsv")}
+                </button>
+              )}
+              {/* Ghost example of what a logged trade looks like */}
+              <div
+                className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
+                aria-hidden="true"
+              >
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
+                  {t("empty.example")}
                 </div>
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <span
-                    className={cn(
-                      "font-display text-3xl md:text-4xl font-extrabold tabular-nums tracking-tight",
-                      gain ? "text-emerald-400" : "text-red-400",
-                    )}
-                    style={{
-                      textShadow: gain
-                        ? "0 0 24px rgba(16,185,129,0.25)"
-                        : "0 0 24px rgba(239,68,68,0.25)",
-                    }}
-                  >
-                    {formatPnl(stats.totalPnl)}
-                  </span>
-                  {periodPct !== null && (
-                    <span
-                      className={cn(
-                        "text-xs md:text-sm font-bold px-2 py-0.5 rounded-lg tabular-nums",
-                        gain ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400",
-                      )}
-                    >
-                      {periodPct >= 0 ? "+" : ""}
-                      {(periodPct * 100).toFixed(2)}%
-                    </span>
-                  )}
-                  <span className="text-[11px] text-slate-500">
-                    {stats.totalTrades} {t("common.trades")}
-                  </span>
+                <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 border-dashed">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-white">NQ</span>
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                        L
+                      </span>
+                      <span className="text-[10px] text-slate-600">Silver Bullet</span>
+                    </div>
+                    <div className="text-[10px] text-slate-600">
+                      10:03 · 2R · $150 {t("dashboard.riskSuffix")}
+                    </div>
+                  </div>
+                  <div className="text-sm font-bold text-emerald-400">+$300.00</div>
                 </div>
-              </div>
-              {/* Period selector */}
-              <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
-                {PERIODS.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => changePeriod(p)}
-                    className={cn(
-                      "px-2.5 md:px-3.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition-all",
-                      period === p
-                        ? "bg-cyan-500/15 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
-                        : "text-slate-500 hover:text-slate-300",
-                    )}
-                  >
-                    {p === "7d"
-                      ? "7D"
-                      : p === "30d"
-                        ? "30D"
-                        : p === "ytd"
-                          ? "YTD"
-                          : t("common.all")}
-                  </button>
-                ))}
               </div>
             </div>
-            {stats.equityCurve.length > 0 ? (
-              <div className="h-56 md:h-80 chart-draw">
-                <Suspense
-                  fallback={
-                    <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
-                  }
-                >
-                  <EquityChart data={stats.equityCurve} />
-                </Suspense>
-              </div>
-            ) : (
-              <div className="h-56 md:h-80 flex items-center justify-center text-slate-600 text-sm">
-                {t("dashboard.noTradesInPeriod")}
-              </div>
-            )}
-
-            {/* Period context strip — quick, glanceable framing under the curve */}
-            {stats.totalTrades > 0 && (
-              <div className="mt-3 pt-3 border-t border-white/[0.05] grid grid-cols-3 gap-2 md:gap-4">
-                <MiniStat
-                  icon={<CalendarDays className="w-3.5 h-3.5" />}
-                  label={t("dashboard.tradingDays")}
-                  value={String(insight.tradingDays)}
-                />
-                <MiniStat
-                  icon={<Gauge className="w-3.5 h-3.5" />}
-                  label={t("dashboard.avgPerDay")}
-                  value={formatPnl(insight.avgPerDay)}
-                  accent={insight.avgPerDay >= 0 ? "text-emerald-400" : "text-red-400"}
-                />
-                <MiniStat
-                  icon={<Scale className="w-3.5 h-3.5" />}
-                  label={t("dashboard.longShort")}
-                  value={
-                    insight.longShare !== null ? `${Math.round(insight.longShare * 100)}% L` : "—"
-                  }
-                  sub={`${insight.longs}L · ${insight.shorts}S`}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Stats Grid — radial gauges + sparkline, with folded secondary stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-            <Metric
-              title={t("stats.winRate")}
-              value={formatPct(stats.winRate)}
-              valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
-              visual={{
-                kind: "radial",
-                pct: stats.winRate,
-                color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
-                center: `${stats.wins}/${stats.losses}`,
-              }}
-              footer={{
-                label: t("dashboard.currentStreak"),
-                value: streakLabel,
-                className: streakColor,
-              }}
-              delay={0}
-            />
-            <Metric
-              title={t("dashboard.profitFactor")}
-              value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
-              valueClass={
-                stats.profitFactor >= 1.5
-                  ? "text-emerald-400"
-                  : stats.profitFactor < 1
-                    ? "text-red-400"
-                    : "text-white"
-              }
-              visual={{
-                kind: "radial",
-                pct: Math.min(stats.profitFactor / 3, 1),
-                color:
-                  stats.profitFactor >= 1.5
-                    ? "#10b981"
-                    : stats.profitFactor < 1
-                      ? "#ef4444"
-                      : "#22d3ee",
-              }}
-              footer={{ label: t("dashboard.avgRR"), value: stats.avgRR.toFixed(2) }}
-              delay={60}
-            />
-            <Metric
-              icon={
-                quant.expectancy >= 0 ? (
-                  <TrendingUp className="w-4 h-4" />
-                ) : (
-                  <TrendingDown className="w-4 h-4" />
-                )
-              }
-              title={t("quant.expectancy")}
-              value={formatPnl(quant.expectancy)}
-              valueClass={quant.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
-              visual={{
-                kind: "spark",
-                data: stats.equityCurve.map((e) => e.equity),
-                color: quant.expectancy >= 0 ? "#22d3ee" : "#ef4444",
-              }}
-              footer={{
-                label: t("dashboard.bestWorst"),
-                value: `${stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"} / ${stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}`,
-              }}
-              delay={120}
-            />
-            <Metric
-              title={t("dashboard.maxDrawdown")}
-              value={formatPnl(-stats.maxDrawdown)}
-              valueClass="text-red-400"
-              visual={{
-                kind: "radial",
-                pct: quant.maxDrawdownPct ?? 0,
-                color: (quant.maxDrawdownPct ?? 0) >= 0.2 ? "#ef4444" : "#f59e0b",
-                center:
-                  quant.maxDrawdownPct !== null
-                    ? `${(quant.maxDrawdownPct * 100).toFixed(0)}%`
-                    : undefined,
-              }}
-              footer={{
-                label: t("quant.planAdherence"),
-                value: formatPct(quant.planAdherence),
-                className: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400",
-              }}
-              delay={180}
-            />
-          </div>
-
-          <div>
-            {/* Recent Trades */}
-            <Card hover className="overflow-hidden animate-fade-in-up stagger-4">
-              <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
-                <h3 className="text-sm font-semibold text-white">{t("dashboard.recentTrades")}</h3>
-              </div>
-              <div className="divide-y divide-white/[0.04]">
-                {recentTrades.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-slate-600 text-sm">
-                    {t("dashboard.noTradesInPeriod")}
-                  </div>
-                ) : (
-                  recentTrades.map((trade) => {
-                    const be = isBreakEven(trade);
-                    return (
-                      <div
-                        key={trade.id}
-                        className="px-4 md:px-5 py-3 trade-card flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
+          ) : (
+            <>
+              {/* ── Hero: Equity Curve ── */}
+              <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+                <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
+                      <LineChart className="w-3.5 h-3.5 text-cyan-400/70" />
+                      {t("dashboard.equityCurve")}
+                    </div>
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <span
+                        className={cn(
+                          "font-display text-3xl md:text-4xl font-extrabold tabular-nums tracking-tight",
+                          gain ? "text-emerald-400" : "text-red-400",
+                        )}
+                        style={{
+                          textShadow: gain
+                            ? "0 0 24px rgba(16,185,129,0.25)"
+                            : "0 0 24px rgba(239,68,68,0.25)",
+                        }}
                       >
-                        <div
+                        {formatPnl(stats.totalPnl)}
+                      </span>
+                      {periodPct !== null && (
+                        <span
                           className={cn(
-                            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-                            be
-                              ? "bg-slate-500/10"
-                              : trade.pnl >= 0
-                                ? "bg-emerald-500/10"
-                                : "bg-red-500/10",
+                            "text-xs md:text-sm font-bold px-2 py-0.5 rounded-lg tabular-nums",
+                            gain
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-red-500/10 text-red-400",
                           )}
                         >
-                          {be ? (
-                            <Minus className="w-4 h-4 text-slate-300" />
-                          ) : trade.pnl >= 0 ? (
-                            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                          ) : (
-                            <ArrowDownRight className="w-4 h-4 text-red-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-white">{trade.symbol}</span>
-                            <span
-                              className={cn(
-                                "text-[11px] font-bold px-1.5 py-0.5 rounded",
-                                directionBadgeClass(trade.direction),
-                              )}
-                            >
-                              {directionLabel(trade.direction)}
-                            </span>
-                            <span className="hidden md:inline text-[10px] text-slate-600">
-                              {trade.strategy}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-600">
-                            {formatShortDate(trade.date)} · {trade.rMultiple.toFixed(1)}R
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div
-                            className={cn(
-                              "text-sm font-bold",
-                              be
-                                ? "text-slate-300"
-                                : trade.pnl >= 0
-                                  ? "text-emerald-400"
-                                  : "text-red-400",
-                            )}
-                          >
-                            {formatPnl(trade.pnl)}
-                          </div>
-                          <div className="text-[10px] text-slate-600">
-                            ${trade.riskAmount.toFixed(0)} {t("dashboard.riskSuffix")}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                          {periodPct >= 0 ? "+" : ""}
+                          {(periodPct * 100).toFixed(2)}%
+                        </span>
+                      )}
+                      <span className="text-[11px] text-slate-500">
+                        {stats.totalTrades} {t("common.trades")}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Period selector */}
+                  <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+                    {PERIODS.map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => changePeriod(p)}
+                        className={cn(
+                          "px-2.5 md:px-3.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition-all",
+                          period === p
+                            ? "bg-cyan-500/15 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+                            : "text-slate-500 hover:text-slate-300",
+                        )}
+                      >
+                        {p === "7d"
+                          ? "7D"
+                          : p === "30d"
+                            ? "30D"
+                            : p === "ytd"
+                              ? "YTD"
+                              : t("common.all")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {stats.equityCurve.length > 0 ? (
+                  <div className="h-56 md:h-80 chart-draw">
+                    <Suspense
+                      fallback={
+                        <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
+                      }
+                    >
+                      <EquityChart data={stats.equityCurve} />
+                    </Suspense>
+                  </div>
+                ) : (
+                  <div className="h-56 md:h-80 flex items-center justify-center text-slate-600 text-sm">
+                    {t("dashboard.noTradesInPeriod")}
+                  </div>
+                )}
+
+                {/* Period context strip — quick, glanceable framing under the curve */}
+                {stats.totalTrades > 0 && (
+                  <div className="mt-3 pt-3 border-t border-white/[0.05] grid grid-cols-3 gap-2 md:gap-4">
+                    <MiniStat
+                      icon={<CalendarDays className="w-3.5 h-3.5" />}
+                      label={t("dashboard.tradingDays")}
+                      value={String(insight.tradingDays)}
+                    />
+                    <MiniStat
+                      icon={<Gauge className="w-3.5 h-3.5" />}
+                      label={t("dashboard.avgPerDay")}
+                      value={formatPnl(insight.avgPerDay)}
+                      accent={insight.avgPerDay >= 0 ? "text-emerald-400" : "text-red-400"}
+                    />
+                    <MiniStat
+                      icon={<Scale className="w-3.5 h-3.5" />}
+                      label={t("dashboard.longShort")}
+                      value={
+                        insight.longShare !== null
+                          ? `${Math.round(insight.longShare * 100)}% L`
+                          : "—"
+                      }
+                      sub={`${insight.longs}L · ${insight.shorts}S`}
+                    />
+                  </div>
                 )}
               </div>
-            </Card>
-          </div>
+
+              {/* Stats Grid — radial gauges + sparkline, with folded secondary stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+                <Metric
+                  title={t("stats.winRate")}
+                  value={formatPct(stats.winRate)}
+                  valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
+                  visual={{
+                    kind: "radial",
+                    pct: stats.winRate,
+                    color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
+                    center: `${stats.wins}/${stats.losses}`,
+                  }}
+                  footer={{
+                    label: t("dashboard.currentStreak"),
+                    value: streakLabel,
+                    className: streakColor,
+                  }}
+                  delay={0}
+                />
+                <Metric
+                  title={t("dashboard.profitFactor")}
+                  value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
+                  valueClass={
+                    stats.profitFactor >= 1.5
+                      ? "text-emerald-400"
+                      : stats.profitFactor < 1
+                        ? "text-red-400"
+                        : "text-white"
+                  }
+                  visual={{
+                    kind: "radial",
+                    pct: Math.min(stats.profitFactor / 3, 1),
+                    color:
+                      stats.profitFactor >= 1.5
+                        ? "#10b981"
+                        : stats.profitFactor < 1
+                          ? "#ef4444"
+                          : "#22d3ee",
+                  }}
+                  footer={{ label: t("dashboard.avgRR"), value: stats.avgRR.toFixed(2) }}
+                  delay={60}
+                />
+                <Metric
+                  icon={
+                    quant.expectancy >= 0 ? (
+                      <TrendingUp className="w-4 h-4" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4" />
+                    )
+                  }
+                  title={t("quant.expectancy")}
+                  value={formatPnl(quant.expectancy)}
+                  valueClass={quant.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
+                  visual={{
+                    kind: "spark",
+                    data: stats.equityCurve.map((e) => e.equity),
+                    color: quant.expectancy >= 0 ? "#22d3ee" : "#ef4444",
+                  }}
+                  footer={{
+                    label: t("dashboard.bestWorst"),
+                    value: `${stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"} / ${stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}`,
+                  }}
+                  delay={120}
+                />
+                <Metric
+                  title={t("dashboard.maxDrawdown")}
+                  value={formatPnl(-stats.maxDrawdown)}
+                  valueClass="text-red-400"
+                  visual={{
+                    kind: "radial",
+                    pct: quant.maxDrawdownPct ?? 0,
+                    color: (quant.maxDrawdownPct ?? 0) >= 0.2 ? "#ef4444" : "#f59e0b",
+                    center:
+                      quant.maxDrawdownPct !== null
+                        ? `${(quant.maxDrawdownPct * 100).toFixed(0)}%`
+                        : undefined,
+                  }}
+                  footer={{
+                    label: t("quant.planAdherence"),
+                    value: formatPct(quant.planAdherence),
+                    className: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400",
+                  }}
+                  delay={180}
+                />
+              </div>
+
+              <div>
+                {/* Recent Trades */}
+                <Card hover className="overflow-hidden animate-fade-in-up stagger-4">
+                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
+                    <h3 className="text-sm font-semibold text-white">
+                      {t("dashboard.recentTrades")}
+                    </h3>
+                  </div>
+                  <div className="divide-y divide-white/[0.04]">
+                    {recentTrades.length === 0 ? (
+                      <div className="px-4 py-10 text-center text-slate-600 text-sm">
+                        {t("dashboard.noTradesInPeriod")}
+                      </div>
+                    ) : (
+                      recentTrades.map((trade) => {
+                        const be = isBreakEven(trade);
+                        return (
+                          <div
+                            key={trade.id}
+                            className="px-4 md:px-5 py-3 trade-card flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <div
+                              className={cn(
+                                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                                be
+                                  ? "bg-slate-500/10"
+                                  : trade.pnl >= 0
+                                    ? "bg-emerald-500/10"
+                                    : "bg-red-500/10",
+                              )}
+                            >
+                              {be ? (
+                                <Minus className="w-4 h-4 text-slate-300" />
+                              ) : trade.pnl >= 0 ? (
+                                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                              ) : (
+                                <ArrowDownRight className="w-4 h-4 text-red-400" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-white">{trade.symbol}</span>
+                                <span
+                                  className={cn(
+                                    "text-[11px] font-bold px-1.5 py-0.5 rounded",
+                                    directionBadgeClass(trade.direction),
+                                  )}
+                                >
+                                  {directionLabel(trade.direction)}
+                                </span>
+                                <span className="hidden md:inline text-[10px] text-slate-600">
+                                  {trade.strategy}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-600">
+                                {formatShortDate(trade.date)} · {trade.rMultiple.toFixed(1)}R
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div
+                                className={cn(
+                                  "text-sm font-bold",
+                                  be
+                                    ? "text-slate-300"
+                                    : trade.pnl >= 0
+                                      ? "text-emerald-400"
+                                      : "text-red-400",
+                                )}
+                              >
+                                {formatPnl(trade.pnl)}
+                              </div>
+                              <div className="text-[10px] text-slate-600">
+                                ${trade.riskAmount.toFixed(0)} {t("dashboard.riskSuffix")}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </Card>
+              </div>
+            </>
+          )}
         </>
       )}
     </PageContainer>
