@@ -61,9 +61,10 @@ function cta(label: string, url: string, primary = true): string {
 
 const GOAL_LABELS: Record<string, string> = {
   consistency: "devenir régulier et discipliné",
-  funded: "décrocher un compte financé",
-  income: "vivre du trading",
-  learn: "progresser et comprendre tes erreurs",
+  prop_challenge: "passer un challenge prop firm",
+  discipline: "appliquer une discipline stricte",
+  fulltime: "en faire une activité à temps plein",
+  side: "progresser en parallèle de ton activité",
 };
 
 const STYLE_LABELS: Record<string, string> = {

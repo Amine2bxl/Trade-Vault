@@ -8,6 +8,8 @@ import type { JarvisInsight, JarvisMemory } from "./types";
  *  - impact réel (35 %) — la magnitude monétaire de l'insight ;
  *  - actionnabilité (20 %) — la mission est-elle claire et immédiate ?
  *  - bonus « warning » (+0.1) — un danger prend le pas sur un constat ;
+ *  - calibration profil (+0.2) — le pattern lié à LA faiblesse déclarée par
+ *    le trader à l'onboarding est préféré (Jarvis surveille ce que TU as dit) ;
  *  - pénalité anti-répétition (×0.55) — ne pas répéter le dernier pattern.
  *
  * Retourne la liste triée ; l'élément[0] porte priority = 1 (le Hero).
@@ -19,11 +21,16 @@ const impactScore = (insight: JarvisInsight): number =>
 const actionability = (insight: JarvisInsight): number =>
   0.5 + Math.min(0.5, insight.mission.length * 0.25);
 
-export function pickPriority(candidates: JarvisInsight[], memory: JarvisMemory): JarvisInsight[] {
+export function pickPriority(
+  candidates: JarvisInsight[],
+  memory: JarvisMemory,
+  preferredPattern?: string | null,
+): JarvisInsight[] {
   const scored = candidates.map((insight) => {
     let score =
       0.45 * insight.confidence + 0.35 * impactScore(insight) + 0.2 * actionability(insight);
     if (insight.moment === "warning") score += 0.1;
+    if (preferredPattern && insight.pattern === preferredPattern) score += 0.2;
     if (insight.pattern === memory.lastPattern) score *= 0.55;
     return { insight, score };
   });

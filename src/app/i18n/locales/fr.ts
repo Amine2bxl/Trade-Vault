@@ -32,6 +32,16 @@ const fr: Dict = {
   "common.cancel": "Annuler",
   "common.delete": "Supprimer",
   "common.edit": "Modifier",
+  // Onboarding (refonte 3 moments)
+  "onb.nameTitle": "Comment t'appelles-tu ?",
+  "onb.nameSub": "Jarvis te parlera par ton prénom — la voix, les rappels, tout.",
+  "onb.namePlaceholder": "Ton prénom",
+  "onb.nameCta": "Continuer",
+  "onb.profileTitle": "Ton profil de trader",
+  "onb.profileSub":
+    "Quelques réponses, et ta checklist et Jarvis sont calibrés sur toi. Tout est modifiable.",
+  "onb.saveError": "Oups, la sauvegarde a échoué. Réessaie.",
+  "onb.saveRetry": "Réessayer",
   "common.add": "Ajouter",
   "common.view": "Voir",
   "common.loading": "Chargement…",
@@ -933,6 +943,10 @@ const fr: Dict = {
   "chk.dashStart": "Lance ta routine pre-market avant d'entrer en position",
   "chk.dashCta": "Ouvrir",
   "chk.guidedSetup": "Configuration guidée (facile)",
+  "chk.recommended": "Recommandé pour toi",
+  "chk.recommendedSub":
+    "Jarvis a construit cette liste depuis ton profil (style, faiblesse, marché, objectif).",
+  "chk.applyRecommended": "Appliquer cette liste",
   "chk.streakSuffix": "jours d'affilée",
   "chk.streakHint":
     "Jours de semaine consécutifs avec checklist verrouillée. Les week-ends ne cassent jamais la série.",

@@ -14,6 +14,7 @@ import {
   X,
   RotateCcw,
   Wand2,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
@@ -39,6 +40,7 @@ import {
 import "./checklist.css";
 
 import { type Tone, TONES, LINES } from "./checklist/voice";
+import { loadTradingRules, saveTradingRules, type TradingRule } from "../utils/tradingRules";
 import {
   FOMO_ICONS,
   pad,
@@ -160,6 +162,44 @@ interface ChecklistProps {
 }
 
 /* ══════════════════════════════ COMPONENT ══════════════════════════════ */
+
+/**
+ * Phase 3 — la checklist alimente la discipline. Chaque engagement choisi dans
+ * le wizard devient une règle « custom » du profil (jamais auto-vérifiée — on
+ * ne devine jamais un chiffre — mais visible, comptée et citée par Jarvis).
+ * Dédupliquée par texte : relancer le wizard ne crée pas de doublons.
+ */
+async function syncWizardRules(
+  userId: string | undefined,
+  items: { title: string }[],
+): Promise<void> {
+  if (!userId || items.length === 0) return;
+  try {
+    const existing = await loadTradingRules(userId);
+    const existingTexts = new Set(existing.map((r) => r.text.toLowerCase().trim()));
+    const fresh: TradingRule[] = [];
+    for (const it of items) {
+      const text = it.title.trim();
+      if (!text || existingTexts.has(text.toLowerCase())) continue;
+      existingTexts.add(text.toLowerCase());
+      fresh.push({
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `rule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        kind: "custom",
+        value: "",
+        text,
+        enabled: true,
+      });
+    }
+    if (fresh.length > 0) await saveTradingRules(userId, [...existing, ...fresh]);
+  } catch (e) {
+    // Jamais bloquant : la checklist fonctionne sans règles.
+    console.error("[checklist] sync wizard rules failed", e);
+  }
+}
+
 export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const { user } = useAuth();
   const { t, lang } = useT();
@@ -265,6 +305,11 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       /* noop */
     }
     setShowWizard(false);
+    // Phase 3 — la checklist alimente la DISCIPLINE : chaque engagement du
+    // wizard devient une règle « custom » du profil (dédupliquée par texte).
+    // Ces règles alimentent les notifications (discipline armée), le contexte
+    // coach (Jarvis cite tes engagements) et le compteur de règles.
+    void syncWizardRules(user?.id, r.items);
   };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1481,6 +1526,48 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
             {cfgTab === "items" && (
               <div className="space-y-2">
+                {/* Phase 3 — liste recommandée par Jarvis (generateChecklist) :
+                    le profil onboarding (style, faiblesse, marché, objectif)
+                    produit une liste courte sur-mesure. Un clic = appliquée. */}
+                {generated.items.length > 0 && (
+                  <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
+                        {t("chk.recommended")}
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed mb-2.5">
+                      {t("chk.recommendedSub")}
+                    </p>
+                    <ul className="space-y-1 mb-3">
+                      {generated.items.slice(0, 4).map((it) => (
+                        <li
+                          key={it.title}
+                          className="flex items-center gap-1.5 text-[11.5px] text-slate-300"
+                        >
+                          <span className="w-1 h-1 rounded-full bg-cyan-400 shrink-0" />
+                          {it.title}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => {
+                        markTouched();
+                        setConfig((c) => ({ ...c, items: generated.items }));
+                        setDay((d) => ({
+                          ...d,
+                          checked: new Array(generated.items.length).fill(false),
+                        }));
+                        void syncWizardRules(user?.id, generated.items);
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 shadow-lg shadow-cyan-500/15 transition-all"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> {t("chk.applyRecommended")}
+                    </button>
+                  </div>
+                )}
+
                 <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
                   {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
                 </div>

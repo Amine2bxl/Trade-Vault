@@ -103,12 +103,16 @@ function main(): void {
   const refHash = referenceHash(reference);
   // Render config is part of the filename: changing engine or speed re-renders
   // every line instead of silently reusing clips rendered with old settings.
-  const speed = process.env.F5_SPEED ?? "0.80";
-  const steps = process.env.F5_STEPS ?? "32";
+  // Pacing is applied AFTER rendering (ffmpeg atempo), never inside F5:
+  // F5's `speed` stretches the token stream and can drop words. Rendering at
+  // native pace + atempo gives an exact, pitch-preserved, word-perfect slow-down.
+  const speed = process.env.F5_SPEED ?? "1.0";
+  const steps = process.env.F5_STEPS ?? "24";
   const cfg = process.env.F5_CFG ?? "3.0";
-  const cfgHash = sha256(`${engine}:${speed}:${steps}:${cfg}`).slice(0, 4);
+  const atempo = process.env.F5_ATEMPO ?? "0.84";
+  const cfgHash = sha256(`${engine}:${atempo}:${steps}:${cfg}`).slice(0, 4);
   console.log(
-    `[voices] engine=${label} reference=${reference} (${refHash}) speed=${speed} steps=${steps} cfg=${cfg} cfg=${cfgHash}`,
+    `[voices] engine=${label} reference=${reference} (${refHash}) speed=${speed} atempo=${atempo} steps=${steps} cfg=${cfg} cfg=${cfgHash}`,
   );
 
   const catalog = buildCatalog();
@@ -140,11 +144,12 @@ function main(): void {
     for (const item of need) {
       const wav = join(TMP_DIR, `${item.id}.wav`);
       const mp3 = join(OUT_DIR, `voice-${refHash}-${cfgHash}-${item.id}.mp3`);
-      // Gentle edge trim (-50 dB, long window) so only true dead air is
-      // removed — never a soft consonant — then even loudness.
+      // atempo slows the native render pitch-preserved and exactly; gentle
+      // edge trim (-50 dB) removes only true dead air, never a soft consonant.
       const filter =
-        "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.2," +
-        "areverse,silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.2," +
+        `atempo=${atempo},` +
+        "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.12," +
+        "areverse,silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.12," +
         "areverse,loudnorm=I=-16:TP=-1.5:LRA=11";
       execFileSync(
         "ffmpeg",

@@ -61,9 +61,9 @@ def main() -> int:
     ap.add_argument("--ref", required=True, help="reference voice sample (mp3/wav)")
     ap.add_argument("--cache", required=True, help="cache dir for the transcript")
     ap.add_argument("--device", default="auto", help="auto | cpu | mps | cuda")
-    ap.add_argument("--speed", type=float, default=float(os.environ.get("F5_SPEED", "0.80")),
-                    help="speaking pace, <1 is slower and more deliberate")
-    ap.add_argument("--steps", type=int, default=int(os.environ.get("F5_STEPS", "32")),
+    ap.add_argument("--speed", type=float, default=float(os.environ.get("F5_SPEED", "1.0")),
+                    help="F5 render pace — keep 1.0 (native); slow down via ffmpeg atempo")
+    ap.add_argument("--steps", type=int, default=int(os.environ.get("F5_STEPS", "24")),
                     help="diffusion steps (32 = best quality, 24 = fast, 16 = quick)")
     ap.add_argument("--cfg", type=float, default=float(os.environ.get("F5_CFG", "3.0")),
                     help="text-adherence strength; higher = fewer dropped words")

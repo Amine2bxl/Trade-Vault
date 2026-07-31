@@ -64,6 +64,16 @@ const en = {
   "common.cancel": "Cancel",
   "common.delete": "Delete",
   "common.edit": "Edit",
+  // Onboarding (3-moment redesign)
+  "onb.nameTitle": "What should we call you?",
+  "onb.nameSub": "Jarvis will greet you by name — in voice, reminders, everything.",
+  "onb.namePlaceholder": "Your first name",
+  "onb.nameCta": "Continue",
+  "onb.profileTitle": "Your trading profile",
+  "onb.profileSub":
+    "A few answers and your checklist and Jarvis are tuned to you. You can change it anytime.",
+  "onb.saveError": "Oops — the save failed. Please retry.",
+  "onb.saveRetry": "Retry",
   "common.add": "Add",
   "common.view": "View",
   "common.loading": "Loading…",
@@ -1004,6 +1014,9 @@ const en = {
   "chk.dashStart": "Start your pre-market routine before entering a trade",
   "chk.dashCta": "Open",
   "chk.guidedSetup": "Guided setup (easy)",
+  "chk.recommended": "Recommended for you",
+  "chk.recommendedSub": "Jarvis built this list from your profile (style, weakness, market, goal).",
+  "chk.applyRecommended": "Apply this list",
   "chk.streakSuffix": "day streak",
   "chk.streakHint":
     "Consecutive weekdays with a locked pre-market checklist. Weekends never break the chain.",

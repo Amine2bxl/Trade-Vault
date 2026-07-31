@@ -306,11 +306,20 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
 
 // Persists the collected answers and stamps `onboarded_at` so the flow never
 // shows again. `skipped` records that the user bailed with defaults.
+//
+// PHASE 0 — UNE SEULE source de vérité : l'onboarding alimente AUSSI le profil
+// Jarvis (style, faiblesse déclarée, objectif) et pose `jarvis_completed_at`.
+// Fini la double collecte : Jarvis connaît le trader dès le jour 1.
+//
+// La fusion Jarvis est BEST-EFFORT (2e requête en try/catch) : si la migration
+// `jarvis_*` n'est pas appliquée, le chemin critique (onboarding_* + gate) ne
+// casse jamais — le profil local de Jarvis reste fonctionnel.
 export async function saveOnboarding(
   userId: string,
   d: OnboardingData,
-  opts: { skipped?: boolean } = {},
+  opts: { skipped?: boolean; firstName?: string } = {},
 ): Promise<void> {
+  const now = new Date().toISOString();
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -323,10 +332,25 @@ export async function saveOnboarding(
       onboarding_pain: d.pain,
       onboarding_monthly_target: d.monthlyTarget,
       onboarding_skipped: opts.skipped ?? false,
-      onboarded_at: new Date().toISOString(),
+      onboarded_at: now,
     })
     .eq("id", userId);
   if (error) throw error;
+
+  // Fusion profil Jarvis — jamais bloquante (migration absente = ignorée).
+  void supabase
+    .from("profiles")
+    .update({
+      ...(opts.firstName?.trim() ? { jarvis_first_name: opts.firstName.trim() } : {}),
+      jarvis_style: d.style || null,
+      jarvis_weakness: d.pain || null,
+      jarvis_goal: d.goal || null,
+      jarvis_completed_at: now,
+    })
+    .eq("id", userId)
+    .then(({ error: jarvisError }) => {
+      if (jarvisError) console.error("[onboarding] jarvis merge skipped", jarvisError);
+    });
 
   // J+0 welcome email, personalized from the answers just saved. Fire and
   // forget: the server dedupes via email_log, a failure never blocks the app.

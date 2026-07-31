@@ -20,6 +20,27 @@ export interface EngineResult {
   candidates: JarvisInsight[];
 }
 
+/**
+ * La faiblesse déclarée à l'onboarding (pain) oriente le Hero : Jarvis
+ * surveille en priorité ce que le trader a dit être son point faible.
+ * `pain` → pattern détecteur (best-effort, null si non mappable).
+ */
+export function patternForPain(pain: string | null | undefined): string | null {
+  switch (pain) {
+    case "overtrading":
+      return "overtrading";
+    case "risk":
+      return "risk_after_loss";
+    case "emotions":
+    case "consistency":
+      return "discipline_streak";
+    case "journaling":
+      return "costliest_mistake";
+    default:
+      return null;
+  }
+}
+
 export function runInsightEngine(data: JarvisHomeData, memory: JarvisMemory): EngineResult {
   const ignored = new Set(memory.ignoredPatterns ?? []);
   const raw: JarvisInsight[] = [];
@@ -47,6 +68,7 @@ export function runInsightEngine(data: JarvisHomeData, memory: JarvisMemory): En
     };
   }
 
-  const ranked = pickPriority(validated, memory);
+  const preferred = patternForPain(data.onboarding?.pain);
+  const ranked = pickPriority(validated, memory, preferred);
   return { confidence: { status: "validated", insight: ranked[0] }, candidates: ranked };
 }
