@@ -539,28 +539,43 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, []);
 
   /* Play a pre-rendered audio URL with the same widget + comms choreography as
-     the hosted path. `onBeforePlay` lets callers remember that the hosted
-     provider answered, so we only probe the network once per session. */
+     the hosted path. Resolves `true` once playback actually started; `false`
+     on autoplay refusal or a missing file, so callers can fall back to the
+     browser voice instead of staying silent. */
   const playUrl = useCallback(
-    (url: string, txt: string, onBeforePlay?: () => void): Promise<void> => {
-      onBeforePlay?.();
-      audioElRef.current?.pause();
-      const el = new Audio(url);
-      audioElRef.current = el;
-      el.volume = 0.95;
-      showVoiceWidget(txt);
-      commOn();
-      el.onended = () => {
-        radioClick();
-        commOff();
-        hideVoiceWidget();
-      };
-      el.onerror = () => {
-        commOff();
-        hideVoiceWidget();
-      };
-      return el.play();
-    },
+    (url: string, txt: string, onBeforePlay?: () => void): Promise<boolean> =>
+      new Promise((resolve) => {
+        onBeforePlay?.();
+        audioElRef.current?.pause();
+        const el = new Audio(url);
+        audioElRef.current = el;
+        let started = false;
+        const fail = () => {
+          commOff();
+          hideVoiceWidget();
+          if (!started) {
+            started = true;
+            resolve(false);
+          }
+        };
+        el.volume = 0.95;
+        showVoiceWidget(txt);
+        commOn();
+        el.onended = () => {
+          radioClick();
+          commOff();
+          hideVoiceWidget();
+        };
+        el.onerror = fail;
+        el.play()
+          .then(() => {
+            if (!started) {
+              started = true;
+              resolve(true);
+            }
+          })
+          .catch(fail);
+      }),
     [radioClick, commOn, commOff, showVoiceWidget, hideVoiceWidget],
   );
 
@@ -574,8 +589,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           return false;
         }
         ttsAvailableRef.current = true;
-        await playUrl(res.audio, txt);
-        return true;
+        return await playUrl(res.audio, txt);
       } catch {
         // Network/autoplay refusal → fall back to the browser voice.
         ttsAvailableRef.current = false;
@@ -647,8 +661,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       await loadVoiceClips();
       const clip = clipFor(txt);
       if (clip) {
-        void playUrl(clip, txt);
-        return;
+        const ok = await playUrl(clip, txt);
+        if (ok) return;
+        // Autoplay refusal or missing file → fall through to hosted/browser.
       }
       // Hosted voice next — identical everywhere. Browser voice is the fallback.
       if (ttsAvailableRef.current !== false) {

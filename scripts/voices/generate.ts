@@ -1,33 +1,51 @@
 /**
  * Voice catalogue generator — renders every fixed Jarvis line with the cloned
- * voice (XTTS-v2) and ships it as a static MP3, so the SaaS plays the exact
- * voice with zero per-utterance cost and no vendor token.
+ * voice and ships it as a static MP3, so the SaaS plays the exact voice with
+ * zero per-utterance cost and no vendor token.
  *
  * Run:  bun run scripts/voices/generate.ts
  *
+ * Engines (switch freely, both offline and free):
+ *   - f5  (default)  F5-TTS — MIT, natural, closest to a neural provider
+ *   - xtts           XTTS-v2 — Coqui, heavier but well-known
+ *
  * Inputs:
- *   - src/modules/voice/Jarvis.mp3  the reference voice sample
+ *   - the reference voice sample   (env VOICE_REF, default src/modules/voice/Jarvis.mp3)
  *   - src/app/pages/checklist/voice.ts  the Checklist LINES catalog (single source)
  *   - src/modules/voice/brief.ts        the Jarvis brief fixed lines (single source)
  *
  * Outputs (committed, served statically):
- *   - public/voices/<hash>.mp3     one MP3 per unique spoken line
- *   - public/voices/manifest.json  text -> file, used by the runtime lookup
+ *   - public/voices/voice-<ref>-<text>.mp3   one MP3 per unique spoken line
+ *   - public/voices/manifest.json            text -> file, used by the runtime lookup
+ *
+ * Changing the voice is one step: drop a new sample on the reference path and
+ * re-run. The reference fingerprint is part of every filename, so old clips
+ * are regenerated and stale files are pruned automatically.
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LINES } from "../../src/app/pages/checklist/voice";
 import { briefLines } from "../../src/modules/voice/brief";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const REFERENCE = join(ROOT, "src/modules/voice/Jarvis.mp3");
 const OUT_DIR = join(ROOT, "public/voices");
 const TMP_DIR = join(ROOT, "scripts/voices/.gen-tmp");
-const PYTHON = join(ROOT, "scripts/voices/.venv/bin/python");
-const SYNTH = join(ROOT, "scripts/voices/synthesize.py");
+
+const ENGINES = {
+  f5: {
+    python: join(ROOT, "scripts/voices/.venv-f5/bin/python"),
+    synth: join(ROOT, "scripts/voices/synthesize_f5.py"),
+    label: "F5-TTS",
+  },
+  xtts: {
+    python: join(ROOT, "scripts/voices/.venv/bin/python"),
+    synth: join(ROOT, "scripts/voices/synthesize.py"),
+    label: "XTTS-v2",
+  },
+} as const;
 
 const GREETINGS = ["Good morning", "Good afternoon", "Good evening"] as const;
 
@@ -64,23 +82,37 @@ export function buildCatalog(): string[] {
   return out;
 }
 
-function idFor(text: string): string {
-  return createHash("sha256").update(text).digest("hex").slice(0, 12);
+function sha256(input: string | Buffer): string {
+  return createHash("sha256").update(input).digest("hex");
+}
+
+/** Fingerprint of the reference sample — changing it re-renders every line. */
+function referenceHash(refPath: string): string {
+  return sha256(readFileSync(refPath)).slice(0, 8);
 }
 
 function main(): void {
-  if (!existsSync(REFERENCE)) {
-    throw new Error(`missing reference voice: ${REFERENCE}`);
+  const engine = (process.env.VOICE_ENGINE ?? "f5") as keyof typeof ENGINES;
+  if (!ENGINES[engine]) throw new Error(`unknown VOICE_ENGINE: ${engine}`);
+  const { python, synth, label } = ENGINES[engine];
+
+  const reference =
+    process.env.VOICE_REF ?? join(ROOT, "src/modules/voice/Jarvis.mp3");
+  if (!existsSync(reference)) {
+    throw new Error(`missing reference voice: ${reference}`);
   }
+  const refHash = referenceHash(reference);
+  console.log(`[voices] engine=${label} reference=${reference} (${refHash})`);
+
   const catalog = buildCatalog();
   console.log(`[voices] catalog: ${catalog.length} unique lines`);
 
-  const lines = catalog.map((text) => ({ id: idFor(text), text }));
+  const lines = catalog.map((text) => ({ id: sha256(text).slice(0, 12), text }));
   const manifest: Record<string, string> = {};
   const need: typeof lines = [];
 
   for (const item of lines) {
-    const file = `voice-${item.id}.mp3`;
+    const file = `voice-${refHash}-${item.id}.mp3`;
     manifest[item.text] = file;
     if (!existsSync(join(OUT_DIR, file))) need.push(item);
   }
@@ -90,25 +122,41 @@ function main(): void {
   writeFileSync(linesJson, JSON.stringify(lines, null, 2));
 
   if (need.length) {
-    console.log(`[voices] generating ${need.length} new clips with XTTS…`);
+    console.log(`[voices] generating ${need.length} new clips…`);
     const toDo = join(TMP_DIR, "todo.json");
     writeFileSync(toDo, JSON.stringify(need, null, 2));
-    execFileSync(PYTHON, [SYNTH, toDo, TMP_DIR, "--ref", REFERENCE, "--device", "auto"], {
+    execFileSync(python, [synth, toDo, TMP_DIR, "--ref", reference, "--cache", TMP_DIR], {
       stdio: "inherit",
-      env: { ...process.env, COQUI_TOS_AGREED: "1" },
+      env: { ...process.env, COQUI_TOS_AGREED: "1", PYTHONHASHSEED: "0" },
     });
 
     mkdirSync(OUT_DIR, { recursive: true });
     for (const item of need) {
       const wav = join(TMP_DIR, `${item.id}.wav`);
-      const mp3 = join(OUT_DIR, `voice-${item.id}.mp3`);
-      execFileSync("ffmpeg", ["-y", "-i", wav, "-ar", "24000", "-ac", "1", "-b:a", "64k", mp3], {
-        stdio: "ignore",
-      });
+      const mp3 = join(OUT_DIR, `voice-${refHash}-${item.id}.mp3`);
+      // Trim edge silence and normalise loudness so playback is tight and even.
+      const filter =
+        "silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.15," +
+        "areverse,silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.15," +
+        "areverse,loudnorm=I=-16:TP=-1.5:LRA=11";
+      execFileSync(
+        "ffmpeg",
+        ["-y", "-i", wav, "-af", filter, "-ar", "24000", "-ac", "1", "-b:a", "64k", mp3],
+        { stdio: "ignore" },
+      );
       rmSync(wav);
     }
   } else {
     console.log("[voices] all clips already up to date");
+  }
+
+  // Prune stale clips from a previous reference/engine.
+  const live = new Set(Object.values(manifest));
+  for (const file of readdirSync(OUT_DIR)) {
+    if (file.startsWith("voice-") && !live.has(file)) {
+      rmSync(join(OUT_DIR, file));
+      console.log(`[voices] pruned ${file}`);
+    }
   }
 
   writeFileSync(join(OUT_DIR, "manifest.json"), JSON.stringify(manifest, null, 2));

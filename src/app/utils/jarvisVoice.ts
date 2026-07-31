@@ -137,20 +137,26 @@ export function useJarvisVoice(): JarvisVoice {
       await loadVoiceClips();
       const clip = clipFor(line);
       if (clip) {
-        const run = ++runRef.current;
-        audioRef.current?.pause();
-        const el = new Audio(clip);
-        audioRef.current = el;
-        el.volume = 0.95;
-        el.onended = () => {
-          if (run === runRef.current) setSpeaking(false);
-        };
-        el.onerror = () => {
-          if (run === runRef.current) setSpeaking(false);
-        };
-        setSpeaking(true);
-        await el.play();
-        return;
+        const played = await new Promise<boolean>((resolve) => {
+          const run = ++runRef.current;
+          audioRef.current?.pause();
+          const el = new Audio(clip);
+          audioRef.current = el;
+          el.volume = 0.95;
+          const done = (started: boolean) => {
+            if (run === runRef.current && !started) setSpeaking(false);
+            resolve(started);
+          };
+          el.onended = () => {
+            if (run === runRef.current) setSpeaking(false);
+            resolve(true);
+          };
+          el.onerror = () => done(false);
+          setSpeaking(true);
+          el.play().then(() => done(true)).catch(() => done(false));
+        });
+        if (played) return;
+        // Autoplay refusal or missing file → fall through to hosted/local.
       }
 
       if (!(await hostedAvailable())) {
