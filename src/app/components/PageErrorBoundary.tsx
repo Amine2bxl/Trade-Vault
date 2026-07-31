@@ -1,43 +1,23 @@
 import { Component, type ReactNode } from "react";
-import { RotateCw } from "lucide-react";
-import { EmptyState, Button } from "@/shared/ui";
 import { reportAppError } from "@/shared/error-reporting";
-import { useT } from "../i18n/LanguageContext";
 
 /**
- * PageErrorBoundary — isolates a single page's render crash.
+ * PageErrorBoundary — silences a single page's render crash so the shell
+ * (nav, coach, sidebar) survives and the user can navigate elsewhere.
  *
- * Without it, a throw inside any page bubbles to the router's root error
- * boundary and replaces the ENTIRE app with the full-screen 500 screen (nav,
- * coach, everything gone). Here the shell survives: only the page area shows a
- * retryable fallback, so "one broken request" never takes down the whole app
- * (reliability requirement). It auto-resets when `resetKey` changes — i.e. the
- * user navigating to another page clears a stuck error with no reload.
+ * Instead of showing a scary error card, it logs the error and renders
+ * nothing in the content area — the user sees the shell and can click
+ * another nav item to move on. A navigation (resetKey change) clears
+ * the error automatically.
  */
 interface Props {
   children: ReactNode;
-  /** Changing this value resets the boundary (we pass the current page id). */
   resetKey: string;
+  /** Optional fallback to render instead of nothing. Defaults to null. */
+  fallback?: ReactNode;
 }
 interface State {
   error: Error | null;
-}
-
-function PageErrorFallback({ onRetry }: { onRetry: () => void }) {
-  const { t } = useT();
-  return (
-    <div className="p-4 md:p-5 max-w-2xl mx-auto">
-      <EmptyState
-        title={t("error.pageTitle")}
-        description={t("error.pageBody")}
-        action={
-          <Button onClick={onRetry}>
-            <RotateCw className="w-4 h-4" /> {t("error.retry")}
-          </Button>
-        }
-      />
-    </div>
-  );
 }
 
 export default class PageErrorBoundary extends Component<Props, State> {
@@ -49,10 +29,14 @@ export default class PageErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error) {
     reportAppError(error, { boundary: "page_error_boundary", page: this.props.resetKey });
+    // Auto-recover after 2 seconds — the page will re-render and might
+    // work (e.g. a transient Supabase connection issue resolved itself).
+    setTimeout(() => {
+      if (this.state.error) this.setState({ error: null });
+    }, 2000);
   }
 
   componentDidUpdate(prev: Props) {
-    // A navigation (resetKey change) clears a stuck page error automatically.
     if (this.state.error && prev.resetKey !== this.props.resetKey) {
       this.setState({ error: null });
     }
@@ -60,7 +44,9 @@ export default class PageErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      return <PageErrorFallback onRetry={() => this.setState({ error: null })} />;
+      // Render nothing — the shell (nav, sidebar, coach) stays visible
+      // and the user can navigate away. No scary messages.
+      return this.props.fallback ?? null;
     }
     return this.props.children;
   }
