@@ -109,25 +109,23 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     window.dispatchEvent(new CustomEvent("tv:ask-coach", { detail: { prompt } }));
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4 md:py-5">
-      {/* En-tête : Jarvis s'adresse au trader, jamais d'écran vide. */}
-      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-2">
-        <Sparkles className="w-3.5 h-3.5" />
-        {t("assistant.title")}
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-3xl mx-auto w-full">
+      {/* En-tête : le premier écran d'un assistant IA, pas une page de stats. */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-2">
+          <Sparkles className="w-3.5 h-3.5" />
+          {t("assistant.title")}
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+          {t("jarvisHome.greeting")} {firstName}.
+        </h2>
+        <p className="text-slate-400 mt-1.5">{t("jarvisHome.ask")}</p>
       </div>
-      <h2 className="text-xl md:text-2xl font-bold text-white mb-1 tracking-tight">
-        {t("jarvisHome.greeting")} {firstName}.
-      </h2>
-      <p className="text-sm text-slate-500 mb-3">{t("jarvisHome.subtitle")}</p>
-      <p className="flex items-center gap-2 text-[11px] text-slate-600 mb-5">
-        <Sparkles className="w-3 h-3 text-cyan-500/70 shrink-0" />
-        {t("jarvisHome.presence")}
-      </p>
 
       {blocks === null ? (
         <div className="space-y-3">
-          <div className="h-20 rounded-2xl bg-white/[0.04] animate-pulse" />
-          <div className="h-28 rounded-2xl bg-white/[0.03] animate-pulse" />
+          <div className="h-24 rounded-2xl bg-white/[0.04] animate-pulse" />
+          <div className="h-32 rounded-2xl bg-white/[0.03] animate-pulse" />
           <div className="h-24 rounded-2xl bg-white/[0.03] animate-pulse" />
         </div>
       ) : (
@@ -136,7 +134,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
 
       {/* Suggestions — écrites depuis la situation + la page, jamais génériques. */}
       {suggestions.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-7">
           <div className="flex items-center gap-2 mb-2.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
               {t("jarvisHome.suggestions")}
@@ -149,7 +147,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 key={s.id}
                 onClick={() => askSuggestion(s.prompt)}
                 className={cn(
-                  "px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08]",
+                  "px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08]",
                   "text-xs text-slate-300 hover:bg-white/[0.08] hover:border-cyan-500/30 hover:text-white",
                   "transition-all text-left",
                 )}

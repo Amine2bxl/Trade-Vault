@@ -19,7 +19,7 @@ import {
   sessionConversationStore,
   useConversations,
 } from "./jarvis/conversations";
-import ConversationSidebar from "./jarvis/components/ConversationSidebar";
+import JarvisSidebar from "./jarvis/components/JarvisSidebar";
 import CreditsBar from "./jarvis/components/CreditsBar";
 import AccountSwitcher from "./AccountSwitcher";
 
@@ -81,6 +81,21 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     [user?.id, conversationId],
   );
 
+  // La sidebar / le coach demandent une analyse → ouvre la Conversation.
+  const askJarvis = useCallback(
+    (prompt: string) => {
+      setPendingPrompt(prompt);
+      setActiveWorkspace("conversation");
+      if (user?.id && !conversationIdRef.current) {
+        void sessionConversationStore(user.id)
+          .create()
+          .then((c) => setConversationId(c.id))
+          .catch(() => {});
+      }
+    },
+    [user?.id],
+  );
+
   // Le dock ouvre toujours sur l'Accueil intelligent (jamais de chat vide).
   const toggleOpen = () => {
     if (!open) setActiveWorkspace("home");
@@ -126,19 +141,11 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     const onAsk = (e: Event) => {
       const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
       if (!prompt) return;
-      setPendingPrompt(prompt);
-      setActiveWorkspace("conversation");
-      if (user?.id && !conversationIdRef.current) {
-        void sessionConversationStore(user.id)
-          .create()
-          .then((conv) => setConversationId(conv.id))
-          .catch(() => {});
-      }
-      setOpen(true);
+      askJarvis(prompt);
     };
     window.addEventListener("tv:ask-coach", onAsk);
     return () => window.removeEventListener("tv:ask-coach", onAsk);
-  }, [user?.id]);
+  }, [askJarvis]);
 
   // The workspace consumes `pendingPrompt` at mount (initialPrompt). Clear it
   // right after so a re-open without a new event never re-asks the old prompt.
@@ -233,19 +240,21 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
             </button>
           }
           sidebar={
-            <ConversationSidebar
+            <JarvisSidebar
               conversations={conversations}
               activeId={conversationId}
               onNew={() => void newConversation()}
-              onOpen={openConversation}
-              onDelete={(id) => void deleteConversation(id)}
+              onOpenConversation={openConversation}
+              onDeleteConversation={(id) => void deleteConversation(id)}
+              onOpenHome={() => setActiveWorkspace("home")}
+              onAsk={askJarvis}
             />
           }
           footer={
             <>
               <CreditsBar />
-              <div className="flex items-center px-2">
-                <AccountSwitcher compact />
+              <div className="flex items-center px-2 min-w-[220px]">
+                <AccountSwitcher variant="card" />
               </div>
             </>
           }

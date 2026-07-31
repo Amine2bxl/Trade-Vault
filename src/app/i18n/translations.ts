@@ -375,8 +375,38 @@ const en = {
   "jarvisHome.greeting": "Hello",
   "jarvisHome.trader": "Trader",
   "jarvisHome.subtitle": "Here is your trading state today.",
-  "jarvisHome.presence": "Jarvis analyses your trades, spots your mistakes and walks you through every day.",
+  "jarvisHome.ask": "How can I help you today?",
   "jarvisHome.suggestions": "Questions to explore",
+
+  // Jarvis sidebar (cockpit navigation)
+  "jarvisSide.principal": "Main",
+  "jarvisSide.analyse": "Analysis",
+  "jarvisSide.data": "Data",
+  "jarvisSide.overview": "Overview",
+  "jarvisSide.new": "New conversation",
+  "jarvisSide.conversations": "Conversations",
+  "jarvisSide.analyseEntry": "AI analysis",
+  "jarvisSide.notes": "Notes",
+  "jarvisSide.plans": "Plans",
+  "jarvisSide.tags": "Tags",
+  "jarvisSide.calendar": "Economic calendar",
+  "jarvisSide.news": "News",
+  "jarvisSide.promptAnalyse": "Analyse my trading week: strengths, weaknesses, and the one lever to pull next.",
+  "jarvisSide.promptNotes": "Help me organise my trading notes so I learn from every trade.",
+  "jarvisSide.promptPlans": "Prepare my trading plan for my next session.",
+  "jarvisSide.promptTags": "Which tags or mistakes should I track to spot my patterns?",
+  "jarvisSide.promptCalendar": "Which important economic events this week, and how should I prepare?",
+  "jarvisSide.promptNews": "Summarise the market news that matters for my trading.",
+
+  // Jarvis credits (Jarvis Intelligence)
+  "credits.title": "Jarvis Intelligence",
+  "credits.remaining": "analyses left",
+  "credits.value1": "detect your mistakes",
+  "credits.value2": "analyse your setups",
+  "credits.value3": "improve your discipline",
+
+  // Accounts
+  "account.active": "Active account",
 
   // Jarvis conversations
   "jarvisConv.new": "New conversation",

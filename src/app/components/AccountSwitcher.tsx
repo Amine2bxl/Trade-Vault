@@ -37,7 +37,7 @@ export default function AccountSwitcher({
   variant = "bar",
 }: {
   compact?: boolean;
-  variant?: "bar" | "fab";
+  variant?: "bar" | "fab" | "card";
 }) {
   const { accounts, activeAccount, switchAccount, editAccount, removeAccount } = useAccounts();
   const { t } = useT();
@@ -376,6 +376,65 @@ export default function AccountSwitcher({
           />
         )}
       </>
+    );
+  }
+
+  // Trading Account — carte premium (footer Jarvis) : solde + type + changer.
+  if (variant === "card") {
+    if (!activeAccount) return null;
+    const ActiveIcon = TYPE_ICON[activeAccount.type];
+    const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          title={t("account.switch")}
+          className={cn(
+            "w-full flex items-center gap-2.5 rounded-2xl border transition-all px-3 py-2",
+            "bg-white/[0.03] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.05]",
+          )}
+        >
+          <span
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
+          >
+            <ActiveIcon className="w-4.5 h-4.5" />
+          </span>
+          <span className="flex-1 min-w-0 text-left">
+            <span className="block text-[9px] uppercase tracking-[0.14em] text-slate-500 font-bold">
+              {t("account.active")}
+            </span>
+            <span className="block text-sm font-bold text-white truncate leading-tight">
+              {activeAccount.name}
+            </span>
+          </span>
+          <span className="text-right shrink-0">
+            <span className="block font-display text-sm font-extrabold text-white tabular-nums leading-tight">
+              {balance}
+            </span>
+            <span className="flex items-center justify-end gap-0.5 text-[9px] font-bold uppercase tracking-wide text-cyan-400/80">
+              {t("account.switchShort")}
+              <ChevronDown className={cn("w-3 h-3 transition-transform", open && "rotate-180")} />
+            </span>
+          </span>
+        </button>
+        <AccountSheet open={open} onClose={() => setOpen(false)} />
+        {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+        {deleting && (
+          <DeleteAccountModal
+            account={deleting}
+            onConfirm={async () => {
+              try {
+                await removeAccount(deleting.id);
+              } catch (e) {
+                console.error("Failed to delete account", e);
+              }
+              setDeleting(null);
+            }}
+            onClose={() => setDeleting(null)}
+          />
+        )}
+      </div>
     );
   }
 

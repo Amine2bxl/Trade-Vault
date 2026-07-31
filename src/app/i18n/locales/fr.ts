@@ -330,8 +330,38 @@ const fr: Dict = {
   "jarvisHome.greeting": "Bonjour",
   "jarvisHome.trader": "Trader",
   "jarvisHome.subtitle": "Voici ton état trading aujourd'hui.",
-  "jarvisHome.presence": "Jarvis analyse tes trades, détecte tes erreurs et t'accompagne chaque jour.",
+  "jarvisHome.ask": "Comment puis-je t'aider aujourd'hui ?",
   "jarvisHome.suggestions": "Questions à explorer",
+
+  // Sidebar Jarvis (navigation cockpit)
+  "jarvisSide.principal": "Principal",
+  "jarvisSide.analyse": "Analyse",
+  "jarvisSide.data": "Données",
+  "jarvisSide.overview": "Aperçu",
+  "jarvisSide.new": "Nouvelle discussion",
+  "jarvisSide.conversations": "Conversations",
+  "jarvisSide.analyseEntry": "Analyse IA",
+  "jarvisSide.notes": "Notes",
+  "jarvisSide.plans": "Plans",
+  "jarvisSide.tags": "Tags",
+  "jarvisSide.calendar": "Calendrier économique",
+  "jarvisSide.news": "Actualités",
+  "jarvisSide.promptAnalyse": "Analyse ma semaine de trading : points forts, points faibles, et le levier n°1 à actionner.",
+  "jarvisSide.promptNotes": "Aide-moi à organiser mes notes de trading pour apprendre de chaque trade.",
+  "jarvisSide.promptPlans": "Prépare mon plan de trading pour ma prochaine session.",
+  "jarvisSide.promptTags": "Quels tags ou erreurs devrais-je suivre pour détecter mes schémas ?",
+  "jarvisSide.promptCalendar": "Quels événements économiques importants cette semaine, et comment m'y préparer ?",
+  "jarvisSide.promptNews": "Résume les actualités de marché qui comptent pour mon trading.",
+
+  // Crédits Jarvis (Jarvis Intelligence)
+  "credits.title": "Jarvis Intelligence",
+  "credits.remaining": "analyses restantes",
+  "credits.value1": "détecter tes erreurs",
+  "credits.value2": "analyser tes setups",
+  "credits.value3": "améliorer ta discipline",
+
+  // Comptes
+  "account.active": "Compte actif",
 
   // Conversations Jarvis
   "jarvisConv.new": "Nouvelle discussion",
