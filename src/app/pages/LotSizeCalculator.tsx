@@ -9,6 +9,8 @@ import {
   Plus,
   Info,
   AlertTriangle,
+  Shield,
+  Layers,
 } from "lucide-react";
 import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "../utils/positionCalc";
 import { loadAccountBalance, saveAccountBalance } from "../store";
@@ -140,8 +142,20 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
   const fiveLossDrawdown = `${Math.min(100, riskPctNum * 5).toFixed(0)}%`;
 
   return (
-    <div className="p-4 md:p-5 max-w-[860px] mx-auto">
-      <PageHeader className="stagger-0" title={t("calc.title")} subtitle={t("calc.subtitle")} />
+    <div className="p-4 md:p-5 max-w-[900px] mx-auto">
+      <PageHeader
+        className="stagger-0"
+        icon={
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+              <Calculator className="w-4.5 h-4.5 text-white" />
+            </span>
+          </span>
+        }
+        title={t("calc.title")}
+        subtitle={t("calc.subtitle")}
+      />
 
       {/* Mode toggle */}
       <div className="inline-flex p-1 rounded-2xl bg-white/[0.03] border border-white/[0.07] mb-5 animate-fade-in-up stagger-1">
@@ -165,9 +179,14 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
         {/* Inputs */}
         <div className="glass-strong rounded-3xl p-4 md:p-5 space-y-3.5 animate-fade-in-up stagger-2">
           {/* Risk budget — shared by both modes */}
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
-            {t("calc.sectionRisk")}
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="grid h-6 w-6 place-items-center rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+              <Shield className="w-3 h-3 text-cyan-300" />
+            </span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/80">
+              {t("calc.sectionRisk")}
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>
@@ -258,9 +277,14 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           )}
 
           <div className="pt-1 border-t border-white/[0.05]" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">
-            {t("calc.sectionInstrument")}
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="grid h-6 w-6 place-items-center rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+              <Layers className="w-3 h-3 text-cyan-300" />
+            </span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300/80">
+              {t("calc.sectionInstrument")}
+            </p>
+          </div>
 
           {mode === "forex" ? (
             <>
@@ -376,14 +400,11 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
             </p>
           ) : mode === "forex" && forex ? (
             <div className="space-y-1 animate-fade-in">
-              <div className="text-center py-3">
-                <div className="text-5xl font-extrabold text-white font-display tabular-nums tracking-tight">
-                  {forex.lots.toFixed(2)}
-                </div>
-                <div className="text-[10px] uppercase tracking-wider text-cyan-400 font-bold mt-1">
-                  {t("calc.standardLots")} · {pair.label}
-                </div>
-              </div>
+              <HeroResult
+                value={forex.lots.toFixed(2)}
+                unit={t("calc.standardLots")}
+                sub={`${pair.label} · ${t("calc.miniLots")} ${forex.miniLots.toFixed(1)}`}
+              />
               <ResultRow label={t("calc.miniLots")} value={forex.miniLots.toFixed(1)} />
               <ResultRow label={t("calc.microLots")} value={forex.microLots.toFixed(0)} />
               <ResultRow label={t("calc.units")} value={forex.units.toLocaleString()} />
@@ -399,14 +420,11 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
             </div>
           ) : futures ? (
             <div className="space-y-1 animate-fade-in">
-              <div className="text-center py-3">
-                <div className="text-5xl font-extrabold text-white font-display tabular-nums tracking-tight">
-                  {futures.contracts}
-                </div>
-                <div className="text-[10px] uppercase tracking-wider text-cyan-400 font-bold mt-1">
-                  {t("calc.contracts")}
-                </div>
-              </div>
+              <HeroResult
+                value={String(futures.contracts)}
+                unit={t("calc.contracts")}
+                sub={`${t("calc.effectiveRisk")} $${futures.effectiveRisk.toFixed(2)}`}
+              />
               <ResultRow label={t("calc.stopPoints")} value={stopPoints} />
               <ResultRow label={t("calc.pointValue")} value={`$${parseFloat(pointValue) || 0}`} />
               <ResultRow
@@ -437,6 +455,21 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function HeroResult({ value, unit, sub }: { value: string; unit: string; sub?: string }) {
+  return (
+    <div className="relative text-center pt-4 pb-3">
+      <div className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-40 h-24 rounded-full bg-cyan-500/15 blur-2xl" />
+      <div className="relative inline-block bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent font-display text-6xl font-extrabold tabular-nums tracking-tight drop-shadow-[0_0_20px_rgba(34,211,238,0.25)]">
+        {value}
+      </div>
+      <div className="relative mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">
+        {unit}
+      </div>
+      {sub && <div className="relative mt-1 text-[10px] text-slate-600 font-medium">{sub}</div>}
     </div>
   );
 }

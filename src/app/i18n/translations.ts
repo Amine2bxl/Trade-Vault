@@ -75,7 +75,8 @@ const en = {
   "onb.saveError": "Oops — the save failed. Please retry.",
   "onb.saveRetry": "Retry",
   "onb.notifyTitle": "Stay disciplined, even away from the screen",
-  "onb.notifySub": "Jarvis alerts you when you break a rule or a session starts. Rare and relevant — never spammy.",
+  "onb.notifySub":
+    "Jarvis alerts you when you break a rule or a session starts. Rare and relevant — never spammy.",
   "onb.notifyCta": "Enable notifications",
   "onb.notifyLater": "Maybe later",
   "onb.notifySettings": "Adjustable anytime in Settings.",
@@ -666,6 +667,7 @@ const en = {
   // Journal filters
   // Push notifications
   "push.title": "Notifications",
+  "push.subtitle": "Jarvis alerts you when it matters — pick your channels.",
   "push.enable": "Enable push notifications",
   "push.enabled": "Push notifications enabled",
   "push.disabled": "Push notifications disabled",

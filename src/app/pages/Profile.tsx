@@ -118,9 +118,17 @@ export default function Profile({ trades, setPage }: ProfileProps) {
 
       {/* Contact / Support */}
       <Card variant="glass-strong" pad="default" className="space-y-2.5">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-          {t("profile.getInTouch")}
-        </h2>
+        <div className="flex items-center gap-2">
+          <span className="relative shrink-0">
+            <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/30 blur-sm" />
+            <span className="relative grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
+              <MessageSquare className="w-3.5 h-3.5 text-white" />
+            </span>
+          </span>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+            {t("profile.getInTouch")}
+          </h2>
+        </div>
         <ContactLink
           icon={<MessageSquare className="h-4 w-4" />}
           label={t("profile.support")}

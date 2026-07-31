@@ -43,7 +43,8 @@ const fr: Dict = {
   "onb.saveError": "Oups, la sauvegarde a échoué. Réessaie.",
   "onb.saveRetry": "Réessayer",
   "onb.notifyTitle": "Reste discipliné, même loin de l'écran",
-  "onb.notifySub": "Jarvis t'alerte quand tu enfreins une règle ou qu'une session démarre. Rare et pertinent — jamais de spam.",
+  "onb.notifySub":
+    "Jarvis t'alerte quand tu enfreins une règle ou qu'une session démarre. Rare et pertinent — jamais de spam.",
   "onb.notifyCta": "Activer les notifications",
   "onb.notifyLater": "Plus tard",
   "onb.notifySettings": "Réglable à tout moment dans les Réglages.",
@@ -610,6 +611,7 @@ const fr: Dict = {
     "Saisissez votre e-mail ci-dessus pour réinitialiser votre mot de passe",
   "auth.resetSent": "E-mail de réinitialisation envoyé. Vérifiez votre boîte de réception.",
   "push.title": "Notifications",
+  "push.subtitle": "Jarvis t'alerte quand ça compte — choisis tes canaux.",
   "push.enable": "Activer les notifications push",
   "push.enabled": "Notifications push activées",
   "push.disabled": "Notifications push désactivées",
