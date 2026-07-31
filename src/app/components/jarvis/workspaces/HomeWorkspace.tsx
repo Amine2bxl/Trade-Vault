@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Sparkles, Check, Volume2 } from "lucide-react";
+import { Plus, Sparkles, Check, Volume2, Bot } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../contexts/ToastContext";
@@ -38,7 +38,9 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
   const [blocks, setBlocks] = useState<JarvisBlock[] | null>(null);
   const [welcomeLine, setWelcomeLine] = useState<string | null>(null);
-  const { speakLocal, speaking } = useJarvisVoice();
+  // Voix CLONÉE partout : `speak` préfère les clips (lignes fixes) puis la
+  // voix hébergée ElevenLabs, et ne retombe sur le navigateur qu'en secours.
+  const { speak, speaking } = useJarvisVoice();
 
   // Snapshot de données (pur, synchrone, déjà en cache côté trades).
   const stats = useMemo(() => computeStats(context.trades), [context.trades]);
@@ -103,10 +105,10 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   const firstName = context.profile?.firstName || t("jarvisHome.trader");
   const copyLang: "fr" | "en" = effectiveCopyLang(lang);
 
-  // ── Bienvenue vocale locale (0 token, 0 réseau) ──
-  // « Welcome, {Prénom} » + une phrase courte qui varie selon la situation :
-  // la voix de Jarvis (speechSynthesis, profil en-gb profond) parle uniquement
-  // en anglais. Rejouée à CHAQUE ouverture de l'accueil (remount du workspace).
+  // ── Bienvenue vocale CLONÉE ──
+  // « Welcome, {Prénom} » + une phrase courte qui varie selon la situation.
+  // `speak` utilise la voix créée (clip pré-rendu si la ligne est fixe, sinon
+  // voix ElevenLabs, sinon navigateur) — rejouée à chaque ouverture de l'accueil.
   const welcomeRef = useRef<string | null>(null);
   useEffect(() => {
     const phrase = buildWelcomePhrase(data, firstName);
@@ -114,7 +116,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     welcomeRef.current = phrase;
     setWelcomeLine(phrase);
     // Petit délai : laisse la fenêtre se peindre avant de parler (autoplay).
-    const id = window.setTimeout(() => speakLocal(phrase), 450);
+    const id = window.setTimeout(() => void speak(phrase), 450);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -176,23 +178,38 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-3xl mx-auto w-full">
-      {/* En-tête : le premier écran d'un assistant IA, pas une page de stats. */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          {t("assistant.title")}
+      {/* En-tête — le premier écran d'un assistant personnel, pas une page de stats. */}
+      <div className="relative mb-6">
+        <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-32 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="relative flex items-center gap-4">
+          {/* Avatar Jarvis — la voix clonée, la même identité partout */}
+          <div className="relative shrink-0">
+            <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-md" />
+            <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+              <Bot className="w-7 h-7 text-white" />
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-1">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              {t("assistant.title")}
+            </div>
+            <h2 className="flex items-center gap-2.5 text-2xl md:text-3xl font-bold text-white tracking-tight leading-tight">
+              {t("jarvisHome.greeting")} {firstName}.
+            </h2>
+            <p className="text-slate-400 mt-1">{t("jarvisHome.ask")}</p>
+          </div>
         </div>
-        <h2 className="flex items-center gap-2.5 text-2xl md:text-3xl font-bold text-white tracking-tight">
-          {t("jarvisHome.greeting")} {firstName}.
-          {speaking && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5">
-              <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
-            </span>
-          )}
-        </h2>
-        <p className="text-slate-400 mt-1.5">{t("jarvisHome.ask")}</p>
+        {speaking && (
+          <div className="relative mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2.5 py-1">
+            <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
+          </div>
+        )}
         {welcomeLine && (
-          <p className="mt-2 text-[12.5px] text-slate-500 leading-relaxed max-w-xl">
+          <p className="relative mt-3 text-[12.5px] text-slate-400 leading-relaxed max-w-xl border-l-2 border-cyan-500/30 pl-3">
             {welcomeLine}
           </p>
         )}

@@ -22,7 +22,8 @@ const PAIN_LABEL: Record<string, string> = {
 
 export default function FirstSessionWelcome() {
   const { user } = useAuth();
-  const { speakLocal } = useJarvisVoice();
+  // Voix clonée (clips + ElevenLabs) — la même que partout ailleurs.
+  const { speak } = useJarvisVoice();
   const ranRef = useRef(false);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function FirstSessionWelcome() {
           ? `Welcome, ${firstName}. I will keep an eye on your ${pain}. First objective: one clean trade.`
           : `Welcome, ${firstName}. First objective: one clean trade.`;
         // Petite attente : laisse la page se peindre avant de parler.
-        window.setTimeout(() => speakLocal(phrase), 700);
+        window.setTimeout(() => void speak(phrase), 700);
       } catch {
         /* jamais bloquant */
       }
@@ -65,7 +66,7 @@ export default function FirstSessionWelcome() {
     return () => {
       active = false;
     };
-  }, [user?.id, speakLocal]);
+  }, [user?.id, speak]);
 
   return null;
 }

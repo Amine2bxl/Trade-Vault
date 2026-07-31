@@ -20,6 +20,8 @@ const fr: Dict = {
   "nav.jarvis": "Jarvis",
   "nav.profile": "Profil",
   "nav.home": "Accueil",
+  "nav.search": "Rechercher une page…",
+  "nav.noResults": "Aucune page ne correspond à ta recherche.",
   "nav.ai": "IA",
   "nav.more": "Plus",
   "nav.goals": "Objectifs",
