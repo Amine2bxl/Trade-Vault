@@ -1,7 +1,8 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
   Upload,
   PlayCircle,
   Loader2,
@@ -11,9 +12,15 @@ import {
   GraduationCap,
   UserRound,
   Globe,
+  ShieldAlert,
+  SlidersHorizontal,
+  Bell,
+  BellOff,
+  Rocket,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, type OnboardingData } from "../store";
 import { oc } from "./onboardingCopy";
@@ -22,13 +29,27 @@ import logoSrc from "@/assets/tradevault-logo.png";
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;
 
-// Refonte Phase 1 : 3 moments au lieu de 6.
-//   1. IDENTITÉ  — prénom + langue (Jarvis s'adresse à toi par ton prénom)
-//   2. PROFIL    — style, marchés, expérience, objectif, faiblesse, cible, ICT
-//   3. C'EST PARTI — Import CSV / Démo / Démarrer à zéro (3 cartes)
-// La demande de permission push a été RETIRÉE du flux (demandée au bon moment,
-// dans Settings) ; la sauvegarde est atomique (retry si échec).
-type StepKey = "identity" | "profile" | "start";
+// Onboarding 2.0 — UNE question par écran, design premium TradeVault.
+//   1. IDENTITÉ   — prénom + langue
+//   2. STYLE      — scalping / day / swing        (simple)
+//   3. MARCHÉS    — futures/forex/stocks/options/crypto  (MULTI)
+//   4. NIVEAU     — nouveau / intermédiaire / aguerri / prop  (simple)
+//   5. OBJECTIF   — régularité / prop / discipline / temps plein / en parallèle
+//   6. FAIBLESSES — émotions / constance / sur-trading / risque / journalisation (MULTI)
+//   7. RÉGLAGES   — cible mensuelle % + méthodologie ICT
+//   8. NOTIFICATIONS — permission push (ré-intégrée, non bloquante)
+//   9. C'EST PARTI — Import CSV / Démo / Démarrer à zéro
+// Chaque écran est court (un tap) : progress bar, back, skip si optionnel.
+type StepKey =
+  | "identity"
+  | "style"
+  | "markets"
+  | "experience"
+  | "goal"
+  | "pain"
+  | "settings"
+  | "notify"
+  | "start";
 
 const EMPTY: OnboardingData = {
   goal: null,
@@ -43,6 +64,122 @@ const EMPTY: OnboardingData = {
   skipped: false,
 };
 
+/* ── Petits blocs réutilisables du design system ────────────────────────── */
+
+function IconBadge({ icon: Icon }: { icon: typeof Target }) {
+  return (
+    <div className="relative mb-5">
+      <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
+      <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+        <Icon className="w-7 h-7 text-white" />
+      </div>
+    </div>
+  );
+}
+
+function ScreenShell({
+  icon,
+  title,
+  subtitle,
+  children,
+  footer,
+}: {
+  icon: typeof Target;
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
+  return (
+    <div className="text-center">
+      <div className="flex justify-center">
+        <IconBadge icon={icon} />
+      </div>
+      <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-2">{title}</h2>
+      {subtitle && (
+        <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">{subtitle}</p>
+      )}
+      {children}
+      {footer}
+    </div>
+  );
+}
+
+function OptionCard({
+  selected,
+  multi,
+  onClick,
+  label,
+  desc,
+}: {
+  selected: boolean;
+  multi?: boolean;
+  onClick: () => void;
+  label: string;
+  desc?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "onb-card relative rounded-2xl px-3 py-3 border text-left w-full",
+        selected
+          ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
+          : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
+      )}
+    >
+      {multi && (
+        <span
+          className={cn(
+            "absolute top-2.5 right-2.5 grid h-5 w-5 place-items-center rounded-full border transition-all",
+            selected
+              ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent"
+              : "border-white/15",
+          )}
+        >
+          {selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+        </span>
+      )}
+      <div
+        className={cn(
+          "text-[13.5px] font-semibold pr-5",
+          selected ? "text-white" : "text-slate-300",
+        )}
+      >
+        {label}
+      </div>
+      {desc && <div className="text-[11px] text-slate-500 leading-tight mt-0.5">{desc}</div>}
+    </button>
+  );
+}
+
+function Chip({
+  selected,
+  onClick,
+  label,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "onb-card rounded-xl px-3.5 py-2.5 border text-[13px] font-semibold inline-flex items-center gap-1.5",
+        selected
+          ? "bg-cyan-500/15 border-cyan-400/50 text-white"
+          : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+      )}
+    >
+      {selected && <Check className="w-3.5 h-3.5 text-cyan-300" strokeWidth={3} />}
+      {label}
+    </button>
+  );
+}
+
+/* ── Composant principal ────────────────────────────────────────────────── */
+
 export default function Onboarding({
   userId,
   onDone,
@@ -51,32 +188,44 @@ export default function Onboarding({
   onDone: (action?: OnboardingAction) => void;
 }) {
   const { lang, setLang, t } = useT();
-  const fr = lang === "fr";
   const c = oc(lang);
+  const { subscribe } = usePushNotifications();
   const [idx, setIdx] = useState(0);
   const [saving, setSaving] = useState<OnboardingAction | "fresh" | null>(null);
   const [saveError, setSaveError] = useState(false);
-  // Prénom — mémorisé par Jarvis (voix de bienvenue, emails).
+  const [notifBusy, setNotifBusy] = useState(false);
+  // Réponses (toutes optionnelles).
   const [firstName, setFirstName] = useState("");
-  // Profiling answers (all optional — skipping keeps safe defaults).
   const [style, setStyle] = useState<string | null>(null);
-  const [pain, setPain] = useState<string | null>(null);
-  const [target, setTarget] = useState("");
-  const [goal, setGoal] = useState<string | null>(null);
-  const [experience, setExperience] = useState<string | null>(null);
   const [assets, setAssets] = useState<string[]>([]);
+  const [experience, setExperience] = useState<string | null>(null);
+  const [goal, setGoal] = useState<string | null>(null);
+  const [pain, setPain] = useState<string[]>([]);
+  const [target, setTarget] = useState("");
   const [usesIct, setUsesIct] = useState(false);
 
-  const steps: StepKey[] = ["identity", "profile", "start"];
+  const steps: StepKey[] = [
+    "identity",
+    "style",
+    "markets",
+    "experience",
+    "goal",
+    "pain",
+    "settings",
+    "notify",
+    "start",
+  ];
   const step = steps[Math.min(idx, steps.length - 1)];
   const progress = (idx + 1) / steps.length;
+  const stepNum = Math.min(idx + 1, steps.length);
 
   const next = useCallback(() => setIdx((i) => Math.min(i + 1, steps.length - 1)), [steps.length]);
   const back = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
 
-  // Atomic save : on ne quitte l'onboarding QUE si la sauvegarde réussit
-  // (sinon `onboarded_at` n'est pas posé et le flux recommencerait au prochain
-  // chargement). En cas d'échec → message + retry.
+  const toggle = <T,>(setter: (prev: T[]) => void, arr: T[], value: T) =>
+    setter(arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value]);
+
+  // Atomic save : on ne quitte QUE si la sauvegarde réussit (sinon retry).
   const finish = useCallback(
     async (action: OnboardingAction) => {
       if (saving) return;
@@ -87,7 +236,16 @@ export default function Onboarding({
       try {
         await saveOnboarding(
           userId,
-          { ...EMPTY, style, pain, monthlyTarget, goal, experience, assets, usesIct },
+          {
+            ...EMPTY,
+            style,
+            pain: pain.length ? pain.join(", ") : null,
+            monthlyTarget,
+            goal,
+            experience,
+            assets,
+            usesIct,
+          },
           { skipped: false, firstName },
         );
         onDone(action);
@@ -100,7 +258,48 @@ export default function Onboarding({
     [saving, userId, onDone, style, pain, target, goal, experience, assets, usesIct, firstName],
   );
 
+  // Permission push, ré-intégrée — jamais bloquante.
+  const enableNotify = useCallback(async () => {
+    if (notifBusy) return;
+    setNotifBusy(true);
+    try {
+      await subscribe();
+    } catch {
+      /* denied / unsupported — réglable dans Settings */
+    } finally {
+      setNotifBusy(false);
+      next();
+    }
+  }, [notifBusy, subscribe, next]);
+
   const langs = Object.entries(LANG_NAMES) as [Lang, string][];
+
+  const ContinueBtn = ({
+    onClick,
+    children,
+    disabled,
+  }: {
+    onClick: () => void;
+    children: ReactNode;
+    disabled?: boolean;
+  }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
+    >
+      {children}
+    </button>
+  );
+
+  const SkipBtn = ({ onClick, label }: { onClick: () => void; label: string }) => (
+    <button
+      onClick={onClick}
+      className="w-full mt-2.5 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div
@@ -108,15 +307,15 @@ export default function Onboarding({
       style={{ background: "linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)" }}
     >
       <div
-        className="auth-orb w-[500px] h-[500px] bg-cyan-600 -top-40 -left-40"
+        className="auth-orb w-[520px] h-[520px] bg-cyan-600 -top-44 -left-44"
         style={{ animationDelay: "0s" }}
       />
       <div
-        className="auth-orb w-[400px] h-[400px] bg-teal-600 -bottom-32 -right-32"
+        className="auth-orb w-[420px] h-[420px] bg-teal-600 -bottom-36 -right-36"
         style={{ animationDelay: "-5s" }}
       />
 
-      {/* Top bar: back · progress */}
+      {/* Top bar : back · progress · étape */}
       <div className="relative z-20 flex items-center gap-3 px-4 pt-4 md:px-6 max-w-2xl mx-auto w-full">
         {idx > 0 ? (
           <button
@@ -138,15 +337,19 @@ export default function Onboarding({
             <div className="onb-progress-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
           </div>
         </div>
+
+        <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-600 tabular-nums">
+          {stepNum}/{steps.length}
+        </span>
       </div>
 
       {/* Body */}
       <div className="relative z-10 h-[calc(100%-3.5rem)] flex items-center justify-center px-4 py-4 overflow-y-auto">
-        <div key={step} className="w-full max-w-lg animate-fade-in-up">
-          {/* ── MOMENT 1 · IDENTITÉ ── */}
+        <div key={step} className="w-full max-w-lg animate-fade-in-up pb-2">
+          {/* ── 1 · IDENTITÉ ── */}
           {step === "identity" && (
-            <div>
-              <div className="flex justify-center mb-4">
+            <div className="text-center">
+              <div className="flex justify-center mb-5">
                 <div className="relative">
                   <div className="onb-halo absolute inset-0 rounded-2xl bg-cyan-500/40 blur-xl" />
                   <img
@@ -160,16 +363,14 @@ export default function Onboarding({
               </div>
 
               <div className="flex justify-center mb-3">
-                <div className="w-11 h-11 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-500/15 border border-cyan-500/20">
                   <UserRound className="w-5 h-5 text-cyan-300" />
                 </div>
               </div>
-              <h1 className="text-xl md:text-2xl font-bold text-white text-center mb-1.5">
+              <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1.5">
                 {t("onb.nameTitle")}
               </h1>
-              <p className="text-sm text-slate-400 text-center mb-5 max-w-sm mx-auto">
-                {t("onb.nameSub")}
-              </p>
+              <p className="text-sm text-slate-400 max-w-sm mx-auto mb-6">{t("onb.nameSub")}</p>
 
               <input
                 type="text"
@@ -178,21 +379,21 @@ export default function Onboarding({
                 onKeyDown={(e) => e.key === "Enter" && next()}
                 placeholder={t("onb.namePlaceholder")}
                 maxLength={40}
-                className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-colors"
+                className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
               />
 
-              <div className="mt-5 mb-5">
-                <div className="flex items-center gap-2 mb-2.5">
+              <div className="mt-6 mb-1">
+                <div className="flex items-center justify-center gap-2 mb-3">
                   <Globe className="w-4 h-4 text-cyan-300" />
                   <span className="text-xs font-semibold text-slate-400">{c.langTitle}</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 onb-in">
+                <div className="grid grid-cols-3 gap-2 onb-in">
                   {langs.map(([code, name]) => (
                     <button
                       key={code}
                       onClick={() => setLang(code)}
                       className={cn(
-                        "onb-card rounded-xl px-3 py-2.5 border text-center text-[13px] font-semibold",
+                        "onb-card rounded-xl px-2.5 py-2.5 border text-center text-[13px] font-semibold",
                         code === lang
                           ? "bg-cyan-500/15 border-cyan-400/50 text-white"
                           : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
@@ -204,34 +405,16 @@ export default function Onboarding({
                 </div>
               </div>
 
-              <button
-                onClick={next}
-                className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
-              >
-                {t("onb.nameCta")} <ArrowRight className="w-4 h-4 inline-block -mt-0.5" />
-              </button>
+              <ContinueBtn onClick={next}>
+                {t("onb.nameCta")} <ArrowRight className="w-4 h-4" />
+              </ContinueBtn>
             </div>
           )}
 
-          {/* ── MOMENT 2 · PROFIL TRADER ── */}
-          {step === "profile" && (
-            <div>
-              <div className="text-center mb-5">
-                <div className="flex justify-center mb-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-                    <Compass className="w-5 h-5 text-white" />
-                  </div>
-                </div>
-                <h2 className="text-xl md:text-2xl font-bold text-white mb-1.5">
-                  {t("onb.profileTitle")}
-                </h2>
-                <p className="text-sm text-slate-400 max-w-md mx-auto">{t("onb.profileSub")}</p>
-              </div>
-
-              {/* Style */}
-              <h2 className="text-base font-bold text-white text-center mb-1">{c.styleTitle}</h2>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.styleSub}</p>
-              <div className="grid grid-cols-3 gap-2 mb-6 onb-in">
+          {/* ── 2 · STYLE ── */}
+          {step === "style" && (
+            <ScreenShell icon={Compass} title={c.styleTitle} subtitle={c.styleSub}>
+              <div className="grid grid-cols-3 gap-2.5 onb-in">
                 {(
                   [
                     ["scalping", c.sScalper, c.sScalperD],
@@ -239,36 +422,24 @@ export default function Onboarding({
                     ["swing", c.sSwing, c.sSwingD],
                   ] as const
                 ).map(([id, label, desc]) => (
-                  <button
+                  <OptionCard
                     key={id}
+                    selected={style === id}
                     onClick={() => setStyle(style === id ? null : id)}
-                    className={cn(
-                      "onb-card rounded-2xl p-3 border text-center",
-                      style === id
-                        ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "text-sm font-bold",
-                        style === id ? "text-white" : "text-slate-300",
-                      )}
-                    >
-                      {label}
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-0.5 leading-tight">{desc}</div>
-                  </button>
+                    label={label}
+                    desc={desc}
+                  />
                 ))}
               </div>
+              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
+              <SkipBtn onClick={next} label={c.skip} />
+            </ScreenShell>
+          )}
 
-              {/* Marchés */}
-              <div className="flex items-center gap-2 justify-center mb-1">
-                <Layers className="w-4 h-4 text-cyan-300" />
-                <h2 className="text-base font-bold text-white text-center">{c.assetsTitle}</h2>
-              </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.assetsSub}</p>
-              <div className="flex flex-wrap justify-center gap-2 mb-6 onb-in">
+          {/* ── 3 · MARCHÉS (multi) ── */}
+          {step === "markets" && (
+            <ScreenShell icon={Layers} title={c.assetsTitle} subtitle={c.assetsSub}>
+              <div className="flex flex-wrap justify-center gap-2.5 onb-in">
                 {(
                   [
                     ["futures", c.aFutures],
@@ -277,34 +448,24 @@ export default function Onboarding({
                     ["options", c.aOptions],
                     ["crypto", c.aCrypto],
                   ] as const
-                ).map(([id, label]) => {
-                  const on = assets.includes(id);
-                  return (
-                    <button
-                      key={id}
-                      onClick={() =>
-                        setAssets((a) => (on ? a.filter((x) => x !== id) : [...a, id]))
-                      }
-                      className={cn(
-                        "onb-card rounded-xl px-3.5 py-2 border text-[13px] font-semibold",
-                        on
-                          ? "bg-cyan-500/15 border-cyan-400/50 text-white"
-                          : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
+                ).map(([id, label]) => (
+                  <Chip
+                    key={id}
+                    selected={assets.includes(id)}
+                    onClick={() => toggle(setAssets, assets, id)}
+                    label={label}
+                  />
+                ))}
               </div>
+              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
+              <SkipBtn onClick={next} label={c.skip} />
+            </ScreenShell>
+          )}
 
-              {/* Expérience */}
-              <div className="flex items-center gap-2 justify-center mb-1">
-                <GraduationCap className="w-4 h-4 text-cyan-300" />
-                <h2 className="text-base font-bold text-white text-center">{c.expTitle}</h2>
-              </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.expSub}</p>
-              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+          {/* ── 4 · NIVEAU ── */}
+          {step === "experience" && (
+            <ScreenShell icon={GraduationCap} title={c.expTitle} subtitle={c.expSub}>
+              <div className="grid grid-cols-2 gap-2.5 onb-in">
                 {(
                   [
                     ["new", c.eNew, c.eNewD],
@@ -313,33 +474,24 @@ export default function Onboarding({
                     ["funded", c.eFund, c.eFundD],
                   ] as const
                 ).map(([id, label, desc]) => (
-                  <button
+                  <OptionCard
                     key={id}
+                    selected={experience === id}
                     onClick={() => setExperience(experience === id ? null : id)}
-                    className={cn(
-                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
-                      experience === id
-                        ? "bg-cyan-500/15 border-cyan-400/50"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "text-[13px] font-semibold",
-                        experience === id ? "text-white" : "text-slate-300",
-                      )}
-                    >
-                      {label}
-                    </div>
-                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
-                  </button>
+                    label={label}
+                    desc={desc}
+                  />
                 ))}
               </div>
+              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
+              <SkipBtn onClick={next} label={c.skip} />
+            </ScreenShell>
+          )}
 
-              {/* Objectif */}
-              <h2 className="text-base font-bold text-white text-center mb-1">{c.goalTitle}</h2>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.goalSub}</p>
-              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+          {/* ── 5 · OBJECTIF ── */}
+          {step === "goal" && (
+            <ScreenShell icon={Target} title={c.goalTitle} subtitle={c.goalSub}>
+              <div className="grid grid-cols-2 gap-2.5 onb-in">
                 {(
                   [
                     ["consistency", c.gCons, c.gConsD],
@@ -349,33 +501,24 @@ export default function Onboarding({
                     ["side", c.gSide, c.gSideD],
                   ] as const
                 ).map(([id, label, desc]) => (
-                  <button
+                  <OptionCard
                     key={id}
+                    selected={goal === id}
                     onClick={() => setGoal(goal === id ? null : id)}
-                    className={cn(
-                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
-                      goal === id
-                        ? "bg-cyan-500/15 border-cyan-400/50"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "text-[13px] font-semibold",
-                        goal === id ? "text-white" : "text-slate-300",
-                      )}
-                    >
-                      {label}
-                    </div>
-                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
-                  </button>
+                    label={label}
+                    desc={desc}
+                  />
                 ))}
               </div>
+              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
+              <SkipBtn onClick={next} label={c.skip} />
+            </ScreenShell>
+          )}
 
-              {/* Faiblesse déclarée */}
-              <h2 className="text-base font-bold text-white text-center mb-1">{c.painTitle}</h2>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.painSub}</p>
-              <div className="grid grid-cols-2 gap-2 mb-6 onb-in">
+          {/* ── 6 · FAIBLESSES (multi) ── */}
+          {step === "pain" && (
+            <ScreenShell icon={ShieldAlert} title={c.painTitle} subtitle={c.painSub}>
+              <div className="grid grid-cols-2 gap-2.5 onb-in">
                 {(
                   [
                     ["emotions", c.pEmo, c.pEmoD],
@@ -385,36 +528,25 @@ export default function Onboarding({
                     ["journaling", c.pJour, c.pJourD],
                   ] as const
                 ).map(([id, label, desc]) => (
-                  <button
+                  <OptionCard
                     key={id}
-                    onClick={() => setPain(pain === id ? null : id)}
-                    className={cn(
-                      "onb-card rounded-2xl px-3 py-2.5 border text-left",
-                      pain === id
-                        ? "bg-cyan-500/15 border-cyan-400/50"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "text-[13px] font-semibold",
-                        pain === id ? "text-white" : "text-slate-300",
-                      )}
-                    >
-                      {label}
-                    </div>
-                    <div className="text-[10px] text-slate-500 leading-tight">{desc}</div>
-                  </button>
+                    multi
+                    selected={pain.includes(id)}
+                    onClick={() => toggle(setPain, pain, id)}
+                    label={label}
+                    desc={desc}
+                  />
                 ))}
               </div>
+              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
+              <SkipBtn onClick={next} label={c.skip} />
+            </ScreenShell>
+          )}
 
-              {/* Cible mensuelle */}
-              <div className="flex items-center gap-2 justify-center mb-1">
-                <Target className="w-4 h-4 text-cyan-300" />
-                <h2 className="text-base font-bold text-white text-center">{c.targetTitle}</h2>
-              </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.targetSub}</p>
-              <div className="relative max-w-[200px] mx-auto mb-7">
+          {/* ── 7 · RÉGLAGES (cible + ICT) ── */}
+          {step === "settings" && (
+            <ScreenShell icon={SlidersHorizontal} title={c.targetTitle} subtitle={c.targetSub}>
+              <div className="relative max-w-[200px] mx-auto mb-8">
                 <input
                   type="number"
                   inputMode="decimal"
@@ -424,63 +556,99 @@ export default function Onboarding({
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
                   placeholder="3"
-                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-10 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
+                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-10 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
                   %
                 </span>
               </div>
 
-              {/* ICT */}
-              <div className="flex items-center gap-2 justify-center mb-1">
+              <div className="flex items-center justify-center gap-2 mb-1">
                 <Compass className="w-4 h-4 text-cyan-300" />
-                <h2 className="text-base font-bold text-white text-center">{c.ictTitle}</h2>
+                <h3 className="text-base font-bold text-white">{c.ictTitle}</h3>
               </div>
               <p className="text-xs text-slate-400 text-center mb-3">{c.ictSub}</p>
-              <div className="grid grid-cols-2 gap-2 max-w-[280px] mx-auto mb-7 onb-in">
+              <div className="grid grid-cols-2 gap-2.5 max-w-[280px] mx-auto onb-in">
                 {(
                   [
                     [true, c.ictYes],
                     [false, c.ictNo],
                   ] as const
                 ).map(([val, label]) => (
-                  <button
+                  <OptionCard
                     key={String(val)}
+                    selected={usesIct === val}
                     onClick={() => setUsesIct(val)}
-                    className={cn(
-                      "onb-card rounded-xl px-3 py-2.5 border text-[13px] font-semibold text-center",
-                      usesIct === val
-                        ? "bg-cyan-500/15 border-cyan-400/50 text-white"
-                        : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
-                    )}
-                  >
-                    {label}
-                  </button>
+                    label={label}
+                  />
                 ))}
               </div>
 
-              <button
-                onClick={next}
-                className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
-              >
-                {c.cont}
-              </button>
-              <button
-                onClick={next}
-                className="w-full mt-2.5 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                {c.skip}
-              </button>
+              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
+              <SkipBtn onClick={next} label={c.skip} />
+            </ScreenShell>
+          )}
+
+          {/* ── 8 · NOTIFICATIONS ── */}
+          {step === "notify" && (
+            <div className="text-center">
+              <div className="flex justify-center">
+                <div className="relative mb-5">
+                  <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
+                  <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+                    <Bell className="w-7 h-7 text-white" />
+                  </div>
+                </div>
+              </div>
+              <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-2">
+                {t("onb.notifyTitle")}
+              </h2>
+              <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">
+                {t("onb.notifySub")}
+              </p>
+
+              <div className="onb-in">
+                <button
+                  onClick={enableNotify}
+                  disabled={notifBusy}
+                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-4 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60 text-sm font-bold text-white"
+                >
+                  {notifBusy ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Bell className="w-5 h-5 text-cyan-300" />
+                  )}
+                  {t("onb.notifyCta")}
+                </button>
+                <button
+                  onClick={next}
+                  disabled={notifBusy}
+                  className="flex items-center justify-center gap-1.5 w-full py-2.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  <BellOff className="w-3.5 h-3.5" /> {t("onb.notifyLater")}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-600 mt-3">{t("onb.notifySettings")}</p>
             </div>
           )}
 
-          {/* ── MOMENT 3 · C'EST PARTI ── */}
+          {/* ── 9 · C'EST PARTI ── */}
           {step === "start" && (
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-1.5">
-                {c.startTitle}
-              </h2>
-              <p className="text-sm text-slate-400 text-center mb-6">{c.startSub}</p>
+              <div className="text-center">
+                <div className="flex justify-center">
+                  <div className="relative mb-5">
+                    <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-lg" />
+                    <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
+                      <Rocket className="w-7 h-7 text-white" />
+                    </div>
+                  </div>
+                </div>
+                <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-1.5">
+                  {c.startTitle}
+                </h2>
+                <p className="text-sm text-slate-400 max-w-md mx-auto mb-7">{c.startSub}</p>
+              </div>
 
               {saveError && (
                 <div className="mb-4 rounded-xl border border-red-500/25 bg-red-500/[0.08] px-3.5 py-3 flex items-center gap-2.5">

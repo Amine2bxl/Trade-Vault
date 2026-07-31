@@ -23,22 +23,25 @@ export interface EngineResult {
 /**
  * La faiblesse déclarée à l'onboarding (pain) oriente le Hero : Jarvis
  * surveille en priorité ce que le trader a dit être son point faible.
- * `pain` → pattern détecteur (best-effort, null si non mappable).
+ * `pain` peut être une liste séparée par virgules (multi-sélection) — on
+ * retourne le premier pattern mappable (best-effort, null si aucun).
  */
 export function patternForPain(pain: string | null | undefined): string | null {
-  switch (pain) {
-    case "overtrading":
-      return "overtrading";
-    case "risk":
-      return "risk_after_loss";
-    case "emotions":
-    case "consistency":
-      return "discipline_streak";
-    case "journaling":
-      return "costliest_mistake";
-    default:
-      return null;
+  if (!pain) return null;
+  const map: Record<string, string> = {
+    overtrading: "overtrading",
+    risk: "risk_after_loss",
+    emotions: "discipline_streak",
+    consistency: "discipline_streak",
+    journaling: "costliest_mistake",
+  };
+  for (const token of pain
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)) {
+    if (map[token]) return map[token];
   }
+  return null;
 }
 
 export function runInsightEngine(data: JarvisHomeData, memory: JarvisMemory): EngineResult {
