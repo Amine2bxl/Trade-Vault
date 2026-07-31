@@ -321,8 +321,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 <Bot className="w-3.5 h-3.5 text-white" />
               </div>
             </div>
-            <div className="rounded-2xl px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.08] flex items-center gap-2 text-sm text-slate-400">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("assistant.thinking")}
+            <div className="rounded-2xl px-4 py-3 bg-white/[0.04] border border-white/[0.08] flex items-center gap-1.5">
+              <span className="thinking-dot" />
+              <span className="thinking-dot" style={{ animationDelay: "0.15s" }} />
+              <span className="thinking-dot" style={{ animationDelay: "0.3s" }} />
             </div>
           </div>
         )}

@@ -135,6 +135,17 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     };
   }, [open, user?.id]);
 
+  // La page Jarvis (nav) ouvre le MÊME overlay — conversation et historique
+  // partagés partout. Un seul Jarvis, deux points d'entrée.
+  useEffect(() => {
+    const onOpen = () => {
+      setActiveWorkspace("conversation");
+      setOpen(true);
+    };
+    window.addEventListener("tv:open-jarvis", onOpen);
+    return () => window.removeEventListener("tv:open-jarvis", onOpen);
+  }, []);
+
   // Other pages (e.g. the pre-market Checklist) can open Jarvis with a
   // ready-made prompt via a window event — keeps pages decoupled.
   useEffect(() => {

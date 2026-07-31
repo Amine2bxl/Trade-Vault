@@ -887,8 +887,7 @@ input[type="range"]::-webkit-slider-thumb {
   to {
     background-position: -200% 0;
   }
-}
-.skeleton {
+}.skeleton {
   background: linear-gradient(
     100deg,
     rgba(30, 41, 59, 0.45) 40%,
@@ -901,6 +900,33 @@ input[type="range"]::-webkit-slider-thumb {
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;
+  }
+}
+
+/* Jarvis "thinking" — trois points qui ondulent pendant que l'IA réfléchit. */
+@keyframes thinkingWave {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+.thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--tv-accent, #22d3ee), var(--tv-accent-2, #14b8a6));
+  animation: thinkingWave 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking-dot {
+    animation: none;
+    opacity: 0.6;
   }
 }
 

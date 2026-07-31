@@ -451,7 +451,7 @@ function AppContent() {
               {page === "analytics" && <Analytics trades={trades} />}
               {page === "mistakes" && <Mistakes trades={trades} />}
               {page === "missed" && <MissedOpportunities />}
-              {page === "insights" && <Jarvis trades={trades} />}
+              {page === "insights" && <Jarvis />}
               {page === "news" && <EconomicNews />}
               {page === "seasonality" && (
                 <Seasonality trades={trades} tradesLoading={tradesLoading} />

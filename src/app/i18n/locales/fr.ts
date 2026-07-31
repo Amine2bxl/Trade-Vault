@@ -332,6 +332,9 @@ const fr: Dict = {
   "jarvisHome.subtitle": "Voici ton état trading aujourd'hui.",
   "jarvisHome.ask": "Comment puis-je t'aider aujourd'hui ?",
   "jarvisHome.suggestions": "Questions à explorer",
+  "jarvisHome.proposal": "Action proposée",
+  "jarvisHome.addRule": "Ajouter à ma checklist",
+  "jarvisHome.ruleAdded": "Règle ajoutée à ta checklist. Elle sera appliquée à chaque trade.",
 
   // Sidebar Jarvis (navigation cockpit)
   "jarvisSide.principal": "Principal",

@@ -377,6 +377,9 @@ const en = {
   "jarvisHome.subtitle": "Here is your trading state today.",
   "jarvisHome.ask": "How can I help you today?",
   "jarvisHome.suggestions": "Questions to explore",
+  "jarvisHome.proposal": "Proposed action",
+  "jarvisHome.addRule": "Add to my checklist",
+  "jarvisHome.ruleAdded": "Rule added to your checklist. It will be applied to every trade.",
 
   // Jarvis sidebar (cockpit navigation)
   "jarvisSide.principal": "Main",

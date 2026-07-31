@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Plus, Sparkles, Check } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useToast } from "../../../contexts/ToastContext";
 import { computeStats } from "../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { deriveDailyRule } from "../../../utils/edgeScore";
 import { loadOnboarding, type OnboardingData } from "../../../store";
+import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { effectiveCopyLang } from "../prefs";
 import { sessionJarvisMemory } from "../insights/memory";
 import { buildHomeBlocks } from "../insights/buildHome";
@@ -104,6 +106,51 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     [data, context.page, copyLang],
   );
 
+  // ── Jarvis propose une ACTION intégrée à l'app ──
+  // La fuite la plus coûteuse → proposition d'ajouter une règle « custom » à la
+  // checklist du trader. C'est le premier ToolBlock réel : Jarvis agit, l'user
+  // valide, la règle devient partie prenante de sa discipline.
+  const worstMistake = useMemo(() => {
+    return Object.entries(data.stats.mistakeStats)
+      .map(([name, v]) => ({ name, ...v }))
+      .filter((m) => m.totalPnl < 0)
+      .sort((a, b) => a.totalPnl - b.totalPnl)[0];
+  }, [data.stats.mistakeStats]);
+  const [ruleAdded, setRuleAdded] = useState(false);
+  const [ruleSaving, setRuleSaving] = useState(false);
+  const { toast } = useToast();
+
+  const addMistakeRule = async () => {
+    if (!user?.id || !worstMistake || ruleAdded || ruleSaving) return;
+    setRuleSaving(true);
+    try {
+      const ruleText = lang === "fr" ? `Pas de ${worstMistake.name}` : `No ${worstMistake.name}`;
+      const rules = await loadTradingRules(user.id);
+      if (!rules.some((r) => r.text.toLowerCase() === ruleText.toLowerCase())) {
+        await saveTradingRules(user.id, [
+          ...rules,
+          {
+            id:
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `rule-${Date.now()}`,
+            kind: "custom",
+            value: "",
+            text: ruleText,
+            enabled: true,
+          },
+        ]);
+      }
+      setRuleAdded(true);
+      toast(t("jarvisHome.ruleAdded"), "success");
+    } catch (e) {
+      console.error("[jarvis] add rule failed", e);
+      toast(t("ai.genericError"), "error");
+    } finally {
+      setRuleSaving(false);
+    }
+  };
+
   // Le canal `tv:ask-coach` ouvre la Conversation avec la question — découplé.
   const askSuggestion = (prompt: string) =>
     window.dispatchEvent(new CustomEvent("tv:ask-coach", { detail: { prompt } }));
@@ -130,6 +177,62 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
         </div>
       ) : (
         <BlockList blocks={blocks} />
+      )}
+
+      {/* ── ToolBlock : Jarvis propose une action, l'user l'intègre ──
+          Ex. « La fuite qui te coûte le plus = overtrading → ajouter une règle
+          à ta checklist. » Un clic → la règle entre dans sa discipline. */}
+      {worstMistake && !ruleAdded && (
+        <div className="mt-5 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-4">
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-md shadow-cyan-500/20">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1">
+                {t("jarvisHome.proposal")}
+              </div>
+              <p className="text-[13px] text-slate-300 leading-relaxed">
+                {lang === "fr" ? (
+                  <>
+                    Jarvis a repéré que{" "}
+                    <b className="text-white">{worstMistake.name.toLowerCase()}</b> te coûte le
+                    plus. Ajouter une règle pour t'en protéger ?
+                  </>
+                ) : (
+                  <>
+                    Jarvis found <b className="text-white">{worstMistake.name.toLowerCase()}</b>{" "}
+                    costs you the most. Add a rule to protect yourself?
+                  </>
+                )}
+              </p>
+              <button
+                onClick={addMistakeRule}
+                disabled={ruleSaving}
+                className={cn(
+                  "mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold",
+                  "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25",
+                  "transition-colors disabled:opacity-60",
+                )}
+              >
+                {ruleSaving ? (
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-cyan-300/30 border-t-cyan-300 animate-spin" />
+                ) : (
+                  <Plus className="w-3.5 h-3.5" />
+                )}
+                {t("jarvisHome.addRule")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {ruleAdded && (
+        <div className="mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 flex items-center gap-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15">
+            <Check className="w-4 h-4 text-emerald-400" />
+          </div>
+          <p className="text-[13px] text-emerald-300">{t("jarvisHome.ruleAdded")}</p>
+        </div>
       )}
 
       {/* Suggestions — écrites depuis la situation + la page, jamais génériques. */}
