@@ -29,6 +29,6 @@ export const riskAfterLossDetector: Detector = (data) => {
       ral.pnlAfterLoss < 0
         ? { label: "Coût estimé après perte", amount: Math.abs(ral.pnlAfterLoss), unit: "$" }
         : null,
-    mission: ["Pause de 15 minutes après -1R", "Ne pas augmenter la taille après une perte"],
+    mission: ["pause_after_loss", "keep_size_after_loss"],
   };
 };

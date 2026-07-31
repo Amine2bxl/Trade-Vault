@@ -42,6 +42,6 @@ export const disciplineStreakDetector: Detector = (data) => {
     sampleSize: s.totalTrades,
     evidence,
     impact: null,
-    mission: ["Protéger ta série : garder le même process", "Ne pas surconfirmer après les gains"],
+    mission: ["protect_streak", "no_overconfidence"],
   };
 };

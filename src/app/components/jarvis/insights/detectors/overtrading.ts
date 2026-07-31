@@ -34,9 +34,6 @@ export const overtradingDetector: Detector = (data) => {
       busyDayThreshold: ot.busyDayThreshold,
     },
     impact: { label: "Coût des journées chargées", amount: Math.abs(ot.pnlOnBusyDays), unit: "$" },
-    mission: [
-      `Limiter la journée à ${ot.medianTradesPerDay + 1} trades max`,
-      "N'entrer que sur des setups validés",
-    ],
+    mission: ["day_trade_cap", "only_verified_setups"],
   };
 };
