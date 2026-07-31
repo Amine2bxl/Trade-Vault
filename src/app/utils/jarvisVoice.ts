@@ -38,6 +38,9 @@ export { pickJarvisVoice as pickEnglishMaleVoice } from "@/modules/voice";
 export interface JarvisVoice {
   /** Speak a line (English). Resolves once playback has started. */
   speak: (text: string) => Promise<void>;
+  /** Speak STRICTLY with the local browser voice — no clips, no hosted TTS,
+   *  no network, zero cost. Used for ambient greetings (never counted). */
+  speakLocal: (text: string) => void;
   /** Stop any current playback immediately. */
   stop: () => void;
   /** True while Jarvis is talking — drive a subtle "speaking" indicator. */
@@ -225,5 +228,5 @@ export function useJarvisVoice(): JarvisVoice {
   // Silence Jarvis when the component using the hook unmounts.
   useEffect(() => stop, [stop]);
 
-  return { speak, stop, speaking };
+  return { speak, speakLocal, stop, speaking };
 }

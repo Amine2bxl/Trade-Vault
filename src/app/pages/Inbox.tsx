@@ -6,33 +6,60 @@ import {
   Check,
   CheckCheck,
   Loader2,
-  AlertTriangle,
   Goal,
   TrendingDown,
   Brain,
   Calendar,
+  Bot,
+  ShieldAlert,
+  Clock,
 } from "lucide-react";
 import { loadNotifications, markNotificationRead } from "@/modules/notifications";
+import type { AppNotification, NotificationCategory } from "@/modules/notifications/types";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { PageContainer } from "@/shared/ui/PageContainer";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import type { AppNotification } from "@/modules/notifications/types";
+import { cn } from "../utils/cn";
 
-type FilterKind = "all" | "discipline" | "goals" | "risk" | "ai" | "economic";
+/**
+ * Inbox — toutes les notifications de Jarvis, au même endroit.
+ *
+ * Chaque entrée est SIGNÉE Jarvis (avatar gradient) et classée par catégorie
+ * produit. Un clic redirige vers la bonne page puis ouvre le popup de détail
+ * (résumé + CTA + plan d'action) via `tv:open-notification`.
+ */
 
-const KIND_ICON: Record<string, typeof Bell> = {
-  discipline_warning: AlertTriangle,
-  discipline_limit: AlertTriangle,
-  discipline_success: Check,
-  goal_completed: Goal,
-  streak: Bell,
-  max_loss: TrendingDown,
-  ai_insight: Brain,
+type FilterKind = NotificationCategory | "all";
+
+const CATEGORY_ICON: Record<NotificationCategory, typeof Bell> = {
+  discipline: ShieldAlert,
+  goals: Goal,
+  risk: TrendingDown,
+  jarvis: Brain,
   economic: Calendar,
+  activity: Clock,
+  system: Bell,
 };
 
-const FILTER_KINDS: FilterKind[] = ["all", "discipline", "goals", "risk", "ai", "economic"];
+const CATEGORY_ACCENT: Record<NotificationCategory, string> = {
+  discipline: "text-cyan-300 bg-cyan-500/10",
+  goals: "text-emerald-300 bg-emerald-500/10",
+  risk: "text-red-300 bg-red-500/10",
+  jarvis: "text-violet-300 bg-violet-500/10",
+  economic: "text-amber-300 bg-amber-500/10",
+  activity: "text-slate-300 bg-slate-500/10",
+  system: "text-slate-300 bg-slate-500/10",
+};
+
+const FILTER_KINDS: FilterKind[] = [
+  "all",
+  "discipline",
+  "risk",
+  "goals",
+  "jarvis",
+  "activity",
+  "economic",
+];
 
 export default function Inbox() {
   const { t } = useT();
@@ -52,7 +79,7 @@ export default function Inbox() {
 
   const filtered = useMemo(() => {
     if (filter === "all") return notifs;
-    return notifs.filter((n) => n.kind?.startsWith(filter));
+    return notifs.filter((n) => n.category === filter);
   }, [notifs, filter]);
 
   const unreadCount = notifs.filter((n) => !n.readAt).length;
@@ -78,10 +105,22 @@ export default function Inbox() {
     window.dispatchEvent(new CustomEvent("tv:notif-updated"));
   }, [user?.id, filtered, handleMarkRead]);
 
-  const IconComponent = (kind?: string) => {
-    if (!kind) return Bell;
-    return KIND_ICON[kind] ?? Bell;
-  };
+  // Cliquer une notification → rediriger vers la bonne page + ouvrir le popup.
+  const openNotification = useCallback((n: AppNotification) => {
+    const page =
+      (n.data?.ctaPage as string | undefined) ??
+      (n.url?.startsWith("/journal")
+        ? "journal"
+        : n.url?.startsWith("/mistakes")
+          ? "mistakes"
+          : n.url?.startsWith("/checklist")
+            ? "checklist"
+            : n.url?.startsWith("/reports")
+              ? "reports"
+              : "dashboard");
+    window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page } }));
+    window.dispatchEvent(new CustomEvent("tv:open-notification", { detail: { notification: n } }));
+  }, []);
 
   return (
     <PageContainer>
@@ -91,11 +130,10 @@ export default function Inbox() {
           <p className="text-sm text-slate-500 mt-1">{t("inbox.subtitle")}</p>
         </div>
         {unreadCount > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-cyan-400 font-medium bg-cyan-500/10 px-2.5 py-1 rounded-lg">
-              {unreadCount} non lu{unreadCount > 1 ? "s" : ""}
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
+            <BellRing className="w-3.5 h-3.5" />
+            {unreadCount} {unreadCount > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}
+          </span>
         )}
       </div>
 
@@ -105,11 +143,12 @@ export default function Inbox() {
           <button
             key={k}
             onClick={() => setFilter(k)}
-            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={cn(
+              "shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
               filter === k
                 ? "bg-cyan-500/15 text-cyan-400"
-                : "text-slate-500 hover:text-slate-300 bg-white/[0.02] hover:bg-white/[0.04]"
-            }`}
+                : "text-slate-500 hover:text-slate-300 bg-white/[0.02] hover:bg-white/[0.04]",
+            )}
           >
             {t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}`)}
           </button>
@@ -139,56 +178,83 @@ export default function Inbox() {
       ) : (
         <div className="space-y-2">
           {filtered.map((n) => {
-            const Icon = IconComponent(n.kind);
+            const Icon = CATEGORY_ICON[n.category] ?? Bell;
             return (
               <div
                 key={n.id}
-                className={`rounded-xl border px-4 py-3 transition ${
+                role="button"
+                tabIndex={0}
+                onClick={() => openNotification(n)}
+                onKeyDown={(e) => e.key === "Enter" && openNotification(n)}
+                className={cn(
+                  "group relative w-full text-left rounded-2xl border px-4 py-3 transition-all cursor-pointer",
+                  "hover:border-cyan-500/25 hover:bg-white/[0.03]",
                   n.readAt
                     ? "border-white/[.04] bg-white/[.02]"
-                    : "border-cyan-500/15 bg-cyan-500/05"
-                }`}
+                    : "border-cyan-500/15 bg-cyan-500/05",
+                )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                {!n.readAt && (
+                  <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-cyan-400" />
+                )}
+                <div className="flex items-start gap-3 pr-4">
+                  {/* Avatar Jarvis — chaque notification est signée. */}
+                  <span className="relative shrink-0">
+                    <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/25 blur-sm" />
                     <span
-                      className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
-                        n.readAt ? "bg-slate-800 text-slate-500" : "bg-cyan-500/10 text-cyan-400"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {!n.readAt && (
-                          <span className="h-2 w-2 rounded-full bg-cyan-400 shrink-0" />
-                        )}
-                        <p
-                          className={`text-sm truncate ${
-                            n.readAt ? "text-slate-400" : "text-white font-medium"
-                          }`}
-                        >
-                          {n.title}
-                        </p>
-                      </div>
-                      {n.body && (
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.body}</p>
+                      className={cn(
+                        "relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-md shadow-cyan-500/20",
+                        n.readAt && "opacity-60 saturate-50",
                       )}
-                      <p className="text-[10px] text-slate-600 mt-1.5">
-                        {new Date(n.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  {!n.readAt && (
-                    <button
-                      onClick={() => handleMarkRead(n.id)}
-                      className="shrink-0 grid h-7 w-7 place-items-center rounded-lg bg-white/[.04] hover:bg-white/[.08] transition"
-                      title={t("inbox.markRead")}
                     >
-                      <Check className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  )}
+                      <Bot className="w-4 h-4 text-white" />
+                    </span>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider shrink-0">
+                        Jarvis
+                      </span>
+                      <span className="h-px flex-1 bg-white/[0.06]" />
+                      <span
+                        className={cn(
+                          "shrink-0 grid h-5 w-5 place-items-center rounded-md",
+                          CATEGORY_ACCENT[n.category] ?? "text-slate-400 bg-slate-500/10",
+                        )}
+                      >
+                        <Icon className="w-3 h-3" />
+                      </span>
+                    </div>
+                    <p
+                      className={cn(
+                        "text-sm truncate mt-1",
+                        n.readAt ? "text-slate-400" : "text-white font-semibold",
+                      )}
+                    >
+                      {n.title}
+                    </p>
+                    {n.body && (
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                        {n.body}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-slate-600 mt-1.5">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
+                {!n.readAt && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkRead(n.id);
+                    }}
+                    className="absolute bottom-3 right-3 grid h-6 w-6 place-items-center rounded-md bg-white/[.04] hover:bg-white/[.08] transition text-slate-400"
+                    title={t("inbox.markRead")}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             );
           })}

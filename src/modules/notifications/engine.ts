@@ -1,6 +1,12 @@
 import { generateId } from "@/domain";
 import { events } from "@/modules/events";
-import type { AppNotification, NotificationAdapters, NotificationInput } from "./types";
+import type {
+  AppNotification,
+  NotificationAdapters,
+  NotificationCategory,
+  NotificationInput,
+  NotificationKind,
+} from "./types";
 
 /**
  * Notification Engine — single funnel for everything the user is told.
@@ -29,6 +35,18 @@ function isFr(): boolean {
   } catch {
     return false;
   }
+}
+
+/** Catégorie par défaut, dérivée du kind — un seul endroit, jamais dupliqué. */
+export function categoryOf(kind: NotificationKind): NotificationCategory {
+  if (kind.startsWith("discipline")) return "discipline";
+  if (kind.startsWith("goal")) return "goals";
+  if (kind.startsWith("risk") || kind === "pattern_detected") return "risk";
+  if (kind.startsWith("economic")) return "economic";
+  if (kind.startsWith("activity")) return "activity";
+  if (kind === "trade_analyzed" || kind === "daily_brief" || kind === "weekly_review")
+    return "jarvis";
+  return "system";
 }
 
 /**
@@ -74,6 +92,7 @@ export const NotificationEngine = {
       url: input.url,
       severity: input.severity ?? "info",
       channels: input.channels ?? ["dashboard", "toast"],
+      category: input.category ?? categoryOf(input.kind),
       createdAt: new Date().toISOString(),
       readAt: null,
       data: input.data,

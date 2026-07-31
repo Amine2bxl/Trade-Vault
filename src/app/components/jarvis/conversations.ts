@@ -17,6 +17,8 @@ export interface ConversationMeta {
   title: string;
   createdAt: string;
   updatedAt: string;
+  /** Épinglée = toujours en tête d'Historique, quel que soit l'ordre récent. */
+  pinned?: boolean;
 }
 
 export interface Conversation extends ConversationMeta {
@@ -28,6 +30,8 @@ export interface ConversationStore {
   get(id: string): Promise<Conversation | null>;
   create(): Promise<Conversation>;
   saveMessages(id: string, messages: JarvisMessage[]): Promise<void>;
+  rename(id: string, title: string): Promise<void>;
+  togglePin(id: string): Promise<void>;
   remove(id: string): Promise<void>;
 }
 
@@ -77,12 +81,20 @@ export function autoTitle(messages: JarvisMessage[]): string {
   return "Nouvelle discussion";
 }
 
+/** Tri : épinglées en tête, puis les plus récentes. */
+function sortList(list: ConversationMeta[]): ConversationMeta[] {
+  return [...list].sort((a, b) => {
+    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+    return b.updatedAt.localeCompare(a.updatedAt);
+  });
+}
+
 export class SessionConversationStore implements ConversationStore {
   constructor(private readonly userId: string) {}
 
   async list(): Promise<ConversationMeta[]> {
     const list = read<ConversationMeta[]>(indexKey(this.userId), []);
-    return [...list].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return sortList(list);
   }
 
   async get(id: string): Promise<Conversation | null> {
@@ -117,13 +129,29 @@ export class SessionConversationStore implements ConversationStore {
         existing && existing.title !== "Nouvelle discussion" ? existing.title : autoTitle(messages),
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
+      pinned: existing?.pinned,
     };
     write(convKey(this.userId, id), messages);
+    write(indexKey(this.userId), sortList([meta, ...list.filter((c) => c.id !== id)]));
+    notify();
+  }
+
+  async rename(id: string, title: string): Promise<void> {
+    const clean = title.trim().slice(0, 64);
+    if (!clean) return;
+    const list = await this.list();
     write(
       indexKey(this.userId),
-      [meta, ...list.filter((c) => c.id !== id)].sort((a, b) =>
-        b.updatedAt.localeCompare(a.updatedAt),
-      ),
+      sortList(list.map((c) => (c.id === id ? { ...c, title: clean } : c))),
+    );
+    notify();
+  }
+
+  async togglePin(id: string): Promise<void> {
+    const list = await this.list();
+    write(
+      indexKey(this.userId),
+      sortList(list.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))),
     );
     notify();
   }

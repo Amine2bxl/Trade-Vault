@@ -60,6 +60,7 @@ const en = {
 
   // Common
   "common.save": "Save",
+  "common.rename": "Rename",
   "common.cancel": "Cancel",
   "common.delete": "Delete",
   "common.edit": "Edit",
@@ -229,6 +230,8 @@ const en = {
   "inbox.empty": "No notifications yet. They'll appear here as your trading day unfolds.",
   "inbox.emptyFiltered": "No notifications in this category.",
   "inbox.markRead": "Mark as read",
+  "inbox.unread": "unread",
+  "inbox.unreadPlural": "unread",
   "inbox.markAllRead": "Mark all read",
   "inbox.filterAll": "All",
   "inbox.filterDiscipline": "Discipline",
@@ -236,6 +239,12 @@ const en = {
   "inbox.filterRisk": "Risk",
   "inbox.filterAi": "AI",
   "inbox.filterEconomic": "Economic",
+  "inbox.plan": "Action plan",
+  "inbox.later": "Later",
+  "inbox.ctaDefault": "Open",
+  "inbox.planDefault":
+    "Keep logging your trades — Jarvis reviews every session and flags what matters.",
+  "inbox.fromJarvis": "Sent by Jarvis",
   "appearance.presets": "Presets",
   "appearance.yours": "Your themes",
   "appearance.new": "New theme",
@@ -378,14 +387,15 @@ const en = {
   "jarvisHome.ask": "How can I help you today?",
   "jarvisHome.suggestions": "Questions to explore",
   "jarvisHome.proposal": "Proposed action",
+  "jarvisHome.speaking": "speaking",
   "jarvisHome.addRule": "Add to my checklist",
   "jarvisHome.ruleAdded": "Rule added to your checklist. It will be applied to every trade.",
 
   // Jarvis sidebar (cockpit navigation)
   "jarvisSide.principal": "Main",
-  "jarvisSide.analyse": "Analysis",
-  "jarvisSide.data": "Data",
-  "jarvisSide.overview": "Overview",
+  "jarvisSide.home": "Home",
+  "jarvisSide.history": "History",
+  "jarvisSide.historyNote": "Pinned conversations stay on top.",
   "jarvisSide.new": "New conversation",
   "jarvisSide.conversations": "Conversations",
   "jarvisSide.analyseEntry": "AI analysis",
@@ -409,6 +419,11 @@ const en = {
   "credits.value1": "detect your mistakes",
   "credits.value2": "analyse your setups",
   "credits.value3": "improve your discipline",
+  "credits.explainer": "5 free analyses a day, reset at midnight.",
+  "credits.exhausted": "Daily limit reached. Come back tomorrow or go Premium.",
+  "credits.exhaustedBody":
+    "Each message counts as one analysis. Go Premium for unlimited Jarvis access.",
+  "credits.upgrade": "Discover Premium",
 
   // Accounts
   "account.active": "Active account",
@@ -419,6 +434,8 @@ const en = {
   "jarvisConv.thisWeek": "This week",
   "jarvisConv.older": "Earlier",
   "jarvisConv.empty": "Start a conversation — Jarvis will remember it here.",
+  "jarvisConv.pin": "Pin",
+  "jarvisConv.unpin": "Unpin",
   "jarvisConv.toggle": "Toggle conversations",
   "jarvisConv.credits": "Jarvis Credits",
 

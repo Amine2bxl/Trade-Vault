@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Eraser, Send, Loader2, Mic, MicOff } from "lucide-react";
+import { Bot, Eraser, Send, Loader2, Mic, MicOff, Zap } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
@@ -8,6 +8,12 @@ import { cn } from "../../../utils/cn";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { loadOnboarding, type OnboardingData } from "../../../store";
+import {
+  exceedsDailyLimit,
+  incrementAiUsage,
+  aiUsageToday,
+  FREE_DAILY_LIMIT,
+} from "../../../utils/aiUsage";
 import { effectiveCopyLang } from "../prefs";
 import { sessionConversationStore } from "../conversations";
 import { BlockList } from "../BlockRenderer";
@@ -77,6 +83,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
+  // Limite gratuite 5/j : la bannière Premium apparaît quand la limite est
+  // atteinte, pour inviter à l'upgrade plutôt que de bloquer en silence.
+  const [quotaBanner, setQuotaBanner] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const SpeechRecognitionCtor = getSpeechRecognition();
@@ -156,6 +165,13 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     async (q: string) => {
       const query = q.trim();
       if (!query || loading || !loaded) return;
+      // Quota gratuit : au-delà de 5 analyses/jour, on explique et on oriente
+      // vers Premium — aucune requête n'est envoyée (0 token consommé).
+      if (exceedsDailyLimit(userId)) {
+        setQuotaBanner(true);
+        setQuestion("");
+        return;
+      }
       const priorTurns = messages
         .filter((m) => m.role !== "error")
         .map((m) => ({ role: m.role as "user" | "assistant", content: textOf(m) }));
@@ -181,6 +197,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         rules,
       });
       try {
+        // Une analyse consommée — comptée localement, jamais d'appel réseau.
+        incrementAiUsage(userId);
         let res;
         try {
           res = await askCoach({ data: { question: query, ...payload } });
@@ -224,7 +242,18 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         setLoading(false);
       }
     },
-    [loading, messages, loaded, context.trades, context.profile, lang, t, onboarding, rules],
+    [
+      loading,
+      messages,
+      loaded,
+      context.trades,
+      context.profile,
+      lang,
+      t,
+      onboarding,
+      rules,
+      userId,
+    ],
   );
 
   // A page (Checklist, Missed…) opened Jarvis with a ready-made prompt.
@@ -332,6 +361,29 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
       {/* Saisie */}
       <div className="p-3 md:p-4 border-t border-white/[0.06] shrink-0">
+        {(quotaBanner || aiUsageToday(userId) >= FREE_DAILY_LIMIT) && (
+          <div className="mb-2.5 rounded-xl border border-amber-500/25 bg-gradient-to-r from-amber-500/[0.08] to-amber-500/[0.03] px-3.5 py-3 flex items-start gap-2.5">
+            <Zap className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12.5px] font-semibold text-amber-200 leading-snug">
+                {t("credits.exhausted")}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                {t("credits.exhaustedBody")}
+              </p>
+            </div>
+            <button
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("tv:navigate", { detail: { page: "subscription" } }),
+                )
+              }
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all"
+            >
+              {t("credits.upgrade")}
+            </button>
+          </div>
+        )}
         {listening && (
           <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-semibold mb-2 px-1">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />{" "}

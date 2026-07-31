@@ -385,46 +385,90 @@ export default function AccountSwitcher({
     if (!activeAccount) return null;
     const ActiveIcon = TYPE_ICON[activeAccount.type];
     const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
+    const editing = editingId === activeAccount.id;
     return (
       <div className="relative w-full">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          title={t("account.switch")}
-          className={cn(
-            "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all overflow-hidden",
-            "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
-            "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5",
-          )}
-        >
-          <span className="pointer-events-none absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
-          <span
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
-            style={{
-              background: `${activeAccount.color}22`,
-              color: activeAccount.color,
-              borderColor: `${activeAccount.color}44`,
-            }}
+        {editing ? (
+          <div className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-white/[0.04] px-2.5 py-1.5">
+            <input
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRename(activeAccount.id);
+                if (e.key === "Escape") setEditingId(null);
+              }}
+              autoFocus
+              maxLength={40}
+              placeholder={activeAccount.name}
+              className="flex-1 min-w-0 bg-transparent text-[13px] font-bold text-white focus:outline-none placeholder-slate-600"
+            />
+            <button
+              onClick={() => commitRename(activeAccount.id)}
+              aria-label={t("common.save")}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setEditingId(null)}
+              aria-label={t("common.cancel")}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/[0.08]"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            title={t("account.switch")}
+            className={cn(
+              "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all overflow-hidden",
+              "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
+              "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5 group/acc",
+            )}
           >
-            <ActiveIcon className="w-4 h-4" />
-          </span>
-          <span className="flex-1 min-w-0 text-left">
-            <span className="block text-[8px] uppercase tracking-[0.14em] text-slate-500 font-bold">
-              {t("account.active")}
+            <span className="pointer-events-none absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+            <span
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
+              style={{
+                background: `${activeAccount.color}22`,
+                color: activeAccount.color,
+                borderColor: `${activeAccount.color}44`,
+              }}
+            >
+              <ActiveIcon className="w-4 h-4" />
             </span>
-            <span className="block text-[13px] font-bold text-white truncate leading-tight">
-              {activeAccount.name}
+            <span className="flex-1 min-w-0 text-left">
+              <span className="block text-[8px] uppercase tracking-[0.14em] text-slate-500 font-bold">
+                {t("account.active")}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="block text-[13px] font-bold text-white truncate leading-tight">
+                  {activeAccount.name}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startRename(activeAccount);
+                  }}
+                  aria-label={t("account.rename")}
+                  className="w-5 h-5 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
+                >
+                  <Pencil className="w-2.5 h-2.5" />
+                </button>
+              </span>
             </span>
-          </span>
-          <span className="text-right shrink-0">
-            <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
-              {balance}
+            <span className="text-right shrink-0">
+              <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
+                {balance}
+              </span>
+              <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
+                {t("account.switchShort")}
+                <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
+              </span>
             </span>
-            <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
-              {t("account.switchShort")}
-              <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
-            </span>
-          </span>
-        </button>
+          </button>
+        )}
         <AccountSheet open={open} onClose={() => setOpen(false)} />
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
         {deleting && (
@@ -465,36 +509,81 @@ export default function AccountSwitcher({
   const ActiveIcon = TYPE_ICON[activeAccount.type];
   const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
 
+  const editingBar = editingId === activeAccount.id;
+
   return (
     <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        title={t("account.switch")}
-        className={cn(
-          "w-full flex items-center gap-2.5 rounded-2xl border transition-all",
-          compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
-          "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
-        )}
-      >
-        <span
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
+      {editingBar ? (
+        <div className="flex items-center gap-1.5 rounded-2xl border border-cyan-500/40 bg-white/[0.04] px-3 py-2.5">
+          <input
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename(activeAccount.id);
+              if (e.key === "Escape") setEditingId(null);
+            }}
+            autoFocus
+            maxLength={40}
+            placeholder={activeAccount.name}
+            className="flex-1 min-w-0 bg-transparent text-sm font-semibold text-white focus:outline-none placeholder-slate-600"
+          />
+          <button
+            onClick={() => commitRename(activeAccount.id)}
+            aria-label={t("common.save")}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setEditingId(null)}
+            aria-label={t("common.cancel")}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/[0.06]"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          title={t("account.switch")}
+          className={cn(
+            "w-full flex items-center gap-2.5 rounded-2xl border transition-all",
+            compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
+            "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
+          )}
         >
-          <ActiveIcon className="w-4 h-4" />
-        </span>
-        <span className="flex-1 min-w-0 text-left">
-          <span className="block text-sm font-semibold text-white truncate">
-            {activeAccount.name}
+          <span
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
+          >
+            <ActiveIcon className="w-4 h-4" />
           </span>
-          <span className="block text-[10px] text-slate-500 truncate tabular-nums">
-            {balance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
+          <span className="flex-1 min-w-0 text-left">
+            <span className="flex items-center gap-1.5">
+              <span className="block text-sm font-semibold text-white truncate">
+                {activeAccount.name}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startRename(activeAccount);
+                }}
+                aria-label={t("account.rename")}
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </span>
+            <span className="block text-[10px] text-slate-500 truncate tabular-nums">
+              {balance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
+            </span>
           </span>
-        </span>
-        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
-          {t("account.switchShort")}
-          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
-        </span>
-      </button>
+          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
+            {t("account.switchShort")}
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+          </span>
+        </button>
+      )}
 
       <AccountSheet open={open} onClose={() => setOpen(false)} />
 

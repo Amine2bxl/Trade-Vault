@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AppNotification } from "./types";
+import { categoryOf } from "./engine";
 
 /**
  * Persistence adapter for the notifications table (see migration
@@ -40,6 +41,9 @@ export async function loadNotifications(userId: string, limit = 50): Promise<App
     url: r.url ?? undefined,
     severity: r.severity as AppNotification["severity"],
     channels: ["dashboard"],
+    // La catégorie est dérivée du kind côté client (pas de colonne en base) —
+    // un seul point de vérité, aucune migration requise.
+    category: categoryOf(r.kind as AppNotification["kind"]),
     createdAt: r.created_at,
     readAt: r.read_at,
     data: (r.data ?? undefined) as AppNotification["data"],

@@ -81,6 +81,22 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     [user?.id, conversationId],
   );
 
+  const renameConversation = useCallback(
+    async (id: string, title: string) => {
+      if (!user?.id || !title) return;
+      await sessionConversationStore(user.id).rename(id, title);
+    },
+    [user?.id],
+  );
+
+  const togglePinConversation = useCallback(
+    async (id: string) => {
+      if (!user?.id) return;
+      await sessionConversationStore(user.id).togglePin(id);
+    },
+    [user?.id],
+  );
+
   // La sidebar / le coach demandent une analyse → ouvre la Conversation.
   const askJarvis = useCallback(
     (prompt: string) => {
@@ -257,8 +273,9 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
               onNew={() => void newConversation()}
               onOpenConversation={openConversation}
               onDeleteConversation={(id) => void deleteConversation(id)}
+              onRenameConversation={(id, title) => void renameConversation(id, title)}
+              onTogglePin={(id) => void togglePinConversation(id)}
               onOpenHome={() => setActiveWorkspace("home")}
-              onAsk={askJarvis}
             />
           }
           footer={<CreditsBar />}

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Sparkles, Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Sparkles, Check, Volume2 } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../contexts/ToastContext";
+import { useJarvisVoice } from "../../../utils/jarvisVoice";
 import { computeStats } from "../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { deriveDailyRule } from "../../../utils/edgeScore";
@@ -36,6 +37,8 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   const { user } = useAuth();
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
   const [blocks, setBlocks] = useState<JarvisBlock[] | null>(null);
+  const [welcomeLine, setWelcomeLine] = useState<string | null>(null);
+  const { speakLocal, speaking } = useJarvisVoice();
 
   // Snapshot de données (pur, synchrone, déjà en cache côté trades).
   const stats = useMemo(() => computeStats(context.trades), [context.trades]);
@@ -100,6 +103,22 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   const firstName = context.profile?.firstName || t("jarvisHome.trader");
   const copyLang: "fr" | "en" = effectiveCopyLang(lang);
 
+  // ── Bienvenue vocale locale (0 token, 0 réseau) ──
+  // « Welcome, {Prénom} » + une phrase courte qui varie selon la situation :
+  // la voix de Jarvis (speechSynthesis, profil en-gb profond) parle uniquement
+  // en anglais. Rejouée à CHAQUE ouverture de l'accueil (remount du workspace).
+  const welcomeRef = useRef<string | null>(null);
+  useEffect(() => {
+    const phrase = buildWelcomePhrase(data, firstName);
+    if (!phrase || welcomeRef.current === phrase) return;
+    welcomeRef.current = phrase;
+    setWelcomeLine(phrase);
+    // Petit délai : laisse la fenêtre se peindre avant de parler (autoplay).
+    const id = window.setTimeout(() => speakLocal(phrase), 450);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Suggestions intelligentes : page active + situation réelle (pur).
   const suggestions = useMemo(
     () => buildSuggestions(data, context.page, copyLang),
@@ -163,10 +182,20 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           <Sparkles className="w-3.5 h-3.5" />
           {t("assistant.title")}
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+        <h2 className="flex items-center gap-2.5 text-2xl md:text-3xl font-bold text-white tracking-tight">
           {t("jarvisHome.greeting")} {firstName}.
+          {speaking && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5">
+              <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
+            </span>
+          )}
         </h2>
         <p className="text-slate-400 mt-1.5">{t("jarvisHome.ask")}</p>
+        {welcomeLine && (
+          <p className="mt-2 text-[12.5px] text-slate-500 leading-relaxed max-w-xl">
+            {welcomeLine}
+          </p>
+        )}
       </div>
 
       {blocks === null ? (
@@ -263,4 +292,33 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       )}
     </div>
   );
+}
+
+/**
+ * Bienvenue vocale en anglais — « Welcome, {Prénom} » + UNE phrase courte qui
+ * varie selon le contexte réel (nombre de trades, win rate, la plus grosse
+ * fuite, zéro activité). Jamais de copie générique : chaque mot est calculé.
+ */
+function buildWelcomePhrase(data: JarvisHomeData, firstName: string): string {
+  const n = data.trades.length;
+  const s = data.stats;
+  const open = `Welcome, ${firstName}.`;
+
+  if (n === 0) {
+    return `${open} You have no trades yet — I am ready when you are.`;
+  }
+
+  const wr = Math.round((s.winRate ?? 0) * 100);
+  const withWinRate =
+    n >= 5 && wr > 0 && `${open} You have logged ${n} trades with a ${wr} percent win rate.`;
+
+  if (withWinRate) return withWinRate;
+
+  if (s.totalPnl < 0) {
+    return `${open} Your recent trades are net negative — let us find the leak.`;
+  }
+  if (s.totalPnl > 0) {
+    return `${open} Your recent trades are profitable — let us protect the edge.`;
+  }
+  return `${open} I have ${n} trade${n > 1 ? "s" : ""} to work with today.`;
 }
