@@ -59,6 +59,12 @@ describe("normalizeError", () => {
     expect(normalizeError(new Error("anything else"), "groq").type).toBe("unknown");
   });
 
+  it("une erreur sous forme d'objet n'est jamais réduite à [object Object]", () => {
+    const err = normalizeError({ error: { message: "model not found" } }, "openrouter");
+    expect(err.technicalMessage).toContain("model not found");
+    expect(err.technicalMessage).not.toContain("[object Object]");
+  });
+
   it("jamais de clé ni de contenu dans les messages techniques", () => {
     const err = normalizeError(
       new Error("AI request failed: key=sk-abc123 token=xyz"),

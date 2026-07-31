@@ -153,7 +153,9 @@ export function useJarvisVoice(): JarvisVoice {
           };
           el.onerror = () => done(false);
           setSpeaking(true);
-          el.play().then(() => done(true)).catch(() => done(false));
+          el.play()
+            .then(() => done(true))
+            .catch(() => done(false));
         });
         if (played) return;
         // Autoplay refusal or missing file → fall through to hosted/local.

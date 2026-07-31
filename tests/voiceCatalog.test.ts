@@ -28,8 +28,12 @@ test("the manifest maps every clip to an existing file", () => {
   const manifest = JSON.parse(
     readFileSync(join(process.cwd(), "public/voices/manifest.json"), "utf8"),
   ) as Record<string, string>;
+  const files = Object.values(manifest);
+  const refs = new Set(files.map((f) => f.split("-")[1]));
+  expect(refs.size).toBe(1); // one reference voice across the whole catalogue
   for (const [text, file] of Object.entries(manifest)) {
     expect(text.trim().length).toBeGreaterThan(0);
-    expect(file).toMatch(/^voice-[0-9a-f]{12}\.mp3$/);
+    // voice-<reference fingerprint 8>-<text hash 12>.mp3
+    expect(file).toMatch(/^voice-[0-9a-f]{8}-[0-9a-f]{12}\.mp3$/);
   }
 });

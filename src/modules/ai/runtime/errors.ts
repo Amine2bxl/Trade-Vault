@@ -39,8 +39,20 @@ export function redactSecrets(text: string): string {
   return text.replace(SECRET_RE, "[redacted]");
 }
 
+/** Message d'une erreur quelconque — y compris des valeurs non-Error (objets). */
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  try {
+    const s = JSON.stringify(err);
+    return s && s !== "{}" ? s : "[erreur sans détail]";
+  } catch {
+    return "[erreur non sérialisable]";
+  }
+}
+
 export function normalizeError(err: unknown, provider: string): RuntimeError {
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg = errorMessage(err);
   const status = (err as { status?: number })?.status;
   const low = msg.toLowerCase();
   const technical = (s: string) => redactSecrets(s.slice(0, 300));

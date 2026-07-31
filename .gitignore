@@ -45,4 +45,5 @@ dist-ssr
 probe.mjs
 # Local voice cloning tooling (heavy Python env — never commit)
 scripts/voices/.venv
+scripts/voices/.venv-f5
 scripts/voices/.gen-tmp
