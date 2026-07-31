@@ -194,7 +194,10 @@ export function buildCoachV1Payload(opts: {
   // you lose on Fridays". Computed deterministically, never by the model.
   const signals = computeBehaviorSignals(trades);
   return {
-    trades: toInsightTradesPayload(trades),
+    // Les 40 derniers trades suffisent pour les exemples du coach (les stats et
+    // signaux portent la vue d'ensemble). Un payload plus léger = l'IA répond
+    // plus vite et reste sous les limites de temps (serverless Vercel ~10s).
+    trades: toInsightTradesPayload(trades.slice(-40)),
     stats: trades.length ? compactStats(trades) : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
     signals: Object.keys(signals).length ? slimSignals(signals) : undefined,

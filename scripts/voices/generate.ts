@@ -96,13 +96,19 @@ function main(): void {
   if (!ENGINES[engine]) throw new Error(`unknown VOICE_ENGINE: ${engine}`);
   const { python, synth, label } = ENGINES[engine];
 
-  const reference =
-    process.env.VOICE_REF ?? join(ROOT, "src/modules/voice/Jarvis.mp3");
+  const reference = process.env.VOICE_REF ?? join(ROOT, "src/modules/voice/Jarvis.mp3");
   if (!existsSync(reference)) {
     throw new Error(`missing reference voice: ${reference}`);
   }
   const refHash = referenceHash(reference);
-  console.log(`[voices] engine=${label} reference=${reference} (${refHash})`);
+  // Render config is part of the filename: changing engine or speed re-renders
+  // every line instead of silently reusing clips rendered with old settings.
+  const speed = process.env.F5_SPEED ?? "0.86";
+  const steps = process.env.F5_STEPS ?? "24";
+  const cfgHash = sha256(`${engine}:${speed}:${steps}`).slice(0, 4);
+  console.log(
+    `[voices] engine=${label} reference=${reference} (${refHash}) speed=${speed} steps=${steps} cfg=${cfgHash}`,
+  );
 
   const catalog = buildCatalog();
   console.log(`[voices] catalog: ${catalog.length} unique lines`);
@@ -112,7 +118,7 @@ function main(): void {
   const need: typeof lines = [];
 
   for (const item of lines) {
-    const file = `voice-${refHash}-${item.id}.mp3`;
+    const file = `voice-${refHash}-${cfgHash}-${item.id}.mp3`;
     manifest[item.text] = file;
     if (!existsSync(join(OUT_DIR, file))) need.push(item);
   }
@@ -129,11 +135,10 @@ function main(): void {
       stdio: "inherit",
       env: { ...process.env, COQUI_TOS_AGREED: "1", PYTHONHASHSEED: "0" },
     });
-
     mkdirSync(OUT_DIR, { recursive: true });
     for (const item of need) {
       const wav = join(TMP_DIR, `${item.id}.wav`);
-      const mp3 = join(OUT_DIR, `voice-${refHash}-${item.id}.mp3`);
+      const mp3 = join(OUT_DIR, `voice-${refHash}-${cfgHash}-${item.id}.mp3`);
       // Trim edge silence and normalise loudness so playback is tight and even.
       const filter =
         "silenceremove=start_periods=1:start_threshold=-40dB:start_silence=0.15," +

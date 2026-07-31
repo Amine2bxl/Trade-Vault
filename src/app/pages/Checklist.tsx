@@ -539,24 +539,26 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   }, []);
 
   /* Play a pre-rendered audio URL with the same widget + comms choreography as
-     the hosted path. Resolves `true` once playback actually started; `false`
-     on autoplay refusal or a missing file, so callers can fall back to the
-     browser voice instead of staying silent. */
+     the hosted path. Resolves `true` once playback actually started (or ended,
+     with `waitEnd`); `false` on autoplay refusal or a missing file, so callers
+     can fall back to the browser voice instead of staying silent. */
   const playUrl = useCallback(
-    (url: string, txt: string, onBeforePlay?: () => void): Promise<boolean> =>
+    (url: string, txt: string, onBeforePlay?: () => void, waitEnd = false): Promise<boolean> =>
       new Promise((resolve) => {
         onBeforePlay?.();
         audioElRef.current?.pause();
         const el = new Audio(url);
         audioElRef.current = el;
-        let started = false;
+        let settled = false;
+        const settle = (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          resolve(ok);
+        };
         const fail = () => {
           commOff();
           hideVoiceWidget();
-          if (!started) {
-            started = true;
-            resolve(false);
-          }
+          settle(false);
         };
         el.volume = 0.95;
         showVoiceWidget(txt);
@@ -565,14 +567,12 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           radioClick();
           commOff();
           hideVoiceWidget();
+          if (waitEnd) settle(true);
         };
         el.onerror = fail;
         el.play()
           .then(() => {
-            if (!started) {
-              started = true;
-              resolve(true);
-            }
+            if (!waitEnd) settle(true);
           })
           .catch(fail);
       }),
@@ -652,7 +652,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     [radioClick, commOn, commOff, pickVoice, showVoiceWidget, hideVoiceWidget],
   );
 
-  const speak = useCallback(
+  /* One utterance, played to completion. Lines that arrive while one is
+     speaking are queued by `speak` — nothing gets cut off mid-sentence. */
+  const speakOne = useCallback(
     async (txt: string, tone: Tone) => {
       if (!audioOnRef.current) return;
       // The cloned voice first: any pre-rendered line plays its static clip —
@@ -661,21 +663,44 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       await loadVoiceClips();
       const clip = clipFor(txt);
       if (clip) {
-        const ok = await playUrl(clip, txt);
+        const ok = await playUrl(clip, txt, undefined, true);
         if (ok) return;
         // Autoplay refusal or missing file → fall through to hosted/browser.
       }
       // Hosted voice next — identical everywhere. Browser voice is the fallback.
       if (ttsAvailableRef.current !== false) {
-        void speakHosted(txt).then((ok) => {
-          if (ok || !("speechSynthesis" in window)) return;
-          speakBrowser(txt, tone);
-        });
+        const ok = await speakHosted(txt);
+        if (ok || !("speechSynthesis" in window)) return;
+        speakBrowser(txt, tone);
         return;
       }
       speakBrowser(txt, tone);
     },
     [playUrl, speakHosted, speakBrowser],
+  );
+
+  /* FIFO speech queue: rapid-fire `say()` calls each play in full, in order,
+     instead of the newer one cutting the older one off. */
+  const speechQueueRef = useRef<{ txt: string; tone: Tone }[]>([]);
+  const speechBusyRef = useRef(false);
+  const speakNext = useCallback(() => {
+    if (speechBusyRef.current) return;
+    const item = speechQueueRef.current.shift();
+    if (!item) return;
+    speechBusyRef.current = true;
+    void speakOne(item.txt, item.tone).finally(() => {
+      speechBusyRef.current = false;
+      speakNext();
+    });
+  }, [speakOne]);
+
+  const speak = useCallback(
+    (txt: string, tone: Tone) => {
+      if (!audioOnRef.current) return;
+      speechQueueRef.current.push({ txt, tone });
+      speakNext();
+    },
+    [speakNext],
   );
 
   const say = useCallback(
@@ -841,6 +866,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       if (gates[k] && !prev[k]) blip(950 + idx * 90, 0.06, "sine", 0.01);
     });
     if (gates.check && !prev.check && !allGates) say("checkDone");
+    if (gates.win && !prev.win) say("win");
     prevGatesRef.current = gates;
     if (allGates && !wasAllRef.current && !day.locked) {
       setFlash((f) => f + 1);
@@ -948,8 +974,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const setMotiv = (i: number) => {
     if (editMode) return;
     setDay((d) => ({ ...d, motiv: i }));
-    if (config.motivs[i]?.ok) confirmTick(4);
-    else {
+    if (config.motivs[i]?.ok) {
+      confirmTick(4);
+      say("motivOk");
+    } else {
       alarm();
       say("interference");
     }
@@ -957,8 +985,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const setFomo = (i: number) => {
     if (editMode) return;
     setDay((d) => ({ ...d, fomo: i }));
-    if (i === 3) alarm();
-    else blip(700 + i * 90, 0.08, "sine", 0.018);
+    if (i === 3) {
+      alarm();
+      say("fomo");
+    } else blip(700 + i * 90, 0.08, "sine", 0.018);
   };
   const toggleAssume = () => {
     setDay((d) => {
@@ -979,6 +1009,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       } catch {
         /* noop */
       }
+      speechQueueRef.current = [];
+      speechBusyRef.current = false;
       commOff();
       hideVoiceWidget();
     }
