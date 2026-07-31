@@ -25,6 +25,7 @@ const TradingPlan = lazy(() => import("./pages/TradingPlan"));
 const Appearance = lazy(() => import("./pages/Appearance"));
 const Subscription = lazy(() => import("./pages/Subscription"));
 const Inbox = lazy(() => import("./pages/Inbox"));
+import LoadingScreen from "./components/LoadingScreen";
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
@@ -339,9 +340,7 @@ function AppContent() {
   );
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-slate-400">Loading…</div>
-    );
+    return <LoadingScreen message="Vérification de ton compte…" />;
   }
 
   // Signed-out visitors get the public landing page (its CTAs open the auth
@@ -349,19 +348,13 @@ function AppContent() {
   if (!isAuthenticated) return <Landing />;
 
   if (onboarding === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-slate-400">Loading…</div>
-    );
+    return <LoadingScreen message="Préparation de ton espace…" />;
   }
 
   if (onboarding === "needed" && user) {
     return (
       <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center text-slate-400">
-            Loading…
-          </div>
-        }
+        fallback={<LoadingScreen message="Chargement de l'onboarding…" />}
       >
         <Onboarding userId={user.id} onDone={handleOnboardingDone} />
       </Suspense>

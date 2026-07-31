@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { LayoutDashboard, Plus, MoreHorizontal, X } from "lucide-react";
+import { LayoutDashboard, Plus, MoreHorizontal, X, Bell } from "lucide-react";
 import { Page } from "../types";
 import { MOBILE_BAR, MOBILE_MORE_GROUPS, NAV_ITEMS } from "../navigation";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useHasTradeDraft } from "../utils/persistence";
+import { useUnreadCount } from "../hooks/useUnreadCount";
 
 interface MobileNavProps {
   page: Page;
@@ -17,6 +18,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
   const { t } = useT();
   const { user } = useAuth();
   const hasDraft = useHasTradeDraft(user?.id);
+  const unread = useUnreadCount(user?.id);
   const [moreOpen, setMoreOpen] = useState(false);
 
   // Symmetric 2 + FAB + 2 layout. The promoted tabs come from MOBILE_BAR
@@ -91,13 +93,20 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
             {rightItems.map((it) =>
               renderItem({ ...it, active: page === it.id, onClick: () => setPage(it.id) }),
             )}
-            {renderItem({
-              id: "more",
-              label: t("nav.more"),
-              icon: MoreHorizontal,
-              active: isMoreActive,
-              onClick: () => setMoreOpen(true),
-            })}
+            <div className="relative">
+              {renderItem({
+                id: "more",
+                label: t("nav.more"),
+                icon: MoreHorizontal,
+                active: isMoreActive,
+                onClick: () => setMoreOpen(true),
+              })}
+              {unread > 0 && (
+                <span className="absolute top-0 right-1 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]">
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -96,7 +96,7 @@ function statusOf(event: CalendarEvent, now: number): EventStatus {
 function useNow(fast: boolean): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), fast ? 1_000 : 60_000);
+    const id = setInterval(() => setNow(Date.now()), fast ? 5_000 : 60_000);
     return () => clearInterval(id);
   }, [fast]);
   return now;
