@@ -65,6 +65,7 @@ export default function Inbox() {
       setNotifs((prev) =>
         prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)),
       );
+      window.dispatchEvent(new CustomEvent("tv:notif-updated"));
     },
     [user?.id],
   );
@@ -74,6 +75,7 @@ export default function Inbox() {
     for (const n of filtered) {
       if (!n.readAt) await handleMarkRead(n.id);
     }
+    window.dispatchEvent(new CustomEvent("tv:notif-updated"));
   }, [user?.id, filtered, handleMarkRead]);
 
   const IconComponent = (kind?: string) => {
