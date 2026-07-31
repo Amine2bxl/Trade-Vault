@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bot, Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
+import { Bot, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
 import { Trade } from "../types";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../utils/aiContext";
@@ -16,7 +16,7 @@ import {
 } from "../store";
 import MarkdownAnswer from "./MarkdownAnswer";
 import JarvisProfileModal from "./JarvisProfileModal";
-import { Modal } from "@/shared/ui";
+import JarvisShell from "./jarvis/JarvisShell";
 
 interface AiAssistantProps {
   trades: Trade[];
@@ -285,41 +285,24 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       </button>
 
       {open && !profileOpen && (
-        <Modal
+        <JarvisShell
           open
           onClose={() => setOpen(false)}
-          className="md:max-w-lg w-full h-[65vh] md:h-[600px] max-h-[85vh] flex flex-col overflow-hidden"
-        >
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.06] to-transparent shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
-              <Bot className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-white">{t("assistant.title")}</h3>
-              <p className="text-[11px] text-slate-500 truncate">{t("assistant.subtitle")}</p>
-            </div>
-            {messages.length > 0 && (
+          actions={
+            messages.length > 0 ? (
               <button
                 onClick={clearChat}
                 aria-label={t("assistant.clear")}
                 title={t("assistant.clear")}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
               >
                 <Eraser className="w-4 h-4" />
               </button>
-            )}
-            <button
-              onClick={() => setOpen(false)}
-              aria-label={t("common.close")}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors shrink-0"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
+            ) : null
+          }
+        >
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-3">
             {messages.length === 0 && (
               <div className="text-sm text-slate-500 leading-relaxed">{t("assistant.empty")}</div>
             )}
@@ -400,7 +383,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
               </button>
             </div>
           </div>
-        </Modal>
+        </JarvisShell>
       )}
 
       {/* First-open card: the trader tells Jarvis who they are once. */}
