@@ -14,6 +14,13 @@ describe("patternForPain — la faiblesse déclarée oriente Jarvis", () => {
     expect(patternForPain(undefined)).toBeNull();
   });
 
+  it("gère la multi-sélection (liste séparée par virgules) → premier mappable", () => {
+    expect(patternForPain("journaling, emotions")).toBe("costliest_mistake");
+    expect(patternForPain("risk, overtrading")).toBe("risk_after_loss");
+    expect(patternForPain("emotions, risk")).toBe("discipline_streak");
+    expect(patternForPain("  overtrading , emotions ")).toBe("overtrading");
+  });
+
   it("le Hero préfère le pattern lié à la faiblesse déclarée", () => {
     // Un trader overtrading dont la faiblesse déclarée EST overtrading :
     // le détecteur overtrading est validé ET priorisé par le profil.
