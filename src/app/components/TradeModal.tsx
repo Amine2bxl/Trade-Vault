@@ -332,10 +332,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       ? "L'heure d'entrée doit être antérieure à l'heure de sortie."
       : null;
   const rMultipleError =
-    form.direction !== "be" &&
-    form.rMultiple !== "" &&
-    (isNaN(parseFloat(form.rMultiple)) || parseFloat(form.rMultiple) <= 0)
-      ? "Le R multiple doit être un nombre positif."
+    form.direction !== "be" && form.rMultiple !== "" && isNaN(parseFloat(form.rMultiple))
+      ? "Le R multiple doit être un nombre valide."
       : null;
   const isValid =
     form.symbol &&

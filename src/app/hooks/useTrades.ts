@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { loadUserTrades, migrateLegacyTradeScreenshots } from "../store";
 import type { Trade } from "../types";
@@ -16,6 +16,23 @@ import type { Trade } from "../types";
 
 const EMPTY: Trade[] = [];
 
+/** sessionStorage persistence: on F5 the in-memory React Query cache is gone
+ * and the dashboard waits ~3s for a cold Supabase round-trip. Persisting the
+ * last successful fetch and feeding it back as `initialData` makes the page
+ * paint instantly with the previous data while a background refetch silently
+ * updates it. */
+function tradesStorageKey(userId: string, accountId: string | null) {
+  return `tv:trades:${userId}:${accountId ?? ""}`;
+}
+function readCachedTrades(key: string): Trade[] | undefined {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Trade[]) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Stable cache key for a user's trades scoped to the active account. */
 export function tradesQueryKey(userId: string | null | undefined, accountId: string | null) {
   return ["trades", userId ?? null, accountId] as const;
@@ -29,6 +46,9 @@ export function useTrades(
   const queryClient = useQueryClient();
   const isOn = !!userId && enabled;
 
+  const sKey = userId ? tradesStorageKey(userId, accountId) : "";
+  const initialData = useMemo(() => (sKey ? readCachedTrades(sKey) : undefined), [sKey]);
+
   const query = useQuery({
     queryKey: tradesQueryKey(userId, accountId),
     // loadUserTrades scopes to the active account via module state; the
@@ -36,7 +56,19 @@ export function useTrades(
     queryFn: () => loadUserTrades(userId as string),
     enabled: isOn,
     staleTime: 30_000,
+    initialData,
   });
+
+  // Persist to sessionStorage on every successful fetch so the next F5
+  // restores the data instantly.
+  useEffect(() => {
+    if (!sKey || !query.data) return;
+    try {
+      sessionStorage.setItem(sKey, JSON.stringify(query.data));
+    } catch {
+      /* quota exceeded — non-critical */
+    }
+  }, [query.data, sKey]);
 
   // One-time background migration: trades still carrying inline base64
   // screenshots get their images moved to Storage, then each migrated trade is

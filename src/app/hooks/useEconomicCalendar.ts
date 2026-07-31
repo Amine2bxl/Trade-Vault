@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchEconomicCalendar } from "@/backend/economic-calendar.functions";
 import type { CalendarEvent } from "@/modules/economic-calendar";
@@ -17,6 +18,22 @@ import { addDays, etToInstant, getEventsForWeek, isoDate } from "../utils/econom
 // ============================================================
 
 const MINUTE = 60_000;
+
+/** sessionStorage persistence: same pattern as useTrades — on F5 the cold
+ * server fetch takes ~3s. Caching the last response and feeding it back as
+ * `initialData` makes the calendar paint instantly while a background
+ * refetch silently updates it. */
+function econStorageKey(weekKey: string) {
+  return `tv:econ:${weekKey}`;
+}
+function readCachedEcon<T>(key: string): T | undefined {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Repli hors-ligne : le générateur de règles, converti au format normalisé. */
 async function fallbackEvents(weekStart: Date): Promise<CalendarEvent[]> {
@@ -69,6 +86,12 @@ export function useEconomicCalendar(weekStart: Date): EconomicCalendarState {
   const to = addDays(weekStart, 7);
   const weekKey = isoDate(weekStart);
 
+  const sKey = econStorageKey(weekKey);
+  const initialData = useMemo(
+    () => readCachedEcon<Awaited<ReturnType<typeof fetchEconomicCalendar>>>(sKey),
+    [sKey],
+  );
+
   const primary = useQuery({
     queryKey: ["economic-calendar", weekKey],
     queryFn: () =>
@@ -80,7 +103,18 @@ export function useEconomicCalendar(weekStart: Date): EconomicCalendarState {
     // suivante : la navigation ne doit jamais faire clignoter la page.
     placeholderData: (previous) => previous,
     refetchInterval: (query) => refreshInterval(query.state.data?.events ?? [], from, to),
+    initialData,
   });
+
+  // Persist to sessionStorage so the next F5 restores the data instantly.
+  useEffect(() => {
+    if (!primary.data) return;
+    try {
+      sessionStorage.setItem(sKey, JSON.stringify(primary.data));
+    } catch {
+      /* quota exceeded — non-critical */
+    }
+  }, [primary.data, sKey]);
 
   const cacheEmpty = !primary.isPending && (primary.data?.events.length ?? 0) === 0;
 
