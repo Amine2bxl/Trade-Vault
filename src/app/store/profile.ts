@@ -97,6 +97,65 @@ export async function saveLanguage(userId: string, language: string): Promise<vo
   if (error) throw error;
 }
 
+// ── Jarvis remembered profile ──
+// Captured by the first-open Jarvis card and fed to the coach on every call.
+// `completedAt` being NULL is the gate that re-shows the card on next open.
+export interface JarvisProfile {
+  firstName: string | null;
+  style: string | null;
+  weakness: string | null;
+  strength: string | null;
+  goal: string | null;
+  completedAt: string | null;
+}
+
+interface JarvisProfileRow {
+  jarvis_first_name: string | null;
+  jarvis_style: string | null;
+  jarvis_weakness: string | null;
+  jarvis_strength: string | null;
+  jarvis_goal: string | null;
+  jarvis_completed_at: string | null;
+}
+
+export async function loadJarvisProfile(userId: string): Promise<JarvisProfile> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "jarvis_first_name, jarvis_style, jarvis_weakness, jarvis_strength, jarvis_goal, jarvis_completed_at",
+    )
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  const r = (data ?? {}) as JarvisProfileRow;
+  return {
+    firstName: r.jarvis_first_name ?? null,
+    style: r.jarvis_style ?? null,
+    weakness: r.jarvis_weakness ?? null,
+    strength: r.jarvis_strength ?? null,
+    goal: r.jarvis_goal ?? null,
+    completedAt: r.jarvis_completed_at ?? null,
+  };
+}
+
+export async function saveJarvisProfile(
+  userId: string,
+  p: Pick<JarvisProfile, "firstName" | "style" | "weakness" | "strength" | "goal">,
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      jarvis_first_name: p.firstName?.trim() || null,
+      jarvis_style: p.style?.trim() || null,
+      jarvis_weakness: p.weakness?.trim() || null,
+      jarvis_strength: p.strength?.trim() || null,
+      jarvis_goal: p.goal?.trim() || null,
+      jarvis_completed_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+  if (error) throw error;
+}
+
 // ── Onboarding (stored on profile) ──
 export interface OnboardingData {
   goal: string | null;

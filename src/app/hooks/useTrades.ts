@@ -46,8 +46,18 @@ export function useTrades(
   const queryClient = useQueryClient();
   const isOn = !!userId && enabled;
 
+  // On F5 the active account is null until AccountContext resolves. Reading a
+  // userId-level cache during that window avoids flashing the empty state: the
+  // last active account's trades (mirrored below) paint immediately, then the
+  // account-scoped cache/refetch takes over once `accountId` resolves.
   const sKey = userId ? tradesStorageKey(userId, accountId) : "";
-  const initialData = useMemo(() => (sKey ? readCachedTrades(sKey) : undefined), [sKey]);
+  const userLevelKey = userId ? `tv:trades:${userId}:` : "";
+  const initialData = useMemo(() => {
+    if (!sKey) return undefined;
+    return (
+      readCachedTrades(sKey) ?? (accountId === null ? readCachedTrades(userLevelKey) : undefined)
+    );
+  }, [sKey, userLevelKey, accountId]);
 
   const query = useQuery({
     queryKey: tradesQueryKey(userId, accountId),
@@ -60,15 +70,17 @@ export function useTrades(
   });
 
   // Persist to sessionStorage on every successful fetch so the next F5
-  // restores the data instantly.
+  // restores the data instantly — once scoped to the active account, and once
+  // as a userId-level mirror for the pre-account window.
   useEffect(() => {
-    if (!sKey || !query.data) return;
+    if (!userId || !query.data) return;
     try {
       sessionStorage.setItem(sKey, JSON.stringify(query.data));
+      sessionStorage.setItem(userLevelKey, JSON.stringify(query.data));
     } catch {
       /* quota exceeded — non-critical */
     }
-  }, [query.data, sKey]);
+  }, [query.data, sKey, userLevelKey, userId]);
 
   // One-time background migration: trades still carrying inline base64
   // screenshots get their images moved to Storage, then each migrated trade is

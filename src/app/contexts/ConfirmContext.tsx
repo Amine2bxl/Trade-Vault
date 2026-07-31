@@ -1,15 +1,8 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { Modal } from "@/shared/ui";
 
 interface ConfirmOptions {
   danger?: boolean;
@@ -40,28 +33,19 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     setPending(null);
   };
 
-  // Esc-to-close
-  useEffect(() => {
-    if (!pending) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") settle(false);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [pending]);
-
   return (
     <ConfirmCtx.Provider value={confirm}>
       {children}
       {pending && (
-        <div
-          className="fixed inset-0 z-[110] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in"
-          onClick={() => settle(false)}
+        <Modal
+          open
+          onClose={() => settle(false)}
+          size="sm"
+          // Rides above every other modal (z-110), with a stronger dim.
+          wrapperClassName="z-[110]"
+          backdropClassName="bg-black/70"
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full md:max-w-sm md:rounded-3xl rounded-t-3xl glass-strong border border-white/10 p-6 animate-slide-up md:animate-slide-in"
-          >
+          <div className="p-6">
             <div
               className={cn(
                 "w-11 h-11 rounded-2xl flex items-center justify-center mb-4",
@@ -91,7 +75,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </ConfirmCtx.Provider>
   );

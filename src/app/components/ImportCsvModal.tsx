@@ -5,7 +5,7 @@ import { generateId } from "../store";
 import { formatPnl } from "../utils/tradeCalcs";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
-import { Button } from "@/shared/ui";
+import { Button, Modal } from "@/shared/ui";
 
 interface ImportCsvModalProps {
   existing: Trade[];
@@ -283,212 +283,213 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500/40 cursor-pointer";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative glass-strong rounded-t-3xl md:rounded-3xl w-full md:max-w-2xl max-h-[96vh] md:max-h-[90vh] overflow-hidden animate-slide-up md:animate-slide-in shadow-2xl shadow-black/50">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Upload className="w-4 h-4 text-cyan-400" />
-            {t("import.title")}
-          </h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Modal
+      open
+      onClose={onClose}
+      className="md:max-w-2xl max-h-[96vh] md:max-h-[90vh] overflow-hidden"
+    >
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <Upload className="w-4 h-4 text-cyan-400" />
+          {t("import.title")}
+        </h2>
+        <button
+          onClick={onClose}
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-70px)] px-6 py-5 space-y-4">
-          {result ? (
-            <div className="text-center py-8">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-                <Check className="w-7 h-7 text-emerald-400" />
-              </div>
-              <div className="text-xl font-bold text-white mb-1">
-                {result.imported} {t("import.imported")}
-              </div>
-              <div className="text-xs text-slate-500">
-                {result.duplicates > 0 && (
-                  <span>
-                    {result.duplicates} {t("import.duplicatesSkipped")} ·{" "}
-                  </span>
-                )}
-                {result.invalid > 0 && (
-                  <span>
-                    {result.invalid} {t("import.invalidSkipped")}
-                  </span>
-                )}
-              </div>
-              <Button onClick={onClose} className="mt-6">
-                {t("common.close")}
-              </Button>
+      <div className="overflow-y-auto max-h-[calc(90vh-70px)] px-6 py-5 space-y-4">
+        {result ? (
+          <div className="text-center py-8">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+              <Check className="w-7 h-7 text-emerald-400" />
             </div>
-          ) : !parsed ? (
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOver(false);
-                handleFile(e.dataTransfer.files?.[0]);
-              }}
-              onClick={() => fileRef.current?.click()}
+            <div className="text-xl font-bold text-white mb-1">
+              {result.imported} {t("import.imported")}
+            </div>
+            <div className="text-xs text-slate-500">
+              {result.duplicates > 0 && (
+                <span>
+                  {result.duplicates} {t("import.duplicatesSkipped")} ·{" "}
+                </span>
+              )}
+              {result.invalid > 0 && (
+                <span>
+                  {result.invalid} {t("import.invalidSkipped")}
+                </span>
+              )}
+            </div>
+            <Button onClick={onClose} className="mt-6">
+              {t("common.close")}
+            </Button>
+          </div>
+        ) : !parsed ? (
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              handleFile(e.dataTransfer.files?.[0]);
+            }}
+            onClick={() => fileRef.current?.click()}
+            className={cn(
+              "rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all",
+              dragOver
+                ? "border-cyan-500/50 bg-cyan-500/[0.05]"
+                : "border-white/[0.08] hover:border-cyan-500/30 hover:bg-cyan-500/[0.02]",
+            )}
+          >
+            <FileSpreadsheet className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+            <div className="text-sm font-semibold text-white mb-1">{t("import.dropHint")}</div>
+            <div className="text-[11px] text-slate-500">
+              NinjaTrader · TradingView · TopStep · TradeVault · CSV
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => handleFile(e.target.files?.[0])}
+              className="hidden"
+            />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="text-xs text-slate-400">
+                {parsed.rows.length} {t("import.rowsDetected")}
+                {parsed.format && (
+                  <span className="ml-2 px-2 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-400 text-[10px] font-bold">
+                    {parsed.format}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setParsed(null);
+                  setMapping({});
+                }}
+                className="text-[11px] text-slate-500 hover:text-white transition-colors"
+              >
+                {t("import.otherFile")}
+              </button>
+            </div>
+
+            {/* Column mapping */}
+            <div>
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                {t("import.mapColumns")}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                {FIELDS.map((f) => (
+                  <div key={f}>
+                    <label className="block text-[10px] text-slate-500 mb-1">
+                      {f === "date"
+                        ? t("trade.date")
+                        : f === "symbol"
+                          ? t("trade.symbol")
+                          : f === "pnl"
+                            ? t("journal.colPnl")
+                            : f === "direction"
+                              ? t("trade.direction")
+                              : f === "entryTime"
+                                ? t("trade.entryTime")
+                                : f === "exitTime"
+                                  ? t("trade.exitTime")
+                                  : f === "risk"
+                                    ? t("trade.riskAmount")
+                                    : f === "rMultiple"
+                                      ? t("trade.rrMultiple")
+                                      : f === "strategy"
+                                        ? t("trade.strategy")
+                                        : f === "slippage"
+                                          ? t("trade.slippage")
+                                          : t("trade.notes")}
+                      {REQUIRED.includes(f) && <span className="text-red-400"> *</span>}
+                    </label>
+                    <select
+                      value={mapping[f] ?? ""}
+                      onChange={(e) =>
+                        setMapping((m) => ({
+                          ...m,
+                          [f]: e.target.value === "" ? undefined : Number(e.target.value),
+                        }))
+                      }
+                      className={selectClass}
+                    >
+                      <option value="">—</option>
+                      {parsed.headers.map((h, i) => (
+                        <option key={i} value={i}>
+                          {h || `(col ${i + 1})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div>
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                {t("import.preview")} · {mappedTrades.valid.length} {t("import.validRows")}
+                {mappedTrades.invalid > 0
+                  ? ` · ${mappedTrades.invalid} ${t("import.invalidSkipped")}`
+                  : ""}
+              </div>
+              <div className="rounded-xl border border-white/[0.06] overflow-hidden divide-y divide-white/[0.04]">
+                {mappedTrades.valid.slice(0, 5).map((tr, i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
+                    <span className="text-slate-500 w-20 shrink-0">{tr.date}</span>
+                    <span className="font-bold text-white w-16 truncate">{tr.symbol}</span>
+                    <span className="text-slate-500 uppercase text-[10px]">{tr.direction}</span>
+                    {tr.entryTime && (
+                      <span className="text-slate-600 text-[10px]">{tr.entryTime}</span>
+                    )}
+                    <span
+                      className={cn(
+                        "ml-auto font-bold tabular-nums",
+                        tr.pnl >= 0 ? "text-emerald-400" : "text-red-400",
+                      )}
+                    >
+                      {formatPnl(tr.pnl)}
+                    </span>
+                  </div>
+                ))}
+                {mappedTrades.valid.length === 0 && (
+                  <div className="px-3 py-6 text-center text-xs text-slate-600">
+                    {t("import.noValidRows")}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Button
+              onClick={doImport}
+              disabled={!canImport || importing}
               className={cn(
-                "rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all",
-                dragOver
-                  ? "border-cyan-500/50 bg-cyan-500/[0.05]"
-                  : "border-white/[0.08] hover:border-cyan-500/30 hover:bg-cyan-500/[0.02]",
+                "w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                canImport && !importing
+                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
+                  : "bg-slate-800 text-slate-500 cursor-not-allowed",
               )}
             >
-              <FileSpreadsheet className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-              <div className="text-sm font-semibold text-white mb-1">{t("import.dropHint")}</div>
-              <div className="text-[11px] text-slate-500">
-                NinjaTrader · TradingView · TopStep · TradeVault · CSV
-              </div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(e) => handleFile(e.target.files?.[0])}
-                className="hidden"
-              />
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="text-xs text-slate-400">
-                  {parsed.rows.length} {t("import.rowsDetected")}
-                  {parsed.format && (
-                    <span className="ml-2 px-2 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-400 text-[10px] font-bold">
-                      {parsed.format}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => {
-                    setParsed(null);
-                    setMapping({});
-                  }}
-                  className="text-[11px] text-slate-500 hover:text-white transition-colors"
-                >
-                  {t("import.otherFile")}
-                </button>
-              </div>
-
-              {/* Column mapping */}
-              <div>
-                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  {t("import.mapColumns")}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-                  {FIELDS.map((f) => (
-                    <div key={f}>
-                      <label className="block text-[10px] text-slate-500 mb-1">
-                        {f === "date"
-                          ? t("trade.date")
-                          : f === "symbol"
-                            ? t("trade.symbol")
-                            : f === "pnl"
-                              ? t("journal.colPnl")
-                              : f === "direction"
-                                ? t("trade.direction")
-                                : f === "entryTime"
-                                  ? t("trade.entryTime")
-                                  : f === "exitTime"
-                                    ? t("trade.exitTime")
-                                    : f === "risk"
-                                      ? t("trade.riskAmount")
-                                      : f === "rMultiple"
-                                        ? t("trade.rrMultiple")
-                                        : f === "strategy"
-                                          ? t("trade.strategy")
-                                          : f === "slippage"
-                                            ? t("trade.slippage")
-                                            : t("trade.notes")}
-                        {REQUIRED.includes(f) && <span className="text-red-400"> *</span>}
-                      </label>
-                      <select
-                        value={mapping[f] ?? ""}
-                        onChange={(e) =>
-                          setMapping((m) => ({
-                            ...m,
-                            [f]: e.target.value === "" ? undefined : Number(e.target.value),
-                          }))
-                        }
-                        className={selectClass}
-                      >
-                        <option value="">—</option>
-                        {parsed.headers.map((h, i) => (
-                          <option key={i} value={i}>
-                            {h || `(col ${i + 1})`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div>
-                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  {t("import.preview")} · {mappedTrades.valid.length} {t("import.validRows")}
-                  {mappedTrades.invalid > 0
-                    ? ` · ${mappedTrades.invalid} ${t("import.invalidSkipped")}`
-                    : ""}
-                </div>
-                <div className="rounded-xl border border-white/[0.06] overflow-hidden divide-y divide-white/[0.04]">
-                  {mappedTrades.valid.slice(0, 5).map((tr, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
-                      <span className="text-slate-500 w-20 shrink-0">{tr.date}</span>
-                      <span className="font-bold text-white w-16 truncate">{tr.symbol}</span>
-                      <span className="text-slate-500 uppercase text-[10px]">{tr.direction}</span>
-                      {tr.entryTime && (
-                        <span className="text-slate-600 text-[10px]">{tr.entryTime}</span>
-                      )}
-                      <span
-                        className={cn(
-                          "ml-auto font-bold tabular-nums",
-                          tr.pnl >= 0 ? "text-emerald-400" : "text-red-400",
-                        )}
-                      >
-                        {formatPnl(tr.pnl)}
-                      </span>
-                    </div>
-                  ))}
-                  {mappedTrades.valid.length === 0 && (
-                    <div className="px-3 py-6 text-center text-xs text-slate-600">
-                      {t("import.noValidRows")}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Button
-                onClick={doImport}
-                disabled={!canImport || importing}
-                className={cn(
-                  "w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-                  canImport && !importing
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
-                    : "bg-slate-800 text-slate-500 cursor-not-allowed",
-                )}
-              >
-                {importing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
-                {t("import.importBtn")} ({mappedTrades.valid.length})
-              </Button>
-            </>
-          )}
-        </div>
+              {importing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {t("import.importBtn")} ({mappedTrades.valid.length})
+            </Button>
+          </>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }

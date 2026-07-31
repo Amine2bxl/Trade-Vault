@@ -3,7 +3,7 @@ import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "./tradingRules";
 import { loadMemory, remember } from "@/modules/ai/memory";
-import { loadOnboarding, type OnboardingData } from "../store";
+import { loadOnboarding, loadJarvisProfile, type OnboardingData } from "../store";
 import type { AIUserContext } from "@/modules/ai/context";
 
 /**
@@ -98,22 +98,32 @@ export interface CoachV1Payload {
 }
 
 /**
- * One-line trader profile from the onboarding answers — sent with every coach
- * call so the coaching addresses THIS trader (their style, market, declared
- * weakness, goal and target) instead of sounding generic. Pure, sync, no IO.
+ * One-line trader profile from the onboarding answers + the Jarvis remembered
+ * profile — sent with every coach call so the coaching addresses THIS trader
+ * (their name, style, declared weakness, strength, goal and target) instead of
+ * sounding generic. Pure, sync, no IO.
  */
 export function describeProfile(
   onb: (OnboardingData & { monthlyTarget?: number | null }) | null | undefined,
+  jarvis?: {
+    firstName?: string | null;
+    style?: string | null;
+    weakness?: string | null;
+    strength?: string | null;
+    goal?: string | null;
+  } | null,
 ): string | undefined {
-  if (!onb) return undefined;
   const parts: string[] = [];
-  if (onb.style) parts.push(`style: ${onb.style}`);
-  if (onb.experience) parts.push(`experience: ${onb.experience}`);
-  if (onb.assets?.length) parts.push(`markets: ${onb.assets.slice(0, 5).join(", ")}`);
-  if (onb.usesIct) parts.push("uses ICT concepts");
-  if (onb.goal) parts.push(`goal: ${onb.goal}`);
-  if (onb.pain) parts.push(`declared weakness to police: ${onb.pain}`);
-  if (typeof onb.monthlyTarget === "number" && onb.monthlyTarget > 0)
+  if (jarvis?.firstName) parts.push(`first name: ${jarvis.firstName}`);
+  if (onb?.style || jarvis?.style) parts.push(`style: ${onb?.style || jarvis?.style}`);
+  if (onb?.experience) parts.push(`experience: ${onb.experience}`);
+  if (onb?.assets?.length) parts.push(`markets: ${onb.assets.slice(0, 5).join(", ")}`);
+  if (onb?.usesIct) parts.push("uses ICT concepts");
+  if (onb?.goal || jarvis?.goal) parts.push(`goal: ${onb?.goal || jarvis?.goal}`);
+  if (onb?.pain || jarvis?.weakness)
+    parts.push(`declared weakness to police: ${onb?.pain || jarvis?.weakness}`);
+  if (jarvis?.strength) parts.push(`strength to build on: ${jarvis.strength}`);
+  if (typeof onb?.monthlyTarget === "number" && onb.monthlyTarget > 0)
     parts.push(`monthly target: ${onb.monthlyTarget}%`);
   if (!parts.length) return undefined;
   return `Trader profile — ${parts.join("; ")}.`;
@@ -132,10 +142,26 @@ export function buildCoachV1Payload(opts: {
   maxTurns?: number;
   /** Onboarding answers — makes the coaching personal on every single call. */
   onboarding?: (OnboardingData & { monthlyTarget?: number | null }) | null;
+  /** The Jarvis remembered profile (first name, strength, goal…). */
+  jarvisProfile?: {
+    firstName?: string | null;
+    style?: string | null;
+    weakness?: string | null;
+    strength?: string | null;
+    goal?: string | null;
+  } | null;
   /** The trader's own rules, so the coach holds them to their own standard. */
   rules?: TradingRule[];
 }): CoachV1Payload {
-  const { trades, conversation = [], language, maxTurns = 16, onboarding, rules } = opts;
+  const {
+    trades,
+    conversation = [],
+    language,
+    maxTurns = 16,
+    onboarding,
+    jarvisProfile,
+    rules,
+  } = opts;
   const stats = trades.length ? computeStats(trades) : null;
   const mistakes = stats
     ? Object.entries(stats.mistakeStats)
@@ -159,7 +185,7 @@ export function buildCoachV1Payload(opts: {
     conversation: conversation
       .slice(-maxTurns)
       .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),
-    profile: describeProfile(onboarding),
+    profile: describeProfile(onboarding, jarvisProfile),
     language,
   };
 }
@@ -169,13 +195,19 @@ export async function seedProfileMemory(userId: string): Promise<void> {
     const existing = await loadMemory(userId, ["profile"], 1);
     if (existing.length) return;
 
-    const onb = await loadOnboarding(userId);
+    const [onb, jarvis] = await Promise.all([
+      loadOnboarding(userId).catch(() => null),
+      loadJarvisProfile(userId).catch(() => null),
+    ]);
     const parts: string[] = [];
-    if (onb.style) parts.push(`style: ${onb.style}`);
-    if (onb.pain) parts.push(`main weakness to watch: ${onb.pain}`);
-    if (typeof onb.monthlyTarget === "number") parts.push(`monthly target: ${onb.monthlyTarget}%`);
-    if (onb.experience) parts.push(`experience: ${onb.experience}`);
-    if (onb.usesIct) parts.push("uses ICT concepts");
+    if (jarvis?.firstName) parts.push(`first name: ${jarvis.firstName}`);
+    if (onb?.style || jarvis?.style) parts.push(`style: ${onb?.style || jarvis?.style}`);
+    if (onb?.pain || jarvis?.weakness)
+      parts.push(`main weakness to watch: ${onb?.pain || jarvis?.weakness}`);
+    if (jarvis?.strength) parts.push(`strength to build on: ${jarvis.strength}`);
+    if (typeof onb?.monthlyTarget === "number") parts.push(`monthly target: ${onb.monthlyTarget}%`);
+    if (onb?.experience) parts.push(`experience: ${onb.experience}`);
+    if (onb?.usesIct) parts.push("uses ICT concepts");
     if (!parts.length) return;
 
     await remember(userId, "profile", `Trader profile — ${parts.join("; ")}.`);

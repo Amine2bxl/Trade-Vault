@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { LogOut } from "lucide-react";
 import { Page } from "../types";
 import { NAV_GROUPS } from "../navigation";
@@ -20,6 +21,14 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
   const { user, logout } = useAuth();
   const { t } = useT();
   const unread = useUnreadCount(user?.id);
+  // Only transition the win-rate bar once it changes AFTER mount — on a fresh
+  // load (F5) the bar must render at its final width instantly, otherwise the
+  // 0→X transition is what made the navbar "shake" on every refresh.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   return (
     // h-dvh + sticky top-0: the rail is always exactly viewport-height and never
@@ -128,7 +137,10 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           </div>
           <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-700"
+              className={cn(
+                "h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400",
+                mounted && "transition-all duration-700",
+              )}
               style={{ width: `${winRate * 100}%` }}
             />
           </div>

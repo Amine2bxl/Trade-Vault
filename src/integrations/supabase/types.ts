@@ -414,6 +414,12 @@ export type Database = {
           created_at: string;
           email: string;
           id: string;
+          jarvis_completed_at: string | null;
+          jarvis_first_name: string | null;
+          jarvis_goal: string | null;
+          jarvis_strength: string | null;
+          jarvis_style: string | null;
+          jarvis_weakness: string | null;
           language: string;
           name: string;
           onboarded_at: string | null;
@@ -440,6 +446,12 @@ export type Database = {
           created_at?: string;
           email?: string;
           id: string;
+          jarvis_completed_at?: string | null;
+          jarvis_first_name?: string | null;
+          jarvis_goal?: string | null;
+          jarvis_strength?: string | null;
+          jarvis_style?: string | null;
+          jarvis_weakness?: string | null;
           language?: string;
           name?: string;
           onboarded_at?: string | null;
@@ -466,6 +478,12 @@ export type Database = {
           created_at?: string;
           email?: string;
           id?: string;
+          jarvis_completed_at?: string | null;
+          jarvis_first_name?: string | null;
+          jarvis_goal?: string | null;
+          jarvis_strength?: string | null;
+          jarvis_style?: string | null;
+          jarvis_weakness?: string | null;
           language?: string;
           name?: string;
           onboarded_at?: string | null;

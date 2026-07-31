@@ -8,8 +8,15 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
-import { loadOnboarding, type OnboardingData } from "../store";
+import {
+  loadOnboarding,
+  loadJarvisProfile,
+  saveJarvisProfile,
+  type OnboardingData,
+} from "../store";
 import MarkdownAnswer from "./MarkdownAnswer";
+import JarvisProfileModal from "./JarvisProfileModal";
+import { Modal } from "@/shared/ui";
 
 interface AiAssistantProps {
   trades: Trade[];
@@ -47,6 +54,33 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
   const chatKey = nsKey(user?.id, "ai.chat");
   const inputKey = nsKey(user?.id, "ai.input");
   const [open, setOpen] = useState(false);
+  // First-open gate: the "Profile Jarvis remembers" card shows until the trader
+  // completes it. Re-checked on every open so a dismissed card comes back until
+  // it is saved (jarvis_completed_at non-NULL).
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [jarvisProfile, setJarvisProfile] = useState<{
+    firstName?: string | null;
+    style?: string | null;
+    weakness?: string | null;
+    strength?: string | null;
+    goal?: string | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    let active = true;
+    loadJarvisProfile(user.id)
+      .then((p) => {
+        if (!active) return;
+        setJarvisProfile(p);
+        if (!p.completedAt) setProfileOpen(true);
+      })
+      .catch(() => {
+        // Best-effort: a failed read never blocks the coach.
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, user?.id]);
   // Conversation + draft input persist per user, so a message you sent keeps its
   // answer, and a half-typed question is still there, after you close the panel,
   // switch pages, or come back later on this device.
@@ -133,6 +167,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         conversation: priorTurns,
         language: lang,
         onboarding,
+        jarvisProfile,
         rules,
       });
       try {
@@ -160,7 +195,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         setLoading(false);
       }
     },
-    [loading, messages, trades, lang, t, user?.id, onboarding, rules],
+    [loading, messages, trades, lang, t, user?.id, onboarding, jarvisProfile, rules],
   );
 
   // Other pages (e.g. the pre-market Checklist) can open the coach with a
@@ -249,8 +284,12 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         </span>
       </button>
 
-      {open && (
-        <div className="fixed z-40 bottom-[9.5rem] right-4 left-4 md:left-auto md:bottom-24 md:right-6 md:w-[380px] h-[65vh] md:h-[600px] max-h-[calc(100vh-180px)] glass-strong rounded-3xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-slide-up">
+      {open && !profileOpen && (
+        <Modal
+          open
+          onClose={() => setOpen(false)}
+          className="md:max-w-lg w-full h-[65vh] md:h-[600px] max-h-[85vh] flex flex-col overflow-hidden"
+        >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.06] to-transparent shrink-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
@@ -361,7 +400,28 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
+      )}
+
+      {/* First-open card: the trader tells Jarvis who they are once. */}
+      {open && profileOpen && (
+        <JarvisProfileModal
+          open
+          onClose={() => setProfileOpen(false)}
+          onSave={async (p) => {
+            if (!user?.id) return;
+            await saveJarvisProfile(user.id, p);
+          }}
+          onSaved={() => {
+            setProfileOpen(false);
+            // Make the freshly-saved profile available to the coach immediately.
+            if (user?.id) {
+              loadJarvisProfile(user.id)
+                .then((p) => setJarvisProfile(p))
+                .catch(() => {});
+            }
+          }}
+        />
       )}
     </>
   );

@@ -356,6 +356,20 @@ const en = {
   "assistant.clear": "Clear conversation",
   "assistant.close": "Close",
 
+  // Jarvis remembered profile (first-open card)
+  "jarvisProfile.title": "Profile Jarvis remembers",
+  "jarvisProfile.subtitle": "What Jarvis knows about you, so it can personalize every answer.",
+  "jarvisProfile.firstName": "First name",
+  "jarvisProfile.style": "Trading style",
+  "jarvisProfile.weakness": "Main weakness",
+  "jarvisProfile.weaknessPh": "e.g. revenge trading",
+  "jarvisProfile.strength": "Main strength",
+  "jarvisProfile.strengthPh": "e.g. patience at key levels",
+  "jarvisProfile.goal": "Current goal",
+  "jarvisProfile.goalPh": "e.g. +5R per month",
+  "jarvisProfile.save": "Save",
+  "jarvisProfile.saveError": "Could not save your profile. Please try again.",
+
   // Dashboard
   "dashboard.greetingStillUp": "Still up",
   "dashboard.greetingMorning": "Good morning",

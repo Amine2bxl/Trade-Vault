@@ -447,7 +447,7 @@ function AppContent() {
                 />
               )}
               {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
-              {page === "calendar" && <CalendarPage trades={trades} />}
+              {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
               {page === "analytics" && <Analytics trades={trades} />}
               {page === "mistakes" && <Mistakes trades={trades} />}
               {page === "missed" && <MissedOpportunities />}
@@ -544,6 +544,10 @@ function AppContent() {
           trades={[viewingTrade]}
           date={viewingTrade.date}
           onClose={() => setViewingTrade(null)}
+          onDelete={(id) => {
+            handleDelete(id);
+            setViewingTrade(null);
+          }}
         />
       )}
     </div>

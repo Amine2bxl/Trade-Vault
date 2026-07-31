@@ -62,13 +62,12 @@ export default function AccountSwitcher({
     }
   };
 
-  if (!activeAccount) return null;
-  const ActiveIcon = TYPE_ICON[activeAccount.type];
-
   // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
   // that opens a premium bottom sheet of tappable account cards — one tap to
   // switch sub-accounts. Original layout, no dropdown crowding the top bar.
   if (variant === "fab") {
+    if (!activeAccount) return null;
+    const ActiveIcon = TYPE_ICON[activeAccount.type];
     return (
       <>
         {/* Big thumb-zone FAB: pinned bottom-left above the dock, sized and
@@ -278,6 +277,25 @@ export default function AccountSwitcher({
       </>
     );
   }
+
+  // Sidebar (bar) variant. Before accounts resolve the rail must reserve the
+  // exact slot (same height as the pill) — otherwise the account pill pops in
+  // after mount and shifts the whole nav/perf/user column on F5.
+  if (!activeAccount) {
+    return (
+      <div
+        aria-hidden="true"
+        className="w-full flex items-center gap-2.5 rounded-2xl border border-white/[0.08] px-3 py-2.5"
+      >
+        <div className="w-8 h-8 rounded-lg bg-white/[0.08] animate-pulse shrink-0" />
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="h-3 w-2/3 rounded bg-white/[0.08] animate-pulse" />
+          <div className="h-2 w-1/3 rounded bg-white/[0.08] animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+  const ActiveIcon = TYPE_ICON[activeAccount.type];
 
   return (
     <div className="relative">
