@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -31,6 +31,16 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     resolver.current = null;
     setPending(null);
   };
+
+  // Esc-to-close
+  useEffect(() => {
+    if (!pending) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") settle(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [pending]);
 
   return (
     <ConfirmCtx.Provider value={confirm}>
