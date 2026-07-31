@@ -23,7 +23,7 @@ import { isTransientType, normalizeError, type RuntimeError } from "./errors";
 
 /** Timeout (ms) par provider — configurable, valeurs par défaut saines. */
 const PROVIDER_TIMEOUTS: Record<string, number> = {
-  gemini: 8_000,
+  gemini: 10_000,
   groq: 5_000,
   openrouter: 8_000,
   openai: 8_000,

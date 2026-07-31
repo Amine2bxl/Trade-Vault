@@ -79,62 +79,77 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
       const apiKey = process.env[cfg.apiKeyEnv];
       if (!apiKey) throw new Error(`AI is not configured (missing ${cfg.apiKeyEnv}).`);
 
-      const res = await fetch(`${getBaseUrl()}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          ...(cfg.id === "openrouter" ? { "HTTP-Referer": "https://tradevault.be" } : {}),
-        },
-        body: JSON.stringify({
-          model: getModel(),
-          max_tokens: req.maxTokens ?? 4096,
-          ...(req.temperature !== undefined && { temperature: req.temperature }),
-          ...(req.json && { response_format: { type: "json_object" } }),
-          ...(req.tools?.length && {
-            tools: req.tools.map((t) => ({
-              type: "function",
-              function: { name: t.name, description: t.description, parameters: t.parameters },
-            })),
-            tool_choice: req.toolChoice ?? "auto",
+      const attempt = async (model: string): Promise<AIResponse> => {
+        const res = await fetch(`${getBaseUrl()}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+            ...(cfg.id === "openrouter" ? { "HTTP-Referer": "https://tradevault.be" } : {}),
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: req.maxTokens ?? 4096,
+            ...(req.temperature !== undefined && { temperature: req.temperature }),
+            ...(req.json && { response_format: { type: "json_object" } }),
+            ...(req.tools?.length && {
+              tools: req.tools.map((t) => ({
+                type: "function",
+                function: { name: t.name, description: t.description, parameters: t.parameters },
+              })),
+              tool_choice: req.toolChoice ?? "auto",
+            }),
+            messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
           }),
-          messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
-        }),
-        ...(req.signal ? { signal: req.signal } : {}),
-      });
+          ...(req.signal ? { signal: req.signal } : {}),
+        });
 
-      if (!res.ok) {
-        const text = await res.text();
-        if (res.status === 429)
-          throw new Error("Rate limit reached. Please try again in a moment.");
-        if (res.status === 402 || res.status === 403)
-          throw new Error("AI credits exhausted. Please add credits to continue.");
-        throw new Error(`AI request failed: ${text.slice(0, 200)}`);
-      }
+        if (!res.ok) {
+          const text = await res.text();
+          if (res.status === 429)
+            throw new Error("Rate limit reached. Please try again in a moment.");
+          if (res.status === 402 || res.status === 403)
+            throw new Error("AI credits exhausted. Please add credits to continue.");
+          throw new Error(`AI request failed: ${text.slice(0, 200)}`);
+        }
 
-      const json = (await res.json()) as OpenAIResponse;
-      const choice = json.choices?.[0];
-      const text = choice?.message?.content ?? "";
+        const json = (await res.json()) as OpenAIResponse;
+        const choice = json.choices?.[0];
+        const text = choice?.message?.content ?? "";
 
-      const toolCalls: ProviderToolCall[] | undefined = choice?.message?.tool_calls
-        ?.filter((c) => c.function?.name)
-        .map((c) => ({
-          id: c.id,
-          name: c.function?.name ?? "",
-          arguments: parseArguments(c.function?.arguments),
-        }));
+        const toolCalls: ProviderToolCall[] | undefined = choice?.message?.tool_calls
+          ?.filter((c) => c.function?.name)
+          .map((c) => ({
+            id: c.id,
+            name: c.function?.name ?? "",
+            arguments: parseArguments(c.function?.arguments),
+          }));
 
-      return {
-        text,
-        provider: cfg.id,
-        model: getModel(),
-        usage: {
-          inputTokens: json.usage?.prompt_tokens,
-          outputTokens: json.usage?.completion_tokens,
-        },
-        ...(toolCalls?.length && { toolCalls }),
-        finishReason: mapFinish(choice?.finish_reason),
+        return {
+          text,
+          provider: cfg.id,
+          model,
+          usage: {
+            inputTokens: json.usage?.prompt_tokens,
+            outputTokens: json.usage?.completion_tokens,
+          },
+          ...(toolCalls?.length && { toolCalls }),
+          finishReason: mapFinish(choice?.finish_reason),
+        };
       };
+
+      try {
+        return await attempt(getModel());
+      } catch (e) {
+        // Modèle configuré indisponible (les modèles :free d'OpenRouter changent)
+        // → retentative avec le modèle par défaut fiable du code.
+        const msg = e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase();
+        const modelIssue = /model|unavailable for free|not found/i.test(msg);
+        if (modelIssue && getModel() !== cfg.defaultModel) {
+          return attempt(cfg.defaultModel);
+        }
+        throw e;
+      }
     },
   };
 }
