@@ -153,9 +153,7 @@ export default function Inbox() {
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <span
                       className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg ${
-                        n.readAt
-                          ? "bg-slate-800 text-slate-500"
-                          : "bg-cyan-500/10 text-cyan-400"
+                        n.readAt ? "bg-slate-800 text-slate-500" : "bg-cyan-500/10 text-cyan-400"
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />

@@ -14,7 +14,9 @@ export function useUnreadCount(userId: string | undefined): number {
         .eq("user_id", userId)
         .is("read_at", null);
       if (activeRef.current) setCount(c ?? 0);
-    } catch {}
+    } catch {
+      /* silent — Supabase not available */
+    }
   };
 
   useEffect(() => {

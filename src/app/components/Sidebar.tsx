@@ -81,10 +81,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                   )}
                   <div className="relative shrink-0">
                     <Icon
-                      className={cn(
-                        "w-4 h-4",
-                        page === id ? "text-cyan-400" : "text-slate-600",
-                      )}
+                      className={cn("w-4 h-4", page === id ? "text-cyan-400" : "text-slate-600")}
                     />
                     {id === "inbox" && unread > 0 && (
                       <span className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]">

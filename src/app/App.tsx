@@ -89,10 +89,35 @@ function AppContent() {
   const [page, setPage] = useState<Page>(() => {
     try {
       const saved = sessionStorage.getItem("tv.page");
-      if (saved && ["dashboard","inbox","journal","checklist","calendar","analytics","mistakes","missed","insights","news","seasonality","calculator","settings","reports","goals","tradingplan","appearance","subscription","profile"].includes(saved)) {
+      if (
+        saved &&
+        [
+          "dashboard",
+          "inbox",
+          "journal",
+          "checklist",
+          "calendar",
+          "analytics",
+          "mistakes",
+          "missed",
+          "insights",
+          "news",
+          "seasonality",
+          "calculator",
+          "settings",
+          "reports",
+          "goals",
+          "tradingplan",
+          "appearance",
+          "subscription",
+          "profile",
+        ].includes(saved)
+      ) {
         return saved as Page;
       }
-    } catch {}
+    } catch {
+      /* sessionStorage unavailable */
+    }
     return "dashboard";
   });
 
@@ -100,7 +125,11 @@ function AppContent() {
   const pageRef = useRef(page);
   pageRef.current = page;
   useEffect(() => {
-    try { sessionStorage.setItem("tv.page", page); } catch {}
+    try {
+      sessionStorage.setItem("tv.page", page);
+    } catch {
+      /* sessionStorage unavailable */
+    }
   }, [page]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
@@ -368,9 +397,7 @@ function AppContent() {
 
   if (onboarding === "needed" && user) {
     return (
-      <Suspense
-        fallback={<LoadingScreen message="Chargement de l'onboarding…" />}
-      >
+      <Suspense fallback={<LoadingScreen message="Chargement de l'onboarding…" />}>
         <Onboarding userId={user.id} onDone={handleOnboardingDone} />
       </Suspense>
     );
