@@ -60,9 +60,26 @@ const en = {
 
   // Common
   "common.save": "Save",
+  "common.rename": "Rename",
   "common.cancel": "Cancel",
   "common.delete": "Delete",
   "common.edit": "Edit",
+  // Onboarding (3-moment redesign)
+  "onb.nameTitle": "What should we call you?",
+  "onb.nameSub": "Jarvis will greet you by name — in voice, reminders, everything.",
+  "onb.namePlaceholder": "Your first name",
+  "onb.nameCta": "Continue",
+  "onb.profileTitle": "Your trading profile",
+  "onb.profileSub":
+    "A few answers and your checklist and Jarvis are tuned to you. You can change it anytime.",
+  "onb.saveError": "Oops — the save failed. Please retry.",
+  "onb.saveRetry": "Retry",
+  "onb.notifyTitle": "Stay disciplined, even away from the screen",
+  "onb.notifySub":
+    "Jarvis alerts you when you break a rule or a session starts. Rare and relevant — never spammy.",
+  "onb.notifyCta": "Enable notifications",
+  "onb.notifyLater": "Maybe later",
+  "onb.notifySettings": "Adjustable anytime in Settings.",
   "common.add": "Add",
   "common.view": "View",
   "common.loading": "Loading…",
@@ -229,6 +246,8 @@ const en = {
   "inbox.empty": "No notifications yet. They'll appear here as your trading day unfolds.",
   "inbox.emptyFiltered": "No notifications in this category.",
   "inbox.markRead": "Mark as read",
+  "inbox.unread": "unread",
+  "inbox.unreadPlural": "unread",
   "inbox.markAllRead": "Mark all read",
   "inbox.filterAll": "All",
   "inbox.filterDiscipline": "Discipline",
@@ -236,6 +255,12 @@ const en = {
   "inbox.filterRisk": "Risk",
   "inbox.filterAi": "AI",
   "inbox.filterEconomic": "Economic",
+  "inbox.plan": "Action plan",
+  "inbox.later": "Later",
+  "inbox.ctaDefault": "Open",
+  "inbox.planDefault":
+    "Keep logging your trades — Jarvis reviews every session and flags what matters.",
+  "inbox.fromJarvis": "Sent by Jarvis",
   "appearance.presets": "Presets",
   "appearance.yours": "Your themes",
   "appearance.new": "New theme",
@@ -345,6 +370,7 @@ const en = {
   // Jarvis (floating panel)
   "assistant.title": "Jarvis",
   "assistant.subtitle": "Your trading performance intelligence",
+  "jarvis.copilot": "Your AI trading copilot",
   "assistant.placeholder": "Ask Jarvis…",
   "assistant.empty":
     "Ask Jarvis anything about your trading — stats, patterns, mistakes, or a specific trade.",
@@ -369,6 +395,82 @@ const en = {
   "jarvisProfile.goalPh": "e.g. +5R per month",
   "jarvisProfile.save": "Save",
   "jarvisProfile.saveError": "Could not save your profile. Please try again.",
+
+  // Jarvis Home (Phase 1)
+  "jarvisHome.greeting": "Hello",
+  "jarvisHome.trader": "Trader",
+  "jarvisHome.subtitle": "Here is your trading state today.",
+  "jarvisHome.ask": "How can I help you today?",
+  "jarvisHome.suggestions": "Questions to explore",
+  "jarvisHome.proposal": "Proposed action",
+  "jarvisHome.speaking": "speaking",
+  "jarvisHome.addRule": "Add to my checklist",
+  "jarvisHome.ruleAdded": "Rule added to your checklist. It will be applied to every trade.",
+
+  // Jarvis sidebar (cockpit navigation)
+  "jarvisSide.principal": "Main",
+  "jarvisSide.home": "Home",
+  "jarvisSide.history": "History",
+  "jarvisSide.historyNote": "Pinned conversations stay on top.",
+  "jarvisSide.new": "New conversation",
+  "jarvisSide.conversations": "Conversations",
+  "jarvisSide.analyseEntry": "AI analysis",
+  "jarvisSide.notes": "Notes",
+  "jarvisSide.plans": "Plans",
+  "jarvisSide.tags": "Tags",
+  "jarvisSide.calendar": "Economic calendar",
+  "jarvisSide.news": "News",
+  "jarvisSide.promptAnalyse":
+    "Analyse my trading week: strengths, weaknesses, and the one lever to pull next.",
+  "jarvisSide.promptNotes": "Help me organise my trading notes so I learn from every trade.",
+  "jarvisSide.promptPlans": "Prepare my trading plan for my next session.",
+  "jarvisSide.promptTags": "Which tags or mistakes should I track to spot my patterns?",
+  "jarvisSide.promptCalendar":
+    "Which important economic events this week, and how should I prepare?",
+  "jarvisSide.promptNews": "Summarise the market news that matters for my trading.",
+
+  // Jarvis credits (Jarvis Intelligence)
+  "credits.title": "Jarvis Intelligence",
+  "credits.remaining": "analyses left",
+  "credits.value1": "detect your mistakes",
+  "credits.value2": "analyse your setups",
+  "credits.value3": "improve your discipline",
+  "credits.explainer": "5 free analyses a day, reset at midnight.",
+  "credits.exhausted": "Daily limit reached. Come back tomorrow or go Premium.",
+  "credits.exhaustedBody":
+    "Each message counts as one analysis. Go Premium for unlimited Jarvis access.",
+  "credits.upgrade": "Discover Premium",
+
+  // Accounts
+  "account.active": "Active account",
+
+  // Jarvis conversations
+  "jarvisConv.new": "New conversation",
+  "jarvisConv.today": "Today",
+  "jarvisConv.thisWeek": "This week",
+  "jarvisConv.older": "Earlier",
+  "jarvisConv.empty": "Start a conversation — Jarvis will remember it here.",
+  "jarvisConv.pin": "Pin",
+  "jarvisConv.unpin": "Unpin",
+  "jarvisConv.toggle": "Toggle conversations",
+  "jarvisConv.credits": "Jarvis Credits",
+
+  // Jarvis settings
+  "jarvisSettings.title": "Settings",
+  "jarvisSettings.profileTitle": "Profile Jarvis remembers",
+  "jarvisSettings.profileSubtitle": "What Jarvis knows about you to personalise its advice.",
+  "jarvisSettings.edit": "Edit",
+  "jarvisSettings.prefTitle": "Preferences",
+  "jarvisSettings.responseLang": "Response language",
+  "jarvisSettings.langAuto": "Automatic",
+  "jarvisSettings.langFr": "French",
+  "jarvisSettings.langEn": "English",
+  "jarvisSettings.memoryTitle": "Jarvis memory",
+  "jarvisSettings.memorySubtitle": "Jarvis uses your memory to personalise its analyses.",
+  "jarvisSettings.memoryPattern": "Last insight shown:",
+  "jarvisSettings.memorySeen": "Opens today:",
+  "jarvisSettings.memoryIgnored": "Ignored:",
+  "jarvisSettings.memoryReset": "Reset Jarvis memory",
 
   // Dashboard
   "dashboard.greetingStillUp": "Still up",
@@ -565,6 +667,7 @@ const en = {
   // Journal filters
   // Push notifications
   "push.title": "Notifications",
+  "push.subtitle": "Jarvis alerts you when it matters — pick your channels.",
   "push.enable": "Enable push notifications",
   "push.enabled": "Push notifications enabled",
   "push.disabled": "Push notifications disabled",
@@ -778,6 +881,10 @@ const en = {
   "calc.sectionRisk": "1 · What you are willing to lose",
   "calc.sectionInstrument": "2 · The instrument and your stop",
   "calc.perTrade": "per trade",
+  "calc.resultLive": "Live size",
+  "calc.riskGauge": "of the recommended budget (2%)",
+  "calc.riskOfAccount": "of account",
+  "calc.riskSuggestion": "The recommended budget: 2% of the account, never more.",
 
   // Settings
   "settings.title": "Settings",
@@ -918,6 +1025,9 @@ const en = {
   "chk.dashStart": "Start your pre-market routine before entering a trade",
   "chk.dashCta": "Open",
   "chk.guidedSetup": "Guided setup (easy)",
+  "chk.recommended": "Recommended for you",
+  "chk.recommendedSub": "Jarvis built this list from your profile (style, weakness, market, goal).",
+  "chk.applyRecommended": "Apply this list",
   "chk.streakSuffix": "day streak",
   "chk.streakHint":
     "Consecutive weekdays with a locked pre-market checklist. Weekends never break the chain.",
@@ -938,6 +1048,10 @@ const en = {
   // AI generic
   "ai.noResponse": "No response.",
   "ai.genericError": "Something went wrong. Please try again.",
+  "ai.rateLimited": "Too many requests in a short window. Wait a moment and try again.",
+  "ai.sessionExpired": "Your session expired. Reconnect and try again.",
+  "ai.validationError":
+    "The request could not be processed. Try rephrasing or log out and back in.",
 
   // Economic news
   "news.subtitle": "Upcoming macro events — impact, currency and times in your timezone.",
@@ -980,6 +1094,7 @@ const en = {
 
   // Accounts (switcher)
   "account.switch": "Switch account",
+  "account.switchShort": "Change",
   "account.title": "Accounts",
   "account.subtitle": "Switch sub-account in one tap",
   "account.rename": "Rename",

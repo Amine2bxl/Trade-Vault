@@ -68,8 +68,12 @@ function rowToEvent(row: EventRow): CalendarEvent {
 export const fetchEconomicCalendar = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => Input.parse(input))
   .handler(async ({ data }): Promise<EconomicCalendarPayload> => {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+    // Les variables côté serveur peuvent manquer sur Vercel (les mêmes valeurs
+    // sont exposées en VITE_* pour le client) : on retombe dessus — exactement
+    // le même repli que le client/auth. Sans lui, la page afficherait « inactif »
+    // sur la preview alors que la base est parfaitement lisible.
+    const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     if (!url || !key) {
       // Configuration incomplète : on renvoie une charge vide plutôt que de
       // faire tomber la page. Le repli d'affichage est géré côté UI.

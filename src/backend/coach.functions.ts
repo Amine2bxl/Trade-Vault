@@ -80,9 +80,16 @@ export const askCoach = createServerFn({ method: "POST" })
       const res = await runCoach(data);
       const text = res.text?.trim();
       if (text) return { answer: text, source: "ai" as const };
-      return { answer: fallbackCoachAnswer(data), source: "deterministic" as const };
+      console.warn("[coach] provider answered but text was empty — serving fallback", res);
+      return {
+        answer: fallbackCoachAnswer(data),
+        source: "deterministic" as const,
+      };
     } catch (err) {
       console.warn("[coach] provider unavailable — deterministic answer served", err);
-      return { answer: fallbackCoachAnswer(data), source: "deterministic" as const };
+      return {
+        answer: fallbackCoachAnswer(data),
+        source: "deterministic" as const,
+      };
     }
   });

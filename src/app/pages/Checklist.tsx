@@ -14,13 +14,20 @@ import {
   X,
   RotateCcw,
   Wand2,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
-import { loadOnboarding, type OnboardingData } from "../store";
+import {
+  loadOnboarding,
+  loadChecklistConfig,
+  saveChecklistConfig,
+  type OnboardingData,
+} from "../store";
 import { ttsSpeak } from "@/backend/tts.functions";
+import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
 import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {
@@ -38,6 +45,7 @@ import {
 import "./checklist.css";
 
 import { type Tone, TONES, LINES } from "./checklist/voice";
+import { loadTradingRules, saveTradingRules, type TradingRule } from "../utils/tradingRules";
 import {
   FOMO_ICONS,
   pad,
@@ -159,6 +167,44 @@ interface ChecklistProps {
 }
 
 /* ══════════════════════════════ COMPONENT ══════════════════════════════ */
+
+/**
+ * Phase 3 — la checklist alimente la discipline. Chaque engagement choisi dans
+ * le wizard devient une règle « custom » du profil (jamais auto-vérifiée — on
+ * ne devine jamais un chiffre — mais visible, comptée et citée par Jarvis).
+ * Dédupliquée par texte : relancer le wizard ne crée pas de doublons.
+ */
+async function syncWizardRules(
+  userId: string | undefined,
+  items: { title: string }[],
+): Promise<void> {
+  if (!userId || items.length === 0) return;
+  try {
+    const existing = await loadTradingRules(userId);
+    const existingTexts = new Set(existing.map((r) => r.text.toLowerCase().trim()));
+    const fresh: TradingRule[] = [];
+    for (const it of items) {
+      const text = it.title.trim();
+      if (!text || existingTexts.has(text.toLowerCase())) continue;
+      existingTexts.add(text.toLowerCase());
+      fresh.push({
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `rule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        kind: "custom",
+        value: "",
+        text,
+        enabled: true,
+      });
+    }
+    if (fresh.length > 0) await saveTradingRules(userId, [...existing, ...fresh]);
+  } catch (e) {
+    // Jamais bloquant : la checklist fonctionne sans règles.
+    console.error("[checklist] sync wizard rules failed", e);
+  }
+}
+
 export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const { user } = useAuth();
   const { t, lang } = useT();
@@ -264,6 +310,11 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       /* noop */
     }
     setShowWizard(false);
+    // Phase 3 — la checklist alimente la DISCIPLINE : chaque engagement du
+    // wizard devient une règle « custom » du profil (dédupliquée par texte).
+    // Ces règles alimentent les notifications (discipline armée), le contexte
+    // coach (Jarvis cite tes engagements) et le compteur de règles.
+    void syncWizardRules(user?.id, r.items);
   };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -301,6 +352,44 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       /* quota */
     }
   }, [config, CFG_KEY]);
+
+  /* Phase 5 — l'app se souvient : la config remonte en base (best-effort,
+     debounced) pour survivre au changement d'appareil / vidage du cache. */
+  useEffect(() => {
+    if (!touchedRef.current || !uid) return;
+    const t = window.setTimeout(() => {
+      void saveChecklistConfig(uid, config);
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [config, uid]);
+
+  /* Hydratation depuis la base : 1re visite sur cet appareil (localStorage
+     vide) mais config existante en base → on la restaure. Jamais bloquant. */
+  useEffect(() => {
+    if (!uid) return;
+    let local: ChkConfig | null = null;
+    try {
+      const raw = localStorage.getItem(CFG_KEY);
+      if (raw) local = JSON.parse(raw) as ChkConfig;
+    } catch {
+      /* noop */
+    }
+    if (local || !touchedRef.current) return;
+    let active = true;
+    void loadChecklistConfig(uid).then((saved) => {
+      if (!active || !saved) return;
+      const cfg = saved as ChkConfig;
+      if (Array.isArray(cfg?.items) && cfg.items.length > 0) {
+        setConfig(cfg);
+        markTouched();
+      }
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid]);
+
   useEffect(() => {
     try {
       localStorage.setItem(DAY_KEY, JSON.stringify(day));
@@ -532,6 +621,56 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const ttsAvailableRef = useRef<boolean | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
 
+  // Preload the cloned-voice clip map once — every fixed line plays it.
+  useEffect(() => {
+    void loadVoiceClips();
+  }, []);
+
+  /* Play a pre-rendered audio URL with the same widget + comms choreography as
+     the hosted path. Resolves `true` once playback actually started (or ended,
+     with `waitEnd`); `false` on autoplay refusal or a missing file, so callers
+     can fall back to the browser voice instead of staying silent. */
+  const playUrl = useCallback(
+    (url: string, txt: string, onBeforePlay?: () => void, waitEnd = false): Promise<boolean> =>
+      new Promise((resolve) => {
+        onBeforePlay?.();
+        audioElRef.current?.pause();
+        const el = new Audio(url);
+        audioElRef.current = el;
+        let settled = false;
+        const settle = (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          resolve(ok);
+        };
+        const fail = () => {
+          commOff();
+          hideVoiceWidget();
+          settle(false);
+        };
+        el.volume = 0.95;
+        // Deterministic playback: the clip already carries the right pace and
+        // tone — never let the element re-scale it.
+        el.playbackRate = 1;
+        el.preservesPitch = true;
+        showVoiceWidget(txt);
+        commOn();
+        el.onended = () => {
+          radioClick();
+          commOff();
+          hideVoiceWidget();
+          if (waitEnd) settle(true);
+        };
+        el.onerror = fail;
+        el.play()
+          .then(() => {
+            if (!waitEnd) settle(true);
+          })
+          .catch(fail);
+      }),
+    [radioClick, commOn, commOff, showVoiceWidget, hideVoiceWidget],
+  );
+
   const speakHosted = useCallback(
     async (txt: string): Promise<boolean> => {
       if (ttsAvailableRef.current === false) return false;
@@ -542,23 +681,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           return false;
         }
         ttsAvailableRef.current = true;
-        audioElRef.current?.pause();
-        const el = new Audio(res.audio);
-        audioElRef.current = el;
-        el.volume = 0.95;
-        showVoiceWidget(txt);
-        commOn();
-        el.onended = () => {
-          radioClick();
-          commOff();
-          hideVoiceWidget();
-        };
-        el.onerror = () => {
-          commOff();
-          hideVoiceWidget();
-        };
-        await el.play();
-        return true;
+        return await playUrl(res.audio, txt);
       } catch {
         // Network/autoplay refusal → fall back to the browser voice.
         ttsAvailableRef.current = false;
@@ -566,7 +689,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         return false;
       }
     },
-    [showVoiceWidget, hideVoiceWidget, commOn, commOff, radioClick],
+    [playUrl, commOff],
   );
 
   const speakBrowser = useCallback(
@@ -621,20 +744,62 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     [radioClick, commOn, commOff, pickVoice, showVoiceWidget, hideVoiceWidget],
   );
 
-  const speak = useCallback(
-    (txt: string, tone: Tone) => {
+  /* One utterance, played to completion. Lines that arrive while one is
+     speaking are queued by `speak` — nothing gets cut off mid-sentence. */
+  const speakOne = useCallback(
+    async (txt: string, tone: Tone) => {
       if (!audioOnRef.current) return;
-      // Hosted voice first — identical everywhere. Browser voice is the fallback.
+      // The cloned voice first: any pre-rendered line plays its static clip —
+      // zero network, zero per-utterance cost, identical on every OS. Wait for
+      // the (tiny, cached) manifest so the first line never races past it.
+      await loadVoiceClips();
+      const clip = clipFor(txt);
+      if (clip) {
+        let ok = await playUrl(clip, txt, undefined, true);
+        if (!ok) {
+          // Stale manifest (browser/CDN cache)? Refresh once and retry before
+          // falling back to the browser voice.
+          await refreshVoiceClips();
+          const healed = clipFor(txt);
+          if (healed && healed !== clip) ok = await playUrl(healed, txt, undefined, true);
+        }
+        if (ok) return;
+        // Autoplay refusal or missing file → fall through to hosted/browser.
+      }
+      // Hosted voice next — identical everywhere. Browser voice is the fallback.
       if (ttsAvailableRef.current !== false) {
-        void speakHosted(txt).then((ok) => {
-          if (ok || !("speechSynthesis" in window)) return;
-          speakBrowser(txt, tone);
-        });
+        const ok = await speakHosted(txt);
+        if (ok || !("speechSynthesis" in window)) return;
+        speakBrowser(txt, tone);
         return;
       }
       speakBrowser(txt, tone);
     },
-    [speakHosted, speakBrowser],
+    [playUrl, speakHosted, speakBrowser],
+  );
+
+  /* FIFO speech queue: rapid-fire `say()` calls each play in full, in order,
+     instead of the newer one cutting the older one off. */
+  const speechQueueRef = useRef<{ txt: string; tone: Tone }[]>([]);
+  const speechBusyRef = useRef(false);
+  const speakNext = useCallback(() => {
+    if (speechBusyRef.current) return;
+    const item = speechQueueRef.current.shift();
+    if (!item) return;
+    speechBusyRef.current = true;
+    void speakOne(item.txt, item.tone).finally(() => {
+      speechBusyRef.current = false;
+      speakNext();
+    });
+  }, [speakOne]);
+
+  const speak = useCallback(
+    (txt: string, tone: Tone) => {
+      if (!audioOnRef.current) return;
+      speechQueueRef.current.push({ txt, tone });
+      speakNext();
+    },
+    [speakNext],
   );
 
   const say = useCallback(
@@ -647,7 +812,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       const h = new Date().getHours();
       const greet = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
       const txt = arr[Math.floor(Math.random() * arr.length)].replace("%G", greet);
-      speak(txt, o.tone);
+      void speak(txt, o.tone);
     },
     [speak],
   );
@@ -800,6 +965,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       if (gates[k] && !prev[k]) blip(950 + idx * 90, 0.06, "sine", 0.01);
     });
     if (gates.check && !prev.check && !allGates) say("checkDone");
+    if (gates.win && !prev.win) say("win");
     prevGatesRef.current = gates;
     if (allGates && !wasAllRef.current && !day.locked) {
       setFlash((f) => f + 1);
@@ -907,8 +1073,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const setMotiv = (i: number) => {
     if (editMode) return;
     setDay((d) => ({ ...d, motiv: i }));
-    if (config.motivs[i]?.ok) confirmTick(4);
-    else {
+    if (config.motivs[i]?.ok) {
+      confirmTick(4);
+      say("motivOk");
+    } else {
       alarm();
       say("interference");
     }
@@ -916,8 +1084,10 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
   const setFomo = (i: number) => {
     if (editMode) return;
     setDay((d) => ({ ...d, fomo: i }));
-    if (i === 3) alarm();
-    else blip(700 + i * 90, 0.08, "sine", 0.018);
+    if (i === 3) {
+      alarm();
+      say("fomo");
+    } else blip(700 + i * 90, 0.08, "sine", 0.018);
   };
   const toggleAssume = () => {
     setDay((d) => {
@@ -938,6 +1108,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       } catch {
         /* noop */
       }
+      speechQueueRef.current = [];
+      speechBusyRef.current = false;
       commOff();
       hideVoiceWidget();
     }
@@ -1397,6 +1569,48 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
             {cfgTab === "items" && (
               <div className="space-y-2">
+                {/* Phase 3 — liste recommandée par Jarvis (generateChecklist) :
+                    le profil onboarding (style, faiblesse, marché, objectif)
+                    produit une liste courte sur-mesure. Un clic = appliquée. */}
+                {generated.items.length > 0 && (
+                  <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
+                        {t("chk.recommended")}
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed mb-2.5">
+                      {t("chk.recommendedSub")}
+                    </p>
+                    <ul className="space-y-1 mb-3">
+                      {generated.items.slice(0, 4).map((it) => (
+                        <li
+                          key={it.title}
+                          className="flex items-center gap-1.5 text-[11.5px] text-slate-300"
+                        >
+                          <span className="w-1 h-1 rounded-full bg-cyan-400 shrink-0" />
+                          {it.title}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => {
+                        markTouched();
+                        setConfig((c) => ({ ...c, items: generated.items }));
+                        setDay((d) => ({
+                          ...d,
+                          checked: new Array(generated.items.length).fill(false),
+                        }));
+                        void syncWizardRules(user?.id, generated.items);
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 shadow-lg shadow-cyan-500/15 transition-all"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> {t("chk.applyRecommended")}
+                    </button>
+                  </div>
+                )}
+
                 <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
                   {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
                 </div>

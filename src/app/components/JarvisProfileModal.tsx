@@ -15,26 +15,48 @@ interface JarvisProfileModalProps {
     strength: string;
     goal: string;
   }) => Promise<void>;
+  /** Profil existant (édition) — pré-remplit le formulaire. */
+  initial?: {
+    firstName?: string | null;
+    style?: string | null;
+    weakness?: string | null;
+    strength?: string | null;
+    goal?: string | null;
+  } | null;
+  /** Suggestions depuis les Objectifs / Onboarding (premier enregistrement). */
+  suggested?: { style?: string; weakness?: string; goal?: string } | null;
 }
 
 const EMPTY = { firstName: "", style: "", weakness: "", strength: "", goal: "" };
+
+const pick = (v: string | null | undefined): string => (v && v.trim() ? v.trim() : "");
 
 export default function JarvisProfileModal({
   open,
   onClose,
   onSaved,
   onSave,
+  initial,
+  suggested,
 }: JarvisProfileModalProps) {
   const { t } = useT();
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Pré-remplissage : profil existant d'abord, sinon suggestions des Objectifs.
   useEffect(() => {
     if (open) {
-      setForm(EMPTY);
+      setForm({
+        firstName: pick(initial?.firstName),
+        style: pick(initial?.style) || (suggested?.style ?? ""),
+        weakness: pick(initial?.weakness) || (suggested?.weakness ?? ""),
+        strength: pick(initial?.strength),
+        goal: pick(initial?.goal) || (suggested?.goal ?? ""),
+      });
       setError(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement>) =>

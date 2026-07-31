@@ -39,8 +39,9 @@ test("answers in French when the UI language is French", () => {
     language: "fr",
     stats: { totalTrades: 5, totalPnl: -300, winRatePct: 20, profitFactor: 0.4 },
   });
-  expect(out).toContain("L'essentiel");
-  expect(out).toContain("Plan d'action");
+  expect(out).toContain("**Plan**");
+  expect(out).toContain("Quel est ton objectif");
+  expect(out).not.toContain("undefined");
 });
 
 test("names the costliest leak, not just any mistake", () => {
@@ -61,5 +62,6 @@ test("stays silent on leaks when none are costly", () => {
     stats: { totalTrades: 10, totalPnl: 500 },
     mistakes: [{ name: "noted", count: 1, totalPnl: 20 }],
   });
-  expect(out).toContain("No costly recurring mistake detected");
+  expect(out).toContain("error discipline is clean");
+  expect(out).not.toContain("undefined");
 });

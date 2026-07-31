@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ttsCapabilities, ttsSpeak } from "@/backend/tts.functions";
+import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { JARVIS_VOICE, pickJarvisVoice, toSpeechSegments } from "@/modules/voice";
 
 /**
@@ -37,6 +38,9 @@ export { pickJarvisVoice as pickEnglishMaleVoice } from "@/modules/voice";
 export interface JarvisVoice {
   /** Speak a line (English). Resolves once playback has started. */
   speak: (text: string) => Promise<void>;
+  /** Speak STRICTLY with the local browser voice — no clips, no hosted TTS,
+   *  no network, zero cost. Used for ambient greetings (never counted). */
+  speakLocal: (text: string) => void;
   /** Stop any current playback immediately. */
   stop: () => void;
   /** True while Jarvis is talking — drive a subtle "speaking" indicator. */
@@ -61,6 +65,11 @@ export function useJarvisVoice(): JarvisVoice {
     load();
     speechSynthesis.addEventListener("voiceschanged", load);
     return () => speechSynthesis.removeEventListener("voiceschanged", load);
+  }, []);
+
+  // Preload the cloned-voice clip map — fixed lines play the exact voice.
+  useEffect(() => {
+    void loadVoiceClips();
   }, []);
 
   const stop = useCallback(() => {
@@ -126,6 +135,63 @@ export function useJarvisVoice(): JarvisVoice {
       const line = text.trim();
       if (!line) return;
 
+      // Cloned voice first: pre-rendered fixed lines play their static clip —
+      // exact identity, zero network, zero per-utterance cost.
+      await loadVoiceClips();
+      const clip = clipFor(line);
+      if (clip) {
+        const played = await new Promise<boolean>((resolve) => {
+          const run = ++runRef.current;
+          audioRef.current?.pause();
+          const el = new Audio(clip);
+          audioRef.current = el;
+          el.volume = 0.95;
+          // Deterministic playback — the clip carries the right pace and tone.
+          el.playbackRate = 1;
+          el.preservesPitch = true;
+          const done = (started: boolean) => {
+            if (run === runRef.current && !started) setSpeaking(false);
+            resolve(started);
+          };
+          el.onended = () => {
+            if (run === runRef.current) setSpeaking(false);
+            resolve(true);
+          };
+          el.onerror = () => done(false);
+          setSpeaking(true);
+          el.play()
+            .then(() => done(true))
+            .catch(() => done(false));
+        });
+        if (played) return;
+        // Stale manifest? Refresh once and retry the healed mapping.
+        await refreshVoiceClips();
+        const healed = clipFor(line);
+        if (healed && healed !== clip) {
+          const run = ++runRef.current;
+          audioRef.current?.pause();
+          const el = new Audio(healed);
+          audioRef.current = el;
+          el.volume = 0.95;
+          el.playbackRate = 1;
+          el.preservesPitch = true;
+          el.onended = () => {
+            if (run === runRef.current) setSpeaking(false);
+          };
+          el.onerror = () => {
+            if (run === runRef.current) setSpeaking(false);
+          };
+          setSpeaking(true);
+          try {
+            await el.play();
+            return;
+          } catch {
+            if (run === runRef.current) setSpeaking(false);
+          }
+        }
+        // Autoplay refusal or missing file → fall through to hosted/local.
+      }
+
       if (!(await hostedAvailable())) {
         speakLocal(line);
         return;
@@ -162,5 +228,5 @@ export function useJarvisVoice(): JarvisVoice {
   // Silence Jarvis when the component using the hook unmounts.
   useEffect(() => stop, [stop]);
 
-  return { speak, stop, speaking };
+  return { speak, speakLocal, stop, speaking };
 }

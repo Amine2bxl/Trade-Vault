@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_CONFLUENCES } from "../types";
 import { getActiveAccountId } from "./accounts";
+import { loadTradingPlan } from "../utils/tradingPlan";
 
 // ── Confluences (stored on profile) ──
 export async function loadConfluences(userId: string): Promise<string[]> {
@@ -118,42 +119,122 @@ interface JarvisProfileRow {
   jarvis_completed_at: string | null;
 }
 
+const jarvisLocalKey = (userId: string) => `tv:jarvis:profile:${userId}`;
+
+function readJarvisLocal(userId: string): JarvisProfile | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(jarvisLocalKey(userId));
+    return raw ? (JSON.parse(raw) as JarvisProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeJarvisLocal(userId: string, p: JarvisProfile): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(jarvisLocalKey(userId), JSON.stringify(p));
+  } catch {
+    /* best-effort */
+  }
+}
+
+const EMPTY_JARVIS: JarvisProfile = {
+  firstName: null,
+  style: null,
+  weakness: null,
+  strength: null,
+  goal: null,
+  completedAt: null,
+};
+
+/**
+ * Repli local : si la migration Supabase (colonnes jarvis_*) n'est pas encore
+ * appliquée, le profil est quand même sauvegardé/mémorisé côté client. Le DB
+ * reste la source de vérité dès qu'elle répond ; l'utilisateur n'est jamais
+ * bloqué ni confronté à une erreur.
+ */
 export async function loadJarvisProfile(userId: string): Promise<JarvisProfile> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(
-      "jarvis_first_name, jarvis_style, jarvis_weakness, jarvis_strength, jarvis_goal, jarvis_completed_at",
-    )
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  const r = (data ?? {}) as JarvisProfileRow;
-  return {
-    firstName: r.jarvis_first_name ?? null,
-    style: r.jarvis_style ?? null,
-    weakness: r.jarvis_weakness ?? null,
-    strength: r.jarvis_strength ?? null,
-    goal: r.jarvis_goal ?? null,
-    completedAt: r.jarvis_completed_at ?? null,
-  };
+  const local = readJarvisLocal(userId);
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(
+        "jarvis_first_name, jarvis_style, jarvis_weakness, jarvis_strength, jarvis_goal, jarvis_completed_at",
+      )
+      .eq("id", userId)
+      .maybeSingle();
+    if (error) throw error;
+    const r = (data ?? {}) as JarvisProfileRow;
+    const fromDb: JarvisProfile = {
+      firstName: r.jarvis_first_name ?? null,
+      style: r.jarvis_style ?? null,
+      weakness: r.jarvis_weakness ?? null,
+      strength: r.jarvis_strength ?? null,
+      goal: r.jarvis_goal ?? null,
+      completedAt: r.jarvis_completed_at ?? null,
+    };
+    // DB vide mais profil local présent (migration non appliquée) → repli local.
+    if (!fromDb.completedAt && local?.completedAt) return local;
+    return fromDb;
+  } catch {
+    return local ?? { ...EMPTY_JARVIS };
+  }
 }
 
 export async function saveJarvisProfile(
   userId: string,
   p: Pick<JarvisProfile, "firstName" | "style" | "weakness" | "strength" | "goal">,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      jarvis_first_name: p.firstName?.trim() || null,
-      jarvis_style: p.style?.trim() || null,
-      jarvis_weakness: p.weakness?.trim() || null,
-      jarvis_strength: p.strength?.trim() || null,
-      jarvis_goal: p.goal?.trim() || null,
-      jarvis_completed_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
-  if (error) throw error;
+  const completed: JarvisProfile = {
+    firstName: p.firstName?.trim() || null,
+    style: p.style?.trim() || null,
+    weakness: p.weakness?.trim() || null,
+    strength: p.strength?.trim() || null,
+    goal: p.goal?.trim() || null,
+    completedAt: new Date().toISOString(),
+  };
+  // Toujours mémoriser localement : le profil est disponible immédiatement.
+  writeJarvisLocal(userId, completed);
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        jarvis_first_name: completed.firstName,
+        jarvis_style: completed.style,
+        jarvis_weakness: completed.weakness,
+        jarvis_strength: completed.strength,
+        jarvis_goal: completed.goal,
+        jarvis_completed_at: completed.completedAt,
+      })
+      .eq("id", userId);
+    if (error) throw error;
+  } catch (e) {
+    // Migration Supabase non appliquée → le profil reste en local, jamais
+    // d'erreur bloquante pour l'utilisateur.
+    console.error("[jarvis-profile] DB write failed, kept local", e);
+  }
+}
+
+/**
+ * Prefill depuis les données déjà connues (Objectifs / Onboarding) : le profil
+ * « mémorisé par Jarvis » est pré-rempli avec ce que TradeVault sait déjà
+ * (style, faiblesse déclarée, objectif/plan de trading) — l'utilisateur n'a
+ * pas à tout ressaisir.
+ */
+export async function buildJarvisPrefill(
+  userId: string,
+): Promise<{ style?: string; weakness?: string; goal?: string }> {
+  const [onb, plan] = await Promise.all([
+    loadOnboarding(userId).catch(() => null),
+    loadTradingPlan(userId).catch(() => null),
+  ]);
+  return {
+    style: onb?.style || undefined,
+    weakness: onb?.pain || undefined,
+    goal: plan?.mission?.trim() || onb?.goal || undefined,
+  };
 }
 
 // ── Onboarding (stored on profile) ──
@@ -225,11 +306,20 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
 
 // Persists the collected answers and stamps `onboarded_at` so the flow never
 // shows again. `skipped` records that the user bailed with defaults.
+//
+// PHASE 0 — UNE SEULE source de vérité : l'onboarding alimente AUSSI le profil
+// Jarvis (style, faiblesse déclarée, objectif) et pose `jarvis_completed_at`.
+// Fini la double collecte : Jarvis connaît le trader dès le jour 1.
+//
+// La fusion Jarvis est BEST-EFFORT (2e requête en try/catch) : si la migration
+// `jarvis_*` n'est pas appliquée, le chemin critique (onboarding_* + gate) ne
+// casse jamais — le profil local de Jarvis reste fonctionnel.
 export async function saveOnboarding(
   userId: string,
   d: OnboardingData,
-  opts: { skipped?: boolean } = {},
+  opts: { skipped?: boolean; firstName?: string } = {},
 ): Promise<void> {
+  const now = new Date().toISOString();
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -242,10 +332,25 @@ export async function saveOnboarding(
       onboarding_pain: d.pain,
       onboarding_monthly_target: d.monthlyTarget,
       onboarding_skipped: opts.skipped ?? false,
-      onboarded_at: new Date().toISOString(),
+      onboarded_at: now,
     })
     .eq("id", userId);
   if (error) throw error;
+
+  // Fusion profil Jarvis — jamais bloquante (migration absente = ignorée).
+  void supabase
+    .from("profiles")
+    .update({
+      ...(opts.firstName?.trim() ? { jarvis_first_name: opts.firstName.trim() } : {}),
+      jarvis_style: d.style || null,
+      jarvis_weakness: d.pain || null,
+      jarvis_goal: d.goal || null,
+      jarvis_completed_at: now,
+    })
+    .eq("id", userId)
+    .then(({ error: jarvisError }) => {
+      if (jarvisError) console.error("[onboarding] jarvis merge skipped", jarvisError);
+    });
 
   // J+0 welcome email, personalized from the answers just saved. Fire and
   // forget: the server dedupes via email_log, a failure never blocks the app.
@@ -262,4 +367,35 @@ export async function saveOnboarding(
       // best-effort — the user experience never depends on the email
     }
   })();
+}
+
+// ── Checklist config (Phase 5 — l'app se souvient) ───────────────────────────
+// La config de la checklist pré-marché (items, startTime, timeZone) est
+// synchronisée en base (profiles.checklist_config jsonb). BEST-EFFORT : si la
+// colonne n'existe pas (migration non appliquée), le localStorage continue de
+// fonctionner — jamais d'erreur bloquante.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const profilesAny = supabase.from("profiles") as any;
+
+export async function saveChecklistConfig(userId: string, config: unknown): Promise<void> {
+  try {
+    await profilesAny.update({ checklist_config: config }).eq("id", userId);
+  } catch (e) {
+    // Migration absente → on garde le localStorage, silencieux.
+    console.error("[checklist-config] DB write skipped", e);
+  }
+}
+
+export async function loadChecklistConfig(userId: string): Promise<unknown> {
+  try {
+    const { data, error } = await profilesAny
+      .select("checklist_config")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.checklist_config ?? null;
+  } catch (e) {
+    console.error("[checklist-config] DB read skipped", e);
+    return null;
+  }
 }

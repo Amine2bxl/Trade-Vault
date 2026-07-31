@@ -1,0 +1,324 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Sparkles, Check, Volume2 } from "lucide-react";
+import { useT } from "../../../i18n/LanguageContext";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useToast } from "../../../contexts/ToastContext";
+import { useJarvisVoice } from "../../../utils/jarvisVoice";
+import { computeStats } from "../../../utils/tradeCalcs";
+import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
+import { deriveDailyRule } from "../../../utils/edgeScore";
+import { loadOnboarding, type OnboardingData } from "../../../store";
+import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
+import { effectiveCopyLang } from "../prefs";
+import { sessionJarvisMemory } from "../insights/memory";
+import { buildHomeBlocks } from "../insights/buildHome";
+import { buildSuggestions } from "../insights/suggestions";
+import type { CopyContext } from "../insights/copy/templates";
+import type { JarvisHomeData, JarvisMemory } from "../insights/types";
+import { BlockList } from "../BlockRenderer";
+import type { JarvisBlock } from "../blocks";
+import type { JarvisWorkspaceProps } from "../workspaces";
+import { cn } from "../../../utils/cn";
+
+/**
+ * HomeWorkspace — l'ACCUEIL intelligent de Jarvis (Phase 1, Étape 5).
+ *
+ * ORCHESTRATEUR UNIQUEMENT : aucune logique métier ici. Le pipeline complet
+ * (data → engine → confiance → copy → toBlocks) vit dans le module insights ;
+ * ce composant charge les données + la mémoire, appelle `buildHomeBlocks` et
+ * rend le résultat via `BlockList`.
+ *
+ * Jarvis n'est jamais vide : soit un insight validé (Hero/Insight/Mission),
+ * soit le mode apprentissage (pas de conclusion inventée).
+ */
+
+export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
+  const { t, lang } = useT();
+  const { user } = useAuth();
+  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
+  const [blocks, setBlocks] = useState<JarvisBlock[] | null>(null);
+  const [welcomeLine, setWelcomeLine] = useState<string | null>(null);
+  const { speakLocal, speaking } = useJarvisVoice();
+
+  // Snapshot de données (pur, synchrone, déjà en cache côté trades).
+  const stats = useMemo(() => computeStats(context.trades), [context.trades]);
+  const signals = useMemo(() => computeBehaviorSignals(context.trades), [context.trades]);
+  const rule = useMemo(() => deriveDailyRule(stats), [stats]);
+  const data: JarvisHomeData = useMemo(
+    () => ({
+      trades: context.trades,
+      stats,
+      signals,
+      edge: null,
+      rule,
+      profile: context.profile ?? null,
+      onboarding,
+    }),
+    [context.trades, context.profile, stats, signals, rule, onboarding],
+  );
+
+  // Voice mode (onboarding.experience) — chargé en arrière-plan, best-effort.
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setOnboarding(o);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  // Pipeline : mémoire → engine → blocs (une seule passe par changement de data).
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const store = sessionJarvisMemory();
+      const memory = await store.read();
+      if (!active) return;
+      const copyLang: "fr" | "en" = lang === "fr" ? "fr" : "en";
+      const ctx: CopyContext = { lang: copyLang, experience: onboarding?.experience };
+      const { blocks: built, pattern } = buildHomeBlocks(data, memory, ctx);
+      if (!active) return;
+      setBlocks(built);
+
+      // Anti-répétition : maj mémoire (premier open du jour fige le pattern).
+      const today = new Date().toISOString().slice(0, 10);
+      const isNewDay = memory.lastShownDate !== today;
+      const next: JarvisMemory = {
+        ...memory,
+        lastShownDate: today,
+        seenCount: isNewDay ? 1 : memory.seenCount + 1,
+      };
+      if (isNewDay && pattern) next.lastPattern = pattern;
+      await store.write(next);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [data, lang, onboarding?.experience]);
+
+  const firstName = context.profile?.firstName || t("jarvisHome.trader");
+  const copyLang: "fr" | "en" = effectiveCopyLang(lang);
+
+  // ── Bienvenue vocale locale (0 token, 0 réseau) ──
+  // « Welcome, {Prénom} » + une phrase courte qui varie selon la situation :
+  // la voix de Jarvis (speechSynthesis, profil en-gb profond) parle uniquement
+  // en anglais. Rejouée à CHAQUE ouverture de l'accueil (remount du workspace).
+  const welcomeRef = useRef<string | null>(null);
+  useEffect(() => {
+    const phrase = buildWelcomePhrase(data, firstName);
+    if (!phrase || welcomeRef.current === phrase) return;
+    welcomeRef.current = phrase;
+    setWelcomeLine(phrase);
+    // Petit délai : laisse la fenêtre se peindre avant de parler (autoplay).
+    const id = window.setTimeout(() => speakLocal(phrase), 450);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Suggestions intelligentes : page active + situation réelle (pur).
+  const suggestions = useMemo(
+    () => buildSuggestions(data, context.page, copyLang),
+    [data, context.page, copyLang],
+  );
+
+  // ── Jarvis propose une ACTION intégrée à l'app ──
+  // La fuite la plus coûteuse → proposition d'ajouter une règle « custom » à la
+  // checklist du trader. C'est le premier ToolBlock réel : Jarvis agit, l'user
+  // valide, la règle devient partie prenante de sa discipline.
+  const worstMistake = useMemo(() => {
+    return Object.entries(data.stats.mistakeStats)
+      .map(([name, v]) => ({ name, ...v }))
+      .filter((m) => m.totalPnl < 0)
+      .sort((a, b) => a.totalPnl - b.totalPnl)[0];
+  }, [data.stats.mistakeStats]);
+  const [ruleAdded, setRuleAdded] = useState(false);
+  const [ruleSaving, setRuleSaving] = useState(false);
+  const { toast } = useToast();
+
+  const addMistakeRule = async () => {
+    if (!user?.id || !worstMistake || ruleAdded || ruleSaving) return;
+    setRuleSaving(true);
+    try {
+      const ruleText = lang === "fr" ? `Pas de ${worstMistake.name}` : `No ${worstMistake.name}`;
+      const rules = await loadTradingRules(user.id);
+      if (!rules.some((r) => r.text.toLowerCase() === ruleText.toLowerCase())) {
+        await saveTradingRules(user.id, [
+          ...rules,
+          {
+            id:
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `rule-${Date.now()}`,
+            kind: "custom",
+            value: "",
+            text: ruleText,
+            enabled: true,
+          },
+        ]);
+      }
+      setRuleAdded(true);
+      toast(t("jarvisHome.ruleAdded"), "success");
+    } catch (e) {
+      console.error("[jarvis] add rule failed", e);
+      toast(t("ai.genericError"), "error");
+    } finally {
+      setRuleSaving(false);
+    }
+  };
+
+  // Le canal `tv:ask-coach` ouvre la Conversation avec la question — découplé.
+  const askSuggestion = (prompt: string) =>
+    window.dispatchEvent(new CustomEvent("tv:ask-coach", { detail: { prompt } }));
+
+  return (
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-3xl mx-auto w-full">
+      {/* En-tête : le premier écran d'un assistant IA, pas une page de stats. */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-2">
+          <Sparkles className="w-3.5 h-3.5" />
+          {t("assistant.title")}
+        </div>
+        <h2 className="flex items-center gap-2.5 text-2xl md:text-3xl font-bold text-white tracking-tight">
+          {t("jarvisHome.greeting")} {firstName}.
+          {speaking && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5">
+              <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
+            </span>
+          )}
+        </h2>
+        <p className="text-slate-400 mt-1.5">{t("jarvisHome.ask")}</p>
+        {welcomeLine && (
+          <p className="mt-2 text-[12.5px] text-slate-500 leading-relaxed max-w-xl">
+            {welcomeLine}
+          </p>
+        )}
+      </div>
+
+      {blocks === null ? (
+        <div className="space-y-3">
+          <div className="h-24 rounded-2xl bg-white/[0.04] animate-pulse" />
+          <div className="h-32 rounded-2xl bg-white/[0.03] animate-pulse" />
+          <div className="h-24 rounded-2xl bg-white/[0.03] animate-pulse" />
+        </div>
+      ) : (
+        <BlockList blocks={blocks} />
+      )}
+
+      {/* ── ToolBlock : Jarvis propose une action, l'user l'intègre ──
+          Ex. « La fuite qui te coûte le plus = overtrading → ajouter une règle
+          à ta checklist. » Un clic → la règle entre dans sa discipline. */}
+      {worstMistake && !ruleAdded && (
+        <div className="mt-5 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-4">
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-md shadow-cyan-500/20">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1">
+                {t("jarvisHome.proposal")}
+              </div>
+              <p className="text-[13px] text-slate-300 leading-relaxed">
+                {lang === "fr" ? (
+                  <>
+                    Jarvis a repéré que{" "}
+                    <b className="text-white">{worstMistake.name.toLowerCase()}</b> te coûte le
+                    plus. Ajouter une règle pour t'en protéger ?
+                  </>
+                ) : (
+                  <>
+                    Jarvis found <b className="text-white">{worstMistake.name.toLowerCase()}</b>{" "}
+                    costs you the most. Add a rule to protect yourself?
+                  </>
+                )}
+              </p>
+              <button
+                onClick={addMistakeRule}
+                disabled={ruleSaving}
+                className={cn(
+                  "mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold",
+                  "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25",
+                  "transition-colors disabled:opacity-60",
+                )}
+              >
+                {ruleSaving ? (
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-cyan-300/30 border-t-cyan-300 animate-spin" />
+                ) : (
+                  <Plus className="w-3.5 h-3.5" />
+                )}
+                {t("jarvisHome.addRule")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {ruleAdded && (
+        <div className="mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 flex items-center gap-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15">
+            <Check className="w-4 h-4 text-emerald-400" />
+          </div>
+          <p className="text-[13px] text-emerald-300">{t("jarvisHome.ruleAdded")}</p>
+        </div>
+      )}
+
+      {/* Suggestions — écrites depuis la situation + la page, jamais génériques. */}
+      {suggestions.length > 0 && (
+        <div className="mt-7">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+              {t("jarvisHome.suggestions")}
+            </span>
+            <span className="h-px flex-1 bg-white/[0.05]" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => askSuggestion(s.prompt)}
+                className={cn(
+                  "px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08]",
+                  "text-xs text-slate-300 hover:bg-white/[0.08] hover:border-cyan-500/30 hover:text-white",
+                  "transition-all text-left",
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Bienvenue vocale en anglais — « Welcome, {Prénom} » + UNE phrase courte qui
+ * varie selon le contexte réel (nombre de trades, win rate, la plus grosse
+ * fuite, zéro activité). Jamais de copie générique : chaque mot est calculé.
+ */
+function buildWelcomePhrase(data: JarvisHomeData, firstName: string): string {
+  const n = data.trades.length;
+  const s = data.stats;
+  const open = `Welcome, ${firstName}.`;
+
+  if (n === 0) {
+    return `${open} You have no trades yet — I am ready when you are.`;
+  }
+
+  const wr = Math.round((s.winRate ?? 0) * 100);
+  const withWinRate =
+    n >= 5 && wr > 0 && `${open} You have logged ${n} trades with a ${wr} percent win rate.`;
+
+  if (withWinRate) return withWinRate;
+
+  if (s.totalPnl < 0) {
+    return `${open} Your recent trades are net negative — let us find the leak.`;
+  }
+  if (s.totalPnl > 0) {
+    return `${open} Your recent trades are profitable — let us protect the edge.`;
+  }
+  return `${open} I have ${n} trade${n > 1 ? "s" : ""} to work with today.`;
+}

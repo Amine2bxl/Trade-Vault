@@ -105,6 +105,14 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       {/* Header + completion */}
       <PageHeader
         className="mb-2 items-center"
+        icon={
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+              <Map className="w-4.5 h-4.5 text-white" />
+            </span>
+          </span>
+        }
         title={tr("Plan de trading", "Trading Plan")}
         subtitle={tr(
           "Ta constitution de trader — écrite une fois, relue chaque jour.",
@@ -411,8 +419,11 @@ function Section({
       style={{ animationDelay: `${delay * 70}ms` }}
     >
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-          <Icon className="w-4.5 h-4.5" />
+        <div className="relative shrink-0">
+          <span className="absolute -inset-0.5 rounded-xl bg-cyan-500/30 blur-sm" />
+          <div className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
+            <Icon className="w-4.5 h-4.5 text-white" />
+          </div>
         </div>
         <div>
           <h2 className="text-sm font-bold text-white">{title}</h2>

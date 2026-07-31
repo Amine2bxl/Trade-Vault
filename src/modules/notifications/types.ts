@@ -12,9 +12,24 @@ export type NotificationKind =
   | "discipline_success"
   | "trade_analyzed"
   | "goal_completed"
+  | "goal_milestone"
   | "daily_brief"
   | "weekly_review"
   | "pattern_detected"
+  | "risk_loss_streak"
+  | "risk_max_loss"
+  | "activity_lull"
+  | "economic_event"
+  | "system";
+
+/** Catégorie produit — pilote les filtres de la boîte de réception. */
+export type NotificationCategory =
+  | "discipline"
+  | "goals"
+  | "risk"
+  | "jarvis"
+  | "economic"
+  | "activity"
   | "system";
 
 export interface AppNotification {
@@ -29,6 +44,8 @@ export interface AppNotification {
   channels: NotificationChannel[];
   createdAt: string;
   readAt?: string | null;
+  /** Catégorie de la boîte de réception (dérivée par défaut depuis `kind`). */
+  category: NotificationCategory;
   /** Structured payload for rich rendering (analysis object, brief id…). */
   data?: Record<string, unknown>;
 }
@@ -40,6 +57,9 @@ export interface NotificationInput {
   url?: string;
   severity?: AppNotification["severity"];
   channels?: NotificationChannel[];
+  category?: NotificationCategory;
+  /** Structured payload: `plan` (plan d'action court), `ctaLabel`, `ctaPage`,
+   *  et toute valeur métier utile au popup de détail. */
   data?: Record<string, unknown>;
   /** Skip DB persistence (pure toast). Defaults to false. */
   ephemeral?: boolean;

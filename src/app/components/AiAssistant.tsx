@@ -1,69 +1,132 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Bot, Sparkles, X, Send, Loader2, Mic, MicOff, Eraser } from "lucide-react";
-import { Trade } from "../types";
-import { askCoach } from "@/backend/coach.functions";
-import { buildCoachV1Payload, seedProfileMemory } from "../utils/aiContext";
-import { useTradingRules } from "../hooks/useTradingRules";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, Settings, X } from "lucide-react";
+import { Trade, Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
-import { nsKey, readJSON, writeJSON, removeKey } from "../utils/persistence";
 import {
-  loadOnboarding,
   loadJarvisProfile,
   saveJarvisProfile,
-  type OnboardingData,
+  buildJarvisPrefill,
+  type JarvisProfile,
 } from "../store";
-import MarkdownAnswer from "./MarkdownAnswer";
 import JarvisProfileModal from "./JarvisProfileModal";
-import { Modal } from "@/shared/ui";
+import JarvisShell from "./jarvis/JarvisShell";
+import type { JarvisContext } from "./jarvis/context";
+import type { JarvisWorkspaceId } from "./jarvis/workspaces";
+import {
+  migrateLegacyChat,
+  sessionConversationStore,
+  useConversations,
+} from "./jarvis/conversations";
+import JarvisSidebar from "./jarvis/components/JarvisSidebar";
+import CreditsBar from "./jarvis/components/CreditsBar";
+import AccountSwitcher from "./AccountSwitcher";
 
 interface AiAssistantProps {
   trades: Trade[];
+  /** Page TradeVault courante — enrichit le contexte agrégé de Jarvis. */
+  page?: Page;
 }
 
-interface ChatMessage {
-  role: "user" | "assistant" | "error";
-  text: string;
-}
+/**
+ * AiAssistant — l'ouvreur de Jarvis (dock + gate profil).
+ *
+ * Jarvis est une PLATEFORME : ce composant ne contient AUCUNE logique de chat.
+ * Il fournit au JarvisShell le contexte agrégé (trades, profil, prompt externe)
+ * ; le workspace actif (conversation) vit dans le registre des workspaces.
+ */
 
-// Minimal typing for the Web Speech API — not in lib.dom.d.ts, and we only need
-// the handful of members this component touches.
-interface SpeechRecognitionLike extends EventTarget {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((e: any) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-}
-
-function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
-  if (typeof window === "undefined") return null;
-  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
-}
-
-export default function AiAssistant({ trades }: AiAssistantProps) {
-  const { t, lang } = useT();
+export default function AiAssistant({ trades, page }: AiAssistantProps) {
+  const { t } = useT();
   const { user } = useAuth();
-  // The floating panel and the Jarvis page must never diverge in what they
-  // ground the coach on — same rules, same signals, same persona.
-  const rules = useTradingRules();
-  const chatKey = nsKey(user?.id, "ai.chat");
-  const inputKey = nsKey(user?.id, "ai.input");
   const [open, setOpen] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState<string | undefined>(undefined);
+  // Le workspace actif : l'Accueil par défaut, la Conversation sur prompt externe.
+  const [activeWorkspace, setActiveWorkspace] = useState<JarvisWorkspaceId>("home");
+
+  // Conversations (couche de données dédiée, multi-sessions).
+  const conversations = useConversations(user?.id);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
+  conversationIdRef.current = conversationId;
+
+  // Migration one-shot de l'ancien chat unique vers le store.
+  useEffect(() => {
+    if (!user?.id) return;
+    void migrateLegacyChat(sessionConversationStore(user.id), user.id);
+  }, [user?.id]);
+
+  const openConversation = useCallback((id: string) => {
+    setConversationId(id);
+    setActiveWorkspace("conversation");
+  }, []);
+
+  const newConversation = useCallback(async () => {
+    if (!user?.id) return;
+    const conv = await sessionConversationStore(user.id).create();
+    openConversation(conv.id);
+  }, [user?.id, openConversation]);
+
+  const deleteConversation = useCallback(
+    async (id: string) => {
+      if (!user?.id) return;
+      await sessionConversationStore(user.id).remove(id);
+      if (conversationId === id) {
+        const list = await sessionConversationStore(user.id).list();
+        setConversationId(list[0]?.id ?? null);
+        if (list.length === 0) setActiveWorkspace("home");
+      }
+    },
+    [user?.id, conversationId],
+  );
+
+  const renameConversation = useCallback(
+    async (id: string, title: string) => {
+      if (!user?.id || !title) return;
+      await sessionConversationStore(user.id).rename(id, title);
+    },
+    [user?.id],
+  );
+
+  const togglePinConversation = useCallback(
+    async (id: string) => {
+      if (!user?.id) return;
+      await sessionConversationStore(user.id).togglePin(id);
+    },
+    [user?.id],
+  );
+
+  // La sidebar / le coach demandent une analyse → ouvre la Conversation.
+  const askJarvis = useCallback(
+    (prompt: string) => {
+      setPendingPrompt(prompt);
+      setActiveWorkspace("conversation");
+      if (user?.id && !conversationIdRef.current) {
+        void sessionConversationStore(user.id)
+          .create()
+          .then((c) => setConversationId(c.id))
+          .catch(() => {});
+      }
+    },
+    [user?.id],
+  );
+
+  // Le dock ouvre toujours sur l'Accueil intelligent (jamais de chat vide).
+  const toggleOpen = () => {
+    if (!open) setActiveWorkspace("home");
+    setOpen((v) => !v);
+  };
+
   // First-open gate: the "Profile Jarvis remembers" card shows until the trader
   // completes it. Re-checked on every open so a dismissed card comes back until
   // it is saved (jarvis_completed_at non-NULL).
   const [profileOpen, setProfileOpen] = useState(false);
-  const [jarvisProfile, setJarvisProfile] = useState<{
-    firstName?: string | null;
-    style?: string | null;
-    weakness?: string | null;
-    strength?: string | null;
-    goal?: string | null;
+  const [jarvisProfile, setJarvisProfile] = useState<JarvisProfile | null>(null);
+  const [prefill, setPrefill] = useState<{
+    style?: string;
+    weakness?: string;
+    goal?: string;
   } | null>(null);
   useEffect(() => {
     if (!open || !user?.id) return;
@@ -77,160 +140,60 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       .catch(() => {
         // Best-effort: a failed read never blocks the coach.
       });
-    return () => {
-      active = false;
-    };
-  }, [open, user?.id]);
-  // Conversation + draft input persist per user, so a message you sent keeps its
-  // answer, and a half-typed question is still there, after you close the panel,
-  // switch pages, or come back later on this device.
-  const [messages, setMessages] = useState<ChatMessage[]>(() =>
-    readJSON<ChatMessage[]>(chatKey, []),
-  );
-  const [question, setQuestion] = useState(() => readJSON<string>(inputKey, ""));
-  const [loading, setLoading] = useState(false);
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const SpeechRecognitionCtor = getSpeechRecognition();
-
-  // Reload the stored conversation when the signed-in user changes.
-  useEffect(() => {
-    setMessages(readJSON<ChatMessage[]>(chatKey, []));
-    setQuestion(readJSON<string>(inputKey, ""));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  // Persist conversation + draft input on every change.
-  useEffect(() => {
-    writeJSON(chatKey, messages);
-  }, [chatKey, messages]);
-  useEffect(() => {
-    writeJSON(inputKey, question);
-  }, [inputKey, question]);
-
-  const clearChat = useCallback(() => {
-    setMessages([]);
-    removeKey(chatKey);
-  }, [chatKey]);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
-
-  // Seed the coach's long-term memory from the onboarding profile the first
-  // time it's opened for this user, so it already "knows" them. Idempotent and
-  // best-effort (see seedProfileMemory) — runs once per signed-in user.
-  const seededRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!open || !user?.id || seededRef.current === user.id) return;
-    seededRef.current = user.id;
-    void seedProfileMemory(user.id);
-  }, [open, user?.id]);
-
-  // The onboarding answers travel with EVERY coach call, so the coaching keeps
-  // naming this trader's own weakness, goal and style instead of sounding
-  // generic. Best-effort: a failed load just means a slightly less personal
-  // answer, never an error.
-  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
-  useEffect(() => {
-    if (!user?.id) {
-      setOnboarding(null);
-      return;
-    }
-    let active = true;
-    loadOnboarding(user.id)
-      .then((o) => {
-        if (active) setOnboarding(o);
+    // Suggestions depuis les Objectifs / Onboarding pour pré-remplir le profil.
+    buildJarvisPrefill(user.id)
+      .then((s) => {
+        if (active) setPrefill(s);
       })
       .catch(() => {});
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [open, user?.id]);
 
-  const ask = useCallback(
-    async (q: string) => {
-      const query = q.trim();
-      if (!query || loading) return;
-      // Capture the thread BEFORE this turn — it becomes the conversation the
-      // coach sees, giving true multi-turn continuity (the legacy endpoint sent
-      // none). Errors are excluded; they aren't part of the dialogue.
-      const priorTurns = messages
-        .filter((m) => m.role !== "error")
-        .map((m) => ({ role: m.role as "user" | "assistant", content: m.text }));
-      setMessages((prev) => [...prev, { role: "user", text: query }]);
-      setQuestion("");
-      setLoading(true);
-      const payload = buildCoachV1Payload({
-        trades,
-        conversation: priorTurns,
-        language: lang,
-        onboarding,
-        jarvisProfile,
-        rules,
-      });
-      try {
-        let res;
-        try {
-          res = await askCoach({ data: { question: query, ...payload } });
-        } catch (firstErr) {
-          // One automatic retry after a short backoff — most coach failures
-          // are transient (cold serverless function, network blip, brief 5xx).
-          // The trader never sees the first stumble.
-          console.warn("[coach] first attempt failed, retrying", firstErr);
-          await new Promise((r) => setTimeout(r, 1500));
-          res = await askCoach({ data: { question: query, ...payload } });
-        }
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", text: res.answer || t("ai.noResponse") },
-        ]);
-      } catch (e) {
-        // Never surface raw provider/Supabase/rate-limit text to the trader —
-        // it's noise at best and leaks internals at worst. One calm message.
-        console.error("[coach] request failed after retry", e);
-        setMessages((prev) => [...prev, { role: "error", text: t("ai.genericError") }]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [loading, messages, trades, lang, t, user?.id, onboarding, jarvisProfile, rules],
-  );
+  // La page Jarvis (nav) ouvre le MÊME overlay — conversation et historique
+  // partagés partout. Un seul Jarvis, deux points d'entrée.
+  useEffect(() => {
+    const onOpen = () => {
+      setActiveWorkspace("conversation");
+      setOpen(true);
+    };
+    window.addEventListener("tv:open-jarvis", onOpen);
+    return () => window.removeEventListener("tv:open-jarvis", onOpen);
+  }, []);
 
-  // Other pages (e.g. the pre-market Checklist) can open the coach with a
+  // Other pages (e.g. the pre-market Checklist) can open Jarvis with a
   // ready-made prompt via a window event — keeps pages decoupled.
   useEffect(() => {
     const onAsk = (e: Event) => {
       const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
       if (!prompt) return;
-      setOpen(true);
-      ask(prompt);
+      askJarvis(prompt);
     };
     window.addEventListener("tv:ask-coach", onAsk);
     return () => window.removeEventListener("tv:ask-coach", onAsk);
-  }, [ask]);
+  }, [askJarvis]);
 
-  const toggleMic = useCallback(() => {
-    if (!SpeechRecognitionCtor) return;
-    if (listening) {
-      recognitionRef.current?.stop();
-      return;
-    }
-    const recognition = new SpeechRecognitionCtor();
-    recognition.lang = lang;
-    recognition.interimResults = false;
-    recognition.continuous = false;
-    recognition.onresult = (e: any) => {
-      const transcript = e.results?.[0]?.[0]?.transcript;
-      if (transcript) setQuestion((prev) => (prev ? `${prev} ${transcript}` : transcript));
-    };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
-    recognitionRef.current = recognition;
-    setListening(true);
-    recognition.start();
-  }, [SpeechRecognitionCtor, listening, lang]);
+  // The workspace consumes `pendingPrompt` at mount (initialPrompt). Clear it
+  // right after so a re-open without a new event never re-asks the old prompt.
+  useEffect(() => {
+    if (!open || profileOpen || !pendingPrompt) return;
+    const id = requestAnimationFrame(() => setPendingPrompt(undefined));
+    return () => cancelAnimationFrame(id);
+  }, [open, profileOpen, pendingPrompt]);
+
+  // Contexte agrégé transmis au Shell → workspace (jamais des props métier).
+  const context: JarvisContext = useMemo(
+    () => ({
+      userId: user?.id,
+      trades,
+      profile: jarvisProfile,
+      page,
+      conversationId,
+      pendingPrompt,
+    }),
+    [user?.id, trades, jarvisProfile, page, conversationId, pendingPrompt],
+  );
 
   return (
     <>
@@ -243,7 +206,7 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
           status dot. On mobile it collapses to the mark alone to stay out of
           the thumb zone, but keeps the identical surface. */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
@@ -284,123 +247,39 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         </span>
       </button>
 
+      {/* Workspace actif : la fenêtre espace de travail (le chat est un module). */}
       {open && !profileOpen && (
-        <Modal
+        <JarvisShell
           open
           onClose={() => setOpen(false)}
-          className="md:max-w-lg w-full h-[65vh] md:h-[600px] max-h-[85vh] flex flex-col overflow-hidden"
-        >
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.06] to-transparent shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
-              <Bot className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-white">{t("assistant.title")}</h3>
-              <p className="text-[11px] text-slate-500 truncate">{t("assistant.subtitle")}</p>
-            </div>
-            {messages.length > 0 && (
-              <button
-                onClick={clearChat}
-                aria-label={t("assistant.clear")}
-                title={t("assistant.clear")}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-              >
-                <Eraser className="w-4 h-4" />
-              </button>
-            )}
+          activeWorkspace={activeWorkspace}
+          onNavigateWorkspace={setActiveWorkspace}
+          context={context}
+          initialPrompt={pendingPrompt}
+          actions={
             <button
-              onClick={() => setOpen(false)}
-              aria-label={t("common.close")}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors shrink-0"
+              onClick={() => setActiveWorkspace("settings")}
+              aria-label={t("jarvisSettings.title")}
+              title={t("jarvisSettings.title")}
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
             >
-              <X className="w-4 h-4" />
+              <Settings className="w-4.5 h-4.5" />
             </button>
-          </div>
-
-          {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-            {messages.length === 0 && (
-              <div className="text-sm text-slate-500 leading-relaxed">{t("assistant.empty")}</div>
-            )}
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
-              >
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-                    m.role === "user" &&
-                      "bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium",
-                    m.role === "assistant" &&
-                      "bg-white/[0.04] border border-white/[0.08] text-slate-200",
-                    m.role === "error" && "bg-red-500/10 border border-red-500/20 text-red-300",
-                  )}
-                >
-                  {m.role === "assistant" ? <MarkdownAnswer content={m.text} /> : m.text}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.08] flex items-center gap-2 text-sm text-slate-400">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("assistant.thinking")}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input */}
-          <div className="p-3 border-t border-white/[0.06] shrink-0">
-            {listening && (
-              <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-semibold mb-2 px-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />{" "}
-                {t("assistant.listening")}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              {SpeechRecognitionCtor && (
-                <button
-                  type="button"
-                  onClick={toggleMic}
-                  aria-label={t("common.voiceInput")}
-                  className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                    listening
-                      ? "bg-red-500/15 text-red-400"
-                      : "bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]",
-                  )}
-                >
-                  {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-              )}
-              <input
-                type="text"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") ask(question);
-                }}
-                placeholder={t("assistant.placeholder")}
-                disabled={loading}
-                className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all disabled:opacity-50"
-              />
-              <button
-                onClick={() => ask(question)}
-                disabled={loading || !question.trim()}
-                aria-label={t("common.send")}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white shrink-0 transition-all"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
-        </Modal>
+          }
+          sidebar={
+            <JarvisSidebar
+              conversations={conversations}
+              activeId={conversationId}
+              onNew={() => void newConversation()}
+              onOpenConversation={openConversation}
+              onDeleteConversation={(id) => void deleteConversation(id)}
+              onRenameConversation={(id, title) => void renameConversation(id, title)}
+              onTogglePin={(id) => void togglePinConversation(id)}
+              onOpenHome={() => setActiveWorkspace("home")}
+            />
+          }
+          footer={<CreditsBar />}
+        />
       )}
 
       {/* First-open card: the trader tells Jarvis who they are once. */}
@@ -408,13 +287,15 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
         <JarvisProfileModal
           open
           onClose={() => setProfileOpen(false)}
+          initial={jarvisProfile}
+          suggested={prefill}
           onSave={async (p) => {
             if (!user?.id) return;
             await saveJarvisProfile(user.id, p);
           }}
           onSaved={() => {
             setProfileOpen(false);
-            // Make the freshly-saved profile available to the coach immediately.
+            // Make the freshly-saved profile available to Jarvis immediately.
             if (user?.id) {
               loadJarvisProfile(user.id)
                 .then((p) => setJarvisProfile(p))

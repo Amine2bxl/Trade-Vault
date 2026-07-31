@@ -67,9 +67,10 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
         </div>
       </div>
 
-      {/* Active account switcher — available on every page */}
+      {/* Active account switcher — available on every page. Carte CTA premium
+          (même design que le cockpit Jarvis) */}
       <div className="px-3 pt-3 shrink-0">
-        <AccountSwitcher />
+        <AccountSwitcher variant="card" />
       </div>
 
       {/* Navigation — scrolls internally, never moves the rail */}

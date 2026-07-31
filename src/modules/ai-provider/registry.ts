@@ -1,16 +1,22 @@
 import type { AIProvider } from "./types";
 import { GeminiProvider } from "./gemini";
 import { AnthropicProvider } from "./anthropic";
-import { OpenAIProvider } from "./openai";
+import { OpenAIProvider, GroqProvider, OpenRouterProvider } from "./openai";
 
 /**
  * Provider registry — resolution order:
  *   1. AI_PROVIDER env var when set AND configured
  *   2. first configured provider in PROVIDERS order
- * Adding Mistral/DeepSeek/Ollama = one file + one line here.
+ * Adding a provider = one factory call + one line here.
  */
 
-const PROVIDERS: AIProvider[] = [GeminiProvider, AnthropicProvider, OpenAIProvider];
+const PROVIDERS: AIProvider[] = [
+  GeminiProvider,
+  AnthropicProvider,
+  OpenAIProvider,
+  GroqProvider,
+  OpenRouterProvider,
+];
 
 export function resolveProvider(): AIProvider {
   const wanted = process.env.AI_PROVIDER?.toLowerCase();
@@ -26,6 +32,24 @@ export function resolveProvider(): AIProvider {
     );
   }
   return first;
+}
+
+/**
+ * Toutes les providers CONFIGURÉES, dans l'ordre : la préférée (AI_PROVIDER)
+ * d'abord, puis les autres. C'est la base de la chaîne de repli multi-clés :
+ * avec plusieurs clés gratuites (Gemini + Groq + …), une provider qui échoue
+ * (quota, panne) laisse la suivante répondre. Vide si aucune n'est configurée.
+ */
+export function resolveProviders(): AIProvider[] {
+  const configured = PROVIDERS.filter((p) => p.isConfigured());
+  const wanted = process.env.AI_PROVIDER?.toLowerCase();
+  if (wanted) {
+    const preferred = configured.find((p) => p.id === wanted);
+    if (preferred) {
+      return [preferred, ...configured.filter((p) => p.id !== wanted)];
+    }
+  }
+  return configured;
 }
 
 /**
@@ -48,4 +72,15 @@ export function resolveToolCapableProvider(): AIProvider {
     );
   }
   return first;
+}
+
+/** Ids de toutes les providers connues (même non configurées). */
+export function providerIds(): string[] {
+  return PROVIDERS.map((p) => p.id);
+}
+
+/** Présence d'une clé pour un provider — diagnostic uniquement, jamais la valeur. */
+export function isProviderConfigured(id: string): boolean {
+  const provider = PROVIDERS.find((p) => p.id === id);
+  return provider ? provider.isConfigured() : false;
 }

@@ -51,7 +51,10 @@ import {
   NotificationEngine,
   persistNotification,
   initNotificationListeners,
+  dispatchCodedNotifications,
+  markNotificationRead,
 } from "@/modules/notifications";
+import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -59,6 +62,8 @@ import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 const Landing = lazy(() => import("./pages/Landing"));
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
+import NotificationDetailModal from "./components/NotificationDetailModal";
+import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -136,6 +141,24 @@ function AppContent() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
+  // Notification ouverte via tv:open-notification → popup centré (fond flouté).
+  const [detailNotification, setDetailNotification] = useState<AppNotification | null>(null);
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const n = (e as CustomEvent<{ notification?: AppNotification }>).detail?.notification;
+      if (n) setDetailNotification(n);
+    };
+    window.addEventListener("tv:open-notification", onOpen);
+    return () => window.removeEventListener("tv:open-notification", onOpen);
+  }, []);
+  const markNotifRead = useCallback(
+    (id: string) => {
+      if (!user?.id) return;
+      void markNotificationRead(user.id, id);
+      window.dispatchEvent(new CustomEvent("tv:notif-updated"));
+    },
+    [user?.id],
+  );
   // First-run gate: 'loading' until we know, 'needed' shows onboarding, 'done'
   // lets the app render. `onboarded_at` on the profile is the source of truth.
   const [onboarding, setOnboarding] = useState<"loading" | "needed" | "done">("loading");
@@ -145,6 +168,42 @@ function AppContent() {
   useEffect(() => {
     const m = new URLSearchParams(window.location.search).get("report");
     if (m && /^\d{4}-\d{2}$/.test(m)) setPage("reports");
+  }, []);
+
+  // Global navigation event — CTA de Jarvis (Premium, notifications) navigue
+  // vers une page sans coupler les modales au composant racine.
+  useEffect(() => {
+    const onNavigate = (e: Event) => {
+      const detail = (e as CustomEvent<{ page?: string }>).detail;
+      if (
+        detail?.page &&
+        [
+          "dashboard",
+          "inbox",
+          "journal",
+          "checklist",
+          "calendar",
+          "analytics",
+          "mistakes",
+          "missed",
+          "insights",
+          "news",
+          "seasonality",
+          "calculator",
+          "settings",
+          "reports",
+          "goals",
+          "tradingplan",
+          "appearance",
+          "subscription",
+          "profile",
+        ].includes(detail.page)
+      ) {
+        setPage(detail.page as Page);
+      }
+    };
+    window.addEventListener("tv:navigate", onNavigate);
+    return () => window.removeEventListener("tv:navigate", onNavigate);
   }, []);
 
   // Deep link from lifecycle emails: /?upgrade=1&promo=VAULT20 lands on the
@@ -219,6 +278,49 @@ function AppContent() {
     window.addEventListener("tv-rules-updated", onUpdate);
     return () => window.removeEventListener("tv-rules-updated", onUpdate);
   }, [user]);
+
+  // ── Préchargement des pages les plus visitées ──
+  // Une fois connecté et le premier rendu peint, on chauffe les chunks lazy
+  // (Journal, Analytics, Inbox, …) en arrière-plan : la navigation devient
+  // quasi instantanée au lieu de charger le module au premier clic.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const id = window.setTimeout(() => {
+      for (const mod of [
+        "./pages/Dashboard",
+        "./pages/Journal",
+        "./pages/Analytics",
+        "./pages/Inbox",
+        "./pages/Mistakes",
+        "./pages/CalendarPage",
+      ]) {
+        void import(mod).catch(() => {});
+      }
+    }, 900);
+    return () => window.clearTimeout(id);
+  }, [isAuthenticated]);
+
+  // ── Règles de notification codées (0 IA) ──
+  // Après chargement des trades, Jarvis évalue ses règles locales (série de
+  // pertes, fuite, inactivité, revue hebdo) et livre les notifications une
+  // fois par jour via l'engine (persist → inbox). Dédupliqué côté runner.
+  useEffect(() => {
+    if (!user?.id || !accountsReady || tradesLoading) return;
+    void dispatchCodedNotifications(
+      user.id,
+      {
+        trades: trades.map((t) => ({ date: t.date, pnl: t.pnl, mistakes: t.mistakes ?? [] })),
+        stats: {
+          totalPnl: stats.totalPnl,
+          winRate: stats.winRate,
+          tradeCount: stats.totalTrades,
+          mistakeStats: stats.mistakeStats,
+        },
+        rulesEnabled: rulesRef.current.filter((r) => r.enabled).length,
+      },
+      (uid, input) => NotificationEngine.notify(uid, input),
+    ).catch(() => {});
+  }, [user?.id, accountsReady, tradesLoading, trades, stats]);
 
   const handleSave = useCallback(
     async (trade: Trade) => {
@@ -406,6 +508,7 @@ function AppContent() {
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
     // scrolls inside <main>, so the sidebar rail never moves on any page.
     <div className="relative flex h-dvh text-white overflow-hidden">
+      <FirstSessionWelcome />
       <CursorGlow />
       {/* Ambient background glow */}
       <div className="shell-bg-orbs pointer-events-none fixed inset-0 overflow-hidden">
@@ -451,7 +554,7 @@ function AppContent() {
               {page === "analytics" && <Analytics trades={trades} />}
               {page === "mistakes" && <Mistakes trades={trades} />}
               {page === "missed" && <MissedOpportunities />}
-              {page === "insights" && <Jarvis trades={trades} />}
+              {page === "insights" && <Jarvis />}
               {page === "news" && <EconomicNews />}
               {page === "seasonality" && (
                 <Seasonality trades={trades} tradesLoading={tradesLoading} />
@@ -514,7 +617,7 @@ function AppContent() {
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
       <Suspense fallback={null}>
-        <AiAssistant trades={trades} />
+        <AiAssistant trades={trades} page={page} />
       </Suspense>
       {modalOpen && (
         <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
@@ -548,6 +651,13 @@ function AppContent() {
             handleDelete(id);
             setViewingTrade(null);
           }}
+        />
+      )}
+      {detailNotification && (
+        <NotificationDetailModal
+          notification={detailNotification}
+          onClose={() => setDetailNotification(null)}
+          onMarkRead={markNotifRead}
         />
       )}
     </div>

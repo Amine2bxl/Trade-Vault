@@ -42,7 +42,8 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 
 function toProfile(row: any): OnboardingProfile {
   return {
-    name: row.name || "trader",
+    // Le prénom de l'onboarding (jarvis_first_name) prime sur le nom du compte.
+    name: row.jarvis_first_name || row.name || "trader",
     goal: row.onboarding_goal,
     style: row.onboarding_style,
     experience: row.onboarding_experience,
@@ -53,7 +54,7 @@ function toProfile(row: any): OnboardingProfile {
 }
 
 const PROFILE_COLS =
-  "id, name, email, onboarding_goal, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_assets, onboarding_pain";
+  "id, name, email, jarvis_first_name, onboarding_goal, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_assets, onboarding_pain";
 
 /** Insert-first dedupe: returns true when this call won the right to send. */
 async function claimEmail(sb: any, userId: string, key: string): Promise<boolean> {

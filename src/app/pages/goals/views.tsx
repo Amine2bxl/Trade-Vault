@@ -198,14 +198,14 @@ export function GoalPicker({
       <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-1.5">
         {tr("Choisis tes objectifs", "Pick your goals")}
       </h2>
-      <p className="text-xs text-slate-500 mb-4">
+      <p className="text-xs text-slate-500 mb-3">
         {tr(
           "Sélectionnes-en autant que tu veux — le plan les combine en 6 étapes mensuelles.",
           "Select as many as you want — the plan combines them into 6 monthly steps.",
         )}
       </p>
 
-      <div className="grid gap-2.5 mb-5">
+      <div className="grid gap-2 mb-4">
         {kinds.map((k) => {
           const m = KIND_META[k];
           const Icon = m.icon;
@@ -223,11 +223,11 @@ export function GoalPicker({
             >
               <button
                 onClick={() => patch(k, { selected: !d.selected })}
-                className="w-full flex items-center gap-3.5 p-4 text-left"
+                className="w-full flex items-center gap-3 p-3.5 text-left"
               >
                 <div
                   className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
                     d.selected ? "bg-cyan-500/20 text-cyan-300" : "bg-white/[0.04] text-slate-400",
                   )}
                 >
@@ -405,8 +405,8 @@ export function PlanView({
   return (
     <div className="space-y-4 animate-fade-in-up">
       {/* ── Goals summary ── */}
-      <div className="glass-strong rounded-3xl p-5">
-        <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="glass-strong rounded-3xl p-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
           <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
             {tr("Mes objectifs", "My goals")}
             <span className="ml-2 text-slate-500 normal-case tracking-normal font-medium">

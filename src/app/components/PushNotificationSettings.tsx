@@ -1,19 +1,36 @@
-import { useState } from "react";
-import { Bell, BellOff, Smartphone, AlertCircle, Loader2, Send } from "lucide-react";
+import { useState, type ComponentType } from "react";
+import {
+  Bell,
+  BellRing,
+  Smartphone,
+  AlertCircle,
+  Loader2,
+  Send,
+  ShieldAlert,
+  Target,
+  TrendingDown,
+  Brain,
+  Calendar,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { sendPushToSelf } from "@/backend/push.functions";
 import { useT } from "../i18n/LanguageContext";
+import { cn } from "../utils/cn";
 
 type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
 
-const CATEGORIES: { key: NotifCategory; labelKey: string }[] = [
-  { key: "discipline", labelKey: "push.catDiscipline" },
-  { key: "goals", labelKey: "push.catGoals" },
-  { key: "risk", labelKey: "push.catRisk" },
-  { key: "ai", labelKey: "push.catAi" },
-  { key: "economic", labelKey: "push.catEconomic" },
+const CATEGORIES: {
+  key: NotifCategory;
+  labelKey: string;
+  icon: ComponentType<{ className?: string }>;
+}[] = [
+  { key: "discipline", labelKey: "push.catDiscipline", icon: ShieldAlert },
+  { key: "goals", labelKey: "push.catGoals", icon: Target },
+  { key: "risk", labelKey: "push.catRisk", icon: TrendingDown },
+  { key: "ai", labelKey: "push.catAi", icon: Brain },
+  { key: "economic", labelKey: "push.catEconomic", icon: Calendar },
 ];
 
 const PREFS_KEY = "tv.notif.prefs";
@@ -41,6 +58,24 @@ function savePrefs(p: Record<NotifCategory, boolean>): void {
 }
 
 export { loadPrefs, type NotifCategory, PREFS_KEY };
+
+function Switch({ on }: { on: boolean }) {
+  return (
+    <span
+      className={cn(
+        "relative h-5 w-9 shrink-0 rounded-full p-0.5 transition-colors",
+        on ? "bg-gradient-to-r from-cyan-500 to-teal-500" : "bg-white/10",
+      )}
+    >
+      <span
+        className={cn(
+          "block h-4 w-4 rounded-full bg-white shadow transition-transform",
+          on && "translate-x-4",
+        )}
+      />
+    </span>
+  );
+}
 
 export function PushNotificationSettings() {
   const { t } = useT();
@@ -80,13 +115,25 @@ export function PushNotificationSettings() {
   };
 
   return (
-    <div className="glass-strong rounded-3xl p-5 space-y-4">
-      <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
-        {t("push.title")}
-      </h2>
+    <div className="relative overflow-hidden glass-strong rounded-3xl p-4 md:p-5 space-y-4">
+      {/* Hairline + glow, comme les autres surfaces premium */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+
+      <div className="flex items-center gap-2.5">
+        <span className="relative shrink-0">
+          <span className="absolute -inset-1 rounded-lg bg-cyan-500/30 blur-md" />
+          <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+            <Bell className="w-4 h-4 text-white" />
+          </span>
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-sm font-bold text-white tracking-tight">{t("push.title")}</h2>
+          <p className="text-[11px] text-slate-500">{t("push.subtitle")}</p>
+        </div>
+      </div>
 
       {isiOS && !isPWA ? (
-        <div className="flex gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+        <div className="flex gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.05] p-3.5">
           <Smartphone className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
           <div className="text-xs text-slate-300 leading-relaxed">
             <div className="font-semibold text-white mb-1">{t("push.iosInstallTitle")}</div>
@@ -98,44 +145,43 @@ export function PushNotificationSettings() {
           </div>
         </div>
       ) : !isSupported ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 text-xs text-slate-400">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-xs text-slate-400">
           <AlertCircle className="w-4 h-4" /> {t("push.unsupported")}
         </div>
       ) : permission === "denied" ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-300">
+        <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.05] p-3.5 text-xs text-red-300">
           <AlertCircle className="w-4 h-4" /> {t("push.denied")}
         </div>
       ) : (
         <>
+          {/* Toggle principal — carte action */}
           <button
             onClick={handleToggle}
             disabled={isLoading}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] transition disabled:opacity-50"
+            className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] transition disabled:opacity-50"
           >
             <span className="flex items-center gap-3">
-              {isSubscribed ? (
-                <Bell className="w-4 h-4 text-emerald-400" />
-              ) : (
-                <BellOff className="w-4 h-4 text-slate-400" />
-              )}
-              <span className="text-sm text-white font-medium">
-                {isSubscribed ? t("push.enabled") : t("push.enable")}
+              <span
+                className={cn(
+                  "grid h-9 w-9 place-items-center rounded-xl border",
+                  isSubscribed
+                    ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                    : "bg-white/[0.04] border-white/[0.08] text-slate-400",
+                )}
+              >
+                {isSubscribed ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+              </span>
+              <span className="text-left">
+                <span className="block text-sm text-white font-semibold">
+                  {isSubscribed ? t("push.enabled") : t("push.enable")}
+                </span>
+                <span className="block text-[10px] text-slate-500">{t("push.hint")}</span>
               </span>
             </span>
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
             ) : (
-              <span
-                className={`h-5 w-9 rounded-full p-0.5 transition ${
-                  isSubscribed ? "bg-emerald-500/80" : "bg-white/10"
-                }`}
-              >
-                <span
-                  className={`block h-4 w-4 rounded-full bg-white transition-transform ${
-                    isSubscribed ? "translate-x-4" : ""
-                  }`}
-                />
-              </span>
+              <Switch on={isSubscribed} />
             )}
           </button>
 
@@ -143,7 +189,7 @@ export function PushNotificationSettings() {
             <button
               onClick={handleTest}
               disabled={isSending}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-50 text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-50 text-sm font-semibold"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -153,36 +199,43 @@ export function PushNotificationSettings() {
               {t("push.sendTest")}
             </button>
           )}
-
-          <p className="text-[10px] text-slate-600">{t("push.hint")}</p>
         </>
       )}
 
       {/* Notification category preferences */}
-      <div className="space-y-2 pt-2 border-t border-white/[.06]">
-        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+      <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
+        <p className="px-1 pt-1 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
           {t("push.categories")}
         </p>
-        {CATEGORIES.map((cat) => (
-          <label
-            key={cat.key}
-            className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition cursor-pointer"
-          >
-            <span className="text-xs text-slate-300">{t(cat.labelKey)}</span>
-            <input
-              type="checkbox"
-              checked={prefs[cat.key]}
-              onChange={() =>
-                setPrefs((p) => {
-                  const next = { ...p, [cat.key]: !p[cat.key] };
-                  savePrefs(next);
-                  return next;
-                })
-              }
-              className="h-4 w-4 rounded border-white/20 bg-white/5 checked:bg-cyan-500"
-            />
-          </label>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          return (
+            <label
+              key={cat.key}
+              className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-400">
+                  <Icon className="w-3.5 h-3.5" />
+                </span>
+                <span className="text-xs text-slate-300 truncate">{t(cat.labelKey)}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={prefs[cat.key]}
+                onChange={() =>
+                  setPrefs((p) => {
+                    const next = { ...p, [cat.key]: !p[cat.key] };
+                    savePrefs(next);
+                    return next;
+                  })
+                }
+                className="sr-only"
+              />
+              <Switch on={prefs[cat.key]} />
+            </label>
+          );
+        })}
       </div>
     </div>
   );

@@ -135,6 +135,14 @@ export default function Settings({
     <PageContainer className="max-w-2xl space-y-3">
       <PageHeader
         className="mb-0 md:mb-0 stagger-0"
+        icon={
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+              <SlidersHorizontal className="w-4.5 h-4.5 text-white" />
+            </span>
+          </span>
+        }
         title={t("settings.title")}
         subtitle={t("settings.subtitle")}
       />
@@ -152,7 +160,7 @@ export default function Settings({
       </div>
 
       {!anyVisible && (
-        <p className="text-sm text-slate-500 text-center py-8">{t("settings.noResults")}</p>
+        <p className="text-sm text-slate-500 text-center py-6">{t("settings.noResults")}</p>
       )}
 
       {/* Preferences */}
@@ -391,12 +399,15 @@ function SectionHeading({
   sub?: string;
 }) {
   return (
-    <div className="flex items-start gap-2">
-      <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-        {icon}
-      </div>
+    <div className="flex items-start gap-2.5">
+      <span className="relative shrink-0">
+        <span className="absolute -inset-0.5 rounded-xl bg-cyan-500/30 blur-sm" />
+        <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20 text-white">
+          {icon}
+        </span>
+      </span>
       <div>
-        <h2 className="text-sm font-semibold text-white uppercase tracking-wider">{title}</h2>
+        <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
         {sub && <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>}
       </div>
     </div>

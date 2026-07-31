@@ -135,6 +135,27 @@ export function describeProfile(
  * conversation and the language. No long-term memory (V1 scope): synchronous,
  * no DB read, so it never blocks the coach.
  */
+/**
+ * Garde les signaux sous le plafond serveur (~12 KB, Zod) : un journal riche
+ * (beaucoup de symboles/stratégies) dépassait la limite → la requête était
+ * rejetée (400) → « une erreur est survenue ». On borne les buckets et on
+ * retire en dernier les sections les moins critiques.
+ */
+function slimSignals(signals: ReturnType<typeof computeBehaviorSignals>): Record<string, unknown> {
+  const cap = 10_000;
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(signals)) {
+    const v = (signals as Record<string, unknown>)[k];
+    out[k] = Array.isArray(v) ? v.slice(0, 4) : v;
+  }
+  if (JSON.stringify(out).length <= cap) return out;
+  for (const drop of ["conviction", "setupQuality", "bySession", "bySymbol", "byWeekday"]) {
+    if (JSON.stringify(out).length <= cap) break;
+    delete out[drop];
+  }
+  return out;
+}
+
 export function buildCoachV1Payload(opts: {
   trades: Trade[];
   conversation?: CoachTurn[];
@@ -173,10 +194,13 @@ export function buildCoachV1Payload(opts: {
   // you lose on Fridays". Computed deterministically, never by the model.
   const signals = computeBehaviorSignals(trades);
   return {
-    trades: toInsightTradesPayload(trades),
+    // Les 25 derniers trades suffisent pour les exemples du coach (les stats et
+    // signaux portent la vue d'ensemble). Un payload plus léger = l'IA répond
+    // plus vite et reste sous les limites de temps (serverless Vercel ~10s).
+    trades: toInsightTradesPayload(trades.slice(-25)),
     stats: trades.length ? compactStats(trades) : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
-    signals: Object.keys(signals).length ? (signals as Record<string, unknown>) : undefined,
+    signals: Object.keys(signals).length ? slimSignals(signals) : undefined,
     rules: rules?.length
       ? rules
           .slice(0, 30)

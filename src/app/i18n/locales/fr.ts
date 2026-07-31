@@ -28,9 +28,26 @@ const fr: Dict = {
   "nav.appearance": "Apparence",
   "nav.subscription": "Abonnement",
   "common.save": "Enregistrer",
+  "common.rename": "Renommer",
   "common.cancel": "Annuler",
   "common.delete": "Supprimer",
   "common.edit": "Modifier",
+  // Onboarding (refonte 3 moments)
+  "onb.nameTitle": "Comment t'appelles-tu ?",
+  "onb.nameSub": "Jarvis te parlera par ton prénom — la voix, les rappels, tout.",
+  "onb.namePlaceholder": "Ton prénom",
+  "onb.nameCta": "Continuer",
+  "onb.profileTitle": "Ton profil de trader",
+  "onb.profileSub":
+    "Quelques réponses, et ta checklist et Jarvis sont calibrés sur toi. Tout est modifiable.",
+  "onb.saveError": "Oups, la sauvegarde a échoué. Réessaie.",
+  "onb.saveRetry": "Réessayer",
+  "onb.notifyTitle": "Reste discipliné, même loin de l'écran",
+  "onb.notifySub":
+    "Jarvis t'alerte quand tu enfreins une règle ou qu'une session démarre. Rare et pertinent — jamais de spam.",
+  "onb.notifyCta": "Activer les notifications",
+  "onb.notifyLater": "Plus tard",
+  "onb.notifySettings": "Réglable à tout moment dans les Réglages.",
   "common.add": "Ajouter",
   "common.view": "Voir",
   "common.loading": "Chargement…",
@@ -188,6 +205,8 @@ const fr: Dict = {
   "inbox.empty": "Aucune notification pour le moment. Elles apparaîtront ici au fil de ta session.",
   "inbox.emptyFiltered": "Aucune notification dans cette catégorie.",
   "inbox.markRead": "Marquer comme lu",
+  "inbox.unread": "non lu",
+  "inbox.unreadPlural": "non lus",
   "inbox.markAllRead": "Tout marquer",
   "inbox.filterAll": "Tout",
   "inbox.filterDiscipline": "Discipline",
@@ -195,6 +214,12 @@ const fr: Dict = {
   "inbox.filterRisk": "Risque",
   "inbox.filterAi": "IA",
   "inbox.filterEconomic": "Économique",
+  "inbox.plan": "Plan d'action",
+  "inbox.later": "Plus tard",
+  "inbox.ctaDefault": "Ouvrir",
+  "inbox.planDefault":
+    "Continue à logger tes trades — Jarvis analyse chaque session et te préviendra de ce qui compte.",
+  "inbox.fromJarvis": "Envoyé par Jarvis",
   "appearance.presets": "Prédéfinis",
   "appearance.yours": "Tes thèmes",
   "appearance.new": "Nouveau thème",
@@ -298,6 +323,7 @@ const fr: Dict = {
   "jarvis.pf": "Profit factor",
   "jarvis.streak": "Série",
   "assistant.title": "Jarvis",
+  "jarvis.copilot": "Ton copilote IA trading",
   "assistant.subtitle": "Ton intelligence de performance trading",
   "assistant.placeholder": "Demande à Jarvis…",
   "assistant.empty":
@@ -324,6 +350,83 @@ const fr: Dict = {
   "jarvisProfile.goalPh": "ex. +5R par mois",
   "jarvisProfile.save": "Sauvegarder",
   "jarvisProfile.saveError": "Impossible d'enregistrer ton profil. Réessaie.",
+
+  // Accueil Jarvis (Phase 1)
+  "jarvisHome.greeting": "Bonjour",
+  "jarvisHome.trader": "Trader",
+  "jarvisHome.subtitle": "Voici ton état trading aujourd'hui.",
+  "jarvisHome.ask": "Comment puis-je t'aider aujourd'hui ?",
+  "jarvisHome.suggestions": "Questions à explorer",
+  "jarvisHome.proposal": "Action proposée",
+  "jarvisHome.speaking": "parle",
+  "jarvisHome.addRule": "Ajouter à ma checklist",
+  "jarvisHome.ruleAdded": "Règle ajoutée à ta checklist. Elle sera appliquée à chaque trade.",
+
+  // Sidebar Jarvis (navigation cockpit)
+  "jarvisSide.principal": "Principal",
+  "jarvisSide.home": "Accueil",
+  "jarvisSide.history": "Historique",
+  "jarvisSide.historyNote": "Les conversations épinglées restent en tête.",
+  "jarvisSide.new": "Nouvelle conversation",
+  "jarvisSide.conversations": "Conversations",
+  "jarvisSide.analyseEntry": "Analyse IA",
+  "jarvisSide.notes": "Notes",
+  "jarvisSide.plans": "Plans",
+  "jarvisSide.tags": "Tags",
+  "jarvisSide.calendar": "Calendrier économique",
+  "jarvisSide.news": "Actualités",
+  "jarvisSide.promptAnalyse":
+    "Analyse ma semaine de trading : points forts, points faibles, et le levier n°1 à actionner.",
+  "jarvisSide.promptNotes":
+    "Aide-moi à organiser mes notes de trading pour apprendre de chaque trade.",
+  "jarvisSide.promptPlans": "Prépare mon plan de trading pour ma prochaine session.",
+  "jarvisSide.promptTags": "Quels tags ou erreurs devrais-je suivre pour détecter mes schémas ?",
+  "jarvisSide.promptCalendar":
+    "Quels événements économiques importants cette semaine, et comment m'y préparer ?",
+  "jarvisSide.promptNews": "Résume les actualités de marché qui comptent pour mon trading.",
+
+  // Crédits Jarvis (Jarvis Intelligence)
+  "credits.title": "Jarvis Intelligence",
+  "credits.remaining": "analyses restantes",
+  "credits.value1": "détecter tes erreurs",
+  "credits.value2": "analyser tes setups",
+  "credits.value3": "améliorer ta discipline",
+  "credits.explainer": "5 analyses gratuites par jour, réinitialisées à minuit.",
+  "credits.exhausted": "Limite du jour atteinte. Repasse demain ou passe Premium.",
+  "credits.exhaustedBody":
+    "Chaque message compte une analyse. Passe Premium pour un accès illimité à Jarvis.",
+  "credits.upgrade": "Découvrir Premium",
+
+  // Comptes
+  "account.active": "Compte actif",
+
+  // Conversations Jarvis
+  "jarvisConv.new": "Nouvelle discussion",
+  "jarvisConv.today": "Aujourd'hui",
+  "jarvisConv.thisWeek": "Cette semaine",
+  "jarvisConv.older": "Anciennes",
+  "jarvisConv.empty": "Lance une conversation — Jarvis s'en souviendra ici.",
+  "jarvisConv.pin": "Épingler",
+  "jarvisConv.unpin": "Désépingler",
+  "jarvisConv.toggle": "Afficher les conversations",
+  "jarvisConv.credits": "Crédits Jarvis",
+
+  // Paramètres Jarvis
+  "jarvisSettings.title": "Paramètres",
+  "jarvisSettings.profileTitle": "Profil mémorisé par Jarvis",
+  "jarvisSettings.profileSubtitle": "Ce que Jarvis connaît de toi pour personnaliser ses conseils.",
+  "jarvisSettings.edit": "Modifier",
+  "jarvisSettings.prefTitle": "Préférences",
+  "jarvisSettings.responseLang": "Langue de réponse",
+  "jarvisSettings.langAuto": "Automatique",
+  "jarvisSettings.langFr": "Français",
+  "jarvisSettings.langEn": "Anglais",
+  "jarvisSettings.memoryTitle": "Mémoire Jarvis",
+  "jarvisSettings.memorySubtitle": "Jarvis utilise ta mémoire pour personnaliser ses analyses.",
+  "jarvisSettings.memoryPattern": "Dernier insight affiché :",
+  "jarvisSettings.memorySeen": "Ouvertures aujourd'hui :",
+  "jarvisSettings.memoryIgnored": "Ignorés :",
+  "jarvisSettings.memoryReset": "Réinitialiser la mémoire Jarvis",
 
   "dashboard.greetingStillUp": "Encore debout",
   "dashboard.greetingMorning": "Bonjour",
@@ -508,6 +611,7 @@ const fr: Dict = {
     "Saisissez votre e-mail ci-dessus pour réinitialiser votre mot de passe",
   "auth.resetSent": "E-mail de réinitialisation envoyé. Vérifiez votre boîte de réception.",
   "push.title": "Notifications",
+  "push.subtitle": "Jarvis t'alerte quand ça compte — choisis tes canaux.",
   "push.enable": "Activer les notifications push",
   "push.enabled": "Notifications push activées",
   "push.disabled": "Notifications push désactivées",
@@ -706,6 +810,10 @@ const fr: Dict = {
   "calc.sectionRisk": "1 · Ce que tu acceptes de perdre",
   "calc.sectionInstrument": "2 · L'instrument et ton stop",
   "calc.perTrade": "par trade",
+  "calc.resultLive": "Taille en direct",
+  "calc.riskGauge": "du budget conseillé (2 %)",
+  "calc.riskOfAccount": "du compte",
+  "calc.riskSuggestion": "Le budget conseillé : 2 % du compte, jamais plus.",
 
   "settings.title": "Réglages",
   "settings.subtitle": "Préférences, notifications et données",
@@ -846,6 +954,10 @@ const fr: Dict = {
   "chk.dashStart": "Lance ta routine pre-market avant d'entrer en position",
   "chk.dashCta": "Ouvrir",
   "chk.guidedSetup": "Configuration guidée (facile)",
+  "chk.recommended": "Recommandé pour toi",
+  "chk.recommendedSub":
+    "Jarvis a construit cette liste depuis ton profil (style, faiblesse, marché, objectif).",
+  "chk.applyRecommended": "Appliquer cette liste",
   "chk.streakSuffix": "jours d'affilée",
   "chk.streakHint":
     "Jours de semaine consécutifs avec checklist verrouillée. Les week-ends ne cassent jamais la série.",
@@ -866,6 +978,9 @@ const fr: Dict = {
   // IA générique
   "ai.noResponse": "Pas de réponse.",
   "ai.genericError": "Une erreur est survenue. Réessaie.",
+  "ai.rateLimited": "Trop de requêtes sur un court instant. Attends un moment puis réessaie.",
+  "ai.sessionExpired": "Ta session a expiré. Reconnecte-toi puis réessaie.",
+  "ai.validationError": "La requête n'a pas pu être traitée. Reformule ou reconnecte-toi.",
 
   // Actus économiques
   "news.subtitle": "Événements macro à venir — impact, devise et horaires dans ton fuseau.",
@@ -908,6 +1023,7 @@ const fr: Dict = {
 
   // Comptes (switcher)
   "account.switch": "Changer de compte",
+  "account.switchShort": "Changer",
   "account.title": "Comptes",
   "account.subtitle": "Change de sous-compte en un tap",
   "account.rename": "Renommer",
