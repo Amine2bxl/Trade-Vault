@@ -312,7 +312,8 @@ const fr: Dict = {
 
   // Profil mémorisé par Jarvis (carte de première ouverture)
   "jarvisProfile.title": "Profil mémorisé par Jarvis",
-  "jarvisProfile.subtitle": "Ce que Jarvis sait de toi afin de personnaliser chacune de ses réponses.",
+  "jarvisProfile.subtitle":
+    "Ce que Jarvis sait de toi afin de personnaliser chacune de ses réponses.",
   "jarvisProfile.firstName": "Prénom",
   "jarvisProfile.style": "Style de trading",
   "jarvisProfile.weakness": "Faiblesse principale",
