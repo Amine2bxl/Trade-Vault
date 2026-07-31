@@ -120,6 +120,16 @@ describe("Insight Engine — priorité unique", () => {
     });
     expect(repeated.candidates[0].pattern).toBe("discipline_streak");
   });
+
+  it("mémoire : un pattern ignoré (dismiss) est exclu", () => {
+    const data = buildHomeData(riskAfterLossTrader());
+    const res = runInsightEngine(data, {
+      ...EMPTY_MEMORY,
+      ignoredPatterns: ["risk_after_loss"],
+    });
+    expect(res.candidates.find((c) => c.pattern === "risk_after_loss")).toBeUndefined();
+    expect(res.confidence.status).toBe("learning");
+  });
 });
 
 describe("Priority — tri isolé", () => {

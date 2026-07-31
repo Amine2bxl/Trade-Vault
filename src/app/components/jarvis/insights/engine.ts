@@ -21,10 +21,11 @@ export interface EngineResult {
 }
 
 export function runInsightEngine(data: JarvisHomeData, memory: JarvisMemory): EngineResult {
+  const ignored = new Set(memory.ignoredPatterns ?? []);
   const raw: JarvisInsight[] = [];
   for (const detector of DETECTORS) {
     const candidate = detector(data);
-    if (candidate) raw.push(candidate);
+    if (candidate && !ignored.has(candidate.pattern)) raw.push(candidate);
   }
 
   if (raw.length === 0) {

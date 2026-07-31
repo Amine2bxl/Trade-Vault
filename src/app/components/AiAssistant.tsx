@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bot, X } from "lucide-react";
-import { Trade } from "../types";
+import { Trade, Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -12,6 +12,8 @@ import type { JarvisWorkspaceId } from "./jarvis/workspaces";
 
 interface AiAssistantProps {
   trades: Trade[];
+  /** Page TradeVault courante — enrichit le contexte agrégé de Jarvis. */
+  page?: Page;
 }
 
 /**
@@ -22,7 +24,7 @@ interface AiAssistantProps {
  * ; le workspace actif (conversation) vit dans le registre des workspaces.
  */
 
-export default function AiAssistant({ trades }: AiAssistantProps) {
+export default function AiAssistant({ trades, page }: AiAssistantProps) {
   const { t } = useT();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -86,9 +88,10 @@ export default function AiAssistant({ trades }: AiAssistantProps) {
       userId: user?.id,
       trades,
       profile: jarvisProfile,
+      page,
       pendingPrompt,
     }),
-    [user?.id, trades, jarvisProfile, pendingPrompt],
+    [user?.id, trades, jarvisProfile, page, pendingPrompt],
   );
 
   return (

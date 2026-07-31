@@ -329,6 +329,7 @@ const fr: Dict = {
   "jarvisHome.greeting": "Bonjour",
   "jarvisHome.trader": "Trader",
   "jarvisHome.subtitle": "J'ai analysé ton trading — voici ce qui compte aujourd'hui.",
+  "jarvisHome.suggestions": "Questions à explorer",
 
   "dashboard.greetingStillUp": "Encore debout",
   "dashboard.greetingMorning": "Bonjour",

@@ -374,6 +374,7 @@ const en = {
   "jarvisHome.greeting": "Hello",
   "jarvisHome.trader": "Trader",
   "jarvisHome.subtitle": "I analysed your trading — here is what matters today.",
+  "jarvisHome.suggestions": "Questions to explore",
 
   // Dashboard
   "dashboard.greetingStillUp": "Still up",

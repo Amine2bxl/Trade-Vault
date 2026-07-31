@@ -514,7 +514,7 @@ function AppContent() {
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
       <Suspense fallback={null}>
-        <AiAssistant trades={trades} />
+        <AiAssistant trades={trades} page={page} />
       </Suspense>
       {modalOpen && (
         <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
