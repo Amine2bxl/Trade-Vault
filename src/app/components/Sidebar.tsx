@@ -7,6 +7,7 @@ import { cn } from "../utils/cn";
 import logoSrc from "@/assets/tradevault-logo.png";
 import { useT } from "../i18n/LanguageContext";
 import AccountSwitcher from "./AccountSwitcher";
+import { useUnreadCount } from "../hooks/useUnreadCount";
 
 interface SidebarProps {
   page: Page;
@@ -18,6 +19,7 @@ interface SidebarProps {
 export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t } = useT();
+  const unread = useUnreadCount(user?.id);
 
   return (
     // h-dvh + sticky top-0: the rail is always exactly viewport-height and never
@@ -77,12 +79,19 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                   {page === id && (
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
                   )}
-                  <Icon
-                    className={cn(
-                      "w-4 h-4 shrink-0",
-                      page === id ? "text-cyan-400" : "text-slate-600",
+                  <div className="relative shrink-0">
+                    <Icon
+                      className={cn(
+                        "w-4 h-4",
+                        page === id ? "text-cyan-400" : "text-slate-600",
+                      )}
+                    />
+                    {id === "inbox" && unread > 0 && (
+                      <span className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]">
+                        {unread > 99 ? "99+" : unread}
+                      </span>
                     )}
-                  />
+                  </div>
                   <span className="truncate">{t(labelKey)}</span>
                   {page === id && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
