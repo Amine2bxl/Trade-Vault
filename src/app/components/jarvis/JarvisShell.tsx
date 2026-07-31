@@ -1,39 +1,57 @@
-import { type ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Bot, X } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useT } from "../../i18n/LanguageContext";
 import { Modal } from "@/shared/ui";
+import type { JarvisContext } from "./context";
+import { JARVIS_WORKSPACES, type JarvisWorkspaceId } from "./workspaces";
 
 /**
- * JarvisShell — la FENÊTRE de Jarvis (Phase 0).
+ * JarvisShell — la FENÊTRE de Jarvis (Phase 0, architecture verrouillée).
  *
- * Architecture (terminologie TradeVault) :
+ * Jarvis est une PLATEFORME, pas un chat. Le Shell n'affiche QUE le workspace
+ * actif (`activeWorkspace`), résolu via le registre `JARVIS_WORKSPACES`
+ * (lazy : un espace jamais ouvert n'est jamais chargé). Le Shell ne dépend
+ * d'aucun module métier — ajouter un workspace ne le modifie pas.
+ *
+ * Architecture :
  *   JarvisShell      → ce composant : la fenêtre centrée (80–85 % × 85–90 %),
  *                      overlay premium, coins arrondis, responsive.
- *     JarvisWorkspace → le layout 3 colonnes (nav / centre / contexte) — Phase P3/P4.
- *       JarvisCore    → le moteur IA front (canal de conversation) — Phase P2+.
+ *     JarvisWorkspace → les espaces (Accueil, Conversation, Rapports…),
+ *                       chargés à la demande via le registre.
+ *       JarvisCore    → le moteur IA front (Phase P2+).
  *         AI Router   → le routeur de modèles, BACKEND, interne — jamais dans l'UI.
  *
- * Règles :
- *   - Composant 100 % présentational : aucune logique IA/métier ici.
- *   - L'application reste visible derrière (overlay dim + léger blur) : ouvrir
- *     Jarvis est un espace de travail, pas une sortie de TradeVault.
- *   - Le contenu central (Accueil, Conversation, blocs…) arrive dans `children`.
- *   - Seul « Jarvis » et « Assistant IA de TradeVault » sont affichés — aucun
- *     nom de fournisseur n'est jamais rendu ici.
+ * Seuls « Jarvis » et « Assistant IA de TradeVault » sont affichés — aucun
+ * nom de fournisseur n'est jamais rendu ici.
  */
 
 export interface JarvisShellProps {
   open: boolean;
   onClose: () => void;
-  /** Actions du header (nouvelle discussion, paramètres, voix…) avant « Fermer ». */
+  /** Workspace actif affiché dans la fenêtre. */
+  activeWorkspace: JarvisWorkspaceId;
+  /** Contexte agrégé (compte, page, profil, trades…) transmis aux workspaces. */
+  context: JarvisContext;
+  /** Prompt fourni par une page externe (`tv:ask-coach`), consommé à l'ouverture. */
+  initialPrompt?: string;
+  /** Navigation entre espaces (colonne gauche, Phase P3). */
+  onNavigateWorkspace?: (id: JarvisWorkspaceId) => void;
+  /** Actions globales du header (paramètres, agrandir…). */
   actions?: ReactNode;
-  /** Contenu central de l'espace de travail. */
-  children: ReactNode;
 }
 
-export default function JarvisShell({ open, onClose, actions, children }: JarvisShellProps) {
+export default function JarvisShell({
+  open,
+  onClose,
+  activeWorkspace,
+  context,
+  initialPrompt,
+  onNavigateWorkspace,
+  actions,
+}: JarvisShellProps) {
   const { t } = useT();
+  const Workspace = JARVIS_WORKSPACES[activeWorkspace];
 
   return (
     <Modal
@@ -92,8 +110,31 @@ export default function JarvisShell({ open, onClose, actions, children }: Jarvis
         </button>
       </header>
 
-      {/* ── Contenu central (Accueil / Conversation / blocs) ── */}
-      <div className="flex-1 min-h-0 flex flex-col">{children}</div>
+      {/* ── Workspace actif (lazy) ── */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <Suspense
+          fallback={
+            <div className="flex-1 flex items-center justify-center">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                Chargement…
+              </div>
+            </div>
+          }
+        >
+          {Workspace ? (
+            <Workspace
+              context={context}
+              initialPrompt={initialPrompt}
+              openWorkspace={onNavigateWorkspace ?? (() => {})}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
+              {`${activeWorkspace} — bientôt disponible`}
+            </div>
+          )}
+        </Suspense>
+      </div>
     </Modal>
   );
 }
