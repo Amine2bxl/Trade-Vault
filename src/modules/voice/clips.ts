@@ -6,12 +6,25 @@
  * exact spoken line back to its audio file. Exact match only: a line that was
  * never rendered falls back to the browser voice — the trader hears a voice,
  * never an error.
+ *
+ * The manifest is fetched with `no-store` and self-heals: clip filenames are
+ * immutable (hashed), so when the browser/CDN holds a stale manifest from an
+ * earlier deploy, a failed clip triggers one refresh + retry instead of
+ * silently falling back to the browser voice.
  */
 
 const MANIFEST_URL = "/voices/manifest.json";
 
 let manifest: Map<string, string> | null = null;
 let loading: Promise<Map<string, string>> | null = null;
+let autoHealed = false;
+
+async function fetchManifest(): Promise<Map<string, string>> {
+  const res = await fetch(MANIFEST_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error(`manifest ${res.status}`);
+  const data = (await res.json()) as Record<string, string>;
+  return new Map(Object.entries(data));
+}
 
 /**
  * Load the text→file map once per session. Resolves to an empty map on any
@@ -20,13 +33,9 @@ let loading: Promise<Map<string, string>> | null = null;
 export function loadVoiceClips(): Promise<Map<string, string>> {
   if (manifest) return Promise.resolve(manifest);
   if (!loading) {
-    loading = fetch(MANIFEST_URL)
-      .then((r) => {
-        if (!r.ok) throw new Error(`manifest ${r.status}`);
-        return r.json() as Promise<Record<string, string>>;
-      })
-      .then((data) => {
-        manifest = new Map(Object.entries(data));
+    loading = fetchManifest()
+      .then((m) => {
+        manifest = m;
         return manifest;
       })
       .catch(() => {
@@ -35,6 +44,19 @@ export function loadVoiceClips(): Promise<Map<string, string>> {
       });
   }
   return loading;
+}
+
+/**
+ * Re-fetch the manifest after a clip failed to load. Used once per session to
+ * heal a stale browser/CDN cache; the new mapping points at the current
+ * immutable clip files.
+ */
+export async function refreshVoiceClips(): Promise<void> {
+  if (autoHealed) return;
+  autoHealed = true;
+  manifest = null;
+  loading = null;
+  await loadVoiceClips();
 }
 
 /**

@@ -21,7 +21,7 @@ import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import { loadOnboarding, type OnboardingData } from "../store";
 import { ttsSpeak } from "@/backend/tts.functions";
-import { clipFor, loadVoiceClips } from "@/modules/voice/clips";
+import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
 import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {
@@ -663,7 +663,14 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       await loadVoiceClips();
       const clip = clipFor(txt);
       if (clip) {
-        const ok = await playUrl(clip, txt, undefined, true);
+        let ok = await playUrl(clip, txt, undefined, true);
+        if (!ok) {
+          // Stale manifest (browser/CDN cache)? Refresh once and retry before
+          // falling back to the browser voice.
+          await refreshVoiceClips();
+          const healed = clipFor(txt);
+          if (healed && healed !== clip) ok = await playUrl(healed, txt, undefined, true);
+        }
         if (ok) return;
         // Autoplay refusal or missing file → fall through to hosted/browser.
       }

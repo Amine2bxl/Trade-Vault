@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ttsCapabilities, ttsSpeak } from "@/backend/tts.functions";
-import { clipFor, loadVoiceClips } from "@/modules/voice/clips";
+import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { JARVIS_VOICE, pickJarvisVoice, toSpeechSegments } from "@/modules/voice";
 
 /**
@@ -158,6 +158,29 @@ export function useJarvisVoice(): JarvisVoice {
             .catch(() => done(false));
         });
         if (played) return;
+        // Stale manifest? Refresh once and retry the healed mapping.
+        await refreshVoiceClips();
+        const healed = clipFor(line);
+        if (healed && healed !== clip) {
+          const run = ++runRef.current;
+          audioRef.current?.pause();
+          const el = new Audio(healed);
+          audioRef.current = el;
+          el.volume = 0.95;
+          el.onended = () => {
+            if (run === runRef.current) setSpeaking(false);
+          };
+          el.onerror = () => {
+            if (run === runRef.current) setSpeaking(false);
+          };
+          setSpeaking(true);
+          try {
+            await el.play();
+            return;
+          } catch {
+            if (run === runRef.current) setSpeaking(false);
+          }
+        }
         // Autoplay refusal or missing file → fall through to hosted/local.
       }
 

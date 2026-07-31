@@ -37,7 +37,7 @@ test("the manifest maps every clip to an existing file", () => {
   expect(refs.size).toBe(1); // one reference voice across the whole catalogue
   for (const [text, file] of Object.entries(manifest)) {
     expect(text.trim().length).toBeGreaterThan(0);
-    // voice-<reference fingerprint 8>-<text hash 12>.mp3
-    expect(file).toMatch(/^voice-[0-9a-f]{8}-[0-9a-f]{12}\.mp3$/);
+    // voice-<reference fingerprint 8>-<render config 4>-<text hash 12>.mp3
+    expect(file).toMatch(/^voice-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{12}\.mp3$/);
   }
 });
