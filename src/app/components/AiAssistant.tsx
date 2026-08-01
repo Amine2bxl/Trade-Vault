@@ -192,10 +192,10 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         className={cn(
           "group fixed z-40 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
           "flex items-center justify-center",
-          // Mobile : squircle 44px — la MÊME surface que la nav bar (.float-shell).
-          "h-11 w-11 rounded-2xl float-shell",
+          // Mobile : pilule 44px — la MÊME surface et la MÊME forme que la nav.
+          "h-11 w-11 rounded-full float-shell",
           // Desktop : pill étiqueté, même surface.
-          "md:h-auto md:w-auto md:gap-2.5 md:rounded-2xl md:p-1.5 md:pr-4",
+          "md:h-auto md:w-auto md:gap-2.5 md:rounded-full md:p-1.5 md:pr-4",
           "transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
           open && "md:border-cyan-400/40 md:bg-cyan-500/[0.08]",
           !open && "md:hover:border-cyan-400/30",

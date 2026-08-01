@@ -755,7 +755,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .bottom-nav-shell {
   border-radius: 26px;
-  background: linear-gradient(180deg, rgba(12, 22, 37, 0.86) 0%, rgba(7, 13, 22, 0.94) 100%);
+  background: linear-gradient(180deg, rgba(12, 22, 37, 0.96) 0%, rgba(7, 13, 22, 0.98) 100%);
   border: 1px solid rgb(var(--tv-accent-rgb) / 0.1);
   box-shadow:
     0 10px 34px rgba(0, 0, 0, 0.55),
@@ -766,10 +766,11 @@ input[type="range"]::-webkit-slider-thumb {
   overflow: hidden;
 }
 /* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
-   la barre de navigation — même dégradé, même liseré accent, mêmes ombres
-   internes, même blur. Le rayon est posé sur l'élément (rounded-*). */
+   la barre de navigation — même dégradé (opacité renforcée), même liseré
+   accent, mêmes ombres internes, même blur. La forme est posée sur l'élément
+   (rounded-full = pilule, comme la nav). */
 .float-shell {
-  background: linear-gradient(180deg, rgba(12, 22, 37, 0.86) 0%, rgba(7, 13, 22, 0.94) 100%);
+  background: linear-gradient(180deg, rgba(12, 22, 37, 0.96) 0%, rgba(7, 13, 22, 0.98) 100%);
   border: 1px solid rgb(var(--tv-accent-rgb) / 0.12);
   box-shadow:
     0 10px 34px rgba(0, 0, 0, 0.55),
