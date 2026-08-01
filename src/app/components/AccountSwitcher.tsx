@@ -171,15 +171,14 @@ export default function AccountSwitcher({
     const ActiveIcon = TYPE_ICON[activeAccount.type];
     return (
       <>
-        {/* Pilule mobile HARMONISÉE avec le dock Jarvis : h-11, rounded-xl,
-            glass + liseré cyan + glow doux, badge icône h-7 à l'intérieur —
-            la MÊME structure, la même lumière. */}
+        {/* Pilule mobile : la MÊME surface que la nav bar (.float-shell) —
+            dégradé sombre, liseré accent, blur, ombres internes. Badge teinte
+            compte à l'intérieur, comme le badge gradient de Jarvis. */}
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-11 pl-1.5 pr-3 rounded-xl flex items-center gap-2 glass-strong border border-cyan-500/20 shadow-[0_6px_16px_rgba(0,0,0,0.4),0_0_12px_rgba(34,211,238,0.18)] active:scale-95 transition-all"
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-11 pl-1.5 pr-3 rounded-2xl flex items-center gap-2 float-shell active:scale-95 transition-all"
         >
-          <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
           <span
             className="relative grid h-7 w-7 shrink-0 place-items-center rounded-lg border shadow-sm"
             style={{

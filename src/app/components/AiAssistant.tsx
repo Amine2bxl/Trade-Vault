@@ -192,19 +192,15 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         className={cn(
           "group fixed z-40 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
           "flex items-center justify-center",
-          // Mobile : squircle glass 44px, badge gradient à l'intérieur —
-          // la MÊME structure que la pilule sous-comptes (harmonisé).
-          "h-11 w-11 rounded-xl glass-strong border border-cyan-500/20",
-          "shadow-[0_6px_16px_rgba(0,0,0,0.4),0_0_12px_rgba(34,211,238,0.18)]",
-          // Desktop : pill glass étiqueté (badge un peu plus grand).
-          "md:h-auto md:w-auto md:gap-2.5 md:rounded-2xl md:border md:p-1.5 md:pr-4 md:glass-strong",
-          "md:shadow-[0_8px_24px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.18)]",
+          // Mobile : squircle 44px — la MÊME surface que la nav bar (.float-shell).
+          "h-11 w-11 rounded-2xl float-shell",
+          // Desktop : pill étiqueté, même surface.
+          "md:h-auto md:w-auto md:gap-2.5 md:rounded-2xl md:p-1.5 md:pr-4",
           "transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
           open && "md:border-cyan-400/40 md:bg-cyan-500/[0.08]",
-          !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
+          !open && "md:hover:border-cyan-400/30",
         )}
       >
-        <span className="pointer-events-none hidden md:block absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
         <span
           className={cn(
             "relative grid place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shadow-sm",
