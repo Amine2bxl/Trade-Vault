@@ -203,7 +203,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       >
         <span
           className={cn(
-            "relative grid place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shadow-sm",
+            "relative grid place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-sm",
             "h-7 w-7 md:h-9 md:w-9",
           )}
         >
