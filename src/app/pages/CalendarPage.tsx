@@ -351,183 +351,193 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        <div className="grid grid-cols-8 border-b border-white/[0.06]">
-          {DAYS.map((d, i) => (
-            <div
-              key={d + i}
-              className={cn(
-                "py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest",
-                i >= 5 ? "text-slate-700" : "text-slate-500",
-              )}
-            >
-              {d}
-            </div>
-          ))}
-          <div className="py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
-            {t("calendar.week")}
-          </div>
-        </div>
-        <div className="p-1.5 md:p-3 space-y-1 md:space-y-2">
-          {calendarRows.map((row, rowIdx) => {
-            const week = weekTotals[rowIdx];
-            return (
-              <div key={rowIdx} className="grid grid-cols-8 gap-1 md:gap-2">
-                {row.map((day, colIdx) => {
-                  if (day === null)
-                    return <div key={`e-${rowIdx}-${colIdx}`} className="h-14 md:min-h-[104px]" />;
-                  const dateStr = getDateStr(day);
-                  const data = dailyData[dateStr];
-                  const isAllBE = data && data.count > 0 && data.count === data.breakEven;
-                  const isWin = data && !isAllBE && data.pnl > 0;
-                  const isLoss = data && !isAllBE && data.pnl < 0;
-                  const isToday = dateStr === new Date().toISOString().split("T")[0];
-                  const isWeekend = colIdx >= 5;
-                  const dayMissed = missedByDate[dateStr] || [];
-                  const missedCount = dayMissed.length;
-
-                  // Heatmap intensity: 0 → the day with the largest |P&L| this month.
-                  const mag =
-                    data && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
-                  const a = 0.08 + 0.34 * mag; // fill alpha
-                  const b = 0.18 + 0.24 * mag; // border alpha
-                  let cellStyle: CSSProperties | undefined;
-                  if (isWin)
-                    cellStyle = {
-                      background: `linear-gradient(155deg, rgba(16,185,129,${a}), rgba(16,185,129,${a * 0.35}))`,
-                      borderColor: `rgba(16,185,129,${b})`,
-                    };
-                  else if (isLoss)
-                    cellStyle = {
-                      background: `linear-gradient(155deg, rgba(244,63,63,${a}), rgba(244,63,63,${a * 0.35}))`,
-                      borderColor: `rgba(244,63,63,${b})`,
-                    };
-                  else if (isAllBE)
-                    cellStyle = {
-                      background: "rgba(148,163,184,0.10)",
-                      borderColor: "rgba(148,163,184,0.22)",
-                    };
-
-                  return (
-                    <button
-                      key={dateStr}
-                      onClick={() => {
-                        if (data) setSelectedDate(dateStr);
-                        else if (dayMissed.length > 0) setSelectedMissed(dayMissed[0]);
-                      }}
-                      disabled={!data && missedCount === 0}
-                      style={cellStyle}
-                      className={cn(
-                        "h-14 md:min-h-[104px] md:p-2.5 p-1.5 rounded-lg md:rounded-xl text-left transition-all duration-200 relative overflow-hidden border flex flex-col",
-                        !cellStyle && !missedCount && "border-white/[0.05]",
-                        !cellStyle && isWeekend && "bg-white/[0.01]",
-                        !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
-                        isToday && "ring-1 ring-inset ring-cyan-400/60",
-                        (data || missedCount > 0) &&
-                          "cursor-pointer hover:brightness-125 active:scale-[0.97]",
-                      )}
-                    >
-                      {/* Day number */}
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={cn(
-                            "text-[10px] md:text-xs font-semibold tabular-nums",
-                            isToday
-                              ? "text-cyan-300"
-                              : data
-                                ? "text-slate-300"
-                                : isWeekend
-                                  ? "text-slate-700"
-                                  : "text-slate-600",
-                          )}
-                        >
-                          {day}
-                        </span>
-                        {missedCount > 0 && (
-                          <span
-                            className="flex items-center gap-0.5 text-amber-300 text-[11px] md:text-[10px] font-bold"
-                            title={`${missedCount} ${t("missed.title")}`}
-                          >
-                            <Target className="w-2 h-2 md:w-2.5 md:h-2.5" />
-                            {missedCount}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* P&L — the hero number, centered in the cell */}
-                      {data && (
-                        <div className="flex-1 flex flex-col justify-center">
-                          <div
-                            className={cn(
-                              "font-display text-[11px] md:text-base font-extrabold tabular-nums leading-none",
-                              isAllBE
-                                ? "text-slate-300"
-                                : isWin
-                                  ? "text-emerald-300"
-                                  : isLoss
-                                    ? "text-red-300"
-                                    : "text-slate-400",
-                            )}
-                          >
-                            {isAllBE
-                              ? t("common.be")
-                              : `${data.pnl >= 0 ? "+" : "−"}$${Math.abs(data.pnl).toFixed(0)}`}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Footer: trade count + RR */}
-                      {data && (
-                        <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] font-semibold tabular-nums">
-                          <span className="text-slate-400">
-                            {data.count}{" "}
-                            {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
-                          </span>
-                          {data.avgRR > 0 && (
-                            <span className="text-cyan-400/80 hidden md:inline">
-                              {data.avgRR.toFixed(1)}R
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {/* Weekly summary column */}
+        {/* Scroll horizontal sur mobile : chaque colonne garde une largeur
+            minimale pour que les P&L s'affichent EN ENTIER (swipe latéral). */}
+        <div className="overflow-x-auto md:overflow-visible scrollbar-thin">
+          <div className="min-w-[640px] md:min-w-0">
+            <div className="grid grid-cols-8 border-b border-white/[0.06]">
+              {DAYS.map((d, i) => (
                 <div
+                  key={d + i}
                   className={cn(
-                    "h-14 md:min-h-[104px] rounded-lg md:rounded-xl p-1.5 md:p-2.5 flex flex-col justify-center border border-white/[0.04] bg-white/[0.015]",
-                    week.days === 0 && "opacity-40",
+                    "py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest",
+                    i >= 5 ? "text-slate-700" : "text-slate-500",
                   )}
                 >
-                  <div className="text-[11px] md:text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">
-                    {t("calendar.week")} {rowIdx + 1}
-                  </div>
-                  <div
-                    className={cn(
-                      "font-display text-[11px] md:text-sm font-extrabold tabular-nums leading-none",
-                      week.days === 0
-                        ? "text-slate-600"
-                        : week.pnl > 0
-                          ? "text-emerald-400"
-                          : week.pnl < 0
-                            ? "text-red-400"
-                            : "text-slate-300",
-                    )}
-                  >
-                    {week.days === 0
-                      ? "—"
-                      : `${week.pnl >= 0 ? "+" : "−"}$${Math.abs(week.pnl).toFixed(0)}`}
-                  </div>
-                  {week.days > 0 && (
-                    <div className="text-[11px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
-                      {week.days} {week.days === 1 ? t("calendar.day") : t("calendar.days")}
-                    </div>
-                  )}
+                  {d}
                 </div>
+              ))}
+              <div className="py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
+                {t("calendar.week")}
               </div>
-            );
-          })}
+            </div>
+            <div className="p-1.5 md:p-3 space-y-1 md:space-y-2">
+              {calendarRows.map((row, rowIdx) => {
+                const week = weekTotals[rowIdx];
+                return (
+                  <div key={rowIdx} className="grid grid-cols-8 gap-1 md:gap-2">
+                    {row.map((day, colIdx) => {
+                      if (day === null)
+                        return (
+                          <div key={`e-${rowIdx}-${colIdx}`} className="h-16 md:min-h-[104px]" />
+                        );
+                      const dateStr = getDateStr(day);
+                      const data = dailyData[dateStr];
+                      const isAllBE = data && data.count > 0 && data.count === data.breakEven;
+                      const isWin = data && !isAllBE && data.pnl > 0;
+                      const isLoss = data && !isAllBE && data.pnl < 0;
+                      const isToday = dateStr === new Date().toISOString().split("T")[0];
+                      const isWeekend = colIdx >= 5;
+                      const dayMissed = missedByDate[dateStr] || [];
+                      const missedCount = dayMissed.length;
+
+                      // Heatmap intensity: 0 → the day with the largest |P&L| this month.
+                      const mag =
+                        data && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
+                      const a = 0.08 + 0.34 * mag; // fill alpha
+                      const b = 0.18 + 0.24 * mag; // border alpha
+                      let cellStyle: CSSProperties | undefined;
+                      if (isWin)
+                        cellStyle = {
+                          background: `linear-gradient(155deg, rgba(16,185,129,${a}), rgba(16,185,129,${a * 0.35}))`,
+                          borderColor: `rgba(16,185,129,${b})`,
+                        };
+                      else if (isLoss)
+                        cellStyle = {
+                          background: `linear-gradient(155deg, rgba(244,63,63,${a}), rgba(244,63,63,${a * 0.35}))`,
+                          borderColor: `rgba(244,63,63,${b})`,
+                        };
+                      else if (isAllBE)
+                        cellStyle = {
+                          background: "rgba(148,163,184,0.10)",
+                          borderColor: "rgba(148,163,184,0.22)",
+                        };
+
+                      return (
+                        <button
+                          key={dateStr}
+                          onClick={() => {
+                            if (data) setSelectedDate(dateStr);
+                            else if (dayMissed.length > 0) setSelectedMissed(dayMissed[0]);
+                          }}
+                          disabled={!data && missedCount === 0}
+                          style={cellStyle}
+                          className={cn(
+                            "h-16 md:min-h-[104px] md:p-2.5 p-1 rounded-lg md:rounded-xl text-left transition-all duration-200 relative overflow-hidden border flex flex-col",
+                            !cellStyle && !missedCount && "border-white/[0.05]",
+                            !cellStyle && isWeekend && "bg-white/[0.01]",
+                            !cellStyle &&
+                              missedCount > 0 &&
+                              "bg-amber-500/[0.06] border-amber-500/20",
+                            isToday && "ring-1 ring-inset ring-cyan-400/60",
+                            (data || missedCount > 0) &&
+                              "cursor-pointer hover:brightness-125 active:scale-[0.97]",
+                          )}
+                        >
+                          {/* Day number */}
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={cn(
+                                "text-[10px] md:text-xs font-semibold tabular-nums",
+                                isToday
+                                  ? "text-cyan-300"
+                                  : data
+                                    ? "text-slate-300"
+                                    : isWeekend
+                                      ? "text-slate-700"
+                                      : "text-slate-600",
+                              )}
+                            >
+                              {day}
+                            </span>
+                            {missedCount > 0 && (
+                              <span
+                                className="flex items-center gap-0.5 text-amber-300 text-[11px] md:text-[10px] font-bold"
+                                title={`${missedCount} ${t("missed.title")}`}
+                              >
+                                <Target className="w-2 h-2 md:w-2.5 md:h-2.5" />
+                                {missedCount}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* P&L — the hero number, centered in the cell */}
+                          {data && (
+                            <div className="flex-1 flex flex-col justify-center">
+                              <div
+                                className={cn(
+                                  "font-display text-[13px] md:text-base font-extrabold tabular-nums leading-none",
+                                  isAllBE
+                                    ? "text-slate-300"
+                                    : isWin
+                                      ? "text-emerald-300"
+                                      : isLoss
+                                        ? "text-red-300"
+                                        : "text-slate-400",
+                                )}
+                              >
+                                {isAllBE
+                                  ? t("common.be")
+                                  : `${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)}`}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Footer: trade count + RR */}
+                          {data && (
+                            <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] font-semibold tabular-nums">
+                              <span className="text-slate-400">
+                                {data.count}{" "}
+                                {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
+                              </span>
+                              {data.avgRR > 0 && (
+                                <span className="text-cyan-400/80 hidden md:inline">
+                                  {data.avgRR.toFixed(1)}R
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                    {/* Weekly summary column */}
+                    <div
+                      className={cn(
+                        "h-16 md:min-h-[104px] rounded-lg md:rounded-xl p-1 md:p-2.5 flex flex-col justify-center border border-white/[0.04] bg-white/[0.015]",
+                        week.days === 0 && "opacity-40",
+                      )}
+                    >
+                      <div className="text-[11px] md:text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">
+                        {t("calendar.week")} {rowIdx + 1}
+                      </div>
+                      <div
+                        className={cn(
+                          "font-display text-[13px] md:text-sm font-extrabold tabular-nums leading-none",
+                          week.days === 0
+                            ? "text-slate-600"
+                            : week.pnl > 0
+                              ? "text-emerald-400"
+                              : week.pnl < 0
+                                ? "text-red-400"
+                                : "text-slate-300",
+                        )}
+                      >
+                        {week.days === 0
+                          ? "—"
+                          : `${week.pnl >= 0 ? "+" : "−"}${Math.abs(week.pnl).toFixed(0)}`}
+                      </div>
+                      {week.days > 0 && (
+                        <div className="text-[11px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
+                          {week.days} {week.days === 1 ? t("calendar.day") : t("calendar.days")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </Card>
 

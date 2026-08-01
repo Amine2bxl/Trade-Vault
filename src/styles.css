@@ -230,6 +230,26 @@ body {
   }
 }
 
+/* ── Démo landing (LandingDemo) ── */
+@keyframes demoBar {
+  from {
+    opacity: 0;
+    transform: scaleY(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+@keyframes demoProgress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
 /* ══ Branded error identity (404 / 500) ══ */
 .err-code {
   position: relative;
