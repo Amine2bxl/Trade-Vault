@@ -171,23 +171,26 @@ export default function AccountSwitcher({
     const ActiveIcon = TYPE_ICON[activeAccount.type];
     return (
       <>
-        {/* Pills mobile premium : une pilule glass épurée, sans couleur criarde —
-            l'avatar porte la teinte du compte, le reste suit la DA. */}
+        {/* Pilule mobile PREMIUM : glass-strong + liseré cyan + glow doux.
+            L'avatar porte la teinte du compte, le halo derrière vient de la DA. */}
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-12 pl-2 pr-3 rounded-full flex items-center gap-2 glass-strong border border-white/[0.1] shadow-[0_8px_24px_rgba(0,0,0,0.45)] active:scale-95 transition-transform"
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-12 pl-2 pr-3 rounded-full flex items-center gap-2 glass-strong border border-cyan-500/20 shadow-[0_8px_24px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.15)] active:scale-95 transition-all"
         >
-          <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-          <span
-            className="relative w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border"
-            style={{
-              background: `${activeAccount.color}22`,
-              color: activeAccount.color,
-              borderColor: `${activeAccount.color}40`,
-            }}
-          >
-            <ActiveIcon className="w-4 h-4" />
+          <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span
+              className="relative grid w-8 h-8 place-items-center rounded-xl border"
+              style={{
+                background: `${activeAccount.color}22`,
+                color: activeAccount.color,
+                borderColor: `${activeAccount.color}44`,
+              }}
+            >
+              <ActiveIcon className="w-4 h-4" />
+            </span>
           </span>
           <span className="min-w-0 max-w-[92px] text-left">
             <span className="block text-[9px] uppercase tracking-[0.14em] font-bold text-slate-500 leading-none mb-0.5">

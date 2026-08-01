@@ -190,11 +190,11 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
-          "group fixed z-40 bottom-24 right-4 md:bottom-6 md:right-6",
-          // Mobile : simple pastille squircle propre (pas de pill chrome).
+          "group fixed z-40 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
+          // Mobile : pastille squircle premium + glow ; desktop : pill étiqueté.
           "md:flex items-center gap-2.5 rounded-2xl",
           "p-1.5 md:pr-4 md:border glass-strong",
-          "shadow-xl shadow-black/40 transition-all duration-300",
+          "shadow-[0_8px_24px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.18)] transition-all duration-300",
           "hover:-translate-y-0.5 active:scale-[0.98]",
           open && "border-cyan-400/40 bg-cyan-500/[0.08]",
           !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
@@ -204,11 +204,11 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         <span className="relative shrink-0">
           <span
             className={cn(
-              "absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md transition-opacity",
-              open ? "opacity-100" : "opacity-0 group-hover:opacity-70",
+              "absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-lg transition-opacity",
+              open ? "opacity-100" : "opacity-70 group-hover:opacity-100",
             )}
           />
-          <span className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+          <span className="relative grid h-10 w-10 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-[0_0_18px_rgba(34,211,238,0.45)] ring-1 ring-cyan-400/30">
             {open ? (
               <X className="w-4.5 h-4.5 text-white" />
             ) : (
