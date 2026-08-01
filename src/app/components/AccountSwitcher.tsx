@@ -171,38 +171,33 @@ export default function AccountSwitcher({
     const ActiveIcon = TYPE_ICON[activeAccount.type];
     return (
       <>
-        {/* Big thumb-zone FAB: pinned bottom-left above the dock, sized and
-            haloed so switching sub-accounts is a one-thumb, zero-hunt action. */}
+        {/* Pilule mobile : la MÊME surface ET la MÊME forme que la nav bar
+            (.float-shell + rounded-full). Badge teinte compte bien arrondi,
+            texte légèrement décalé à droite pour respirer des bords. */}
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-14 pl-2.5 pr-3.5 rounded-full flex items-center gap-2 border-2 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.45)] active:scale-95 transition-transform"
-          style={{
-            background: `linear-gradient(135deg, ${activeAccount.color}33, ${activeAccount.color}14)`,
-            borderColor: `${activeAccount.color}99`,
-            boxShadow: `0 8px 24px rgba(0,0,0,0.45), 0 0 18px ${activeAccount.color}40`,
-          }}
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-11 pl-2 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition-all"
         >
           <span
-            className="relative w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: `${activeAccount.color}2e`, color: activeAccount.color }}
+            className="relative grid h-7 w-7 shrink-0 place-items-center rounded-2xl border shadow-sm"
+            style={{
+              background: `${activeAccount.color}22`,
+              color: activeAccount.color,
+              borderColor: `${activeAccount.color}44`,
+            }}
           >
-            <ActiveIcon className="w-5 h-5" />
-            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#0a0f1e] border border-white/15 flex items-center justify-center">
-              <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
-            </span>
+            <ActiveIcon className="w-3.5 h-3.5" />
           </span>
-          <span className="min-w-0 max-w-[96px] text-left">
-            <span
-              className="block text-[11px] uppercase tracking-[0.14em] font-bold leading-none mb-0.5 flex items-center gap-1"
-              style={{ color: `${activeAccount.color}cc` }}
-            >
-              <Layers className="w-2.5 h-2.5" /> {t("account.fabLabel")}
+          <span className="min-w-0 max-w-[88px] text-left">
+            <span className="block text-[9px] uppercase tracking-[0.14em] font-bold text-slate-500 leading-none mb-0.5">
+              {t("account.fabLabel")}
             </span>
             <span className="block text-xs font-bold text-white truncate leading-tight">
               {activeAccount.name}
             </span>
           </span>
+          <ChevronDown className="w-3 h-3 text-slate-500 shrink-0" />
         </button>
 
         {open && (

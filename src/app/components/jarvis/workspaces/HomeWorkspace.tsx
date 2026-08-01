@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Sparkles, Check, Volume2 } from "lucide-react";
+import { Plus, Sparkles, Check, Volume2, Bot } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../contexts/ToastContext";
@@ -38,7 +38,9 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
   const [blocks, setBlocks] = useState<JarvisBlock[] | null>(null);
   const [welcomeLine, setWelcomeLine] = useState<string | null>(null);
-  const { speakLocal, speaking } = useJarvisVoice();
+  // Voix CLONÉE partout : `speak` préfère les clips (lignes fixes) puis la
+  // voix hébergée ElevenLabs, et ne retombe sur le navigateur qu'en secours.
+  const { speak, speaking } = useJarvisVoice();
 
   // Snapshot de données (pur, synchrone, déjà en cache côté trades).
   const stats = useMemo(() => computeStats(context.trades), [context.trades]);
@@ -103,10 +105,10 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   const firstName = context.profile?.firstName || t("jarvisHome.trader");
   const copyLang: "fr" | "en" = effectiveCopyLang(lang);
 
-  // ── Bienvenue vocale locale (0 token, 0 réseau) ──
-  // « Welcome, {Prénom} » + une phrase courte qui varie selon la situation :
-  // la voix de Jarvis (speechSynthesis, profil en-gb profond) parle uniquement
-  // en anglais. Rejouée à CHAQUE ouverture de l'accueil (remount du workspace).
+  // ── Bienvenue vocale CLONÉE ──
+  // « Welcome, {Prénom} » + une phrase courte qui varie selon la situation.
+  // `speak` utilise la voix créée (clip pré-rendu si la ligne est fixe, sinon
+  // voix ElevenLabs, sinon navigateur) — rejouée à chaque ouverture de l'accueil.
   const welcomeRef = useRef<string | null>(null);
   useEffect(() => {
     const phrase = buildWelcomePhrase(data, firstName);
@@ -114,7 +116,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     welcomeRef.current = phrase;
     setWelcomeLine(phrase);
     // Petit délai : laisse la fenêtre se peindre avant de parler (autoplay).
-    const id = window.setTimeout(() => speakLocal(phrase), 450);
+    const id = window.setTimeout(() => void speak(phrase), 450);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -176,23 +178,38 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-3xl mx-auto w-full">
-      {/* En-tête : le premier écran d'un assistant IA, pas une page de stats. */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          {t("assistant.title")}
+      {/* En-tête — le premier écran d'un assistant personnel, pas une page de stats. */}
+      <div className="relative mb-6">
+        <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-32 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="relative flex items-center gap-4">
+          {/* Avatar Jarvis — la voix clonée, la même identité partout */}
+          <div className="relative shrink-0">
+            <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-md" />
+            <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+              <Bot className="w-7 h-7 text-white" />
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-1">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              {t("assistant.title")}
+            </div>
+            <h2 className="flex items-center gap-2.5 text-2xl md:text-3xl font-bold text-white tracking-tight leading-tight">
+              {t("jarvisHome.greeting")} {firstName}.
+            </h2>
+            <p className="text-slate-400 mt-1">{t("jarvisHome.ask")}</p>
+          </div>
         </div>
-        <h2 className="flex items-center gap-2.5 text-2xl md:text-3xl font-bold text-white tracking-tight">
-          {t("jarvisHome.greeting")} {firstName}.
-          {speaking && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5">
-              <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
-            </span>
-          )}
-        </h2>
-        <p className="text-slate-400 mt-1.5">{t("jarvisHome.ask")}</p>
+        {speaking && (
+          <div className="relative mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2.5 py-1">
+            <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
+          </div>
+        )}
         {welcomeLine && (
-          <p className="mt-2 text-[12.5px] text-slate-500 leading-relaxed max-w-xl">
+          <p className="relative mt-3 text-[12.5px] text-slate-400 leading-relaxed max-w-xl border-l-2 border-cyan-500/30 pl-3">
             {welcomeLine}
           </p>
         )}
@@ -212,11 +229,15 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           Ex. « La fuite qui te coûte le plus = overtrading → ajouter une règle
           à ta checklist. » Un clic → la règle entre dans sa discipline. */}
       {worstMistake && !ruleAdded && (
-        <div className="mt-5 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-4">
+        <div className="relative mt-5 overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-r from-cyan-500/[0.08] to-teal-500/[0.04] p-4">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
           <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-md shadow-cyan-500/20">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
+            <span className="relative shrink-0">
+              <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+                <Sparkles className="w-4.5 h-4.5 text-white" />
+              </span>
+            </span>
             <div className="min-w-0 flex-1">
               <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1">
                 {t("jarvisHome.proposal")}
@@ -239,13 +260,13 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 onClick={addMistakeRule}
                 disabled={ruleSaving}
                 className={cn(
-                  "mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold",
-                  "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25",
-                  "transition-colors disabled:opacity-60",
+                  "mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white",
+                  "bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110",
+                  "shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-60",
                 )}
               >
                 {ruleSaving ? (
-                  <span className="h-3.5 w-3.5 rounded-full border-2 border-cyan-300/30 border-t-cyan-300 animate-spin" />
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 ) : (
                   <Plus className="w-3.5 h-3.5" />
                 )}
@@ -256,10 +277,10 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
         </div>
       )}
       {ruleAdded && (
-        <div className="mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 flex items-center gap-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15">
+        <div className="mt-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4 flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15">
             <Check className="w-4 h-4 text-emerald-400" />
-          </div>
+          </span>
           <p className="text-[13px] text-emerald-300">{t("jarvisHome.ruleAdded")}</p>
         </div>
       )}
@@ -267,11 +288,11 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       {/* Suggestions — écrites depuis la situation + la page, jamais génériques. */}
       {suggestions.length > 0 && (
         <div className="mt-7">
-          <div className="flex items-center gap-2 mb-2.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
               {t("jarvisHome.suggestions")}
             </span>
-            <span className="h-px flex-1 bg-white/[0.05]" />
+            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
           </div>
           <div className="flex flex-wrap gap-2">
             {suggestions.map((s) => (
@@ -279,8 +300,8 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 key={s.id}
                 onClick={() => askSuggestion(s.prompt)}
                 className={cn(
-                  "px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08]",
-                  "text-xs text-slate-300 hover:bg-white/[0.08] hover:border-cyan-500/30 hover:text-white",
+                  "group px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08]",
+                  "text-xs text-slate-300 hover:bg-white/[0.07] hover:border-cyan-500/30 hover:text-white",
                   "transition-all text-left",
                 )}
               >

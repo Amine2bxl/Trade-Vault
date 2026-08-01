@@ -279,6 +279,16 @@ function AppContent() {
     return () => window.removeEventListener("tv-rules-updated", onUpdate);
   }, [user]);
 
+  // ── PWA : enregistrement PRÉCOCE du service worker ──
+  // Avant, il n'était enregistré qu'à l'opt-in push. En l'enregistrant dès le
+  // chargement, le site est INSTALLABLE (Chrome/iOS le traitent comme une app)
+  // et le shell hors-ligne fonctionne : le raccourci mobile s'ouvre sans la
+  // chrome du navigateur. Idempotent — le push réutilise la même registration.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw-push.js", { scope: "/" }).catch(() => {});
+  }, []);
+
   // ── Préchargement des pages les plus visitées ──
   // Une fois connecté et le premier rendu peint, on chauffe les chunks lazy
   // (Journal, Analytics, Inbox, …) en arrière-plan : la navigation devient

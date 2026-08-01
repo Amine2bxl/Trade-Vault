@@ -49,6 +49,8 @@ const en = {
   "nav.jarvis": "Jarvis",
   "nav.profile": "Profile",
   "nav.home": "Home",
+  "nav.search": "Search a page…",
+  "nav.noResults": "No page matches your search.",
   "nav.goals": "Goals",
   "nav.tradingPlan": "Trading Plan",
   "nav.reports": "Monthly Reports",

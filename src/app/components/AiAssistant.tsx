@@ -4,13 +4,7 @@ import { Trade, Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
-import {
-  loadJarvisProfile,
-  saveJarvisProfile,
-  buildJarvisPrefill,
-  type JarvisProfile,
-} from "../store";
-import JarvisProfileModal from "./JarvisProfileModal";
+import { loadJarvisProfile, type JarvisProfile } from "../store";
 import JarvisShell from "./jarvis/JarvisShell";
 import type { JarvisContext } from "./jarvis/context";
 import type { JarvisWorkspaceId } from "./jarvis/workspaces";
@@ -118,34 +112,20 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     setOpen((v) => !v);
   };
 
-  // First-open gate: the "Profile Jarvis remembers" card shows until the trader
-  // completes it. Re-checked on every open so a dismissed card comes back until
-  // it is saved (jarvis_completed_at non-NULL).
-  const [profileOpen, setProfileOpen] = useState(false);
+  // Profil Jarvis chargé pour le contexte (le modal « première-prise » a été
+  // supprimé : on atterrit directement sur l'accueil). L'édition vit dans
+  // Settings → Profil mémorisé.
   const [jarvisProfile, setJarvisProfile] = useState<JarvisProfile | null>(null);
-  const [prefill, setPrefill] = useState<{
-    style?: string;
-    weakness?: string;
-    goal?: string;
-  } | null>(null);
   useEffect(() => {
     if (!open || !user?.id) return;
     let active = true;
     loadJarvisProfile(user.id)
       .then((p) => {
-        if (!active) return;
-        setJarvisProfile(p);
-        if (!p.completedAt) setProfileOpen(true);
+        if (active) setJarvisProfile(p);
       })
       .catch(() => {
         // Best-effort: a failed read never blocks the coach.
       });
-    // Suggestions depuis les Objectifs / Onboarding pour pré-remplir le profil.
-    buildJarvisPrefill(user.id)
-      .then((s) => {
-        if (active) setPrefill(s);
-      })
-      .catch(() => {});
     return () => {
       active = false;
     };
@@ -177,10 +157,10 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   // The workspace consumes `pendingPrompt` at mount (initialPrompt). Clear it
   // right after so a re-open without a new event never re-asks the old prompt.
   useEffect(() => {
-    if (!open || profileOpen || !pendingPrompt) return;
+    if (!open || !pendingPrompt) return;
     const id = requestAnimationFrame(() => setPendingPrompt(undefined));
     return () => cancelAnimationFrame(id);
-  }, [open, profileOpen, pendingPrompt]);
+  }, [open, pendingPrompt]);
 
   // Contexte agrégé transmis au Shell → workspace (jamais des props métier).
   const context: JarvisContext = useMemo(
@@ -210,28 +190,37 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
-          "group fixed z-40 bottom-24 right-4 md:bottom-6 md:right-6",
-          "flex items-center gap-2.5 rounded-2xl border p-1.5 md:pr-4",
-          "glass-strong shadow-xl shadow-black/40 transition-all duration-300",
-          "hover:-translate-y-0.5 active:scale-[0.98]",
-          open
-            ? "border-cyan-400/40 bg-cyan-500/[0.08]"
-            : "border-white/[0.1] hover:border-cyan-400/35",
+          "group fixed z-40 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
+          "flex items-center justify-center md:gap-2.5",
+          // Mobile : pilule float-shell 44px, badge bien arrondi.
+          "h-11 w-11 rounded-full float-shell",
+          // Desktop : pill glass ORIGINAL (inchangé).
+          "md:h-auto md:w-auto md:rounded-2xl md:border md:p-1.5 md:pr-4 md:glass-strong",
+          "md:shadow-xl md:shadow-black/40",
+          "transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
+          open && "md:border-cyan-400/40 md:bg-cyan-500/[0.08]",
+          !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
         )}
       >
-        <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+        <span className="pointer-events-none hidden md:block absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
         <span className="relative shrink-0">
           <span
             className={cn(
-              "absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md transition-opacity",
+              "hidden md:block absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md transition-opacity",
               open ? "opacity-100" : "opacity-0 group-hover:opacity-70",
             )}
           />
-          <span className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+          <span
+            className={cn(
+              "relative grid place-items-center bg-gradient-to-br from-cyan-500 to-teal-600",
+              "h-7 w-7 rounded-2xl",
+              "md:h-10 md:w-10 md:rounded-xl md:shadow-lg md:shadow-cyan-500/25",
+            )}
+          >
             {open ? (
-              <X className="w-4.5 h-4.5 text-white" />
+              <X className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-white" />
             ) : (
-              <Bot className="w-5 h-5 text-white" />
+              <Bot className="w-4 h-4 md:w-5 md:h-5 text-white" />
             )}
           </span>
         </span>
@@ -248,7 +237,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       </button>
 
       {/* Workspace actif : la fenêtre espace de travail (le chat est un module). */}
-      {open && !profileOpen && (
+      {open && (
         <JarvisShell
           open
           onClose={() => setOpen(false)}
@@ -279,29 +268,6 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
             />
           }
           footer={<CreditsBar />}
-        />
-      )}
-
-      {/* First-open card: the trader tells Jarvis who they are once. */}
-      {open && profileOpen && (
-        <JarvisProfileModal
-          open
-          onClose={() => setProfileOpen(false)}
-          initial={jarvisProfile}
-          suggested={prefill}
-          onSave={async (p) => {
-            if (!user?.id) return;
-            await saveJarvisProfile(user.id, p);
-          }}
-          onSaved={() => {
-            setProfileOpen(false);
-            // Make the freshly-saved profile available to Jarvis immediately.
-            if (user?.id) {
-              loadJarvisProfile(user.id)
-                .then((p) => setJarvisProfile(p))
-                .catch(() => {});
-            }
-          }}
         />
       )}
     </>
