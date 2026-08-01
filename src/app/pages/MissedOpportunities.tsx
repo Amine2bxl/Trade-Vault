@@ -571,12 +571,13 @@ function MissedEditor({
         </button>
       </div>
       <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-5">
-        <div className="grid grid-cols-3 gap-3">
-          <FieldInput
-            label={t("missed.field.date")}
-            type="date"
+        {/* Grille responsive : 1 colonne sur mobile (jamais empilé/cramé),
+            3 sur desktop. La date passe par des bulles de présélection. */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <DateBubbles
             value={m.date}
             onChange={(v) => set("date", v)}
+            label={t("missed.field.date")}
           />
           <FieldInput
             label={t("missed.field.symbol")}
@@ -733,6 +734,63 @@ function FieldArea({
         rows={2}
         className={cn(FIELD_BASE, "py-2.5 resize-y min-h-[56px]")}
       />
+    </label>
+  );
+}
+
+/** Date en BULLES (présélections) + date précise via un picker natif — pas de
+ *  case à remplir : un tap suffit pour le cas le plus fréquent. */
+function DateBubbles({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { t } = useT();
+  const iso = (offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - offset);
+    const m = `${d.getMonth() + 1}`.padStart(2, "0");
+    const day = `${d.getDate()}`.padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  };
+  const presets = [
+    { key: "today", label: t("missed.dateToday"), value: iso(0) },
+    { key: "yesterday", label: t("missed.dateYesterday"), value: iso(1) },
+    { key: "two", label: t("missed.dateTwoDays"), value: iso(2) },
+  ];
+  return (
+    <label className="block">
+      <span className={EDITOR_LABEL}>{label}</span>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {presets.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            onClick={() => onChange(p.value)}
+            className={cn(
+              "h-9 px-3 rounded-full border text-xs font-semibold transition-all",
+              value === p.value
+                ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                : "bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20",
+            )}
+          >
+            {p.label}
+          </button>
+        ))}
+        <input
+          type="date"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            FIELD_BASE,
+            "h-9 px-2.5 text-xs sm:text-sm w-auto min-w-[140px] flex-1 sm:flex-none",
+          )}
+        />
+      </div>
     </label>
   );
 }

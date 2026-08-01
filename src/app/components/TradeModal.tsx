@@ -403,7 +403,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
         <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-4">
           {/* Row 1: Symbol, Direction, Date */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>{t("trade.symbol")}</label>
               <input
@@ -468,7 +468,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </div>
 
           {/* Row 2: Risk Amount + R:R + P&L */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>{t("trade.riskAmount")}</label>
               <div className="flex gap-1.5">
@@ -588,7 +588,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     </button>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>{t("trade.stopPoints")}</label>
                     <input
@@ -639,7 +639,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </div>
 
           {/* Entry/Exit Time + Strategy */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>{t("trade.entryTime")}</label>
               <input
