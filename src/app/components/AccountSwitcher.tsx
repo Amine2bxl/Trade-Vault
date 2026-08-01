@@ -171,18 +171,18 @@ export default function AccountSwitcher({
     const ActiveIcon = TYPE_ICON[activeAccount.type];
     return (
       <>
-        {/* Pilule mobile PREMIUM : glass-strong + liseré cyan + glow doux.
-            L'avatar porte la teinte du compte, le halo derrière vient de la DA. */}
+        {/* Pilule mobile HARMONISÉE avec le dock Jarvis : h-12, squircle
+            rounded-2xl, liseré cyan, glow doux, hairline — la même famille. */}
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-12 pl-2 pr-3 rounded-full flex items-center gap-2 glass-strong border border-cyan-500/20 shadow-[0_8px_24px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.15)] active:scale-95 transition-all"
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-12 pl-2 pr-3 rounded-2xl flex items-center gap-2 glass-strong border border-cyan-500/20 shadow-[0_8px_20px_rgba(0,0,0,0.45),0_0_16px_rgba(34,211,238,0.3)] active:scale-95 transition-all"
         >
           <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
           <span className="relative shrink-0">
             <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
             <span
-              className="relative grid w-8 h-8 place-items-center rounded-xl border"
+              className="relative grid h-8 w-8 place-items-center rounded-xl border ring-1 ring-white/10"
               style={{
                 background: `${activeAccount.color}22`,
                 color: activeAccount.color,

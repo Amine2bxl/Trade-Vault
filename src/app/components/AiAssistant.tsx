@@ -191,29 +191,35 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         aria-expanded={open}
         className={cn(
           "group fixed z-40 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
-          // Mobile : pastille squircle premium + glow ; desktop : pill étiqueté.
-          "md:flex items-center gap-2.5 rounded-2xl",
-          "p-1.5 md:pr-4 md:border glass-strong",
-          "shadow-[0_8px_24px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.18)] transition-all duration-300",
-          "hover:-translate-y-0.5 active:scale-[0.98]",
-          open && "border-cyan-400/40 bg-cyan-500/[0.08]",
+          "flex items-center justify-center",
+          // Mobile : squircle 48px propre, ring + glow (harmonisé avec la FAB).
+          "h-12 w-12 rounded-2xl",
+          // Desktop : pill glass étiqueté.
+          "md:h-auto md:w-auto md:gap-2.5 md:rounded-2xl md:border md:p-1.5 md:pr-4 md:glass-strong",
+          "shadow-[0_8px_20px_rgba(0,0,0,0.45),0_0_16px_rgba(34,211,238,0.3)]",
+          "md:shadow-[0_8px_24px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.18)]",
+          "transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
+          open && "md:border-cyan-400/40 md:bg-cyan-500/[0.08]",
           !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
         )}
       >
-        <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+        <span className="pointer-events-none hidden md:block absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
         <span className="relative shrink-0">
+          {/* Halo uniquement sur le pill desktop */}
           <span
             className={cn(
-              "absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-lg transition-opacity",
+              "hidden md:block absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-lg transition-opacity",
               open ? "opacity-100" : "opacity-70 group-hover:opacity-100",
             )}
           />
-          <span className="relative grid h-10 w-10 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-[0_0_18px_rgba(34,211,238,0.45)] ring-1 ring-cyan-400/30">
-            {open ? (
-              <X className="w-4.5 h-4.5 text-white" />
-            ) : (
-              <Bot className="w-5 h-5 text-white" />
+          <span
+            className={cn(
+              "relative grid place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600",
+              "h-12 w-12 md:h-10 md:w-10",
+              "ring-1 ring-cyan-400/30 shadow-[0_0_14px_rgba(34,211,238,0.35)]",
             )}
+          >
+            {open ? <X className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
           </span>
         </span>
         <span className="hidden md:block text-left leading-none">
