@@ -674,10 +674,31 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
           </div>
 
-          {/* Setup Quality */}
+          {/* Setup Quality — jauges d'étoiles premium dans un conteneur */}
           <div>
-            <label className={labelClass}>{t("trade.setupQuality")}</label>
-            <div className="flex gap-2.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelClass + " mb-0"}>{t("trade.setupQuality")}</label>
+              <span
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                  form.setupQuality <= 1 &&
+                    "text-red-300 bg-red-500/10 border-red-500/25",
+                  form.setupQuality === 2 && "text-amber-300 bg-amber-500/10 border-amber-500/25",
+                  form.setupQuality === 3 && "text-slate-200 bg-white/[0.05] border-white/[0.1]",
+                  form.setupQuality === 4 && "text-cyan-300 bg-cyan-500/10 border-cyan-500/25",
+                  form.setupQuality >= 5 && "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
+                )}
+              >
+                {[
+                  t("trade.quality1"),
+                  t("trade.quality2"),
+                  t("trade.quality3"),
+                  t("trade.quality4"),
+                  t("trade.quality5"),
+                ][form.setupQuality - 1]}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1.5">
               {[1, 2, 3, 4, 5].map((n) => {
                 const on = n <= form.setupQuality;
                 return (
@@ -685,13 +706,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     key={n}
                     onClick={() => setForm((f) => ({ ...f, setupQuality: n }))}
                     aria-label={`${n} / 5`}
-                    className="star-btn focus:outline-none p-0.5"
+                    className="flex-1 flex items-center justify-center py-1.5 rounded-lg transition-all hover:bg-white/[0.04] active:scale-95"
                   >
                     <Star
                       className={cn(
-                        "w-8 h-8 transition-colors",
+                        "w-6 h-6 transition-all duration-200",
                         on
-                          ? "text-amber-400 fill-amber-400 star-on"
+                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]"
                           : "text-slate-700 hover:text-amber-400/40",
                       )}
                       strokeWidth={on ? 2 : 1.75}
@@ -702,31 +723,84 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
           </div>
 
-          {/* Confidence */}
+          {/* Confidence — jauge RADIALE premium + slider */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-2">
               <label className={labelClass + " mb-0"}>{t("trade.confidence")}</label>
               <span
                 className={cn(
-                  "text-sm font-bold",
-                  form.confidence >= 75
-                    ? "text-emerald-400"
-                    : form.confidence >= 50
-                      ? "text-amber-400"
-                      : "text-red-400",
+                  "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                  form.confidence >= 75 &&
+                    "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
+                  form.confidence >= 50 &&
+                    form.confidence < 75 &&
+                    "text-amber-300 bg-amber-500/10 border-amber-500/25",
+                  form.confidence < 50 && "text-red-300 bg-red-500/10 border-red-500/25",
                 )}
               >
-                {form.confidence}%
+                {form.confidence >= 75
+                  ? t("trade.confHigh")
+                  : form.confidence >= 50
+                    ? t("trade.confMid")
+                    : t("trade.confLow")}
               </span>
             </div>
-            <input
-              type="range"
-              min="1"
-              max="100"
-              value={form.confidence}
-              onChange={(e) => setForm((f) => ({ ...f, confidence: parseInt(e.target.value) }))}
-              className="w-full"
-            />
+            <div className="flex items-center gap-4">
+              {/* Jauge radiale */}
+              <div className="relative shrink-0">
+                <svg width="68" height="68" viewBox="0 0 68 68" className="-rotate-90">
+                  <circle
+                    cx="34"
+                    cy="34"
+                    r="28"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth="7"
+                  />
+                  <circle
+                    cx="34"
+                    cy="34"
+                    r="28"
+                    fill="none"
+                    stroke="url(#confGrad)"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 28}
+                    strokeDashoffset={2 * Math.PI * 28 * (1 - form.confidence / 100)}
+                    className="transition-[stroke-dashoffset] duration-500"
+                  />
+                  <defs>
+                    <linearGradient id="confGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#22d3ee" />
+                      <stop offset="100%" stopColor="#2dd4bf" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 grid place-items-center">
+                  <span
+                    className={cn(
+                      "font-display text-base font-extrabold tabular-nums",
+                      form.confidence >= 75
+                        ? "text-emerald-400"
+                        : form.confidence >= 50
+                          ? "text-amber-400"
+                          : "text-red-400",
+                    )}
+                  >
+                    {form.confidence}%
+                  </span>
+                </div>
+              </div>
+              {/* Slider */}
+              <input
+                type="range"
+                min="1"
+                max="100"
+                value={form.confidence}
+                onChange={(e) => setForm((f) => ({ ...f, confidence: parseInt(e.target.value) }))}
+                className="flex-1 min-w-0"
+              />
+            </div>
           </div>
 
           {/* Confluences (customizable) and Mistakes below both render the one
