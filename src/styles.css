@@ -423,6 +423,27 @@ body {
   }
 }
 
+/* iOS focus-zoom guard — Mobile Safari zooms & pans the viewport whenever a
+   focused form control renders below 16px, so every 14px (`text-sm`) field in
+   the app triggered a jarring zoom-in on tap. Bumping the *rendered* size to
+   16px on phones (visual only, no logic) keeps typing native and steady.
+   `max-width` scopes it to mobile; desktop keeps the dense 14px fields. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  /* Momentum scrolling + inset containment for every in-app scroller so a
+     nested list/sheet never rubber-bands the whole page behind it. */
+  .overflow-y-auto,
+  .overflow-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
 /* Display family — Sora, exactly like the landing page headings, so titles
  * carry the same voice on both sides of the sign-in wall. */
 h1,
