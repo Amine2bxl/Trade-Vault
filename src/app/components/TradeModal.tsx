@@ -127,6 +127,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return { ...defaultForm };
   });
 
+  // Couleur de la jauge de confiance = celle du badge de statut (cohérence).
+  const confidenceColor = useMemo(() => {
+    if (form.confidence >= 75) return { from: "#34d399", to: "#10b981", text: "text-emerald-400" };
+    if (form.confidence >= 50) return { from: "#fbbf24", to: "#f59e0b", text: "text-amber-400" };
+    return { from: "#f87171", to: "#ef4444", text: "text-red-400" };
+  }, [form.confidence]);
+
   // Flag the restored-draft badge on first mount (post-state, avoids SSR mismatch).
   useEffect(() => {
     if (!trade && readJSON<TradeDraft | null>(draftKey, null)) setDraftRestored(true);
@@ -375,7 +382,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   : "bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent",
           )}
         />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5 min-w-0">
             <h2 className="text-lg font-bold text-white shrink-0">
               {trade ? t("trade.editTitle") : t("trade.newTitle")}
@@ -401,7 +408,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-4">
+        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-4 sm:px-6 py-4 space-y-3.5">
           {/* Row 1: Symbol, Direction, Date */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -700,7 +707,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 }
               </span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1.5">
+            <div className="flex items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
               {[1, 2, 3, 4, 5].map((n) => {
                 const on = n <= form.setupQuality;
                 return (
@@ -708,13 +715,16 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     key={n}
                     onClick={() => setForm((f) => ({ ...f, setupQuality: n }))}
                     aria-label={`${n} / 5`}
-                    className="flex-1 flex items-center justify-center py-1.5 rounded-lg transition-all hover:bg-white/[0.04] active:scale-95"
+                    className={cn(
+                      "flex-1 flex items-center justify-center rounded-lg transition-all",
+                      on ? "py-1.5" : "py-1.5 hover:bg-white/[0.04] active:scale-95",
+                    )}
                   >
                     <Star
                       className={cn(
-                        "w-6 h-6 transition-all duration-200",
+                        "w-[22px] h-[22px] transition-all duration-200",
                         on
-                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]"
+                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.45)] scale-110"
                           : "text-slate-700 hover:text-amber-400/40",
                       )}
                       strokeWidth={on ? 2 : 1.75}
@@ -748,45 +758,58 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               </span>
             </div>
             <div className="flex items-center gap-4">
-              {/* Jauge radiale */}
+              {/* Jauge radiale — la couleur suit le niveau, comme le badge */}
               <div className="relative shrink-0">
                 <svg width="68" height="68" viewBox="0 0 68 68" className="-rotate-90">
                   <circle
                     cx="34"
                     cy="34"
-                    r="28"
+                    r="27"
                     fill="none"
                     stroke="rgba(255,255,255,0.06)"
-                    strokeWidth="7"
+                    strokeWidth="8"
                   />
                   <circle
                     cx="34"
                     cy="34"
-                    r="28"
+                    r="27"
                     fill="none"
-                    stroke="url(#confGrad)"
-                    strokeWidth="7"
+                    stroke={confidenceColor.from}
+                    strokeWidth="8"
                     strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 28}
-                    strokeDashoffset={2 * Math.PI * 28 * (1 - form.confidence / 100)}
+                    strokeDasharray={2 * Math.PI * 27}
+                    strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
+                    opacity="0.25"
+                    filter="url(#confGlow)"
+                    className="transition-[stroke-dashoffset] duration-500"
+                  />
+                  <circle
+                    cx="34"
+                    cy="34"
+                    r="27"
+                    fill="none"
+                    stroke={`url(#confGrad)`}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 27}
+                    strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
                     className="transition-[stroke-dashoffset] duration-500"
                   />
                   <defs>
                     <linearGradient id="confGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#2dd4bf" />
+                      <stop offset="0%" stopColor={confidenceColor.from} />
+                      <stop offset="100%" stopColor={confidenceColor.to} />
                     </linearGradient>
+                    <filter id="confGlow" x="-40%" y="-40%" width="180%" height="180%">
+                      <feGaussianBlur stdDeviation="4" />
+                    </filter>
                   </defs>
                 </svg>
                 <div className="absolute inset-0 grid place-items-center">
                   <span
                     className={cn(
                       "font-display text-base font-extrabold tabular-nums",
-                      form.confidence >= 75
-                        ? "text-emerald-400"
-                        : form.confidence >= 50
-                          ? "text-amber-400"
-                          : "text-red-400",
+                      confidenceColor.text,
                     )}
                   >
                     {form.confidence}%

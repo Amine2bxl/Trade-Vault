@@ -177,7 +177,7 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-11 pl-2 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition-all"
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-11 pl-1.5 pr-3 rounded-full flex items-center gap-2 float-shell active:scale-95 transition-all"
         >
           <span
             className="relative grid h-7 w-7 shrink-0 place-items-center rounded-2xl border shadow-sm"

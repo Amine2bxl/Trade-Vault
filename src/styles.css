@@ -434,8 +434,11 @@ body {
 @media (max-width: 767px) {
   .app-main {
     padding-top: env(safe-area-inset-top, 0px);
-    /* Floating dock: pill height + its 10px bottom gap + safe-area inset. */
-    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    /* Écart constant entre le bas du contenu et les widgets fixes (sous-comptes
+       + Jarvis), aligné sur l'écart nav→widget (~20-25px). Le padding est fixe :
+       ajouter du contenu garde TOUJOURS le même espace, rien n'est jamais
+       masqué. */
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
     /* Clamp the scroll container to the viewport so no child can drag the
        whole page sideways on Analytics/tables. */
     overflow-x: hidden;

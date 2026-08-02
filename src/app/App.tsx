@@ -532,7 +532,7 @@ function AppContent() {
         />
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
-      <main className="app-main relative flex-1 overflow-y-auto pb-[calc(185px+env(safe-area-inset-bottom,0px))] md:pb-8">
+      <main className="app-main relative flex-1 overflow-y-auto">
         {/* Push opt-in now lives in onboarding (and Settings), not as a
             dashboard banner. */}
         <div key={page}>
