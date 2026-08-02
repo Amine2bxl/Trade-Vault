@@ -1,5 +1,5 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { Play, Compass } from "lucide-react";
+import { Play, Compass, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.png";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
@@ -1421,7 +1421,30 @@ export default function Landing() {
               </a>
             </div>
           </div>
-          <div className="mt-8 border-t border-white/[.05] pt-6 text-center text-[11px] text-slate-700">
+          {/* Réseaux sociaux — EMPLACEMENTS prévus, aucune URL inventée.
+              Renseigner les vraies URLs quand les comptes existent (rel="" les
+              rend nofollow pour le SEO). */}
+          <div className="mt-8 flex items-center justify-center gap-4">
+            {(
+              [
+                { icon: Twitter, label: "X (Twitter)" },
+                { icon: Linkedin, label: "LinkedIn" },
+                { icon: Instagram, label: "Instagram" },
+                { icon: Facebook, label: "Facebook" },
+                { icon: Youtube, label: "YouTube" },
+              ] as const
+            ).map((s) => (
+              <span
+                key={s.label}
+                aria-label={s.label}
+                title={`${s.label} — bientôt`}
+                className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[0.08] bg-white/[0.02] text-slate-600 hover:text-cyan-300 hover:border-cyan-500/25 transition-colors"
+              >
+                <s.icon className="w-4 h-4" />
+              </span>
+            ))}
+          </div>
+          <div className="mt-6 border-t border-white/[.05] pt-6 text-center text-[11px] text-slate-700">
             © {new Date().getFullYear()} TradeVault. Le trading comporte des risques. Journalise
             d'abord, trade ensuite.
           </div>

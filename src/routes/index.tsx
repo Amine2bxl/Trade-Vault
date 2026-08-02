@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import App from "@/app/App";
 import { pageSeo } from "../shared/seo";
+import Landing from "@/app/pages/Landing";
 
 // The brand comes first and stands alone before the separator, so the browser
 // tab, search results and Google's brand review all read "TradeVault" first.
@@ -10,9 +11,9 @@ import { pageSeo } from "../shared/seo";
 const SEO_TITLE = "TradeVault — Journal de trading et coach IA";
 // French: the landing page it describes is French, and a description in another
 // language than the page is a mismatch both for search engines and for a
-// reviewer comparing the site against the consent screen.
+// reviewer comparing the site against the consent screen. ≤ 155 caractères.
 const SEO_DESCRIPTION =
-  "TradeVault est un journal de trading et un coach IA qui aide les traders à analyser leurs performances, suivre leur plan de trading et progresser en discipline : analytics quantitatives, calendrier économique et checklist pré-market.";
+  "Journal de trading et coach IA : analyse tes performances, suis ton plan et gagne en discipline. Analytics, calendrier économique et checklist pré-market.";
 
 export const Route = createFileRoute("/")({
   // Routed through the shared SEO builder so the home page gets a single,
@@ -23,8 +24,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  // Le HTML initial contient DIRECTEMENT la landing publique (SSR) : les
+  // moteurs IA (ChatGPT, Claude, Gemini, Perplexity…) et les crawlers SEO
+  // lisent le contenu sans exécuter JavaScript → meilleur GEO + LCP.
+  // Le shell authentifié (App) ne monte que côté client, une fois l'auth résolue.
   return (
-    <ClientOnly fallback={<div className="min-h-screen" />}>
+    <ClientOnly fallback={<Landing />}>
       <App />
     </ClientOnly>
   );
