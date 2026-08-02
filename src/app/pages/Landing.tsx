@@ -3,7 +3,6 @@ import { Play, Compass, Twitter, Linkedin, Instagram, Facebook, Youtube } from "
 import logoSrc from "@/assets/tradevault-logo.png";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
-import { LandingDemo } from "../components/LandingDemo";
 import {
   eur,
   MONTHLY_EUR,
@@ -648,8 +647,6 @@ export default function Landing() {
   const [menu, setMenu] = useState(false);
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
-  // Démo : "video" = lecture auto (type GIF), "guide" = tour guidé.
-  const [demo, setDemo] = useState<"video" | "guide" | null>(null);
   const { y, pct } = useScroll();
   const cd = useCountdown();
   const spot = useSpot();
@@ -805,7 +802,7 @@ export default function Landing() {
       <main className="relative z-10">
         {/* ── HERO ── */}
         <section
-          className="hero-mesh relative overflow-hidden pt-[120px] pb-20 lg:pt-[150px] lg:pb-28"
+          className="hero-mesh relative overflow-hidden pt-[92px] pb-20 lg:pt-[116px] lg:pb-28"
           onPointerMove={onHeroMove}
         >
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-5 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-8">
@@ -851,27 +848,15 @@ export default function Landing() {
                   onClick={() => open("signup", "Essai Premium 14 jours")}
                   className="btn-primary px-6 py-3.5 text-[.95rem]"
                 >
-                  Essai Premium 14 jours <Icon n="arrow" cls="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => open("signup", "Plan Gratuit")}
-                  className="btn-ghost px-6 py-3.5 text-[.95rem]"
-                >
-                  Commencer gratuitement
+                  Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
                 </button>
                 <div className="flex items-center justify-center gap-2 sm:justify-start">
-                  <button
-                    onClick={() => setDemo("video")}
-                    className="btn-ghost px-4 py-3.5 text-[.95rem]"
-                  >
+                  <a href="/demo" className="btn-ghost px-5 py-3.5 text-[.95rem]">
                     <Play className="w-4 h-4" /> Démo
-                  </button>
-                  <button
-                    onClick={() => setDemo("guide")}
-                    className="btn-ghost px-4 py-3.5 text-[.95rem]"
-                  >
-                    <Compass className="w-4 h-4" /> Naviguer
-                  </button>
+                  </a>
+                  <a href="/demo-site" className="btn-ghost px-5 py-3.5 text-[.95rem]">
+                    <Compass className="w-4 h-4" /> Voir le site
+                  </a>
                 </div>
               </div>
               <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
@@ -1465,7 +1450,6 @@ export default function Landing() {
       )}
 
       {auth && <AuthModal onClose={() => setAuth(false)} initialMode={authMode} plan={authPlan} />}
-      {demo && <LandingDemo mode={demo} onClose={() => setDemo(null)} />}
     </div>
   );
 }
