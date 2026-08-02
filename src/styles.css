@@ -434,11 +434,11 @@ body {
 @media (max-width: 767px) {
   .app-main {
     padding-top: env(safe-area-inset-top, 0px);
-    /* Hauteur cumulée des 3 éléments fixes en bas : nav (~66px) + dock Jarvis
-       (~44px) + pilule sous-comptes (~44px) + marge. Le dernier contenu est
-       toujours visible AU-DESSUS de l'ensemble — aucune page mobile n'est
-       masquée. */
-    padding-bottom: calc(190px + env(safe-area-inset-bottom, 0px));
+    /* Écart constant entre le bas du contenu et les widgets fixes (sous-comptes
+       + Jarvis), aligné sur l'écart nav→widget (~20-25px). Le padding est fixe :
+       ajouter du contenu garde TOUJOURS le même espace, rien n'est jamais
+       masqué. */
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
     /* Clamp the scroll container to the viewport so no child can drag the
        whole page sideways on Analytics/tables. */
     overflow-x: hidden;
