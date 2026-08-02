@@ -104,7 +104,9 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     <>
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
         <div className="bottom-nav-shell">
-          <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2 gap-1">
+          <div className="grid grid-cols-7 items-center px-1.5 pt-1.5 pb-1.5 gap-0.5">
+            {/* Sous-compte — intégré à la nav (icône teinte compte) */}
+            <AccountSwitcher variant="fab" inline />
             {leftItems.map((it) =>
               renderItem({ ...it, active: page === it.id, onClick: () => setPage(it.id) }),
             )}
@@ -112,10 +114,9 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               <button
                 onClick={onAddTrade}
                 aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
-                className="fab-button relative text-white -mt-7"
+                className="fab-button relative text-white -mt-6"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
-                {/* "In progress" dot when a trade draft is waiting */}
                 {hasDraft && (
                   <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#060d16] shadow-[0_0_8px_rgba(251,191,36,0.7)] animate-pulse" />
                 )}
@@ -138,6 +139,23 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
                 </span>
               )}
             </div>
+            {/* Jarvis — intégré à la nav, ouvre le même overlay que le dock */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
+              aria-label={t("nav.jarvis")}
+              className="bottom-nav-item"
+            >
+              <span className="bottom-nav-bar" />
+              <span className="relative">
+                <span className="absolute -inset-1 rounded-xl bg-cyan-500/40 blur-md" />
+                <span className="relative grid h-[26px] w-[26px] place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shadow-[0_0_10px_rgba(34,211,238,0.4)]">
+                  <Bot className="w-3.5 h-3.5 text-white" />
+                </span>
+              </span>
+              <span className="text-[10px] leading-none font-semibold text-cyan-300">
+                {t("nav.jarvis")}
+              </span>
+            </button>
           </div>
         </div>
       </div>

@@ -61,7 +61,6 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 const Landing = lazy(() => import("./pages/Landing"));
 import CursorGlow from "./components/CursorGlow";
-import AccountSwitcher from "./components/AccountSwitcher";
 import NotificationDetailModal from "./components/NotificationDetailModal";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
@@ -532,7 +531,7 @@ function AppContent() {
         />
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
-      <main className="app-main relative flex-1 overflow-y-auto pb-[calc(260px+env(safe-area-inset-bottom,0px))] md:pb-8">
+      <main className="app-main relative flex-1 overflow-y-auto pb-[calc(110px+env(safe-area-inset-bottom,0px))] md:pb-8">
         {/* Push opt-in now lives in onboarding (and Settings), not as a
             dashboard banner. */}
         <div key={page}>
@@ -621,8 +620,8 @@ function AppContent() {
           </PageErrorBoundary>
         </div>
       </main>
-      {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}
-      <AccountSwitcher variant="fab" />
+      {/* Le sélecteur de sous-comptes mobile vit DANS la nav bar (MobileNav) —
+          plus de pastille flottante qui cache le contenu. */}
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />

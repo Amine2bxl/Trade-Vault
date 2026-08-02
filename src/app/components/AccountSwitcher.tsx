@@ -35,9 +35,12 @@ const TYPE_LABEL_KEY = {
 export default function AccountSwitcher({
   compact,
   variant = "bar",
+  inline,
 }: {
   compact?: boolean;
   variant?: "bar" | "fab" | "card";
+  /** Fab en ligne : intégré à la nav (pas de position fixe). */
+  inline?: boolean;
 }) {
   const { accounts, activeAccount, switchAccount, editAccount, removeAccount } = useAccounts();
   const { t } = useT();
@@ -177,10 +180,16 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] h-11 pl-2 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition-all"
+          className={cn(
+            // inline = intégré à la nav (pas de fixed) ; sinon pastille flottante.
+            inline
+              ? "relative w-full justify-center"
+              : "md:hidden fixed z-40 left-3 bottom-[calc(96px+env(safe-area-inset-bottom,0px))]",
+            "h-11 pl-1.5 pr-3 rounded-full flex items-center gap-2 float-shell active:scale-95 transition-all",
+          )}
         >
           <span
-            className="relative grid h-7 w-7 shrink-0 place-items-center rounded-2xl border shadow-sm"
+            className="relative grid h-7 w-7 shrink-0 place-items-center rounded-xl border shadow-sm"
             style={{
               background: `${activeAccount.color}22`,
               color: activeAccount.color,
@@ -189,15 +198,19 @@ export default function AccountSwitcher({
           >
             <ActiveIcon className="w-3.5 h-3.5" />
           </span>
-          <span className="min-w-0 max-w-[88px] text-left">
-            <span className="block text-[9px] uppercase tracking-[0.14em] font-bold text-slate-500 leading-none mb-0.5">
-              {t("account.fabLabel")}
-            </span>
-            <span className="block text-xs font-bold text-white truncate leading-tight">
-              {activeAccount.name}
-            </span>
-          </span>
-          <ChevronDown className="w-3 h-3 text-slate-500 shrink-0" />
+          {!inline && (
+            <>
+              <span className="min-w-0 max-w-[88px] text-left">
+                <span className="block text-[9px] uppercase tracking-[0.14em] font-bold text-slate-500 leading-none mb-0.5">
+                  {t("account.fabLabel")}
+                </span>
+                <span className="block text-xs font-bold text-white truncate leading-tight">
+                  {activeAccount.name}
+                </span>
+              </span>
+              <ChevronDown className="w-3 h-3 text-slate-500 shrink-0" />
+            </>
+          )}
         </button>
 
         {open && (
