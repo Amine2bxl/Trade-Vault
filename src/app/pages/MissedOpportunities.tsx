@@ -554,7 +554,7 @@ function MissedEditor({
           popups are now literally the same architecture — only the accent
           colour (amber vs cyan) and the fields differ. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06]">
         <h2
           id="missed-editor-title"
           className="text-lg font-bold text-white flex items-center gap-2.5"
@@ -570,7 +570,7 @@ function MissedEditor({
           <X className="w-4 h-4" />
         </button>
       </div>
-      <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-5">
+      <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-4 sm:px-6 py-4 space-y-4">
         {/* Grille responsive : 1 colonne sur mobile (jamais empilé/cramé),
             3 sur desktop. La date passe par des bulles de présélection. */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -659,7 +659,7 @@ function MissedEditor({
           )}
         </div>
       </div>
-      <div className="flex justify-end gap-2 px-6 py-4 border-t border-white/[0.06]">
+      <div className="flex justify-end gap-2 px-4 sm:px-6 py-3 border-t border-white/[0.06]">
         <button
           onClick={onClose}
           className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"

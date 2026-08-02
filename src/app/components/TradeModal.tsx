@@ -375,7 +375,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   : "bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent",
           )}
         />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5 min-w-0">
             <h2 className="text-lg font-bold text-white shrink-0">
               {trade ? t("trade.editTitle") : t("trade.newTitle")}
@@ -401,7 +401,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-4">
+        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-4 sm:px-6 py-4 space-y-3.5">
           {/* Row 1: Symbol, Direction, Date */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
