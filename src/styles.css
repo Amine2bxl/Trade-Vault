@@ -438,7 +438,7 @@ body {
        + Jarvis), aligné sur l'écart nav→widget (~20-25px). Le padding est fixe :
        ajouter du contenu garde TOUJOURS le même espace, rien n'est jamais
        masqué. */
-    padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
     /* Clamp the scroll container to the viewport so no child can drag the
        whole page sideways on Analytics/tables. */
     overflow-x: hidden;
