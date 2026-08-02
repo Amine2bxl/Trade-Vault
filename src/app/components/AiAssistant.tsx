@@ -190,32 +190,41 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
-          "group fixed z-40 hidden md:flex bottom-6 right-6",
-          "items-center gap-2.5 rounded-2xl border p-1.5 pr-4",
-          "glass-strong shadow-xl shadow-black/40 transition-all duration-300",
-          "hover:-translate-y-0.5 active:scale-[0.98]",
-          open
-            ? "border-cyan-400/40 bg-cyan-500/[0.08]"
-            : "border-white/[0.1] hover:border-cyan-400/35",
+          "group fixed z-40 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
+          "flex items-center justify-center md:gap-2.5",
+          // Mobile : pilule float-shell 44px, badge bien arrondi.
+          "h-11 w-11 rounded-full float-shell",
+          // Desktop : pill glass ORIGINAL (inchangé).
+          "md:h-auto md:w-auto md:rounded-2xl md:border md:p-1.5 md:pr-4 md:glass-strong",
+          "md:shadow-xl md:shadow-black/40",
+          "transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
+          open && "md:border-cyan-400/40 md:bg-cyan-500/[0.08]",
+          !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
         )}
       >
-        <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+        <span className="pointer-events-none hidden md:block absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
         <span className="relative shrink-0">
           <span
             className={cn(
-              "absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md transition-opacity",
+              "hidden md:block absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md transition-opacity",
               open ? "opacity-100" : "opacity-0 group-hover:opacity-70",
             )}
           />
-          <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+          <span
+            className={cn(
+              "relative grid place-items-center bg-gradient-to-br from-cyan-500 to-teal-600",
+              "h-7 w-7 rounded-2xl",
+              "md:h-10 md:w-10 md:rounded-xl md:shadow-lg md:shadow-cyan-500/25",
+            )}
+          >
             {open ? (
-              <X className="w-4.5 h-4.5 text-white" />
+              <X className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-white" />
             ) : (
-              <Bot className="w-5 h-5 text-white" />
+              <Bot className="w-4 h-4 md:w-5 md:h-5 text-white" />
             )}
           </span>
         </span>
-        <span className="text-left leading-none">
+        <span className="hidden md:block text-left leading-none">
           <span className="block text-[13px] font-bold text-white">{t("assistant.title")}</span>
           <span className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80">
             <span className="relative flex h-1.5 w-1.5">
