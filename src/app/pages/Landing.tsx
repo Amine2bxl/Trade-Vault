@@ -802,7 +802,7 @@ export default function Landing() {
       <main className="relative z-10">
         {/* ── HERO ── */}
         <section
-          className="hero-mesh relative overflow-hidden pt-[120px] pb-20 lg:pt-[150px] lg:pb-28"
+          className="hero-mesh relative overflow-hidden pt-[92px] pb-20 lg:pt-[116px] lg:pb-28"
           onPointerMove={onHeroMove}
         >
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-5 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-8">
