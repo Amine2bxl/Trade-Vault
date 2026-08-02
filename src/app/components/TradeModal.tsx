@@ -681,21 +681,23 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <span
                 className={cn(
                   "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                  form.setupQuality <= 1 &&
-                    "text-red-300 bg-red-500/10 border-red-500/25",
+                  form.setupQuality <= 1 && "text-red-300 bg-red-500/10 border-red-500/25",
                   form.setupQuality === 2 && "text-amber-300 bg-amber-500/10 border-amber-500/25",
                   form.setupQuality === 3 && "text-slate-200 bg-white/[0.05] border-white/[0.1]",
                   form.setupQuality === 4 && "text-cyan-300 bg-cyan-500/10 border-cyan-500/25",
-                  form.setupQuality >= 5 && "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
+                  form.setupQuality >= 5 &&
+                    "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
                 )}
               >
-                {[
-                  t("trade.quality1"),
-                  t("trade.quality2"),
-                  t("trade.quality3"),
-                  t("trade.quality4"),
-                  t("trade.quality5"),
-                ][form.setupQuality - 1]}
+                {
+                  [
+                    t("trade.quality1"),
+                    t("trade.quality2"),
+                    t("trade.quality3"),
+                    t("trade.quality4"),
+                    t("trade.quality5"),
+                  ][form.setupQuality - 1]
+                }
               </span>
             </div>
             <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1.5">
