@@ -4,9 +4,13 @@ import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
+import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
+import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
+import { answerToBlocks } from "../insights/answerToBlocks";
 import { cn } from "../../../utils/cn";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useToast } from "../../../contexts/ToastContext";
 import { loadOnboarding, type OnboardingData } from "../../../store";
 import {
   exceedsDailyLimit,
@@ -17,7 +21,7 @@ import {
 import { effectiveCopyLang } from "../prefs";
 import { sessionConversationStore } from "../conversations";
 import { BlockList } from "../BlockRenderer";
-import type { JarvisMessage } from "../blocks";
+import type { JarvisMessage, JarvisToolBlock } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
 
 /**
@@ -70,7 +74,11 @@ const seededUsers = new Set<string>();
 export default function ConversationWorkspace({ context, initialPrompt }: JarvisWorkspaceProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
+  const { toast } = useToast();
   const rules = useTradingRules();
+  // Signaux comportementaux — recalculés à partir des trades du contexte, pour
+  // adosser la preuve chiffrée (📊) des réponses à de vraies données.
+  const signals = useMemo(() => computeBehaviorSignals(context.trades), [context.trades]);
   const userId = user?.id ?? context.userId;
   const conversationId = context.conversationId ?? null;
   // Store STABLE par utilisateur : le recréer à chaque rendu ferait tourner
@@ -131,6 +139,37 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     setMessages([]);
     if (store && conversationId) void store.saveMessages(conversationId, []);
   }, [store, conversationId]);
+
+  // ── Action exécutable : Jarvis propose une règle, l'utilisateur l'intègre ──
+  // « Ajouter cette règle à ma checklist » écrit une vraie TradingRule (dédupée)
+  // et diffuse `tv-rules-updated` pour que le reste de l'app se synchronise.
+  const handleTool = useCallback(
+    async (block: JarvisToolBlock) => {
+      const ruleText =
+        typeof block.payload?.ruleText === "string" ? block.payload.ruleText.trim() : "";
+      if (!userId || !ruleText) return;
+      const current = await loadTradingRules(userId);
+      if (!current.some((r) => r.text.toLowerCase() === ruleText.toLowerCase())) {
+        const next = [
+          ...current,
+          {
+            id:
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `rule-${Date.now()}`,
+            kind: "custom" as const,
+            value: "",
+            text: ruleText,
+            enabled: true,
+          },
+        ];
+        await saveTradingRules(userId, next);
+        window.dispatchEvent(new CustomEvent("tv-rules-updated", { detail: next }));
+      }
+      toast(t("jarvisHome.ruleAdded"), "success");
+    },
+    [userId, toast, t],
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -196,6 +235,23 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         jarvisProfile: context.profile,
         rules,
       });
+      // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
+      // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux
+      // sur un simple bloc markdown si rien ne peut être structuré.
+      const pushAnswer = (text: string) => {
+        const { blocks } = answerToBlocks({
+          answer: text || t("ai.noResponse"),
+          question: query,
+          lang: effectiveCopyLang(lang),
+          signals,
+          stats: payload.stats,
+          mistakes: payload.mistakes,
+        });
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", id: genId(), blocks, createdAt: new Date().toISOString() },
+        ]);
+      };
       try {
         // Une analyse consommée — comptée localement, jamais d'appel réseau.
         incrementAiUsage(userId);
@@ -210,7 +266,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           await new Promise((r) => setTimeout(r, 1500));
           res = await askCoach({ data: { question: query, ...payload } });
         }
-        push("assistant", res.answer || t("ai.noResponse"));
+        pushAnswer(res.answer || t("ai.noResponse"));
       } catch (e) {
         // Jamais d'erreur visible : on répond de façon déterministe depuis les
         // mêmes données (quota, session, transport…). La console garde la cause.
@@ -223,7 +279,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             mistakes: payload.mistakes,
             trades: payload.trades as FallbackPayload["trades"],
           };
-          push("assistant", fallbackCoachAnswer(fallbackPayload));
+          pushAnswer(fallbackCoachAnswer(fallbackPayload));
         } catch {
           push("error", t("ai.genericError"));
         }
@@ -242,6 +298,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       onboarding,
       rules,
       userId,
+      signals,
     ],
   );
 
@@ -327,7 +384,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                   m.role === "error" && "bg-red-500/10 border border-red-500/20 text-red-300",
                 )}
               >
-                {m.role === "assistant" ? <BlockList blocks={m.blocks} /> : textOf(m) || ""}
+                {m.role === "assistant" ? (
+                  <BlockList blocks={m.blocks} onTool={handleTool} />
+                ) : (
+                  textOf(m) || ""
+                )}
               </div>
             </div>
           ))
