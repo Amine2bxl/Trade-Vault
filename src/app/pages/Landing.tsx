@@ -1,7 +1,9 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
+import { Play, Compass } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.png";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
+import { LandingDemo } from "../components/LandingDemo";
 import {
   eur,
   MONTHLY_EUR,
@@ -646,6 +648,8 @@ export default function Landing() {
   const [menu, setMenu] = useState(false);
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
+  // Démo : "video" = lecture auto (type GIF), "guide" = tour guidé.
+  const [demo, setDemo] = useState<"video" | "guide" | null>(null);
   const { y, pct } = useScroll();
   const cd = useCountdown();
   const spot = useSpot();
@@ -855,6 +859,20 @@ export default function Landing() {
                 >
                   Commencer gratuitement
                 </button>
+                <div className="flex items-center justify-center gap-2 sm:justify-start">
+                  <button
+                    onClick={() => setDemo("video")}
+                    className="btn-ghost px-4 py-3.5 text-[.95rem]"
+                  >
+                    <Play className="w-4 h-4" /> Démo
+                  </button>
+                  <button
+                    onClick={() => setDemo("guide")}
+                    className="btn-ghost px-4 py-3.5 text-[.95rem]"
+                  >
+                    <Compass className="w-4 h-4" /> Naviguer
+                  </button>
+                </div>
               </div>
               <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
                 {["Sans carte bancaire", "Annulation en 1 clic", "Setup en 2 min"].map((t) => (
@@ -1424,6 +1442,7 @@ export default function Landing() {
       )}
 
       {auth && <AuthModal onClose={() => setAuth(false)} initialMode={authMode} plan={authPlan} />}
+      {demo && <LandingDemo mode={demo} onClose={() => setDemo(null)} />}
     </div>
   );
 }

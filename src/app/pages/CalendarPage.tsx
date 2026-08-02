@@ -351,27 +351,29 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        <div className="grid grid-cols-8 border-b border-white/[0.06]">
+        {/* Tout tient sur une page : 7 colonnes de jours sur mobile (la
+            colonne semaine est masquée), 8 sur desktop. Pas de scroll. */}
+        <div className="grid grid-cols-7 md:grid-cols-8 border-b border-white/[0.06]">
           {DAYS.map((d, i) => (
             <div
               key={d + i}
               className={cn(
-                "py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest",
+                "py-1.5 md:py-3 text-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest",
                 i >= 5 ? "text-slate-700" : "text-slate-500",
               )}
             >
               {d}
             </div>
           ))}
-          <div className="py-2 md:py-3 text-center text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
+          <div className="hidden md:block py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
             {t("calendar.week")}
           </div>
         </div>
-        <div className="p-1.5 md:p-3 space-y-1 md:space-y-2">
+        <div className="p-1 md:p-3 space-y-0.5 md:space-y-2">
           {calendarRows.map((row, rowIdx) => {
             const week = weekTotals[rowIdx];
             return (
-              <div key={rowIdx} className="grid grid-cols-8 gap-1 md:gap-2">
+              <div key={rowIdx} className="grid grid-cols-7 md:grid-cols-8 gap-0.5 md:gap-2">
                 {row.map((day, colIdx) => {
                   if (day === null)
                     return <div key={`e-${rowIdx}-${colIdx}`} className="h-14 md:min-h-[104px]" />;
@@ -417,7 +419,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       disabled={!data && missedCount === 0}
                       style={cellStyle}
                       className={cn(
-                        "h-14 md:min-h-[104px] md:p-2.5 p-1.5 rounded-lg md:rounded-xl text-left transition-all duration-200 relative overflow-hidden border flex flex-col",
+                        "h-14 md:min-h-[104px] md:p-2.5 p-0.5 rounded-lg md:rounded-xl text-left transition-all duration-200 relative overflow-hidden border flex flex-col",
                         !cellStyle && !missedCount && "border-white/[0.05]",
                         !cellStyle && isWeekend && "bg-white/[0.01]",
                         !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
@@ -430,7 +432,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       <div className="flex items-center justify-between">
                         <span
                           className={cn(
-                            "text-[10px] md:text-xs font-semibold tabular-nums",
+                            "text-[9px] md:text-xs font-semibold tabular-nums",
                             isToday
                               ? "text-cyan-300"
                               : data
@@ -470,7 +472,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                           >
                             {isAllBE
                               ? t("common.be")
-                              : `${data.pnl >= 0 ? "+" : "−"}$${Math.abs(data.pnl).toFixed(0)}`}
+                              : `${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)}`}
                           </div>
                         </div>
                       )}
@@ -493,10 +495,11 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                   );
                 })}
 
-                {/* Weekly summary column */}
+                {/* Weekly summary column — masquée sur mobile (tout tient
+                    sur une page), visible en desktop. */}
                 <div
                   className={cn(
-                    "h-14 md:min-h-[104px] rounded-lg md:rounded-xl p-1.5 md:p-2.5 flex flex-col justify-center border border-white/[0.04] bg-white/[0.015]",
+                    "hidden md:flex h-[104px] rounded-xl p-2.5 flex-col justify-center border border-white/[0.04] bg-white/[0.015]",
                     week.days === 0 && "opacity-40",
                   )}
                 >
@@ -505,7 +508,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                   </div>
                   <div
                     className={cn(
-                      "font-display text-[11px] md:text-sm font-extrabold tabular-nums leading-none",
+                      "font-display text-[13px] md:text-sm font-extrabold tabular-nums leading-none",
                       week.days === 0
                         ? "text-slate-600"
                         : week.pnl > 0
@@ -517,7 +520,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                   >
                     {week.days === 0
                       ? "—"
-                      : `${week.pnl >= 0 ? "+" : "−"}$${Math.abs(week.pnl).toFixed(0)}`}
+                      : `${week.pnl >= 0 ? "+" : "−"}${Math.abs(week.pnl).toFixed(0)}`}
                   </div>
                   {week.days > 0 && (
                     <div className="text-[11px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
