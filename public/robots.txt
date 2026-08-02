@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Ne pas indexer les pages internes / de dev
+Disallow: /dev/
+Disallow: /reset-password
+
+Sitemap: https://tradevault.be/sitemap.xml

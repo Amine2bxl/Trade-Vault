@@ -1,0 +1,33 @@
+# TradeVault
+
+> Journal de trading et coach IA pour traders : analyse tes performances, suis ton plan de trading et renforce ta discipline.
+
+TradeVault est une application web de journal de trading avec un coach IA intégré (Jarvis). Elle aide les traders à analyser leurs performances, détecter leurs erreurs récurrentes, suivre un plan de trading et maintenir une discipline solide.
+
+## Fonctionnalités clés
+
+- **Journal de trading** : enregistre chaque trade (symbole, direction, risque, R-multiple, setup, erreurs, capture d'écran) en moins d'une minute.
+- **Coach IA (Jarvis)** : analyse ton historique, nomme tes patterns coûteux (série de pertes, sur-trading, fuite la plus chère) et te donne un plan d'action concret, en français ou en anglais.
+- **Analytics quantitatives** : edge par setup, R-multiple moyen, jours de la semaine, drawdown, objectif mensuel.
+- **Calendrier économique** : les publications macro qui comptent pour ton trading, avec impact et valeurs précédentes/prévisions.
+- **Checklist pré-market** : ritual quotidien pour ne plus trader à l'impulsion.
+- **Objectifs & plan de trading** : plan d'action progressif sur 6 mois.
+- **Notifications disciplinaires** : alertes quand tu enfreins une de tes règles.
+
+## Public
+
+Traders particuliers, traders de prop firms et débutants qui veulent passer de l'intuition à une méthode mesurée.
+
+## Pages
+
+- [Accueil](https://tradevault.be/)
+- [Conditions d'utilisation](https://tradevault.be/terms)
+- [Politique de confidentialité](https://tradevault.be/privacy)
+- [Contact](https://tradevault.be/contact)
+
+## Points forts
+
+- Journalisation rapide (45 secondes par trade).
+- Analyse IA des données réelles de l'utilisateur — jamais de généralités.
+- Multi-comptes (prop, démo, réel).
+- Interface sombre premium, responsive mobile.

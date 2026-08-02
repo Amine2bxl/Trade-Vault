@@ -10,6 +10,9 @@ import { aiRuntimeProbe } from "@/modules/ai/runtime/probe";
  */
 
 export const Route = createFileRoute("/dev/ai")({
+  head: () => ({
+    meta: [{ name: "robots", content: "noindex,nofollow" }],
+  }),
   component: DevAiPage,
 });
 

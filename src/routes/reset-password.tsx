@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import logoSrc from "@/assets/tradevault-logo.png";
 
 export const Route = createFileRoute("/reset-password")({
+  head: () => ({
+    meta: [{ name: "robots", content: "noindex,nofollow" }],
+  }),
   component: ResetPasswordPage,
 });
 

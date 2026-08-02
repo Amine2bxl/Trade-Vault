@@ -10,6 +10,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../shared/seo";
+import { initAnalytics } from "@/app/utils/analytics";
 import { reportAppError } from "../shared/error-reporting";
 
 /** Site-wide title and description — the marketing promise, in the language
@@ -145,6 +146,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => lockZoom(), []);
+
+  // GA4 — injecté uniquement si VITE_GA4_MEASUREMENT_ID est défini (sinon no-op).
+  useEffect(() => {
+    initAnalytics();
+  }, []);
 
   // Stale lazy-chunk guard. Pages are code-split; after a new deploy the old
   // build's chunk hashes 404, so anyone who had the app open across a release
