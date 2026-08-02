@@ -8,7 +8,7 @@ import Landing from "@/app/pages/Landing";
 // tab, search results and Google's brand review all read "TradeVault" first.
 // The suffix stays because a bare one-word title loses the SEO keywords, and it
 // is what the page actually is.
-const SEO_TITLE = "TradeVault — Journal de trading et coach IA";
+const SEO_TITLE = "TradeVault — Journal de trading et coach IA pour traders";
 // French: the landing page it describes is French, and a description in another
 // language than the page is a mismatch both for search engines and for a
 // reviewer comparing the site against the consent screen. ≤ 155 caractères.
