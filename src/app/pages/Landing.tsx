@@ -654,8 +654,13 @@ export default function Landing() {
 
   // Scrollspy: active nav = the last NAV section whose top has passed under the
   // header. Continuous (no dead zones between sections that aren't in the nav).
+  // `scrollLockRef` est levé pendant le défilement déclenché par un clic : le
+  // bouton cliqué reste actif immédiatement, sans sauter entre les boutons.
+  const scrollLockRef = useRef(false);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const onScroll = () => {
+      if (scrollLockRef.current) return;
       const pos = window.scrollY + 120;
       let cur = "";
       for (const [, id] of NAV) {
@@ -666,7 +671,10 @@ export default function Landing() {
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
   }, []);
 
   const open = (mode: "login" | "signup", plan?: string) => {
@@ -681,7 +689,15 @@ export default function Landing() {
   // so this stays a plain, reliable scrollIntoView at every screen size.
   const go = (id: string) => {
     setMenu(false);
+    // Actif IMMÉDIAT + verrouille le scrollspy pendant le défilement animé :
+    // le bouton cliqué reste surligné, aucun saut entre les boutons.
+    setActiveSec(id);
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollLockRef.current = true;
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollTimerRef.current = setTimeout(() => {
+      scrollLockRef.current = false;
+    }, 1000);
   };
   const onHeroMove = (e: RPointerEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
