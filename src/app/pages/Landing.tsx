@@ -727,7 +727,7 @@ export default function Landing() {
                 <button
                   key={id}
                   onClick={() => go(id)}
-                  className={`flex items-center gap-1 rounded-full px-2 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
+                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     on
                       ? "bg-cyan-400/[.12] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.25)]"
                       : isTp
@@ -745,18 +745,13 @@ export default function Landing() {
               );
             })}
           </nav>
-          {/* Right zone — actions, natural width; mirrors the left visually. */}
+          {/* Right zone — actions, natural width; mirrors the left visually.
+              Deux CTA seulement : Démo (ghost) + Essai gratuit (primary). */}
           <div className="flex items-center justify-end gap-2.5">
             <div className="hidden items-center gap-2 xl:flex">
-              {/* Below 2xl the centered 8-item nav needs the horizontal room, so
-                  the secondary "Se connecter" only appears once there's space.
-                  Wrapped because `.btn-ghost` sets its own display and would win
-                  over the `hidden` utility otherwise. */}
-              <div className="hidden 2xl:block">
-                <button onClick={() => open("login")} className="btn-ghost px-3.5 text-[13px]">
-                  Se connecter
-                </button>
-              </div>
+              <a href="/demo" className="btn-ghost px-3.5 text-[13px]">
+                <Play className="w-3.5 h-3.5" /> Démo
+              </a>
               <button
                 onClick={() => open("signup", "Essai Premium 14 jours")}
                 className="btn-primary px-4 text-[13px]"
@@ -791,9 +786,9 @@ export default function Landing() {
               >
                 Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
               </button>
-              <button onClick={() => open("login")} className="btn-ghost mt-2.5 w-full">
-                Se connecter
-              </button>
+              <a href="/demo" className="btn-ghost mt-2.5 w-full">
+                <Play className="w-3.5 h-3.5" /> Démo
+              </a>
             </div>
           </div>
         )}
