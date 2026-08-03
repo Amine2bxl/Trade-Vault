@@ -17,12 +17,15 @@ import {
   Bell,
   BellOff,
   Rocket,
+  Wallet,
+  Palette,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
-import { saveOnboarding, type OnboardingData } from "../store";
+import { saveOnboarding, saveAccountBalance, type OnboardingData } from "../store";
+import { useTheme } from "../contexts/ThemeContext";
 import { oc } from "./onboardingCopy";
 import logoSrc from "@/assets/tradevault-logo.webp";
 
@@ -203,6 +206,10 @@ export default function Onboarding({
   const [pain, setPain] = useState<string[]>([]);
   const [target, setTarget] = useState("");
   const [usesIct, setUsesIct] = useState(false);
+  // Taille du compte — Jarvis calibre le risque réel. Apparence — thème de l'app.
+  const [accountSize, setAccountSize] = useState("");
+  const { themes, activeId, setActive } = useTheme();
+  const builtinThemes = themes.filter((th) => th.builtin);
 
   const steps: StepKey[] = [
     "identity",
@@ -248,6 +255,11 @@ export default function Onboarding({
           },
           { skipped: false, firstName },
         );
+        // Taille du compte — alimente le calibreur de risque (best-effort).
+        const size = parseFloat(accountSize.replace(/\s/g, ""));
+        if (Number.isFinite(size) && size > 0) {
+          await saveAccountBalance(userId, size).catch(() => {});
+        }
         onDone(action);
       } catch (e) {
         console.error("Failed to save onboarding", e);
@@ -255,7 +267,20 @@ export default function Onboarding({
         setSaving(null);
       }
     },
-    [saving, userId, onDone, style, pain, target, goal, experience, assets, usesIct, firstName],
+    [
+      saving,
+      userId,
+      onDone,
+      style,
+      pain,
+      target,
+      goal,
+      experience,
+      assets,
+      usesIct,
+      firstName,
+      accountSize,
+    ],
   );
 
   // Permission push, ré-intégrée — jamais bloquante.
@@ -546,7 +571,7 @@ export default function Onboarding({
           {/* ── 7 · RÉGLAGES (cible + ICT) ── */}
           {step === "settings" && (
             <ScreenShell icon={SlidersHorizontal} title={c.targetTitle} subtitle={c.targetSub}>
-              <div className="relative max-w-[200px] mx-auto mb-8">
+              <div className="relative max-w-[200px] mx-auto mb-6">
                 <input
                   type="number"
                   inputMode="decimal"
@@ -561,6 +586,44 @@ export default function Onboarding({
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
                   %
                 </span>
+              </div>
+
+              {/* Taille du compte — Jarvis calibre le risque réel */}
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Wallet className="w-4 h-4 text-cyan-300" />
+                <h3 className="text-base font-bold text-white">{t("onb.accountSize")}</h3>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{t("onb.accountSizeSub")}</p>
+              <div className="relative max-w-[200px] mx-auto mb-7">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">
+                  $
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  value={accountSize}
+                  onChange={(e) => setAccountSize(e.target.value)}
+                  placeholder="25 000"
+                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
+                />
+              </div>
+
+              {/* Apparence de l'app — le thème s'applique immédiatement */}
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Palette className="w-4 h-4 text-cyan-300" />
+                <h3 className="text-base font-bold text-white">{t("onb.appearance")}</h3>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{t("onb.appearanceSub")}</p>
+              <div className="grid grid-cols-2 gap-2.5 max-w-[300px] mx-auto mb-7 onb-in">
+                {builtinThemes.map((th) => (
+                  <OptionCard
+                    key={th.id}
+                    selected={activeId === th.id}
+                    onClick={() => setActive(th.id)}
+                    label={th.name}
+                  />
+                ))}
               </div>
 
               <div className="flex items-center justify-center gap-2 mb-1">

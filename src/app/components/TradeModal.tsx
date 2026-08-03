@@ -9,6 +9,7 @@ import {
   Wallet,
   Calculator,
   SlidersHorizontal,
+  CandlestickChart,
 } from "lucide-react";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "../types";
 import { getSession } from "../utils/quantStats";
@@ -382,11 +383,51 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   : "bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent",
           )}
         />
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <h2 className="text-lg font-bold text-white shrink-0">
-              {trade ? t("trade.editTitle") : t("trade.newTitle")}
-            </h2>
+        {/* Header premium — même matière que le widget compte/Jarvis */}
+        <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.07] to-transparent overflow-hidden">
+          <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-cyan-500/10 blur-2xl" />
+          <div className="relative flex items-center gap-2.5 min-w-0">
+            <span className="relative shrink-0">
+              <span
+                className={cn(
+                  "absolute -inset-1 rounded-xl blur-md transition-colors",
+                  form.direction === "be"
+                    ? "bg-slate-500/30"
+                    : calculatedPnl > 0
+                      ? "bg-emerald-500/30"
+                      : calculatedPnl < 0
+                        ? "bg-red-500/30"
+                        : "bg-cyan-500/30",
+                )}
+              />
+              <span
+                className={cn(
+                  "relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br transition-colors",
+                  form.direction === "be"
+                    ? "from-slate-400 to-slate-600"
+                    : calculatedPnl > 0
+                      ? "from-emerald-500 to-teal-500"
+                      : calculatedPnl < 0
+                        ? "from-red-500 to-orange-500"
+                        : "from-cyan-500 to-teal-600",
+                )}
+              >
+                <CandlestickChart className="w-4.5 h-4.5 text-white" />
+              </span>
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-bold text-white leading-tight">
+                {trade ? t("trade.editTitle") : t("trade.newTitle")}
+              </h2>
+              <p className="text-[11px] text-slate-500 truncate">
+                {form.symbol ? `${form.symbol} · ` : ""}
+                {form.direction === "long"
+                  ? "Long"
+                  : form.direction === "short"
+                    ? "Short"
+                    : "Break-even"}
+              </p>
+            </div>
             {!trade && draftRestored && (
               <button
                 onClick={discardDraft}
@@ -645,7 +686,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             )}
           </div>
 
-          {/* Entry/Exit Time + Strategy */}
+          {/* Entry/Exit Time + Strategy — temps en un tap (presets) ou picker */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>{t("trade.entryTime")}</label>
@@ -681,6 +722,28 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
           </div>
 
+          {/* Presets d'heure — un tap remplit entrée + sortie (puis ajustables) */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mr-0.5">
+              {t("trade.timePresets")}
+            </span>
+            {[
+              { t: "09:30", v: "10:15" },
+              { t: "10:00", v: "11:00" },
+              { t: "15:30", v: "16:00" },
+              { t: "16:00", v: "17:00" },
+            ].map((p) => (
+              <button
+                key={p.t}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, entryTime: p.t, exitTime: p.v }))}
+                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition-all bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-cyan-500/30"
+              >
+                {p.t} → {p.v}
+              </button>
+            ))}
+          </div>
+
           {/* Setup Quality — jauges d'étoiles premium dans un conteneur */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -707,7 +770,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 }
               </span>
             </div>
-            <div className="flex items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
+            <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => {
                 const on = n <= form.setupQuality;
                 return (
@@ -716,16 +779,18 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     onClick={() => setForm((f) => ({ ...f, setupQuality: n }))}
                     aria-label={`${n} / 5`}
                     className={cn(
-                      "flex-1 flex items-center justify-center rounded-lg transition-all",
-                      on ? "py-1.5" : "py-1.5 hover:bg-white/[0.04] active:scale-95",
+                      "flex-1 flex items-center justify-center gap-1 rounded-full border px-2 py-1.5 transition-all active:scale-95",
+                      on
+                        ? "bg-amber-500/15 border-amber-500/30"
+                        : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]",
                     )}
                   >
                     <Star
                       className={cn(
-                        "w-[22px] h-[22px] transition-all duration-200",
+                        "w-4 h-4 transition-all duration-200",
                         on
-                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.45)] scale-110"
-                          : "text-slate-700 hover:text-amber-400/40",
+                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]"
+                          : "text-slate-600",
                       )}
                       strokeWidth={on ? 2 : 1.75}
                     />
