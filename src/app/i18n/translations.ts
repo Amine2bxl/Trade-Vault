@@ -1299,6 +1299,8 @@ const en = {
   "reports.mistakes": "Costliest mistakes",
   "reports.mom": "vs previous month",
   "reports.aiSummary": "AI Coach debrief",
+  "reports.positive": "Positive month",
+  "reports.negative": "Tough month",
   "reports.maxDrawdown": "Max drawdown",
   "reports.profitFactor": "Profit factor",
   "reports.hide": "Hide details",

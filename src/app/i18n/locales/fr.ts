@@ -1235,6 +1235,8 @@ const fr: Dict = {
   "reports.mistakes": "Erreurs les plus coûteuses",
   "reports.mom": "vs mois précédent",
   "reports.aiSummary": "Débrief du Coach IA",
+  "reports.positive": "Mois positif",
+  "reports.negative": "Mois difficile",
   "reports.maxDrawdown": "Drawdown max",
   "reports.profitFactor": "Profit factor",
   "reports.hide": "Masquer les détails",
