@@ -24,11 +24,11 @@ export function CookieConsent() {
 
   return (
     <>
-      {/* Bouton discret — au-dessus du CTA mobile collant sur petit écran */}
+      {/* Bouton discret — en bas à gauche, toujours visible */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Préférences de cookies"
-        className="fixed bottom-[calc(84px+env(safe-area-inset-bottom,0px))] left-3 xl:bottom-4 xl:left-4 z-[200] flex items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-slate-500 backdrop-blur-md transition-all hover:border-cyan-500/30 hover:bg-white/[.06] hover:text-slate-200"
+        className="fixed bottom-4 left-4 z-[200] flex items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-slate-500 backdrop-blur-md transition-all hover:border-cyan-500/30 hover:bg-white/[.06] hover:text-slate-200"
       >
         <Cookie className="w-3.5 h-3.5" /> Cookies
       </button>

@@ -745,20 +745,18 @@ export default function Landing() {
               );
             })}
           </nav>
-          {/* Right zone — actions, natural width; mirrors the left visually.
-              Deux CTA seulement : Démo (ghost) + Essai gratuit (primary). */}
-          <div className="flex items-center justify-end gap-2.5">
-            <div className="hidden items-center gap-2 xl:flex">
-              <a href="/demo" className="btn-ghost px-3.5 text-[13px]">
-                <Play className="w-3.5 h-3.5" /> Démo
-              </a>
-              <button
-                onClick={() => open("signup", "Essai Premium 14 jours")}
-                className="btn-primary px-4 text-[13px]"
-              >
-                Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
-              </button>
-            </div>
+          {/* Right zone — actions. Deux CTA (Démo + Essai gratuit), visibles sur
+              tous les écrans (compact sur mobile) ; hamburger en dessous de xl. */}
+          <div className="flex items-center justify-end gap-2">
+            <a href="/demo" className="btn-ghost hidden px-3 py-2 text-[13px] sm:inline-flex">
+              <Play className="w-3.5 h-3.5" /> Démo
+            </a>
+            <button
+              onClick={() => open("signup", "Essai Premium 14 jours")}
+              className="btn-primary px-3.5 py-2 text-[13px]"
+            >
+              Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
+            </button>
             <button
               onClick={() => setMenu(!menu)}
               className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] bg-white/[.03] text-slate-200 xl:hidden"
@@ -1481,18 +1479,6 @@ export default function Landing() {
       </footer>
 
       <CookieConsent />
-      {/* ── STICKY MOBILE CTA ── */}
-      {y > 500 && !auth && !menu && (
-        <div className="sticky-bar-in fixed inset-x-0 bottom-0 z-40 border-t border-white/[.08] bg-[#060d16]/92 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl xl:hidden">
-          <button
-            onClick={() => open("signup", "Essai Premium 14 jours")}
-            className="btn-primary w-full py-3.5"
-          >
-            Essai Premium 14 jours — gratuit
-          </button>
-        </div>
-      )}
-
       {auth && <AuthModal onClose={() => setAuth(false)} initialMode={authMode} plan={authPlan} />}
     </div>
   );
