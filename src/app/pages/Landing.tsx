@@ -42,7 +42,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
         className={`${compact ? "h-7 w-7" : "h-9 w-9"} object-contain drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]`}
       />
       <span
-        className={`font-display font-extrabold tracking-[-0.04em] text-[#ffffff] leading-none ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
+        className={`font-display font-extrabold tracking-[-0.04em] text-[#ffffff] leading-none hidden sm:block ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
       >
         TradeVault
       </span>
@@ -753,9 +753,9 @@ export default function Landing() {
             </a>
             <button
               onClick={() => open("signup", "Essai Premium 14 jours")}
-              className="btn-primary px-4"
+              className="btn-primary px-3.5 sm:px-4"
             >
-              Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
+              Essai gratuit <Icon n="arrow" cls="h-4 w-4 hidden sm:inline" />
             </button>
             <button
               onClick={() => setMenu(!menu)}
