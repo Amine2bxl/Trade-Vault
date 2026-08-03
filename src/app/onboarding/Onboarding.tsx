@@ -24,7 +24,7 @@ import { usePushNotifications } from "../hooks/usePushNotifications";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, type OnboardingData } from "../store";
 import { oc } from "./onboardingCopy";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;

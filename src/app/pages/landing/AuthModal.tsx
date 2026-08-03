@@ -2,7 +2,7 @@
  * Extrait de Landing.tsx (Phase D) — aucun changement de comportement. */
 import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon } from "./Icon";
 
 export function AuthModal({

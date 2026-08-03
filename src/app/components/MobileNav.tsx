@@ -18,7 +18,7 @@ import { useHasTradeDraft } from "../utils/persistence";
 import { useUnreadCount } from "../hooks/useUnreadCount";
 import { Modal } from "@/shared/ui";
 import AccountSwitcher from "./AccountSwitcher";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 
 interface MobileNavProps {
   page: Page;
