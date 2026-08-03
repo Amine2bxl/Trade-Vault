@@ -5,7 +5,7 @@ import { NAV_GROUPS } from "../navigation";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 import { useT } from "../i18n/LanguageContext";
 import AccountSwitcher from "./AccountSwitcher";
 import { useUnreadCount } from "../hooks/useUnreadCount";
