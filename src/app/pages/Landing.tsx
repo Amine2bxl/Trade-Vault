@@ -727,12 +727,12 @@ export default function Landing() {
                 <button
                   key={id}
                   onClick={() => go(id)}
-                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     on
-                      ? "bg-cyan-400/[.12] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.25)]"
+                      ? "bg-cyan-400/[.14] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.28)]"
                       : isTp
-                        ? "text-emerald-300 hover:bg-emerald-400/[.08]"
-                        : "text-slate-400 hover:text-white hover:bg-white/[.04]"
+                        ? "text-emerald-300 hover:bg-emerald-400/[.1]"
+                        : "text-slate-400 hover:text-white hover:bg-white/[.06]"
                   }`}
                 >
                   {isTp && (
@@ -748,12 +748,12 @@ export default function Landing() {
           {/* Right zone — actions. Deux CTA (Démo + Essai gratuit), visibles sur
               tous les écrans (compact sur mobile) ; hamburger en dessous de xl. */}
           <div className="flex items-center justify-end gap-2">
-            <a href="/demo" className="btn-ghost hidden px-3 py-2 text-[13px] sm:inline-flex">
+            <a href="/demo" className="btn-ghost hidden px-4 sm:inline-flex">
               <Play className="w-3.5 h-3.5" /> Démo
             </a>
             <button
               onClick={() => open("signup", "Essai Premium 14 jours")}
-              className="btn-primary px-3.5 py-2 text-[13px]"
+              className="btn-primary px-4"
             >
               Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
             </button>
@@ -843,14 +843,9 @@ export default function Landing() {
                 >
                   Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
                 </button>
-                <div className="flex items-center justify-center gap-2 sm:justify-start">
-                  <a href="/demo" className="btn-ghost px-5 py-3.5 text-[.95rem]">
-                    <Play className="w-4 h-4" /> Démo
-                  </a>
-                  <a href="/demo-site" className="btn-ghost px-5 py-3.5 text-[.95rem]">
-                    <Compass className="w-4 h-4" /> Voir le site
-                  </a>
-                </div>
+                <a href="/demo-site" className="btn-ghost px-5 py-3.5 text-[.95rem]">
+                  <Compass className="w-4 h-4" /> Voir le site
+                </a>
               </div>
               <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
                 {["Sans carte bancaire", "Annulation en 1 clic", "Setup en 2 min"].map((t) => (
@@ -1393,13 +1388,7 @@ export default function Landing() {
                 onClick={() => open("signup", "Essai Premium 14 jours")}
                 className="btn-primary px-8 py-4"
               >
-                Essai Premium 14 jours <Icon n="arrow" cls="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => open("signup", "Plan Gratuit")}
-                className="btn-ghost px-8 py-4"
-              >
-                Commencer gratuitement
+                Essai gratuit 14 jours <Icon n="arrow" cls="h-4 w-4" />
               </button>
             </div>
             <p className="mt-5 text-xs text-slate-600">
