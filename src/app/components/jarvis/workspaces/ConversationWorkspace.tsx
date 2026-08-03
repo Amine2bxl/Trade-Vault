@@ -102,9 +102,10 @@ function historyTextOf(m: JarvisMessage): string {
       case "tool":
         parts.push(`[action proposée: ${b.label}]`);
         break;
-      case "alert":
-        parts.push(b.message);
-        break;
+      // `alert` est délibérément EXCLU : ces blocs sont des notices d'interface
+      // (ex. « analyse hors ligne »), pas des propos de Jarvis. Les renvoyer
+      // ferait croire au modèle qu'il les a dits et polluerait les tours
+      // suivants (excuses, méta-commentaires sur sa propre indisponibilité).
     }
   }
   return parts.filter(Boolean).join("\n").slice(0, HISTORY_CHARS);
@@ -206,7 +207,12 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
       const ruleText =
         typeof block.payload?.ruleText === "string" ? block.payload.ruleText.trim() : "";
-      if (!userId || !ruleText) return;
+      // On LÈVE au lieu de sortir en silence : `ToolView` traite l'absence
+      // d'exception comme une réussite et afficherait un ✓ alors que rien n'a
+      // été écrit. Un bouton qui ment est pire qu'un bouton inerte.
+      if (!userId || !ruleText) {
+        throw new Error("tool: missing userId or ruleText");
+      }
       const current = await loadTradingRules(userId);
       if (!current.some((r) => r.text.toLowerCase() === ruleText.toLowerCase())) {
         const next = [

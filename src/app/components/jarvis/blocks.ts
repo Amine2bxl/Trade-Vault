@@ -106,7 +106,15 @@ export interface JarvisMissionBlock {
   type: "mission";
   title: string;
   items: string[];
-  cta?: { label: string; tool?: JarvisToolKind };
+  /** Action optionnelle. `payload`/`targetPage` sont nécessaires pour que le
+   *  CTA soit RÉELLEMENT exécutable : sans eux, le handler ne peut rien écrire
+   *  (ajout additif, rétro-compatible — les blocs existants restent valides). */
+  cta?: {
+    label: string;
+    tool?: JarvisToolKind;
+    payload?: Record<string, unknown>;
+    targetPage?: string;
+  };
 }
 
 /**

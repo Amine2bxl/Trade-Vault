@@ -123,6 +123,8 @@ function MissionView({ block, onTool }: { block: JarvisMissionBlock; onTool?: Bl
             type: "tool",
             tool: block.cta.tool ?? "createChecklist",
             label: block.cta.label,
+            payload: block.cta.payload,
+            targetPage: block.cta.targetPage,
           }}
           onTool={onTool}
         />
