@@ -6,7 +6,9 @@ import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
+import { computeStats } from "../../../utils/tradeCalcs";
 import { answerToBlocks } from "../insights/answerToBlocks";
+import { buildSuggestions } from "../insights/suggestions";
 import { cn } from "../../../utils/cn";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -56,9 +58,56 @@ function genId(): string {
     : `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Texte affichable d'un message (bulle utilisateur). */
 function textOf(m: JarvisMessage): string {
   const md = m.blocks.find((b) => b.type === "markdown");
   return md && md.type === "markdown" ? md.content : "";
+}
+
+/** Longueur maximale d'un tour assistant renvoyé au modèle. Large pour le
+ *  diagnostic, assez serré pour que 16 tours restent bon marché. */
+const HISTORY_CHARS = 900;
+
+/**
+ * Sérialisation d'un message pour l'HISTORIQUE envoyé au coach.
+ *
+ * `textOf` ne renvoie que le premier bloc markdown : depuis que les réponses
+ * sont découpées en blocs, le PLAN vit dans un bloc `mission` et disparaissait
+ * donc de l'historique — Jarvis oubliait ce qu'il venait de recommander et se
+ * répétait ou se contredisait au tour suivant.
+ *
+ * Choix de CONTENU (qualité du contexte, pas seulement sa taille) : on inclut
+ * l'analyse, le nom du pattern, le plan et l'action proposée — ce que rien
+ * d'autre ne transporte. On EXCLUT délibérément les valeurs chiffrées des
+ * blocs `insight` : elles sont recalculées et renvoyées à chaque appel dans le
+ * bloc BEHAVIOUR SIGNALS, donc les recopier ne ferait que payer deux fois la
+ * même information.
+ */
+function historyTextOf(m: JarvisMessage): string {
+  const parts: string[] = [];
+  for (const b of m.blocks) {
+    switch (b.type) {
+      case "markdown":
+        parts.push(b.content);
+        break;
+      case "hero":
+        parts.push(b.lines.map((l) => l.text).join(" "));
+        break;
+      case "insight":
+        parts.push(`[pattern: ${b.patternLabel}]`);
+        break;
+      case "mission":
+        if (b.items.length) parts.push(`${b.title}: ${b.items.join(" · ")}`);
+        break;
+      case "tool":
+        parts.push(`[action proposée: ${b.label}]`);
+        break;
+      case "alert":
+        parts.push(b.message);
+        break;
+    }
+  }
+  return parts.filter(Boolean).join("\n").slice(0, HISTORY_CHARS);
 }
 
 /** 4xx (quota, validation, auth) → non rétentable ; 5xx/réseau → rétentable. */
@@ -79,6 +128,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // Signaux comportementaux — recalculés à partir des trades du contexte, pour
   // adosser la preuve chiffrée (📊) des réponses à de vraies données.
   const signals = useMemo(() => computeBehaviorSignals(context.trades), [context.trades]);
+  const stats = useMemo(() => computeStats(context.trades), [context.trades]);
   const userId = user?.id ?? context.userId;
   const conversationId = context.conversationId ?? null;
   // Store STABLE par utilisateur : le recréer à chaque rendu ferait tourner
@@ -145,6 +195,15 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // et diffuse `tv-rules-updated` pour que le reste de l'app se synchronise.
   const handleTool = useCallback(
     async (block: JarvisToolBlock) => {
+      // Navigation : on réutilise le canal `tv:navigate` déjà écouté par App
+      // (même contrat que la CreditsBar et les notifications) — aucun second
+      // mécanisme de navigation n'est introduit.
+      if (block.tool === "openPage") {
+        const page = block.targetPage ?? (block.payload?.page as string | undefined);
+        if (page) window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page } }));
+        return;
+      }
+
       const ruleText =
         typeof block.payload?.ruleText === "string" ? block.payload.ruleText.trim() : "";
       if (!userId || !ruleText) return;
@@ -184,6 +243,29 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   }, [userId]);
 
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
+
+  // Suggestions intelligentes — `buildSuggestions` existait déjà (utilisé par
+  // l'Accueil) mais n'était jamais branché ici : la conversation n'orientait
+  // donc jamais le trader. Elles sont dérivées de SES données réelles (pire
+  // jour, erreur la plus coûteuse, dérive de risque…), pas d'une liste figée.
+  const suggestions = useMemo(
+    () =>
+      buildSuggestions(
+        {
+          trades: context.trades,
+          stats,
+          signals,
+          edge: null,
+          rule: null,
+          profile: context.profile ?? null,
+          onboarding,
+        },
+        context.page,
+        effectiveCopyLang(lang),
+      ).slice(0, 4),
+    [context.trades, context.profile, context.page, stats, signals, onboarding, lang],
+  );
+
   useEffect(() => {
     if (!userId) {
       setOnboarding(null);
@@ -213,7 +295,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       }
       const priorTurns = messages
         .filter((m) => m.role !== "error")
-        .map((m) => ({ role: m.role as "user" | "assistant", content: textOf(m) }));
+        .map((m) => ({ role: m.role as "user" | "assistant", content: historyTextOf(m) }));
       const push = (role: JarvisMessage["role"], text: string) =>
         setMessages((prev) => [
           ...prev,
@@ -238,7 +320,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
       // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux
       // sur un simple bloc markdown si rien ne peut être structuré.
-      const pushAnswer = (text: string) => {
+      const pushAnswer = (text: string, degraded = false) => {
         const { blocks } = answerToBlocks({
           answer: text || t("ai.noResponse"),
           question: query,
@@ -247,9 +329,21 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           stats: payload.stats,
           mistakes: payload.mistakes,
         });
+        // Honnêteté : quand la réponse vient du moteur déterministe (provider
+        // indisponible, quota, timeout), on le DIT. Les chiffres restent vrais
+        // — ils viennent des mêmes signaux — mais le raisonnement est plus
+        // pauvre, et laisser croire le contraire abîmerait la confiance.
+        const withNotice: typeof blocks = degraded
+          ? [{ type: "alert", level: "info", message: t("ai.offlineAnalysis") }, ...blocks]
+          : blocks;
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", id: genId(), blocks, createdAt: new Date().toISOString() },
+          {
+            role: "assistant",
+            id: genId(),
+            blocks: withNotice,
+            createdAt: new Date().toISOString(),
+          },
         ]);
       };
       try {
@@ -263,10 +357,15 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           // retry — on ne double pas la consommation de quota.
           if (!isTransient(firstErr)) throw firstErr;
           console.warn("[coach] first attempt failed, retrying", firstErr);
-          await new Promise((r) => setTimeout(r, 1500));
+          // Backoff court : ce retry ne concerne que les erreurs transitoires
+          // (5xx/réseau). 1,5 s s'ajoutait à une attente déjà longue pour un
+          // gain de fiabilité nul — 400 ms absorbe un pic réseau tout autant.
+          await new Promise((r) => setTimeout(r, 400));
           res = await askCoach({ data: { question: query, ...payload } });
         }
-        pushAnswer(res.answer || t("ai.noResponse"));
+        // Le serveur indique déjà si la réponse vient de l'IA ou du moteur
+        // déterministe — on ne le devine pas, on lit `source`.
+        pushAnswer(res.answer || t("ai.noResponse"), res.source !== "ai");
       } catch (e) {
         // Jamais d'erreur visible : on répond de façon déterministe depuis les
         // mêmes données (quota, session, transport…). La console garde la cause.
@@ -279,7 +378,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             mistakes: payload.mistakes,
             trades: payload.trades as FallbackPayload["trades"],
           };
-          pushAnswer(fallbackCoachAnswer(fallbackPayload));
+          pushAnswer(fallbackCoachAnswer(fallbackPayload), true);
         } catch {
           push("error", t("ai.genericError"));
         }
@@ -354,56 +453,131 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       {/* Messages — rendus UNIQUEMENT via les blocs */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-8 py-5 space-y-5">
         {!loaded ? (
-          <div className="text-sm text-slate-500">{t("assistant.empty")}</div>
+          /* Chargement de la conversation — squelette, jamais de texte gris. */
+          <div className="space-y-3" aria-busy="true">
+            <div className="h-16 rounded-2xl bg-white/[0.04] animate-pulse" />
+            <div className="h-24 rounded-2xl bg-white/[0.03] animate-pulse" />
+          </div>
         ) : messages.length === 0 ? (
-          <div className="text-sm text-slate-500 leading-relaxed">{t("assistant.empty")}</div>
-        ) : (
-          messages.map((m) => (
-            <div
-              key={m.id}
-              className={cn(
-                "flex items-end gap-2",
-                m.role === "user" ? "justify-end" : "justify-start",
-              )}
-            >
-              {m.role !== "user" && (
-                <div className="relative shrink-0 mb-1">
-                  <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-                  <div className="relative grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
-                    <Bot className="w-3.5 h-3.5 text-white" />
-                  </div>
+          /* ── État vide premium ──
+             Premier écran vu : il doit poser l'identité de Jarvis ET enseigner
+             quoi demander, à partir des données réelles du trader. */
+          <div className="animate-fade-in-up">
+            <div className="relative">
+              <div className="pointer-events-none absolute -top-8 left-0 h-24 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
+              <div className="relative flex items-center gap-3">
+                <span className="relative shrink-0">
+                  <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/35 blur-md" />
+                  <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+                    <Bot className="w-5 h-5 text-white" />
+                  </span>
+                </span>
+                <div className="min-w-0">
+                  <p className="text-base font-bold text-white tracking-tight">
+                    {t("assistant.title")}
+                  </p>
+                  <p className="text-xs text-slate-400">{t("jarvis.copilot")}</p>
                 </div>
-              )}
+              </div>
+              <p className="relative mt-3 text-sm text-slate-300 leading-relaxed max-w-lg">
+                {t("assistant.empty")}
+              </p>
+            </div>
+
+            {suggestions.length > 0 && (
+              <div className="mt-5 space-y-2">
+                <p className="text-[11px] uppercase tracking-[0.16em] font-semibold text-slate-500">
+                  {t("jarvisHome.suggestions")}
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => void ask(s.prompt)}
+                      className="min-h-11 text-left rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-[13px] text-slate-200 hover:border-cyan-500/30 hover:bg-cyan-500/[0.06] active:scale-[0.99] transition-all"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          messages.map((m, i) =>
+            m.role === "user" ? (
+              /* L'utilisateur garde la bulle : l'asymétrie devient le repère de
+                 tour, sans enfermer le contenu analytique de Jarvis. */
+              <div key={m.id} className="flex justify-end">
+                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-medium text-white">
+                  {textOf(m) || ""}
+                </div>
+              </div>
+            ) : (
+              /* Jarvis : CANVAS pleine largeur. Plus de bulle autour des cartes
+                 — fin des cartes-dans-une-carte, les blocs respirent enfin. */
               <div
-                className={cn(
-                  "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                  m.role === "user" &&
-                    "bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium",
-                  m.role === "assistant" &&
-                    "bg-white/[0.04] border border-white/[0.08] text-slate-200",
-                  m.role === "error" && "bg-red-500/10 border border-red-500/20 text-red-300",
-                )}
+                key={m.id}
+                className={cn("animate-fade-in-up", i > 0 && "border-t border-white/[0.05] pt-5")}
               >
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+                    <Bot className="w-3.5 h-3.5 text-white" />
+                  </span>
+                  <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
+                    {t("assistant.title")}
+                  </span>
+                </div>
                 {m.role === "assistant" ? (
                   <BlockList blocks={m.blocks} onTool={handleTool} />
                 ) : (
-                  textOf(m) || ""
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
+                    {textOf(m) || ""}
+                  </div>
                 )}
               </div>
-            </div>
-          ))
+            ),
+          )
         )}
+
+        {/* Relances : Jarvis oriente au lieu d'attendre. */}
+        {loaded && !loading && messages.length > 0 && suggestions.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {suggestions.slice(0, 3).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => void ask(s.prompt)}
+                className="min-h-9 rounded-full border border-white/[0.08] bg-white/[0.02] px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:border-cyan-500/30 hover:text-white active:scale-[0.98] transition-all"
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {loading && (
-          <div className="flex items-end gap-2 justify-start">
-            <div className="relative shrink-0 mb-1">
-              <div className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
+          /* Chargement informatif : on annonce ce que Jarvis lit réellement. */
+          <div className="animate-fade-in border-t border-white/[0.05] pt-5">
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
                 <Bot className="w-3.5 h-3.5 text-white" />
-              </div>
+              </span>
+              <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
+                {t("assistant.title")}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="thinking-dot" />
+                <span className="thinking-dot" style={{ animationDelay: "0.15s" }} />
+                <span className="thinking-dot" style={{ animationDelay: "0.3s" }} />
+              </span>
             </div>
-            <div className="rounded-2xl px-4 py-3 bg-white/[0.04] border border-white/[0.08] flex items-center gap-1.5">
-              <span className="thinking-dot" />
-              <span className="thinking-dot" style={{ animationDelay: "0.15s" }} />
-              <span className="thinking-dot" style={{ animationDelay: "0.3s" }} />
+            <p className="text-[13px] text-slate-400">
+              {t("jarvisHome.analyzing").replace("{n}", String(context.trades.length))}
+            </p>
+            <div className="mt-3 space-y-2">
+              <div className="h-16 rounded-2xl bg-white/[0.03] animate-pulse" />
             </div>
           </div>
         )}

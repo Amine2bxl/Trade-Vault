@@ -411,6 +411,7 @@ const en = {
   "jarvisHome.subtitle": "Here is your trading state today.",
   "jarvisHome.ask": "How can I help you today?",
   "jarvisHome.suggestions": "Questions to explore",
+  "jarvisHome.analyzing": "Reading your last {n} trades…",
   "jarvisHome.proposal": "Proposed action",
   "jarvisHome.speaking": "speaking",
   "jarvisHome.addRule": "Add to my checklist",
@@ -1065,6 +1066,8 @@ const en = {
 
   // AI generic
   "ai.noResponse": "No response.",
+  "ai.offlineAnalysis":
+    "Offline analysis: the numbers are still accurate, the interpretation is more limited.",
   "ai.genericError": "Something went wrong. Please try again.",
   "ai.rateLimited": "Too many requests in a short window. Wait a moment and try again.",
   "ai.sessionExpired": "Your session expired. Reconnect and try again.",

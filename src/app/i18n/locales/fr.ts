@@ -366,6 +366,7 @@ const fr: Dict = {
   "jarvisHome.subtitle": "Voici ton état trading aujourd'hui.",
   "jarvisHome.ask": "Comment puis-je t'aider aujourd'hui ?",
   "jarvisHome.suggestions": "Questions à explorer",
+  "jarvisHome.analyzing": "J'analyse tes {n} derniers trades…",
   "jarvisHome.proposal": "Action proposée",
   "jarvisHome.speaking": "parle",
   "jarvisHome.addRule": "Ajouter à ma checklist",
@@ -995,6 +996,8 @@ const fr: Dict = {
 
   // IA générique
   "ai.noResponse": "Pas de réponse.",
+  "ai.offlineAnalysis":
+    "Analyse hors ligne : les chiffres restent exacts, l'interprétation est plus limitée.",
   "ai.genericError": "Une erreur est survenue. Réessaie.",
   "ai.rateLimited": "Trop de requêtes sur un court instant. Attends un moment puis réessaie.",
   "ai.sessionExpired": "Ta session a expiré. Reconnecte-toi puis réessaie.",

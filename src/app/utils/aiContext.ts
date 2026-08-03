@@ -3,6 +3,7 @@ import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "./tradingRules";
 import { loadMemory, remember } from "@/modules/ai/memory";
+import { slimSignals } from "./signalContext";
 import { loadOnboarding, loadJarvisProfile, type OnboardingData } from "../store";
 import type { AIUserContext } from "@/modules/ai/context";
 
@@ -141,20 +142,8 @@ export function describeProfile(
  * rejetée (400) → « une erreur est survenue ». On borne les buckets et on
  * retire en dernier les sections les moins critiques.
  */
-function slimSignals(signals: ReturnType<typeof computeBehaviorSignals>): Record<string, unknown> {
-  const cap = 10_000;
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(signals)) {
-    const v = (signals as Record<string, unknown>)[k];
-    out[k] = Array.isArray(v) ? v.slice(0, 4) : v;
-  }
-  if (JSON.stringify(out).length <= cap) return out;
-  for (const drop of ["conviction", "setupQuality", "bySession", "bySymbol", "byWeekday"]) {
-    if (JSON.stringify(out).length <= cap) break;
-    delete out[drop];
-  }
-  return out;
-}
+/* La sélection des signaux vit dans `signalContext.ts` — module pur, testable
+   sans dépendance DB. Voir ce fichier pour la stratégie de conservation. */
 
 export function buildCoachV1Payload(opts: {
   trades: Trade[];

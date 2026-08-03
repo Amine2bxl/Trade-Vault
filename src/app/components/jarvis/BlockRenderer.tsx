@@ -98,7 +98,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
 }
 
 /* ── Mission : l'action du jour ── */
-function MissionView({ block }: { block: JarvisMissionBlock }) {
+function MissionView({ block, onTool }: { block: JarvisMissionBlock; onTool?: BlockToolHandler }) {
   return (
     <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.05] p-3.5 space-y-2.5">
       <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300">
@@ -114,13 +114,18 @@ function MissionView({ block }: { block: JarvisMissionBlock }) {
           </li>
         ))}
       </ul>
-      {block.cta && (
-        <button
-          type="button"
-          className="w-full h-9 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold mt-1"
-        >
-          {block.cta.label}
-        </button>
+      {/* Le CTA d'une mission est une VRAIE action : il passe par le même
+          handler que les ToolBlock, donc par la même exécution auditée. Sans
+          handler fourni, on ne rend pas un bouton mort. */}
+      {block.cta && onTool && (
+        <ToolView
+          block={{
+            type: "tool",
+            tool: block.cta.tool ?? "createChecklist",
+            label: block.cta.label,
+          }}
+          onTool={onTool}
+        />
       )}
     </div>
   );
@@ -265,7 +270,7 @@ export function BlockRenderer({
     case "insight":
       return <InsightView block={block} />;
     case "mission":
-      return <MissionView block={block} />;
+      return <MissionView block={block} onTool={onTool} />;
     case "tool":
       return <ToolView block={block} onTool={onTool} />;
     case "alert":
