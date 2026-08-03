@@ -18,7 +18,7 @@ import { useHasTradeDraft } from "../utils/persistence";
 import { useUnreadCount } from "../hooks/useUnreadCount";
 import { Modal } from "@/shared/ui";
 import AccountSwitcher from "./AccountSwitcher";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 
 interface MobileNavProps {
   page: Page;
@@ -115,7 +115,6 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
                 className="fab-button relative text-white -mt-7"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
-                {/* "In progress" dot when a trade draft is waiting */}
                 {hasDraft && (
                   <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#060d16] shadow-[0_0_8px_rgba(251,191,36,0.7)] animate-pulse" />
                 )}

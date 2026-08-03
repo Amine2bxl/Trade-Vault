@@ -2,9 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, FormEvent } from "react";
 import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 
 export const Route = createFileRoute("/reset-password")({
+  head: () => ({
+    meta: [{ name: "robots", content: "noindex,nofollow" }],
+  }),
   component: ResetPasswordPage,
 });
 

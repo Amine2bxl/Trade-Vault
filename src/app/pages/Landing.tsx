@@ -1,9 +1,8 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { Play, Compass } from "lucide-react";
-import logoSrc from "@/assets/tradevault-logo.png";
+import { Play, Compass, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
+import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
-import { LandingDemo } from "../components/LandingDemo";
 import {
   eur,
   MONTHLY_EUR,
@@ -43,7 +42,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
         className={`${compact ? "h-7 w-7" : "h-9 w-9"} object-contain drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]`}
       />
       <span
-        className={`font-display font-extrabold tracking-[-0.04em] text-[#ffffff] leading-none ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
+        className={`font-display font-extrabold tracking-[-0.04em] text-[#ffffff] leading-none hidden sm:block ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
       >
         TradeVault
       </span>
@@ -648,8 +647,6 @@ export default function Landing() {
   const [menu, setMenu] = useState(false);
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
-  // Démo : "video" = lecture auto (type GIF), "guide" = tour guidé.
-  const [demo, setDemo] = useState<"video" | "guide" | null>(null);
   const { y, pct } = useScroll();
   const cd = useCountdown();
   const spot = useSpot();
@@ -657,8 +654,13 @@ export default function Landing() {
 
   // Scrollspy: active nav = the last NAV section whose top has passed under the
   // header. Continuous (no dead zones between sections that aren't in the nav).
+  // `scrollLockRef` est levé pendant le défilement déclenché par un clic : le
+  // bouton cliqué reste actif immédiatement, sans sauter entre les boutons.
+  const scrollLockRef = useRef(false);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const onScroll = () => {
+      if (scrollLockRef.current) return;
       const pos = window.scrollY + 120;
       let cur = "";
       for (const [, id] of NAV) {
@@ -669,7 +671,10 @@ export default function Landing() {
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
   }, []);
 
   const open = (mode: "login" | "signup", plan?: string) => {
@@ -684,7 +689,15 @@ export default function Landing() {
   // so this stays a plain, reliable scrollIntoView at every screen size.
   const go = (id: string) => {
     setMenu(false);
+    // Actif IMMÉDIAT + verrouille le scrollspy pendant le défilement animé :
+    // le bouton cliqué reste surligné, aucun saut entre les boutons.
+    setActiveSec(id);
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollLockRef.current = true;
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollTimerRef.current = setTimeout(() => {
+      scrollLockRef.current = false;
+    }, 1000);
   };
   const onHeroMove = (e: RPointerEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -730,12 +743,12 @@ export default function Landing() {
                 <button
                   key={id}
                   onClick={() => go(id)}
-                  className={`flex items-center gap-1 rounded-full px-2 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     on
-                      ? "bg-cyan-400/[.12] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.25)]"
+                      ? "bg-cyan-400/[.14] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.28)]"
                       : isTp
-                        ? "text-emerald-300 hover:bg-emerald-400/[.08]"
-                        : "text-slate-400 hover:text-white hover:bg-white/[.04]"
+                        ? "text-emerald-300 hover:bg-emerald-400/[.1]"
+                        : "text-slate-400 hover:bg-cyan-400/[.07] hover:text-cyan-100"
                   }`}
                 >
                   {isTp && (
@@ -748,25 +761,18 @@ export default function Landing() {
               );
             })}
           </nav>
-          {/* Right zone — actions, natural width; mirrors the left visually. */}
-          <div className="flex items-center justify-end gap-2.5">
-            <div className="hidden items-center gap-2 xl:flex">
-              {/* Below 2xl the centered 8-item nav needs the horizontal room, so
-                  the secondary "Se connecter" only appears once there's space.
-                  Wrapped because `.btn-ghost` sets its own display and would win
-                  over the `hidden` utility otherwise. */}
-              <div className="hidden 2xl:block">
-                <button onClick={() => open("login")} className="btn-ghost px-3.5 text-[13px]">
-                  Se connecter
-                </button>
-              </div>
-              <button
-                onClick={() => open("signup", "Essai Premium 14 jours")}
-                className="btn-primary px-4 text-[13px]"
-              >
-                Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
-              </button>
-            </div>
+          {/* Right zone — actions. Deux CTA (Démo + Essai gratuit), visibles sur
+              tous les écrans (compact sur mobile) ; hamburger en dessous de xl. */}
+          <div className="flex items-center justify-end gap-2">
+            <a href="/demo" className="btn-ghost hidden px-4 sm:inline-flex">
+              <Play className="w-3.5 h-3.5" /> Démo
+            </a>
+            <button
+              onClick={() => open("signup", "Essai Premium 14 jours")}
+              className="btn-primary px-3.5 sm:px-4"
+            >
+              Essai gratuit <Icon n="arrow" cls="h-4 w-4 hidden sm:inline" />
+            </button>
             <button
               onClick={() => setMenu(!menu)}
               className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] bg-white/[.03] text-slate-200 xl:hidden"
@@ -794,9 +800,9 @@ export default function Landing() {
               >
                 Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
               </button>
-              <button onClick={() => open("login")} className="btn-ghost mt-2.5 w-full">
-                Se connecter
-              </button>
+              <a href="/demo" className="btn-ghost mt-2.5 w-full">
+                <Play className="w-3.5 h-3.5" /> Démo
+              </a>
             </div>
           </div>
         )}
@@ -805,7 +811,7 @@ export default function Landing() {
       <main className="relative z-10">
         {/* ── HERO ── */}
         <section
-          className="hero-mesh relative overflow-hidden pt-[120px] pb-20 lg:pt-[150px] lg:pb-28"
+          className="hero-mesh relative overflow-hidden pt-[92px] pb-20 lg:pt-[116px] lg:pb-28"
           onPointerMove={onHeroMove}
         >
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-5 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:px-8">
@@ -851,28 +857,11 @@ export default function Landing() {
                   onClick={() => open("signup", "Essai Premium 14 jours")}
                   className="btn-primary px-6 py-3.5 text-[.95rem]"
                 >
-                  Essai Premium 14 jours <Icon n="arrow" cls="h-4 w-4" />
+                  Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
                 </button>
-                <button
-                  onClick={() => open("signup", "Plan Gratuit")}
-                  className="btn-ghost px-6 py-3.5 text-[.95rem]"
-                >
-                  Commencer gratuitement
-                </button>
-                <div className="flex items-center justify-center gap-2 sm:justify-start">
-                  <button
-                    onClick={() => setDemo("video")}
-                    className="btn-ghost px-4 py-3.5 text-[.95rem]"
-                  >
-                    <Play className="w-4 h-4" /> Démo
-                  </button>
-                  <button
-                    onClick={() => setDemo("guide")}
-                    className="btn-ghost px-4 py-3.5 text-[.95rem]"
-                  >
-                    <Compass className="w-4 h-4" /> Naviguer
-                  </button>
-                </div>
+                <a href="/demo-site" className="btn-ghost px-5 py-3.5 text-[.95rem]">
+                  <Compass className="w-4 h-4" /> Voir le site
+                </a>
               </div>
               <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
                 {["Sans carte bancaire", "Annulation en 1 clic", "Setup en 2 min"].map((t) => (
@@ -1105,6 +1094,55 @@ export default function Landing() {
                 Tout débloquer gratuitement <Icon n="arrow" cls="h-4 w-4" />
               </button>
               <p className="mt-3 text-xs text-slate-600">14 jours Premium · sans carte bancaire</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── MÉTHODE — comment ça marche (aucun chiffre inventé) ── */}
+        <section className="relative border-t border-white/[.06] py-20 lg:py-24">
+          <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
+            <SectionHead
+              tag="Méthode"
+              title={
+                <>
+                  Comment <span className="text-gradient">Jarvis</span> analyse ton trading
+                </>
+              }
+              sub="Aucune généralité : chaque analyse part de TES données, avec une méthode déterministe et transparente."
+            />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(
+                [
+                  {
+                    t: "1 · Tu journalises",
+                    d: "Chaque trade est enregistré : symbole, direction, risque, R-multiple, setup, erreurs, capture d'écran. 45 secondes par trade.",
+                  },
+                  {
+                    t: "2 · Les métriques sont calculées",
+                    d: "Win rate, R-multiple moyen, profit factor, drawdown, edge par jour et par setup : tout est recalculé en temps réel, sans approximation.",
+                  },
+                  {
+                    t: "3 · Jarvis détecte tes patterns",
+                    d: "Il cherche les schémas récurrents (série de pertes, sur-trading, fuite la plus coûteuse) avec un score de confiance — et ne conclut que si les données suffisent.",
+                  },
+                ] as const
+              ).map((c) => (
+                <article
+                  key={c.t}
+                  className="reveal rounded-2xl border border-white/[.06] bg-white/[.015] p-6"
+                >
+                  <h3 className="text-sm font-bold text-white">{c.t}</h3>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">{c.d}</p>
+                </article>
+              ))}
+            </div>
+            <div className="reveal mt-6 rounded-2xl border border-cyan-500/15 bg-cyan-500/[.05] p-5">
+              <p className="text-xs leading-5 text-slate-300">
+                <strong className="text-white">Le calcul des métriques, en clair.</strong> Win rate
+                = trades gagnants ÷ trades décidés · R-multiple = profit ÷ risque du trade · Profit
+                factor = somme des gains ÷ somme des pertes. Jarvis ne prédit jamais le marché : il
+                analyse ton historique pour te montrer ce qui te coûte, et quoi corriger.
+              </p>
             </div>
           </div>
         </section>
@@ -1366,13 +1404,7 @@ export default function Landing() {
                 onClick={() => open("signup", "Essai Premium 14 jours")}
                 className="btn-primary px-8 py-4"
               >
-                Essai Premium 14 jours <Icon n="arrow" cls="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => open("signup", "Plan Gratuit")}
-                className="btn-ghost px-8 py-4"
-              >
-                Commencer gratuitement
+                Essai gratuit 14 jours <Icon n="arrow" cls="h-4 w-4" />
               </button>
             </div>
             <p className="mt-5 text-xs text-slate-600">
@@ -1421,7 +1453,30 @@ export default function Landing() {
               </a>
             </div>
           </div>
-          <div className="mt-8 border-t border-white/[.05] pt-6 text-center text-[11px] text-slate-700">
+          {/* Réseaux sociaux — EMPLACEMENTS prévus, aucune URL inventée.
+              Renseigner les vraies URLs quand les comptes existent (rel="" les
+              rend nofollow pour le SEO). */}
+          <div className="mt-8 flex items-center justify-center gap-4">
+            {(
+              [
+                { icon: Twitter, label: "X (Twitter)" },
+                { icon: Linkedin, label: "LinkedIn" },
+                { icon: Instagram, label: "Instagram" },
+                { icon: Facebook, label: "Facebook" },
+                { icon: Youtube, label: "YouTube" },
+              ] as const
+            ).map((s) => (
+              <span
+                key={s.label}
+                aria-label={s.label}
+                title={`${s.label} — bientôt`}
+                className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[0.08] bg-white/[0.02] text-slate-600 hover:text-cyan-300 hover:border-cyan-500/25 transition-colors"
+              >
+                <s.icon className="w-4 h-4" />
+              </span>
+            ))}
+          </div>
+          <div className="mt-6 border-t border-white/[.05] pt-6 text-center text-[11px] text-slate-700">
             © {new Date().getFullYear()} TradeVault. Le trading comporte des risques. Journalise
             d'abord, trade ensuite.
           </div>
@@ -1429,20 +1484,7 @@ export default function Landing() {
       </footer>
 
       <CookieConsent />
-      {/* ── STICKY MOBILE CTA ── */}
-      {y > 500 && !auth && !menu && (
-        <div className="sticky-bar-in fixed inset-x-0 bottom-0 z-40 border-t border-white/[.08] bg-[#060d16]/92 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl xl:hidden">
-          <button
-            onClick={() => open("signup", "Essai Premium 14 jours")}
-            className="btn-primary w-full py-3.5"
-          >
-            Essai Premium 14 jours — gratuit
-          </button>
-        </div>
-      )}
-
       {auth && <AuthModal onClose={() => setAuth(false)} initialMode={authMode} plan={authPlan} />}
-      {demo && <LandingDemo mode={demo} onClose={() => setDemo(null)} />}
     </div>
   );
 }

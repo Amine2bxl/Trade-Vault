@@ -10,6 +10,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../shared/seo";
+import { initAnalytics } from "@/app/utils/analytics";
 import { reportAppError } from "../shared/error-reporting";
 
 /** Site-wide title and description — the marketing promise, in the language
@@ -17,6 +18,10 @@ import { reportAppError } from "../shared/error-reporting";
 const ROOT_TITLE = "TradeVault — Ton coach IA de trading personnel";
 const ROOT_DESCRIPTION =
   "Pas un simple journal de trading : un coach IA qui lit chacun de tes trades, chiffre les erreurs qui te coûtent le plus et t'impose la discipline. Journal, analytics quantitatives et checklist pré-market.";
+
+/** Google Fonts — chargées en non-bloquant (preload → stylesheet après paint). */
+const GOOGLE_FONTS_URL =
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap";
 
 import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../app/components/ErrorScreen";
@@ -105,9 +110,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      // Polices Google chargées en NON-BLOQUANT : préchargées (fetch parallèle)
+      // puis basculées en stylesheet après hydratation (voir le swap ci-dessous).
+      // Élimine le render-blocking sans changer le rendu final (font-display: swap).
       {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap",
+        rel: "preload",
+        as: "style",
+        href: GOOGLE_FONTS_URL,
       },
     ],
   }),
@@ -145,6 +154,20 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => lockZoom(), []);
+
+  // GA4 — injecté uniquement si VITE_GA4_MEASUREMENT_ID est défini (sinon no-op).
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  // Polices : bascule le <link rel="preload" as="style"> en stylesheet après le
+  // premier rendu — élimine le render-blocking sans changer le rendu final.
+  useEffect(() => {
+    const preload = document.querySelector<HTMLLinkElement>(
+      'link[rel="preload"][as="style"][href*="fonts.googleapis.com"]',
+    );
+    if (preload) preload.rel = "stylesheet";
+  }, []);
 
   // Stale lazy-chunk guard. Pages are code-split; after a new deploy the old
   // build's chunk hashes 404, so anyone who had the app open across a release

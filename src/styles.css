@@ -434,8 +434,11 @@ body {
 @media (max-width: 767px) {
   .app-main {
     padding-top: env(safe-area-inset-top, 0px);
-    /* Floating dock: pill height + its 10px bottom gap + safe-area inset. */
-    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    /* Écart constant entre le bas du contenu et les widgets fixes (sous-comptes
+       + Jarvis), aligné sur l'écart nav→widget (~20-25px). Le padding est fixe :
+       ajouter du contenu garde TOUJOURS le même espace, rien n'est jamais
+       masqué. */
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
     /* Clamp the scroll container to the viewport so no child can drag the
        whole page sideways on Analytics/tables. */
     overflow-x: hidden;
@@ -1019,34 +1022,23 @@ svg.lucide {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.6rem;
+  padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 700;
-  border-radius: 0.6rem;
-  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #0ea5e9 100%);
+  border-radius: 0.75rem;
+  /* Signature TradeVault — même gradient et rayon que les boutons de l'app. */
+  background: linear-gradient(90deg, #06b6d4, #14b8a6);
   color: #ffffff;
-  overflow: hidden;
-  isolation: isolate;
+  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.25);
   transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.22s ease;
-  box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
-}
-.btn-primary::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  bottom: -50%;
-  left: -50%;
-  width: 20%;
-  transform: rotate(22deg);
-  background: rgba(255, 255, 255, 0.45);
-  filter: blur(8px);
-  animation: shimmer 4s ease-in-out infinite;
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(34, 211, 238, 0.3);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
 }
 .btn-primary:active {
   transform: translateY(0) scale(0.985);
@@ -1056,9 +1048,6 @@ svg.lucide {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-.btn-primary:disabled::after {
-  display: none;
 }
 .btn-sm {
   padding: 0.5rem 0.85rem;
@@ -1070,21 +1059,23 @@ svg.lucide {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.6rem;
+  padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
   color: #cbd5e1;
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease,
+    color 0.2s ease,
     transform 0.2s ease;
 }
 .btn-ghost:hover {
-  border-color: rgba(34, 211, 238, 0.4);
-  background: rgba(34, 211, 238, 0.07);
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.08);
+  color: #e2e8f0;
   transform: translateY(-2px);
 }
 .btn-ghost:active {
@@ -1094,16 +1085,6 @@ svg.lucide {
 .btn-ghost {
   height: 2.6rem;
   white-space: nowrap;
-}
-@keyframes shimmer {
-  0%,
-  60% {
-    left: -50%;
-  }
-  85%,
-  100% {
-    left: 130%;
-  }
 }
 
 /* App-shell ambient orbs: static — the animated orb-float behind a

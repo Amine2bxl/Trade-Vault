@@ -21,7 +21,8 @@ export const FIELD_BASE =
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, ...rest }, ref) {
-    return <input ref={ref} className={cn(FIELD_BASE, "h-11", className)} {...rest} />;
+    // Compact mobile (h-9) / confort desktop (h-10) — champs fins, plus denses.
+    return <input ref={ref} className={cn(FIELD_BASE, "h-9 sm:h-10", className)} {...rest} />;
   },
 );
 
@@ -34,7 +35,7 @@ export const Textarea = forwardRef<
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
   function Select({ className, ...rest }, ref) {
-    return <select ref={ref} className={cn(FIELD_BASE, "h-11", className)} {...rest} />;
+    return <select ref={ref} className={cn(FIELD_BASE, "h-9 sm:h-10", className)} {...rest} />;
   },
 );
 

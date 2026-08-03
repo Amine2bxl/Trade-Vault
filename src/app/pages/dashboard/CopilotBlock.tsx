@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag } from "lucide-react";
+import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag, Bot } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useT } from "../../i18n/LanguageContext";
 import type { EdgeResult, DailyRule } from "../../utils/edgeScore";
@@ -176,14 +176,21 @@ function CopilotBlock({
         {/* Right — Jarvis line, rule, checklist, objective */}
         <div className="space-y-3 min-w-0">
           {/* Jarvis coaching line */}
-          <div className="flex gap-2.5 rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 px-3.5 py-3">
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 text-cyan-300">
-              <Sparkles className="w-3.5 h-3.5" />
+          {/* Jarvis coaching line — signée Jarvis */}
+          <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 px-3.5 py-3 overflow-hidden">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+            <div className="flex gap-2.5 items-start">
+              <span className="relative shrink-0">
+                <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/30 blur-sm" />
+                <span className="relative grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shadow-sm">
+                  <Bot className="w-3.5 h-3.5 text-white" />
+                </span>
+              </span>
+              <p className="text-[13px] leading-relaxed text-slate-200 min-w-0">
+                <span className="font-semibold text-cyan-300">Jarvis</span>{" "}
+                <span className="text-slate-500">·</span> {jarvisLine}
+              </p>
             </div>
-            <p className="text-[13px] leading-relaxed text-slate-200 min-w-0">
-              <span className="font-semibold text-cyan-300">Jarvis</span>{" "}
-              <span className="text-slate-500">·</span> {jarvisLine}
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -212,11 +219,16 @@ function CopilotBlock({
                     {(objective.currentPct * 100).toFixed(1)}%{" "}
                     <span className="text-slate-600 text-xs">/ {objective.targetPct}%</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden mt-2">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
-                      style={{ width: `${Math.round((objPct ?? 0) * 100)}%` }}
-                    />
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
+                        style={{ width: `${Math.round((objPct ?? 0) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-bold tabular-nums text-cyan-300 shrink-0">
+                      {Math.round((objPct ?? 0) * 100)}%
+                    </span>
                   </div>
                 </>
               ) : (

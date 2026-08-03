@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FileText,
-  Sparkles,
   Loader2,
   ChevronDown,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
   RefreshCw,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
@@ -103,6 +103,14 @@ export default function Reports() {
     <div className="p-4 md:p-5 max-w-[900px] mx-auto">
       <PageHeader
         className="stagger-0"
+        icon={
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+              <FileText className="w-4.5 h-4.5 text-white" />
+            </span>
+          </span>
+        }
         title={t("reports.title")}
         subtitle={t("reports.subtitle")}
         actions={
@@ -200,33 +208,59 @@ function ReportCard({
         aria-expanded={open}
         className="w-full flex items-center gap-3 px-4 md:px-5 py-4 text-left hover:bg-white/[0.02] transition"
       >
-        <div
-          className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-            gain ? "bg-emerald-500/10" : "bg-red-500/10",
-          )}
-        >
-          {gain ? (
-            <TrendingUp className="w-5 h-5 text-emerald-400" />
-          ) : (
-            <TrendingDown className="w-5 h-5 text-red-400" />
-          )}
+        <div className="relative shrink-0">
+          <span
+            className={cn(
+              "absolute -inset-0.5 rounded-xl blur-sm",
+              gain ? "bg-emerald-500/30" : "bg-red-500/30",
+            )}
+          />
+          <div
+            className={cn(
+              "relative grid h-10 w-10 place-items-center rounded-xl",
+              gain
+                ? "bg-gradient-to-br from-emerald-500/25 to-emerald-600/10"
+                : "bg-gradient-to-br from-red-500/25 to-red-600/10",
+            )}
+          >
+            {gain ? (
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+            ) : (
+              <TrendingDown className="w-5 h-5 text-red-400" />
+            )}
+          </div>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-white capitalize">
+          <div className="font-display text-sm md:text-[15px] font-bold text-white capitalize leading-tight">
             {monthLabel(row.month, locale)}
           </div>
-          <div className="text-[11px] text-slate-500">
-            {r.trades} {t("common.trades")} · {formatPct(r.winRate)} {t("stats.winRate")}
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+            <span>
+              {r.trades} {t("common.trades")}
+            </span>
+            <span className="w-1 h-1 rounded-full bg-slate-700" />
+            <span>
+              {formatPct(r.winRate)} {t("stats.winRate")}
+            </span>
           </div>
         </div>
-        <div
-          className={cn(
-            "font-display text-base md:text-lg font-extrabold tabular-nums shrink-0",
-            gain ? "text-emerald-400" : "text-red-400",
-          )}
-        >
-          {formatPnl(r.totalPnl)}
+        <div className="text-right shrink-0">
+          <div
+            className={cn(
+              "font-display text-lg md:text-xl font-extrabold tabular-nums leading-none",
+              gain ? "text-emerald-400" : "text-red-400",
+            )}
+          >
+            {formatPnl(r.totalPnl)}
+          </div>
+          <div
+            className={cn(
+              "mt-1 text-[10px] font-bold uppercase tracking-wider",
+              gain ? "text-emerald-500/70" : "text-red-500/70",
+            )}
+          >
+            {gain ? t("reports.positive") : t("reports.negative")}
+          </div>
         </div>
         <ChevronDown
           className={cn(
@@ -309,16 +343,19 @@ function ReportCard({
               <div className="space-y-1.5">
                 {r.weekly.map((w) => {
                   const max = Math.max(...r.weekly.map((x) => Math.abs(x.pnl)), 1);
+                  const win = w.pnl >= 0;
                   return (
                     <div key={w.week} className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-500 w-16 shrink-0">
+                      <span className="text-[10px] text-slate-500 w-16 shrink-0 tabular-nums">
                         {t("reports.week")} {w.week}
                       </span>
                       <div className="flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">
                         <div
                           className={cn(
-                            "h-full rounded-full",
-                            w.pnl >= 0 ? "bg-emerald-500/60" : "bg-red-500/60",
+                            "h-full rounded-full transition-all",
+                            win
+                              ? "bg-gradient-to-r from-emerald-600/70 to-emerald-400"
+                              : "bg-gradient-to-r from-red-600/70 to-red-400",
                           )}
                           style={{ width: `${(Math.abs(w.pnl) / max) * 100}%` }}
                         />
@@ -326,7 +363,7 @@ function ReportCard({
                       <span
                         className={cn(
                           "text-[11px] font-bold tabular-nums w-20 text-right",
-                          w.pnl >= 0 ? "text-emerald-400" : "text-red-400",
+                          win ? "text-emerald-400" : "text-red-400",
                         )}
                       >
                         {formatPnl(w.pnl)}
@@ -385,11 +422,20 @@ function ReportCard({
 
           {/* AI summary (Étape 5, option A) */}
           {r.aiSummary && (
-            <div className="rounded-xl bg-cyan-500/[0.05] border border-cyan-500/15 p-3.5">
-              <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-cyan-400 font-bold mb-2">
-                <Sparkles className="w-3.5 h-3.5" /> {t("reports.aiSummary")}
-              </h4>
-              <div className="text-sm text-slate-300">
+            <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 p-4 overflow-hidden">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="relative shrink-0">
+                  <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/30 blur-sm" />
+                  <span className="relative grid h-6 w-6 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shadow-sm">
+                    <Bot className="w-3 h-3 text-white" />
+                  </span>
+                </span>
+                <h4 className="text-[11px] uppercase tracking-wider text-cyan-400 font-bold">
+                  {t("reports.aiSummary")}
+                </h4>
+              </div>
+              <div className="text-sm text-slate-300 leading-relaxed">
                 <MarkdownAnswer content={r.aiSummary} />
               </div>
             </div>
@@ -414,7 +460,13 @@ function Kpi({
   neutral?: boolean;
 }) {
   return (
-    <div className="glass rounded-xl p-3">
+    <div className="relative glass rounded-xl p-3 overflow-hidden">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent",
+          neutral ? "via-white/20" : good ? "via-emerald-400/40" : "via-amber-400/40",
+        )}
+      />
       <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
         {label}
       </div>

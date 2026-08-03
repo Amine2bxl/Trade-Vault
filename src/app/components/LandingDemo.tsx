@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Bot, X, ArrowRight, ArrowLeft, Play, CheckCircle2 } from "lucide-react";
 import { cn } from "../utils/cn";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 
 /**
  * LandingDemo — la démo « voir l'app en action ».

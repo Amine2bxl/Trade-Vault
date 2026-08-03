@@ -9,6 +9,7 @@ import {
   Wallet,
   Calculator,
   SlidersHorizontal,
+  CandlestickChart,
 } from "lucide-react";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "../types";
 import { getSession } from "../utils/quantStats";
@@ -126,6 +127,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     if (saved) return { ...defaultForm, ...saved, screenshots: [] as string[] };
     return { ...defaultForm };
   });
+
+  // Couleur de la jauge de confiance = celle du badge de statut (cohérence).
+  const confidenceColor = useMemo(() => {
+    if (form.confidence >= 75) return { from: "#34d399", to: "#10b981", text: "text-emerald-400" };
+    if (form.confidence >= 50) return { from: "#fbbf24", to: "#f59e0b", text: "text-amber-400" };
+    return { from: "#f87171", to: "#ef4444", text: "text-red-400" };
+  }, [form.confidence]);
 
   // Flag the restored-draft badge on first mount (post-state, avoids SSR mismatch).
   useEffect(() => {
@@ -375,11 +383,51 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   : "bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent",
           )}
         />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <h2 className="text-lg font-bold text-white shrink-0">
-              {trade ? t("trade.editTitle") : t("trade.newTitle")}
-            </h2>
+        {/* Header premium — même matière que le widget compte/Jarvis */}
+        <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.07] to-transparent overflow-hidden">
+          <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-cyan-500/10 blur-2xl" />
+          <div className="relative flex items-center gap-2.5 min-w-0">
+            <span className="relative shrink-0">
+              <span
+                className={cn(
+                  "absolute -inset-1 rounded-xl blur-md transition-colors",
+                  form.direction === "be"
+                    ? "bg-slate-500/30"
+                    : calculatedPnl > 0
+                      ? "bg-emerald-500/30"
+                      : calculatedPnl < 0
+                        ? "bg-red-500/30"
+                        : "bg-cyan-500/30",
+                )}
+              />
+              <span
+                className={cn(
+                  "relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br transition-colors",
+                  form.direction === "be"
+                    ? "from-slate-400 to-slate-600"
+                    : calculatedPnl > 0
+                      ? "from-emerald-500 to-teal-500"
+                      : calculatedPnl < 0
+                        ? "from-red-500 to-orange-500"
+                        : "from-cyan-500 to-teal-600",
+                )}
+              >
+                <CandlestickChart className="w-4.5 h-4.5 text-white" />
+              </span>
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-bold text-white leading-tight">
+                {trade ? t("trade.editTitle") : t("trade.newTitle")}
+              </h2>
+              <p className="text-[11px] text-slate-500 truncate">
+                {form.symbol ? `${form.symbol} · ` : ""}
+                {form.direction === "long"
+                  ? "Long"
+                  : form.direction === "short"
+                    ? "Short"
+                    : "Break-even"}
+              </p>
+            </div>
             {!trade && draftRestored && (
               <button
                 onClick={discardDraft}
@@ -401,7 +449,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-6 py-5 space-y-4">
+        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-4 sm:px-6 py-4 space-y-3.5">
           {/* Row 1: Symbol, Direction, Date */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -638,7 +686,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             )}
           </div>
 
-          {/* Entry/Exit Time + Strategy */}
+          {/* Entry/Exit Time + Strategy — temps en un tap (presets) ou picker */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>{t("trade.entryTime")}</label>
@@ -674,6 +722,28 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
           </div>
 
+          {/* Presets d'heure — un tap remplit entrée + sortie (puis ajustables) */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mr-0.5">
+              {t("trade.timePresets")}
+            </span>
+            {[
+              { t: "09:30", v: "10:15" },
+              { t: "10:00", v: "11:00" },
+              { t: "15:30", v: "16:00" },
+              { t: "16:00", v: "17:00" },
+            ].map((p) => (
+              <button
+                key={p.t}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, entryTime: p.t, exitTime: p.v }))}
+                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition-all bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-cyan-500/30"
+              >
+                {p.t} → {p.v}
+              </button>
+            ))}
+          </div>
+
           {/* Setup Quality — jauges d'étoiles premium dans un conteneur */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -700,7 +770,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 }
               </span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1.5">
+            <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => {
                 const on = n <= form.setupQuality;
                 return (
@@ -708,14 +778,19 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     key={n}
                     onClick={() => setForm((f) => ({ ...f, setupQuality: n }))}
                     aria-label={`${n} / 5`}
-                    className="flex-1 flex items-center justify-center py-1.5 rounded-lg transition-all hover:bg-white/[0.04] active:scale-95"
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-1 rounded-full border px-2 py-1.5 transition-all active:scale-95",
+                      on
+                        ? "bg-amber-500/15 border-amber-500/30"
+                        : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]",
+                    )}
                   >
                     <Star
                       className={cn(
-                        "w-6 h-6 transition-all duration-200",
+                        "w-4 h-4 transition-all duration-200",
                         on
-                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]"
-                          : "text-slate-700 hover:text-amber-400/40",
+                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]"
+                          : "text-slate-600",
                       )}
                       strokeWidth={on ? 2 : 1.75}
                     />
@@ -748,45 +823,58 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               </span>
             </div>
             <div className="flex items-center gap-4">
-              {/* Jauge radiale */}
+              {/* Jauge radiale — la couleur suit le niveau, comme le badge */}
               <div className="relative shrink-0">
                 <svg width="68" height="68" viewBox="0 0 68 68" className="-rotate-90">
                   <circle
                     cx="34"
                     cy="34"
-                    r="28"
+                    r="27"
                     fill="none"
                     stroke="rgba(255,255,255,0.06)"
-                    strokeWidth="7"
+                    strokeWidth="8"
                   />
                   <circle
                     cx="34"
                     cy="34"
-                    r="28"
+                    r="27"
                     fill="none"
-                    stroke="url(#confGrad)"
-                    strokeWidth="7"
+                    stroke={confidenceColor.from}
+                    strokeWidth="8"
                     strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 28}
-                    strokeDashoffset={2 * Math.PI * 28 * (1 - form.confidence / 100)}
+                    strokeDasharray={2 * Math.PI * 27}
+                    strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
+                    opacity="0.25"
+                    filter="url(#confGlow)"
+                    className="transition-[stroke-dashoffset] duration-500"
+                  />
+                  <circle
+                    cx="34"
+                    cy="34"
+                    r="27"
+                    fill="none"
+                    stroke={`url(#confGrad)`}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 27}
+                    strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
                     className="transition-[stroke-dashoffset] duration-500"
                   />
                   <defs>
                     <linearGradient id="confGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#2dd4bf" />
+                      <stop offset="0%" stopColor={confidenceColor.from} />
+                      <stop offset="100%" stopColor={confidenceColor.to} />
                     </linearGradient>
+                    <filter id="confGlow" x="-40%" y="-40%" width="180%" height="180%">
+                      <feGaussianBlur stdDeviation="4" />
+                    </filter>
                   </defs>
                 </svg>
                 <div className="absolute inset-0 grid place-items-center">
                   <span
                     className={cn(
                       "font-display text-base font-extrabold tabular-nums",
-                      form.confidence >= 75
-                        ? "text-emerald-400"
-                        : form.confidence >= 50
-                          ? "text-amber-400"
-                          : "text-red-400",
+                      confidenceColor.text,
                     )}
                   >
                     {form.confidence}%
