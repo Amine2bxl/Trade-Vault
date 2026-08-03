@@ -1,6 +1,6 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
 import { Play, Compass, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
-import logoSrc from "@/assets/tradevault-logo.png";
+import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
 import {
@@ -1090,6 +1090,55 @@ export default function Landing() {
                 Tout débloquer gratuitement <Icon n="arrow" cls="h-4 w-4" />
               </button>
               <p className="mt-3 text-xs text-slate-600">14 jours Premium · sans carte bancaire</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── MÉTHODE — comment ça marche (aucun chiffre inventé) ── */}
+        <section className="relative border-t border-white/[.06] py-20 lg:py-24">
+          <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
+            <SectionHead
+              tag="Méthode"
+              title={
+                <>
+                  Comment <span className="text-gradient">Jarvis</span> analyse ton trading
+                </>
+              }
+              sub="Aucune généralité : chaque analyse part de TES données, avec une méthode déterministe et transparente."
+            />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(
+                [
+                  {
+                    t: "1 · Tu journalises",
+                    d: "Chaque trade est enregistré : symbole, direction, risque, R-multiple, setup, erreurs, capture d'écran. 45 secondes par trade.",
+                  },
+                  {
+                    t: "2 · Les métriques sont calculées",
+                    d: "Win rate, R-multiple moyen, profit factor, drawdown, edge par jour et par setup : tout est recalculé en temps réel, sans approximation.",
+                  },
+                  {
+                    t: "3 · Jarvis détecte tes patterns",
+                    d: "Il cherche les schémas récurrents (série de pertes, sur-trading, fuite la plus coûteuse) avec un score de confiance — et ne conclut que si les données suffisent.",
+                  },
+                ] as const
+              ).map((c) => (
+                <article
+                  key={c.t}
+                  className="reveal rounded-2xl border border-white/[.06] bg-white/[.015] p-6"
+                >
+                  <h3 className="text-sm font-bold text-white">{c.t}</h3>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">{c.d}</p>
+                </article>
+              ))}
+            </div>
+            <div className="reveal mt-6 rounded-2xl border border-cyan-500/15 bg-cyan-500/[.05] p-5">
+              <p className="text-xs leading-5 text-slate-300">
+                <strong className="text-white">Le calcul des métriques, en clair.</strong> Win rate
+                = trades gagnants ÷ trades décidés · R-multiple = profit ÷ risque du trade · Profit
+                factor = somme des gains ÷ somme des pertes. Jarvis ne prédit jamais le marché : il
+                analyse ton historique pour te montrer ce qui te coûte, et quoi corriger.
+              </p>
             </div>
           </div>
         </section>
