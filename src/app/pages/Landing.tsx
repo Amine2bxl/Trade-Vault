@@ -732,7 +732,7 @@ export default function Landing() {
                       ? "bg-cyan-400/[.14] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.28)]"
                       : isTp
                         ? "text-emerald-300 hover:bg-emerald-400/[.1]"
-                        : "text-slate-400 hover:text-white hover:bg-white/[.06]"
+                        : "text-slate-400 hover:bg-cyan-400/[.07] hover:text-cyan-100"
                   }`}
                 >
                   {isTp && (
