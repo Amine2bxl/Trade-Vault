@@ -293,6 +293,7 @@ const en = {
   "missed.log": "Log Missed Setup",
   "missed.logShort": "Log",
   "missed.modalTitle": "Missed Setup",
+  "missed.editorHint": "Document it, turn it into a lesson.",
   "missed.field.date": "Date",
   "missed.dateToday": "Today",
   "missed.dateYesterday": "Yesterday",

@@ -250,6 +250,7 @@ const fr: Dict = {
   "missed.log": "Enregistrer un setup manqué",
   "missed.logShort": "Ajouter",
   "missed.modalTitle": "Setup manqué",
+  "missed.editorHint": "Documente-le, transforme-le en leçon.",
   "missed.field.date": "Date",
   "missed.dateToday": "Aujourd'hui",
   "missed.dateYesterday": "Hier",

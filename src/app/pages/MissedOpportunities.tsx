@@ -554,18 +554,30 @@ function MissedEditor({
           popups are now literally the same architecture — only the accent
           colour (amber vs cyan) and the fields differ. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06]">
-        <h2
-          id="missed-editor-title"
-          className="text-lg font-bold text-white flex items-center gap-2.5"
-        >
-          <Target className="w-4.5 h-4.5 text-amber-400 shrink-0" />
-          {t("missed.modalTitle")}
-        </h2>
+      {/* Header premium — même architecture que New Trade */}
+      <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden">
+        <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-amber-500/10 blur-2xl" />
+        <div className="relative flex items-center gap-2.5 min-w-0">
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-amber-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
+              <Target className="w-4.5 h-4.5 text-white" />
+            </span>
+          </span>
+          <div className="min-w-0">
+            <h2 id="missed-editor-title" className="text-base font-bold text-white leading-tight">
+              {t("missed.modalTitle")}
+            </h2>
+            <p className="text-[11px] text-slate-500 truncate">
+              {m.symbol ? `${m.symbol} · ` : ""}
+              {t("missed.editorHint")}
+            </p>
+          </div>
+        </div>
         <button
           onClick={onClose}
           aria-label={t("common.close")}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
