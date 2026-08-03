@@ -23,6 +23,7 @@ import {
 import { effectiveCopyLang } from "../prefs";
 import { sessionConversationStore } from "../conversations";
 import { BlockList } from "../BlockRenderer";
+import { historyTextOf } from "../history";
 import type { JarvisMessage, JarvisToolBlock } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
 
@@ -62,53 +63,6 @@ function genId(): string {
 function textOf(m: JarvisMessage): string {
   const md = m.blocks.find((b) => b.type === "markdown");
   return md && md.type === "markdown" ? md.content : "";
-}
-
-/** Longueur maximale d'un tour assistant renvoyé au modèle. Large pour le
- *  diagnostic, assez serré pour que 16 tours restent bon marché. */
-const HISTORY_CHARS = 900;
-
-/**
- * Sérialisation d'un message pour l'HISTORIQUE envoyé au coach.
- *
- * `textOf` ne renvoie que le premier bloc markdown : depuis que les réponses
- * sont découpées en blocs, le PLAN vit dans un bloc `mission` et disparaissait
- * donc de l'historique — Jarvis oubliait ce qu'il venait de recommander et se
- * répétait ou se contredisait au tour suivant.
- *
- * Choix de CONTENU (qualité du contexte, pas seulement sa taille) : on inclut
- * l'analyse, le nom du pattern, le plan et l'action proposée — ce que rien
- * d'autre ne transporte. On EXCLUT délibérément les valeurs chiffrées des
- * blocs `insight` : elles sont recalculées et renvoyées à chaque appel dans le
- * bloc BEHAVIOUR SIGNALS, donc les recopier ne ferait que payer deux fois la
- * même information.
- */
-function historyTextOf(m: JarvisMessage): string {
-  const parts: string[] = [];
-  for (const b of m.blocks) {
-    switch (b.type) {
-      case "markdown":
-        parts.push(b.content);
-        break;
-      case "hero":
-        parts.push(b.lines.map((l) => l.text).join(" "));
-        break;
-      case "insight":
-        parts.push(`[pattern: ${b.patternLabel}]`);
-        break;
-      case "mission":
-        if (b.items.length) parts.push(`${b.title}: ${b.items.join(" · ")}`);
-        break;
-      case "tool":
-        parts.push(`[action proposée: ${b.label}]`);
-        break;
-      // `alert` est délibérément EXCLU : ces blocs sont des notices d'interface
-      // (ex. « analyse hors ligne »), pas des propos de Jarvis. Les renvoyer
-      // ferait croire au modèle qu'il les a dits et polluerait les tours
-      // suivants (excuses, méta-commentaires sur sa propre indisponibilité).
-    }
-  }
-  return parts.filter(Boolean).join("\n").slice(0, HISTORY_CHARS);
 }
 
 /** 4xx (quota, validation, auth) → non rétentable ; 5xx/réseau → rétentable. */
