@@ -244,6 +244,36 @@ entière à zéro. Utiliser `if not exists`, `drop … if exists` avant `create`
 
 ---
 
+## 5 bis. Observabilité
+
+**`ai_agent_runs`** enregistre chaque appel IA : provider, modèle, tokens
+**réels**, latence, statut. C'est la seule source qui **survit aux
+redéploiements** — `runtime/metrics.ts` est en mémoire et repart à zéro à chaque
+cold start serverless.
+
+**Écriture** : serveur uniquement (service role). La table n'a **aucune politique
+d'insertion** — un client ne doit pas pouvoir fabriquer de fausses métriques,
+puisqu'elles servent à des arbitrages de modèle, de budget et de coût.
+Best-effort : perdre une mesure est acceptable, perdre une réponse ne l'est pas.
+
+**Lecture** : `/dev/ai`, restreinte au **compte authentifié**. Il n'existe pas de
+rôle admin et cette page n'est protégée que par l'absence de lien vers elle :
+des agrégats globaux feraient fuiter l'activité de tous les utilisateurs.
+*Pour calibrer un modèle, tester depuis un compte dédié.*
+
+**Statuts** : `ok` · `fallback` (réponse déterministe servie — **distinct d'une
+erreur**, le trader a bien eu une réponse fondée) · `error`.
+
+> **Deux choix de mesure** : médiane et p95, **jamais de moyenne** — un seul
+> timeout à 10 s fausse une moyenne sur 20 appels. Et les latences absentes sont
+> **exclues** : un repli immédiat n'a pas mis 0 ms, le compter maquillerait les
+> performances.
+
+**Jamais de contenu de conversation** dans la table : ni prompt, ni réponse, ni
+question.
+
+---
+
 ## 6. Sécurité
 
 - **RLS partout**, propriétaire uniquement (`auth.uid() = user_id`). Vérifié par
@@ -263,19 +293,17 @@ d'environnement suffit à basculer.
 
 **Vérifié comme manquant**, par ordre de valeur :
 
-1. **Observabilité** — `ai_agent_runs` non appliquée, `TelemetryRecorder` sans
-   writer, `runtime/metrics` en mémoire (perdu à chaque cold start). *Rien n'est
-   mesurable aujourd'hui.*
-2. **Proactivité de Jarvis** — via `Inbox`, qui est aujourd'hui un canal vide.
-3. **URLs par page** — l'app entière est une seule route ; le bouton retour
+1. **Proactivité de Jarvis** — via `Inbox`, qui est aujourd'hui un canal vide.
+2. **URLs par page** — l'app entière est une seule route ; le bouton retour
    quitte l'application sur Android, et **aucune page n'est traçable en
    analytics**.
-4. **Extraction mémoire par LLM** — garde-fous spécifiés, non codés.
-5. **Streaming** — nécessite un transport HTTP (le RPC actuel ne peut pas faire
+3. **Extraction mémoire par LLM** — garde-fous spécifiés, non codés.
+4. **Streaming** — nécessite un transport HTTP (le RPC actuel ne peut pas faire
    de SSE).
-6. **Design system** — ~470 tailles typographiques arbitraires restantes, ~105
+5. **Design system** — ~470 tailles typographiques arbitraires restantes, ~105
    couleurs en dur. *Plus aucun texte sous 11 px.*
-7. **i18n** — deux mécanismes coexistent (dictionnaire + ternaires en ligne).
+6. **i18n** — deux mécanismes coexistent (dictionnaire + ternaires en ligne).
+7. **Purge de `ai_agent_runs`** — la table croît linéairement.
 
 ---
 
