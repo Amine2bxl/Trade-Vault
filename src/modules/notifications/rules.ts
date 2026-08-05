@@ -22,7 +22,27 @@ export interface RuleContext {
     mistakeStats: Record<string, { count: number; totalPnl: number }>;
   };
   rulesEnabled: number;
+  /**
+   * Tendance PAR erreur, déjà calculée par `computeBehavioral`. Optionnel :
+   * une absence signifie « pas mesuré », jamais « pas de progrès ».
+   */
+  mistakeTrends?: { mistake: string; deltaPct: number; recent: number; previous: number }[];
+  /** Tenue des règles, déjà calculée par `computeRuleAdherence`. */
+  adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
 }
+
+/**
+ * Seuils d'émission — délibérément HAUTS.
+ *
+ * Une observation notifiée tous les jours devient du bruit, et un canal
+ * bruyant se fait désactiver : on perd alors le canal ENTIER, y compris les
+ * alertes qui comptent. Mieux vaut se taire souvent et être écouté quand on
+ * parle.
+ */
+const TREND_NOTIFY_PCT = 30;
+const ADHERENCE_NOTIFY_PCT = 60;
+/** Sous ce nombre d'occurrences, une variation n'est pas un signal. */
+const MIN_SAMPLE = 3;
 
 export interface CodedRule {
   key: string;
@@ -174,6 +194,67 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
             : "Compare your 3 best trades to your 3 worst: what really separates them?",
           ctaLabel: fr ? "Ouvrir mes rapports" : "Open reports",
           ctaPage: "reports",
+        },
+      }),
+    });
+  }
+
+  // ── PROGRÈS — une erreur RECULE nettement ──────────────────────────────
+  // Le produit dit déjà les choses dures. Il doit aussi reconnaître un progrès
+  // réel : c'est ce qui donne envie de continuer, et c'est chiffré, donc
+  // crédible. On ne félicite JAMAIS sans preuve.
+  const improving = (ctx.mistakeTrends ?? [])
+    .filter((m) => m.deltaPct <= -TREND_NOTIFY_PCT && m.previous >= MIN_SAMPLE)
+    .sort((a, b) => a.deltaPct - b.deltaPct)[0];
+  if (improving) {
+    const pct = Math.abs(improving.deltaPct);
+    rules.push({
+      key: `pattern_improving:${improving.mistake}:${today}`,
+      input: jarvis({
+        kind: "pattern_detected",
+        title: fr ? "Une de tes fuites recule" : "One of your leaks is receding",
+        body: fr
+          ? `« ${improving.mistake} » : ${improving.previous} fois sur la période précédente, ${improving.recent} sur la récente — ${pct} % de moins.`
+          : `"${improving.mistake}": ${improving.previous} times last period, ${improving.recent} now — ${pct}% fewer.`,
+        severity: "success",
+        url: "/mistakes",
+        category: "discipline",
+        data: {
+          plan: fr
+            ? "Ce que tu fais différemment fonctionne. Identifie-le et garde-le."
+            : "Whatever you changed is working. Name it and keep it.",
+          ctaLabel: fr ? "Voir mes erreurs" : "View mistakes",
+          ctaPage: "mistakes",
+        },
+      }),
+    });
+  }
+
+  // ── DISCIPLINE — une règle MAL tenue ───────────────────────────────────
+  // La règle la moins tenue, et seulement si elle a été réellement éprouvée.
+  // Sans le seuil d'échantillon, un seul écart sur deux trades déclencherait
+  // une alerte — le trader apprendrait à les ignorer.
+  const slipping = (ctx.adherence ?? [])
+    .filter((a) => a.ratePct < ADHERENCE_NOTIFY_PCT && a.applicable >= MIN_SAMPLE)
+    .sort((a, b) => a.ratePct - b.ratePct)[0];
+  if (slipping) {
+    rules.push({
+      key: `adherence_low:${slipping.text.slice(0, 40)}:${today}`,
+      input: jarvis({
+        kind: "discipline_warning",
+        title: fr ? "Une règle t'échappe" : "A rule is slipping",
+        body: fr
+          ? `« ${slipping.text} » : tenue ${slipping.kept} fois sur ${slipping.applicable}.`
+          : `"${slipping.text}": kept ${slipping.kept} of ${slipping.applicable} times.`,
+        severity: "warning",
+        url: "/checklist",
+        category: "discipline",
+        data: {
+          plan: fr
+            ? "Une règle qu'on ne tient pas est une règle mal calibrée, ou une règle qu'on ne veut pas. Ajuste-la ou retire-la."
+            : "A rule you don't keep is either miscalibrated or unwanted. Adjust it or drop it.",
+          ctaLabel: fr ? "Revoir mes règles" : "Review my rules",
+          ctaPage: "checklist",
         },
       }),
     });

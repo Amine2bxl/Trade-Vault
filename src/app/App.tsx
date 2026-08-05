@@ -56,6 +56,8 @@ import {
 } from "@/modules/notifications";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
+import { computeBehavioral } from "./utils/behavioral";
+import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
@@ -270,20 +272,44 @@ function AppContent() {
   // fois par jour via l'engine (persist → inbox). Dédupliqué côté runner.
   useEffect(() => {
     if (!user?.id || !accountsReady || tradesLoading) return;
-    void dispatchCodedNotifications(
-      user.id,
-      {
-        trades: trades.map((t) => ({ date: t.date, pnl: t.pnl, mistakes: t.mistakes ?? [] })),
-        stats: {
-          totalPnl: stats.totalPnl,
-          winRate: stats.winRate,
-          tradeCount: stats.totalTrades,
-          mistakeStats: stats.mistakeStats,
+    const uid = user.id;
+    void (async () => {
+      // Le solde est nécessaire aux règles de risque en % ; il est chargé une
+      // fois ici plutôt qu'à chaque évaluation.
+      const balance =
+        (await loadStartingBalance(uid).catch(() => 0)) + trades.reduce((s, tr) => s + tr.pnl, 0);
+      await dispatchCodedNotifications(
+        uid,
+        {
+          trades: trades.map((t) => ({ date: t.date, pnl: t.pnl, mistakes: t.mistakes ?? [] })),
+          stats: {
+            totalPnl: stats.totalPnl,
+            winRate: stats.winRate,
+            tradeCount: stats.totalTrades,
+            mistakeStats: stats.mistakeStats,
+          },
+          rulesEnabled: rulesRef.current.filter((r) => r.enabled).length,
+          // Alimenté par les moteurs déterministes : Jarvis peut désormais
+          // signaler un progrès chiffré ou une règle qui échappe — sans appel
+          // IA, donc sans coût et sans risque d'invention.
+          mistakeTrends: computeBehavioral(trades)
+            .rows.filter((r) => r.trend)
+            .map((r) => ({
+              mistake: r.mistake,
+              deltaPct: r.trend!.deltaPct,
+              recent: r.trend!.recent,
+              previous: r.trend!.previous,
+            })),
+          adherence: computeRuleAdherence(trades, rulesRef.current, balance).map((a) => ({
+            text: a.text,
+            kept: a.kept,
+            applicable: a.applicable,
+            ratePct: a.ratePct,
+          })),
         },
-        rulesEnabled: rulesRef.current.filter((r) => r.enabled).length,
-      },
-      (uid, input) => NotificationEngine.notify(uid, input),
-    ).catch(() => {});
+        (id, input) => NotificationEngine.notify(id, input),
+      );
+    })().catch(() => {});
   }, [user?.id, accountsReady, tradesLoading, trades, stats]);
 
   const handleSave = useCallback(
