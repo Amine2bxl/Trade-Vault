@@ -23,14 +23,18 @@
  * lui qui décide de ce que Jarvis « sait » à chaque réponse.
  */
 
-/** Les 4 catégories réellement présentes dans la table `ai_memory`. */
-export type MemoryKind = "profile" | "fact" | "lesson" | "conversation";
+/** Les catégories présentes dans `ai_memory` (V2). */
+export type MemoryKind = "profile" | "fact" | "lesson" | "conversation" | "preference" | "decision";
 
 export interface MemoryLike {
   id?: string;
   kind: MemoryKind;
   content: string;
   createdAt?: string;
+  /** 1–5. Optionnel : les lignes écrites avant la V2 n'en ont pas. */
+  importance?: number;
+  /** 0–1. Une croyance contestée pèse moins qu'un fait confirmé. */
+  confidence?: number;
 }
 
 /**
@@ -135,12 +139,12 @@ export function detectMemoryIntent(question: string): MemoryIntent {
  * repli, pas un fait durable.
  */
 const AFFINITY: Record<MemoryIntent, Record<MemoryKind, number>> = {
-  psychology: { profile: 3, fact: 3, lesson: 2, conversation: 1 },
-  discipline: { profile: 2, fact: 2, lesson: 4, conversation: 1 },
-  performance: { profile: 2, fact: 3, lesson: 2, conversation: 1 },
-  goals: { profile: 4, fact: 1, lesson: 2, conversation: 1 },
-  rules: { profile: 2, fact: 1, lesson: 4, conversation: 1 },
-  generic: { profile: 3, fact: 2, lesson: 2, conversation: 1 },
+  psychology: { profile: 3, fact: 3, lesson: 2, decision: 2, preference: 1, conversation: 1 },
+  discipline: { profile: 2, fact: 2, lesson: 4, decision: 5, preference: 1, conversation: 1 },
+  performance: { profile: 2, fact: 3, lesson: 2, decision: 2, preference: 2, conversation: 1 },
+  goals: { profile: 4, fact: 1, lesson: 2, decision: 3, preference: 1, conversation: 1 },
+  rules: { profile: 2, fact: 1, lesson: 4, decision: 5, preference: 1, conversation: 1 },
+  generic: { profile: 3, fact: 2, lesson: 2, decision: 3, preference: 2, conversation: 1 },
 };
 
 /** Mots vides ignorés dans le recoupement lexical (FR + EN). */
@@ -227,9 +231,17 @@ function terms(text: string): Set<string> {
 
 export interface ScoredMemory {
   memory: MemoryLike;
+  /** Score final pondéré — sert au CLASSEMENT. */
   score: number;
-  /** Pourquoi il a été retenu — indispensable pour auditer la sélection. */
-  reason: { affinity: number; overlap: number; recency: number };
+  /**
+   * Pertinence brute (affinité + recoupement + récence), AVANT pondération.
+   * C'est elle qu'on compare au plancher : « ce souvenir parle-t-il de la
+   * question ? » est une question distincte de « quelle confiance je lui
+   * accorde ? ». Confondre les deux ferait écarter un fait pertinent au seul
+   * motif qu'il est ancien ou peu important.
+   */
+  relevance: number;
+  reason: { affinity: number; overlap: number; recency: number; weight: number };
 }
 
 /**
@@ -264,7 +276,21 @@ export function scoreMemory(
     }
   }
 
-  return { memory, score: affinity + overlap + recency, reason: { affinity, overlap, recency } };
+  // IMPORTANCE et CONFIANCE modulent le total au lieu de s'y ajouter : un
+  // souvenir hors sujet ne doit pas remonter simplement parce qu'il est
+  // important, et une croyance à moitié contestée doit peser moitié moins.
+  // Défauts (3 / 0.6) alignés sur le SQL, pour les lignes écrites avant la V2.
+  const importance = memory.importance ?? 3;
+  const confidence = memory.confidence ?? 0.6;
+  const weight = (importance / 3) * confidence;
+  const base = affinity + overlap + recency;
+
+  return {
+    memory,
+    score: base * weight,
+    relevance: base,
+    reason: { affinity, overlap, recency, weight },
+  };
 }
 
 export interface SelectionResult {
@@ -311,7 +337,7 @@ export function selectMemories(
     // Plancher de PERTINENCE : un souvenir sans lien avec la question n'est pas
     // envoyé, même s'il reste de la place. Le budget protège du volume ; ce
     // filtre protège de la dilution — ce sont deux problèmes différents.
-    if (s.score < minRelevance) continue;
+    if (s.relevance < minRelevance) continue;
     const content =
       s.memory.content.length > MAX_MEMORY_CHARS
         ? `${s.memory.content.slice(0, MAX_MEMORY_CHARS - 1)}…`

@@ -197,9 +197,10 @@ export function buildCoachV1Payload(opts: {
 
 export async function seedProfileMemory(userId: string): Promise<void> {
   try {
-    const existing = await loadMemory(userId, ["profile"], 1);
-    if (existing.length) return;
-
+    // Plus de garde « écrire une seule fois » : elle figeait le profil à vie.
+    // Si le trader corrige sa faiblesse déclarée ou sa cible mensuelle, le
+    // souvenir doit suivre. L'upsert par clé rend l'opération idempotente —
+    // réécrire le même contenu ne crée pas de doublon.
     const [onb, jarvis] = await Promise.all([
       loadOnboarding(userId).catch(() => null),
       loadJarvisProfile(userId).catch(() => null),
@@ -215,7 +216,16 @@ export async function seedProfileMemory(userId: string): Promise<void> {
     if (onb?.usesIct) parts.push("uses ICT concepts");
     if (!parts.length) return;
 
-    await remember(userId, "profile", `Trader profile — ${parts.join("; ")}.`);
+    await remember(userId, "profile", `Trader profile — ${parts.join("; ")}.`, {
+      // Clé stable : il n'existe qu'UN profil par trader, par construction.
+      key: "trader_profile",
+      // Importance maximale : c'est l'identité, elle cadre toute réponse.
+      importance: 5,
+      // Confiance élevée mais pas totale — le trader s'est décrit lui-même,
+      // et une auto-description peut être optimiste.
+      confidence: 0.9,
+      source: "onboarding",
+    });
   } catch {
     // Best-effort: seeding must never surface an error to the user.
   }

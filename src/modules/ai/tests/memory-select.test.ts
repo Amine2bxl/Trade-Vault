@@ -195,6 +195,57 @@ describe("budget de tokens — contrainte DURE", () => {
   });
 });
 
+describe("importance & confiance — la pondération V2", () => {
+  it("un ENGAGEMENT domine une observation sur une question de discipline", () => {
+    // `decision` = le trader s'est engagé. C'est le signal le plus fort du
+    // produit : il doit primer sur une simple observation.
+    const mix: MemoryLike[] = [
+      { id: "obs", kind: "fact", content: "Observation neutre.", importance: 3, confidence: 0.6 },
+      {
+        id: "engagement",
+        kind: "decision",
+        content: "A accepté la règle « stop après 1 perte ».",
+        importance: 5,
+        confidence: 1,
+      },
+    ];
+    const r = selectMemories(mix, "Est-ce que je respecte ma discipline ?", { now: NOW });
+    expect(r.scored[0].memory.id).toBe("engagement");
+  });
+
+  it("une croyance CONTESTÉE passe derrière un fait confirmé, à pertinence égale", () => {
+    const mix: MemoryLike[] = [
+      { id: "doute", kind: "fact", content: "Observation identique.", confidence: 0.35 },
+      { id: "sur", kind: "fact", content: "Observation identique.", confidence: 1 },
+    ];
+    const r = selectMemories(mix, "performance", { now: NOW });
+    expect(r.scored[0].memory.id).toBe("sur");
+  });
+
+  it("le PLANCHER porte sur la pertinence, pas sur le poids", () => {
+    // Régression : pondérer avant de comparer au seuil écartait un fait
+    // pertinent au seul motif qu'il était ancien ou peu important.
+    const faible: MemoryLike[] = [
+      {
+        id: "pertinent-mais-faible",
+        kind: "lesson",
+        content: "Engagement ancien mais applicable.",
+        importance: 1,
+        confidence: 0.4,
+      },
+    ];
+    const r = selectMemories(faible, "Comment tenir ma discipline ?", { now: NOW });
+    expect(ids(r.selected)).toEqual(["pertinent-mais-faible"]);
+  });
+
+  it("les lignes écrites AVANT la V2 (sans importance/confiance) restent exploitables", () => {
+    const legacy: MemoryLike[] = [{ id: "v1", kind: "fact", content: "Ancien souvenir." }];
+    const r = selectMemories(legacy, "performance", { now: NOW });
+    expect(r.scored[0].reason.weight).toBeCloseTo(0.6, 5);
+    expect(r.selected.length).toBe(1);
+  });
+});
+
 describe("estimateTokens", () => {
   it("approxime ~4 caractères par token", () => {
     expect(estimateTokens("12345678")).toBe(2);

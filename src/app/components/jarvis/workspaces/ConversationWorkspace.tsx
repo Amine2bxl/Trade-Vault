@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Eraser, Send, Loader2, Mic, MicOff, Zap } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
-import { loadMemory, type MemoryEntry } from "@/modules/ai/memory";
+import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
@@ -209,6 +209,30 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         ];
         await saveTradingRules(userId, next);
         window.dispatchEvent(new CustomEvent("tv-rules-updated", { detail: next }));
+
+        // ── Apprentissage ──────────────────────────────────────────────────
+        // La règle elle-même vit dans `profiles` (source de vérité unique, déjà
+        // envoyée au coach) — on ne la duplique PAS. Ce qu'on mémorise est
+        // autre chose : le fait que le trader se soit ENGAGÉ, et quand.
+        // C'est une décision, elle n'est recalculable depuis aucune donnée, et
+        // c'est le signal le plus fort du produit : il permettra à Jarvis de
+        // revenir dessus (« tu l'as tenue 4 fois sur 5 »).
+        void remember(
+          userId,
+          "decision",
+          `A accepté la règle « ${ruleText} » le ${new Date().toISOString().slice(0, 10)}.`,
+          {
+            // Clé dérivée du texte : ré-accepter la même règle rafraîchit la
+            // date au lieu de créer un doublon.
+            key: `rule:${ruleText.toLowerCase().slice(0, 80)}`,
+            importance: 5,
+            // Certitude : l'utilisateur a cliqué. Rien n'est déduit ni extrait.
+            confidence: 1,
+            source: "rule_accepted",
+          },
+        ).catch(() => {
+          /* l'apprentissage ne doit jamais faire échouer l'action de l'utilisateur */
+        });
       }
       toast(t("jarvisHome.ruleAdded"), "success");
     },
