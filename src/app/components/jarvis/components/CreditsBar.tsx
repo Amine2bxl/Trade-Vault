@@ -71,7 +71,7 @@ export default function CreditsBar() {
               {t("credits.remaining")}
             </span>
           </div>
-          <div className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-slate-600 font-bold">
+          <div className="mt-0.5 text-[11px] uppercase tracking-[0.16em] text-slate-600 font-bold">
             {t("credits.title")} · {FREE_DAILY_LIMIT}/j
           </div>
         </div>

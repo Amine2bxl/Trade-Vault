@@ -358,7 +358,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <div
               key={d + i}
               className={cn(
-                "py-1.5 md:py-3 text-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest",
+                "py-1.5 md:py-3 text-center text-[11px] md:text-xs font-bold uppercase tracking-widest",
                 i >= 5 ? "text-slate-700" : "text-slate-500",
               )}
             >
@@ -432,7 +432,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       <div className="flex items-center justify-between">
                         <span
                           className={cn(
-                            "text-[9px] md:text-xs font-semibold tabular-nums",
+                            "text-[11px] md:text-xs font-semibold tabular-nums",
                             isToday
                               ? "text-cyan-300"
                               : data

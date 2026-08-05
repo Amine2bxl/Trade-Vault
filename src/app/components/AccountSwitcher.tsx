@@ -190,7 +190,7 @@ export default function AccountSwitcher({
             <ActiveIcon className="w-3.5 h-3.5" />
           </span>
           <span className="min-w-0 max-w-[88px] text-left">
-            <span className="block text-[9px] uppercase tracking-[0.14em] font-bold text-slate-500 leading-none mb-0.5">
+            <span className="block text-[11px] uppercase tracking-[0.14em] font-bold text-slate-500 leading-none mb-0.5">
               {t("account.fabLabel")}
             </span>
             <span className="block text-xs font-bold text-white truncate leading-tight">

@@ -288,7 +288,7 @@ function Fact({
 }) {
   return (
     <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] px-3 py-2.5 min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
         <span className="text-cyan-400/70 shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
       </div>

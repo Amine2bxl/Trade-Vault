@@ -340,7 +340,7 @@ export default function MissedOpportunities() {
 function MissedTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-      <div className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+      <div className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
         {label}
       </div>
       <div
@@ -372,7 +372,9 @@ function Field({
   };
   return (
     <div className={cn("rounded-lg bg-white/[0.02] border px-2.5 py-2", tones[tone])}>
-      <div className="text-[9px] uppercase tracking-wider font-bold mb-0.5 opacity-80">{label}</div>
+      <div className="text-[11px] uppercase tracking-wider font-bold mb-0.5 opacity-80">
+        {label}
+      </div>
       <div className="text-slate-200 text-xs md:text-sm whitespace-pre-wrap">
         {value || <span className="text-slate-600 italic">—</span>}
       </div>

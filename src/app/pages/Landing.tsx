@@ -220,7 +220,7 @@ function HeroDashboard() {
             ["Sharpe", "1.84"],
           ].map(([l, v]) => (
             <div key={l} className="text-center">
-              <p className="text-[9px] font-medium uppercase tracking-[.08em] text-slate-500">
+              <p className="text-[11px] font-medium uppercase tracking-[.08em] text-slate-500">
                 {l}
               </p>
               <p className="mt-1 font-display text-base font-bold text-cyan-300">{v}</p>
@@ -298,7 +298,7 @@ function AIConversation() {
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
               Plan recommandé
             </span>
           </div>
@@ -435,9 +435,9 @@ function FeaturePreview({ k }: { k: FeatKind }) {
               <span className="rounded bg-emerald-400/15 px-1 py-px text-[8px] font-bold text-emerald-400">
                 LONG
               </span>
-              <span className="truncate text-[9px] text-slate-600">Silver Bullet</span>
+              <span className="truncate text-[11px] text-slate-600">Silver Bullet</span>
             </div>
-            <div className="text-[9px] text-slate-600">10:03 · 2R · 150 $ de risque</div>
+            <div className="text-[11px] text-slate-600">10:03 · 2R · 150 $ de risque</div>
           </div>
           <span className="font-display text-xs font-extrabold text-emerald-400">+300 $</span>
         </div>
@@ -529,7 +529,7 @@ function FeaturePreview({ k }: { k: FeatKind }) {
             key={ev}
             className="flex items-center gap-2.5 rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5"
           >
-            <span className="text-[9px] font-bold tabular-nums text-slate-500">{h}</span>
+            <span className="text-[11px] font-bold tabular-nums text-slate-500">{h}</span>
             <span className="flex-1 text-[10px] font-semibold text-slate-200">{ev}</span>
             <span className={`rounded px-1.5 py-px text-[8px] font-bold ${c}`}>{imp}</span>
           </div>
@@ -542,7 +542,7 @@ function FeaturePreview({ k }: { k: FeatKind }) {
       <div className="rounded-lg border-2 border-dashed border-cyan-400/30 bg-cyan-400/[.04] px-3 py-2.5 text-center">
         <span className="text-[10px] font-semibold text-slate-300">historique_2025.csv</span>
       </div>
-      <div className="mt-1.5 flex items-center justify-between px-0.5 text-[9px]">
+      <div className="mt-1.5 flex items-center justify-between px-0.5 text-[11px]">
         <span className="text-slate-500">248 trades détectés</span>
         <span className="flex items-center gap-1 font-bold text-emerald-400">
           <Icon n="check" cls="h-2.5 w-2.5" />
