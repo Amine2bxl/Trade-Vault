@@ -1,4 +1,4 @@
-import type { Trade } from "../types";
+import type { Trade, TradeStats } from "../types";
 import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "./tradingRules";
@@ -26,9 +26,13 @@ export interface CoachTurn {
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
-/** Scalar-only snapshot the coach can cite — no arrays/maps (schema + size). */
-function compactStats(trades: Trade[]): Record<string, number | string | null> {
-  const s = computeStats(trades);
+/**
+ * Instantané scalaire que le coach peut citer — ni tableaux ni maps (schéma + taille).
+ *
+ * Reçoit les stats DÉJÀ calculées : les recalculer ici en faisait la troisième
+ * exécution de `computeStats` pour une seule question, sur le thread principal.
+ */
+function compactStats(s: TradeStats): Record<string, number | string | null> {
   return {
     totalPnl: round(s.totalPnl),
     winRatePct: round(s.winRate * 100),
@@ -142,6 +146,12 @@ export function buildCoachV1Payload(opts: {
   question?: string;
   /** Souvenirs bruts déjà chargés par l'appelant (lecture Supabase asynchrone). */
   memory?: MemoryLike[];
+  /**
+   * Signaux comportementaux DÉJÀ calculés par l'appelant. L'appelant les a
+   * presque toujours sous la main (memo du workspace) : les recalculer ici
+   * doublait un parcours complet des trades à chaque question.
+   */
+  signals?: ReturnType<typeof computeBehaviorSignals>;
 }): CoachV1Payload {
   const {
     trades,
@@ -153,7 +163,9 @@ export function buildCoachV1Payload(opts: {
     rules,
     question,
     memory,
+    signals: providedSignals,
   } = opts;
+  // UNE seule exécution, réutilisée pour les erreurs récurrentes ET l'instantané.
   const stats = trades.length ? computeStats(trades) : null;
   const mistakes = stats
     ? Object.entries(stats.mistakeStats)
@@ -163,13 +175,13 @@ export function buildCoachV1Payload(opts: {
     : [];
   // The behavioural read is what turns "here are your stats" into "here is why
   // you lose on Fridays". Computed deterministically, never by the model.
-  const signals = computeBehaviorSignals(trades);
+  const signals = providedSignals ?? computeBehaviorSignals(trades);
   return {
     // Les 25 derniers trades suffisent pour les exemples du coach (les stats et
     // signaux portent la vue d'ensemble). Un payload plus léger = l'IA répond
     // plus vite et reste sous les limites de temps (serverless Vercel ~10s).
     trades: toInsightTradesPayload(trades.slice(-25)),
-    stats: trades.length ? compactStats(trades) : undefined,
+    stats: stats ? compactStats(stats) : undefined,
     // Mémoire : on n'envoie QUE les souvenirs utiles à cette question, sous
     // budget de tokens strict. Envoyer l'historique complet noierait le modèle
     // et ferait exploser la latence sans rien améliorer.

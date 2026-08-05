@@ -327,6 +327,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         rules,
         question: query,
         memory: memoryRef.current,
+        // Déjà mémoïsés au-dessus : sans ça, `buildCoachV1Payload` reparcourait
+        // tous les trades une seconde fois à chaque question.
+        signals,
       });
       // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
       // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux
