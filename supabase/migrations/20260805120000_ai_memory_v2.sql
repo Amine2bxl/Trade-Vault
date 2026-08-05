@@ -76,11 +76,23 @@ alter table public.ai_memory
 
 -- ── 7. Dé-doublonnage STRUCTUREL ────────────────────────────────────────────
 -- La garantie « jamais deux souvenirs identiques » est portée par la BASE, pas
--- par du code applicatif qu'on peut oublier d'appeler. Partiel (`where key is
--- not null`) pour rester compatible avec les lignes V1 qui n'ont pas de clé.
-create unique index if not exists ai_memory_user_kind_key_uidx
-  on public.ai_memory (user_id, kind, key)
-  where key is not null;
+-- par du code applicatif qu'on peut oublier d'appeler.
+--
+-- CONTRAINTE et non index PARTIEL — vérifié sur PostgreSQL 16 :
+--   1. `ON CONFLICT (user_id, kind, key)` ne peut PAS inférer un index partiel
+--      sans que son prédicat soit répété dans la clause. Or `supabase-js`
+--      (`onConflict: "user_id,kind,key"`) génère exactement la forme sans
+--      prédicat → « there is no unique or exclusion constraint matching the
+--      ON CONFLICT specification » à l'exécution. Le TypeScript, les tests et
+--      le build ne peuvent pas voir ce défaut.
+--   2. Le prédicat était de toute façon inutile : PostgreSQL applique
+--      NULLS DISTINCT par défaut, donc une contrainte non partielle autorise
+--      déjà autant de lignes à `key = NULL` que nécessaire — ce qui préserve
+--      les souvenirs V1 sans clé.
+alter table public.ai_memory
+  drop constraint if exists ai_memory_user_kind_key_uniq;
+alter table public.ai_memory
+  add constraint ai_memory_user_kind_key_uniq unique (user_id, kind, key);
 
 -- Lecture par pertinence : le sélecteur trie par importance puis fraîcheur.
 create index if not exists ai_memory_user_importance_idx
