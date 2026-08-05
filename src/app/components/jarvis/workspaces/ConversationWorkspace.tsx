@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Eraser, Send, Loader2, Mic, MicOff, Zap } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
+import { loadMemory, type MemoryEntry } from "@/modules/ai/memory";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
@@ -101,6 +102,12 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const [quotaBanner, setQuotaBanner] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Mémoire persistante chargée UNE fois par utilisateur, hors du chemin de la
+  // question : la sélection par intention se fait ensuite en local, à coût nul.
+  // Charger au moment de l'envoi ajouterait un aller-retour réseau à CHAQUE
+  // question — la mémoire doit rendre Jarvis plus pertinent, jamais plus lent.
+  // Une ref plutôt qu'un state : cette donnée ne déclenche aucun rendu.
+  const memoryRef = useRef<MemoryEntry[]>([]);
   const SpeechRecognitionCtor = getSpeechRecognition();
   const draftKey = conversationId ? `tv:jarvis:draft:${userId ?? "anon"}:${conversationId}` : null;
 
@@ -128,6 +135,24 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       active = false;
     };
   }, [store, conversationId, draftKey]);
+
+  // Chargement de la mémoire persistante — best-effort et NON bloquant : si la
+  // lecture échoue ou n'a pas encore abouti, Jarvis répond exactement comme
+  // avant (payload sans mémoire). La mémoire enrichit, elle ne conditionne pas.
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadMemory(userId)
+      .then((entries) => {
+        if (active) memoryRef.current = entries;
+      })
+      .catch(() => {
+        /* la mémoire est un bonus, jamais un prérequis */
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
 
   // Sauvegarde les messages dans la conversation (titrée automatiquement).
   useEffect(() => {
@@ -276,6 +301,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         onboarding,
         jarvisProfile: context.profile,
         rules,
+        question: query,
+        memory: memoryRef.current,
       });
       // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
       // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux

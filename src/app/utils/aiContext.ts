@@ -3,9 +3,9 @@ import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "./tradingRules";
 import { loadMemory, remember } from "@/modules/ai/memory";
+import { selectMemories, type MemoryLike } from "@/modules/ai/memory-select";
 import { slimSignals } from "./signalContext";
 import { loadOnboarding, loadJarvisProfile, type OnboardingData } from "../store";
-import type { AIUserContext } from "@/modules/ai/context";
 
 /**
  * Coach context builder — the glue that turns the coach from a stateless Q&A
@@ -46,39 +46,6 @@ function compactStats(trades: Trade[]): Record<string, number | string | null> {
   };
 }
 
-export async function buildCoachContext(opts: {
-  userId?: string;
-  trades: Trade[];
-  conversation?: CoachTurn[];
-  language?: string;
-  /** How many trailing turns of the thread to send (protects payload size). */
-  maxTurns?: number;
-}): Promise<AIUserContext> {
-  const { userId, trades, conversation = [], language, maxTurns = 16 } = opts;
-
-  let memory: { kind: string; content: string }[] | undefined;
-  if (userId) {
-    try {
-      const entries = await loadMemory(userId);
-      if (entries.length) {
-        memory = entries.map((m) => ({ kind: m.kind, content: m.content.slice(0, 2000) }));
-      }
-    } catch {
-      // Best-effort: never let a memory read failure block the coach.
-    }
-  }
-
-  return {
-    trades: toInsightTradesPayload(trades),
-    stats: trades.length ? compactStats(trades) : undefined,
-    memory,
-    conversation: conversation
-      .slice(-maxTurns)
-      .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),
-    language,
-  };
-}
-
 /**
  * Seed a one-line `profile` memory from the onboarding answers so the coach
  * "knows" the trader from the very first message — deterministic, zero AI cost,
@@ -95,6 +62,12 @@ export interface CoachV1Payload {
   rules?: { kind: string; text: string; enabled: boolean }[];
   conversation?: { role: "user" | "assistant"; content: string }[];
   profile?: string;
+  /**
+   * Souvenirs SÉLECTIONNÉS pour cette question précise — jamais l'historique
+   * complet. Le tri et le budget de tokens sont appliqués par
+   * `modules/ai/memory-select`, sous contrainte dure.
+   */
+  memory?: { kind: string; content: string }[];
   language?: string;
 }
 
@@ -162,6 +135,13 @@ export function buildCoachV1Payload(opts: {
   } | null;
   /** The trader's own rules, so the coach holds them to their own standard. */
   rules?: TradingRule[];
+  /**
+   * La question posée — nécessaire pour choisir les souvenirs UTILES à
+   * celle-ci plutôt que d'envoyer toute la mémoire.
+   */
+  question?: string;
+  /** Souvenirs bruts déjà chargés par l'appelant (lecture Supabase asynchrone). */
+  memory?: MemoryLike[];
 }): CoachV1Payload {
   const {
     trades,
@@ -171,6 +151,8 @@ export function buildCoachV1Payload(opts: {
     onboarding,
     jarvisProfile,
     rules,
+    question,
+    memory,
   } = opts;
   const stats = trades.length ? computeStats(trades) : null;
   const mistakes = stats
@@ -188,6 +170,16 @@ export function buildCoachV1Payload(opts: {
     // plus vite et reste sous les limites de temps (serverless Vercel ~10s).
     trades: toInsightTradesPayload(trades.slice(-25)),
     stats: trades.length ? compactStats(trades) : undefined,
+    // Mémoire : on n'envoie QUE les souvenirs utiles à cette question, sous
+    // budget de tokens strict. Envoyer l'historique complet noierait le modèle
+    // et ferait exploser la latence sans rien améliorer.
+    memory:
+      memory?.length && question
+        ? selectMemories(memory, question).selected.map((m) => ({
+            kind: m.kind,
+            content: m.content,
+          }))
+        : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
     signals: Object.keys(signals).length ? slimSignals(signals) : undefined,
     rules: rules?.length

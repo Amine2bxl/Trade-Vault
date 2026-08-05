@@ -50,6 +50,12 @@ export interface CoachInput {
   profile?: string;
   /** Recent conversation turns (in-request only — NOT persisted). */
   conversation?: ConversationTurn[];
+  /**
+   * Souvenirs persistants SÉLECTIONNÉS pour cette question (table `ai_memory`).
+   * C'est ce qui fait la différence entre un assistant qui redécouvre le trader
+   * à chaque session et un coach qui se souvient de ce qu'il lui a dit.
+   */
+  memory?: { kind: string; content: string }[];
 }
 
 /**
@@ -135,9 +141,14 @@ export function buildCoachMessages(input: CoachInput) {
   if (input.signals) builder.withSignals(input.signals);
   if (input.goals) builder.withGoals(input.goals);
   if (input.rules) builder.withRules(input.rules);
-  // The trader's own declared profile rides in the long-term-memory block —
-  // same semantics ("facts you already know"), no new context plumbing.
-  if (input.profile) builder.withMemory([{ kind: "profile", content: input.profile }]);
+  // Le profil déclaré ET les souvenirs sélectionnés partagent le même bloc
+  // « faits que tu connais déjà » : même sémantique, aucun tuyau supplémentaire.
+  // Le profil vient EN PREMIER — c'est l'identité, elle cadre tout le reste.
+  const memoryBlock = [
+    ...(input.profile ? [{ kind: "profile", content: input.profile }] : []),
+    ...(input.memory ?? []),
+  ];
+  if (memoryBlock.length) builder.withMemory(memoryBlock);
 
   const lang = languageName(input.language);
   return buildPrompt({

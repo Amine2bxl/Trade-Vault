@@ -42,6 +42,16 @@ const CoachAsk = z.object({
     .max(30)
     .optional(),
   /**
+   * Souvenirs DÉJÀ sélectionnés par le client sous budget de tokens. Le serveur
+   * ne fait pas confiance à cette sélection : il re-borne (12 entrées, 300
+   * caractères) en défense en profondeur, pour qu'un client modifié ne puisse
+   * pas gonfler le prompt ni le coût.
+   */
+  memory: z
+    .array(z.object({ kind: z.string().max(20), content: z.string().max(300) }))
+    .max(12)
+    .optional(),
+  /**
    * Precomputed behaviour signals. The shape is owned by the client engine, so
    * it is validated by size rather than by field: a hard 12 KB ceiling keeps a
    * malformed or oversized payload from ever reaching the provider.
