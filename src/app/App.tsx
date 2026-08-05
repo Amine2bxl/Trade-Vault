@@ -547,6 +547,8 @@ function AppContent() {
                   tradesLoading={tradesLoading}
                   onOpenChecklist={() => setPage("checklist")}
                   onOpenImport={() => setImportOpen(true)}
+                  onEditTrade={handleEdit}
+                  onOpenJournal={() => setPage("journal")}
                 />
               )}
               {page === "journal" && (
@@ -585,38 +587,6 @@ function AppContent() {
               {page === "subscription" && <Subscription />}
               {page === "inbox" && <Inbox />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-              {![
-                "dashboard",
-                "journal",
-                "checklist",
-                "calendar",
-                "analytics",
-                "mistakes",
-                "missed",
-                "insights",
-                "news",
-                "seasonality",
-                "calculator",
-                "settings",
-                "reports",
-                "goals",
-                "tradingplan",
-                "appearance",
-                "subscription",
-                "inbox",
-                "profile",
-              ].includes(page) && (
-                <Dashboard
-                  trades={trades}
-                  stats={stats}
-                  onAddTrade={handleAdd}
-                  onEditTrade={handleEdit}
-                  onOpenJournal={() => setPage("journal")}
-                  onOpenMissed={() => setPage("missed")}
-                  onOpenChecklist={() => setPage("checklist")}
-                  onOpenImport={() => setImportOpen(true)}
-                />
-              )}
             </Suspense>
           </PageErrorBoundary>
         </div>

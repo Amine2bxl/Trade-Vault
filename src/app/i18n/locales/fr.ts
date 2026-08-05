@@ -33,6 +33,7 @@ const fr: Dict = {
   "common.rename": "Renommer",
   "common.cancel": "Annuler",
   "common.delete": "Supprimer",
+  "common.viewAll": "Tout voir",
   "common.edit": "Modifier",
   // Onboarding (refonte 3 moments)
   "onb.nameTitle": "Comment t'appelles-tu ?",

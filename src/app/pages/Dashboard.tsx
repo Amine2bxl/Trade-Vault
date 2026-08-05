@@ -57,6 +57,11 @@ interface DashboardProps {
   tradesLoading?: boolean;
   onOpenChecklist?: () => void;
   onOpenImport?: () => void;
+  /** Ouvre un trade récent en édition. La liste affichait déjà un état `hover`
+   *  qui promettait cette interaction sans la fournir. */
+  onEditTrade?: (trade: Trade) => void;
+  /** « Tout voir » — la liste est tronquée à 4, il faut un accès au reste. */
+  onOpenJournal?: () => void;
 }
 
 type Period = "7d" | "30d" | "ytd" | "all";
@@ -89,6 +94,8 @@ export default function Dashboard({
   // écran d'un nouvel utilisateur. Vite ne typecheckant pas au build, le défaut
   // passait la CI.
   onOpenImport,
+  onEditTrade,
+  onOpenJournal,
 }: DashboardProps) {
   const { t } = useT();
   const { toast } = useToast();
@@ -636,10 +643,18 @@ export default function Dashboard({
               <div>
                 {/* Recent Trades */}
                 <Card hover className="overflow-hidden ">
-                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
+                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06] flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold text-white">
                       {t("dashboard.recentTrades")}
                     </h3>
+                    {onOpenJournal && trades.length > recentTrades.length && (
+                      <button
+                        onClick={onOpenJournal}
+                        className="text-xs font-semibold text-cyan-400/90 hover:text-cyan-300 transition-colors shrink-0"
+                      >
+                        {t("common.viewAll")}
+                      </button>
+                    )}
                   </div>
                   <div className="divide-y divide-white/[0.04]">
                     {recentTrades.length === 0 ? (
@@ -649,10 +664,26 @@ export default function Dashboard({
                     ) : (
                       recentTrades.map((trade) => {
                         const be = isBreakEven(trade);
+                        // `button` et non `div` quand l'action existe : le clavier
+                        // et les lecteurs d'écran doivent atteindre l'édition,
+                        // pas seulement la souris.
+                        const RowTag = onEditTrade ? "button" : "div";
                         return (
-                          <div
+                          <RowTag
                             key={trade.id}
-                            className="px-4 md:px-5 py-3 trade-card flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
+                            {...(onEditTrade
+                              ? {
+                                  type: "button" as const,
+                                  onClick: () => onEditTrade(trade),
+                                  "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
+                                }
+                              : {})}
+                            className={cn(
+                              "px-4 md:px-5 py-3 trade-card flex items-center gap-3 transition-colors",
+                              onEditTrade
+                                ? "w-full text-left hover:bg-white/[0.04] focus-visible:bg-white/[0.06] focus-visible:outline-none cursor-pointer"
+                                : "hover:bg-white/[0.02]",
+                            )}
                           >
                             <div
                               className={cn(
@@ -708,7 +739,7 @@ export default function Dashboard({
                                 ${trade.riskAmount.toFixed(0)} {t("dashboard.riskSuffix")}
                               </div>
                             </div>
-                          </div>
+                          </RowTag>
                         );
                       })
                     )}

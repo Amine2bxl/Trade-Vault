@@ -65,6 +65,7 @@ const en = {
   "common.rename": "Rename",
   "common.cancel": "Cancel",
   "common.delete": "Delete",
+  "common.viewAll": "View all",
   "common.edit": "Edit",
   // Onboarding (3-moment redesign)
   "onb.nameTitle": "What should we call you?",
