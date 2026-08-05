@@ -1,3 +1,15 @@
+-- NOTE D'IDEMPOTENCE (ajoutée après diagnostic du statut MIGRATIONS_FAILED)
+-- Cette migration recréait des politiques, index et triggers déjà créés par
+-- 20260605201359. En production ce n'était pas visible : les migrations y ont
+-- été appliquées incrémentalement. Mais une branche de PREVIEW rejoue TOUTE la
+-- chaîne à zéro — elle échouait donc systématiquement sur
+-- « policy "Users can view their own profile" already exists », ce qui laissait
+-- la branche en MIGRATIONS_FAILED et faisait passer le check Supabase en
+-- "skipped" à chaque PR. Résultat : aucune migration n'était jamais vérifiée
+-- avant la production.
+-- Les gardes ci-dessous ne changent RIEN au schéma obtenu : elles rendent
+-- seulement le rejeu possible.
+
 -- Profiles
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -15,8 +27,11 @@ create table if not exists public.profiles (
 grant select, insert, update, delete on public.profiles to authenticated;
 grant all on public.profiles to service_role;
 alter table public.profiles enable row level security;
+drop policy if exists "Users can view their own profile" on public.profiles;
 create policy "Users can view their own profile" on public.profiles for select to authenticated using (auth.uid() = id);
+drop policy if exists "Users can insert their own profile" on public.profiles;
 create policy "Users can insert their own profile" on public.profiles for insert to authenticated with check (auth.uid() = id);
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile" on public.profiles for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
 
 -- Trades
@@ -44,12 +59,16 @@ create table if not exists public.trades (
 grant select, insert, update, delete on public.trades to authenticated;
 grant all on public.trades to service_role;
 alter table public.trades enable row level security;
+drop policy if exists "Users can view their own trades" on public.trades;
 create policy "Users can view their own trades" on public.trades for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "Users can insert their own trades" on public.trades;
 create policy "Users can insert their own trades" on public.trades for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "Users can update their own trades" on public.trades;
 create policy "Users can update their own trades" on public.trades for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users can delete their own trades" on public.trades;
 create policy "Users can delete their own trades" on public.trades for delete to authenticated using (auth.uid() = user_id);
-create index trades_user_id_idx on public.trades (user_id);
-create index trades_user_date_idx on public.trades (user_id, trade_date desc);
+create index if not exists trades_user_id_idx on public.trades (user_id);
+create index if not exists trades_user_date_idx on public.trades (user_id, trade_date desc);
 
 -- updated_at trigger
 create or replace function public.set_updated_at()
@@ -57,7 +76,9 @@ returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at = now(); return new; end; $$;
 revoke all on function public.set_updated_at() from public, anon, authenticated;
 
+drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at before update on public.profiles for each row execute function public.set_updated_at();
+drop trigger if exists trades_set_updated_at on public.trades;
 create trigger trades_set_updated_at before update on public.trades for each row execute function public.set_updated_at();
 
 -- Auto-create profile on signup
@@ -73,4 +94,5 @@ begin
 end; $$;
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
