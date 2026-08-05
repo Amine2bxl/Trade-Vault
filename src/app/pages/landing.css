@@ -13,6 +13,8 @@
     system-ui,
     -apple-system,
     sans-serif;
+  /* PWA safe area: ensure footer never gets clipped by the home indicator */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .landing-root .font-display {
   font-family: "Sora", "Manrope", ui-sans-serif, system-ui, sans-serif;
