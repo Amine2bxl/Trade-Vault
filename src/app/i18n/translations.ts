@@ -510,6 +510,7 @@ const en = {
   // Dashboard — Copilot block (Edge Score, rule of the day, objective)
   "copilot.title": "Today's copilot",
   "copilot.edgeLabel": "Edge score",
+  "copilot.trendTitle": "Your discipline trajectory over the last sessions",
   "copilot.scoreBuilding": "Score building — log more trades",
   "copilot.cleanDays": "Clean days",
   "copilot.cleanDaysWord": "clean days",

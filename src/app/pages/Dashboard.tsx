@@ -29,6 +29,14 @@ import { loadStartingBalance } from "../store";
 import { loadTradingPlan } from "../utils/tradingPlan";
 import { loadOnboarding } from "../store/profile";
 import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/edgeScore";
+import {
+  readHistory,
+  writeHistory,
+  appendToday,
+  dayOverDayDelta,
+  trend,
+  type EdgePoint,
+} from "../utils/edgeHistory";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
@@ -76,6 +84,11 @@ export default function Dashboard({
   onAddTrade,
   tradesLoading,
   onOpenChecklist,
+  // Déclaré dans `DashboardProps` et UTILISÉ dans l'état vide, mais il n'était
+  // pas destructuré : la référence levait un ReferenceError au rendu du premier
+  // écran d'un nouvel utilisateur. Vite ne typecheckant pas au build, le défaut
+  // passait la CI.
+  onOpenImport,
 }: DashboardProps) {
   const { t } = useT();
   const { toast } = useToast();
@@ -222,40 +235,36 @@ export default function Dashboard({
   );
   const dailyRule = useMemo(() => deriveDailyRule(computeStats(trades)), [trades]);
 
-  // Day-over-day delta: compare today's score with the last stored snapshot.
-  const edgeDelta = useMemo(() => {
-    if (!user || edge.score === null) return null;
-    try {
-      const raw = localStorage.getItem(`tv.edge.${user.id}`);
-      if (!raw) return null;
-      const snap = JSON.parse(raw) as { date?: string; score?: number };
-      const today = new Date().toISOString().slice(0, 10);
-      if (snap.date && snap.date !== today && typeof snap.score === "number") {
-        return edge.score - snap.score;
-      }
-    } catch {
-      /* ignore */
-    }
-    return null;
-  }, [user?.id, edge.score]);
+  // ── Trajectoire de discipline ──────────────────────────────────────────────
+  // On conserve un HISTORIQUE borné du score, pas seulement l'instantané de la
+  // veille : le delta jour/jour dit « tu as monté depuis hier », il ne dit pas
+  // « tu progresses ». La logique vit dans un module pur et testé
+  // (`utils/edgeHistory.ts`), ici on ne fait que la brancher.
+  const today = new Date().toISOString().slice(0, 10);
+  const [edgeHistory, setEdgeHistory] = useState<EdgePoint[]>([]);
 
-  // Persist today's score once known, so tomorrow can show a delta.
   useEffect(() => {
-    if (!user || edge.score === null) return;
-    const today = new Date().toISOString().slice(0, 10);
-    try {
-      const raw = localStorage.getItem(`tv.edge.${user.id}`);
-      const snap = raw ? (JSON.parse(raw) as { date?: string }) : null;
-      if (!snap || snap.date !== today) {
-        localStorage.setItem(
-          `tv.edge.${user.id}`,
-          JSON.stringify({ date: today, score: edge.score }),
-        );
-      }
-    } catch {
-      /* best-effort */
-    }
-  }, [user?.id, edge.score]);
+    if (!user || typeof window === "undefined") return;
+    setEdgeHistory(readHistory(window.localStorage, user.id));
+  }, [user?.id]);
+
+  // Enregistre (ou réécrit) le score du jour : il bouge à chaque trade ajouté,
+  // c'est la valeur de fin de journée qui fait foi.
+  useEffect(() => {
+    if (!user || edge.score === null || typeof window === "undefined") return;
+    setEdgeHistory((prev) => {
+      const next = appendToday(prev, today, edge.score as number);
+      writeHistory(window.localStorage, user.id, next);
+      return next;
+    });
+  }, [user?.id, edge.score, today]);
+
+  const edgeDelta = useMemo(
+    () => (edge.score === null ? null : dayOverDayDelta(edgeHistory, today, edge.score)),
+    [edgeHistory, edge.score, today],
+  );
+
+  const edgeTrend = useMemo(() => trend(edgeHistory), [edgeHistory]);
 
   // Monthly objective: current-month PnL as a fraction of the month's opening
   // equity (starting balance + PnL accumulated before this month).
@@ -340,6 +349,8 @@ export default function Dashboard({
             <CopilotBlock
               edge={edge}
               edgeDelta={edgeDelta}
+              edgeTrend={edgeTrend}
+              edgeScores={edgeHistory.map((p) => p.score)}
               rule={dailyRule}
               checklist={chkStatus}
               objective={objective}
@@ -394,7 +405,7 @@ export default function Dashboard({
                   onClick={onOpenImport}
                   className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
                 >
-                  {t("import.importCsv")}
+                  {t("settings.importCsv")}
                 </button>
               )}
               {/* Ghost example of what a logged trade looks like */}

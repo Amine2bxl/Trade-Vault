@@ -21,6 +21,14 @@ interface CopilotBlockProps {
   edge: EdgeResult;
   /** Day-over-day change of the score, when a prior snapshot exists. */
   edgeDelta: number | null;
+  /**
+   * Trajectoire du score sur la fenêtre récente. `null` tant qu'il n'y a pas
+   * au moins deux mesures : le produit n'affirme jamais une tendance qu'il ne
+   * peut pas justifier.
+   */
+  edgeTrend?: { delta: number; from: number; to: number; points: number } | null;
+  /** Points du score, du plus ancien au plus récent, pour la sparkline. */
+  edgeScores?: number[];
   rule: DailyRule | null;
   checklist: CopilotChecklist | null;
   objective: CopilotObjective;
@@ -79,9 +87,59 @@ function EdgeDial({ score }: { score: number }) {
   );
 }
 
+/**
+ * Sparkline de la trajectoire de discipline. SVG pur, comme `EdgeDial` — aucune
+ * bibliothèque de graphiques n'est chargée pour 30 points.
+ *
+ * Décorative au sens de l'accessibilité : la valeur chiffrée et la tendance
+ * sont déjà annoncées en texte juste à côté, donc la répéter ici créerait du
+ * bruit pour un lecteur d'écran.
+ */
+function EdgeSparkline({ scores, positive }: { scores: number[]; positive: boolean }) {
+  const W = 64;
+  const H = 20;
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+  const span = max - min || 1;
+  const step = scores.length > 1 ? W / (scores.length - 1) : 0;
+  const d = scores
+    .map(
+      (s, i) =>
+        `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)},${(H - ((s - min) / span) * H).toFixed(1)}`,
+    )
+    .join(" ");
+  return (
+    <svg
+      width={W}
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      aria-hidden="true"
+      className="overflow-visible"
+    >
+      <path
+        d={d}
+        fill="none"
+        stroke={positive ? "#10b981" : "#ef4444"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.9"
+      />
+      <circle
+        cx={(scores.length - 1) * step}
+        cy={H - ((scores[scores.length - 1] - min) / span) * H}
+        r="2"
+        fill={positive ? "#10b981" : "#ef4444"}
+      />
+    </svg>
+  );
+}
+
 function CopilotBlock({
   edge,
   edgeDelta,
+  edgeTrend,
+  edgeScores,
   rule,
   checklist,
   objective,
@@ -124,6 +182,24 @@ function CopilotBlock({
       </span>
     ) : null;
 
+  // Trajectoire : ce que le delta jour/jour ne peut pas dire. Affichée seulement
+  // quand elle repose sur au moins deux mesures réelles.
+  const trendEl =
+    edgeTrend && edgeScores && edgeScores.length >= 2 ? (
+      <span className="flex items-center gap-1.5" title={t("copilot.trendTitle")}>
+        <EdgeSparkline scores={edgeScores} positive={edgeTrend.delta >= 0} />
+        <span
+          className={cn(
+            "text-xs font-semibold tabular-nums",
+            edgeTrend.delta >= 0 ? "text-emerald-400/90" : "text-red-400/90",
+          )}
+        >
+          {edgeTrend.delta >= 0 ? "+" : ""}
+          {edgeTrend.delta}
+        </span>
+      </span>
+    ) : null;
+
   const cleanPct = edge.tradedDays > 0 ? Math.round((edge.cleanDays / edge.tradedDays) * 100) : 0;
 
   const objPct =
@@ -155,6 +231,7 @@ function CopilotBlock({
             </span>
             {deltaEl}
           </div>
+          {trendEl && <div className="flex items-center justify-center">{trendEl}</div>}
           {edge.tradedDays > 0 && (
             <div className="w-full max-w-[160px]">
               <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
