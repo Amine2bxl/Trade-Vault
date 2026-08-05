@@ -434,7 +434,7 @@ export default function AccountSwitcher({
               <ActiveIcon className="w-4 h-4" />
             </span>
             <span className="flex-1 min-w-0 text-left">
-              <span className="block text-[8px] uppercase tracking-[0.14em] text-slate-500 font-bold">
+              <span className="block text-[10px] uppercase tracking-[0.14em] text-slate-500 font-bold">
                 {t("account.active")}
               </span>
               <span className="flex items-center gap-1.5">
@@ -457,7 +457,7 @@ export default function AccountSwitcher({
               <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
                 {balance}
               </span>
-              <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
+              <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
                 {t("account.switchShort")}
                 <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
               </span>

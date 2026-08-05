@@ -21,9 +21,20 @@ import { isTransientType, normalizeError, type RuntimeError } from "./errors";
  * détection de tâche et le choix de modèle (futur) viendront ici sans refonte.
  */
 
-/** Timeout (ms) par provider — configurable, valeurs par défaut saines. */
+/**
+ * Timeout (ms) par provider — configurable, valeurs par défaut saines.
+ *
+ * Gemini a une marge plus large que les autres, et c'est délibéré : c'est le
+ * provider PRIMAIRE, et abandonner à 10 s une génération qui aboutissait à
+ * 10,5 s jette le travail déjà payé pour servir un repli déterministe
+ * générique. Le trader ne perçoit pas « c'était lent », il perçoit « il a
+ * répondu à côté » — le coût de crédibilité est bien plus élevé que les 4 s
+ * supplémentaires. Le budget de *thinking* étant coupé côté provider, une
+ * réponse normale arrive très en dessous de ce plafond : cette marge ne sert
+ * qu'aux pics réseau, elle n'allonge pas le cas courant.
+ */
 const PROVIDER_TIMEOUTS: Record<string, number> = {
-  gemini: 10_000,
+  gemini: 14_000,
   groq: 5_000,
   openrouter: 8_000,
   openai: 8_000,

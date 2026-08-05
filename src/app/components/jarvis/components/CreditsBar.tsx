@@ -67,7 +67,7 @@ export default function CreditsBar() {
             <span className="font-display text-sm font-extrabold text-white tabular-nums leading-none">
               {remaining}
             </span>
-            <span className="text-[10px] text-slate-500 leading-none">
+            <span className="text-[11px] text-slate-500 leading-none">
               {t("credits.remaining")}
             </span>
           </div>
@@ -77,7 +77,7 @@ export default function CreditsBar() {
         </div>
 
         {/* Bénéfices — pourquoi Jarvis mérite l'analyse, pas le compteur. */}
-        <div className="hidden lg:flex items-center gap-2 text-[9.5px] text-slate-500 flex-wrap shrink-0">
+        <div className="hidden lg:flex items-center gap-2 text-[11px] text-slate-500 flex-wrap shrink-0">
           {values.map((v) => (
             <span key={v} className="inline-flex items-center gap-1">
               <Check className="w-2.5 h-2.5 text-emerald-400" /> {v}
@@ -86,10 +86,13 @@ export default function CreditsBar() {
         </div>
       </div>
 
-      {/* Texte explicatif + CTA Premium — la limite est une porte, pas un mur. */}
+      {/* Texte explicatif + CTA Premium — la limite est une porte, pas un mur.
+          Taille au plancher de 11px du design system : c'est la seule surface
+          de conversion de l'écran Jarvis, la rendre plus petite que tout le
+          reste revenait à cacher l'offre. */}
       <div
         className={cn(
-          "mt-2 flex items-center gap-1.5 text-[9.5px] leading-snug",
+          "mt-2 flex items-center gap-1.5 text-[11px] leading-snug",
           exhausted ? "text-amber-300/90" : "text-slate-600",
         )}
       >
