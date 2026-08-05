@@ -64,6 +64,12 @@ export interface CoachV1Payload {
   signals?: Record<string, unknown>;
   /** The rules the trader wrote for themselves, so the coach can enforce them. */
   rules?: { kind: string; text: string; enabled: boolean }[];
+  /**
+   * Objectifs actifs et progression MESURÉE. Lus depuis `goal_plans` (source de
+   * vérité unique) — jamais mémorisés : un objectif atteint à 40 % hier ne l'est
+   * plus aujourd'hui.
+   */
+  goals?: { kind: string; target: number; current: number }[];
   conversation?: { role: "user" | "assistant"; content: string }[];
   profile?: string;
   /**
@@ -139,6 +145,8 @@ export function buildCoachV1Payload(opts: {
   } | null;
   /** The trader's own rules, so the coach holds them to their own standard. */
   rules?: TradingRule[];
+  /** Objectifs déjà mesurés par `useGoalProgress` — recalculés, jamais stockés. */
+  goals?: { kind: string; target: number; current: number }[];
   /**
    * La question posée — nécessaire pour choisir les souvenirs UTILES à
    * celle-ci plutôt que d'envoyer toute la mémoire.
@@ -161,6 +169,7 @@ export function buildCoachV1Payload(opts: {
     onboarding,
     jarvisProfile,
     rules,
+    goals,
     question,
     memory,
     signals: providedSignals,
@@ -193,6 +202,7 @@ export function buildCoachV1Payload(opts: {
           }))
         : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
+    goals: goals?.length ? goals.slice(0, 10) : undefined,
     signals: Object.keys(signals).length ? slimSignals(signals) : undefined,
     rules: rules?.length
       ? rules

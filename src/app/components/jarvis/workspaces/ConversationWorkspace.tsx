@@ -5,6 +5,7 @@ import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
+import { useGoalProgress } from "../../../hooks/useGoalProgress";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { computeStats } from "../../../utils/tradeCalcs";
@@ -86,6 +87,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const signals = useMemo(() => computeBehaviorSignals(context.trades), [context.trades]);
   const stats = useMemo(() => computeStats(context.trades), [context.trades]);
   const userId = user?.id ?? context.userId;
+  // Objectifs mesurés — hook PARTAGÉ avec la page Goals. Le pipeline du coach
+  // acceptait `goals` depuis le début, mais rien ne les lui envoyait : Jarvis
+  // était incapable de relier ses conseils à ce que le trader vise.
+  const { measured: measuredGoals } = useGoalProgress(context.trades, userId);
   const conversationId = context.conversationId ?? null;
   // Store STABLE par utilisateur : le recréer à chaque rendu ferait tourner
   // l'effet de sauvegarde en boucle (save → événement → re-render → nouveau
@@ -325,6 +330,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         onboarding,
         jarvisProfile: context.profile,
         rules,
+        goals: measuredGoals,
         question: query,
         memory: memoryRef.current,
         // Déjà mémoïsés au-dessus : sans ça, `buildCoachV1Payload` reparcourait
