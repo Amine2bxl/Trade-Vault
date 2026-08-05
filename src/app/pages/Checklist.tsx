@@ -29,6 +29,7 @@ import {
 import { ttsSpeak } from "@/backend/tts.functions";
 import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
+import { computeChecklistStreak } from "../utils/checklistStreak";
 import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
@@ -986,28 +987,17 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
     else canvasStateRef.current("neutral");
   }, [day.locked, allGates, day.fomo]);
 
-  /* ══ Completion streak (gamification) ══
-     Consecutive WEEKDAYS with a locked checklist, read from the per-day
-     localStorage entries. Today counts once locked; weekends never break
-     the chain (markets are closed). */
-  const streak = useMemo(() => {
-    let count = day.locked ? 1 : 0;
-    const d = new Date();
-    for (let guard = 0; guard < 730; guard++) {
-      d.setDate(d.getDate() - 1);
-      if (d.getDay() === 0 || d.getDay() === 6) continue;
-      try {
-        const raw = localStorage.getItem(`tv-chk-${uid}-${d.toISOString().slice(0, 10)}`);
-        if (!raw) break;
-        const p = JSON.parse(raw) as { locked?: boolean };
-        if (!p.locked) break;
-        count++;
-      } catch {
-        break;
-      }
-    }
-    return count;
-  }, [uid, day.locked]);
+  /* ══ Série de complétion ══
+     Jours de BOURSE consécutifs avec checklist verrouillée. La logique vit
+     dans `utils/checklistStreak.ts` — module pur et testé (11 tests) — plutôt
+     qu'en ligne ici : les deux règles produit (week-ends neutres, sursis du
+     jour courant) sont exactement le genre de détail qui casse en silence.
+     Le module expose aussi `atRisk` (série intacte mais jour non validé),
+     disponible pour une future relance. */
+  const streak = useMemo(
+    () => (uid ? computeChecklistStreak(window.localStorage, uid).current : 0),
+    [uid, day.locked],
+  );
 
   /* patience timer + ranks */
   const elapsedMs = Math.max(0, now - day.t0);
