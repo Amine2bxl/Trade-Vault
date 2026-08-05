@@ -114,10 +114,12 @@ Supprimer · Micro-interactions · UX · IA · Indicateurs manquants · Spectacu
 l'autre pour créer une attente. Un trader qui n'a pas tradé hier n'a **aucune raison** d'ouvrir
 le Dashboard.
 
-**Rétention.** Le Dashboard doit cesser d'être un miroir et devenir **un briefing**. Un mur de
-chiffres est consultatif ; une phrase qui change chaque jour est une habitude. La première ligne
-devrait être générée : *« 3 jours sans dépasser ta taille max — ta meilleure série depuis mai. »*
-C'est ça qu'on ouvre le matin.
+**Rétention.** ⚠️ **CORRIGÉ APRÈS LECTURE DU CODE** — cette section affirmait que le Dashboard
+« doit cesser d'être un miroir ». C'était faux. Il porte déjà un **Edge Score** : score de
+discipline 0–100 déterministe, quatre sous-scores pondérés (plan, risque, jours propres,
+routine), qui **récompense le comportement et jamais le P&L**, plus une règle du jour et un
+`CopilotBlock`. Ce qui manquait réellement était la **trajectoire** — livré depuis
+(`utils/edgeHistory.ts`).
 
 **Conversion.** C'est l'endroit où montrer la valeur premium **verrouillée mais visible** :
 la tendance sur 90 jours floutée avec « Pro », plutôt qu'un lien tarifs.
@@ -296,8 +298,11 @@ bruit qui dilue les autres.
 une erreur en euros (`totalCost`, `cleanWr` vs `mistakeWr`) est exactement le bon angle : ça
 transforme un reproche en information.
 **Pourquoi revenir ?** Pour vérifier qu'une erreur recule. Motif **émotionnel** — donc puissant.
-**Rétention.** Rendre visible la **tendance** : « ce mois-ci vs le mois dernier ». Une erreur qui
-recule est la meilleure raison de revenir qui existe dans ce produit.
+**Rétention.** ⚠️ **PRÉCISÉ** — la tendance **agrégée** existait déjà (`weeklyTrend`, 8 semaines
+graphées). Ce qui manquait était la tendance **par erreur** : savoir LAQUELLE recule. Livré
+depuis, avec deux garde-fous — pas de tendance sans fenêtre de comparaison, et fenêtres
+adossées à la dernière date journalisée (sinon un trader en pause verrait ses erreurs
+« reculer » et le produit le féliciterait d'avoir arrêté).
 **Conversion.** La détection automatique des erreurs = premium.
 **Moat.** ⭐ Élevé : les modèles de détection calibrés sur données réelles ne se copient pas.
 **Ajouter.** Tendance par erreur · lien direct « créer une règle » (Jarvis sait déjà le faire) ·
@@ -319,10 +324,13 @@ motifs (les vendredis rouges sautent aux yeux).* **Ajouter** : cliquer un jour o
 « mes pires jours = jours de news » est une révélation produit à coût quasi nul).
 *Moat : moyen. Spectaculaire : une heatmap annuelle façon contributions GitHub.*
 
-**Goals** — Objectifs et progression. ⚠️ **Point faible majeur** : un objectif sans suivi actif
-est un vœu. Rien ne les rappelle, rien ne célèbre un jalon. **Ajouter** : jalons intermédiaires ·
-projection (« à ce rythme, atteint le 12 mars ») · Jarvis qui relie ses conseils à l'objectif
-déclaré. *Moat : fort une fois relié à Jarvis. Spectaculaire : la projection datée.*
+**Goals** — Objectifs et progression. ⚠️ **CORRIGÉ** — « rien ne célèbre un jalon » était faux :
+`milestoneValue`, `milestoneReached` et `goalProgress` existent et sont rendus (progression
+globale + jalons du mois courant). Le vrai manque était que **Jarvis ne les voyait pas** —
+livré depuis via le hook partagé `useGoalProgress`.
+*La **projection datée** que cette section recommandait est ÉCARTÉE : projeter une date depuis
+quelques semaines de trading invente une précision que `ANTI_HALLUCINATION` interdit partout
+ailleurs. Les jalons répondent déjà à « suis-je sur la trajectoire ? » sans rien inventer.*
 
 **Reports** — Rapports mensuels générés. *Valeur élevée, fréquence faible (1×/mois).* **Le levier
 n'est pas la page, c'est la livraison** : un rapport qui arrive par e-mail le 1er du mois est lu ;

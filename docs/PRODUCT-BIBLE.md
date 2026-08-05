@@ -242,7 +242,7 @@ de façon additive (`tools`, `toolCalls`), sans casser les appelants existants.
 | ~105 couleurs hex en dur | grep | 🟠 |
 | `Checklist.tsx` 2 244 L | wc | 🟠 |
 | Code mort IA (`buildAIUserContext`, `buildCoachContext`, `loadMemory`, `forget`) | 0 appelant | 🟡 |
-| `detectIntent` dupliqué | 2 implémentations | 🟡 |
+| ~~`detectIntent` dupliqué~~ | ❌ **INVALIDÉ** — même nom, responsabilités différentes : l'un choisit un gabarit de RÉPONSE, l'autre un bloc de PREUVE. Les fusionner coupleraient le moteur de repli au renderer. | — |
 | Double calcul signals/stats | memo + `buildCoachV1Payload` | 🟡 |
 
 > **Précision méthodologique** : les quatre fichiers à « deux systèmes i18n » **sont traduits** —
