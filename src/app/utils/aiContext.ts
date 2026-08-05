@@ -70,6 +70,12 @@ export interface CoachV1Payload {
    * plus aujourd'hui.
    */
   goals?: { kind: string; target: number; current: number }[];
+  /**
+   * Tenue des règles sur la fenêtre récente. C'est ce qui permet à Jarvis de
+   * dire « tu l'as tenue 11 fois sur 12 » au lieu de « tu as violé ta règle » —
+   * la différence entre un outil qui gronde et un coach qui accompagne.
+   */
+  adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
   conversation?: { role: "user" | "assistant"; content: string }[];
   profile?: string;
   /**
@@ -147,6 +153,8 @@ export function buildCoachV1Payload(opts: {
   rules?: TradingRule[];
   /** Objectifs déjà mesurés par `useGoalProgress` — recalculés, jamais stockés. */
   goals?: { kind: string; target: number; current: number }[];
+  /** Adhérence déjà mesurée par `computeRuleAdherence` — recalculée à chaque fois. */
+  adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
   /**
    * La question posée — nécessaire pour choisir les souvenirs UTILES à
    * celle-ci plutôt que d'envoyer toute la mémoire.
@@ -170,6 +178,7 @@ export function buildCoachV1Payload(opts: {
     jarvisProfile,
     rules,
     goals,
+    adherence,
     question,
     memory,
     signals: providedSignals,
@@ -203,6 +212,9 @@ export function buildCoachV1Payload(opts: {
         : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
     goals: goals?.length ? goals.slice(0, 10) : undefined,
+    // 5 règles suffisent : au-delà, le coach dilue son message au lieu de
+    // pointer celle qui coûte le plus.
+    adherence: adherence?.length ? adherence.slice(0, 5) : undefined,
     signals: Object.keys(signals).length ? slimSignals(signals) : undefined,
     rules: rules?.length
       ? rules

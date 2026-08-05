@@ -43,6 +43,12 @@ export interface CoachInput {
   /** The trader's own written rules — the standard they asked to be held to. */
   rules?: { kind: string; text: string; enabled: boolean }[];
   /**
+   * Tenue mesurée de ces règles sur la période récente. Sans elle, le coach ne
+   * peut que rappeler la règle ; avec elle, il peut mesurer le progrès — c'est
+   * la différence entre gronder et accompagner.
+   */
+  adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
+  /**
    * Who this trader is, from their onboarding (style, market, experience,
    * declared weakness, goal, target). Injected on EVERY call so the coaching
    * is never generic — the coach opens already knowing them.
@@ -141,6 +147,7 @@ export function buildCoachMessages(input: CoachInput) {
   if (input.signals) builder.withSignals(input.signals);
   if (input.goals) builder.withGoals(input.goals);
   if (input.rules) builder.withRules(input.rules);
+  if (input.adherence?.length) builder.withAdherence(input.adherence);
   // Le profil déclaré ET les souvenirs sélectionnés partagent le même bloc
   // « faits que tu connais déjà » : même sémantique, aucun tuyau supplémentaire.
   // Le profil vient EN PREMIER — c'est l'identité, elle cadre tout le reste.

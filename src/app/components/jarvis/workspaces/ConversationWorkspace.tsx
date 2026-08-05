@@ -6,6 +6,7 @@ import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { useGoalProgress } from "../../../hooks/useGoalProgress";
+import { computeRuleAdherence } from "../../../utils/ruleAdherence";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { computeStats } from "../../../utils/tradeCalcs";
@@ -90,7 +91,14 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // Objectifs mesurés — hook PARTAGÉ avec la page Goals. Le pipeline du coach
   // acceptait `goals` depuis le début, mais rien ne les lui envoyait : Jarvis
   // était incapable de relier ses conseils à ce que le trader vise.
-  const { measured: measuredGoals } = useGoalProgress(context.trades, userId);
+  const { measured: measuredGoals, ctx: goalCtx } = useGoalProgress(context.trades, userId);
+  // Tenue des règles — réutilise le vérificateur du moteur de discipline, donc
+  // une seule définition de « violer une règle » dans tout le produit.
+  const adherence = useMemo(
+    () =>
+      computeRuleAdherence(context.trades, rules, goalCtx.startingBalance + goalCtx.stats.totalPnl),
+    [context.trades, rules, goalCtx.startingBalance, goalCtx.stats.totalPnl],
+  );
   const conversationId = context.conversationId ?? null;
   // Store STABLE par utilisateur : le recréer à chaque rendu ferait tourner
   // l'effet de sauvegarde en boucle (save → événement → re-render → nouveau
@@ -331,6 +339,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         jarvisProfile: context.profile,
         rules,
         goals: measuredGoals,
+        adherence,
         question: query,
         memory: memoryRef.current,
         // Déjà mémoïsés au-dessus : sans ça, `buildCoachV1Payload` reparcourait

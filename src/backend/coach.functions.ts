@@ -47,6 +47,17 @@ const CoachAsk = z.object({
    * caractères) en défense en profondeur, pour qu'un client modifié ne puisse
    * pas gonfler le prompt ni le coût.
    */
+  adherence: z
+    .array(
+      z.object({
+        text: z.string().max(300),
+        kept: z.number(),
+        applicable: z.number(),
+        ratePct: z.number(),
+      }),
+    )
+    .max(5)
+    .optional(),
   memory: z
     .array(z.object({ kind: z.string().max(20), content: z.string().max(300) }))
     .max(12)
