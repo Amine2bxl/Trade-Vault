@@ -462,7 +462,19 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       </div>
 
       {/* Messages — rendus UNIQUEMENT via les blocs */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-8 py-5 space-y-5">
+      {/* `aria-live="polite"` : les réponses arrivent de façon asynchrone. Sans
+          région live, une réponse de Jarvis n'existe tout simplement PAS pour un
+          lecteur d'écran — l'utilisateur envoie sa question et n'apprend jamais
+          qu'on lui a répondu. `polite` et non `assertive` pour ne pas couper la
+          lecture en cours ; `relevant="additions"` pour n'annoncer que les
+          nouveaux messages, pas le re-rendu de tout le fil. */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 md:px-8 py-5 space-y-5"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-busy={loading}
+      >
         {!loaded ? (
           /* Chargement de la conversation — squelette, jamais de texte gris. */
           <div className="space-y-3" aria-busy="true">

@@ -32,7 +32,7 @@ const CommandPalette = lazy(() => import("./components/CommandPalette"));
 const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
 import TradeDetailModal from "./components/TradeDetailModal";
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
-import { Trade, Page } from "./types";
+import { Trade, isPage, type Page } from "./types";
 import {
   upsertTrade,
   deleteTrade,
@@ -94,32 +94,9 @@ function AppContent() {
   const [page, setPage] = useState<Page>(() => {
     try {
       const saved = sessionStorage.getItem("tv.page");
-      if (
-        saved &&
-        [
-          "dashboard",
-          "inbox",
-          "journal",
-          "checklist",
-          "calendar",
-          "analytics",
-          "mistakes",
-          "missed",
-          "insights",
-          "news",
-          "seasonality",
-          "calculator",
-          "settings",
-          "reports",
-          "goals",
-          "tradingplan",
-          "appearance",
-          "subscription",
-          "profile",
-        ].includes(saved)
-      ) {
-        return saved as Page;
-      }
+      // `isPage` dérive de PAGES (app/types.ts) : ajouter une page ne demande
+      // plus de penser à mettre cette liste à jour.
+      if (isPage(saved)) return saved;
     } catch {
       /* sessionStorage unavailable */
     }
@@ -175,32 +152,9 @@ function AppContent() {
   useEffect(() => {
     const onNavigate = (e: Event) => {
       const detail = (e as CustomEvent<{ page?: string }>).detail;
-      if (
-        detail?.page &&
-        [
-          "dashboard",
-          "inbox",
-          "journal",
-          "checklist",
-          "calendar",
-          "analytics",
-          "mistakes",
-          "missed",
-          "insights",
-          "news",
-          "seasonality",
-          "calculator",
-          "settings",
-          "reports",
-          "goals",
-          "tradingplan",
-          "appearance",
-          "subscription",
-          "profile",
-        ].includes(detail.page)
-      ) {
-        setPage(detail.page as Page);
-      }
+      // Même garde que la restauration de session : la cible vient d'un
+      // événement externe, elle doit être validée avant d'être appliquée.
+      if (isPage(detail?.page)) setPage(detail.page);
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);
@@ -452,10 +406,14 @@ function AppContent() {
       const results = await Promise.allSettled(imported.map((tr) => upsertTrade(user.id, tr)));
       const saved: Trade[] = [];
       for (let i = 0; i < results.length; i++) {
-        if (results[i].status === "fulfilled") {
+        // Liaison locale : TypeScript n'affine pas un accès indexé répété
+        // (`results[i]`), donc `.reason` était inaccessible au typage alors que
+        // le code était correct à l'exécution.
+        const result = results[i];
+        if (result.status === "fulfilled") {
           saved.push(imported[i]);
         } else {
-          console.error("Failed to import trade", results[i].reason);
+          console.error("Failed to import trade", result.reason);
         }
       }
       if (saved.length > 0) {
