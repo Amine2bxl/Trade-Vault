@@ -817,7 +817,8 @@ const en = {
   "mistakes.sev_low": "Low",
   "mistakes.trendWindow": "vs previous 30 days",
   "mistakes.adherence": "Your rules — how well you hold them",
-  "mistakes.adherenceSub": "Trades checked over the last {n} days. Free-text rules cannot be auto-checked and are excluded.",
+  "mistakes.adherenceSub":
+    "Trades checked over the last {n} days. Free-text rules cannot be auto-checked and are excluded.",
   "mistakes.weeklyTrend": "Weekly trend",
   "mistakes.weeklyTrendSub": "Are you cleaning up your act over time?",
   "mistakes.bySession": "By session",

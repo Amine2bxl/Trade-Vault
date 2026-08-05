@@ -749,7 +749,8 @@ const fr: Dict = {
   "mistakes.sev_low": "Faible",
   "mistakes.trendWindow": "vs 30 jours précédents",
   "mistakes.adherence": "Tes règles — à quel point tu les tiens",
-  "mistakes.adherenceSub": "Trades vérifiés sur les {n} derniers jours. Les règles en texte libre ne sont pas vérifiables automatiquement et sont exclues.",
+  "mistakes.adherenceSub":
+    "Trades vérifiés sur les {n} derniers jours. Les règles en texte libre ne sont pas vérifiables automatiquement et sont exclues.",
   "mistakes.weeklyTrend": "Tendance hebdo",
   "mistakes.weeklyTrendSub": "Corriges-tu tes erreurs dans le temps ?",
   "mistakes.bySession": "Par session",

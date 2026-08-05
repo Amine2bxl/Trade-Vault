@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "../ruleAdherence";
+import { computeRuleAdherence } from "../ruleAdherence";
 import type { TradingRule } from "../tradingRules";
 import type { Trade } from "../../types";
 

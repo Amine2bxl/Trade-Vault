@@ -2,7 +2,7 @@ import type { Trade, TradeStats } from "../types";
 import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "./tradingRules";
-import { loadMemory, remember } from "@/modules/ai/memory";
+import { remember } from "@/modules/ai/memory";
 import { selectMemories, type MemoryLike } from "@/modules/ai/memory-select";
 import { slimSignals } from "./signalContext";
 import { loadOnboarding, loadJarvisProfile, type OnboardingData } from "../store";
