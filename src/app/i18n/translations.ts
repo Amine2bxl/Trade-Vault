@@ -815,6 +815,7 @@ const en = {
   "mistakes.sev_high": "High",
   "mistakes.sev_medium": "Medium",
   "mistakes.sev_low": "Low",
+  "mistakes.trendWindow": "vs previous 30 days",
   "mistakes.weeklyTrend": "Weekly trend",
   "mistakes.weeklyTrendSub": "Are you cleaning up your act over time?",
   "mistakes.bySession": "By session",

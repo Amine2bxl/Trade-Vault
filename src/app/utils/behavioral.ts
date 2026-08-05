@@ -22,8 +22,22 @@ export const MISTAKE_SEVERITY: Record<string, Severity> = {
   "Low liquidity": "low",
 };
 
+/** Durée d'une fenêtre de comparaison. 30 jours ≈ un mois de trading :
+ *  assez long pour lisser le bruit, assez court pour que le trader ressente
+ *  l'amélioration pendant qu'il la produit. */
+export const TREND_WINDOW_DAYS = 30;
+
 function severityOf(mistake: string): Severity {
   return MISTAKE_SEVERITY[mistake] ?? "medium";
+}
+
+export interface MistakeTrend {
+  /** Occurrences sur la fenêtre récente. */
+  recent: number;
+  /** Occurrences sur la fenêtre précédente, de même durée. */
+  previous: number;
+  /** Variation en %, arrondie. Négatif = l'erreur RECULE. */
+  deltaPct: number;
 }
 
 interface MistakeRow {
@@ -32,6 +46,16 @@ interface MistakeRow {
   count: number;
   totalPnl: number;
   avgPnl: number;
+  /**
+   * Cette erreur recule-t-elle ?
+   *
+   * La tendance AGRÉGÉE existait déjà (`weeklyTrend`), mais elle ne dit pas
+   * LAQUELLE des erreurs s'améliore — or c'est ça que le trader veut savoir,
+   * et c'est la meilleure raison de revenir sur cette page. `null` tant que la
+   * fenêtre précédente est vide : annoncer « −100 % » pour une erreur qui
+   * vient d'apparaître serait faux.
+   */
+  trend: MistakeTrend | null;
 }
 
 interface BehavioralReport {
@@ -93,6 +117,40 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
     }
   }
 
+  // ── Tendance par erreur ────────────────────────────────────────────────────
+  // Deux fenêtres de MÊME durée, adossées à la DERNIÈRE date journalisée plutôt
+  // qu'à aujourd'hui : un trader en pause verrait sinon toutes ses erreurs
+  // « reculer » simplement parce qu'il ne trade plus.
+  const dated = trades.filter((t) => t.mistakes.length > 0).map((t) => t.date);
+  const lastDate = dated.length ? dated.reduce((a, b) => (a > b ? a : b)) : null;
+  const trendByMistake: Record<string, MistakeTrend | null> = {};
+  if (lastDate) {
+    const end = new Date(lastDate + "T12:00:00");
+    const midCut = new Date(end);
+    midCut.setDate(midCut.getDate() - TREND_WINDOW_DAYS);
+    const startCut = new Date(end);
+    startCut.setDate(startCut.getDate() - TREND_WINDOW_DAYS * 2);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const midKey = iso(midCut);
+    const startKey = iso(startCut);
+
+    const recent: Record<string, number> = {};
+    const previous: Record<string, number> = {};
+    for (const t of trades) {
+      if (t.mistakes.length === 0) continue;
+      const bucket = t.date > midKey ? recent : t.date > startKey ? previous : null;
+      if (!bucket) continue;
+      for (const m of t.mistakes) bucket[m] = (bucket[m] ?? 0) + 1;
+    }
+    for (const m of Object.keys(agg)) {
+      const r = recent[m] ?? 0;
+      const p = previous[m] ?? 0;
+      // Sans point de comparaison, on n'affirme rien.
+      trendByMistake[m] =
+        p === 0 ? null : { recent: r, previous: p, deltaPct: Math.round(((r - p) / p) * 100) };
+    }
+  }
+
   const rows: MistakeRow[] = Object.entries(agg)
     .map(([mistake, d]) => ({
       mistake,
@@ -100,6 +158,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
       count: d.count,
       totalPnl: Math.round(d.totalPnl * 100) / 100,
       avgPnl: Math.round((d.totalPnl / d.count) * 100) / 100,
+      trend: trendByMistake[mistake] ?? null,
     }))
     // worst first: severity weight × cost magnitude
     .sort((a, b) => SEVERITY_WEIGHT[b.severity] * b.count - SEVERITY_WEIGHT[a.severity] * a.count);

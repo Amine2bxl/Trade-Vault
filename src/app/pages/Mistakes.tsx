@@ -523,6 +523,28 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                         ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
                         : t("mistakes.defaultTip")}
                     </p>
+                    {/* Tendance : la seule information de cette page qui dise au
+                        trader s'il PROGRESSE. Affichée uniquement quand elle
+                        repose sur une fenêtre de comparaison réelle. */}
+                    {m.trend && m.trend.deltaPct !== 0 && (
+                      <div
+                        className={cn(
+                          "mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold",
+                          m.trend.deltaPct < 0 ? "text-emerald-400" : "text-red-400",
+                        )}
+                      >
+                        {m.trend.deltaPct < 0 ? (
+                          <TrendingDown className="w-3 h-3" />
+                        ) : (
+                          <TrendingUp className="w-3 h-3" />
+                        )}
+                        {m.trend.deltaPct > 0 ? "+" : ""}
+                        {m.trend.deltaPct}% ·{" "}
+                        <span className="font-normal text-slate-500">
+                          {t("mistakes.trendWindow")}
+                        </span>
+                      </div>
+                    )}
                     <div className="mt-1.5 text-[11px] text-slate-600">
                       <span className="font-bold text-slate-400">{m.count}×</span> ·{" "}
                       <span

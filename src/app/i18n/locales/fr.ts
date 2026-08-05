@@ -747,6 +747,7 @@ const fr: Dict = {
   "mistakes.sev_high": "Grave",
   "mistakes.sev_medium": "Moyenne",
   "mistakes.sev_low": "Faible",
+  "mistakes.trendWindow": "vs 30 jours précédents",
   "mistakes.weeklyTrend": "Tendance hebdo",
   "mistakes.weeklyTrendSub": "Corriges-tu tes erreurs dans le temps ?",
   "mistakes.bySession": "Par session",
