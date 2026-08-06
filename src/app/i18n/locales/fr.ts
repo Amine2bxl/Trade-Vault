@@ -739,7 +739,7 @@ const fr: Dict = {
   "import.imported": "trades importés",
   "import.duplicatesSkipped": "doublons ignorés",
 
-  "mistakes.discipline": "Score d'exécution",
+  "mistakes.discipline": "Score de journal propre",
   "mistakes.disciplineSub": "D'après les erreurs que tu as cochées, pondérées par gravité",
   "mistakes.severity": "Répartition par gravité",
   "mistakes.severityHint":

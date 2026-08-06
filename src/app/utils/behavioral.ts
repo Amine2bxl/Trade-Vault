@@ -80,8 +80,14 @@ interface BehavioralReport {
    *
    * La discipline, au sens de « tenir ses règles », se mesure dans
    * `ruleAdherence.ts`, et nulle part ailleurs.
+   *
+   * NOM : ni `disciplineScore` (il ne mesure pas la discipline), ni
+   * `executionScore` — ce dernier existe DÉJÀ dans
+   * `modules/trading/analysis/engine.ts` où il désigne l'efficacité de sortie
+   * calculée depuis MAE/MFE. Deux choses différentes portant le même nom, c'est
+   * précisément le défaut que cette série de corrections élimine.
    */
-  executionScore: number;
+  cleanJournalScore: number;
   severityCounts: Record<Severity, number>;
   bySession: Record<TradingSession, number>;
   byDay: Record<number, number>;
@@ -195,7 +201,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
 
   // Discipline: perfect at 0 infractions, each severity-weighted incident per
   // trade chips away. Tuned so ~1 medium mistake every 3 trades ≈ 85.
-  const executionScore =
+  const cleanJournalScore =
     trades.length === 0
       ? 100
       : Math.max(0, Math.min(100, Math.round(100 - (weightedInfractions / trades.length) * 22)));
@@ -218,7 +224,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
     cleanTrades,
     cleanWinRate,
     mistakeWinRate,
-    executionScore,
+    cleanJournalScore,
     severityCounts,
     bySession,
     byDay,

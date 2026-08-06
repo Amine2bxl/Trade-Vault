@@ -807,7 +807,7 @@ const en = {
   "import.duplicatesSkipped": "duplicates skipped",
 
   // Mistakes — behavioral analytics
-  "mistakes.discipline": "Execution score",
+  "mistakes.discipline": "Clean journal score",
   "mistakes.disciplineSub": "Based on the mistakes you flagged, weighted by severity",
   "mistakes.severity": "Severity distribution",
   "mistakes.severityHint":

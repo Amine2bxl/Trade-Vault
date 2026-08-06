@@ -149,7 +149,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   }
 
   // Discipline dial color
-  const disc = b.executionScore;
+  const disc = b.cleanJournalScore;
   const discColor =
     disc >= 80
       ? "text-emerald-400"
