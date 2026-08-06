@@ -724,7 +724,7 @@ const en = {
 
   // Quant metrics
   "quant.expectancy": "Expectancy",
-  "quant.planAdherence": "Plan adherence",
+  "quant.cleanTrades": "Clean trades",
   "quant.needTenDays": "needs ≥10 trading days",
   "quant.annualized": "annualized, daily PnL",
   "quant.kellyHint": "indication only",

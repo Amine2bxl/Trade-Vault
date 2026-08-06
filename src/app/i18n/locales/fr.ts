@@ -665,7 +665,7 @@ const fr: Dict = {
   "empty.example": "Exemple de trade",
 
   "quant.expectancy": "Espérance",
-  "quant.planAdherence": "Respect du plan",
+  "quant.cleanTrades": "Trades sans erreur",
   "quant.needTenDays": "≥10 jours de trading requis",
   "quant.annualized": "annualisé, PnL journalier",
   "quant.kellyHint": "indicatif uniquement",

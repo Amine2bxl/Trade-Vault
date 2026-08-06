@@ -632,9 +632,9 @@ export default function Dashboard({
                         : undefined,
                   }}
                   footer={{
-                    label: t("quant.planAdherence"),
-                    value: formatPct(quant.planAdherence),
-                    className: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400",
+                    label: t("quant.cleanTrades"),
+                    value: formatPct(quant.cleanTrades),
+                    className: quant.cleanTrades >= 0.8 ? "text-emerald-400" : "text-amber-400",
                   }}
                   delay={180}
                 />

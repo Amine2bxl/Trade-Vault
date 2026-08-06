@@ -76,7 +76,18 @@ export interface QuantStats {
   /** Days from max-drawdown trough back to a new equity high; null = no drawdown, -1 = still in it */
   recoveryDays: number | null;
   /** Share of trades logged with zero mistakes */
-  planAdherence: number;
+  /**
+   * Part des trades journalisés SANS erreur cochée.
+   *
+   * ATTENTION — ce n'est PAS l'adhérence aux règles. Cet indicateur mesure ce
+   * que le trader s'est lui-même reproché ; `ruleAdherence.ts` mesure ce que le
+   * moteur de discipline constate, règle par règle, sur une fenêtre de 30 jours.
+   * Les deux portaient le même libellé « Respect du plan » et affichaient des
+   * valeurs différentes : le tableau de bord pouvait annoncer 90 % pendant que
+   * Jarvis disait 55 %. Un chiffre qui diverge entre deux écrans détruit la
+   * confiance dans un produit d'analyse — c'est la règle n°1 du projet.
+   */
+  cleanTrades: number;
 }
 
 export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantStats {
@@ -90,7 +101,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     bestDayShare: null,
     consistencyScore: null,
     recoveryDays: null,
-    planAdherence: 0,
+    cleanTrades: 0,
   };
   if (trades.length === 0) return empty;
 
@@ -185,7 +196,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     }
   }
 
-  const planAdherence = trades.filter((t) => t.mistakes.length === 0).length / trades.length;
+  const cleanTrades = trades.filter((t) => t.mistakes.length === 0).length / trades.length;
 
   return {
     expectancy,
@@ -197,7 +208,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     bestDayShare,
     consistencyScore,
     recoveryDays,
-    planAdherence,
+    cleanTrades,
   };
 }
 

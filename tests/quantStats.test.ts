@@ -151,14 +151,18 @@ describe("computeQuantStats", () => {
     expect(computeQuantStats([mkTrade({ pnl: -100 })]).consistencyScore).toBeNull();
   });
 
-  it("plan adherence = share of mistake-free trades", () => {
+  // Nommé `cleanTrades`, et non « adhérence au plan » : cet indicateur mesure
+  // ce que le trader s'est lui-même reproché, pas ce que le moteur de
+  // discipline constate (`ruleAdherence.ts`). Les deux portaient le même
+  // libellé et affichaient des valeurs différentes.
+  it("cleanTrades = part des trades sans erreur cochée", () => {
     const q = computeQuantStats([
       mkTrade({ mistakes: [] }),
       mkTrade({ mistakes: ["FOMO entry"] }),
       mkTrade({ mistakes: [] }),
       mkTrade({ mistakes: [] }),
     ]);
-    expect(q.planAdherence).toBeCloseTo(0.75);
+    expect(q.cleanTrades).toBeCloseTo(0.75);
   });
 });
 
