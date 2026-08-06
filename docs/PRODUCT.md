@@ -66,7 +66,7 @@ supabase/        31 migrations
 
 Toute logique métier significative vit dans un **module pur** : aucune dépendance
 React, réseau ou stockage, avec les dépendances injectées. C'est ce qui la rend
-testable, et c'est ce qui protège les règles produit subtiles (voir §4).
+testable, et c'est ce qui protège les règles produit subtiles (voir §4 bis).
 
 Modules purs testés : `edgeHistory` · `checklistStreak` · `ruleAdherence` ·
 `ruleCheck` · `behavioral` · `memory-select` · `signalContext` · `history`.
@@ -87,6 +87,12 @@ Modules purs testés : `edgeHistory` · `checklistStreak` · `ruleAdherence` ·
 | Liste des pages | `PAGES` (`app/types.ts`) | ~~3 copies dans `App.tsx`~~ |
 | « Violer une règle » | `ruleCheck.checkTradeAgainstRules` | temps réel **et** bilan |
 | « Où en est cet objectif » | hook `useGoalProgress` | Goals **et** Jarvis |
+| « Où en est l'Edge Score » | hook `useEdgeScore` | Dashboard **et** Jarvis |
+| Page courante | l'**URL** (`?p=`) | ~~état React + `sessionStorage`~~ |
+
+**Et une seule DÉFINITION par métrique** — voir le glossaire §4, écrit après que
+huit défauts eurent partagé la même cause : plusieurs grandeurs différentes
+portant le même nom.
 
 **Ce tableau est la règle la plus importante du projet.** Une donnée dupliquée
 diverge ; un chiffre qui diverge entre deux pages détruit la confiance dans un
@@ -228,7 +234,58 @@ de la carte de preuve).
 
 ---
 
-## 4. Moteurs déterministes — et les règles produit qu'ils protègent
+## 4. Glossaire des métriques — **la section la plus importante de ce document**
+
+Chaque indicateur affiché, sa formule, sa source, et surtout **ce qu'il n'est
+pas**. Cette table existe parce que huit défauts corrigés le 2026-08-06
+partageaient une seule cause : *plusieurs grandeurs différentes portaient le même
+nom*. Aucun n'était détectable par les tests, le typage ou la CI — les valeurs
+étaient justes, c'est l'interprétation qui était fausse.
+
+> **Règle absolue.** Avant de nommer une métrique, vérifier **deux** choses :
+> (1) que la grandeur n'existe pas déjà ailleurs, (2) que le nom choisi n'est
+> **pas déjà pris** dans tout le produit. Omettre le second contrôle a suffi à
+> recréer une collision dix minutes après en avoir corrigé une.
+
+### Les trois grandeurs qu'on confond
+
+| Métrique | Où | Formule | Ce que c'est | Ce que ce **n'est pas** |
+|---|---|---|---|---|
+| **`ruleAdherence`** | `ruleAdherence.ts` | par règle activée : trades conformes ÷ trades applicables, fenêtre 30 j, via `checkTradeAgainstRules` | La **discipline réelle**, constatée par le moteur | Pas déclaratif — le trader ne peut pas l'influencer en cochant ou non |
+| **`cleanJournalScore`** | `behavioral.ts` → page Mistakes | `100 − (infractions pondérées ÷ trades) × 22` | La **charge d'erreurs auto-cochées** | **Pas la discipline.** Un trader qui ne coche rien obtient 100 |
+| **`executionScore`** | `analysis/engine.ts` | dérivé de MAE/MFE | L'**efficacité de sortie** | Aucun rapport avec les règles ni les erreurs |
+
+### Indicateurs du tableau de bord
+
+| Métrique | Formule | Piège |
+|---|---|---|
+| **`winRate`** | gagnants ÷ (gagnants + perdants) | Les break-even sont **exclus du dénominateur**, au global (`tradeCalcs`) comme par bucket (`quantStats.winRateOf`) — vérifié identique |
+| **`cleanTrades`** | trades sans erreur cochée ÷ trades | S'appelait « Respect du plan » et divergeait de `ruleAdherence` sur le même écran |
+| **`Edge Score`** | 4 sous-scores pondérés : `cleanTrades` 35 % · `risk` 25 % · `cleanDays` 25 % · `routine` 15 %, fenêtre `EDGE_WINDOW_DAYS` | Le sous-score `cleanTrades` s'appelait `plan` : Jarvis en déduisait « le respect du plan est ton point faible » |
+| **`profitFactor`** | gains bruts ÷ pertes brutes | Plafonné à 99 quand il n'y a aucune perte |
+| **`currentStreak`** | série de gains/pertes consécutifs (`tradeCalcs`) | **Un résultat, pas une preuve de process.** Jarvis disait « le signe que ton process fonctionne » |
+| **`pnlAfterLoss`** | P&L total des trades suivant une perte | **Borne haute**, pas un surcoût imputable : le trader aurait perdu quelque chose même en taille normale |
+
+### Source unique — accès partagés
+
+| Information | Point d'accès unique | Consommateurs |
+|---|---|---|
+| Progression des objectifs | hook `useGoalProgress` | page Goals · Jarvis |
+| Edge Score | hook `useEdgeScore` | Dashboard · Jarvis |
+| « Violer une règle » | `ruleCheck.checkTradeAgainstRules` | temps réel · bilan 30 j |
+| Page courante | l'**URL** (`?p=`) | toute l'application |
+
+### Ce qu'aucune métrique ne mesure aujourd'hui
+
+- Le **surcoût réel** du sur-dimensionnement après une perte (seule une
+  corrélation est disponible).
+- La **causalité** entre discipline et performance : l'écart entre trades
+  propres et trades marqués est confondu, car on coche plus volontiers une
+  erreur sur un perdant.
+
+---
+
+## 4 bis. Moteurs déterministes — et les règles produit qu'ils protègent
 
 C'est ici que vit la valeur non copiable. Chaque moteur porte des décisions
 produit subtiles, verrouillées par tests.
