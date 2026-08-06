@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Eraser, Send, Loader2, Mic, MicOff, Zap } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
+import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
@@ -395,6 +396,49 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         // Le serveur indique déjà si la réponse vient de l'IA ou du moteur
         // déterministe — on ne le devine pas, on lit `source`.
         pushAnswer(res.answer || t("ai.noResponse"), res.source !== "ai");
+
+        // ── Apprentissage ────────────────────────────────────────────────
+        // APRÈS la réponse, et sans l'attendre : le trader a déjà ce qu'il
+        // demandait, l'extraction ne doit lui coûter aucune milliseconde
+        // perçue. Elle est éteinte par défaut côté serveur
+        // (`AI_MEMORY_EXTRACTION`), pré-filtrée par marqueur d'engagement, et
+        // ne peut produire qu'un candidat déjà validé.
+        //
+        // L'écriture passe par le `remember()` existant — une seule voie vers
+        // `ai_memory`, donc un seul endroit qui tient l'invariant d'unicité.
+        void (async () => {
+          // Sans utilisateur identifié il n'y a pas de mémoire à alimenter :
+          // on ne dépense pas un appel pour un souvenir qu'on ne peut écrire.
+          if (!userId) return;
+          const known = memoryRef.current.map((m) => m.key).filter((k): k is string => !!k);
+          const out = await extractMemory({
+            data: { userMessage: query, knownKeys: known },
+          });
+          for (const c of out.candidates) {
+            await remember(userId, c.kind, c.content, {
+              key: c.key,
+              importance: c.importance,
+              confidence: c.confidence,
+              source: c.source,
+            });
+            memoryRef.current = [
+              ...memoryRef.current,
+              {
+                id: c.key,
+                kind: c.kind,
+                content: c.content,
+                key: c.key,
+                importance: c.importance,
+                confidence: c.confidence,
+                source: c.source,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            ];
+          }
+        })().catch(() => {
+          /* l'apprentissage ne doit JAMAIS dégrader la conversation */
+        });
       } catch (e) {
         // Jamais d'erreur visible : on répond de façon déterministe depuis les
         // mêmes données (quota, session, transport…). La console garde la cause.

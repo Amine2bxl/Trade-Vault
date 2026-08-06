@@ -6,6 +6,7 @@ import {
   deriveKey,
   EXTRACTED_MAX_CONFIDENCE,
   MAX_EXTRACTED_PER_CONVERSATION,
+  shouldAttemptExtraction,
   type RawCandidate,
 } from "../memory-extract";
 
@@ -149,6 +150,41 @@ describe("dé-doublonnage", () => {
     const r = validateCandidates(many);
     expect(r.accepted.length).toBe(MAX_EXTRACTED_PER_CONVERSATION);
     expect(r.rejected.some((x) => x.reason === "over_limit")).toBe(true);
+  });
+});
+
+describe("pré-filtre de coût — quand payer un appel d'extraction", () => {
+  it("NE déclenche PAS sur une simple question — le cas majoritaire", () => {
+    // C'est tout l'enjeu : extraire après chaque échange doublerait la facture
+    // IA alors que la plupart des tours ne contiennent rien de mémorisable.
+    for (const q of [
+      "Pourquoi je perds le vendredi ?",
+      "Montre-moi mes pires setups de la semaine dernière.",
+      "Explique-moi ce qu'est un ratio risque rendement.",
+      "ok",
+    ]) {
+      expect(shouldAttemptExtraction(q)).toBe(false);
+    }
+  });
+
+  it("déclenche sur un engagement explicite", () => {
+    for (const q of [
+      "Je m'engage à ne plus trader après deux pertes consécutives.",
+      "À partir de maintenant je coupe tout avant la clôture de New York.",
+      "Plus jamais je ne prendrai de trade pendant les news importantes.",
+    ]) {
+      expect(shouldAttemptExtraction(q)).toBe(true);
+    }
+  });
+
+  it("déclenche sur une préférence durable exprimée", () => {
+    expect(
+      shouldAttemptExtraction("Je préfère largement les setups de cassure en séance de Londres."),
+    ).toBe(true);
+  });
+
+  it("ignore un message trop court pour contenir un engagement", () => {
+    expect(shouldAttemptExtraction("je vais")).toBe(false);
   });
 });
 

@@ -85,6 +85,38 @@ const PERFORMANCE_FIGURE =
 const HEDGING =
   /\b(peut[- ]être|il semble|semblerait|probablement|sans doute|je pense|on dirait|maybe|probably|it seems|might be|possibly|apparently)\b/i;
 
+/**
+ * Pré-filtre déterministe : ce tour vaut-il un appel LLM d'extraction ?
+ *
+ * DÉCISION DE COÛT, pas de qualité. Extraire après chaque échange doublerait
+ * la facture IA et la latence perçue, alors que l'écrasante majorité des tours
+ * ne contient rien de mémorisable : « pourquoi je perds le vendredi ? » est une
+ * question, pas un engagement. On n'appelle donc le modèle que si le trader a
+ * employé une tournure d'ENGAGEMENT ou de PRÉFÉRENCE.
+ *
+ * Le filtre est volontairement lexical et grossier. Il ne décide pas de ce qui
+ * est mémorisé — `validateCandidates` s'en charge — seulement de ce qui mérite
+ * qu'on paie pour regarder. Un faux négatif coûte un souvenir manqué, que le
+ * trader redira ; un faux positif coûte une fraction de centime.
+ */
+// Pas d'ancrage `\b` : en JavaScript, `\b` ne reconnaît pas les lettres
+// accentuées comme des caractères de mot, donc `\bà partir de` ne matcherait
+// JAMAIS « À partir de maintenant ». Ces marqueurs sont des locutions
+// distinctives de plusieurs mots ; un faux positif par sous-chaîne est
+// implausible, et il ne coûterait de toute façon qu'un appel inutile.
+const COMMITMENT_MARKERS =
+  /(je (vais|veux|dois|m'engage|arrête|arrete|arrêterai|décide|decide|promets|compte)|à partir de (maintenant|demain|lundi)|désormais|desormais|plus jamais|je ne (vais|veux) plus|dorénavant|dorenavant|i (will|want|must|promise|decide|commit)|from now on|never again)/i;
+
+const PREFERENCE_MARKERS =
+  /(je préfère|je prefere|j'aime|je déteste|je deteste|je n'aime pas|je me sens (mieux|plus)|je suis (plus )?(à l'aise|a l'aise)|i prefer|i like|i hate|i'm more comfortable)/i;
+
+export function shouldAttemptExtraction(userText: string): boolean {
+  const t = (userText ?? "").trim();
+  // Sous ce seuil, un message n'a pas la place de contenir un engagement.
+  if (t.length < 20) return false;
+  return COMMITMENT_MARKERS.test(t) || PREFERENCE_MARKERS.test(t);
+}
+
 /** Candidat tel que produit par le modèle — non encore validé. */
 export interface RawCandidate {
   kind?: string;
