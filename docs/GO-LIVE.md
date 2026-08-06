@@ -53,7 +53,7 @@ d'achat réel n'a été testé dans cette session.**
 
 | # | Point | État |
 |---|---|---|
-| 2.1 | **Purge de `ai_agent_runs`** — la table croît linéairement sans rétention | À faire |
+| ~~2.1~~ | ~~**Purge de `ai_agent_runs`**~~ — **FAIT** : rétention 90 jours, greffée sur le tick quotidien existant (`/api/cron/lifecycle-emails`), best-effort. Ni `pg_cron` (extension non installée, l'activer serait une opération sur la production) ni cron dédié. **Non observée en conditions réelles** : le premier passage aura lieu au prochain déclenchement quotidien | ✅ |
 | 2.2 | **Activation de l'extraction mémoire** — codée, testée, `AI_MEMORY_EXTRACTION` éteint. Activer d'abord en préproduction et mesurer le **taux de rejet** | À faire |
 | 2.3 | **Synchronisation serveur des conversations** — l'historique est persistant mais LOCAL : changer d'appareil le perd | À faire |
 | 2.4 | **Analytics par écran** — désormais possible (la page vit dans l'URL), mais aucun outil n'est branché | À faire |

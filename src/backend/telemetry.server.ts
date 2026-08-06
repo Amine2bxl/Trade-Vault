@@ -55,3 +55,54 @@ export async function recordAgentRun(run: RunInput): Promise<void> {
     console.warn("[telemetry] écriture ignorée", e);
   }
 }
+
+/**
+ * Rétention de `ai_agent_runs` — 90 jours.
+ *
+ * POURQUOI UNE RÉTENTION. La table reçoit une ligne par appel IA et ne
+ * supprimait rien : elle croît linéairement avec l'usage, indéfiniment. Sur un
+ * produit qui vise des dizaines de milliers d'utilisateurs, c'est le genre de
+ * table qui finit par coûter plus cher que le service qu'elle mesure.
+ *
+ * POURQUOI 90 JOURS. C'est la fenêtre au-delà de laquelle la donnée ne sert
+ * plus : les décisions qu'elle éclaire (quel modèle, quel budget de tokens,
+ * quel coût acceptable) portent sur des semaines, pas sur des trimestres. Et
+ * l'écran de diagnostic ne lit que 7 jours.
+ *
+ * POURQUOI PAS `pg_cron`. L'extension est disponible sur le projet mais NON
+ * INSTALLÉE ; l'installer et planifier une suppression récurrente serait une
+ * opération sur la base de production. Le produit dispose déjà d'un tick
+ * quotidien (`/api/cron/lifecycle-emails`) qui enchaîne des tâches secondaires
+ * en best-effort — c'est le motif existant, on le réutilise plutôt que d'en
+ * introduire un second.
+ *
+ * AUCUNE DONNÉE UTILISATEUR N'EST TOUCHÉE : cette table ne contient ni prompt,
+ * ni réponse, ni question — uniquement des mesures techniques.
+ */
+export const AGENT_RUNS_RETENTION_DAYS = 90;
+
+export async function purgeOldAgentRuns(): Promise<{ purged: boolean }> {
+  const url = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return { purged: false };
+
+  const cutoff = new Date(
+    Date.now() - AGENT_RUNS_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  try {
+    const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
+    const { error } = await sb.from("ai_agent_runs").delete().lt("created_at", cutoff);
+    if (error) {
+      // La table peut ne pas exister (migration non appliquée) : on le log et
+      // on continue. Une purge ratée n'est jamais une raison de faire échouer
+      // le cron qui l'héberge.
+      console.warn("[telemetry] purge failed", error);
+      return { purged: false };
+    }
+    return { purged: true };
+  } catch (e) {
+    console.warn("[telemetry] purge failed", e);
+    return { purged: false };
+  }
+}
