@@ -53,7 +53,7 @@ app/             UI — 23 pages, 35 composants, 10 hooks
 modules/         Domaine réutilisable — ai/, ai-provider/, voice/, discipline/
 backend/         17 fonctions serveur (createServerFn) + middlewares
 integrations/    Client Supabase + types générés
-supabase/        30 migrations
+supabase/        31 migrations
 ```
 
 **Pile** : TanStack Start (SSR) · TanStack Router · TanStack Query · Supabase
@@ -111,6 +111,41 @@ client**, à partir de données déjà calculées. Le LLM écrit de la prose ; l
 chiffres viennent des moteurs déterministes. *C'est ce qui garantit qu'aucun
 chiffre affiché ne peut être halluciné.* À préserver absolument.
 
+### Persistance des conversations
+
+`localStorage`, derrière l'interface `ConversationStore`
+(`components/jarvis/conversations.ts`).
+
+> **Défaut corrigé le 2026-08-06.** Les conversations vivaient en
+> `sessionStorage` : détruites à la fermeture de l'onglet. Un trader revenait le
+> lendemain devant un Jarvis amnésique. Aucune fonctionnalité ne manquait — le
+> **stockage démentait la promesse centrale du produit**. On peut construire la
+> meilleure mémoire long terme du marché : si l'historique visible s'efface
+> chaque soir, le trader ne croira jamais que Jarvis se souvient de lui.
+> Corrigé aussi pour la préférence de langue et les brouillons de question.
+>
+> Reprise transparente de l'ancien emplacement au premier chargement. `remove()`
+> purge les **deux** emplacements — n'en nettoyer qu'un laissait les messages
+> d'une conversation « supprimée » sur le disque.
+
+**Limite assumée** : le stockage reste LOCAL à l'appareil. La synchronisation
+serveur (table + RLS) est le prochain palier.
+
+### Actions exécutables (`JarvisToolKind`)
+
+Deux actions, toutes deux réellement implémentées :
+
+| Action | Effet |
+|---|---|
+| `createChecklist` | Écrit une vraie `TradingRule` (dédupée) dans `profiles`, diffuse `tv-rules-updated`, et mémorise l'**engagement** (`decision`, confiance 1) |
+| `openPage` | Navigue via le canal `tv:navigate` déjà écouté par l'application |
+
+> Le type en déclarait **dix**, dont huit n'étaient émises nulle part ni gérées
+> par personne. Un contrat qui promet des capacités inexistantes coûte deux
+> fois : il fait croire au lecteur du code que la fonctionnalité existe, et il
+> laisse compiler `tool: "createAlert"` — un bouton qui n'exécute rien tout en
+> affichant un succès. **Le type suit l'implémentation, jamais l'inverse.**
+
 ### Contrat de blocs (9 types)
 
 `markdown` · `stats` · `card` · `checklist` · `alert` · `hero` · `insight` ·
@@ -145,8 +180,37 @@ Le budget protège du volume ; le plancher protège de la **dilution**.
 depuis l'onboarding · règle acceptée → souvenir `decision` (`confidence: 1`,
 l'utilisateur a cliqué).
 
-**Non implémenté** : l'extraction par LLM (PR-2b). C'est la seule brique capable
-de mentir durablement — ses garde-fous sont spécifiés mais non codés.
+### Extraction par LLM (PR-2b) — `memory-extract.ts` + `agents/memory.agent.ts`
+
+La seule brique capable de **mentir durablement**. Une hallucination ponctuelle
+est un incident ; une hallucination *mémorisée* est renvoyée dans chaque prompt
+suivant, indéfiniment. Le coût d'un souvenir manqué est faible (le trader le
+redira) ; celui d'un faux souvenir est durable et invisible. D'où le parti pris :
+**tout ce qui n'est pas manifestement légitime est rejeté.**
+
+| Garde-fou | Raison |
+|---|---|
+| Seules `decision` et `preference` | Les seules choses qu'un trader énonce et qu'aucun calcul ne retrouve. `fact`/`lesson` seraient le vecteur d'entrée des hallucinations |
+| **Aucun chiffre de performance** | Win rate, P&L, R, comptes ont une source calculée ; les figer créerait un second chiffre divergent |
+| Clé **toujours re-dérivée** du contenu | Sinon le modèle écrase n'importe quel souvenir en renvoyant sa clé |
+| Confiance plafonnée à **0,5** | Sous le profil déclaré (0,9) et la règle acceptée (1,0) : une phrase interprétée ne pèse jamais autant qu'un clic |
+| Importance plafonnée à 4 | Un engagement déduit ne prime pas sur l'identité |
+| Rejet des formulations hésitantes | Le modèle signale lui-même qu'il extrapole |
+| 3 souvenirs max/conversation | Appliqué **après** dédoublonnage |
+
+**Coupe-circuit** : `AI_MEMORY_EXTRACTION=1` requis. **Éteint par défaut.**
+
+**Maîtrise du coût** : `shouldAttemptExtraction()` filtre sans réseau — on ne
+paie un appel que si le trader emploie une tournure d'engagement ou de
+préférence. « Pourquoi je perds le vendredi » est une question, pas un
+engagement, et ne déclenche rien : c'est le cas majoritaire.
+
+**Une seule voie d'écriture** : la fonction serveur rend des *candidats* et
+n'écrit rien ; l'écriture passe par le `remember()` existant.
+
+**Métrique à surveiller** : le **taux de rejet** (via `ai_agent_runs`). Un taux
+proche de zéro signifierait que les garde-fous sont trop laxistes — pas que le
+modèle est bon.
 
 ### Ce que Jarvis sait aujourd'hui
 
@@ -330,17 +394,23 @@ d'environnement suffit à basculer.
 
 **Vérifié comme manquant**, par ordre de valeur :
 
-1. **Proactivité de Jarvis** — via `Inbox`, qui est aujourd'hui un canal vide.
-2. **URLs par page** — l'app entière est une seule route ; le bouton retour
+1. **URLs par page** — l'app entière est une seule route ; le bouton retour
    quitte l'application sur Android, et **aucune page n'est traçable en
-   analytics**.
-3. **Extraction mémoire par LLM** — garde-fous spécifiés, non codés.
+   analytics**. C'est aussi un handicap SEO total.
+2. **Synchronisation serveur des conversations** — l'historique est désormais
+   persistant, mais LOCAL à l'appareil. Changer de machine le perd.
+3. **Activation de l'extraction mémoire** — codée et testée, `AI_MEMORY_EXTRACTION`
+   éteint. Le taux de rejet réel reste à mesurer.
 4. **Streaming** — nécessite un transport HTTP (le RPC actuel ne peut pas faire
    de SSE).
 5. **Design system** — ~470 tailles typographiques arbitraires restantes, ~105
-   couleurs en dur. *Plus aucun texte sous 11 px.*
+   couleurs en dur. *Plancher réel : 10 px (`type.micro`), plus aucun 8 px dans
+   l'UI produit.*
 6. **i18n** — deux mécanismes coexistent (dictionnaire + ternaires en ligne).
 7. **Purge de `ai_agent_runs`** — la table croît linéairement.
+8. **Écart local / CI** — le sandbox n'exécute que 290 des 303 tests (paquets npm
+   indisponibles, registre 403). Une régression a échappé à la vérification
+   locale pour cette raison : **la CI est la seule vérification qui fasse foi.**
 
 ---
 
