@@ -545,7 +545,7 @@ const fr: Dict = {
   "mistakes.mostCommon": "Les plus fréquentes",
   "mistakes.noMistakesShort": "Aucune erreur !",
   "mistakes.noMistakes": "Aucune erreur",
-  "mistakes.noMistakesGreat": "Aucune erreur — excellente discipline !",
+  "mistakes.noMistakesGreat": "Aucune erreur cochée sur cette période.",
   "mistakes.improvementTips": "Conseils d'amélioration",
   "mistakes.priority": "PRIORITÉ",
   "mistakes.defaultTip": "Concentrez-vous sur la réduction de cette erreur.",
@@ -739,8 +739,8 @@ const fr: Dict = {
   "import.imported": "trades importés",
   "import.duplicatesSkipped": "doublons ignorés",
 
-  "mistakes.discipline": "Score de discipline",
-  "mistakes.disciplineSub": "Pondéré par la gravité des erreurs sur tous les trades",
+  "mistakes.discipline": "Score d'exécution",
+  "mistakes.disciplineSub": "D'après les erreurs que tu as cochées, pondérées par gravité",
   "mistakes.severity": "Répartition par gravité",
   "mistakes.severityHint":
     "Les erreurs graves (pas de stop, revenge, sur-taille) font sauter un compte le plus vite.",
@@ -758,7 +758,7 @@ const fr: Dict = {
   "mistakes.incidents": "Incidents",
   "mistakes.edgePrefix": "Tes trades propres gagnent",
   "mistakes.edgePoints": "points",
-  "mistakes.edgeSuffix": "plus souvent que ceux avec erreurs — la discipline est ton edge.",
+  "mistakes.edgeSuffix": "plus souvent que ceux où tu as coché une erreur.",
   "mistakes.goal": "Prochain objectif",
   "mistakes.goalIntro": "Élimine",
   "mistakes.goalMid": "cette semaine pour monter la discipline vers",

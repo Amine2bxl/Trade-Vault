@@ -596,7 +596,7 @@ const en = {
   "mistakes.mostCommon": "Most Common",
   "mistakes.noMistakesShort": "No mistakes!",
   "mistakes.noMistakes": "No mistakes",
-  "mistakes.noMistakesGreat": "No mistakes — great discipline!",
+  "mistakes.noMistakesGreat": "No mistakes flagged in this period.",
   "mistakes.improvementTips": "Improvement Tips",
   "mistakes.priority": "PRIORITY",
   "mistakes.defaultTip": "Focus on reducing this mistake.",
@@ -807,8 +807,8 @@ const en = {
   "import.duplicatesSkipped": "duplicates skipped",
 
   // Mistakes — behavioral analytics
-  "mistakes.discipline": "Discipline score",
-  "mistakes.disciplineSub": "Weighted by mistake severity across all trades",
+  "mistakes.discipline": "Execution score",
+  "mistakes.disciplineSub": "Based on the mistakes you flagged, weighted by severity",
   "mistakes.severity": "Severity distribution",
   "mistakes.severityHint":
     "High-severity errors (no stop, revenge, oversizing) blow up accounts fastest.",
@@ -826,7 +826,7 @@ const en = {
   "mistakes.incidents": "Incidents",
   "mistakes.edgePrefix": "Your clean trades win",
   "mistakes.edgePoints": "points",
-  "mistakes.edgeSuffix": "more often than trades with mistakes — discipline is your edge.",
+  "mistakes.edgeSuffix": "more often than trades where you flagged a mistake.",
   "mistakes.goal": "Next goal",
   "mistakes.goalIntro": "Cut",
   "mistakes.goalMid": "this week to lift discipline toward",

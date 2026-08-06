@@ -67,7 +67,21 @@ interface BehavioralReport {
   cleanWinRate: number | null;
   mistakeWinRate: number | null;
   /** 0–100; 100 = flawless discipline, penalized by severity-weighted incidents */
-  disciplineScore: number;
+  /**
+   * Score d'EXÉCUTION, 0–100, dérivé uniquement des erreurs que le trader a
+   * lui-même cochées, pondérées par gravité.
+   *
+   * Ce n'est PAS un score de discipline, et il s'appelait ainsi. La différence
+   * est décisive : un trader qui ne coche rien obtient 100, et la page le
+   * félicitait (« Aucune erreur — excellente discipline ! »). Le produit
+   * récompensait donc le fait de NE PAS journaliser — alors que la
+   * journalisation honnête est l'effort le plus pénible qu'il demande et la
+   * source de toute sa valeur analytique.
+   *
+   * La discipline, au sens de « tenir ses règles », se mesure dans
+   * `ruleAdherence.ts`, et nulle part ailleurs.
+   */
+  executionScore: number;
   severityCounts: Record<Severity, number>;
   bySession: Record<TradingSession, number>;
   byDay: Record<number, number>;
@@ -181,7 +195,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
 
   // Discipline: perfect at 0 infractions, each severity-weighted incident per
   // trade chips away. Tuned so ~1 medium mistake every 3 trades ≈ 85.
-  const disciplineScore =
+  const executionScore =
     trades.length === 0
       ? 100
       : Math.max(0, Math.min(100, Math.round(100 - (weightedInfractions / trades.length) * 22)));
@@ -204,7 +218,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
     cleanTrades,
     cleanWinRate,
     mistakeWinRate,
-    disciplineScore,
+    executionScore,
     severityCounts,
     bySession,
     byDay,
