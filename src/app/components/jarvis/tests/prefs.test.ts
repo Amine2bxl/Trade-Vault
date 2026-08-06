@@ -14,7 +14,9 @@ function installStorageMock() {
     removeItem: (k: string) => void data.delete(k),
     clear: () => data.clear(),
   } as Storage;
-  (globalThis as Record<string, unknown>).sessionStorage = storage;
+  // La préférence est PERSISTANTE (localStorage) : une langue choisie qui se
+  // réinitialise à chaque onglet n'est pas une préférence.
+  (globalThis as Record<string, unknown>).localStorage = storage;
   return () => data.clear();
 }
 
