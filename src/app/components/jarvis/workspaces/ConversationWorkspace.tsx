@@ -281,7 +281,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           trades: context.trades,
           stats,
           signals,
-          edge: null,
           rule: null,
           profile: context.profile ?? null,
           onboarding,

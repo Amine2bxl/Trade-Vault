@@ -2,7 +2,7 @@ import type { Trade } from "../../../types";
 import type { JarvisProfile, OnboardingData } from "../../../store";
 import type { computeStats } from "../../../utils/tradeCalcs";
 import type { computeBehaviorSignals } from "../../../utils/behaviorSignals";
-import type { EdgeResult, DailyRule } from "../../../utils/edgeScore";
+import type { DailyRule } from "../../../utils/edgeScore";
 
 /**
  * Contrat interne du module JarvisHome (Phase 1).
@@ -25,7 +25,6 @@ export interface JarvisHomeData {
   trades: Trade[];
   stats: ReturnType<typeof computeStats>;
   signals: ReturnType<typeof computeBehaviorSignals>;
-  edge: EdgeResult | null;
   rule: DailyRule | null;
   profile: JarvisProfile | null;
   onboarding: OnboardingData | null;

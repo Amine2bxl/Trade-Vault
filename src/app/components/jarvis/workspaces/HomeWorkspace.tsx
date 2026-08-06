@@ -51,7 +51,6 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       trades: context.trades,
       stats,
       signals,
-      edge: null,
       rule,
       profile: context.profile ?? null,
       onboarding,
