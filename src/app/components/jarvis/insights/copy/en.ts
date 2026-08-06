@@ -126,7 +126,7 @@ function enDisciplineStreak(insight: JarvisInsight, mode: JarvisVoiceMode): Hero
   if (mode === "beginner") {
     lines.push({
       kind: "observation",
-      text: `You're on a ${streak}-win streak — a sign your process is working.`,
+      text: `You're on a ${streak}-win streak. That's an outcome, not yet proof: rule adherence is what tells you whether the process held.`,
     });
   } else if (mode === "advanced") {
     lines.push({ kind: "observation", text: `Current streak: ${streak} wins.` });

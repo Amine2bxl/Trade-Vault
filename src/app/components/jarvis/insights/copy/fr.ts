@@ -129,7 +129,7 @@ function frDisciplineStreak(insight: JarvisInsight, mode: JarvisVoiceMode): Hero
   if (mode === "beginner") {
     lines.push({
       kind: "observation",
-      text: `Tu es sur une série de ${streak} victoires — le signe que ton process fonctionne.`,
+      text: `Tu es sur une série de ${streak} victoires. Un résultat, pas encore une preuve : c'est la tenue de tes règles qui dira si le process suit.`,
     });
   } else if (mode === "advanced") {
     lines.push({ kind: "observation", text: `Série en cours : ${streak} victoires.` });
