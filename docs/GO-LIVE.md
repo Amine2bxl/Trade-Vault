@@ -61,6 +61,7 @@ d'achat réel n'a été testé dans cette session.**
 | 2.6 | **Politique de mots de passe / rate-limit auth** | **[NON VÉRIFIÉ]** |
 | 2.7 | **RGPD** — export et suppression de compte | **[NON VÉRIFIÉ]** |
 | 2.8 | **Emails transactionnels** — Resend câblé, délivrabilité non éprouvée | **[NON VÉRIFIÉ]** |
+| 2.10 | **12 langues proposées, 2 réellement traduites** — `fr` et `en` comptent 1 127 clés ; les **dix autres en comptent 293**, soit **26 %**. Le reste retombe sur l'anglais : un utilisateur qui choisit « Deutsch » obtient une interface à ~74 % en anglais. Vérifié par comptage, et par sondage : la navigation et les titres de page sont traduits, mais ni les statistiques (`quant.*`), ni la checklist, ni Jarvis, ni Goals. **Décision produit requise** : réduire le sélecteur aux langues complètes, ou compléter les traductions | **À arbitrer** |
 | 2.9 | **Quatre pages d'analyse jamais auditées** — Analytics, Seasonality, Reports, Calendar : ~3 000 lignes et la majorité des chiffres affichés. Huit défauts « chiffre juste, interprétation fausse » ont été trouvés sur les pages auditées ; rien n'indique que celles-ci en soient exemptes | À faire |
 
 ---
@@ -82,7 +83,15 @@ d'achat réel n'a été testé dans cette session.**
   violations corrigées le 2026-08-06 : « Respect du plan » désignait deux calculs
   différents ; la page courante vivait à la fois en état React et en
   `sessionStorage`.
-- **CI verte** sur les cinq derniers commits.
+- **CI verte** sur les trente derniers commits (un seul échec dans la journée,
+  corrigé).
+- **RTL** : `document.documentElement.dir` bascule en `rtl` pour l'arabe, et les
+  pages publiques le gèrent aussi. L'arabe est incomplet (cf. 2.10) mais **pas
+  cassé**.
+- **Les textes analytiques n'existent qu'en `fr` et `en`.** Conséquence utile :
+  les treize défauts « chiffre juste, interprétation fausse » corrigés le
+  2026-08-06 ne peuvent pas subsister dans les autres locales — elles ne
+  contiennent aucun texte de ce type.
 
 ---
 
