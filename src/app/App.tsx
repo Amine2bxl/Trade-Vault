@@ -33,6 +33,7 @@ const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
 import TradeDetailModal from "./components/TradeDetailModal";
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, isPage, type Page } from "./types";
+import { pageFromSearch, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
 import {
   upsertTrade,
   deleteTrade,
@@ -93,28 +94,45 @@ function AppContent() {
     },
     [queryClient, user?.id, activeId],
   );
+  // L'URL est la SOURCE DE VÉRITÉ de la page courante — plus `sessionStorage`.
+  // Deux emplacements auraient divergé au premier retour arrière, et c'est
+  // l'URL qui rend la page partageable, mesurable et navigable au bouton
+  // retour (voir `utils/pageUrl.ts` pour le raisonnement complet).
   const [page, setPage] = useState<Page>(() => {
+    if (typeof window === "undefined") return DEFAULT_PAGE;
+    const fromUrl = pageFromSearch(window.location.search);
+    if (fromUrl) return fromUrl;
+    // Reprise unique de l'ancien emplacement : un trader dont l'onglet est
+    // ouvert au moment du déploiement reste sur sa page.
     try {
       const saved = sessionStorage.getItem("tv.page");
-      // `isPage` dérive de PAGES (app/types.ts) : ajouter une page ne demande
-      // plus de penser à mettre cette liste à jour.
       if (isPage(saved)) return saved;
     } catch {
-      /* sessionStorage unavailable */
+      /* sessionStorage indisponible */
     }
-    return "dashboard";
+    return DEFAULT_PAGE;
   });
 
-  // Persist page changes to sessionStorage (survives refresh, not tabs)
   const pageRef = useRef(page);
   pageRef.current = page;
+
+  // Écrit la page dans l'URL. `pushState` — et non `replaceState` — parce que
+  // c'est précisément l'entrée d'historique qui fait fonctionner le bouton
+  // retour ; sans elle, « retour » quitte l'application sur Android.
   useEffect(() => {
-    try {
-      sessionStorage.setItem("tv.page", page);
-    } catch {
-      /* sessionStorage unavailable */
-    }
+    if (typeof window === "undefined") return;
+    const next = buildPageUrl(window.location.pathname, window.location.search, page);
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next === current) return;
+    window.history.pushState({ page }, "", next);
   }, [page]);
+
+  // Bouton retour / avant du navigateur.
+  useEffect(() => {
+    const onPop = () => setPage(pageFromSearch(window.location.search) ?? DEFAULT_PAGE);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
