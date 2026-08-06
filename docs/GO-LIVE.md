@@ -61,6 +61,7 @@ d'achat réel n'a été testé dans cette session.**
 | 2.6 | **Politique de mots de passe / rate-limit auth** | **[NON VÉRIFIÉ]** |
 | 2.7 | **RGPD** — export et suppression de compte | **[NON VÉRIFIÉ]** |
 | 2.8 | **Emails transactionnels** — Resend câblé, délivrabilité non éprouvée | **[NON VÉRIFIÉ]** |
+| 2.9 | **Quatre pages d'analyse jamais auditées** — Analytics, Seasonality, Reports, Calendar : ~3 000 lignes et la majorité des chiffres affichés. Huit défauts « chiffre juste, interprétation fausse » ont été trouvés sur les pages auditées ; rien n'indique que celles-ci en soient exemptes | À faire |
 
 ---
 

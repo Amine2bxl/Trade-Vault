@@ -234,6 +234,64 @@ de la carte de preuve).
 
 ---
 
+## 3 bis. Les 23 pages — rôle, données, constat
+
+Chaque page avec son objectif, les moteurs qu'elle consomme et un constat
+d'audit. La colonne « constat » ne contient que ce qui a été **vérifié dans le
+code**.
+
+### Quotidien — la boucle centrale
+
+| Page | Objectif | Moteurs consommés | Constat |
+|---|---|---|---|
+| **Dashboard** (752 l.) | Premier écran de chaque session : état de forme et rappel de discipline | `edgeScore` · `edgeHistory` · `quantStats` · `tradeCalcs` | Consomme désormais `useEdgeScore`, partagé avec Jarvis |
+| **Checklist** (2 234 l.) | Rituel pré-market ; verrouiller la journée | `checklistStreak` · `tradingRules` · `jarvisVoice` | **La plus grosse page du produit** : ~1 750 lignes sont un moteur audio/vocal. Découpage volontairement refusé — non testable ici, risque supérieur au gain |
+| **Journal** (660 l.) | Saisir et relire ses trades | `tradeCalcs` · `exportCsv` | L'effort le plus pénible du produit ; il alimente tout le reste |
+| **Jarvis** (88 l.) | Coach IA — coquille légère, tout vit dans les workspaces | — | Bon découpage : la page ne porte aucune logique |
+| **Inbox** (255 l.) | Toutes les notifications, filtrées par catégorie | — (lit `notifications`) | Décrite à tort comme « canal vide » : 116 notifications en production |
+
+### Analyse — récompense différée
+
+| Page | Objectif | Moteurs consommés | Constat |
+|---|---|---|---|
+| **Analytics** (1 133 l.) | Statistiques approfondies | `quantStats` · `tradeCalcs` | **Non auditée** — ses indicateurs ne figurent pas au glossaire §4 |
+| **Mistakes** (650 l.) | Erreurs récurrentes et leur coût | `behavioral` · `ruleAdherence` · `tradeCalcs` | Son score de tête félicitait les traders qui ne journalisent pas — corrigé le 2026-08-06 |
+| **Calendar** (591 l.) | P&L jour par jour | — (props) | Aucun moteur importé : tout vient des props |
+| **Seasonality** (781 l.) | Performance par période / actif | `assetSeasonality` · `tradeCalcs` | **Non auditée** |
+| **Reports** (529 l.) | Bilans mensuels | `monthlyReport` · `tradeCalcs` | **Non auditée** ; table `monthly_reports` |
+| **Missed** (798 l.) | Setups vus mais non pris | `image` · `tradeCalcs` | Différenciant réel : aucun concurrent ne journalise l'inaction |
+
+### Cadre — engagement du trader
+
+| Page | Objectif | Moteurs consommés | Constat |
+|---|---|---|---|
+| **Goals** (234 l.) | Objectifs mesurés | `goalPlan` · `tradeCalcs` | Partage `useGoalProgress` avec Jarvis |
+| **TradingPlan** (668 l.) | Règles et gestion du risque | `tradingPlan` | Source de vérité des règles (`profiles.trading_rules`) |
+| **Calculator** (562 l.) | Taille de position | `positionCalc` | Outil autonome, sans dépendance à l'historique |
+| **EconomicNews** (751 l.) | Calendrier macro | `economicEvents` | Seule donnée EXTERNE du produit (`economic_events`, 203 lignes) |
+
+### Compte et périphérie
+
+| Page | Objectif | Constat |
+|---|---|---|
+| **Settings** (468 l.) · **Profile** (203 l.) · **Appearance** (29 l.) | Préférences, compte, thème | `Appearance` à 29 lignes occupe une entrée de navigation entière |
+| **Subscription** (386 l.) | Offres et paiement | **Parcours jamais éprouvé de bout en bout** — bloquant Go-Live |
+| **Landing** (1 490 l.) | Acquisition, SSR, SEO | Seule page réellement indexée ; contient une maquette décorative (source des derniers `text-[8px]`) |
+| **Contact** · **Legal** | Pages publiques | RGPD non vérifié |
+
+### Ce que cet inventaire révèle
+
+1. **Quatre pages d'analyse n'ont jamais été auditées** (Analytics, Seasonality,
+   Reports, Calendar) — ~3 000 lignes et la majorité des chiffres affichés du
+   produit. C'est là que se trouvent statistiquement les prochains défauts de la
+   famille « chiffre juste, interprétation fausse ».
+2. **`Appearance` (29 lignes) pèse autant qu'Analytics (1 133 lignes) dans la
+   navigation.** Coût cognitif sans contrepartie.
+3. **Checklist concentre 2 234 lignes**, dont ~78 % de moteur vocal — le seul
+   endroit du produit où la logique métier n'est pas isolée en module pur.
+
+---
+
 ## 4. Glossaire des métriques — **la section la plus importante de ce document**
 
 Chaque indicateur affiché, sa formule, sa source, et surtout **ce qu'il n'est
