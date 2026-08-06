@@ -39,10 +39,9 @@ export type OnboardingAction = "import" | "demo" | null;
 //   4. NIVEAU     — nouveau / intermédiaire / aguerri / prop  (simple)
 //   5. OBJECTIF   — régularité / prop / discipline / temps plein / en parallèle
 //   6. FAIBLESSES — émotions / constance / sur-trading / risque / journalisation (MULTI)
-//   7. CAPITAL    — taille du compte pour calibrer le risque
-//   8. RÉGLAGES   — cible mensuelle % + thème
-//   9. NOTIFICATIONS — permission push (ré-intégrée, non bloquante)
-//   10. C'EST PARTI — Import CSV / Démo / Démarrer à zéro
+//   7. RÉGLAGES   — cible mensuelle % + capital + thème
+//   8. NOTIFICATIONS — permission push (ré-intégrée, non bloquante)
+//   9. C'EST PARTI — Import CSV / Démo / Démarrer à zéro
 // Chaque écran est court (un tap) : progress bar, back, skip si optionnel.
 type StepKey =
   | "identity"
@@ -51,7 +50,6 @@ type StepKey =
   | "experience"
   | "goal"
   | "pain"
-  | "capital"
   | "settings"
   | "notify"
   | "start";
@@ -73,10 +71,10 @@ const EMPTY: OnboardingData = {
 
 function IconBadge({ icon: Icon }: { icon: typeof Target }) {
   return (
-    <div className="relative mb-5">
-      <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
-      <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
-        <Icon className="w-7 h-7 text-white" />
+    <div className="relative mb-4">
+      <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-md" />
+      <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+        <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
   );
@@ -100,9 +98,9 @@ function ScreenShell({
       <div className="flex justify-center">
         <IconBadge icon={icon} />
       </div>
-      <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-2">{title}</h2>
+      <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1">{title}</h2>
       {subtitle && (
-        <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">{subtitle}</p>
+        <p className="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">{subtitle}</p>
       )}
       {children}
       {footer}
@@ -147,13 +145,13 @@ function OptionCard({
       )}
       <div
         className={cn(
-          "text-[13.5px] font-semibold pr-5",
+          "text-xs font-semibold pr-5",
           selected ? "text-white" : "text-slate-300",
         )}
       >
         {label}
       </div>
-      {desc && <div className="text-[11px] text-slate-500 leading-tight mt-0.5">{desc}</div>}
+      {desc && <div className="text-[10px] text-slate-500 leading-tight mt-0.5">{desc}</div>}
     </button>
   );
 }
@@ -171,13 +169,13 @@ function Chip({
     <button
       onClick={onClick}
       className={cn(
-        "onb-card rounded-xl px-3.5 py-2.5 border text-[13px] font-semibold inline-flex items-center gap-1.5",
+        "onb-card rounded-xl px-2.5 py-1.5 border text-xs font-semibold inline-flex items-center gap-1.5",
         selected
           ? "bg-cyan-500/15 border-cyan-400/50 text-white"
           : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
       )}
     >
-      {selected && <Check className="w-3.5 h-3.5 text-cyan-300" strokeWidth={3} />}
+      {selected && <Check className="w-3 h-3 text-cyan-300" strokeWidth={3} />}
       {label}
     </button>
   );
@@ -218,7 +216,6 @@ export default function Onboarding({
     "experience",
     "goal",
     "pain",
-    "capital",
     "settings",
     "notify",
     "start",
@@ -312,7 +309,7 @@ export default function Onboarding({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
+      className="w-full py-2 px-5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
     >
       {children}
     </button>
@@ -355,7 +352,7 @@ export default function Onboarding({
           <span className="w-5" />
         )}
 
-        <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+        <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
           <div
             className="relative h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700 ease-out"
             style={{ width: `${Math.round(progress * 100)}%` }}
@@ -389,14 +386,14 @@ export default function Onboarding({
               </div>
 
               <div className="flex justify-center mb-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-500/15 border border-cyan-500/20">
-                  <UserRound className="w-5 h-5 text-cyan-300" />
+                <div className="grid h-9 w-9 place-items-center rounded-xl bg-cyan-500/15 border border-cyan-500/20">
+                  <UserRound className="w-4 h-4 text-cyan-300" />
                 </div>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1.5">
+              <h1 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
                 {t("onb.nameTitle")}
               </h1>
-              <p className="text-sm text-slate-400 max-w-sm mx-auto mb-6">{t("onb.nameSub")}</p>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">{t("onb.nameSub")}</p>
 
               <input
                 type="text"
@@ -405,7 +402,7 @@ export default function Onboarding({
                 onKeyDown={(e) => e.key === "Enter" && next()}
                 placeholder={t("onb.namePlaceholder")}
                 maxLength={40}
-                className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-base font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
               />
 
               <div className="mt-6 mb-1">
@@ -419,7 +416,7 @@ export default function Onboarding({
                       key={code}
                       onClick={() => setLang(code)}
                       className={cn(
-                        "onb-card rounded-xl px-2.5 py-2.5 border text-center text-[13px] font-semibold",
+                        "onb-card rounded-xl px-2.5 py-2.5 border text-center text-xs font-semibold",
                         code === lang
                           ? "bg-cyan-500/15 border-cyan-400/50 text-white"
                           : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
@@ -569,56 +566,52 @@ export default function Onboarding({
             </ScreenShell>
           )}
 
-          {/* ── 7 · CAPITAL ── */}
-          {step === "capital" && (
-            <ScreenShell icon={Wallet} title={t("onb.accountSize")} subtitle={t("onb.accountSizeSub")}>
-              <div className="relative max-w-[260px] mx-auto mb-5">
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-3xl">$</span>
-                <input
-                  type="number" inputMode="decimal" min={0}
-                  value={accountSize} onChange={(e) => setAccountSize(e.target.value)}
-                  placeholder="25 000"
-                  className="w-full h-16 bg-white/[0.04] border border-white/[0.08] rounded-2xl pl-12 pr-4 text-center text-3xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:bg-white/[0.06] transition-all"
-                />
-              </div>
-              <p className="text-xs text-slate-500 text-center max-w-[280px] mx-auto leading-relaxed">
-                Ce capital sert à calibrer ton risque. Tu pourras le modifier plus tard.
-              </p>
-              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
-              <SkipBtn onClick={next} label={c.skip} />
-            </ScreenShell>
-          )}
-
-          {/* ── 8 · RÉGLAGES (cible + thème) ── */}
+          {/* ── 7 · RÉGLAGES (cible + capital + thème) ── */}
           {step === "settings" && (
             <ScreenShell icon={SlidersHorizontal} title={c.targetTitle} subtitle={c.targetSub}>
               {/* Objectif mensuel */}
               <div className="flex items-center justify-center gap-2 mb-1">
                 <Target className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-sm font-bold text-white">{c.targetTitle}</h3>
+                <h3 className="text-xs font-bold text-white">{c.targetTitle}</h3>
               </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.targetSub}</p>
-              <div className="relative max-w-[160px] mx-auto mb-8">
+              <p className="text-[10px] text-slate-400 text-center mb-2">{c.targetSub}</p>
+              <div className="relative max-w-[140px] mx-auto mb-5">
                 <input
                   type="number" inputMode="decimal" min={0} max={100} step={0.5}
                   value={target} onChange={(e) => setTarget(e.target.value)}
                   placeholder="3"
-                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-10 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
+                  className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-10 text-center text-base font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+              </div>
+
+              {/* Capital */}
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Wallet className="w-4 h-4 text-cyan-300" />
+                <h3 className="text-xs font-bold text-white">{t("onb.accountSize")}</h3>
+              </div>
+              <p className="text-[10px] text-slate-400 text-center mb-2">{t("onb.accountSizeSub")}</p>
+              <div className="relative max-w-[220px] mx-auto mb-5">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-2xl">$</span>
+                <input
+                  type="number" inputMode="decimal" min={0}
+                  value={accountSize} onChange={(e) => setAccountSize(e.target.value)}
+                  placeholder="25 000"
+                  className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-2xl pl-12 pr-4 text-center text-2xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:bg-white/[0.06] transition-all"
+                />
               </div>
 
               {/* Thème — ThemeSettings avec meilleure mise en avant */}
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Palette className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-sm font-bold text-white">{t("onb.appearance")}</h3>
+                <h3 className="text-xs font-bold text-white">{t("onb.appearance")}</h3>
               </div>
-              <p className="text-xs text-slate-400 text-center mb-4">{t("onb.appearanceSub")}</p>
-              <div className="max-w-[420px] mx-auto mb-4 overflow-visible">
+              <p className="text-[10px] text-slate-400 text-center mb-3">{t("onb.appearanceSub")}</p>
+              <div className="max-w-[420px] mx-auto mb-3 overflow-visible">
                 <ThemeSettings />
               </div>
               <div className="text-center mb-4">
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[10px] text-slate-500">
                   Crée ton propre thème pour une expérience unique
                 </p>
               </div>
@@ -628,21 +621,21 @@ export default function Onboarding({
             </ScreenShell>
           )}
 
-          {/* ── 9 · NOTIFICATIONS ── */}
+          {/* ── 8 · NOTIFICATIONS ── */}
           {step === "notify" && (
             <div className="text-center">
               <div className="flex justify-center">
-                <div className="relative mb-5">
-                  <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
-                  <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
-                    <Bell className="w-7 h-7 text-white" />
+                <div className="relative mb-4">
+                  <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-md" />
+                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+                    <Bell className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>
-              <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-2">
+              <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1">
                 {t("onb.notifyTitle")}
               </h2>
-              <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">
+              <p className="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">
                 {t("onb.notifySub")}
               </p>
 
@@ -650,7 +643,7 @@ export default function Onboarding({
                 <button
                   onClick={enableNotify}
                   disabled={notifBusy}
-                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-4 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60 text-sm font-bold text-white"
+                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-3 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60 text-xs font-bold text-white"
                 >
                   {notifBusy ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -671,22 +664,22 @@ export default function Onboarding({
             </div>
           )}
 
-          {/* ── 10 · C'EST PARTI ── */}
+          {/* ── 9 · C'EST PARTI ── */}
           {step === "start" && (
             <div>
               <div className="text-center">
                 <div className="flex justify-center">
-                  <div className="relative mb-5">
-                    <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-lg" />
-                    <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
-                      <Rocket className="w-7 h-7 text-white" />
-                    </div>
+                <div className="relative mb-4">
+                  <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-md" />
+                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
+                    <Rocket className="w-6 h-6 text-white" />
                   </div>
                 </div>
-                <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-1.5">
-                  {c.startTitle}
-                </h2>
-                <p className="text-sm text-slate-400 max-w-md mx-auto mb-7">{c.startSub}</p>
+              </div>
+              <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
+                {c.startTitle}
+              </h2>
+              <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">{c.startSub}</p>
               </div>
 
               {saveError && (
