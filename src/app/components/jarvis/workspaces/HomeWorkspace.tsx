@@ -7,6 +7,9 @@ import { useJarvisVoice } from "../../../utils/jarvisVoice";
 import { computeStats } from "../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { deriveDailyRule } from "../../../utils/edgeScore";
+import { useTradingRules } from "../../../hooks/useTradingRules";
+import { useGoalProgress } from "../../../hooks/useGoalProgress";
+import { computeRuleAdherence } from "../../../utils/ruleAdherence";
 import { loadOnboarding, type OnboardingData } from "../../../store";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { effectiveCopyLang } from "../prefs";
@@ -46,16 +49,28 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   const stats = useMemo(() => computeStats(context.trades), [context.trades]);
   const signals = useMemo(() => computeBehaviorSignals(context.trades), [context.trades]);
   const rule = useMemo(() => deriveDailyRule(stats), [stats]);
+  // Tenue des règles — hooks PARTAGÉS, aucun recalcul local : `useTradingRules`
+  // pour les règles, `useGoalProgress` pour le solde, `computeRuleAdherence`
+  // pour la mesure. C'est ce qui permet au détecteur `rule_kept` de dire
+  // « tu l'as tenue 11 fois sur 12 » sans que le trader ait à le demander.
+  const rules = useTradingRules();
+  const { ctx: goalCtx } = useGoalProgress(context.trades, user?.id ?? context.userId);
+  const adherence = useMemo(
+    () =>
+      computeRuleAdherence(context.trades, rules, goalCtx.startingBalance + goalCtx.stats.totalPnl),
+    [context.trades, rules, goalCtx.startingBalance, goalCtx.stats.totalPnl],
+  );
   const data: JarvisHomeData = useMemo(
     () => ({
       trades: context.trades,
       stats,
       signals,
       rule,
+      adherence,
       profile: context.profile ?? null,
       onboarding,
     }),
-    [context.trades, context.profile, stats, signals, rule, onboarding],
+    [context.trades, context.profile, stats, signals, rule, adherence, onboarding],
   );
 
   // Voice mode (onboarding.experience) — chargé en arrière-plan, best-effort.

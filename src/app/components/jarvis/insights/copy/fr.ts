@@ -17,6 +17,8 @@ export function frHeroLines(insight: JarvisInsight, mode: JarvisVoiceMode): Hero
       return frCostliestMistake(insight, mode);
     case "discipline_streak":
       return frDisciplineStreak(insight, mode);
+    case "rule_kept":
+      return frRuleKept(insight, mode);
     default:
       return [{ kind: "context", text: `J'ai analysé tes ${insight.sampleSize} derniers trades.` }];
   }
@@ -137,6 +139,36 @@ function frDisciplineStreak(insight: JarvisInsight, mode: JarvisVoiceMode): Hero
     lines.push({
       kind: "observation",
       text: `Tu es sur une série de ${streak} victoires consécutives.`,
+    });
+  }
+  lines.push({ kind: "action", text: `Aujourd'hui : ${actionLine(insight, "fr")}.` });
+  return lines;
+}
+
+/**
+ * « Tu l'as tenue 11 fois sur 12 » — la phrase que la documentation produit
+ * désigne comme la boucle centrale de TradeVault.
+ *
+ * Elle nomme une DISCIPLINE, pas un résultat : contrairement à la série de
+ * gains, la tenue d'une règle est entièrement sous le contrôle du trader. C'est
+ * la seule félicitation du produit qui récompense ce qu'il a décidé de faire.
+ */
+function frRuleKept(insight: JarvisInsight, mode: JarvisVoiceMode): HeroLineSpec[] {
+  const kept = num(insight.evidence.kept);
+  const applicable = num(insight.evidence.applicable);
+  const rule = String(insight.evidence.ruleText ?? "");
+  const lines: HeroLineSpec[] = [{ kind: "context", text: `J'ai regardé tes 30 derniers jours.` }];
+  if (mode === "beginner") {
+    lines.push({
+      kind: "observation",
+      text: `Ta règle « ${rule} », tu l'as tenue ${kept} fois sur ${applicable}. Ça, c'est toi qui l'as décidé — pas le marché.`,
+    });
+  } else if (mode === "advanced") {
+    lines.push({ kind: "observation", text: `« ${rule} » : ${kept}/${applicable} tenue.` });
+  } else {
+    lines.push({
+      kind: "observation",
+      text: `Tu as tenu « ${rule} » ${kept} fois sur ${applicable}.`,
     });
   }
   lines.push({ kind: "action", text: `Aujourd'hui : ${actionLine(insight, "fr")}.` });
