@@ -57,12 +57,12 @@ d'achat réel n'a été testé dans cette session.**
 | 2.2 | **Activation de l'extraction mémoire** — codée, testée, `AI_MEMORY_EXTRACTION` éteint. Activer d'abord en préproduction et mesurer le **taux de rejet** | À faire |
 | 2.3 | **Synchronisation serveur des conversations** — l'historique est persistant mais LOCAL : changer d'appareil le perd | À faire |
 | 2.4 | **Analytics par écran** — désormais possible (la page vit dans l'URL), mais aucun outil n'est branché | À faire |
-| 2.5 | **Monitoring d'erreurs** — aucun Sentry ni équivalent. Un plantage en production serait invisible | À faire |
+| 2.5 | **Monitoring d'erreurs** — la COUTURE est en place : `reportAppError` est l'entonnoir unique (error boundaries React, échec de préchargement de chunk, et depuis le 2026-08-06 les erreurs non capturées du navigateur + promesses rejetées). La destination reste la console : **un plantage en production est toujours invisible**. Brancher un fournisseur = une clé + cette seule fonction | **Clé requise** |
 | 2.6 | **Politique de mots de passe / rate-limit auth** | **[NON VÉRIFIÉ]** |
 | 2.7 | **RGPD** — export et suppression de compte | **[NON VÉRIFIÉ]** |
 | 2.8 | **Emails transactionnels** — Resend câblé, délivrabilité non éprouvée | **[NON VÉRIFIÉ]** |
-| 2.10 | **12 langues proposées, 2 réellement traduites** — `fr` et `en` comptent 1 127 clés ; les **dix autres en comptent 293**, soit **26 %**. Le reste retombe sur l'anglais : un utilisateur qui choisit « Deutsch » obtient une interface à ~74 % en anglais. Vérifié par comptage, et par sondage : la navigation et les titres de page sont traduits, mais ni les statistiques (`quant.*`), ni la checklist, ni Jarvis, ni Goals. **Décision produit requise** : réduire le sélecteur aux langues complètes, ou compléter les traductions | **À arbitrer** |
 | 2.9 | **Quatre pages d'analyse jamais auditées** — Analytics, Seasonality, Reports, Calendar : ~3 000 lignes et la majorité des chiffres affichés. Huit défauts « chiffre juste, interprétation fausse » ont été trouvés sur les pages auditées ; rien n'indique que celles-ci en soient exemptes | À faire |
+| 2.10 | **12 langues proposées, 2 réellement traduites** — `fr` et `en` comptent 1 127 clés ; les **dix autres en comptent 293**, soit **26 %**. Le reste retombe sur l'anglais : un utilisateur qui choisit « Deutsch » obtient une interface à ~74 % en anglais. Vérifié par comptage, et par sondage : la navigation et les titres de page sont traduits, mais ni les statistiques (`quant.*`), ni la checklist, ni Jarvis, ni Goals. **Décision produit requise** : réduire le sélecteur aux langues complètes, ou compléter les traductions | **À arbitrer** |
 
 ---
 
