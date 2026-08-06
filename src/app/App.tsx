@@ -73,7 +73,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
-  const { activeId, ready: accountsReady } = useAccounts();
+  const { activeId, ready: accountsReady, activeAccount } = useAccounts();
   const { t } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -621,8 +621,8 @@ function AppContent() {
           </PageErrorBoundary>
         </div>
       </main>
-      {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}
-      <AccountSwitcher variant="fab" />
+      {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
+      <AccountSwitcher variant="fab" balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl} />
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />

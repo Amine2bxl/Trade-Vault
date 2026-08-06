@@ -70,11 +70,15 @@ function getAccountIcon(a: Account) {
 export default function AccountSwitcher({
   compact,
   variant = "bar",
+  balance: balanceProp,
 }: {
   compact?: boolean;
   variant?: "bar" | "fab" | "card";
+  balance?: number;
 }) {
   const { accounts, activeAccount, switchAccount, editAccount, removeAccount } = useAccounts();
+  const computedBalance = balanceProp ?? activeAccount?.startingBalance ?? 0;
+  const fmtBalance = `$${Math.round(computedBalance).toLocaleString("en-US")}`;
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -445,7 +449,6 @@ export default function AccountSwitcher({
   if (variant === "card") {
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
-    const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
     const editing = editingId === activeAccount.id;
     return (
       <div className="relative w-full">
@@ -521,7 +524,7 @@ export default function AccountSwitcher({
             </span>
             <span className="text-right shrink-0">
               <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
-                {balance}
+                {fmtBalance}
               </span>
               <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
                 {t("account.switchShort")}
@@ -568,7 +571,6 @@ export default function AccountSwitcher({
     );
   }
   const ActiveIcon = getAccountIcon(activeAccount);
-  const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
 
   const editingBar = editingId === activeAccount.id;
 
@@ -636,7 +638,7 @@ export default function AccountSwitcher({
               </button>
             </span>
             <span className="block text-[10px] text-slate-500 truncate tabular-nums">
-              {balance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
+              {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
             </span>
           </span>
           <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">

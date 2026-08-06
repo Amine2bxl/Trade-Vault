@@ -566,76 +566,56 @@ export default function Onboarding({
             </ScreenShell>
           )}
 
-          {/* ── 7 · RÉGLAGES (cible + ICT) ── */}
+          {/* ── 7 · RÉGLAGES (cible + capital + thème) ── */}
           {step === "settings" && (
             <ScreenShell icon={SlidersHorizontal} title={c.targetTitle} subtitle={c.targetSub}>
-              <div className="relative max-w-[200px] mx-auto mb-6">
+              {/* Objectif mensuel */}
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Target className="w-4 h-4 text-cyan-300" />
+                <h3 className="text-sm font-bold text-white">{c.targetTitle}</h3>
+              </div>
+              <p className="text-xs text-slate-400 text-center mb-3">{c.targetSub}</p>
+              <div className="relative max-w-[160px] mx-auto mb-8">
                 <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
+                  type="number" inputMode="decimal" min={0} max={100} step={0.5}
+                  value={target} onChange={(e) => setTarget(e.target.value)}
                   placeholder="3"
                   className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-10 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                  %
-                </span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
               </div>
 
-              {/* Taille du compte — Jarvis calibre le risque réel */}
+              {/* Capital — question naturelle avec explication */}
               <div className="flex items-center justify-center gap-2 mb-1">
                 <Wallet className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-base font-bold text-white">{t("onb.accountSize")}</h3>
+                <h3 className="text-sm font-bold text-white">{t("onb.accountSize")}</h3>
               </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{t("onb.accountSizeSub")}</p>
-              <div className="relative max-w-[200px] mx-auto mb-7">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">
-                  $
-                </span>
+              <p className="text-xs text-slate-400 text-center max-w-[280px] mx-auto mb-4 leading-relaxed">
+                {t("onb.accountSizeSub")}
+              </p>
+              <div className="relative max-w-[200px] mx-auto mb-8">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-base">$</span>
                 <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  value={accountSize}
-                  onChange={(e) => setAccountSize(e.target.value)}
+                  type="number" inputMode="decimal" min={0}
+                  value={accountSize} onChange={(e) => setAccountSize(e.target.value)}
                   placeholder="25 000"
-                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
+                  className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-2xl pl-10 pr-4 text-center text-2xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:bg-white/[0.06] transition-all"
                 />
               </div>
 
-              {/* Thème de l'app — prévisualisation et sélection via ThemeSettings */}
-              <div className="flex items-center justify-center gap-2 mb-1">
+              {/* Thème — ThemeSettings avec meilleure mise en avant */}
+              <div className="flex items-center justify-center gap-2 mb-2">
                 <Palette className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-base font-bold text-white">{t("onb.appearance")}</h3>
+                <h3 className="text-sm font-bold text-white">{t("onb.appearance")}</h3>
               </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{t("onb.appearanceSub")}</p>
-              <div className="max-w-[400px] mx-auto mb-7">
+              <p className="text-xs text-slate-400 text-center mb-4">{t("onb.appearanceSub")}</p>
+              <div className="max-w-[420px] mx-auto mb-4">
                 <ThemeSettings />
               </div>
-
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Compass className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-base font-bold text-white">{c.ictTitle}</h3>
-              </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.ictSub}</p>
-              <div className="grid grid-cols-2 gap-2.5 max-w-[280px] mx-auto onb-in">
-                {(
-                  [
-                    [true, c.ictYes],
-                    [false, c.ictNo],
-                  ] as const
-                ).map(([val, label]) => (
-                  <OptionCard
-                    key={String(val)}
-                    selected={usesIct === val}
-                    onClick={() => setUsesIct(val)}
-                    label={label}
-                  />
-                ))}
+              <div className="text-center mb-4">
+                <p className="text-[11px] text-slate-500">
+                  Crée ton propre thème pour une expérience unique
+                </p>
               </div>
 
               <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
