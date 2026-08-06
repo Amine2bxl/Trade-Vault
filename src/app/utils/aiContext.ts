@@ -168,6 +168,15 @@ export function buildCoachV1Payload(opts: {
    * doublait un parcours complet des trades à chaque question.
    */
   signals?: ReturnType<typeof computeBehaviorSignals>;
+  /**
+   * Edge Score déjà calculé (hook `useEdgeScore`).
+   *
+   * C'est l'indicateur de TÊTE du tableau de bord — le premier chiffre que le
+   * trader voit. Jusqu'ici Jarvis l'ignorait : « pourquoi mon Edge Score
+   * baisse ? » recevait la réponse d'un coach qui ne savait pas ce qu'est ce
+   * score. Il n'est PAS recalculé ici (une seule définition, cf. `useEdgeScore`).
+   */
+  edge?: { score: number | null; weakest: string | null };
 }): CoachV1Payload {
   const {
     trades,
@@ -182,6 +191,7 @@ export function buildCoachV1Payload(opts: {
     question,
     memory,
     signals: providedSignals,
+    edge,
   } = opts;
   // UNE seule exécution, réutilisée pour les erreurs récurrentes ET l'instantané.
   const stats = trades.length ? computeStats(trades) : null;
@@ -193,7 +203,11 @@ export function buildCoachV1Payload(opts: {
     : [];
   // The behavioural read is what turns "here are your stats" into "here is why
   // you lose on Fridays". Computed deterministically, never by the model.
-  const signals = providedSignals ?? computeBehaviorSignals(trades);
+  const baseSignals = providedSignals ?? computeBehaviorSignals(trades);
+  // L'Edge Score rejoint les SIGNAUX : c'est exactement leur nature — une
+  // mesure déterministe déjà calculée, que le modèle interprète sans jamais la
+  // recalculer. Aucun nouveau canal, aucun nouveau contrat.
+  const signals = edge && edge.score !== null ? { ...baseSignals, edgeScore: edge } : baseSignals;
   return {
     // Les 25 derniers trades suffisent pour les exemples du coach (les stats et
     // signaux portent la vue d'ensemble). Un payload plus léger = l'IA répond

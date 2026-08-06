@@ -26,9 +26,9 @@ import {
 } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
 import { loadStartingBalance } from "../store";
-import { loadTradingPlan } from "../utils/tradingPlan";
 import { loadOnboarding } from "../store/profile";
-import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/edgeScore";
+import { deriveDailyRule } from "../utils/edgeScore";
+import { useEdgeScore } from "../hooks/useEdgeScore";
 import {
   readHistory,
   writeHistory,
@@ -110,7 +110,6 @@ export default function Dashboard({
     }
   });
   const [startingBalance, setStartingBalance] = useState(0);
-  const [maxRiskPct, setMaxRiskPct] = useState<number | null>(null);
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
   const hasDraft = useHasTradeDraft(user?.id);
 
@@ -121,15 +120,6 @@ export default function Dashboard({
       loadStartingBalance(user.id)
         .then((b) => {
           if (active) setStartingBalance(b);
-        })
-        .catch(() => {
-          if (active) toast(t("dashboard.loadError"), "error");
-        }),
-      loadTradingPlan(user.id)
-        .then((p) => {
-          if (!active) return;
-          const pct = parseFloat(p.risk.maxRiskPerTradePct);
-          setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
         })
         .catch(() => {
           if (active) toast(t("dashboard.loadError"), "error");
@@ -210,36 +200,11 @@ export default function Dashboard({
   }, [user?.id]);
 
   // ── Copilot block: Edge Score, rule of the day, objective ──
-  // Checklist completion per day over the Edge window, read from the same
-  // localStorage keys the Checklist page writes (tv-chk-{uid}-{ISO date}).
-  const checklistByDay = useMemo(() => {
-    const map: Record<string, number> = {};
-    if (!user) return map;
-    const now = new Date();
-    for (let i = 0; i < EDGE_WINDOW_DAYS; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      try {
-        const raw = localStorage.getItem(`tv-chk-${user.id}-${iso}`);
-        if (!raw) continue;
-        const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
-        if (p.locked) map[iso] = 1;
-        else if (Array.isArray(p.checked) && p.checked.length > 0)
-          map[iso] = p.checked.filter(Boolean).length / p.checked.length;
-      } catch {
-        /* ignore malformed entry */
-      }
-    }
-    return map;
-  }, [user?.id]);
+  // Edge Score via le hook PARTAGÉ avec Jarvis : une seule définition de ce
+  // score dans tout le produit. L'assemblage des entrées (checklist par jour,
+  // risque max, solde initial) vit désormais dans `useEdgeScore`.
+  const edge = useEdgeScore(trades, user?.id);
 
-  // Edge Score is computed over the whole account history (not the period
-  // filter) so it reflects recent discipline, not the selected window.
-  const edge = useMemo(
-    () => computeEdgeScore(trades, { maxRiskPct, startingBalance, checklistByDay }),
-    [trades, maxRiskPct, startingBalance, checklistByDay],
-  );
   const dailyRule = useMemo(() => deriveDailyRule(computeStats(trades)), [trades]);
 
   // ── Trajectoire de discipline ──────────────────────────────────────────────

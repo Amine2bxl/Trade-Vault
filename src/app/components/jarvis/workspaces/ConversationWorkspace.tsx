@@ -11,6 +11,7 @@ import { computeRuleAdherence } from "../../../utils/ruleAdherence";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { computeStats } from "../../../utils/tradeCalcs";
+import { useEdgeScore } from "../../../hooks/useEdgeScore";
 import { answerToBlocks } from "../insights/answerToBlocks";
 import { buildSuggestions } from "../insights/suggestions";
 import { cn } from "../../../utils/cn";
@@ -89,6 +90,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const signals = useMemo(() => computeBehaviorSignals(context.trades), [context.trades]);
   const stats = useMemo(() => computeStats(context.trades), [context.trades]);
   const userId = user?.id ?? context.userId;
+  // Edge Score via le hook PARTAGE avec le tableau de bord — jamais recalcule ici.
+  const edge = useEdgeScore(context.trades, userId);
   // Objectifs mesurés — hook PARTAGÉ avec la page Goals. Le pipeline du coach
   // acceptait `goals` depuis le début, mais rien ne les lui envoyait : Jarvis
   // était incapable de relier ses conseils à ce que le trader vise.
@@ -334,6 +337,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       setLoading(true);
       const payload = buildCoachV1Payload({
         trades: context.trades,
+        // Indicateur de tête du tableau de bord — Jarvis l'ignorait jusqu'ici.
+        edge: { score: edge.score, weakest: edge.weakest },
         conversation: priorTurns,
         language: effectiveCopyLang(lang),
         onboarding,
