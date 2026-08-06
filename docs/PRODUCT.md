@@ -598,10 +598,26 @@ perd alors le canal *entier* — alertes de risque comprises. Plusieurs tests
 vérifient explicitement que les règles restent **silencieuses** sur signal faible
 ou échantillon mince.
 
-> **Lacune connue** : `goal_completed`, `goal_milestone`, `trade_analyzed`,
-> `daily_brief` et `economic_event` existent dans le type et sont émis ailleurs
-> dans le produit, mais **aucune règle de `rules.ts` ne les produit**. Le type
-> décrit donc plus large que ce moteur ; c'est documenté plutôt que masqué.
+> **Cinq types déclarés, jamais émis** : `goal_completed`, `goal_milestone`,
+> `trade_analyzed`, `daily_brief`, `economic_event`. Vérifié dans le code
+> (aucun émetteur) **et en production** : sur 122 notifications écrites, seuls
+> 7 `kind` apparaissent — précisément ceux que produisent les règles ci-dessus,
+> plus `discipline_limit`.
+>
+> **Ils sont conservés délibérément**, contrairement aux huit actions Jarvis
+> fictives supprimées le même jour. La différence est réelle : un
+> `JarvisToolKind` inexistant permettait de compiler un bouton qui affichait un
+> succès sans rien exécuter — un défaut **actif**. Un `kind` de notification
+> jamais émis est **inerte** : il ne peut produire aucun comportement faux.
+>
+> Et ils correspondent à des fonctionnalités qui **existent** et dont les
+> notifications restent à câbler : la page Goals et la table `goal_plans` pour
+> les deux `goal_*`, la table `economic_events` (203 lignes, cron quotidien)
+> pour `economic_event`. Les supprimer serait une réécriture qu'il faudrait
+> défaire.
+>
+> La règle « le type suit l'implémentation » vaut contre les contrats qui
+> **mentent**, pas contre ceux qui anticipent une suite identifiée.
 
 ---
 
