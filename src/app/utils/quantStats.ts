@@ -282,7 +282,23 @@ export function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
   return map;
 }
 
+/**
+ * Échantillon minimum avant d'exposer un TAUX par bucket.
+ *
+ * Un total (P&L) reste vrai à n'importe quelle taille d'échantillon : la somme
+ * de deux trades est exactement la somme de deux trades. Un TAUX, lui, ne veut
+ * rien dire sur trois trades — et il invite pourtant à une conclusion
+ * généralisante : « ma meilleure heure est 14 h » tiré d'un unique gagnant.
+ *
+ * Le graphique horaire traçait un taux pour chaque heure sans plancher, et
+ * `behaviorSignals` transmettait ces mêmes taux à Jarvis comme preuve. Le
+ * garde vit donc ICI, dans l'unique définition du taux par bucket, plutôt que
+ * dans chaque consommateur — ils sont tous protégés du même coup.
+ */
+export const MIN_BUCKET_SAMPLE = 5;
+
 export function winRateOf(b: BucketStat): number | null {
   const decided = b.count - b.breakEven;
-  return decided > 0 ? b.wins / decided : null;
+  if (decided < MIN_BUCKET_SAMPLE) return null;
+  return b.wins / decided;
 }

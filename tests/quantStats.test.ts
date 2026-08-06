@@ -185,7 +185,7 @@ describe("breakdowns", () => {
     expect(s.asia.count).toBe(1);
   });
 
-  it("statsByHour and winRateOf", () => {
+  it("statsByHour regroupe par heure d'entrée", () => {
     const byHour = statsByHour([
       mkTrade({ entryTime: "09:30", pnl: 100 }),
       mkTrade({ entryTime: "09:55", pnl: -60 }),
@@ -193,8 +193,30 @@ describe("breakdowns", () => {
       mkTrade({ entryTime: "09:10", pnl: 0, direction: "be" }),
     ]);
     expect(byHour[9].count).toBe(3);
-    expect(winRateOf(byHour[9])).toBeCloseTo(0.5); // 1W/1L, BE excluded
     expect(byHour[10].count).toBe(1);
+  });
+
+  it("winRateOf EXCLUT les break-even du dénominateur", () => {
+    const byHour = statsByHour([
+      ...Array(3)
+        .fill(null)
+        .map(() => mkTrade({ entryTime: "09:30", pnl: 100 })),
+      ...Array(3)
+        .fill(null)
+        .map(() => mkTrade({ entryTime: "09:40", pnl: -60 })),
+      mkTrade({ entryTime: "09:10", pnl: 0, direction: "be" }),
+    ]);
+    expect(winRateOf(byHour[9])).toBeCloseTo(0.5); // 3W/3L, le BE ne compte pas
+  });
+
+  it("winRateOf REFUSE de produire un taux sous l'échantillon minimum", () => {
+    // Un total reste vrai à toute taille ; un TAUX sur trois trades ne veut
+    // rien dire, et invite pourtant à « ma meilleure heure est 9 h ».
+    const byHour = statsByHour([
+      mkTrade({ entryTime: "09:30", pnl: 100 }),
+      mkTrade({ entryTime: "09:55", pnl: -60 }),
+    ]);
+    expect(winRateOf(byHour[9])).toBeNull();
   });
 
   it("dayHourMatrix keys are dow-hour", () => {

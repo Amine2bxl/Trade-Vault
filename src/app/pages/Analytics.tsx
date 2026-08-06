@@ -292,7 +292,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
         hour: `${h}h`,
         h: Number(h),
         pnl: Math.round(b.pnl * 100) / 100,
-        winRate: winRateOf(b) !== null ? Math.round(winRateOf(b)! * 100) : 0,
+        // `null` et non 0 : Recharts interrompt la ligne, ce qui SE VOIT.
+        // Tracer 0 % pour un bucket sans échantillon suffisant affichait « heure
+        // catastrophique » là où il n'y a simplement pas de données.
+        winRate: winRateOf(b) !== null ? Math.round(winRateOf(b)! * 100) : null,
         trades: b.count,
       }))
       .sort((a, b) => a.h - b.h);
