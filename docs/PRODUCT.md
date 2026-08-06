@@ -542,6 +542,69 @@ bout** (cf. `GO-LIVE.md` §1.3).
 
 ---
 
+## 4 quinquies. Notifications — les 14 types et les 7 règles
+
+### Le contrat
+
+Tout ce qui est dit au trader passe par le **Notification Engine** : les pages ne
+déclenchent jamais un toast ou un push directement. Un seul entonnoir, donc un
+seul endroit où arbitrer le bruit.
+
+**Canaux** : `dashboard` (Inbox, persisté) · `toast` · `push` (VAPID) · `email` ·
+`ai_message`.
+
+**Catégorie** : dérivée du `kind` **et de la sévérité** (`categoryOf`). Un
+`pattern_detected` en sévérité `success` est un **progrès**, donc rangé avec les
+observations de Jarvis ; en `warning` c'est un risque. Les classer tous en
+« risque » affichait une félicitation en rouge.
+
+**Anti-spam** : le push est dédupliqué **une fois par jour et par `dedupKey`**.
+Toast et persistance ne le sont pas — le canal push est le seul qu'on peut
+désactiver définitivement en agaçant l'utilisateur, et le perdre ferait perdre
+aussi les alertes de risque.
+
+### Les 14 types
+
+| `kind` | Catégorie | Sens |
+|---|---|---|
+| `discipline_warning` | discipline | Une règle vient d'être enfreinte, ou glisse dans la durée |
+| `discipline_limit` | discipline | Limite du plan atteinte |
+| `discipline_success` | discipline | Séance close sans écart |
+| `goal_completed` · `goal_milestone` | goals | Objectif atteint · palier franchi |
+| `risk_loss_streak` · `risk_max_loss` | risk | Série de pertes · perte maximale |
+| `pattern_detected` | risk **ou** jarvis | Motif nuisible détecté **ou en recul** — la sévérité tranche |
+| `trade_analyzed` · `daily_brief` · `weekly_review` | jarvis | Sorties du coach |
+| `activity_lull` | activity | Inactivité prolongée |
+| `economic_event` | economic | Événement macro à fort impact |
+| `system` | system | Divers |
+
+### Les 7 règles déterministes (`rules.ts`)
+
+Toutes **pures** : mêmes données → mêmes notifications. **Zéro coût IA, zéro
+risque d'hallucination.**
+
+| Règle | Déclenche | Condition |
+|---|---|---|
+| Série de pertes | `risk_loss_streak` | ≥ 3 pertes consécutives |
+| Erreur la plus coûteuse | `risk_max_loss` | une erreur domine le coût cumulé |
+| Inactivité | `activity_lull` | ≥ 5 jours sans trade journalisé |
+| Bilan hebdomadaire | `weekly_review` | lundi, et ≥ 5 trades sur la période |
+| **Progrès** | `pattern_detected` (succès) | une erreur recule de ≥ 30 % avec ≥ 3 occurrences antérieures |
+| **Règle qui glisse** | `discipline_warning` | la règle la moins tenue passe sous 60 % sur ≥ 3 trades applicables |
+| Séance propre | `discipline_success` | au moins une règle active et aucun écart |
+
+**Les seuils sont volontairement hauts.** Un canal bruyant finit désactivé, et on
+perd alors le canal *entier* — alertes de risque comprises. Plusieurs tests
+vérifient explicitement que les règles restent **silencieuses** sur signal faible
+ou échantillon mince.
+
+> **Lacune connue** : `goal_completed`, `goal_milestone`, `trade_analyzed`,
+> `daily_brief` et `economic_event` existent dans le type et sont émis ailleurs
+> dans le produit, mais **aucune règle de `rules.ts` ne les produit**. Le type
+> décrit donc plus large que ce moteur ; c'est documenté plutôt que masqué.
+
+---
+
 ## 5. Modèle de données
 
 **16 tables déployées** : `profiles` · `accounts` · `trades` · `user_preferences`
