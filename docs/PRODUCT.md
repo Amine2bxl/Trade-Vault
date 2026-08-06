@@ -222,8 +222,15 @@ Jours de bourse consécutifs avec checklist verrouillée.
 `economic_events` · `economic_calendar_sync` · `ai_memory` · `ai_reports` ·
 `ai_rate_limits` · `habits`.
 
+**Ajoutées et vérifiées en production le 2026-08-06** : `ai_agent_runs`
+(télémétrie IA, RLS lecture-propriétaire, **aucune** politique d'insertion —
+les écritures passent uniquement par le service role) et les colonnes V2 de
+`ai_memory` (`key`, `importance`, `confidence`, `source`, `updated_at`).
+
 **En attente** (`_pending_ai_os_foundation.sql`, jamais appliquée) :
-`ai_embeddings` (pgvector) · `ai_jobs` · `ai_agent_runs` (télémétrie).
+`ai_embeddings` (pgvector) · `ai_jobs`. Volontairement non reprises : pgvector
+n'est pas justifié tant que la sélection lexicale n'a pas montré ses limites,
+et `ai_jobs` n'a aucun consommateur.
 
 **Dormante** : `habits` (avec `streak`) n'est utilisée par **aucun code
 applicatif** — la série de checklist est calculée depuis `localStorage`, ce qui
@@ -241,6 +248,36 @@ entière à zéro. Utiliser `if not exists`, `drop … if exists` avant `create`
 > « skipped » à chaque PR. Conséquence : **aucune migration n'a jamais été
 > vérifiée avant la production** pendant toute la vie du projet.
 > Vérifié depuis : rejeu complet à zéro, 0 échec, 19 tables, 53 politiques RLS.
+
+> **Cause racine finale, réparée le 2026-08-06.** L'idempotence n'était que la
+> moitié du problème. L'audit de la base réelle a montré que l'historique de
+> migrations distant (`supabase_migrations.schema_migrations`) contenait
+> **29 versions générées par le dashboard** (`20260703094727`…) ne correspondant
+> à **aucun fichier du dépôt**, tandis que les 31 fichiers du dépôt n'y
+> figuraient pas. L'intégration GitHub tentait donc de rejouer les 31 fichiers
+> contre une base qui les contenait déjà sous d'autres numéros → échec
+> systématique.
+>
+> Conséquence mesurée : **aucune migration postérieure au 2026-07-29 n'était
+> parvenue en production**. `ai_memory` y tournait encore en V1 (ni `key`, ni
+> `confidence`), ce qui aurait fait échouer tout `remember()` dès la fusion de
+> la PR #143 — un blocage de lancement invisible pour TypeScript, les tests, le
+> lint, le build et Vercel, tous verts.
+>
+> Réparation (additive, zéro perte : 4 souvenirs et 92 trades préservés) :
+> application des 5 migrations réellement manquantes (`add_direction_check`,
+> `add_updated_at_triggers`, `enforce_storage_rls`, `ai_memory_v2`,
+> `ai_agent_runs`), puis réalignement de l'historique sur les 31 fichiers du
+> dépôt. L'historique d'origine est sauvegardé dans
+> `public._migration_history_backup_20260806`.
+>
+> Durcissement au passage : les politiques du bucket `trade-screenshots`
+> étaient correctes mais ouvertes au rôle `public` ; elles sont désormais
+> restreintes à `authenticated`.
+>
+> **Leçon, la même que pour le bug d'upsert** : le seul contrôle qui a détecté
+> ces défauts est l'exécution contre la base réelle. Cinq vérifications vertes
+> ne disent rien de l'état de la production.
 
 ---
 
