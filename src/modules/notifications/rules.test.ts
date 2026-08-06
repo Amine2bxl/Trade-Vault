@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { evaluateNotificationRules, type RuleContext } from "./rules";
+import { categoryOf } from "./engine";
 
 // Un trader fictif — données stables, règles prévisibles.
 function baseContext(overrides: Partial<RuleContext> = {}): RuleContext {
@@ -166,5 +167,28 @@ describe("règles proactives", () => {
     const rules = evaluateNotificationRules(baseContext());
     expect(rules.find((x) => x.input.kind === "pattern_detected")).toBeUndefined();
     expect(rules.find((x) => x.input.kind === "discipline_warning")).toBeUndefined();
+  });
+});
+
+describe("categoryOf — un progrès n'est pas un risque", () => {
+  it("range une AMÉLIORATION avec les observations de Jarvis, pas dans les risques", () => {
+    // `pattern_detected` couvre deux réalités opposées : un motif nuisible qui
+    // apparaît, et un motif nuisible qui RECULE. Le classer systématiquement en
+    // `risk` affichait « ton erreur recule de 40 % » en ROUGE, sous une icône
+    // de tendance baissière, et le faisait remonter dans le filtre « risque ».
+    // Un produit dont la seule bonne nouvelle ressemble à une alerte apprend au
+    // trader à redouter ses notifications.
+    expect(categoryOf("pattern_detected", "success")).toBe("jarvis");
+  });
+
+  it("garde un motif NUISIBLE dans les risques", () => {
+    expect(categoryOf("pattern_detected", "warning")).toBe("risk");
+    expect(categoryOf("pattern_detected")).toBe("risk");
+  });
+
+  it("ne change rien aux autres catégories", () => {
+    expect(categoryOf("discipline_warning", "success")).toBe("discipline");
+    expect(categoryOf("goal_completed", "success")).toBe("goals");
+    expect(categoryOf("risk_max_loss", "success")).toBe("risk");
   });
 });

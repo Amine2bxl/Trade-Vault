@@ -37,11 +37,28 @@ function isFr(): boolean {
   }
 }
 
-/** Catégorie par défaut, dérivée du kind — un seul endroit, jamais dupliqué. */
-export function categoryOf(kind: NotificationKind): NotificationCategory {
+/**
+ * Catégorie par défaut, dérivée du kind — un seul endroit, jamais dupliqué.
+ *
+ * La SÉVÉRITÉ compte pour `pattern_detected`. Ce kind couvre deux réalités
+ * opposées : un motif nuisible qui apparaît, et un motif nuisible qui RECULE.
+ * Le classer systématiquement en `risk` affichait une félicitation
+ * (« ton erreur X recule de 40 % ») en rouge, sous une icône de tendance
+ * baissière, et la faisait remonter dans le filtre « risque ».
+ *
+ * Un produit dont la seule bonne nouvelle s'affiche comme une alerte apprend au
+ * trader à redouter ses notifications — exactement l'inverse du levier de
+ * rétention recherché. Un progrès est donc rangé avec les observations de
+ * Jarvis, pas avec les risques.
+ */
+export function categoryOf(
+  kind: NotificationKind,
+  severity?: AppNotification["severity"],
+): NotificationCategory {
+  if (kind === "pattern_detected") return severity === "success" ? "jarvis" : "risk";
   if (kind.startsWith("discipline")) return "discipline";
   if (kind.startsWith("goal")) return "goals";
-  if (kind.startsWith("risk") || kind === "pattern_detected") return "risk";
+  if (kind.startsWith("risk")) return "risk";
   if (kind.startsWith("economic")) return "economic";
   if (kind.startsWith("activity")) return "activity";
   if (kind === "trade_analyzed" || kind === "daily_brief" || kind === "weekly_review")
@@ -92,7 +109,8 @@ export const NotificationEngine = {
       url: input.url,
       severity: input.severity ?? "info",
       channels: input.channels ?? ["dashboard", "toast"],
-      category: input.category ?? categoryOf(input.kind),
+      // La sévérité est passée : elle décide de la catégorie d'un progrès.
+      category: input.category ?? categoryOf(input.kind, input.severity ?? "info"),
       createdAt: new Date().toISOString(),
       readAt: null,
       data: input.data,
