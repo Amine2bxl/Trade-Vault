@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Bot, ArrowRight, MessageSquare } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
-import { useConversations, sessionConversationStore } from "../components/jarvis/conversations";
+import { useConversations, jarvisConversationStore } from "../components/jarvis/conversations";
 import { cn } from "../utils/cn";
 
 /**
@@ -25,7 +25,7 @@ export default function Jarvis() {
       return;
     }
     let active = true;
-    void sessionConversationStore(user.id)
+    void jarvisConversationStore(user.id)
       .get(conversations[0].id)
       .then((c) => {
         if (!active) return;

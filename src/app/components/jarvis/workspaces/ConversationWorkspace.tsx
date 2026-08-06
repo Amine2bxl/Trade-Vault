@@ -25,7 +25,7 @@ import {
   FREE_DAILY_LIMIT,
 } from "../../../utils/aiUsage";
 import { effectiveCopyLang } from "../prefs";
-import { sessionConversationStore } from "../conversations";
+import { jarvisConversationStore } from "../conversations";
 import { BlockList } from "../BlockRenderer";
 import { historyTextOf } from "../history";
 import type { JarvisMessage, JarvisToolBlock } from "../blocks";
@@ -104,7 +104,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // Store STABLE par utilisateur : le recréer à chaque rendu ferait tourner
   // l'effet de sauvegarde en boucle (save → événement → re-render → nouveau
   // store → save…), ce qui gelait le site au changement de workspace.
-  const store = useMemo(() => (userId ? sessionConversationStore(userId) : null), [userId]);
+  const store = useMemo(() => (userId ? jarvisConversationStore(userId) : null), [userId]);
 
   const [messages, setMessages] = useState<JarvisMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -740,19 +740,22 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   );
 }
 
+// Brouillons en `localStorage`, comme les conversations : une question a
+// moitie ecrite perdue en fermant l'onglet est une frustration gratuite, et
+// c'est souvent la question la plus difficile a formuler.
 function readDraft(key: string | null): string {
-  if (!key || typeof sessionStorage === "undefined") return "";
+  if (!key || typeof localStorage === "undefined") return "";
   try {
-    return sessionStorage.getItem(key) ?? "";
+    return localStorage.getItem(key) ?? "";
   } catch {
     return "";
   }
 }
 
 function writeDraft(key: string, value: string): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (typeof localStorage === "undefined") return;
   try {
-    sessionStorage.setItem(key, value);
+    localStorage.setItem(key, value);
   } catch {
     /* best-effort */
   }
