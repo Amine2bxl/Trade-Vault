@@ -719,16 +719,13 @@ export default function Landing() {
       {/* ── NAV ── */}
       <header
         className={`fixed inset-x-0 top-0 z-50 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 10 ? "bg-[#060d16]/85 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/40"}`}
+        style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
       >
         <div
           className="scroll-bar absolute inset-x-0 top-0 h-[2px]"
           style={{ transform: `scaleX(${pct})` }}
         />
-        {/* Three-track layout: the logo (left) and actions (right) keep their
-            natural width, while the nav is absolutely centered on the header —
-            so it stays perfectly symmetric and never collides with either side,
-            whatever their content width. */}
-        <div className="relative mx-auto flex h-[66px] max-w-[1600px] items-center justify-between gap-4 px-5 lg:px-8">
+        <div className="relative mx-auto flex h-[60px] md:h-[66px] max-w-[1600px] items-center justify-between gap-3 px-4 md:px-5 lg:px-8">
           {/* Left zone — logo, natural width. */}
           <div className="flex items-center">
             <Logo />
@@ -1415,68 +1412,83 @@ export default function Landing() {
       </main>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-white/[.06] bg-[#050b14]">
-        <div className="mx-auto max-w-[1200px] px-5 py-12 lg:px-8">
-          <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:text-left">
-            <div className="max-w-xs">
+      <footer className="relative z-10 border-t border-white/[.06] bg-[#050b14]">
+        <div className="mx-auto max-w-[1200px] px-5 py-10 lg:px-8 lg:py-12">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-col gap-3">
               <Logo compact />
-              <p className="mt-3 text-xs leading-5 text-slate-600">
+              <p className="text-xs leading-5 text-slate-500 max-w-[220px]">
                 Le coach IA de référence pour les traders qui veulent progresser avec méthode.
               </p>
-            </div>
-            <div className="flex flex-col items-center gap-3 sm:items-end">
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500 sm:justify-end">
-                <button onClick={() => go("features")} className="hover:text-slate-300 transition">
-                  Fonctionnalités
-                </button>
-                <button onClick={() => go("pricing")} className="hover:text-slate-300 transition">
-                  Tarifs
-                </button>
-                <a href="/terms" className="hover:text-slate-300 transition">
-                  Conditions
-                </a>
-                <a href="/privacy" className="hover:text-slate-300 transition">
-                  Confidentialité
-                </a>
-                <a href="/contact" className="hover:text-slate-300 transition">
-                  Contact
-                </a>
-              </div>
-              {/* SUPPORT_EMAIL is the single source of truth: the same address
-                  is declared on the Google OAuth consent screen, so a mismatch
-                  here would look like a different company. */}
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
-                className="inline-flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-cyan-300 transition"
+                className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-cyan-300 transition mt-1"
               >
                 <Icon n="mail" cls="h-3.5 w-3.5" /> {SUPPORT_EMAIL}
               </a>
             </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">
+                Navigation
+              </p>
+              <div className="flex flex-col gap-2">
+                {[
+                  ["features", "Fonctionnalités"],
+                  ["pricing", "Tarifs"],
+                  ["faq", "FAQ"],
+                  ["problem", "Problème"],
+                  ["ai", "Coach IA"],
+                ].map(([id, label]) => (
+                  <button key={id} onClick={() => go(id)}
+                    className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition text-left">
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">
+                Légal
+              </p>
+              <div className="flex flex-col gap-2">
+                <a href="/terms" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                  Conditions d'utilisation
+                </a>
+                <a href="/privacy" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                  Politique de confidentialité
+                </a>
+                <a href="/contact" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                  Contact
+                </a>
+                <a href="/demo" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                  Démo
+                </a>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">
+                Suivez-nous
+              </p>
+              <div className="flex items-center gap-3">
+                {(
+                  [
+                    { icon: Twitter, label: "X (Twitter)" },
+                    { icon: Linkedin, label: "LinkedIn" },
+                    { icon: Instagram, label: "Instagram" },
+                    { icon: Facebook, label: "Facebook" },
+                    { icon: Youtube, label: "YouTube" },
+                  ] as const
+                ).map((s) => (
+                  <span key={s.label} aria-label={s.label}
+                    title={`${s.label} — bientôt`}
+                    className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[.08] bg-white/[.02] text-slate-600 transition-colors">
+                    <s.icon className="w-4 h-4" />
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-          {/* Réseaux sociaux — EMPLACEMENTS prévus, aucune URL inventée.
-              Renseigner les vraies URLs quand les comptes existent (rel="" les
-              rend nofollow pour le SEO). */}
-          <div className="mt-8 flex items-center justify-center gap-4">
-            {(
-              [
-                { icon: Twitter, label: "X (Twitter)" },
-                { icon: Linkedin, label: "LinkedIn" },
-                { icon: Instagram, label: "Instagram" },
-                { icon: Facebook, label: "Facebook" },
-                { icon: Youtube, label: "YouTube" },
-              ] as const
-            ).map((s) => (
-              <span
-                key={s.label}
-                aria-label={s.label}
-                title={`${s.label} — bientôt`}
-                className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[0.08] bg-white/[0.02] text-slate-600 hover:text-cyan-300 hover:border-cyan-500/25 transition-colors"
-              >
-                <s.icon className="w-4 h-4" />
-              </span>
-            ))}
-          </div>
-          <div className="mt-6 border-t border-white/[.05] pt-6 text-center text-[11px] text-slate-700">
+          <div className="mt-10 border-t border-white/[.05] pt-6 text-center text-[11px] text-slate-700">
             © {new Date().getFullYear()} TradeVault. Le trading comporte des risques. Journalise
             d'abord, trade ensuite.
           </div>

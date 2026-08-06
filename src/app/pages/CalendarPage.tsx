@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Target, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target, CalendarDays, ArrowRight } from "lucide-react";
 import { Trade, MissedOpportunity } from "../types";
 import { loadMissedOpportunities } from "../store";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,7 +8,6 @@ import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import MissedOpportunities from "./MissedOpportunities";
 import { useT } from "../i18n/LanguageContext";
 import { PageHeader, PageContainer, Card } from "@/shared/ui";
 
@@ -582,10 +581,40 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         <MissedSetupDetailModal missed={selectedMissed} onClose={() => setSelectedMissed(null)} />
       )}
 
-      {/* Mobile: Missed Opportunities embedded below calendar */}
-      <div className="md:hidden mt-6">
-        <MissedOpportunities />
+      {/* Mobile: Missed setups — lightweight redirect card instead of full inline component */}
+      <div className="md:hidden mt-4">
+        <MissedMobileCard missedCount={missed.length} />
       </div>
     </PageContainer>
+  );
+}
+
+function MissedMobileCard({ missedCount }: { missedCount: number }) {
+  const navigate = () => window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "missed" } }));
+  return (
+    <button
+      onClick={navigate}
+      className="w-full glass rounded-2xl p-4 flex items-center gap-3.5 active:scale-[0.98] transition-all text-left"
+    >
+      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-300 shrink-0">
+        <Target className="w-5 h-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold text-white flex items-center gap-1.5">
+          Setups manqués
+          {missedCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500/20 text-[11px] font-bold text-amber-300 border border-amber-500/25">
+              {missedCount}
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-slate-500 mt-0.5">
+          {missedCount === 0
+            ? "Aucun setup manqué ce mois-ci"
+            : `${missedCount} setup${missedCount > 1 ? "s" : ""} à analyser`}
+        </div>
+      </div>
+      <ArrowRight className="w-4 h-4 text-amber-400 shrink-0" />
+    </button>
   );
 }

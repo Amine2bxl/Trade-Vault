@@ -39,6 +39,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   const { lang } = useT();
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
+  const MAX_SETUPS = 5;
 
   const [plan, setPlan] = useState<TradingPlanData>(EMPTY_PLAN);
   const [loading, setLoading] = useState(true);
@@ -227,6 +228,17 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           "Only the setups written here deserve your money.",
         )}
         delay={2}
+        action={
+          <span className={cn(
+            "inline-flex items-center gap-1.5 h-6 px-2 rounded-lg text-[10px] font-bold border shrink-0",
+            plan.setups.length >= MAX_SETUPS
+              ? "bg-amber-500/10 border-amber-500/25 text-amber-300"
+              : "bg-cyan-500/10 border-cyan-500/20 text-cyan-300",
+          )}>
+            <Layers className="w-3 h-3" />
+            {plan.setups.length}/{MAX_SETUPS}
+          </span>
+        }
       >
         <div className="space-y-3">
           {plan.setups.length === 0 && (
@@ -237,12 +249,32 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
               )}
             </div>
           )}
+
+          {plan.setups.length >= 3 && (
+            <div className={cn(
+              "rounded-xl px-3 py-2.5 text-xs flex items-start gap-2",
+              plan.setups.length >= MAX_SETUPS
+                ? "bg-amber-500/[0.07] border border-amber-500/20 text-amber-200/90"
+                : "bg-cyan-500/[0.04] border border-cyan-500/15 text-cyan-200/70",
+            )}>
+              <Layers className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>
+                {plan.setups.length >= MAX_SETUPS
+                  ? tr(
+                      `Tu as atteint la limite de ${MAX_SETUPS} setups. Trop de setups disperse l'attention. Maîtrise ces ${MAX_SETUPS} avant d'en changer.`,
+                      `You've reached the ${MAX_SETUPS} setup limit. Too many setups scatter focus. Master these ${MAX_SETUPS} before switching.`,
+                    )
+                  : tr(
+                      `Déjà ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Reste concentré : 3-5 setups maîtrisés valent mieux que 10 survolés.`,
+                      `Already ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Stay focused: 3-5 mastered setups beat 10 half-known ones.`,
+                    )}
+              </span>
+            </div>
+          )}
+
           {plan.setups.map((s, i) => (
             <SetupCard
-              key={s.id}
-              setup={s}
-              index={i}
-              fr={fr}
+              key={s.id} setup={s} index={i} fr={fr}
               onChange={(next) =>
                 update((p) => ({
                   ...p,
@@ -254,20 +286,32 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
               }
             />
           ))}
-          <button
-            onClick={() =>
-              update((p) => ({
-                ...p,
-                setups: [
-                  ...p.setups,
-                  { id: crypto.randomUUID(), name: "", rules: "", invalidation: "" },
-                ],
-              }))
-            }
-            className="w-full h-11 rounded-xl border border-dashed border-cyan-500/30 text-cyan-300 text-sm font-semibold hover:bg-cyan-500/[0.06] transition-all flex items-center justify-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> {tr("Ajouter un setup", "Add a setup")}
-          </button>
+
+          {plan.setups.length < MAX_SETUPS && (
+            <button
+              onClick={() =>
+                update((p) => ({
+                  ...p,
+                  setups: [
+                    ...p.setups,
+                    { id: crypto.randomUUID(), name: "", rules: "", invalidation: "" },
+                  ],
+                }))
+              }
+              className="w-full h-11 rounded-xl border border-dashed border-cyan-500/30 text-cyan-300 text-sm font-semibold hover:bg-cyan-500/[0.06] transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> {tr("Ajouter un setup", "Add a setup")}
+            </button>
+          )}
+
+          {plan.setups.length >= MAX_SETUPS && (
+            <p className="text-center text-[11px] text-slate-600">
+              {tr(
+                `Limite de ${MAX_SETUPS} setups atteinte. Supprime un setup pour en ajouter un autre.`,
+                `${MAX_SETUPS}-setup limit reached. Remove one to add another.`,
+              )}
+            </p>
+          )}
         </div>
       </Section>
 
@@ -405,12 +449,14 @@ function Section({
   title,
   sub,
   delay,
+  action,
   children,
 }: {
   icon: typeof Map;
   title: string;
   sub: string;
   delay: number;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -425,8 +471,11 @@ function Section({
             <Icon className="w-4.5 h-4.5 text-white" />
           </div>
         </div>
-        <div>
-          <h2 className="text-sm font-bold text-white">{title}</h2>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-white">{title}</h2>
+            {action}
+          </div>
           <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
         </div>
       </div>
