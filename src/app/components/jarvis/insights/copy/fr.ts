@@ -50,7 +50,7 @@ function frRiskAfterLoss(insight: JarvisInsight, mode: JarvisVoiceMode): HeroLin
   if (insight.impact) {
     lines.push({
       kind: "impact",
-      text: `Ce comportement t'a coûté ${formatMoney(insight.impact.amount, "fr")} sur ces ${insight.sampleSize} trades.`,
+      text: `Tes trades pris après une perte totalisent ${formatMoney(insight.impact.amount, "fr")} sur ces ${insight.sampleSize} trades.`,
     });
   }
   lines.push({ kind: "action", text: `Aujourd'hui : ${actionLine(insight, "fr")}.` });

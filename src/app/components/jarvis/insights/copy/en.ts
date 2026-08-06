@@ -50,7 +50,7 @@ function enRiskAfterLoss(insight: JarvisInsight, mode: JarvisVoiceMode): HeroLin
   if (insight.impact) {
     lines.push({
       kind: "impact",
-      text: `This behaviour has cost you ${formatMoney(insight.impact.amount, "en")} across those ${insight.sampleSize} trades.`,
+      text: `Your post-loss trades add up to ${formatMoney(insight.impact.amount, "en")} across those ${insight.sampleSize} trades.`,
     });
   }
   lines.push({ kind: "action", text: `Today: ${actionLine(insight, "en")}.` });
