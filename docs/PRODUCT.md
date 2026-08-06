@@ -431,6 +431,117 @@ Jours de bourse consécutifs avec checklist verrouillée.
 
 ---
 
+## 4 ter. API serveur, tâches planifiées et intégrations
+
+### Fonctions serveur (`src/backend/`)
+
+Aucune n'est une route HTTP publique : ce sont des `createServerFn` TanStack,
+appelées comme des fonctions depuis le client. **Conséquence directe : aucun
+secret n'atteint jamais le navigateur.**
+
+| Fichier | Rôle | Garde |
+|---|---|---|
+| `coach.functions.ts` | Réponse de Jarvis | `requireProAccess` (auth + quota) |
+| `memory.functions.ts` | Extraction de mémoire → **candidats**, n'écrit rien | `requireProAccess` + `AI_MEMORY_EXTRACTION=1` |
+| `ai.functions.ts` | Autres appels IA | `requireProAccess` |
+| `tts.functions.ts` | Synthèse vocale (checklist) | `requireProAccess` |
+| `reports.functions.ts` | Bilan mensuel à la demande | auth |
+| `push.functions.ts` | Notifications push (VAPID) | auth |
+| `economic-calendar.functions.ts` | Lecture du calendrier macro | auth |
+| `telemetry.server.ts` | Écriture `ai_agent_runs` | **service role** — aucun client ne peut fabriquer de métrique |
+| `billing.server.ts` · `crypto-pay.server.ts` | Stripe · Coinbase Commerce | webhooks signés + `processed_webhook_events` (idempotence) |
+| `lifecycle-emails.server.ts` · `email-templates.server.ts` | Resend | `CRON_SECRET` |
+| `monthly-reports.server.ts` · `goal-reminders.server.ts` | Génération planifiée | `CRON_SECRET` |
+| `rate-limit.server.ts` · `require-pro.ts` | Middlewares partagés | — |
+
+### Tâches planifiées (`vercel.json`)
+
+| Chemin | Cadence | Effet |
+|---|---|---|
+| `/api/cron/monthly-reports` | `0 6 1 * *` — le 1er du mois | Génère les bilans (même builder pur que la version à la demande) |
+| `/api/cron/lifecycle-emails` | `0 8 * * *` — quotidien | Emails de cycle de vie |
+| `/api/cron/economic-calendar` | `0 5 * * *` — quotidien | Ingère le calendrier macro ; `id` = hash déterministe de la clé métier, donc ré-ingérer MET À JOUR au lieu de dupliquer |
+
+### Intégrations externes
+
+| Service | Usage | Rupture si indisponible |
+|---|---|---|
+| **Supabase** | Postgres · RLS · Auth · Storage · Realtime | Totale — c'est la base |
+| **Gemini** (défaut) / Anthropic / Groq / OpenRouter | LLM de Jarvis | **Aucune** : repli déterministe sur les mêmes données |
+| **Stripe** · **Coinbase Commerce** | Paiement carte · crypto | Pas d'abonnement possible |
+| **Resend** | Emails transactionnels | Silencieuse — à surveiller |
+| **ElevenLabs** | Voix de la checklist | Dégradée, la checklist reste utilisable |
+| **Web Push (VAPID)** | Notifications | Les notifications restent dans l'Inbox |
+| **Trustpilot** | Widget d'avis | Cosmétique ; seule origine tierce autorisée par la CSP |
+
+**Le provider IA est interchangeable par variable d'environnement** (`AI_PROVIDER`) :
+l'application ne sait jamais quel modèle répond.
+
+### Variables d'environnement
+
+`SUPABASE_URL` · `SUPABASE_PUBLISHABLE_KEY` · `SUPABASE_SERVICE_ROLE_KEY` ·
+`VITE_SUPABASE_URL` · `VITE_SUPABASE_PUBLISHABLE_KEY` (les deux `VITE_` sont
+publiques par construction et n'exposent que la clé anon) ·
+`AI_PROVIDER` · `GEMINI_API_KEY` · `GEMINI_MODEL` · `GEMINI_THINKING_BUDGET` ·
+`ANTHROPIC_API_KEY` · `ANTHROPIC_MODEL` · `AI_RATE_LIMIT_PER_HOUR` ·
+`AI_REQUIRE_PRO` · **`AI_MEMORY_EXTRACTION`** (éteint par défaut) ·
+`STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PRICE_PRO_MONTHLY` ·
+`STRIPE_PRICE_PRO_YEARLY` · `COINBASE_COMMERCE_API_KEY` ·
+`COINBASE_COMMERCE_WEBHOOK_SECRET` · `RESEND_API_KEY` · `EMAIL_FROM` ·
+`VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` · `VAPID_SUBJECT` ·
+`ELEVENLABS_API_KEY` · `TTS_PROVIDER` · `CRON_SECRET` · `PUBLIC_SITE_URL`.
+
+---
+
+## 4 quater. Workflows
+
+### Journée type du trader
+
+```
+Matin    Checklist pré-market → verrouillage → série de jours
+   ↓     (localStorage `tv-chk-{uid}-{date}`, alimente le sous-score `routine`)
+Séance   Trade → Journal → moteur de discipline (temps réel)
+   ↓     violation → événement → NotificationEngine → toast + push + Inbox
+Soir     Journalisation : erreurs cochées, capture d'écran, notes
+   ↓
+Après    Jarvis : stats · signaux · règles · ADHÉRENCE · objectifs · mémoire
+```
+
+### Écriture d'un trade
+
+`TradeModal` → écriture **optimiste** dans le cache React Query → `upsertTrade`
+(Supabase) → recalcul de tous les moteurs (purs, synchrones) → événements de
+discipline. L'interface n'attend jamais le réseau.
+
+### Une question posée à Jarvis
+
+1. `buildCoachV1Payload` assemble stats, trades, erreurs, signaux, règles,
+   objectifs, adhérence, Edge Score, profil et **mémoire sélectionnée**
+   (≤ 350 tokens).
+2. `askCoach` (serveur, `requireProAccess`) → `runCoach` → routeur multi-provider
+   avec circuit breaker.
+3. Échec ou absence de provider → **repli déterministe** sur les mêmes données.
+4. `answerToBlocks` enrichit la prose **côté client** avec les chiffres déjà
+   calculés — c'est ce qui rend toute hallucination chiffrée impossible.
+5. Si le message contient un marqueur d'engagement **et** que
+   `AI_MEMORY_EXTRACTION=1` : extraction en arrière-plan, après la réponse.
+
+### Notification
+
+Événement métier → `evaluateNotificationRules` (pur) → `NotificationEngine` →
+canaux (toast · push dédupliqué une fois par jour et par clé · Inbox persistée).
+La catégorie dérive du `kind` **et de la sévérité** — un progrès n'est pas un
+risque.
+
+### Abonnement
+
+Choix de l'offre → Stripe Checkout ou Coinbase Commerce → webhook **signé** →
+`processed_webhook_events` garantit l'idempotence → `subscriptions` mise à jour →
+`requireProAccess` lit ce statut. **Ce parcours n'a jamais été éprouvé de bout en
+bout** (cf. `GO-LIVE.md` §1.3).
+
+---
+
 ## 5. Modèle de données
 
 **16 tables déployées** : `profiles` · `accounts` · `trades` · `user_preferences`
