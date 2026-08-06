@@ -517,7 +517,7 @@ const en = {
   "copilot.cleanDaysWord": "clean days",
   "copilot.jarvisBuilding":
     "Not enough recent data yet — log your trades and I'll start scoring your discipline.",
-  "copilot.obsPlan": "Plan adherence is your weak spot right now.",
+  "copilot.obsCleanTrades": "You are flagging mistakes on many recent trades.",
   "copilot.obsRisk": "Position sizing slipped above your limit recently.",
   "copilot.obsRoutine": "Your pre-market routine has been inconsistent.",
   "copilot.obsClean": "{clean} lately.",

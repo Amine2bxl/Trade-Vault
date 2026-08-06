@@ -156,8 +156,8 @@ function CopilotBlock({
       ? `${edge.subs.cleanDays.detail} ${t("copilot.cleanDaysWord")}`
       : "";
     const obs =
-      edge.weakest === "plan"
-        ? t("copilot.obsPlan")
+      edge.weakest === "cleanTrades"
+        ? t("copilot.obsCleanTrades")
         : edge.weakest === "risk"
           ? t("copilot.obsRisk")
           : edge.weakest === "routine"

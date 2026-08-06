@@ -474,7 +474,7 @@ const fr: Dict = {
   "copilot.cleanDaysWord": "jours propres",
   "copilot.jarvisBuilding":
     "Pas encore assez de données récentes — logge tes trades et je note ta discipline.",
-  "copilot.obsPlan": "Le respect du plan est ton point faible en ce moment.",
+  "copilot.obsCleanTrades": "Tu coches beaucoup d'erreurs sur tes trades récents.",
   "copilot.obsRisk": "Ton sizing a récemment dépassé ta limite.",
   "copilot.obsRoutine": "Ta routine pré-market a été irrégulière.",
   "copilot.obsClean": "{clean} récemment.",
