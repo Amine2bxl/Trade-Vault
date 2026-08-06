@@ -13,6 +13,7 @@ import {
   Minus,
   Download,
   Target,
+  BookOpen,
 } from "lucide-react";
 import { Trade, isBreakEven, STRATEGIES } from "../types";
 import {
@@ -221,7 +222,15 @@ export default function Journal({
       <PageHeader
         className="mb-3 md:mb-4 items-center"
         title={t("journal.title")}
-        subtitle={`${filtered.length} ${t("common.trades")}${activeFilterCount > 0 ? ` · ${activeFilterCount} filtre${activeFilterCount > 1 ? "s" : ""}` : ""}`}
+        subtitle={`${filtered.length} ${t("common.trades")}`}
+        icon={
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
+              <BookOpen className="w-4.5 h-4.5 text-white" />
+            </span>
+          </span>
+        }
         actions={
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>

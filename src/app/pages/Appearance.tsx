@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { Palette } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import ThemeSettings from "../components/ThemeSettings";
 import { PageHeader } from "@/shared/ui";
@@ -17,9 +18,17 @@ export default function Appearance() {
         className="mb-2 md:mb-2"
         title={tr("Apparence", "Appearance")}
         subtitle={tr(
-          "Choisis ton identité visuelle — chaque thème reteinte toute l'application en direct.",
-          "Pick your visual identity — every theme retints the whole app live.",
+          "Personnalise l'identité visuelle de ton terminal.",
+          "Customize your trading terminal look and feel.",
         )}
+        icon={
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
+              <Palette className="w-4.5 h-4.5 text-white" />
+            </span>
+          </span>
+        }
       />
       <div className="animate-fade-in-up stagger-1">
         <ThemeSettings />
