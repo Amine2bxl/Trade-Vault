@@ -4,6 +4,9 @@
 > **Règle d'écriture** : tout ce qui est écrit ici a été vérifié dans le code.
 > Ce qui n'a pas pu l'être est signalé comme tel, explicitement.
 >
+> **Avant tout lancement** : lire [`GO-LIVE.md`](GO-LIVE.md) — checklist des
+> bloquants et des points non vérifiés.
+>
 > Compléments historiques : `AUDIT-PREMIUM.md` (technique) · `AUDIT-PRODUIT.md`
 > (produit) · `PRODUCT-BIBLE.md` (vision et moat). **Ce document-ci prime** en cas
 > de divergence — les audits contiennent des constats que le code a invalidés
