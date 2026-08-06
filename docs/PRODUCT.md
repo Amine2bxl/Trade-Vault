@@ -305,6 +305,41 @@ nom*. Aucun n'était détectable par les tests, le typage ou la CI — les valeu
 > **pas déjà pris** dans tout le produit. Omettre le second contrôle a suffi à
 > recréer une collision dix minutes après en avoir corrigé une.
 
+### La règle qui a produit douze corrections en une journée
+
+> **Un TOTAL est vrai à n'importe quelle taille d'échantillon.
+> Un TAUX et un CLASSEMENT ne le sont pas.**
+
+La somme du P&L de deux trades *est* exactement la somme de deux trades — elle ne
+ment jamais. Un taux de réussite sur deux trades ne veut rien dire. Et couronner
+« ta meilleure heure » sur deux trades ne veut rien dire non plus, **même si le
+total affiché est exact** : c'est le classement qui est l'inférence, pas le
+chiffre.
+
+Cette dernière nuance est celle qui échappe le plus longtemps, parce que le
+nombre paraît irréprochable.
+
+**Conséquence appliquée dans tout le produit** : `MIN_BUCKET_SAMPLE` (5 trades
+décisifs) conditionne l'affichage de tout taux et de tout superlatif ; les totaux
+restent affichés sans condition. `MIN_KELLY_SAMPLE` (30) est plus élevé parce que
+Kelly ne décrit pas le passé — il **recommande une taille de position**, donc une
+erreur y coûte de l'argent et non une appréciation.
+
+| Surface | Garde |
+|---|---|
+| Graphique horaire (Analytics) | taux masqué sous 5 ; `null` et non `0` → la ligne s'interrompt visiblement |
+| Tableau des setups (Analytics) | taux, profit factor et R moyen masqués sous 5 |
+| Kelly (Analytics) | masqué sous 30 trades décisifs |
+| Sharpe / Sortino (Analytics) | ≥ 10 jours de trading — **hérité, non revu** : annualiser 10 jours par √252 reste une forte extrapolation |
+| Superlatifs (Seasonality) | « meilleur mois / jour / heure » exigent 5 trades |
+| Meilleurs / pires setups (Reports) | même plancher — un bilan écrit affirme plus fort qu'un graphique |
+| Signaux envoyés à Jarvis | protégés par le même `winRateOf` |
+
+**Trois définitions concurrentes du win rate par bucket ont été trouvées et
+fusionnées** (Analytics, Reports, `quantStats`). Le motif est toujours le même :
+la fonction existante ne prenait pas le bon type d'entrée, quelqu'un a réécrit.
+Les sources de vérité ne se multiplient pas par négligence — par commodité.
+
 ### Les trois grandeurs qu'on confond
 
 | Métrique | Où | Formule | Ce que c'est | Ce que ce **n'est pas** |
