@@ -86,6 +86,7 @@ export default function AccountSwitcher({
   const [draftName, setDraftName] = useState("");
   const [draftIcon, setDraftIcon] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Account | null>(null);
+  const [editingModalAccount, setEditingModalAccount] = useState<Account | null>(null);
 
   const startRename = (a: Account) => {
     setEditingId(a.id);
@@ -390,7 +391,10 @@ export default function AccountSwitcher({
                           </button>
                         )}
                         <button
-                          onClick={() => startRename(a)}
+                          onClick={() => {
+                            setEditingModalAccount(a);
+                            setOpen(false);
+                          }}
                           aria-label={t("account.rename")}
                           className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
                         >
@@ -426,6 +430,12 @@ export default function AccountSwitcher({
         )}
 
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+        {editingModalAccount && (
+          <CreateAccountModal
+            edit={editingModalAccount}
+            onClose={() => setEditingModalAccount(null)}
+          />
+        )}
         {deleting && (
           <DeleteAccountModal
             account={deleting}
@@ -535,6 +545,12 @@ export default function AccountSwitcher({
         )}
         <AccountSheet open={open} onClose={() => setOpen(false)} />
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+        {editingModalAccount && (
+          <CreateAccountModal
+            edit={editingModalAccount}
+            onClose={() => setEditingModalAccount(null)}
+          />
+        )}
         {deleting && (
           <DeleteAccountModal
             account={deleting}
@@ -606,51 +622,69 @@ export default function AccountSwitcher({
           </button>
         </div>
       ) : (
-        <button
-          onClick={() => setOpen((v) => !v)}
-          title={t("account.switch")}
-          className={cn(
-            "w-full flex items-center gap-2.5 rounded-2xl border transition-all",
-            compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
-            "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
-          )}
-        >
-          <span
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            title={t("account.switch")}
+            className={cn(
+              "flex-1 flex items-center gap-2.5 rounded-2xl border transition-all",
+              compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
+              "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
+            )}
           >
-            <ActiveIcon className="w-4 h-4" />
-          </span>
-          <span className="flex-1 min-w-0 text-left">
-            <span className="flex items-center gap-1.5">
-              <span className="block text-sm font-semibold text-white truncate">
-                {activeAccount.name}
+            <span
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
+            >
+              <ActiveIcon className="w-4 h-4" />
+            </span>
+            <span className="flex-1 min-w-0 text-left">
+              <span className="flex items-center gap-1.5">
+                <span className="block text-sm font-semibold text-white truncate">
+                  {activeAccount.name}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startRename(activeAccount);
+                  }}
+                  aria-label={t("account.rename")}
+                  className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
               </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startRename(activeAccount);
-                }}
-                aria-label={t("account.rename")}
-                className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
+              <span className="block text-[10px] text-slate-500 truncate tabular-nums">
+                {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
+              </span>
             </span>
-            <span className="block text-[10px] text-slate-500 truncate tabular-nums">
-              {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
+              {t("account.switchShort")}
+              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
             </span>
-          </span>
-          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
-            {t("account.switchShort")}
-            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
-          </span>
-        </button>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingModalAccount(activeAccount);
+            }}
+            className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-white/[0.08] bg-white/[0.03] border border-white/[0.07] transition-all shrink-0"
+          >
+            <Pencil className="w-3 h-3" />
+            <span>{t("account.editShort")}</span>
+          </button>
+        </div>
       )}
 
       <AccountSheet open={open} onClose={() => setOpen(false)} />
 
       {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+      {editingModalAccount && (
+        <CreateAccountModal
+          edit={editingModalAccount}
+          onClose={() => setEditingModalAccount(null)}
+        />
+      )}
       {deleting && (
         <DeleteAccountModal
           account={deleting}
@@ -750,26 +784,35 @@ function DeleteAccountModal({
   );
 }
 
-function CreateAccountModal({ onClose }: { onClose: () => void }) {
-  const { addAccount } = useAccounts();
+function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Account }) {
+  const { addAccount, editAccount } = useAccounts();
   const { t } = useT();
-  const [name, setName] = useState("");
-  const [type, setType] = useState<AccountType>("prop");
-  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
-  const [balance, setBalance] = useState("50000");
+  const [name, setName] = useState(edit?.name ?? "");
+  const [type, setType] = useState<AccountType>(edit?.type ?? "prop");
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(edit?.icon ?? null);
+  const [balance, setBalance] = useState(String(edit?.startingBalance ?? edit ? 0 : "50000"));
   const [busy, setBusy] = useState(false);
 
   const types: AccountType[] = ["personal", "prop", "demo", "live"];
 
-  const create = async () => {
+  const submit = async () => {
     const trimmed = name.trim();
     if (!trimmed || busy) return;
     setBusy(true);
     try {
-      await addAccount({ name: trimmed, type, icon: selectedIcon ?? undefined, startingBalance: Number(balance) || 0 });
+      if (edit) {
+        await editAccount(edit.id, {
+          name: trimmed,
+          type,
+          icon: selectedIcon ?? "",
+          startingBalance: Number(balance) || 0,
+        });
+      } else {
+        await addAccount({ name: trimmed, type, icon: selectedIcon ?? undefined, startingBalance: Number(balance) || 0 });
+      }
       onClose();
     } catch (e) {
-      console.error("Failed to create account", e);
+      console.error("Failed to save account", e);
       setBusy(false);
     }
   };
@@ -795,7 +838,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
           className="text-lg font-bold text-white flex items-center gap-2.5"
         >
           <Layers className="w-4.5 h-4.5 text-cyan-400 shrink-0" />
-          {t("account.new")}
+          {edit ? t("account.editTitle") : t("account.new")}
         </h2>
         <button
           onClick={onClose}
@@ -812,7 +855,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && create()}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
             autoFocus
             placeholder={t("account.namePlaceholder")}
             className={cn(FIELD_BASE, "h-11")}
@@ -871,7 +914,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
               inputMode="decimal"
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && create()}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
               className={cn(FIELD_BASE, "h-11 pl-7")}
             />
           </div>
@@ -886,7 +929,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
           {t("common.cancel")}
         </button>
         <button
-          onClick={create}
+          onClick={submit}
           disabled={!name.trim() || busy}
           className={cn(
             "px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap",
@@ -895,7 +938,13 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
               : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
           )}
         >
-          {busy ? t("account.creating") : t("account.create")}
+          {busy
+            ? edit
+              ? t("account.editSaving")
+              : t("account.creating")
+            : edit
+              ? t("account.editSave")
+              : t("account.create")}
         </button>
       </div>
     </Modal>

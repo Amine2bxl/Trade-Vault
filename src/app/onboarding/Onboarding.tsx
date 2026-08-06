@@ -39,9 +39,10 @@ export type OnboardingAction = "import" | "demo" | null;
 //   4. NIVEAU     — nouveau / intermédiaire / aguerri / prop  (simple)
 //   5. OBJECTIF   — régularité / prop / discipline / temps plein / en parallèle
 //   6. FAIBLESSES — émotions / constance / sur-trading / risque / journalisation (MULTI)
-//   7. RÉGLAGES   — cible mensuelle % + méthodologie ICT
-//   8. NOTIFICATIONS — permission push (ré-intégrée, non bloquante)
-//   9. C'EST PARTI — Import CSV / Démo / Démarrer à zéro
+//   7. CAPITAL    — taille du compte pour calibrer le risque
+//   8. RÉGLAGES   — cible mensuelle % + thème
+//   9. NOTIFICATIONS — permission push (ré-intégrée, non bloquante)
+//   10. C'EST PARTI — Import CSV / Démo / Démarrer à zéro
 // Chaque écran est court (un tap) : progress bar, back, skip si optionnel.
 type StepKey =
   | "identity"
@@ -50,6 +51,7 @@ type StepKey =
   | "experience"
   | "goal"
   | "pain"
+  | "capital"
   | "settings"
   | "notify"
   | "start";
@@ -216,6 +218,7 @@ export default function Onboarding({
     "experience",
     "goal",
     "pain",
+    "capital",
     "settings",
     "notify",
     "start",
@@ -326,7 +329,7 @@ export default function Onboarding({
 
   return (
     <div
-      className="relative h-dvh w-full overflow-hidden"
+      className="relative h-dvh w-full overflow-hidden flex flex-col"
       style={{ background: "linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)" }}
     >
       <div
@@ -367,7 +370,7 @@ export default function Onboarding({
       </div>
 
       {/* Body */}
-      <div className="relative z-10 h-[calc(100%-3.5rem)] flex items-center justify-center px-4 py-4 overflow-y-auto">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 pt-4 overflow-y-auto">
         <div key={step} className="w-full max-w-lg animate-fade-in-up pb-2">
           {/* ── 1 · IDENTITÉ ── */}
           {step === "identity" && (
@@ -566,7 +569,27 @@ export default function Onboarding({
             </ScreenShell>
           )}
 
-          {/* ── 7 · RÉGLAGES (cible + capital + thème) ── */}
+          {/* ── 7 · CAPITAL ── */}
+          {step === "capital" && (
+            <ScreenShell icon={Wallet} title={t("onb.accountSize")} subtitle={t("onb.accountSizeSub")}>
+              <div className="relative max-w-[260px] mx-auto mb-5">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-3xl">$</span>
+                <input
+                  type="number" inputMode="decimal" min={0}
+                  value={accountSize} onChange={(e) => setAccountSize(e.target.value)}
+                  placeholder="25 000"
+                  className="w-full h-16 bg-white/[0.04] border border-white/[0.08] rounded-2xl pl-12 pr-4 text-center text-3xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:bg-white/[0.06] transition-all"
+                />
+              </div>
+              <p className="text-xs text-slate-500 text-center max-w-[280px] mx-auto leading-relaxed">
+                Ce capital sert à calibrer ton risque. Tu pourras le modifier plus tard.
+              </p>
+              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
+              <SkipBtn onClick={next} label={c.skip} />
+            </ScreenShell>
+          )}
+
+          {/* ── 8 · RÉGLAGES (cible + thème) ── */}
           {step === "settings" && (
             <ScreenShell icon={SlidersHorizontal} title={c.targetTitle} subtitle={c.targetSub}>
               {/* Objectif mensuel */}
@@ -585,31 +608,13 @@ export default function Onboarding({
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
               </div>
 
-              {/* Capital — question naturelle avec explication */}
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Wallet className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-sm font-bold text-white">{t("onb.accountSize")}</h3>
-              </div>
-              <p className="text-xs text-slate-400 text-center max-w-[280px] mx-auto mb-4 leading-relaxed">
-                {t("onb.accountSizeSub")}
-              </p>
-              <div className="relative max-w-[200px] mx-auto mb-8">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-base">$</span>
-                <input
-                  type="number" inputMode="decimal" min={0}
-                  value={accountSize} onChange={(e) => setAccountSize(e.target.value)}
-                  placeholder="25 000"
-                  className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-2xl pl-10 pr-4 text-center text-2xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:bg-white/[0.06] transition-all"
-                />
-              </div>
-
               {/* Thème — ThemeSettings avec meilleure mise en avant */}
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Palette className="w-4 h-4 text-cyan-300" />
                 <h3 className="text-sm font-bold text-white">{t("onb.appearance")}</h3>
               </div>
               <p className="text-xs text-slate-400 text-center mb-4">{t("onb.appearanceSub")}</p>
-              <div className="max-w-[420px] mx-auto mb-4">
+              <div className="max-w-[420px] mx-auto mb-4 overflow-visible">
                 <ThemeSettings />
               </div>
               <div className="text-center mb-4">
@@ -623,7 +628,7 @@ export default function Onboarding({
             </ScreenShell>
           )}
 
-          {/* ── 8 · NOTIFICATIONS ── */}
+          {/* ── 9 · NOTIFICATIONS ── */}
           {step === "notify" && (
             <div className="text-center">
               <div className="flex justify-center">
@@ -666,7 +671,7 @@ export default function Onboarding({
             </div>
           )}
 
-          {/* ── 9 · C'EST PARTI ── */}
+          {/* ── 10 · C'EST PARTI ── */}
           {step === "start" && (
             <div>
               <div className="text-center">
