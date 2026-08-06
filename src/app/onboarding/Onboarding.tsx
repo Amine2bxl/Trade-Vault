@@ -25,7 +25,7 @@ import { useT } from "../i18n/LanguageContext";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, saveAccountBalance, type OnboardingData } from "../store";
-import { useTheme } from "../contexts/ThemeContext";
+import ThemeSettings from "../components/ThemeSettings";
 import { oc } from "./onboardingCopy";
 import logoSrc from "@/assets/tradevault-logo.webp";
 
@@ -208,8 +208,6 @@ export default function Onboarding({
   const [usesIct, setUsesIct] = useState(false);
   // Taille du compte — Jarvis calibre le risque réel. Apparence — thème de l'app.
   const [accountSize, setAccountSize] = useState("");
-  const { themes, activeId, setActive } = useTheme();
-  const builtinThemes = themes.filter((th) => th.builtin);
 
   const steps: StepKey[] = [
     "identity",
@@ -609,54 +607,14 @@ export default function Onboarding({
                 />
               </div>
 
-              {/* Apparence de l'app — aperçu direct du thème avant le choix */}
+              {/* Thème de l'app — prévisualisation et sélection via ThemeSettings */}
               <div className="flex items-center justify-center gap-2 mb-1">
                 <Palette className="w-4 h-4 text-cyan-300" />
                 <h3 className="text-base font-bold text-white">{t("onb.appearance")}</h3>
               </div>
               <p className="text-xs text-slate-400 text-center mb-3">{t("onb.appearanceSub")}</p>
-              <div className="grid grid-cols-2 gap-2.5 max-w-[300px] mx-auto mb-7 onb-in">
-                {builtinThemes.map((th) => (
-                  <button
-                    key={th.id}
-                    type="button"
-                    onClick={() => setActive(th.id)}
-                    className={cn(
-                      "onb-card rounded-2xl border p-3 text-left transition-all",
-                      activeId === th.id
-                        ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      {/* Aperçu du thème */}
-                      <span className="relative h-8 w-8 shrink-0 rounded-xl overflow-hidden ring-1 ring-white/10">
-                        <span
-                          className="absolute inset-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${th.primary}, ${th.secondary})`,
-                          }}
-                        />
-                      </span>
-                      <span className="flex-1 min-w-0">
-                        <span
-                          className={cn(
-                            "block text-[13px] font-semibold truncate",
-                            activeId === th.id ? "text-white" : "text-slate-300",
-                          )}
-                        >
-                          {th.name}
-                        </span>
-                        <span className="block text-[10px] text-slate-500">
-                          {activeId === th.id ? "Actif" : "Appliquer"}
-                        </span>
-                      </span>
-                      {activeId === th.id && (
-                        <Check className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
-                      )}
-                    </div>
-                  </button>
-                ))}
+              <div className="max-w-[400px] mx-auto mb-7">
+                <ThemeSettings />
               </div>
 
               <div className="flex items-center justify-center gap-2 mb-1">

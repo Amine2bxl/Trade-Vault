@@ -303,11 +303,8 @@ export default function Dashboard({
       <PageHeader
         className="items-center"
         icon={
-          <span className="relative shrink-0">
-            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
-              <LayoutDashboard className="w-4.5 h-4.5 text-white" />
-            </span>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <LayoutDashboard className="w-4 h-4 text-white" />
           </span>
         }
         eyebrow={

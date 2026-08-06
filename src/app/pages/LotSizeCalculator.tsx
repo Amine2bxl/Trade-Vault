@@ -155,11 +155,8 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
 
         <div className="relative flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="relative shrink-0">
-              <span className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md" />
-              <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/30">
-                <Calculator className="w-5 h-5 text-white" />
-              </span>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
+              <Calculator className="w-4.5 h-4.5 text-white" />
             </span>
             <div className="min-w-0">
               <h1 className="font-display text-lg md:text-xl font-extrabold tracking-tight text-white">
@@ -195,11 +192,8 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           {/* ── ÉTAPE 1 · Ton risque ── */}
           <div className="relative glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-1">
             <div className="flex items-center gap-3 mb-4">
-              <span className="relative shrink-0">
-                <span className="absolute -inset-0.5 rounded-xl bg-cyan-500/30 blur-sm" />
-                <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
-                  <Shield className="w-4 h-4 text-white" />
-                </span>
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+                <Shield className="w-3.5 h-3.5 text-white" />
               </span>
               <div>
                 <h2 className="text-sm font-bold text-white">{t("calc.sectionRisk")}</h2>
@@ -323,11 +317,8 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           {/* ── ÉTAPE 2 · L'instrument ── */}
           <div className="relative glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-2">
             <div className="flex items-center gap-3 mb-4">
-              <span className="relative shrink-0">
-                <span className="absolute -inset-0.5 rounded-xl bg-cyan-500/30 blur-sm" />
-                <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
-                  <Layers className="w-4 h-4 text-white" />
-                </span>
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+                <Layers className="w-3.5 h-3.5 text-white" />
               </span>
               <div>
                 <h2 className="text-sm font-bold text-white">{t("calc.sectionInstrument")}</h2>
@@ -439,11 +430,8 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
 
           <div className="flex items-center gap-2 mb-3">
-            <span className="relative shrink-0">
-              <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/30 blur-sm" />
-              <span className="relative grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
-                <Gauge className="w-3.5 h-3.5 text-white" />
-              </span>
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
+              <Gauge className="w-3 h-3 text-white" />
             </span>
             <div>
               <h2 className="text-sm font-bold text-white leading-none">{t("calc.resultLive")}</h2>

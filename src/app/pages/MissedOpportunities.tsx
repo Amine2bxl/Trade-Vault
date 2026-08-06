@@ -183,11 +183,8 @@ export default function MissedOpportunities() {
         title={t("missed.title")}
         subtitle={t("missed.subtitle")}
         icon={
-          <span className="relative shrink-0">
-            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
-              <Target className="w-4.5 h-4.5 text-white" />
-            </span>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <Target className="w-4 h-4 text-white" />
           </span>
         }
         actions={
@@ -566,11 +563,8 @@ function MissedEditor({
       <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden">
         <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-amber-500/10 blur-2xl" />
         <div className="relative flex items-center gap-2.5 min-w-0">
-          <span className="relative shrink-0">
-            <span className="absolute -inset-1 rounded-xl bg-amber-500/30 blur-md" />
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600">
-              <Target className="w-4.5 h-4.5 text-white" />
-            </span>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+            <Target className="w-4 h-4 text-white" />
           </span>
           <div className="min-w-0">
             <h2 id="missed-editor-title" className="text-base font-bold text-white leading-tight">

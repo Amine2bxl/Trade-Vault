@@ -49,9 +49,8 @@ export default function Jarvis() {
     <div className="h-full flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-lg text-center">
         {/* Avatar Jarvis */}
-        <div className="relative mx-auto w-16 h-16 mb-5">
-          <span className="absolute -inset-2 rounded-3xl bg-cyan-500/30 blur-lg" />
-          <div className="relative grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+        <div className="mx-auto mb-5">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
             <Bot className="w-8 h-8 text-white" />
           </div>
         </div>

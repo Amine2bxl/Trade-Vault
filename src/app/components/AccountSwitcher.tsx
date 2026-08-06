@@ -12,6 +12,16 @@ import {
   Trash2,
   AlertTriangle,
   Layers,
+  Briefcase,
+  Flame,
+  Star,
+  Shield,
+  Target,
+  TrendingUp,
+  Compass,
+  Home,
+  CreditCard,
+  Globe,
 } from "lucide-react";
 import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
@@ -32,6 +42,31 @@ const TYPE_LABEL_KEY = {
   live: "account.typeLive",
 } as const;
 
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  User,
+  Building2,
+  FlaskConical,
+  Zap,
+  Briefcase,
+  Flame,
+  Star,
+  Shield,
+  Target,
+  TrendingUp,
+  Layers,
+  Compass,
+  Home,
+  CreditCard,
+  Globe,
+};
+
+const AVAILABLE_ICONS = Object.keys(ICON_MAP);
+
+function getAccountIcon(a: Account) {
+  if (a.icon && ICON_MAP[a.icon]) return ICON_MAP[a.icon];
+  return TYPE_ICON[a.type];
+}
+
 export default function AccountSwitcher({
   compact,
   variant = "bar",
@@ -45,20 +80,29 @@ export default function AccountSwitcher({
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [draftIcon, setDraftIcon] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Account | null>(null);
 
   const startRename = (a: Account) => {
     setEditingId(a.id);
     setDraftName(a.name);
+    setDraftIcon(a.icon ?? null);
   };
   const commitRename = async (id: string) => {
     const name = draftName.trim();
+    const current = accounts.find((a) => a.id === id);
+    const icon = draftIcon;
     setEditingId(null);
-    if (!name || name === accounts.find((a) => a.id === id)?.name) return;
+    const nameChanged = name && name !== current?.name;
+    const iconChanged = icon !== (current?.icon ?? null);
+    if (!nameChanged && !iconChanged) return;
     try {
-      await editAccount(id, { name });
+      const patch: Record<string, string> = {};
+      if (nameChanged) patch.name = name;
+      if (iconChanged) patch.icon = icon ?? "";
+      await editAccount(id, patch as never);
     } catch (e) {
-      console.error("Failed to rename account", e);
+      console.error("Failed to update account", e);
     }
   };
 
@@ -93,7 +137,7 @@ export default function AccountSwitcher({
       </div>
       <div className="p-3 max-h-[60vh] overflow-y-auto">
         {accounts.map((a) => {
-          const Icon = TYPE_ICON[a.type];
+          const Icon = getAccountIcon(a);
           const active = a.id === activeAccount?.id;
           return (
             <div
@@ -168,7 +212,7 @@ export default function AccountSwitcher({
   // switch sub-accounts. Original layout, no dropdown crowding the top bar.
   if (variant === "fab") {
     if (!activeAccount) return null;
-    const ActiveIcon = TYPE_ICON[activeAccount.type];
+    const ActiveIcon = getAccountIcon(activeAccount);
     return (
       <>
         {/* Pilule mobile : la MÊME surface ET la MÊME forme que la nav bar
@@ -225,11 +269,12 @@ export default function AccountSwitcher({
 
               <div className="grid grid-cols-2 gap-2.5 p-4 max-h-[55vh] overflow-y-auto">
                 {accounts.map((a) => {
-                  const Icon = TYPE_ICON[a.type];
+                  const Icon = getAccountIcon(a);
                   const active = a.id === activeAccount.id;
                   const editing = editingId === a.id;
 
                   if (editing) {
+                    const DraftIconComp = draftIcon && ICON_MAP[draftIcon] ? ICON_MAP[draftIcon] : Icon;
                     return (
                       <div
                         key={a.id}
@@ -240,7 +285,7 @@ export default function AccountSwitcher({
                           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                           style={{ background: `${a.color}22`, color: a.color }}
                         >
-                          <Icon className="w-4.5 h-4.5" />
+                          <DraftIconComp className="w-4.5 h-4.5" />
                         </span>
                         <input
                           value={draftName}
@@ -253,6 +298,27 @@ export default function AccountSwitcher({
                           maxLength={40}
                           className="w-full bg-white/[0.06] border border-white/15 rounded-lg px-2 py-1 text-sm font-bold text-white focus:outline-none focus:border-cyan-500/50"
                         />
+                        <div className="grid grid-cols-4 gap-1">
+                          {AVAILABLE_ICONS.map((iconName) => {
+                            const IconComp = ICON_MAP[iconName];
+                            const sel = draftIcon === iconName;
+                            return (
+                              <button
+                                key={iconName}
+                                type="button"
+                                onClick={() => setDraftIcon(sel ? null : iconName)}
+                                className={cn(
+                                  "h-7 rounded-lg flex items-center justify-center transition-all border",
+                                  sel
+                                    ? "bg-cyan-500/15 border-cyan-400/60 text-cyan-300"
+                                    : "bg-white/[0.04] border-white/[0.06] text-slate-500 hover:border-white/15 hover:text-white",
+                                )}
+                              >
+                                <IconComp className="w-3 h-3" />
+                              </button>
+                            );
+                          })}
+                        </div>
                         <div className="flex gap-1.5">
                           <button
                             onClick={() => commitRename(a.id)}
@@ -378,7 +444,7 @@ export default function AccountSwitcher({
   // gradient cyan + glow, comme les boutons d'action du produit.
   if (variant === "card") {
     if (!activeAccount) return null;
-    const ActiveIcon = TYPE_ICON[activeAccount.type];
+    const ActiveIcon = getAccountIcon(activeAccount);
     const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
     const editing = editingId === activeAccount.id;
     return (
@@ -501,7 +567,7 @@ export default function AccountSwitcher({
       </div>
     );
   }
-  const ActiveIcon = TYPE_ICON[activeAccount.type];
+  const ActiveIcon = getAccountIcon(activeAccount);
   const balance = `$${Math.round(activeAccount.startingBalance).toLocaleString("en-US")}`;
 
   const editingBar = editingId === activeAccount.id;
@@ -615,7 +681,7 @@ function DeleteAccountModal({
   const { t } = useT();
   const [step, setStep] = useState<1 | 2>(1);
   const [busy, setBusy] = useState(false);
-  const Icon = TYPE_ICON[account.type];
+  const Icon = getAccountIcon(account);
 
   return (
     <Modal
@@ -687,6 +753,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
   const { t } = useT();
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("prop");
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [balance, setBalance] = useState("50000");
   const [busy, setBusy] = useState(false);
 
@@ -697,7 +764,7 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
     if (!trimmed || busy) return;
     setBusy(true);
     try {
-      await addAccount({ name: trimmed, type, startingBalance: Number(balance) || 0 });
+      await addAccount({ name: trimmed, type, icon: selectedIcon ?? undefined, startingBalance: Number(balance) || 0 });
       onClose();
     } catch (e) {
       console.error("Failed to create account", e);
@@ -761,6 +828,31 @@ function CreateAccountModal({ onClose }: { onClose: () => void }) {
                 <Chip key={tp} selected={type === tp} onClick={() => setType(tp)}>
                   <TypeIcon className="w-3.5 h-3.5" /> {t(TYPE_LABEL_KEY[tp])}
                 </Chip>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className={label}>Icon</label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {AVAILABLE_ICONS.map((iconName) => {
+              const IconComp = ICON_MAP[iconName];
+              const selected = selectedIcon === iconName;
+              return (
+                <button
+                  key={iconName}
+                  type="button"
+                  onClick={() => setSelectedIcon(selected ? null : iconName)}
+                  className={cn(
+                    "h-10 rounded-lg flex items-center justify-center transition-all",
+                    selected
+                      ? "bg-cyan-500/15 border border-cyan-400/60 text-cyan-300"
+                      : "bg-white/[0.04] border border-white/[0.06] text-slate-400 hover:border-white/15 hover:text-white hover:bg-white/[0.06]",
+                  )}
+                >
+                  <IconComp className="w-4 h-4" />
+                </button>
               );
             })}
           </div>

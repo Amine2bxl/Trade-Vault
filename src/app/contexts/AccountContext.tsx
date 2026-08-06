@@ -30,11 +30,12 @@ interface Ctx {
   addAccount: (input: {
     name: string;
     type: AccountType;
+    icon?: string;
     startingBalance: number;
   }) => Promise<Account>;
   editAccount: (
     id: string,
-    patch: Partial<{ name: string; type: AccountType; startingBalance: number }>,
+    patch: Partial<{ name: string; type: AccountType; icon: string; startingBalance: number }>,
   ) => Promise<void>;
   removeAccount: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -82,6 +83,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (cached) setActiveAccountId(cached);
 
       const list = await loadAccounts(uid);
+      // Restore icons from localStorage
+      for (const a of list) {
+        try {
+          const icon = localStorage.getItem(`tv.accountIcon.${a.id}`);
+          if (icon) a.icon = icon;
+        } catch {}
+      }
       setAccounts(list);
 
       let active = await loadActiveAccountId(uid).catch(() => null);
@@ -123,11 +131,15 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   );
 
   const addAccount = useCallback(
-    async (input: { name: string; type: AccountType; startingBalance: number }) => {
+    async (input: { name: string; type: AccountType; icon?: string; startingBalance: number }) => {
       if (!user) throw new Error("not authenticated");
-      const acc = await createAccount(user.id, input);
+      const acc = await createAccount(user.id, { name: input.name, type: input.type, startingBalance: input.startingBalance });
+      if (input.icon) {
+        try { localStorage.setItem(`tv.accountIcon.${acc.id}`, input.icon); } catch {}
+        acc.icon = input.icon;
+      }
       setAccounts((prev) => [...prev, acc]);
-      apply(user.id, acc.id); // jump straight into the new account
+      apply(user.id, acc.id);
       saveActiveAccountId(user.id, acc.id).catch(() => {});
       return acc;
     },
@@ -137,10 +149,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const editAccount = useCallback(
     async (
       id: string,
-      patch: Partial<{ name: string; type: AccountType; startingBalance: number }>,
+      patch: Partial<{ name: string; type: AccountType; icon: string; startingBalance: number }>,
     ) => {
       if (!user) return;
-      await updateAccount(user.id, id, patch);
+      const { icon, ...dbPatch } = patch;
+      await updateAccount(user.id, id, dbPatch as Partial<{ name: string; type: AccountType; startingBalance: number }>);
+      if (icon !== undefined) {
+        try { localStorage.setItem(`tv.accountIcon.${id}`, icon); } catch {}
+      }
       setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
     },
     [user],
