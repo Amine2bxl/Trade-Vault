@@ -668,7 +668,7 @@ const fr: Dict = {
   "quant.cleanTrades": "Trades sans erreur",
   "quant.needTenDays": "≥10 jours de trading requis",
   "quant.annualized": "annualisé, PnL journalier",
-  "quant.kellyHint": "indicatif uniquement",
+  "quant.kellyHint": "indicatif — à partir de 30 trades",
   "quant.consistency": "Régularité",
   "quant.bestDay": "meilleur jour",
   "quant.recovery": "Récupération",

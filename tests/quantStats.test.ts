@@ -79,12 +79,17 @@ describe("computeQuantStats", () => {
   });
 
   it("kelly = W - (1-W)/R", () => {
-    // 2 wins avg 200, 2 losses avg 100 → W=0.5, R=2 → 0.5 - 0.5/2 = 0.25
+    // W=0.5, R=2 → 0.5 - 0.5/2 = 0.25.
+    // L'échantillon compte 40 trades décisifs : ce test vérifiait auparavant la
+    // formule sur QUATRE trades, ce qui validait au passage l'affichage d'une
+    // recommandation de taille de position sur un échantillon dénué de sens.
     const q = computeQuantStats([
-      mkTrade({ pnl: 200 }),
-      mkTrade({ pnl: 200 }),
-      mkTrade({ pnl: -100 }),
-      mkTrade({ pnl: -100 }),
+      ...Array(20)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(20)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -100 })),
     ]);
     expect(q.kelly).toBeCloseTo(0.25);
   });
@@ -195,5 +200,53 @@ describe("breakdowns", () => {
   it("dayHourMatrix keys are dow-hour", () => {
     const m = dayHourMatrix([mkTrade({ date: "2026-07-01", entryTime: "09:30", pnl: 10 })]);
     expect(m["3-9"].count).toBe(1); // 2026-07-01 = Wednesday
+  });
+});
+
+describe("Kelly — plancher d'échantillon", () => {
+  // Kelly ne DÉCRIT pas le passé, il RECOMMANDE une taille de position.
+  // Il s'affichait dès deux trades : trois trades chanceux donnaient un Kelly
+  // de plusieurs dizaines de pourcents, et un trader qui le suit fait sauter
+  // son compte. « Indicatif uniquement » ne protège personne.
+  it("ne s'affiche PAS sous 30 trades décisifs", () => {
+    const few = [
+      ...Array(5)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(2)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -50 })),
+    ];
+    expect(computeQuantStats(few).kelly).toBeNull();
+  });
+
+  it("s'affiche une fois l'échantillon suffisant", () => {
+    const many = [
+      ...Array(20)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(15)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -100 })),
+    ];
+    const k = computeQuantStats(many).kelly;
+    expect(k).not.toBeNull();
+    expect(k!).toBeGreaterThan(0);
+  });
+
+  it("les break-even ne comptent pas dans l'échantillon", () => {
+    // Même convention que le win rate : un BE n'est pas une décision tranchée.
+    const padded = [
+      ...Array(5)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(2)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -50 })),
+      ...Array(40)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 0, direction: "be" })),
+    ];
+    expect(computeQuantStats(padded).kelly).toBeNull();
   });
 });

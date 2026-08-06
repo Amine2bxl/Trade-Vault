@@ -727,7 +727,7 @@ const en = {
   "quant.cleanTrades": "Clean trades",
   "quant.needTenDays": "needs ≥10 trading days",
   "quant.annualized": "annualized, daily PnL",
-  "quant.kellyHint": "indication only",
+  "quant.kellyHint": "indicative — from 30 trades",
   "quant.consistency": "Consistency",
   "quant.bestDay": "best day",
   "quant.recovery": "Recovery",

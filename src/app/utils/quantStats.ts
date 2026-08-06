@@ -56,6 +56,9 @@ export function getMacroEvents(date: string): string[] {
 }
 
 // ── Quant metrics ───────────────────────────────────────────────────────────
+/** Trades décisifs requis avant d'afficher Kelly (cf. commentaire du calcul). */
+export const MIN_KELLY_SAMPLE = 30;
+
 export interface QuantStats {
   /** Average $ result per trade (all trades, BE included) */
   expectancy: number;
@@ -173,12 +176,24 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
       : -1;
   }
 
-  // Kelly: W − (1−W)/R with R = avgWin/|avgLoss|
+  // Kelly: W − (1−W)/R avec R = avgWin/|avgLoss|
+  //
+  // PLANCHER D'ÉCHANTILLON — le garde-fou le plus important de ce fichier.
+  // Kelly ne décrit pas une performance passée : il RECOMMANDE une taille de
+  // position. Il était calculé dès qu'un gagnant et un perdant existaient, donc
+  // affiché à partir de DEUX trades. Trois trades chanceux produisent un Kelly
+  // de plusieurs dizaines de pourcents ; un trader qui le suit fait sauter son
+  // compte. La mention « indicatif uniquement » ne protège personne — un
+  // chiffre affiché est un chiffre lu.
+  //
+  // 30 trades décisifs : même esprit que le plancher de 10 jours du Sharpe, à
+  // un seuil plus élevé parce que la conséquence d'une erreur est ici une
+  // décision de risque, pas une appréciation.
   const decisive = trades.filter((t) => !isBreakEven(t));
   const wins = decisive.filter((t) => t.pnl > 0);
   const losses = decisive.filter((t) => t.pnl < 0);
   let kelly: number | null = null;
-  if (wins.length > 0 && losses.length > 0) {
+  if (decisive.length >= MIN_KELLY_SAMPLE && wins.length > 0 && losses.length > 0) {
     const w = wins.length / (wins.length + losses.length);
     const avgWin = wins.reduce((s, t) => s + t.pnl, 0) / wins.length;
     const avgLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0) / losses.length);
