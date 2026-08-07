@@ -7,24 +7,30 @@ import TradeModal from "./components/TradeModal";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
 import Dashboard from "./pages/Dashboard";
-const Journal = lazy(() => import("./pages/Journal"));
-const Checklist = lazy(() => import("./pages/Checklist"));
-const CalendarPage = lazy(() => import("./pages/CalendarPage"));
-const Analytics = lazy(() => import("./pages/Analytics"));
-const Mistakes = lazy(() => import("./pages/Mistakes"));
-const Jarvis = lazy(() => import("./pages/Jarvis"));
-const Profile = lazy(() => import("./pages/Profile"));
-const MissedOpportunities = lazy(() => import("./pages/MissedOpportunities"));
-const EconomicNews = lazy(() => import("./pages/EconomicNews"));
-const Seasonality = lazy(() => import("./pages/Seasonality"));
-const LotSizeCalculator = lazy(() => import("./pages/LotSizeCalculator"));
-const Settings = lazy(() => import("./pages/Settings"));
-const Reports = lazy(() => import("./pages/Reports"));
-const Goals = lazy(() => import("./pages/Goals"));
-const TradingPlan = lazy(() => import("./pages/TradingPlan"));
-const Appearance = lazy(() => import("./pages/Appearance"));
-const Subscription = lazy(() => import("./pages/Subscription"));
-const Inbox = lazy(() => import("./pages/Inbox"));
+// Les pages différées et leur préchargement vivent dans `pageModules` : un
+// seul endroit déclare quel module correspond à quelle page.
+import {
+  Journal,
+  Checklist,
+  CalendarPage,
+  Analytics,
+  Mistakes,
+  Jarvis,
+  Profile,
+  MissedOpportunities,
+  EconomicNews,
+  Seasonality,
+  LotSizeCalculator,
+  Settings,
+  Reports,
+  Goals,
+  TradingPlan,
+  Appearance,
+  Subscription,
+  Inbox,
+  preloadPage,
+  LIKELY_NEXT_PAGES,
+} from "./pageModules";
 import LoadingScreen from "./components/LoadingScreen";
 const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
@@ -148,6 +154,31 @@ function AppContent() {
     );
     if (redirectTo && resolved) window.history.replaceState({ page: resolved }, "", redirectTo);
   }, []);
+
+  // ── Préchargement des pages les plus visitées ──
+  //
+  // Remplace un effet qui appelait `import(mod)` sur une variable de chaîne.
+  // Vite ne peut pas analyser un spécificateur dynamique : ces chemins
+  // n'existent pas à l'exécution dans le navigateur, l'import échouait, et le
+  // `.catch()` avalait l'échec. Ce préchargement n'a donc JAMAIS fonctionné —
+  // ce qui explique une bonne part de la lenteur ressentie au premier clic sur
+  // chaque page. Les loaders de `pageModules` sont, eux, des imports statiques
+  // que le bundler résout à la compilation.
+  //
+  // `requestIdleCallback` garantit que ça ne dispute jamais le temps machine au
+  // premier rendu du tableau de bord.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const run = () => LIKELY_NEXT_PAGES.forEach(preloadPage);
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback;
+    if (ric) {
+      ric(run);
+      return;
+    }
+    const id = window.setTimeout(run, 1500);
+    return () => window.clearTimeout(id);
+  }, [isAuthenticated]);
 
   // Bouton retour / avant du navigateur.
   useEffect(() => {
@@ -287,27 +318,6 @@ function AppContent() {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw-push.js", { scope: "/" }).catch(() => {});
   }, []);
-
-  // ── Préchargement des pages les plus visitées ──
-  // Une fois connecté et le premier rendu peint, on chauffe les chunks lazy
-  // (Journal, Analytics, Inbox, …) en arrière-plan : la navigation devient
-  // quasi instantanée au lieu de charger le module au premier clic.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const id = window.setTimeout(() => {
-      for (const mod of [
-        "./pages/Dashboard",
-        "./pages/Journal",
-        "./pages/Analytics",
-        "./pages/Inbox",
-        "./pages/Mistakes",
-        "./pages/CalendarPage",
-      ]) {
-        void import(mod).catch(() => {});
-      }
-    }, 900);
-    return () => window.clearTimeout(id);
-  }, [isAuthenticated]);
 
   // ── Règles de notification codées (0 IA) ──
   // Après chargement des trades, Jarvis évalue ses règles locales (série de
@@ -554,7 +564,14 @@ function AppContent() {
       <main className="app-main relative flex-1 overflow-y-auto">
         {/* Push opt-in now lives in onboarding (and Settings), not as a
             dashboard banner. */}
-        <div key={page}>
+        {/* PAS de `key={page}` ici. Cette clé forçait React à démonter puis
+            remonter tout le sous-arbre à chaque changement de page : état des
+            filtres, position de défilement et lignes dépliées étaient perdus,
+            et revenir sur une page déjà visitée coûtait un rendu complet
+            au lieu d'un simple échange. La remise à zéro voulue est portée
+            par `resetKey` sur la frontière d'erreur, qui, elle, doit bien
+            repartir de zéro quand la page change. */}
+        <div>
           {/* Contextual skeleton: the loading frame mimics the destination
               page's real layout (chart grid, trade list, calendar…). */}
           <PageErrorBoundary resetKey={page}>

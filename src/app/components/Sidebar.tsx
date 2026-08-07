@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogOut } from "lucide-react";
 import { Page } from "../types";
 import { NAV_GROUPS } from "../navigation";
+import { preloadPage } from "../pageModules";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
@@ -85,6 +86,11 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                 <button
                   key={id}
                   onClick={() => setPage(id)}
+                  // Le chunk de la page part au survol ou au focus clavier,
+                  // soit 100 à 300 ms avant le clic : au moment du clic il est
+                  // déjà là et le squelette n'a plus lieu d'apparaître.
+                  onPointerEnter={() => preloadPage(id)}
+                  onFocus={() => preloadPage(id)}
                   className={cn(
                     "relative w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200",
                     page === id

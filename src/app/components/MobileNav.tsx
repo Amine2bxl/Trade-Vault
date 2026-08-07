@@ -9,7 +9,8 @@ import {
   Bot,
   ChevronRight,
 } from "lucide-react";
-import { Page } from "../types";
+import { isPage, Page } from "../types";
+import { preloadPage } from "../pageModules";
 import { MOBILE_BAR, MOBILE_MORE_GROUPS, NAV_ITEMS } from "../navigation";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -80,6 +81,9 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     <button
       key={id}
       onClick={onClick}
+      // Le doigt touche l'écran avant que le clic ne se déclenche : le chunk
+      // part dès ce premier contact, ce qui suffit souvent à le rendre prêt.
+      onTouchStart={() => isPage(id) && preloadPage(id)}
       aria-current={active ? "page" : undefined}
       className={cn("bottom-nav-item", active ? "text-cyan-300" : "text-slate-500")}
     >
