@@ -46,11 +46,6 @@ type Tab = "assets" | "journal";
 
 export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
   const { t } = useT();
-  const { user } = useAuth();
-  const tabKey = nsKey(user?.id, "seasonality.tab");
-  const savedTab = usePersistedValue<Tab>(tabKey, "assets");
-  const tab: Tab = savedTab === "journal" ? "journal" : "assets";
-  const setTab = (v: Tab) => writeJSON(tabKey, v);
 
   return (
     <PageContainer>
@@ -59,35 +54,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
         title={t("seasonality.title")}
         subtitle={t("seasonality.subtitle")}
       />
-
-      {/* Tab switcher */}
-      <div className="inline-flex p-1 rounded-2xl bg-white/[0.03] border border-white/[0.07] mb-5 animate-fade-in-up stagger-1">
-        {(
-          [
-            ["assets", t("seasonality.tabAssets")],
-            ["journal", t("seasonality.tabJournal")],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "h-9 px-4 md:px-5 rounded-xl text-xs font-bold transition-all",
-              tab === id
-                ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20"
-                : "text-slate-500 hover:text-slate-300",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "assets" ? (
-        <AssetSeasonality />
-      ) : (
-        <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
-      )}
+      <AssetSeasonality />
     </PageContainer>
   );
 }

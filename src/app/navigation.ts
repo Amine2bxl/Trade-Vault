@@ -6,6 +6,7 @@ import {
   Bot,
   Calculator,
   Calendar,
+  CalendarRange,
   ClipboardCheck,
   CreditCard,
   FileText,
@@ -71,6 +72,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: "analytics", labelKey: "nav.analytics", icon: BarChart3 },
       { id: "mistakes", labelKey: "nav.mistakes", icon: AlertTriangle },
       { id: "reports", labelKey: "nav.reports", icon: FileText },
+      { id: "seasonality", labelKey: "nav.seasonality", icon: CalendarRange },
     ],
   },
   {
