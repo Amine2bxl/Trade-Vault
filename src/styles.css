@@ -122,8 +122,7 @@ html {
      (landing, privacy, terms). clip hides overflow WITHOUT creating a
      scroller, so <html> stays the one true scroll root. */
   overflow-x: clip;
-  /* PWA native-feel: lock vertical overscroll on the root to prevent
-     pull-to-refresh and rubber-banding at the page edges. */
+  /* PWA: kill pull-to-refresh and rubber-banding at both edges */
   overscroll-behavior-y: none;
 }
 body {

@@ -41,15 +41,37 @@ interface JournalProps {
 type SortKey = "date" | "symbol" | "pnl" | "strategy" | "rMultiple";
 type SortDir = "asc" | "desc";
 type ResultFilter = "all" | "win" | "loss" | "be";
+type DurationFilter = "all" | "lt30" | "30to60" | "1to4" | "gt4";
 
 const PAGE_SIZE = 50;
 const FILTERS_STORAGE_KEY = "tv.journal.filters";
+
+const DAY_NAMES = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+const DURATION_OPTIONS: { value: DurationFilter; label: string }[] = [
+  { value: "all", label: "Toute durée" },
+  { value: "lt30", label: "< 30 min" },
+  { value: "30to60", label: "30 min – 1h" },
+  { value: "1to4", label: "1h – 4h" },
+  { value: "gt4", label: "> 4h" },
+];
+
+function tradeDurationMinutes(t: Trade): number | null {
+  if (!t.entryTime || !t.exitTime) return null;
+  const [eh, em] = t.entryTime.split(":").map(Number);
+  const [xh, xm] = t.exitTime.split(":").map(Number);
+  let diffMin = xh * 60 + xm - (eh * 60 + em);
+  if (diffMin < 0) diffMin += 24 * 60;
+  return diffMin;
+}
 
 interface StoredFilters {
   strategyFilter: string;
   resultFilter: ResultFilter;
   sortKey: SortKey;
   sortDir: SortDir;
+  dayFilter: string;
+  durationFilter: DurationFilter;
 }
 
 function loadStoredFilters(): Partial<StoredFilters> {
@@ -77,27 +99,32 @@ export default function Journal({
   const [resultFilter, setResultFilter] = useState<ResultFilter>(stored.resultFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? "date");
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
+  const [dayFilter, setDayFilter] = useState<string>(stored.dayFilter ?? "all");
+  const [durationFilter, setDurationFilter] = useState<DurationFilter>(stored.durationFilter ?? "all");
   const [viewingIdx, setViewingIdx] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // Filters survive reloads.
   useEffect(() => {
     try {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify({ strategyFilter, resultFilter, sortKey, sortDir } satisfies StoredFilters),
+        JSON.stringify({
+          strategyFilter, resultFilter, sortKey, sortDir,
+          dayFilter, durationFilter,
+        } satisfies StoredFilters),
       );
     } catch {
-      /* best-effort persistence — ignore */
+      /* best-effort persistence */
     }
-  }, [strategyFilter, resultFilter, sortKey, sortDir]);
+  }, [strategyFilter, resultFilter, sortKey, sortDir, dayFilter, durationFilter]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [strategyFilter, resultFilter]);
+  }, [strategyFilter, resultFilter, dayFilter, durationFilter]);
 
   const filtered = useMemo(() => {
     let list = [...trades];
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -107,6 +134,7 @@ export default function Journal({
           t.notes.toLowerCase().includes(q),
       );
     }
+
     if (periodFilter !== "all") {
       const cutoff = new Date();
       if (periodFilter === "7d") cutoff.setDate(cutoff.getDate() - 7);
@@ -115,10 +143,31 @@ export default function Journal({
       else if (periodFilter === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
       list = list.filter((t) => new Date(t.date) >= cutoff);
     }
+
     if (strategyFilter !== "all") list = list.filter((t) => t.strategy === strategyFilter);
+
+    if (dayFilter !== "all") {
+      list = list.filter((t) => new Date(t.date).getDay().toString() === dayFilter);
+    }
+
+    if (durationFilter !== "all") {
+      list = list.filter((t) => {
+        const mins = tradeDurationMinutes(t);
+        if (mins === null) return false;
+        switch (durationFilter) {
+          case "lt30": return mins < 30;
+          case "30to60": return mins >= 30 && mins <= 60;
+          case "1to4": return mins > 60 && mins <= 240;
+          case "gt4": return mins > 240;
+          default: return true;
+        }
+      });
+    }
+
     if (resultFilter === "win") list = list.filter((t) => !isBreakEven(t) && t.pnl > 0);
     if (resultFilter === "loss") list = list.filter((t) => !isBreakEven(t) && t.pnl < 0);
     if (resultFilter === "be") list = list.filter((t) => isBreakEven(t));
+
     list.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "date") cmp = a.date.localeCompare(b.date);
@@ -129,13 +178,10 @@ export default function Journal({
       return sortDir === "desc" ? -cmp : cmp;
     });
     return list;
-  }, [trades, searchQuery, periodFilter, strategyFilter, resultFilter, sortKey, sortDir]);
+  }, [trades, searchQuery, periodFilter, strategyFilter, resultFilter, sortKey, sortDir, dayFilter, durationFilter]);
 
-  // Counts per result filter — shown inside the pills so the trader sees the
-  // shape of their journal before clicking, not after.
   const counts = useMemo(() => {
-    const base =
-      strategyFilter === "all" ? trades : trades.filter((t) => t.strategy === strategyFilter);
+    const base = strategyFilter === "all" ? trades : trades.filter((t) => t.strategy === strategyFilter);
     return {
       all: base.length,
       win: base.filter((t) => !isBreakEven(t) && t.pnl > 0).length,
@@ -144,22 +190,15 @@ export default function Journal({
     } as Record<ResultFilter, number>;
   }, [trades, strategyFilter]);
 
-  // The journal's headline numbers, recomputed on the CURRENT selection. Making
-  // the summary follow the filter is what turns the list into an analysis tool:
-  // "show me my losses" instantly answers "what do they cost me".
   const summary = useMemo(() => computeStats(filtered), [filtered]);
 
-  // Render at most `visibleCount` rows — keeps the DOM light on big journals
   const shown = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = filtered.length > visibleCount;
   const viewing = viewingIdx !== null ? (filtered[viewingIdx] ?? null) : null;
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
+    else { setSortKey(key); setSortDir("desc"); }
   };
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 text-slate-700" />;
@@ -170,12 +209,25 @@ export default function Journal({
     );
   };
 
+  const activeFilterCount =
+    (periodFilter !== "all" ? 1 : 0) +
+    (strategyFilter !== "all" ? 1 : 0) +
+    (dayFilter !== "all" ? 1 : 0) +
+    (durationFilter !== "all" ? 1 : 0) +
+    (resultFilter !== "all" ? 1 : 0) +
+    (searchQuery.trim() ? 1 : 0);
+
   return (
     <PageContainer>
       <PageHeader
         className="mb-3 md:mb-4 items-center"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
+        icon={
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <BookOpen className="w-4 h-4 text-white" />
+          </span>
+        }
         actions={
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
@@ -183,9 +235,7 @@ export default function Journal({
               <span className="hidden md:inline">{t("common.exportCsv")}</span>
             </Button>
             <Button
-              variant="subtle"
-              size="sm"
-              onClick={onDeleteAll}
+              variant="subtle" size="sm" onClick={onDeleteAll}
               className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
             >
               <Trash className="w-3.5 h-3.5" />
@@ -198,112 +248,114 @@ export default function Journal({
         }
       />
 
-      {/* Summary of the CURRENT selection — the journal reads as an analysis,
-          not just a list. Recomputed from the same deterministic engine. */}
       {filtered.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5 ">
-          <SummaryTile
-            label={t("stats.totalPnl")}
-            value={formatPnl(summary.totalPnl)}
-            tone={summary.totalPnl >= 0 ? "up" : "down"}
-          />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
+          <SummaryTile label={t("stats.totalPnl")} value={formatPnl(summary.totalPnl)} tone={summary.totalPnl >= 0 ? "up" : "down"} />
           <SummaryTile label={t("stats.winRate")} value={formatPct(summary.winRate)} />
           <SummaryTile label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
-          <SummaryTile
-            label={t("journal.colPnl")}
-            hint={t("common.best")}
-            value={formatPnl(summary.bestTrade?.pnl ?? 0)}
-            tone="up"
-          />
+          <SummaryTile label={t("journal.colPnl")} hint={t("common.best")} value={formatPnl(summary.bestTrade?.pnl ?? 0)} tone="up" />
         </div>
       )}
 
-      {/* Search + Period + Strategy + Result filter */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-2.5 md:mb-3">
-        {/* Search */}
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("journal.searchPlaceholder")}
-          className="w-full md:w-auto bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm text-slate-200 placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-400/30"
-        />
-        {/* Period filter */}
-        <select
-          value={periodFilter}
-          onChange={(e) => setPeriodFilter(e.target.value)}
-          className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
-        >
-          <option value="all">{t("common.all")}</option>
-          <option value="7d">{t("common.7d")}</option>
-          <option value="30d">{t("common.30d")}</option>
-          <option value="90d">{t("common.90d")}</option>
-          <option value="1y">{t("common.1y")}</option>
-        </select>
-        {/* Strategy filter */}
-        <select
-          value={strategyFilter}
-          onChange={(e) => setStrategyFilter(e.target.value)}
-          className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
-        >
-          <option value="all">{t("common.all")}</option>
-          {STRATEGIES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
-          {(
-            [
-              { v: "all", label: t("common.all") },
-              { v: "win", label: t("common.win") },
-              { v: "loss", label: t("common.loss") },
-              { v: "be", label: t("common.be") },
-            ] as { v: ResultFilter; label: string }[]
-          ).map((opt) => (
-            <button
-              key={opt.v}
-              onClick={() => setResultFilter(opt.v)}
-              className={cn(
-                "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
-                resultFilter === opt.v
-                  ? opt.v === "win"
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : opt.v === "loss"
-                      ? "bg-red-500/15 text-red-400"
-                      : opt.v === "be"
-                        ? "bg-slate-500/20 text-slate-200"
-                        : "bg-cyan-500/15 text-cyan-400"
-                  : "text-slate-500 hover:text-slate-300",
-              )}
-            >
-              {opt.label}
-              <span
+      {/* Filter bar — 2 rows on mobile for all the new filters */}
+      <div className="flex flex-col gap-1.5 mb-2.5 md:mb-3">
+        {/* Row 1: search + period + strategy + result pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("journal.searchPlaceholder")}
+            enterKeyHint="search"
+            className="w-full md:w-44 bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm text-slate-200 placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-400/30"
+          />
+          <select
+            value={periodFilter}
+            onChange={(e) => setPeriodFilter(e.target.value)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            <option value="all">{t("common.all")}</option>
+            <option value="7d">{t("common.7d")}</option>
+            <option value="30d">{t("common.30d")}</option>
+            <option value="90d">{t("common.90d")}</option>
+            <option value="1y">{t("common.1y")}</option>
+          </select>
+          <select
+            value={strategyFilter}
+            onChange={(e) => setStrategyFilter(e.target.value)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            <option value="all">{t("common.all")}</option>
+            {STRATEGIES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
+            {(
+              [
+                { v: "all", label: t("common.all") },
+                { v: "win", label: t("common.win") },
+                { v: "loss", label: t("common.loss") },
+                { v: "be", label: t("common.be") },
+              ] as { v: ResultFilter; label: string }[]
+            ).map((opt) => (
+              <button
+                key={opt.v}
+                onClick={() => setResultFilter(opt.v)}
                 className={cn(
-                  "tabular-nums text-[10px] font-bold",
-                  resultFilter === opt.v ? "opacity-70" : "text-slate-600",
+                  "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
+                  resultFilter === opt.v
+                    ? opt.v === "win" ? "bg-emerald-500/15 text-emerald-400"
+                    : opt.v === "loss" ? "bg-red-500/15 text-red-400"
+                    : opt.v === "be" ? "bg-slate-500/20 text-slate-200"
+                    : "bg-cyan-500/15 text-cyan-400"
+                    : "text-slate-500 hover:text-slate-300",
                 )}
               >
-                {counts[opt.v]}
-              </span>
-            </button>
-          ))}
+                {opt.label}
+                <span className={cn("tabular-nums text-[10px] font-bold", resultFilter === opt.v ? "opacity-70" : "text-slate-600")}>
+                  {counts[opt.v]}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={onOpenMissed}
-          title={t("missed.title")}
-          className="shrink-0 shadow-[0_4px_16px_rgba(34,211,238,0.25)]"
-        >
-          <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          <span className="hidden sm:inline">{t("missed.title")}</span>
-        </Button>
+
+        {/* Row 2: day-of-week + duration + missed setups button */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <select
+            value={dayFilter}
+            onChange={(e) => setDayFilter(e.target.value)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            <option value="all">Tous les jours</option>
+            {DAY_NAMES.map((name, i) => (
+              <option key={i} value={String(i)}>{name}</option>
+            ))}
+          </select>
+          <select
+            value={durationFilter}
+            onChange={(e) => setDurationFilter(e.target.value as DurationFilter)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            {DURATION_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <div className="flex-1" />
+          <Button
+            variant="primary" size="sm" onClick={onOpenMissed}
+            title={t("missed.title")}
+            className="shrink-0 shadow-[0_4px_16px_rgba(34,211,238,0.25)]"
+          >
+            <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">{t("missed.title")}</span>
+          </Button>
+        </div>
       </div>
 
       {/* ── Mobile: Card List ── */}
-      <div className="md:hidden space-y-1.5 ">
+      <div className="md:hidden space-y-1.5">
         {trades.length === 0 ? (
           <EmptyState
             icon={<Target className="w-7 h-7" />}
@@ -319,7 +371,7 @@ export default function Journal({
           <EmptyState
             title={t("common.noTradesFound")}
             action={
-              <Button size="sm" variant="ghost" onClick={() => setResultFilter("all")}>
+              <Button size="sm" variant="ghost" onClick={() => { setResultFilter("all"); setStrategyFilter("all"); setDayFilter("all"); setDurationFilter("all"); }}>
                 {t("common.all")}
               </Button>
             }
@@ -330,40 +382,20 @@ export default function Journal({
             return (
               <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
                 <div className="flex items-center gap-2 px-2.5 py-1.5">
-                  <button
-                    type="button"
-                    className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
-                    onClick={() => setViewingIdx(i)}
-                  >
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                        be
-                          ? "bg-slate-500/10"
-                          : trade.pnl >= 0
-                            ? "bg-emerald-500/10"
-                            : "bg-red-500/10",
-                      )}
-                    >
-                      {be ? (
-                        <Minus className="w-4 h-4 text-slate-300" />
-                      ) : trade.pnl >= 0 ? (
-                        <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-400" />
-                      )}
+                  <button type="button" className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
+                    onClick={() => setViewingIdx(i)}>
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                      be ? "bg-slate-500/10" : trade.pnl >= 0 ? "bg-emerald-500/10" : "bg-red-500/10",
+                    )}>
+                      {be ? <Minus className="w-4 h-4 text-slate-300" />
+                        : trade.pnl >= 0 ? <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                        : <ArrowDownRight className="w-4 h-4 text-red-400" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[13px] font-bold text-white truncate">
-                          {trade.symbol}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
-                            directionBadgeClass(trade.direction),
-                          )}
-                        >
+                        <span className="text-[13px] font-bold text-white truncate">{trade.symbol}</span>
+                        <span className={cn("text-[11px] font-bold px-1.5 py-0.5 rounded leading-none", directionBadgeClass(trade.direction))}>
                           {directionLabel(trade.direction)}
                         </span>
                         {trade.isExample && (
@@ -377,45 +409,21 @@ export default function Journal({
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div
-                        className={cn(
-                          "text-[13px] font-bold leading-tight",
-                          be
-                            ? "text-slate-300"
-                            : trade.pnl >= 0
-                              ? "text-emerald-400"
-                              : "text-red-400",
-                        )}
-                      >
+                      <div className={cn("text-[13px] font-bold leading-tight", be ? "text-slate-300" : trade.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
                         {formatPnl(trade.pnl)}
                       </div>
-                      <div
-                        className={cn(
-                          "text-[10px] font-semibold",
-                          be
-                            ? "text-slate-300/60"
-                            : trade.rMultiple >= 0
-                              ? "text-emerald-400/60"
-                              : "text-red-400/60",
-                        )}
-                      >
+                      <div className={cn("text-[10px] font-semibold", be ? "text-slate-300/60" : trade.rMultiple >= 0 ? "text-emerald-400/60" : "text-red-400/60")}>
                         {trade.rMultiple.toFixed(1)}R
                       </div>
                     </div>
                   </button>
                   <div className="flex items-center shrink-0 -mr-1">
-                    <button
-                      onClick={() => onEdit(trade)}
-                      aria-label={t("common.edit")}
-                      className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"
-                    >
+                    <button onClick={() => onEdit(trade)} aria-label={t("common.edit")}
+                      className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => onDelete(trade.id)}
-                      aria-label={t("common.delete")}
-                      className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"
-                    >
+                    <button onClick={() => onDelete(trade.id)} aria-label={t("common.delete")}
+                      className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -427,40 +435,23 @@ export default function Journal({
       </div>
 
       {/* ── Desktop: Table ── */}
-      <Card className="hidden md:block overflow-hidden ">
+      <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[880px]">
             <thead className="sticky top-0 z-10 bg-[#0a0f1e]/85 backdrop-blur-md">
               <tr className="border-b border-white/[0.06]">
                 {(["date", "symbol", "strategy", "pnl", "rMultiple"] as SortKey[]).map((key) => (
-                  <th
-                    key={key}
-                    onClick={() => handleSort(key)}
-                    className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-300 transition-colors select-none"
-                  >
+                  <th key={key} onClick={() => handleSort(key)}
+                    className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-300 transition-colors select-none">
                     <span className="flex items-center gap-1.5">
-                      {key === "pnl"
-                        ? t("journal.colPnl")
-                        : key === "rMultiple"
-                          ? t("journal.colRR")
-                          : key === "date"
-                            ? t("journal.colDate")
-                            : key === "symbol"
-                              ? t("journal.colSymbol")
-                              : t("journal.colStrategy")}
+                      {key === "pnl" ? t("journal.colPnl") : key === "rMultiple" ? t("journal.colRR") : key === "date" ? t("journal.colDate") : key === "symbol" ? t("journal.colSymbol") : t("journal.colStrategy")}
                       <SortIcon col={key} />
                     </span>
                   </th>
                 ))}
-                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {t("common.side")}
-                </th>
-                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {t("common.risk")}
-                </th>
-                <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {t("common.actions")}
-                </th>
+                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("common.side")}</th>
+                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("common.risk")}</th>
+                <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -484,14 +475,9 @@ export default function Journal({
                 shown.map((trade, i) => {
                   const be = isBreakEven(trade);
                   return (
-                    <tr
-                      key={trade.id}
-                      className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
-                      onClick={() => setViewingIdx(i)}
-                    >
-                      <td className="px-4 py-1.5 text-sm text-slate-300">
-                        {formatShortDate(trade.date)}
-                      </td>
+                    <tr key={trade.id} className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
+                      onClick={() => setViewingIdx(i)}>
+                      <td className="px-4 py-1.5 text-sm text-slate-300">{formatShortDate(trade.date)}</td>
                       <td className="px-4 py-1.5">
                         <span className="text-sm font-bold text-white">{trade.symbol}</span>
                         {trade.isExample && (
@@ -502,73 +488,34 @@ export default function Journal({
                       </td>
                       <td className="px-4 py-1.5 text-sm text-slate-400">{trade.strategy}</td>
                       <td className="px-4 py-1.5">
-                        <span
-                          className={cn(
-                            "text-sm font-bold",
-                            be
-                              ? "text-slate-300"
-                              : trade.pnl >= 0
-                                ? "text-emerald-400"
-                                : "text-red-400",
-                          )}
-                        >
+                        <span className={cn("text-sm font-bold", be ? "text-slate-300" : trade.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
                           {formatPnl(trade.pnl)}
                         </span>
                       </td>
                       <td className="px-4 py-1.5">
-                        <span
-                          className={cn(
-                            "text-sm font-bold",
-                            be
-                              ? "text-slate-300"
-                              : trade.rMultiple >= 0
-                                ? "text-emerald-400"
-                                : "text-red-400",
-                          )}
-                        >
+                        <span className={cn("text-sm font-bold", be ? "text-slate-300" : trade.rMultiple >= 0 ? "text-emerald-400" : "text-red-400")}>
                           {trade.rMultiple.toFixed(2)}R
                         </span>
                       </td>
                       <td className="px-4 py-1.5">
-                        <span
-                          className={cn(
-                            "text-[10px] font-bold px-2 py-1 rounded-lg",
-                            directionBadgeClass(trade.direction),
-                          )}
-                        >
+                        <span className={cn("text-[10px] font-bold px-2 py-1 rounded-lg", directionBadgeClass(trade.direction))}>
                           {directionLabel(trade.direction)}
                         </span>
                       </td>
-                      <td className="px-4 py-1.5 text-sm font-semibold text-slate-300 tabular-nums">
-                        ${trade.riskAmount.toFixed(0)}
-                      </td>
+                      <td className="px-4 py-1.5 text-sm font-semibold text-slate-300 tabular-nums">${trade.riskAmount.toFixed(0)}</td>
                       <td className="px-4 py-1.5">
-                        <div
-                          className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={() => setViewingIdx(i)}
-                            aria-label={t("missed.preview")}
-                            title={t("missed.preview")}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
-                          >
+                        <div className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+                          onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setViewingIdx(i)} aria-label={t("missed.preview")} title={t("missed.preview")}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
                             <Eye className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => onEdit(trade)}
-                            aria-label={t("common.edit")}
-                            title={t("common.edit")}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
-                          >
+                          <button onClick={() => onEdit(trade)} aria-label={t("common.edit")} title={t("common.edit")}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => onDelete(trade.id)}
-                            aria-label={t("common.delete")}
-                            title={t("common.delete")}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
+                          <button onClick={() => onDelete(trade.id)} aria-label={t("common.delete")} title={t("common.delete")}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -582,13 +529,10 @@ export default function Journal({
         </div>
       </Card>
 
-      {/* Load more (both layouts) */}
       {hasMore && (
         <div className="mt-3 text-center">
-          <button
-            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-            className="px-5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 transition-all"
-          >
+          <button onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="px-5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 transition-all">
             {t("journal.loadMore")} ({filtered.length - visibleCount})
           </button>
         </div>
@@ -596,13 +540,9 @@ export default function Journal({
 
       {viewing && viewingIdx !== null && (
         <TradeDetailModal
-          trades={[viewing]}
-          date={viewing.date}
+          trades={[viewing]} date={viewing.date}
           onClose={() => setViewingIdx(null)}
-          onDelete={(id) => {
-            onDelete(id);
-            setViewingIdx(null);
-          }}
+          onDelete={(id) => { onDelete(id); setViewingIdx(null); }}
           onNavigate={(dir) => {
             const next = viewingIdx + dir;
             if (next < 0 || next >= filtered.length) return;
@@ -618,41 +558,14 @@ export default function Journal({
   );
 }
 
-/**
- * One number of the current selection. Deliberately flatter than `Metric` (no
- * hover glow, no corner accent): four of these sit in a row directly under the
- * page title, so they have to read as a quiet summary line, not as four cards
- * competing with the table below.
- */
-function SummaryTile({
-  label,
-  value,
-  hint,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: "up" | "down" | "neutral";
-}) {
+function SummaryTile({ label, value, hint, tone = "neutral" }: { label: string; value: string; hint?: string; tone?: "up" | "down" | "neutral" }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
-          {label}
-        </span>
-        {hint && (
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
-            {hint}
-          </span>
-        )}
+        <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">{label}</span>
+        {hint && <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600 shrink-0">{hint}</span>}
       </div>
-      <div
-        className={cn(
-          "mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight",
-          tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white",
-        )}
-      >
+      <div className={cn("mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight", tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white")}>
         {value}
       </div>
     </div>

@@ -169,6 +169,11 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
         className="stagger-0"
         title={t("mistakes.title")}
         subtitle={t("mistakes.subtitle")}
+        icon={
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <AlertTriangle className="w-4 h-4 text-white" />
+          </span>
+        }
       />
 
       <div className="space-y-4 md:space-y-6">

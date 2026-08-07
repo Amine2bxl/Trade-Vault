@@ -1352,8 +1352,8 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         <div className="flex flex-col gap-3 animate-fade-in-up">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="tvchk-sheen w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
-                <Bot className="relative w-5 h-5 text-white" />
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+                <Bot className="w-4 h-4 text-white" />
               </span>
               <div className="min-w-0">
                 <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent leading-tight">
@@ -2082,11 +2082,11 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
         <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
           <div className="tvchk-sheen relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3 shadow-2xl shadow-cyan-500/10">
             <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
-            <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0 shadow-lg shadow-cyan-500/30">
+            <span className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
               {voice.speaking && (
-                <span className="absolute -inset-1 rounded-2xl bg-cyan-500/40 blur-md animate-pulse" />
+                <span className="absolute -inset-1 rounded-xl bg-cyan-500/40 blur-md animate-pulse" />
               )}
-              <Bot className="relative w-4 h-4 text-white" />
+              <Bot className="relative w-3.5 h-3.5 text-white" />
             </span>
             <div className="relative min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -2159,10 +2159,9 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       {lockOverlay && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-cyan-500/20">
-            <div className="relative w-24 h-24 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl" />
-              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/40">
-                <Lock className="w-9 h-9 text-white" />
+            <div className="relative w-20 h-20 mx-auto mb-4">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-white" />
               </div>
             </div>
             <div className="text-lg font-bold text-white mb-3">Edge Locked</div>

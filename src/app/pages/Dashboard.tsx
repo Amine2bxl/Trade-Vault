@@ -14,6 +14,7 @@ import {
   CalendarDays,
   Gauge,
   Scale,
+  LayoutDashboard,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -282,6 +283,11 @@ export default function Dashboard({
     <PageContainer>
       <PageHeader
         className="items-center"
+        icon={
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <LayoutDashboard className="w-4 h-4 text-white" />
+          </span>
+        }
         eyebrow={
           <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-1">
             <Sparkles className="w-3.5 h-3.5" />

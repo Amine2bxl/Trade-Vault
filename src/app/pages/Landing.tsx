@@ -220,7 +220,7 @@ function HeroDashboard() {
             ["Sharpe", "1.84"],
           ].map(([l, v]) => (
             <div key={l} className="text-center">
-              <p className="text-[11px] font-medium uppercase tracking-[.08em] text-slate-500">
+              <p className="text-[9px] font-medium uppercase tracking-[.08em] text-slate-500">
                 {l}
               </p>
               <p className="mt-1 font-display text-base font-bold text-cyan-300">{v}</p>
@@ -298,7 +298,7 @@ function AIConversation() {
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">
               Plan recommandé
             </span>
           </div>
@@ -435,9 +435,9 @@ function FeaturePreview({ k }: { k: FeatKind }) {
               <span className="rounded bg-emerald-400/15 px-1 py-px text-[8px] font-bold text-emerald-400">
                 LONG
               </span>
-              <span className="truncate text-[11px] text-slate-600">Silver Bullet</span>
+              <span className="truncate text-[9px] text-slate-600">Silver Bullet</span>
             </div>
-            <div className="text-[11px] text-slate-600">10:03 · 2R · 150 $ de risque</div>
+            <div className="text-[9px] text-slate-600">10:03 · 2R · 150 $ de risque</div>
           </div>
           <span className="font-display text-xs font-extrabold text-emerald-400">+300 $</span>
         </div>
@@ -529,7 +529,7 @@ function FeaturePreview({ k }: { k: FeatKind }) {
             key={ev}
             className="flex items-center gap-2.5 rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5"
           >
-            <span className="text-[11px] font-bold tabular-nums text-slate-500">{h}</span>
+            <span className="text-[9px] font-bold tabular-nums text-slate-500">{h}</span>
             <span className="flex-1 text-[10px] font-semibold text-slate-200">{ev}</span>
             <span className={`rounded px-1.5 py-px text-[8px] font-bold ${c}`}>{imp}</span>
           </div>
@@ -542,7 +542,7 @@ function FeaturePreview({ k }: { k: FeatKind }) {
       <div className="rounded-lg border-2 border-dashed border-cyan-400/30 bg-cyan-400/[.04] px-3 py-2.5 text-center">
         <span className="text-[10px] font-semibold text-slate-300">historique_2025.csv</span>
       </div>
-      <div className="mt-1.5 flex items-center justify-between px-0.5 text-[11px]">
+      <div className="mt-1.5 flex items-center justify-between px-0.5 text-[9px]">
         <span className="text-slate-500">248 trades détectés</span>
         <span className="flex items-center gap-1 font-bold text-emerald-400">
           <Icon n="check" cls="h-2.5 w-2.5" />
@@ -719,17 +719,13 @@ export default function Landing() {
       {/* ── NAV ── */}
       <header
         className={`fixed inset-x-0 top-0 z-50 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 10 ? "bg-[#060d16]/85 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/40"}`}
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
       >
         <div
           className="scroll-bar absolute inset-x-0 top-0 h-[2px]"
           style={{ transform: `scaleX(${pct})` }}
         />
-        {/* Three-track layout: the logo (left) and actions (right) keep their
-            natural width, while the nav is absolutely centered on the header —
-            so it stays perfectly symmetric and never collides with either side,
-            whatever their content width. */}
-        <div className="relative mx-auto flex h-[66px] max-w-[1600px] items-center justify-between gap-4 px-5 lg:px-8">
+        <div className="relative mx-auto flex h-[60px] md:h-[66px] max-w-[1600px] items-center justify-between gap-3 px-4 md:px-5 lg:px-8">
           {/* Left zone — logo, natural width. */}
           <div className="flex items-center">
             <Logo />
@@ -1418,9 +1414,7 @@ export default function Landing() {
       {/* ── FOOTER ── */}
       <footer className="relative z-10 border-t border-white/[.06] bg-[#050b14]">
         <div className="mx-auto max-w-[1200px] px-5 py-10 lg:px-8 lg:py-12">
-          {/* Grille responsive : 1 colonne mobile → 4 colonnes desktop */}
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Colonne 1 : Marque */}
             <div className="flex flex-col gap-3">
               <Logo compact />
               <p className="text-xs leading-5 text-slate-500 max-w-[220px]">
@@ -1433,8 +1427,6 @@ export default function Landing() {
                 <Icon n="mail" cls="h-3.5 w-3.5" /> {SUPPORT_EMAIL}
               </a>
             </div>
-
-            {/* Colonne 2 : Navigation */}
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">
                 Navigation
@@ -1447,51 +1439,32 @@ export default function Landing() {
                   ["problem", "Problème"],
                   ["ai", "Coach IA"],
                 ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    onClick={() => go(id)}
-                    className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition text-left"
-                  >
+                  <button key={id} onClick={() => go(id)}
+                    className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition text-left">
                     {label}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Colonne 3 : Légal */}
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">
                 Légal
               </p>
               <div className="flex flex-col gap-2">
-                <a
-                  href="/terms"
-                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
-                >
+                <a href="/terms" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
                   Conditions d'utilisation
                 </a>
-                <a
-                  href="/privacy"
-                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
-                >
+                <a href="/privacy" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
                   Politique de confidentialité
                 </a>
-                <a
-                  href="/contact"
-                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
-                >
+                <a href="/contact" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
                   Contact
                 </a>
-                <a
-                  href="/demo"
-                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
-                >
+                <a href="/demo" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
                   Démo
                 </a>
               </div>
             </div>
-
-            {/* Colonne 4 : Réseaux sociaux */}
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">
                 Suivez-nous
@@ -1506,20 +1479,15 @@ export default function Landing() {
                     { icon: Youtube, label: "YouTube" },
                   ] as const
                 ).map((s) => (
-                  <span
-                    key={s.label}
-                    aria-label={s.label}
+                  <span key={s.label} aria-label={s.label}
                     title={`${s.label} — bientôt`}
-                    className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[.08] bg-white/[.02] text-slate-600 transition-colors"
-                  >
+                    className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[.08] bg-white/[.02] text-slate-600 transition-colors">
                     <s.icon className="w-4 h-4" />
                   </span>
                 ))}
               </div>
             </div>
           </div>
-
-          {/* Bas du footer : copyright */}
           <div className="mt-10 border-t border-white/[.05] pt-6 text-center text-[11px] text-slate-700">
             © {new Date().getFullYear()} TradeVault. Le trading comporte des risques. Journalise
             d'abord, trade ensuite.

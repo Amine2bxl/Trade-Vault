@@ -57,11 +57,8 @@ export default function Profile({ trades, setPage }: ProfileProps) {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
         <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-3.5">
-          <div className="relative shrink-0">
-            <div className="absolute -inset-1 rounded-2xl bg-cyan-500/40 blur-lg opacity-60" />
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 text-lg font-bold text-white shadow-lg shadow-cyan-500/25">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 text-lg font-bold text-white">
+            {user.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
             <h1 className="font-display truncate text-xl font-extrabold tracking-tight text-white">
@@ -119,11 +116,8 @@ export default function Profile({ trades, setPage }: ProfileProps) {
       {/* Contact / Support */}
       <Card variant="glass-strong" pad="default" className="space-y-2.5">
         <div className="flex items-center gap-2">
-          <span className="relative shrink-0">
-            <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/30 blur-sm" />
-            <span className="relative grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/20">
-              <MessageSquare className="w-3.5 h-3.5 text-white" />
-            </span>
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <MessageSquare className="w-3.5 h-3.5 text-white" />
           </span>
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">
             {t("profile.getInTouch")}

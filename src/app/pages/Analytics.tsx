@@ -329,6 +329,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
         className="stagger-0"
         title={t("analytics.title")}
         subtitle={t("analytics.subtitle")}
+        icon={
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <BarChart3 className="w-4 h-4 text-white" />
+          </span>
+        }
       />
 
       {/* Period filter */}
