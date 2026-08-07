@@ -232,7 +232,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               ) : (
                 groups.map((g) => (
                   <div key={g.labelKey} className="mb-2">
-                    <div className="px-1 pt-3 pb-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+                    <div className="px-1 pt-3 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
                       {t(g.labelKey)}
                     </div>
                     <div className="divide-y divide-white/[0.04] rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
