@@ -33,7 +33,7 @@ const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
 import TradeDetailModal from "./components/TradeDetailModal";
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, isPage, type Page } from "./types";
-import { pageFromSearch, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
+import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
 import {
   upsertTrade,
   deleteTrade,
@@ -98,10 +98,10 @@ function AppContent() {
   // Deux emplacements auraient divergé au premier retour arrière, et c'est
   // l'URL qui rend la page partageable, mesurable et navigable au bouton
   // retour (voir `utils/pageUrl.ts` pour le raisonnement complet).
-  const [page, setPage] = useState<Page>(() => {
+  const [page, setPageState] = useState<Page>(() => {
     if (typeof window === "undefined") return DEFAULT_PAGE;
-    const fromUrl = pageFromSearch(window.location.search);
-    if (fromUrl) return fromUrl;
+    const { page: resolved } = resolveLocation(window.location.pathname, window.location.search);
+    if (resolved) return resolved;
     // Reprise unique de l'ancien emplacement : un trader dont l'onglet est
     // ouvert au moment du déploiement reste sur sa page.
     try {
@@ -116,20 +116,43 @@ function AppContent() {
   const pageRef = useRef(page);
   pageRef.current = page;
 
-  // Écrit la page dans l'URL. `pushState` — et non `replaceState` — parce que
-  // c'est précisément l'entrée d'historique qui fait fonctionner le bouton
-  // retour ; sans elle, « retour » quitte l'application sur Android.
-  useEffect(() => {
+  /**
+   * Navigation : l'état ET l'URL changent ensemble, dans le même geste.
+   *
+   * `setPage` est passé à toute l'application (barre latérale, navigation
+   * mobile, palette de commandes, CTA de Jarvis). En faisant écrire l'URL ICI
+   * plutôt que dans un effet qui réagit après coup, on évite l'écart d'une
+   * frame entre ce qui est affiché et ce que dit la barre d'adresse.
+   *
+   * `pushState` — et non `replaceState` — parce que c'est précisément l'entrée
+   * d'historique qui fait fonctionner le bouton retour ; sans elle, « retour »
+   * quitte l'application sur Android.
+   */
+  const setPage = useCallback((next: Page) => {
+    setPageState(next);
     if (typeof window === "undefined") return;
-    const next = buildPageUrl(window.location.pathname, window.location.search, page);
-    const current = `${window.location.pathname}${window.location.search}`;
-    if (next === current) return;
-    window.history.pushState({ page }, "", next);
-  }, [page]);
+    const url = buildPageUrl(next, window.location.search);
+    if (url === `${window.location.pathname}${window.location.search}`) return;
+    window.history.pushState({ page: next }, "", url);
+  }, []);
+
+  // Réécriture des ANCIENNES URL `?p=` en chemin propre, une fois, sans entrée
+  // d'historique : un lien partagé hier ne doit pas se transformer en
+  // aller-retour aujourd'hui.
+  useEffect(() => {
+    const { page: resolved, redirectTo } = resolveLocation(
+      window.location.pathname,
+      window.location.search,
+    );
+    if (redirectTo && resolved) window.history.replaceState({ page: resolved }, "", redirectTo);
+  }, []);
 
   // Bouton retour / avant du navigateur.
   useEffect(() => {
-    const onPop = () => setPage(pageFromSearch(window.location.search) ?? DEFAULT_PAGE);
+    const onPop = () =>
+      setPageState(
+        resolveLocation(window.location.pathname, window.location.search).page ?? DEFAULT_PAGE,
+      );
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
