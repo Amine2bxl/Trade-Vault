@@ -408,7 +408,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Quant metrics grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-fade-in-up stagger-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 animate-fade-in-up stagger-1">
           {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
           <Card hover className="md:hidden group relative p-3.5">
             <div className="flex items-center gap-1 mb-1.5">
@@ -515,6 +515,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
           ))}
         </div>
+
+        {/* ── Saisonnalité — highlights + yearly heatmap ── */}
+        {trades.length >= 3 && (
+          <SeasonalitySection trades={cutoffTrades} />
+        )}
 
         {/* Performance by setup */}
         <Card hover className="overflow-hidden animate-fade-in-up stagger-2">
@@ -1056,11 +1061,6 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
       </div>
 
-      {/* ── Saisonnalité (journal) ── */}
-      {trades.length >= 3 && (
-        <SeasonalitySection trades={cutoffTrades} />
-      )}
-
     </PageContainer>
   );
 }
@@ -1093,68 +1093,83 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
   }, [trades, lang]);
 
   const { best, worst, years, heatMax, monthly } = data;
-  if (monthly.every((m) => m.count === 0)) return null;
+  const tradedMonths = monthly.filter((m) => m.count > 0).length;
+  const totalTrades = monthly.reduce((s, m) => s + m.count, 0);
+  if (tradedMonths === 0) return null;
 
   return (
-    <div className="mt-6 space-y-4 animate-fade-in-up">
-      {/* Highlights */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="glass rounded-2xl p-3 text-center">
-          <TrendingUp className="w-4 h-4 text-emerald-400 mx-auto mb-1.5" />
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Meilleur mois</div>
-          <div className="text-sm font-bold text-white">{best ? best.month : "—"}</div>
-          <div className="text-xs text-emerald-400 font-semibold tabular-nums mt-0.5">{best ? formatPnl(best.pnl) : "—"}</div>
-        </div>
-        <div className="glass rounded-2xl p-3 text-center">
-          <TrendingDown className="w-4 h-4 text-red-400 mx-auto mb-1.5" />
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Pire mois</div>
-          <div className="text-sm font-bold text-white">{worst ? worst.month : "—"}</div>
-          <div className="text-xs text-red-400 font-semibold tabular-nums mt-0.5">{worst ? formatPnl(worst.pnl) : "—"}</div>
-        </div>
-        <div className="glass rounded-2xl p-3 text-center">
-          <CalendarDays className="w-4 h-4 text-cyan-400 mx-auto mb-1.5" />
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Mois tradés</div>
-          <div className="text-sm font-bold text-white">{monthly.filter((m) => m.count > 0).length}/12</div>
-          <div className="text-xs text-slate-500 mt-0.5">{monthly.reduce((s, m) => s + m.count, 0)} trades</div>
-        </div>
-        <div className="glass rounded-2xl p-3 text-center">
-          <Sparkles className="w-4 h-4 text-amber-400 mx-auto mb-1.5" />
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Années</div>
-          <div className="text-sm font-bold text-white">{years.length}</div>
-          <div className="text-xs text-slate-500 mt-0.5">de données</div>
-        </div>
+    <Card className="animate-fade-in-up stagger-2">
+      <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
+        <h3 className="text-sm font-semibold text-white">Saisonnalité</h3>
       </div>
+      <div className="p-4 md:p-5 space-y-4">
+        {/* Highlights */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Meilleur mois</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white">{best ? best.month : "—"}</div>
+            <div className="text-[11px] text-emerald-400 font-semibold tabular-nums mt-0.5">{best ? formatPnl(best.pnl) : "—"}</div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Pire mois</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white">{worst ? worst.month : "—"}</div>
+            <div className="text-[11px] text-red-400 font-semibold tabular-nums mt-0.5">{worst ? formatPnl(worst.pnl) : "—"}</div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <CalendarDays className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Mois tradés</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white tabular-nums">{tradedMonths}/12</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">{totalTrades} trades</div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Années</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white tabular-nums">{years.length}</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">de données</div>
+          </div>
+        </div>
 
-      {/* Yearly heatmap */}
-      {years.length > 0 && (
-        <Card className="p-4 md:p-5">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Heatmap annuel</h4>
-          <div className="overflow-x-auto">
-            <div className="inline-flex flex-col gap-0.5 min-w-[600px]">
-              <div className="flex gap-0.5 text-[8px] font-bold uppercase text-slate-600 pl-10">
-                {monthly.map((m, i) => <div key={i} className="w-10 text-center">{m.month}</div>)}
-              </div>
-              {years.map(([year, months]) => (
-                <div key={year} className="flex gap-0.5 items-center">
-                  <div className="w-9 text-[9px] font-bold text-slate-400 shrink-0 text-right pr-1">{year}</div>
-                  {months.map((val, i) => {
-                    const mag = heatMax > 0 ? Math.min(1, Math.abs(val) / heatMax) : 0;
-                    const a = 0.05 + 0.25 * mag;
-                    const isWin = val >= 0;
-                    return (
-                      <div key={i} className="w-10 h-7 rounded flex items-center justify-center text-[9px] font-bold tabular-nums transition-colors"
-                        style={{ background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`, color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b" }}>
-                        {val === 0 ? "—" : `${isWin ? "+" : ""}${Math.round(val)}`}
-                      </div>
-                    );
-                  })}
+        {/* Yearly heatmap */}
+        {years.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Heatmap annuel</div>
+            <div className="overflow-x-auto">
+              <div className="inline-flex flex-col gap-0.5 min-w-[600px]">
+                <div className="flex gap-0.5 text-[9px] font-bold uppercase text-slate-600 pl-10">
+                  {monthly.map((m, i) => <div key={i} className="w-10 text-center">{m.month}</div>)}
                 </div>
-              ))}
+                {years.map(([year, months]) => (
+                  <div key={year} className="flex gap-0.5 items-center">
+                    <div className="w-9 text-[10px] font-bold text-slate-400 shrink-0 text-right pr-1">{year}</div>
+                    {months.map((val, i) => {
+                      const mag = heatMax > 0 ? Math.min(1, Math.abs(val) / heatMax) : 0;
+                      const a = 0.05 + 0.25 * mag;
+                      const isWin = val >= 0;
+                      return (
+                        <div key={i} className="w-10 h-7 rounded flex items-center justify-center text-[9px] font-bold tabular-nums"
+                          style={{ background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`, color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b" }}>
+                          {val === 0 && months.every(v => v === 0) ? "—" : `${isWin ? "+" : ""}${Math.round(val)}`}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </Card>
-      )}
-    </div>
+        )}
+      </div>
+    </Card>
   );
 }
 
