@@ -1126,6 +1126,7 @@ const en = {
   "account.title": "Accounts",
   "account.subtitle": "Switch sub-account in one tap",
   "account.rename": "Rename",
+  "account.edit": "Edit account",
   "account.fabLabel": "Accounts",
   "account.delete": "Delete account",
   "account.deleteTitle": "Delete this account?",

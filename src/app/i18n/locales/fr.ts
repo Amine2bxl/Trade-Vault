@@ -1055,6 +1055,7 @@ const fr: Dict = {
   "account.title": "Comptes",
   "account.subtitle": "Change de sous-compte en un tap",
   "account.rename": "Renommer",
+  "account.edit": "Modifier le compte",
   "account.fabLabel": "Comptes",
   "account.delete": "Supprimer le compte",
   "account.deleteTitle": "Supprimer ce compte ?",

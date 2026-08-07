@@ -88,11 +88,17 @@ export default function AccountSwitcher({
   const [deleting, setDeleting] = useState<Account | null>(null);
   const [editingModalAccount, setEditingModalAccount] = useState<Account | null>(null);
 
-  const startRename = (a: Account) => {
+  // NOTE — mécanisme de renommage en ligne DEVENU INATTEIGNABLE : les trois
+  // crayons ouvrent désormais le formulaire complet. Les branches qui testent
+  // `editingId` ne peuvent plus s'exécuter. Elles sont conservées le temps d'un
+  // lot dédié : les retirer touche ~150 lignes de JSX réparties sur trois
+  // variantes de rendu, et mérite sa propre vérification.
+  const _startRename = (a: Account) => {
     setEditingId(a.id);
     setDraftName(a.name);
     setDraftIcon(a.icon ?? null);
   };
+  void _startRename;
   const commitRename = async (id: string) => {
     const name = draftName.trim();
     const current = accounts.find((a) => a.id === id);
@@ -521,12 +527,16 @@ export default function AccountSwitcher({
                 <span className="block text-[13px] font-bold text-white truncate leading-tight">
                   {activeAccount.name}
                 </span>
+                {/* Le crayon ouvre le formulaire COMPLET, comme dans la barre
+                    de comptes et le menu déroulant. Il déclenchait auparavant
+                    un renommage en ligne : le même geste, au même endroit,
+                    donnait accès à un seul champ ici et à quatre ailleurs. */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    startRename(activeAccount);
+                    setEditingModalAccount(activeAccount);
                   }}
-                  aria-label={t("account.rename")}
+                  aria-label={t("account.edit")}
                   className="w-5 h-5 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
                 >
                   <Pencil className="w-2.5 h-2.5" />
@@ -644,12 +654,13 @@ export default function AccountSwitcher({
                 <span className="block text-sm font-semibold text-white truncate">
                   {activeAccount.name}
                 </span>
+                {/* Formulaire complet, comme partout ailleurs. */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    startRename(activeAccount);
+                    setEditingModalAccount(activeAccount);
                   }}
-                  aria-label={t("account.rename")}
+                  aria-label={t("account.edit")}
                   className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
                 >
                   <Pencil className="w-3 h-3" />
@@ -793,7 +804,21 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
   const [name, setName] = useState(edit?.name ?? "");
   const [type, setType] = useState<AccountType>(edit?.type ?? "prop");
   const [selectedIcon, setSelectedIcon] = useState<string | null>(edit?.icon ?? null);
-  const [balance, setBalance] = useState(String((edit?.startingBalance ?? edit) ? 0 : "50000"));
+  /**
+   * Capital de départ — pré-rempli avec la valeur RÉELLE du compte en édition.
+   *
+   * L'expression précédente était `String((edit?.startingBalance ?? edit) ? 0 : "50000")`,
+   * dont le résultat était inversé : un compte à 50 000 s'affichait à **0**, et
+   * un compte à 0 s'affichait à **50 000**. Comme le champ est renvoyé tel quel
+   * à l'enregistrement, **chaque édition écrasait le capital du compte** —
+   * silencieusement, sans erreur.
+   *
+   * La portée était large : `startingBalance` est le dénominateur de la
+   * variation de période, du sous-score de risque de l'Edge Score, de la
+   * progression des objectifs et des statistiques quantitatives. Le remettre à
+   * zéro faussait tous les pourcentages du produit d'un seul clic sur le crayon.
+   */
+  const [balance, setBalance] = useState(String(edit?.startingBalance ?? 50000));
   const [busy, setBusy] = useState(false);
 
   const types: AccountType[] = ["personal", "prop", "demo", "live"];
