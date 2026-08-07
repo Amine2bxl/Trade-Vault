@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Info, BarChart3 } from "lucide-react";
+import { Info, BarChart3, TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
 import {
@@ -15,8 +15,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -47,6 +45,7 @@ import {
   equityYDomain,
   EQUITY_X_PADDING,
 } from "../utils/chartTheme";
+import EquityChart from "../components/EquityChart";
 
 interface AnalyticsProps {
   trades: Trade[];
@@ -366,56 +365,28 @@ export default function Analytics({ trades }: AnalyticsProps) {
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-white mb-0.5">
-                {t("analytics.profitFactor")}
-              </h3>
+              <h3 className="text-sm font-semibold text-white mb-0.5">{t("analytics.profitFactor")}</h3>
               <p className="text-[10px] text-slate-500">{t("analytics.profitsOverLosses")}</p>
             </div>
-            <div className="flex items-center gap-3 md:gap-6 flex-wrap">
+            <div className="flex items-center gap-3 md:gap-5 flex-wrap">
               <div className="text-center">
-                <div className="text-[11px] md:text-[10px] text-slate-500">
-                  {t("analytics.profits")}
-                </div>
-                <div className="text-sm md:text-lg font-bold text-emerald-400">
-                  {formatPnl(profitFactorData.totalProfits)}
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("analytics.profits")}</div>
+                <div className="font-display text-base md:text-lg font-extrabold text-emerald-400 tabular-nums">{formatPnl(profitFactorData.totalProfits)}</div>
+              </div>
+              <div className="text-base text-slate-600 font-light">÷</div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("analytics.losses")}</div>
+                <div className="font-display text-base md:text-lg font-extrabold text-red-400 tabular-nums">{formatPnl(-profitFactorData.totalLosses)}</div>
+              </div>
+              <div className="text-base text-slate-600 font-light">=</div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("analytics.factor")}</div>
+                <div className={cn("font-display text-lg md:text-xl font-extrabold tabular-nums", profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400")}>
+                  {profitFactorData.profitFactor >= 99 ? "99+" : profitFactorData.profitFactor.toFixed(2)}
                 </div>
               </div>
-              <div className="text-lg text-slate-600">÷</div>
-              <div className="text-center">
-                <div className="text-[11px] md:text-[10px] text-slate-500">
-                  {t("analytics.losses")}
-                </div>
-                <div className="text-sm md:text-lg font-bold text-red-400">
-                  {formatPnl(-profitFactorData.totalLosses)}
-                </div>
-              </div>
-              <div className="text-lg text-slate-600">=</div>
-              <div className="text-center">
-                <div className="text-[11px] md:text-[10px] text-slate-500">
-                  {t("analytics.factor")}
-                </div>
-                <div
-                  className={cn(
-                    "font-display text-2xl md:text-3xl font-extrabold tabular-nums",
-                    profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
-                  )}
-                >
-                  {profitFactorData.profitFactor >= 99
-                    ? "99+"
-                    : profitFactorData.profitFactor.toFixed(2)}
-                </div>
-              </div>
-              <span
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-[10px] md:text-xs font-bold",
-                  profitFactorData.isProfitable
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                    : "bg-red-500/10 text-red-400 border border-red-500/20",
-                )}
-              >
-                {profitFactorData.isProfitable
-                  ? `✓ ${t("analytics.profitable")}`
-                  : `✗ ${t("analytics.losing")}`}
+              <span className={cn("px-3 py-1.5 rounded-xl text-[10px] md:text-[11px] font-bold", profitFactorData.isProfitable ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20")}>
+                {profitFactorData.isProfitable ? `✓ ${t("analytics.profitable")}` : `✗ ${t("analytics.losing")}`}
               </span>
             </div>
           </div>
@@ -431,7 +402,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Quant metrics grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-fade-in-up stagger-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 animate-fade-in-up stagger-1">
           {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
           <Card hover className="md:hidden group relative p-3.5">
             <div className="flex items-center gap-1 mb-1.5">
@@ -538,6 +509,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
           ))}
         </div>
+
+        {/* ── Saisonnalité — highlights + yearly heatmap ── */}
+        {trades.length >= 3 && (
+          <SeasonalitySection trades={cutoffTrades} />
+        )}
 
         {/* Performance by setup */}
         <Card hover className="overflow-hidden animate-fade-in-up stagger-2">
@@ -769,60 +745,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
           <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <h3 className="text-sm font-semibold text-white mb-4">{t("analytics.equityCurve")}</h3>
-            <div className="h-56 md:h-80 chart-organic chart-draw">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={stats.equityCurve}
-                  margin={{ top: 12, right: 8, bottom: 0, left: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--tv-accent)" stopOpacity={0.18} />
-                      <stop offset="100%" stopColor="var(--tv-accent)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid {...EQUITY_GRID} />
-                  <XAxis
-                    dataKey="date"
-                    padding={EQUITY_X_PADDING}
-                    tick={AXIS_TICK}
-                    minTickGap={28}
-                    tickFormatter={(v) => {
-                      const p = v.split("-");
-                      return `${p[2]}/${p[1]}`;
-                    }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={equityYDomain}
-                    tick={AXIS_TICK}
-                    tickFormatter={formatAxisMoney}
-                    axisLine={false}
-                    tickLine={false}
-                    width={52}
-                  />
-                  <ReferenceLine y={0} stroke="rgba(148,163,184,0.28)" strokeWidth={1} />
-                  <Tooltip
-                    {...tooltipStyle}
-                    formatter={(value: any) => [
-                      `$${Number(value).toFixed(2)}`,
-                      t("analytics.equityCurve"),
-                    ]}
-                    labelFormatter={(v) => formatShortDate(v)}
-                  />
-                  <Area
-                    type={EQUITY_CURVE_TYPE}
-                    dataKey="equity"
-                    stroke="var(--tv-accent)"
-                    fill="url(#eqG)"
-                    dot={false}
-                    activeDot={glowActiveDot("var(--tv-accent)")}
-                    {...EQUITY_LINE}
-                    {...EQUITY_ANIMATION}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="h-56 md:h-80 chart-draw">
+              <EquityChart data={stats.equityCurve} />
             </div>
           </div>
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
@@ -1140,7 +1064,116 @@ export default function Analytics({ trades }: AnalyticsProps) {
           </Card>
         </div>
       </div>
+
     </PageContainer>
+  );
+}
+
+function SeasonalitySection({ trades }: { trades: Trade[] }) {
+  const { lang } = useT();
+  const locale = LOCALE_MAP[lang] || "en-US";
+  const monthLabel = (m: number) => new Date(2026, m, 1).toLocaleDateString(locale, { month: "short" });
+
+  const data = useMemo(() => {
+    const byMonth = Array.from({ length: 12 }, () => ({ pnl: 0, count: 0 }));
+    const byYearMonth = new Map<number, number[]>();
+    for (const tr of trades) {
+      const d = new Date(tr.date + "T00:00:00");
+      if (Number.isNaN(d.getTime())) continue;
+      const m = d.getMonth();
+      const y = d.getFullYear();
+      byMonth[m].pnl += tr.pnl;
+      byMonth[m].count += 1;
+      if (!byYearMonth.has(y)) byYearMonth.set(y, Array.from({ length: 12 }, () => 0));
+      byYearMonth.get(y)![m] += tr.pnl;
+    }
+    const monthly = byMonth.map((m, i) => ({ month: monthLabel(i), pnl: Math.round(m.pnl * 100) / 100, count: m.count }));
+    const traded = monthly.filter((m) => m.count > 0);
+    const best = traded.length ? traded.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : null;
+    const worst = traded.length ? traded.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : null;
+    const years = [...byYearMonth.entries()].sort((a, b) => b[0] - a[0]);
+    const heatMax = Math.max(1, ...years.flatMap(([, arr]) => arr.map(Math.abs)));
+    return { best, worst, years, heatMax, monthly };
+  }, [trades, lang]);
+
+  const { best, worst, years, heatMax, monthly } = data;
+  const tradedMonths = monthly.filter((m) => m.count > 0).length;
+  const totalTrades = monthly.reduce((s, m) => s + m.count, 0);
+  if (tradedMonths === 0) return null;
+
+  return (
+    <Card className="animate-fade-in-up stagger-2">
+      <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
+        <h3 className="text-sm font-semibold text-white">Tendances</h3>
+      </div>
+      <div className="p-4 md:p-5 space-y-4">
+        {/* Highlights */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Meilleur mois</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white">{best ? best.month : "—"}</div>
+            <div className="text-[11px] text-emerald-400 font-semibold tabular-nums mt-0.5">{best ? formatPnl(best.pnl) : "—"}</div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Pire mois</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white">{worst ? worst.month : "—"}</div>
+            <div className="text-[11px] text-red-400 font-semibold tabular-nums mt-0.5">{worst ? formatPnl(worst.pnl) : "—"}</div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <CalendarDays className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Mois tradés</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white tabular-nums">{tradedMonths}/12</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">{totalTrades} trades</div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Années</span>
+            </div>
+            <div className="font-display text-base font-extrabold text-white tabular-nums">{years.length}</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">de données</div>
+          </div>
+        </div>
+
+        {/* Yearly heatmap */}
+        {years.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Heatmap annuel</div>
+            <div className="flex flex-col gap-0.5 w-full">
+              <div className="grid grid-cols-12 gap-0.5 text-[9px] font-bold uppercase text-slate-600 pl-9">
+                {monthly.map((m, i) => <div key={i} className="text-center">{m.month}</div>)}
+              </div>
+              {years.map(([year, months]) => (
+                <div key={year} className="flex gap-0.5 items-center">
+                  <div className="w-8 text-[10px] font-bold text-slate-400 shrink-0 text-right pr-1">{year}</div>
+                  <div className="grid grid-cols-12 gap-0.5 flex-1">
+                    {months.map((val, i) => {
+                      const mag = heatMax > 0 ? Math.min(1, Math.abs(val) / heatMax) : 0;
+                      const a = 0.05 + 0.25 * mag;
+                      const isWin = val >= 0;
+                      return (
+                        <div key={i} className="h-7 rounded flex items-center justify-center text-[9px] font-bold tabular-nums"
+                          style={{ background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`, color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b" }}>
+                          {val === 0 && months.every(v => v === 0) ? "—" : `${isWin ? "+" : ""}${Math.round(val)}`}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 
