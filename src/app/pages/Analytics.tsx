@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Info, BarChart3 } from "lucide-react";
+import { Info, BarChart3, TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
 import {
@@ -14,8 +14,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -46,6 +44,7 @@ import {
   equityYDomain,
   EQUITY_X_PADDING,
 } from "../utils/chartTheme";
+import EquityChart from "../components/EquityChart";
 
 interface AnalyticsProps {
   trades: Trade[];
@@ -737,60 +736,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
           <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <h3 className="text-sm font-semibold text-white mb-4">{t("analytics.equityCurve")}</h3>
-            <div className="h-56 md:h-80 chart-organic chart-draw">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={stats.equityCurve}
-                  margin={{ top: 12, right: 8, bottom: 0, left: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--tv-accent)" stopOpacity={0.18} />
-                      <stop offset="100%" stopColor="var(--tv-accent)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid {...EQUITY_GRID} />
-                  <XAxis
-                    dataKey="date"
-                    padding={EQUITY_X_PADDING}
-                    tick={AXIS_TICK}
-                    minTickGap={28}
-                    tickFormatter={(v) => {
-                      const p = v.split("-");
-                      return `${p[2]}/${p[1]}`;
-                    }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={equityYDomain}
-                    tick={AXIS_TICK}
-                    tickFormatter={formatAxisMoney}
-                    axisLine={false}
-                    tickLine={false}
-                    width={52}
-                  />
-                  <ReferenceLine y={0} stroke="rgba(148,163,184,0.28)" strokeWidth={1} />
-                  <Tooltip
-                    {...tooltipStyle}
-                    formatter={(value: any) => [
-                      `$${Number(value).toFixed(2)}`,
-                      t("analytics.equityCurve"),
-                    ]}
-                    labelFormatter={(v) => formatShortDate(v)}
-                  />
-                  <Area
-                    type={EQUITY_CURVE_TYPE}
-                    dataKey="equity"
-                    stroke="var(--tv-accent)"
-                    fill="url(#eqG)"
-                    dot={false}
-                    activeDot={glowActiveDot("var(--tv-accent)")}
-                    {...EQUITY_LINE}
-                    {...EQUITY_ANIMATION}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="h-56 md:h-80 chart-draw">
+              <EquityChart data={stats.equityCurve} />
             </div>
           </div>
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
@@ -1108,7 +1055,175 @@ export default function Analytics({ trades }: AnalyticsProps) {
           </Card>
         </div>
       </div>
+
+      {/* ── Saisonnalité (journal) ── */}
+      {trades.length >= 3 && (
+        <SeasonalitySection trades={cutoffTrades} />
+      )}
+
     </PageContainer>
+  );
+}
+
+function SeasonalitySection({ trades }: { trades: Trade[] }) {
+  const { t, lang } = useT();
+  const locale = LOCALE_MAP[lang] || "en-US";
+
+  const weekdayLabel = (dow: number) =>
+    new Date(2026, 1, 2 + dow).toLocaleDateString(locale, { weekday: "short" });
+  const monthLabel = (m: number) =>
+    new Date(2026, m, 1).toLocaleDateString(locale, { month: "short" });
+
+  const data = useMemo(() => {
+    const byDow = Array.from({ length: 7 }, () => ({ pnl: 0, count: 0 }));
+    const byHour = new Map<number, { pnl: number; count: number }>();
+    const byMonth = Array.from({ length: 12 }, () => ({ pnl: 0, count: 0 }));
+
+    for (const tr of trades) {
+      const d = new Date(tr.date + "T00:00:00");
+      if (Number.isNaN(d.getTime())) continue;
+      const m = d.getMonth();
+      byMonth[m].pnl += tr.pnl;
+      byMonth[m].count += 1;
+      byDow[d.getDay()].pnl += tr.pnl;
+      byDow[d.getDay()].count += 1;
+      const h = parseInt(tr.entryTime?.split(":")[0] ?? "", 10);
+      if (!Number.isNaN(h) && h >= 0 && h <= 23) {
+        const cur = byHour.get(h) ?? { pnl: 0, count: 0 };
+        cur.pnl += tr.pnl;
+        cur.count += 1;
+        byHour.set(h, cur);
+      }
+    }
+
+    const dowOrder = [1, 2, 3, 4, 5, 6, 0].filter((d) => byDow[d].count > 0 || (d >= 1 && d <= 5));
+    const weekdays = dowOrder.map((d) => ({
+      day: weekdayLabel(d),
+      pnl: Math.round(byDow[d].pnl * 100) / 100,
+      count: byDow[d].count,
+    }));
+
+    const hours = [...byHour.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([h, v]) => ({
+        hour: `${String(h).padStart(2, "0")}h`,
+        pnl: Math.round(v.pnl * 100) / 100,
+        count: v.count,
+      }));
+
+    const monthly = byMonth.map((m, i) => ({
+      month: monthLabel(i),
+      pnl: Math.round(m.pnl * 100) / 100,
+      count: m.count,
+    }));
+
+    const maxPnl = Math.max(1, ...monthly.map((m) => Math.abs(m.pnl)));
+
+    return { weekdays, hours, monthly, maxPnl };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trades, lang]);
+
+  const { weekdays, hours, monthly, maxPnl } = data;
+  if (weekdays.length === 0 && monthly.every((m) => m.count === 0)) return null;
+
+  return (
+    <div className="mt-6 space-y-4 animate-fade-in-up">
+      <h3 className="text-sm font-semibold text-white px-1">{t("seasonality.tabJournal")}</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Day-of-week P&L */}
+        <Card className="p-4 md:p-5">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <CalendarDays className="w-3.5 h-3.5 text-cyan-400" />
+            P&L par jour de la semaine
+          </h4>
+          {weekdays.length > 0 ? (
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weekdays} margin={{ top: 5, right: 0, bottom: 0, left: 0 }}>
+                  <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis tick={AXIS_TICK} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
+                  <ReferenceLine y={0} stroke="rgba(148,163,184,0.2)" strokeWidth={1} />
+                  <Tooltip {...tooltipStyle} formatter={(v: number) => [formatPnl(v), "P&L"]} />
+                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={36}>
+                    {weekdays.map((entry, i) => (
+                      <Cell key={i} fill={entry.pnl >= 0 ? "#10b981" : "#ef4444"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-44 flex items-center justify-center text-slate-600 text-xs">Pas assez de données</div>
+          )}
+        </Card>
+
+        {/* Hourly P&L */}
+        <Card className="p-4 md:p-5">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            P&L par heure
+          </h4>
+          {hours.length > 0 ? (
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={hours} margin={{ top: 5, right: 0, bottom: 0, left: 0 }}>
+                  <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} interval={2} />
+                  <YAxis tick={AXIS_TICK} tickFormatter={(v) => `$${v}`} axisLine={false} tickLine={false} width={45} />
+                  <ReferenceLine y={0} stroke="rgba(148,163,184,0.2)" strokeWidth={1} />
+                  <Tooltip {...tooltipStyle} formatter={(v: number) => [formatPnl(v), "P&L"]} />
+                  <Bar dataKey="pnl" radius={[3, 3, 0, 0]} maxBarSize={16}>
+                    {hours.map((entry, i) => (
+                      <Cell key={i} fill={entry.pnl >= 0 ? "#10b981" : "#ef4444"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-44 flex items-center justify-center text-slate-600 text-xs">Pas assez de données</div>
+          )}
+        </Card>
+      </div>
+
+      {/* Monthly heatmap */}
+      <Card className="p-4 md:p-5">
+        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+          P&L mensuel
+        </h4>
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-1.5">
+          {monthly.map((m, i) => {
+            const mag = m.count > 0 ? Math.min(1, Math.abs(m.pnl) / maxPnl) : 0;
+            const a = 0.06 + 0.22 * mag;
+            const isWin = m.count > 0 && m.pnl >= 0;
+            const isLoss = m.count > 0 && m.pnl < 0;
+            return (
+              <div
+                key={i}
+                className="rounded-lg px-2 py-2 text-center border transition-colors"
+                style={{
+                  background: isWin ? `rgba(16,185,129,${a})` : isLoss ? `rgba(239,68,68,${a})` : "rgba(255,255,255,0.02)",
+                  borderColor: isWin ? `rgba(16,185,129,${0.15 + 0.15 * mag})` : isLoss ? `rgba(239,68,68,${0.15 + 0.15 * mag})` : "rgba(255,255,255,0.05)",
+                }}
+              >
+                <div className="text-[8px] font-bold uppercase text-slate-500 mb-0.5">{m.month}</div>
+                {m.count > 0 ? (
+                  <>
+                    <div className={`text-[10px] font-extrabold tabular-nums ${isWin ? "text-emerald-400" : "text-red-400"}`}>
+                      {isWin ? "+" : ""}{m.pnl.toFixed(0)}$
+                    </div>
+                    <div className="text-[8px] text-slate-600 tabular-nums">{m.count}</div>
+                  </>
+                ) : (
+                  <div className="text-[10px] text-slate-700">—</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
   );
 }
 
