@@ -258,7 +258,7 @@ code**.
 | **Mistakes** (650 l.) | Erreurs récurrentes et leur coût | `behavioral` · `ruleAdherence` · `tradeCalcs` | Son score de tête félicitait les traders qui ne journalisent pas — corrigé le 2026-08-06 |
 | **Calendar** (591 l.) | P&L jour par jour | — (props) | Aucun moteur importé : tout vient des props |
 | **Seasonality** (781 l.) | Performance par période / actif | `assetSeasonality` · `tradeCalcs` | **Non auditée** |
-| **Reports** (529 l.) | Bilans mensuels | `monthlyReport` · `tradeCalcs` | **Non auditée** ; table `monthly_reports` |
+| **Reports** (529 l.) | Bilans mensuels — génération de **tout** mois clos ayant des trades (`reportMonths`, même définition que le backfill CSV) | `monthlyReport` · `reportMonths` · `tradeCalcs` | **Non auditée** ; table `monthly_reports` |
 | **Missed** (798 l.) | Setups vus mais non pris | `image` · `tradeCalcs` | Différenciant réel : aucun concurrent ne journalise l'inaction |
 
 ### Cadre — engagement du trader
