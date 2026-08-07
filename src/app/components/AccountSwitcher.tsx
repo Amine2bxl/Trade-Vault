@@ -76,46 +76,21 @@ export default function AccountSwitcher({
   variant?: "bar" | "fab" | "card";
   balance?: number;
 }) {
-  const { accounts, activeAccount, switchAccount, editAccount, removeAccount } = useAccounts();
+  const { accounts, activeAccount, switchAccount, removeAccount } = useAccounts();
   const computedBalance = balanceProp ?? activeAccount?.startingBalance ?? 0;
   const fmtBalance = `$${Math.round(computedBalance).toLocaleString("en-US")}`;
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
-  const [draftIcon, setDraftIcon] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Account | null>(null);
   const [editingModalAccount, setEditingModalAccount] = useState<Account | null>(null);
 
-  // NOTE — mécanisme de renommage en ligne DEVENU INATTEIGNABLE : les trois
-  // crayons ouvrent désormais le formulaire complet. Les branches qui testent
-  // `editingId` ne peuvent plus s'exécuter. Elles sont conservées le temps d'un
-  // lot dédié : les retirer touche ~150 lignes de JSX réparties sur trois
-  // variantes de rendu, et mérite sa propre vérification.
-  const _startRename = (a: Account) => {
-    setEditingId(a.id);
-    setDraftName(a.name);
-    setDraftIcon(a.icon ?? null);
-  };
-  void _startRename;
-  const commitRename = async (id: string) => {
-    const name = draftName.trim();
-    const current = accounts.find((a) => a.id === id);
-    const icon = draftIcon;
-    setEditingId(null);
-    const nameChanged = name && name !== current?.name;
-    const iconChanged = icon !== (current?.icon ?? null);
-    if (!nameChanged && !iconChanged) return;
-    try {
-      const patch: Record<string, string> = {};
-      if (nameChanged) patch.name = name;
-      if (iconChanged) patch.icon = icon ?? "";
-      await editAccount(id, patch as never);
-    } catch (e) {
-      console.error("Failed to update account", e);
-    }
-  };
+  // Le renommage EN LIGNE a été retiré ici. Il coexistait avec le formulaire
+  // complet : selon la variante d'affichage, le même crayon donnait soit un
+  // champ « nom » soit quatre champs. Depuis que les trois crayons ouvrent le
+  // formulaire complet, ces branches étaient devenues inatteignables — ~150
+  // lignes de JSX réparties sur trois rendus, plus leur état et leur
+  // enregistrement. Un seul geste d'édition, un seul chemin de code.
 
   /**
    * AccountSheet — sélecteur de comptes dans un Modal PARTAGÉ (portal vers
@@ -282,73 +257,6 @@ export default function AccountSwitcher({
                 {accounts.map((a) => {
                   const Icon = getAccountIcon(a);
                   const active = a.id === activeAccount.id;
-                  const editing = editingId === a.id;
-
-                  if (editing) {
-                    const DraftIconComp =
-                      draftIcon && ICON_MAP[draftIcon] ? ICON_MAP[draftIcon] : Icon;
-                    return (
-                      <div
-                        key={a.id}
-                        className="relative flex flex-col gap-2 rounded-2xl p-3.5 border bg-white/[0.06]"
-                        style={{ borderColor: `${a.color}80` }}
-                      >
-                        <span
-                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: `${a.color}22`, color: a.color }}
-                        >
-                          <DraftIconComp className="w-4.5 h-4.5" />
-                        </span>
-                        <input
-                          value={draftName}
-                          onChange={(e) => setDraftName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") commitRename(a.id);
-                            if (e.key === "Escape") setEditingId(null);
-                          }}
-                          autoFocus
-                          maxLength={40}
-                          className="w-full bg-white/[0.06] border border-white/15 rounded-lg px-2 py-1 text-sm font-bold text-white focus:outline-none focus:border-cyan-500/50"
-                        />
-                        <div className="grid grid-cols-4 gap-1">
-                          {AVAILABLE_ICONS.map((iconName) => {
-                            const IconComp = ICON_MAP[iconName];
-                            const sel = draftIcon === iconName;
-                            return (
-                              <button
-                                key={iconName}
-                                type="button"
-                                onClick={() => setDraftIcon(sel ? null : iconName)}
-                                className={cn(
-                                  "h-7 rounded-lg flex items-center justify-center transition-all border",
-                                  sel
-                                    ? "bg-cyan-500/15 border-cyan-400/60 text-cyan-300"
-                                    : "bg-white/[0.04] border-white/[0.06] text-slate-500 hover:border-white/15 hover:text-white",
-                                )}
-                              >
-                                <IconComp className="w-3 h-3" />
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => commitRename(a.id)}
-                            className="flex-1 h-7 rounded-lg bg-cyan-500/20 text-cyan-200 text-xs font-bold flex items-center justify-center gap-1 hover:bg-cyan-500/30"
-                          >
-                            <Check className="w-3.5 h-3.5" /> OK
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            aria-label={t("common.cancel")}
-                            className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400 flex items-center justify-center hover:bg-white/[0.1]"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  }
 
                   return (
                     <div
@@ -466,94 +374,62 @@ export default function AccountSwitcher({
   if (variant === "card") {
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
-    const editing = editingId === activeAccount.id;
     return (
       <div className="relative w-full">
-        {editing ? (
-          <div className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-white/[0.04] px-2.5 py-1.5">
-            <input
-              value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitRename(activeAccount.id);
-                if (e.key === "Escape") setEditingId(null);
-              }}
-              autoFocus
-              maxLength={40}
-              placeholder={activeAccount.name}
-              className="flex-1 min-w-0 bg-transparent text-[13px] font-bold text-white focus:outline-none placeholder-slate-600"
-            />
-            <button
-              onClick={() => commitRename(activeAccount.id)}
-              aria-label={t("common.save")}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10"
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setEditingId(null)}
-              aria-label={t("common.cancel")}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/[0.08]"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setOpen((v) => !v)}
-            title={t("account.switch")}
-            className={cn(
-              "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all overflow-hidden",
-              "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
-              "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5 group/acc",
-            )}
+        <button
+          onClick={() => setOpen((v) => !v)}
+          title={t("account.switch")}
+          className={cn(
+            "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all overflow-hidden",
+            "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
+            "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5 group/acc",
+          )}
+        >
+          <span className="pointer-events-none absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+          <span
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
+            style={{
+              background: `${activeAccount.color}22`,
+              color: activeAccount.color,
+              borderColor: `${activeAccount.color}44`,
+            }}
           >
-            <span className="pointer-events-none absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
-            <span
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
-              style={{
-                background: `${activeAccount.color}22`,
-                color: activeAccount.color,
-                borderColor: `${activeAccount.color}44`,
-              }}
-            >
-              <ActiveIcon className="w-4 h-4" />
+            <ActiveIcon className="w-4 h-4" />
+          </span>
+          <span className="flex-1 min-w-0 text-left">
+            <span className="block text-[10px] uppercase tracking-[0.14em] text-slate-500 font-bold">
+              {t("account.active")}
             </span>
-            <span className="flex-1 min-w-0 text-left">
-              <span className="block text-[10px] uppercase tracking-[0.14em] text-slate-500 font-bold">
-                {t("account.active")}
+            <span className="flex items-center gap-1.5">
+              <span className="block text-[13px] font-bold text-white truncate leading-tight">
+                {activeAccount.name}
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="block text-[13px] font-bold text-white truncate leading-tight">
-                  {activeAccount.name}
-                </span>
-                {/* Le crayon ouvre le formulaire COMPLET, comme dans la barre
-                    de comptes et le menu déroulant. Il déclenchait auparavant
-                    un renommage en ligne : le même geste, au même endroit,
-                    donnait accès à un seul champ ici et à quatre ailleurs. */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingModalAccount(activeAccount);
-                  }}
-                  aria-label={t("account.edit")}
-                  className="w-5 h-5 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
-                >
-                  <Pencil className="w-2.5 h-2.5" />
-                </button>
-              </span>
+              {/* Le crayon ouvre le formulaire COMPLET, comme dans la barre
+                  de comptes et le menu déroulant. Il déclenchait auparavant
+                  un renommage en ligne : le même geste, au même endroit,
+                  donnait accès à un seul champ ici et à quatre ailleurs. */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingModalAccount(activeAccount);
+                }}
+                aria-label={t("account.edit")}
+                className="w-5 h-5 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+              </button>
             </span>
-            <span className="text-right shrink-0">
-              <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
-                {fmtBalance}
-              </span>
-              <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
-                {t("account.switchShort")}
-                <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
-              </span>
+          </span>
+          <span className="text-right shrink-0">
+            <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
+              {fmtBalance}
             </span>
-          </button>
-        )}
+            <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
+              {t("account.switchShort")}
+              <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
+            </span>
+          </span>
+        </button>
         <AccountSheet open={open} onClose={() => setOpen(false)} />
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
         {editingModalAccount && (
@@ -599,96 +475,61 @@ export default function AccountSwitcher({
   }
   const ActiveIcon = getAccountIcon(activeAccount);
 
-  const editingBar = editingId === activeAccount.id;
-
   return (
     <div className="relative">
-      {editingBar ? (
-        <div className="flex items-center gap-1.5 rounded-2xl border border-cyan-500/40 bg-white/[0.04] px-3 py-2.5">
-          <input
-            value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitRename(activeAccount.id);
-              if (e.key === "Escape") setEditingId(null);
-            }}
-            autoFocus
-            maxLength={40}
-            placeholder={activeAccount.name}
-            className="flex-1 min-w-0 bg-transparent text-sm font-semibold text-white focus:outline-none placeholder-slate-600"
-          />
-          <button
-            onClick={() => commitRename(activeAccount.id)}
-            aria-label={t("common.save")}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10"
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          title={t("account.switch")}
+          className={cn(
+            "flex-1 flex items-center gap-2.5 rounded-2xl border transition-all",
+            compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
+            "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
+          )}
+        >
+          <span
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
           >
-            <Check className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setEditingId(null)}
-            aria-label={t("common.cancel")}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/[0.06]"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            title={t("account.switch")}
-            className={cn(
-              "flex-1 flex items-center gap-2.5 rounded-2xl border transition-all",
-              compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
-              "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
-            )}
-          >
-            <span
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
-            >
-              <ActiveIcon className="w-4 h-4" />
-            </span>
-            <span className="flex-1 min-w-0 text-left">
-              <span className="flex items-center gap-1.5">
-                <span className="block text-sm font-semibold text-white truncate">
-                  {activeAccount.name}
-                </span>
-                {/* Formulaire complet, comme partout ailleurs. */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingModalAccount(activeAccount);
-                  }}
-                  aria-label={t("account.edit")}
-                  className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
+            <ActiveIcon className="w-4 h-4" />
+          </span>
+          <span className="flex-1 min-w-0 text-left">
+            <span className="flex items-center gap-1.5">
+              <span className="block text-sm font-semibold text-white truncate">
+                {activeAccount.name}
               </span>
-              <span className="block text-[10px] text-slate-500 truncate tabular-nums">
-                {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
-              </span>
+              {/* Formulaire complet, comme partout ailleurs. */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingModalAccount(activeAccount);
+                }}
+                aria-label={t("account.edit")}
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
             </span>
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
-              {t("account.switchShort")}
-              <ChevronDown
-                className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")}
-              />
+            <span className="block text-[10px] text-slate-500 truncate tabular-nums">
+              {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
             </span>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingModalAccount(activeAccount);
-            }}
-            className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-white/[0.08] bg-white/[0.03] border border-white/[0.07] transition-all shrink-0"
-          >
-            <Pencil className="w-3 h-3" />
-            <span>{t("account.editShort")}</span>
-          </button>
-        </div>
-      )}
+          </span>
+          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
+            {t("account.switchShort")}
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+          </span>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingModalAccount(activeAccount);
+          }}
+          className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-white/[0.08] bg-white/[0.03] border border-white/[0.07] transition-all shrink-0"
+        >
+          <Pencil className="w-3 h-3" />
+          <span>{t("account.editShort")}</span>
+        </button>
+      </div>
 
       <AccountSheet open={open} onClose={() => setOpen(false)} />
 
