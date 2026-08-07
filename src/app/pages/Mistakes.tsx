@@ -1,4 +1,8 @@
 import { useMemo } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useTradingRules } from "../hooks/useTradingRules";
+import { useGoalProgress } from "../hooks/useGoalProgress";
+import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "../utils/ruleAdherence";
 import {
   AlertTriangle,
   TrendingDown,
@@ -99,6 +103,20 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   );
 
   const b = useMemo(() => computeBehavioral(trades), [trades]);
+
+  // ── Tenue des règles ────────────────────────────────────────────────────
+  // Complément naturel des erreurs : cette page dit ce qui va mal, l'adhérence
+  // dit ce que le trader TIENT. Sans elle, la page ne parle que d'échecs.
+  // Le solde vient de `useGoalProgress`, qui le charge déjà — pas de second
+  // chargement, pas de seconde définition de « solde du compte ».
+  const { user } = useAuth();
+  const rules = useTradingRules();
+  const { ctx: measureCtx } = useGoalProgress(trades, user?.id);
+  const adherence = useMemo(
+    () =>
+      computeRuleAdherence(trades, rules, measureCtx.startingBalance + measureCtx.stats.totalPnl),
+    [trades, rules, measureCtx.startingBalance, measureCtx.stats.totalPnl],
+  );
   const topMistakes = b.rows.slice(0, 3);
 
   const dayData = useMemo(
@@ -131,7 +149,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   }
 
   // Discipline dial color
-  const disc = b.disciplineScore;
+  const disc = b.cleanJournalScore;
   const discColor =
     disc >= 80
       ? "text-emerald-400"
@@ -368,6 +386,53 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
           </Card>
         </div>
 
+        {/* ── Tenue des règles ──
+            Le pendant POSITIF des erreurs : « tu l'as tenue 11 fois sur 12 ».
+            Affiché seulement si des règles vérifiables ont réellement été
+            éprouvées — une section vide vaudrait mieux qu'un 100 % inventé. */}
+        {adherence.length > 0 && (
+          <Card className="p-4 md:p-5 mb-4 md:mb-6">
+            <h3 className="text-sm font-semibold text-white mb-1">{t("mistakes.adherence")}</h3>
+            <p className="text-[11px] text-slate-600 mb-3">
+              {t("mistakes.adherenceSub").replace("{n}", String(ADHERENCE_WINDOW_DAYS))}
+            </p>
+            <div className="space-y-2.5">
+              {adherence.map((a) => (
+                <div key={a.ruleId} className="flex items-center gap-3">
+                  <span className="text-[11px] text-slate-400 flex-1 min-w-0 truncate">
+                    {a.text}
+                  </span>
+                  <div className="w-20 md:w-28 h-1.5 bg-white/[0.06] rounded-full overflow-hidden shrink-0">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-[width] duration-700",
+                        a.ratePct >= 80
+                          ? "bg-emerald-400"
+                          : a.ratePct >= 50
+                            ? "bg-amber-400"
+                            : "bg-red-400",
+                      )}
+                      style={{ width: `${a.ratePct}%` }}
+                    />
+                  </div>
+                  <span
+                    className={cn(
+                      "text-[11px] font-bold tabular-nums shrink-0 w-16 text-right",
+                      a.ratePct >= 80
+                        ? "text-emerald-400"
+                        : a.ratePct >= 50
+                          ? "text-amber-400"
+                          : "text-red-400",
+                    )}
+                  >
+                    {a.kept}/{a.applicable}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* ── When mistakes happen: weekly trend + session + day ── */}
         {b.totalIncidents > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -523,6 +588,28 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                         ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
                         : t("mistakes.defaultTip")}
                     </p>
+                    {/* Tendance : la seule information de cette page qui dise au
+                        trader s'il PROGRESSE. Affichée uniquement quand elle
+                        repose sur une fenêtre de comparaison réelle. */}
+                    {m.trend && m.trend.deltaPct !== 0 && (
+                      <div
+                        className={cn(
+                          "mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold",
+                          m.trend.deltaPct < 0 ? "text-emerald-400" : "text-red-400",
+                        )}
+                      >
+                        {m.trend.deltaPct < 0 ? (
+                          <TrendingDown className="w-3 h-3" />
+                        ) : (
+                          <TrendingUp className="w-3 h-3" />
+                        )}
+                        {m.trend.deltaPct > 0 ? "+" : ""}
+                        {m.trend.deltaPct}% ·{" "}
+                        <span className="font-normal text-slate-500">
+                          {t("mistakes.trendWindow")}
+                        </span>
+                      </div>
+                    )}
                     <div className="mt-1.5 text-[11px] text-slate-600">
                       <span className="font-bold text-slate-400">{m.count}×</span> ·{" "}
                       <span

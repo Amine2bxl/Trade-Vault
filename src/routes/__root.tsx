@@ -11,7 +11,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../shared/seo";
 import { initAnalytics } from "@/app/utils/analytics";
-import { reportAppError } from "../shared/error-reporting";
+import { reportAppError, installGlobalErrorReporting } from "../shared/error-reporting";
 
 /** Site-wide title and description — the marketing promise, in the language
  *  the landing page is written in. Public routes override both. */
@@ -167,6 +167,14 @@ function RootComponent() {
       'link[rel="preload"][as="style"][href*="fonts.googleapis.com"]',
     );
     if (preload) preload.rel = "stylesheet";
+  }, []);
+
+  // Erreurs non capturées du navigateur → même entonnoir que les boundaries.
+  // Sans cela, une panne survenue hors du rendu React (gestionnaire
+  // d'événement, setTimeout, promesse non attendue) disparaissait sans laisser
+  // la moindre trace.
+  useEffect(() => {
+    installGlobalErrorReporting();
   }, []);
 
   // Stale lazy-chunk guard. Pages are code-split; after a new deploy the old

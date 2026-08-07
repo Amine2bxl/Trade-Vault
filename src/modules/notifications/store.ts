@@ -43,7 +43,10 @@ export async function loadNotifications(userId: string, limit = 50): Promise<App
     channels: ["dashboard"],
     // La catégorie est dérivée du kind côté client (pas de colonne en base) —
     // un seul point de vérité, aucune migration requise.
-    category: categoryOf(r.kind as AppNotification["kind"]),
+    category: categoryOf(
+      r.kind as AppNotification["kind"],
+      r.severity as AppNotification["severity"],
+    ),
     createdAt: r.created_at,
     readAt: r.read_at,
     data: (r.data ?? undefined) as AppNotification["data"],

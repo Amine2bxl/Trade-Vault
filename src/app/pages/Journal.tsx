@@ -638,11 +638,11 @@ function SummaryTile({
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
       <div className="flex items-center gap-1.5">
-        <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+        <span className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
           {label}
         </span>
         {hint && (
-          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
             {hint}
           </span>
         )}

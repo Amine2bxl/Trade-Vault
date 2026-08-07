@@ -7,6 +7,7 @@ import {
   getSession,
   statsByHour,
   winRateOf,
+  MIN_BUCKET_SAMPLE,
   TradingSession,
 } from "../utils/quantStats";
 import { loadStartingBalance } from "../store";
@@ -249,17 +250,30 @@ export default function Analytics({ trades }: AnalyticsProps) {
         const gp = wins.reduce((s, tr) => s + tr.pnl, 0);
         const gl = Math.abs(losses.reduce((s, tr) => s + tr.pnl, 0));
         const withRisk = list.filter((tr) => tr.riskAmount > 0);
+        // Le taux passe par `winRateOf`, l'UNIQUE définition du produit : cette
+        // table recalculait le sien, ce qui dupliquait la logique et échappait
+        // au plancher d'échantillon. Un setup joué trois fois affichait « 100 %
+        // de réussite » sur la page même où le trader décide lequel abandonner.
+        const bucket = {
+          pnl: list.reduce((s, tr) => s + tr.pnl, 0),
+          count: list.length,
+          wins: wins.length,
+          breakEven: list.length - decisive.length,
+        };
+        // Les TOTAUX restent affichés quel que soit l'échantillon (une somme est
+        // vraie à toute taille) ; seuls les RATIOS attendent d'être fondés.
+        const enoughSample = decisive.length >= MIN_BUCKET_SAMPLE;
         return {
           strategy,
           count: list.length,
-          pnl: list.reduce((s, tr) => s + tr.pnl, 0),
-          winRate: decisive.length > 0 ? wins.length / decisive.length : null,
-          expectancy: list.reduce((s, tr) => s + tr.pnl, 0) / list.length,
-          profitFactor: gl > 0 ? gp / gl : gp > 0 ? 99 : 0,
+          pnl: bucket.pnl,
+          winRate: winRateOf(bucket),
+          expectancy: bucket.pnl / list.length,
+          profitFactor: !enoughSample ? null : gl > 0 ? gp / gl : gp > 0 ? 99 : 0,
           avgR:
-            withRisk.length > 0
+            enoughSample && withRisk.length > 0
               ? withRisk.reduce((s, tr) => s + tr.pnl / tr.riskAmount, 0) / withRisk.length
-              : 0,
+              : null,
         };
       })
       .sort((a, b) => b.pnl - a.pnl);
@@ -292,7 +306,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
         hour: `${h}h`,
         h: Number(h),
         pnl: Math.round(b.pnl * 100) / 100,
-        winRate: winRateOf(b) !== null ? Math.round(winRateOf(b)! * 100) : 0,
+        // `null` et non 0 : Recharts interrompt la ligne, ce qui SE VOIT.
+        // Tracer 0 % pour un bucket sans échantillon suffisant affichait « heure
+        // catastrophique » là où il n'y a simplement pas de données.
+        winRate: winRateOf(b) !== null ? Math.round(winRateOf(b)! * 100) : null,
         trades: b.count,
       }))
       .sort((a, b) => a.h - b.h);
@@ -579,18 +596,28 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-xs text-right tabular-nums text-slate-300 font-semibold">
-                      {row.profitFactor >= 99 ? "99+" : row.profitFactor.toFixed(2)}
+                      {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
+                          mieux qu'affirmer sur trois trades. */}
+                      {row.profitFactor === null
+                        ? "—"
+                        : row.profitFactor >= 99
+                          ? "99+"
+                          : row.profitFactor.toFixed(2)}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-right tabular-nums">
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          row.avgR >= 0 ? "text-emerald-400" : "text-red-400",
-                        )}
-                      >
-                        {row.avgR >= 0 ? "+" : ""}
-                        {row.avgR.toFixed(2)}R
-                      </span>
+                      {row.avgR === null ? (
+                        <span className="text-slate-600">—</span>
+                      ) : (
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            row.avgR >= 0 ? "text-emerald-400" : "text-red-400",
+                          )}
+                        >
+                          {row.avgR >= 0 ? "+" : ""}
+                          {row.avgR.toFixed(2)}R
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-right tabular-nums">
                       <span

@@ -17,6 +17,8 @@ import type { RetrievedChunk } from "../rag/types";
 
 export type AgentId =
   | "coach"
+  /** Extraction de mémoire — ne parle jamais au trader, écrit ce qu'il retient. */
+  | "memory-extract"
   | "performance-analyst"
   | "psychologist"
   | "risk-manager"

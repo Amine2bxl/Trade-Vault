@@ -1,3 +1,9 @@
+-- RENOMMÉ de 20260801000004 -> 20260801000005.
+-- Deux migrations partageaient la version 20260801000004. Supabase indexe les
+-- migrations appliquées PAR VERSION : l'une des deux pouvait donc ne jamais
+-- être enregistrée, et le rejeu d'une branche devenait imprévisible.
+-- Renommage sans risque : ce fichier est entièrement idempotent
+-- (ADD COLUMN IF NOT EXISTS), donc un rejeu en production ne change rien.
 -- ============ JARVIS REMEMBERED PROFILE ============
 -- The first-open Jarvis card ("Profil mémorisé par Jarvis") captures how the
 -- trader wants to be coached: first name, style, main weakness, main strength

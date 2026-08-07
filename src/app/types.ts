@@ -1,23 +1,40 @@
-export type Page =
-  | "dashboard"
-  | "inbox"
-  | "journal"
-  | "checklist"
-  | "calendar"
-  | "analytics"
-  | "mistakes"
-  | "missed"
-  | "insights"
-  | "profile"
-  | "news"
-  | "seasonality"
-  | "calculator"
-  | "settings"
-  | "reports"
-  | "goals"
-  | "tradingplan"
-  | "appearance"
-  | "subscription";
+/**
+ * Les pages de l'application — SOURCE UNIQUE.
+ *
+ * Le tableau porte la vérité et le type en dérive, pas l'inverse : une union TS
+ * s'efface à la compilation, donc toute validation à l'exécution devait
+ * recopier la liste à la main. Cette recopie existait à deux endroits dans
+ * `App.tsx` et ne demandait qu'à diverger — ajouter une page à l'union sans
+ * l'ajouter au tableau produisait une page silencieusement non restaurable.
+ */
+export const PAGES = [
+  "dashboard",
+  "inbox",
+  "journal",
+  "checklist",
+  "calendar",
+  "analytics",
+  "mistakes",
+  "missed",
+  "insights",
+  "profile",
+  "news",
+  "seasonality",
+  "calculator",
+  "settings",
+  "reports",
+  "goals",
+  "tradingplan",
+  "appearance",
+  "subscription",
+] as const;
+
+export type Page = (typeof PAGES)[number];
+
+/** Garde d'exécution — la seule façon sûre de valider une valeur stockée. */
+export function isPage(value: unknown): value is Page {
+  return typeof value === "string" && (PAGES as readonly string[]).includes(value);
+}
 
 export type TradeDirection = "long" | "short" | "be";
 

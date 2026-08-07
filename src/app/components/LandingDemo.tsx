@@ -219,7 +219,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-      <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
+      <div className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
       <div className={cn("font-display text-base font-extrabold tabular-nums", color)}>{value}</div>
     </div>
   );
@@ -276,7 +276,7 @@ function JournalMock() {
         >
           <div>
             <div className="text-xs font-semibold text-white">{r.s}</div>
-            <div className="text-[9px] text-slate-500 mt-0.5">
+            <div className="text-[11px] text-slate-500 mt-0.5">
               Setup · {r.win ? "bien exécuté" : "erreur notée"}
             </div>
           </div>
@@ -315,7 +315,7 @@ function AnalyticsMock() {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-        <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-3">
+        <div className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-3">
           Edge par jour de la semaine
         </div>
         <div className="flex items-end justify-between gap-2 h-20">
@@ -330,7 +330,7 @@ function AnalyticsMock() {
                 )}
                 style={{ height: `${x.v}%`, animation: `demoBar 0.6s ${i * 0.08}s both` }}
               />
-              <span className="text-[9px] text-slate-500">{x.d}</span>
+              <span className="text-[11px] text-slate-500">{x.d}</span>
             </div>
           ))}
         </div>
@@ -361,7 +361,7 @@ function JarvisMock() {
         </div>
       </div>
       <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.05] px-3.5 py-3">
-        <div className="text-[9px] uppercase tracking-wider text-cyan-400/80 font-bold mb-1">
+        <div className="text-[11px] uppercase tracking-wider text-cyan-400/80 font-bold mb-1">
           Mission du jour
         </div>
         <div className="text-[12px] text-slate-200 leading-relaxed">

@@ -8,7 +8,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import type { Trade } from "../types";
 import { computeStats } from "../utils/tradeCalcs";
-import { computeQuantStats } from "../utils/quantStats";
+import { useGoalProgress } from "../hooks/useGoalProgress";
 import { loadStartingBalance } from "../store";
 import { sendPushToSelf } from "@/backend/push.functions";
 import {
@@ -63,22 +63,11 @@ export default function Goals({ trades }: { trades: Trade[] }) {
     };
   }, [user?.id, activeId]);
 
-  const stats = useMemo(() => computeStats(trades), [trades]);
-  const quant = useMemo(
-    () => computeQuantStats(trades, startingBalance),
-    [trades, startingBalance],
-  );
-  const journalRate = useMemo(
-    () =>
-      trades.length === 0
-        ? 0
-        : trades.filter((x) => x.notes.trim().length > 0).length / trades.length,
-    [trades],
-  );
-  const ctx: MeasureCtx = useMemo(
-    () => ({ stats, quant, startingBalance, journalRate }),
-    [stats, quant, startingBalance, journalRate],
-  );
+  // Contexte de mesure : hook PARTAGÉ avec Jarvis. Deux implémentations de
+  // « où en est cet objectif ? » auraient divergé au premier changement de
+  // formule — le trader aurait alors lu deux chiffres différents pour le même
+  // objectif selon la page ouverte.
+  const { ctx } = useGoalProgress(trades, user?.id, activeId);
 
   const generate = useCallback(
     async (goals: GoalDef[]) => {

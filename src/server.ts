@@ -135,6 +135,16 @@ export default {
           } catch (e) {
             console.error("[goal-reminders] cron failed", e);
           }
+          // Rétention de la télémétrie IA (90 jours). Greffée sur ce même tick
+          // quotidien plutôt que sur un cron dédié : `ai_agent_runs` croissait
+          // linéairement sans jamais rien supprimer. Best-effort — une purge
+          // ratée ne doit jamais faire échouer l'envoi des emails.
+          try {
+            const { purgeOldAgentRuns } = await import("./backend/telemetry.server");
+            await purgeOldAgentRuns();
+          } catch (e) {
+            console.error("[telemetry] purge cron failed", e);
+          }
         }
         return response;
       }

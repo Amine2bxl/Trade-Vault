@@ -33,24 +33,24 @@ test("a perfectly disciplined sample scores 100", () => {
   ];
   const r = computeEdgeScore(trades, { checklistByDay: { "2026-07-20": 1, "2026-07-21": 1 } });
   expect(r.score).toBe(100);
-  expect(r.subs.plan.value).toBe(100);
+  expect(r.subs.cleanTrades.value).toBe(100);
   expect(r.subs.cleanDays.value).toBe(100);
   expect(r.cleanDays).toBe(2);
 });
 
-test("mistakes drag plan adherence and clean days down", () => {
+test("les erreurs cochees font baisser cleanTrades et les jours propres", () => {
   const trades = [
     trade({ date: "2026-07-20", mistakes: ["overtrading"] }),
     trade({ date: "2026-07-21", mistakes: [] }),
   ];
   const r = computeEdgeScore(trades);
-  expect(r.subs.plan.value).toBe(50); // 1 of 2 clean
+  expect(r.subs.cleanTrades.value).toBe(50); // 1 of 2 clean
   expect(r.subs.cleanDays.value).toBe(50); // 1 of 2 days clean
   expect(r.weakest).not.toBeNull();
 });
 
 test("missing components are dropped, not invented (weights renormalise)", () => {
-  // No checklist history and no risk data → only plan + cleanDays measured.
+  // Ni historique de checklist ni donnee de risque → seuls cleanTrades et cleanDays sont mesures.
   const trades = [trade({ date: "2026-07-20", mistakes: [], riskAmount: 0 })];
   const r = computeEdgeScore(trades);
   expect(r.subs.risk.value).toBeNull();

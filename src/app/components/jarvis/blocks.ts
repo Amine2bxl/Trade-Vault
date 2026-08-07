@@ -26,17 +26,22 @@ export type JarvisBlockKind =
   | "notification"
   | "tool";
 
-/** Actions que Jarvis pourra proposer d'exécuter dans TradeVault. */
+/**
+ * Actions que Jarvis peut RÉELLEMENT exécuter dans TradeVault.
+ *
+ * Ce type énumérait auparavant dix actions, dont huit n'étaient émises nulle
+ * part et gérées par personne. Un contrat qui promet des capacités inexistantes
+ * coûte deux fois : il fait croire à un lecteur du code que la fonctionnalité
+ * existe, et il laisse compiler `tool: "createAlert"` — un bouton qui
+ * n'exécuterait rien tout en affichant un succès.
+ *
+ * Chaque valeur ajoutée ici doit être gérée dans `handleTool`. Le type suit
+ * l'implémentation, jamais l'inverse.
+ */
 export type JarvisToolKind =
-  | "createGoal"
+  /** Écrit une vraie règle de trading (dédupée) dans `profiles`. */
   | "createChecklist"
-  | "addTrade"
-  | "deleteTrade"
-  | "updateSetting"
-  | "exportReport"
-  | "importCsv"
-  | "runAnalysis"
-  | "createAlert"
+  /** Navigue via le canal `tv:navigate` déjà écouté par l'application. */
   | "openPage";
 
 export interface JarvisToolBlock {
@@ -106,7 +111,15 @@ export interface JarvisMissionBlock {
   type: "mission";
   title: string;
   items: string[];
-  cta?: { label: string; tool?: JarvisToolKind };
+  /** Action optionnelle. `payload`/`targetPage` sont nécessaires pour que le
+   *  CTA soit RÉELLEMENT exécutable : sans eux, le handler ne peut rien écrire
+   *  (ajout additif, rétro-compatible — les blocs existants restent valides). */
+  cta?: {
+    label: string;
+    tool?: JarvisToolKind;
+    payload?: Record<string, unknown>;
+    targetPage?: string;
+  };
 }
 
 /**
