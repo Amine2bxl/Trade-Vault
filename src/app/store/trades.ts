@@ -115,6 +115,51 @@ export async function upsertTrade(userId: string, trade: Trade): Promise<void> {
   if (error) throw error;
 }
 
+/** Taille d'un lot d'import. Assez gros pour être rapide, assez petit pour
+ *  qu'un échec réseau ne fasse pas perdre tout le fichier. */
+export const IMPORT_BATCH_SIZE = 100;
+
+/**
+ * Écrit un import en LOTS SÉQUENTIELS.
+ *
+ * POURQUOI. L'import lançait auparavant une requête par trade, toutes en
+ * parallèle : un fichier de 2 000 trades ouvrait 2 000 requêtes simultanées,
+ * que le navigateur et Supabase finissaient par refuser. L'utilisateur voyait
+ * « import réussi » avec la moitié de son historique manquante.
+ *
+ * Les lots avancent l'un après l'autre et rapportent leur progression, ce qui
+ * donne enfin une barre de progression honnête. Un lot qui échoue est
+ * retenté trade par trade : une seule ligne fautive ne doit pas emporter
+ * les 99 autres.
+ */
+export async function importTrades(
+  userId: string,
+  trades: readonly Trade[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ saved: Trade[]; failed: number }> {
+  const saved: Trade[] = [];
+  let failed = 0;
+  for (let i = 0; i < trades.length; i += IMPORT_BATCH_SIZE) {
+    const batch = trades.slice(i, i + IMPORT_BATCH_SIZE);
+    const { error } = await supabase.from("trades").upsert(batch.map((t) => tradeToRow(t, userId)));
+    if (!error) {
+      saved.push(...batch);
+    } else {
+      // Repli ligne à ligne pour isoler la ou les lignes réellement fautives.
+      console.error("Batch import failed, retrying row by row", error);
+      const results = await Promise.allSettled(
+        batch.map((t) => supabase.from("trades").upsert(tradeToRow(t, userId))),
+      );
+      results.forEach((r, k) => {
+        if (r.status === "fulfilled" && !r.value.error) saved.push(batch[k]);
+        else failed++;
+      });
+    }
+    onProgress?.(Math.min(i + batch.length, trades.length), trades.length);
+  }
+  return { saved, failed };
+}
+
 export async function deleteTrade(userId: string, id: string): Promise<void> {
   const { data } = await supabase
     .from("trades")
