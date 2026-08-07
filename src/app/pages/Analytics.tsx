@@ -343,56 +343,28 @@ export default function Analytics({ trades }: AnalyticsProps) {
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-white mb-0.5">
-                {t("analytics.profitFactor")}
-              </h3>
+              <h3 className="text-sm font-semibold text-white mb-0.5">{t("analytics.profitFactor")}</h3>
               <p className="text-[10px] text-slate-500">{t("analytics.profitsOverLosses")}</p>
             </div>
-            <div className="flex items-center gap-3 md:gap-6 flex-wrap">
+            <div className="flex items-center gap-3 md:gap-5 flex-wrap">
               <div className="text-center">
-                <div className="text-[11px] md:text-[10px] text-slate-500">
-                  {t("analytics.profits")}
-                </div>
-                <div className="text-sm md:text-lg font-bold text-emerald-400">
-                  {formatPnl(profitFactorData.totalProfits)}
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("analytics.profits")}</div>
+                <div className="font-display text-base md:text-lg font-extrabold text-emerald-400 tabular-nums">{formatPnl(profitFactorData.totalProfits)}</div>
+              </div>
+              <div className="text-base text-slate-600 font-light">÷</div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("analytics.losses")}</div>
+                <div className="font-display text-base md:text-lg font-extrabold text-red-400 tabular-nums">{formatPnl(-profitFactorData.totalLosses)}</div>
+              </div>
+              <div className="text-base text-slate-600 font-light">=</div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{t("analytics.factor")}</div>
+                <div className={cn("font-display text-lg md:text-xl font-extrabold tabular-nums", profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400")}>
+                  {profitFactorData.profitFactor >= 99 ? "99+" : profitFactorData.profitFactor.toFixed(2)}
                 </div>
               </div>
-              <div className="text-lg text-slate-600">÷</div>
-              <div className="text-center">
-                <div className="text-[11px] md:text-[10px] text-slate-500">
-                  {t("analytics.losses")}
-                </div>
-                <div className="text-sm md:text-lg font-bold text-red-400">
-                  {formatPnl(-profitFactorData.totalLosses)}
-                </div>
-              </div>
-              <div className="text-lg text-slate-600">=</div>
-              <div className="text-center">
-                <div className="text-[11px] md:text-[10px] text-slate-500">
-                  {t("analytics.factor")}
-                </div>
-                <div
-                  className={cn(
-                    "font-display text-2xl md:text-3xl font-extrabold tabular-nums",
-                    profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
-                  )}
-                >
-                  {profitFactorData.profitFactor >= 99
-                    ? "99+"
-                    : profitFactorData.profitFactor.toFixed(2)}
-                </div>
-              </div>
-              <span
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-[10px] md:text-xs font-bold",
-                  profitFactorData.isProfitable
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                    : "bg-red-500/10 text-red-400 border border-red-500/20",
-                )}
-              >
-                {profitFactorData.isProfitable
-                  ? `✓ ${t("analytics.profitable")}`
-                  : `✗ ${t("analytics.losing")}`}
+              <span className={cn("px-3 py-1.5 rounded-xl text-[10px] md:text-[11px] font-bold", profitFactorData.isProfitable ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20")}>
+                {profitFactorData.isProfitable ? `✓ ${t("analytics.profitable")}` : `✗ ${t("analytics.losing")}`}
               </span>
             </div>
           </div>
@@ -408,7 +380,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Quant metrics grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 animate-fade-in-up stagger-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 animate-fade-in-up stagger-1">
           {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
           <Card hover className="md:hidden group relative p-3.5">
             <div className="flex items-center gap-1 mb-1.5">
@@ -1100,7 +1072,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
   return (
     <Card className="animate-fade-in-up stagger-2">
       <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
-        <h3 className="text-sm font-semibold text-white">Saisonnalité</h3>
+        <h3 className="text-sm font-semibold text-white">Tendances</h3>
       </div>
       <div className="p-4 md:p-5 space-y-4">
         {/* Highlights */}
