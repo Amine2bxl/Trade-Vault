@@ -95,9 +95,13 @@ function ScreenShell({
 }) {
   return (
     <div className="text-center">
-      <div className="flex justify-center"><IconBadge icon={icon} /></div>
+      <div className="flex justify-center">
+        <IconBadge icon={icon} />
+      </div>
       <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-2">{title}</h2>
-      {subtitle && <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">{subtitle}</p>}
+      {subtitle && (
+        <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">{subtitle}</p>
+      )}
       {children}
     </div>
   );
@@ -127,14 +131,23 @@ function OptionCard({
       )}
     >
       {multi && (
-        <span className={cn(
-          "absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full border transition-all",
-          selected ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent" : "border-white/15",
-        )}>
+        <span
+          className={cn(
+            "absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full border transition-all",
+            selected
+              ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent"
+              : "border-white/15",
+          )}
+        >
           {selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
         </span>
       )}
-      <div className={cn("text-[13.5px] font-semibold pr-6", selected ? "text-white" : "text-slate-300")}>
+      <div
+        className={cn(
+          "text-[13.5px] font-semibold pr-6",
+          selected ? "text-white" : "text-slate-300",
+        )}
+      >
         {label}
       </div>
       {desc && <div className="text-[11px] text-slate-500 leading-tight mt-1">{desc}</div>}
@@ -560,22 +573,50 @@ export default function Onboarding({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 onb-in max-w-md mx-auto">
                 <div className="glass-strong rounded-2xl p-4 text-center">
                   <Target className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Objectif mensuel</div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Objectif mensuel
+                  </div>
                   <div className="relative max-w-[120px] mx-auto">
-                    <input type="number" inputMode="decimal" min={0} max={100} step={0.5} value={target} onChange={(e) => setTarget(e.target.value)} placeholder="3" className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums" />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">%</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      placeholder="3"
+                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
+                      %
+                    </span>
                   </div>
                 </div>
                 <div className="glass-strong rounded-2xl p-4 text-center">
                   <Wallet className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Capital de départ</div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Capital de départ
+                  </div>
                   <div className="relative max-w-[140px] mx-auto">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
-                    <input type="number" inputMode="decimal" min={0} value={accountSize} onChange={(e) => setAccountSize(e.target.value)} placeholder="25000" className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      value={accountSize}
+                      onChange={(e) => setAccountSize(e.target.value)}
+                      placeholder="25000"
+                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                    />
                   </div>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-500 text-center mb-8 -mt-2">Modifiable à tout moment depuis tes paramètres</p>
+              <p className="text-[11px] text-slate-500 text-center mb-8 -mt-2">
+                Modifiable à tout moment depuis tes paramètres
+              </p>
 
               {/* Thème */}
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -587,14 +628,31 @@ export default function Onboarding({
                 <ThemeSettings />
               </div>
               <button
-                onClick={() => createTheme({ name: "Mon thème", primary: "#06b6d4", secondary: "#10b981", highlight: "#22d3ee" })}
+                onClick={() =>
+                  createTheme({
+                    name: "Mon thème",
+                    primary: "#06b6d4",
+                    secondary: "#10b981",
+                    highlight: "#22d3ee",
+                  })
+                }
                 className="w-full h-11 rounded-xl text-sm font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 hover:text-cyan-200 transition-all flex items-center justify-center gap-2 mb-7"
               >
                 <Plus className="w-4 h-4" /> + Personnaliser mon thème
               </button>
 
-              <button onClick={next} className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all">{c.cont}</button>
-              <button onClick={next} className="w-full mt-2.5 py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors">{c.skip}</button>
+              <button
+                onClick={next}
+                className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all"
+              >
+                {c.cont}
+              </button>
+              <button
+                onClick={next}
+                className="w-full mt-2.5 py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {c.skip}
+              </button>
             </ScreenShell>
           )}
 
@@ -646,17 +704,17 @@ export default function Onboarding({
             <div>
               <div className="text-center">
                 <div className="flex justify-center">
-                <div className="relative mb-4">
-                  <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-md" />
-                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
-                    <Rocket className="w-6 h-6 text-white" />
+                  <div className="relative mb-4">
+                    <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-md" />
+                    <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
+                      <Rocket className="w-6 h-6 text-white" />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
-                {c.startTitle}
-              </h2>
-              <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">{c.startSub}</p>
+                <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
+                  {c.startTitle}
+                </h2>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">{c.startSub}</p>
               </div>
 
               {saveError && (

@@ -279,7 +279,8 @@ export default function AccountSwitcher({
                   const editing = editingId === a.id;
 
                   if (editing) {
-                    const DraftIconComp = draftIcon && ICON_MAP[draftIcon] ? ICON_MAP[draftIcon] : Icon;
+                    const DraftIconComp =
+                      draftIcon && ICON_MAP[draftIcon] ? ICON_MAP[draftIcon] : Icon;
                     return (
                       <div
                         key={a.id}
@@ -660,7 +661,9 @@ export default function AccountSwitcher({
             </span>
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
               {t("account.switchShort")}
-              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+              <ChevronDown
+                className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")}
+              />
             </span>
           </button>
           <button
@@ -790,7 +793,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
   const [name, setName] = useState(edit?.name ?? "");
   const [type, setType] = useState<AccountType>(edit?.type ?? "prop");
   const [selectedIcon, setSelectedIcon] = useState<string | null>(edit?.icon ?? null);
-  const [balance, setBalance] = useState(String(edit?.startingBalance ?? edit ? 0 : "50000"));
+  const [balance, setBalance] = useState(String((edit?.startingBalance ?? edit) ? 0 : "50000"));
   const [busy, setBusy] = useState(false);
 
   const types: AccountType[] = ["personal", "prop", "demo", "live"];
@@ -808,7 +811,12 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
           startingBalance: Number(balance) || 0,
         });
       } else {
-        await addAccount({ name: trimmed, type, icon: selectedIcon ?? undefined, startingBalance: Number(balance) || 0 });
+        await addAccount({
+          name: trimmed,
+          type,
+          icon: selectedIcon ?? undefined,
+          startingBalance: Number(balance) || 0,
+        });
       }
       onClose();
     } catch (e) {

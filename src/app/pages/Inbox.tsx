@@ -194,22 +194,29 @@ export default function Inbox() {
       <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
         {FILTER_KINDS.map((k) => {
           const count = k === "all" ? notifs.length : (countByCategory[k] ?? 0);
-          const unread = k === "all"
-            ? unreadTotal
-            : notifs.filter((n) => n.category === k && !n.readAt).length;
+          const unread =
+            k === "all" ? unreadTotal : notifs.filter((n) => n.category === k && !n.readAt).length;
           return (
-            <button key={k} onClick={() => setFilter(k)} className={cn(
-              "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border",
-              filter === k
-                ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-300"
-                : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
-            )}>
+            <button
+              key={k}
+              onClick={() => setFilter(k)}
+              className={cn(
+                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border",
+                filter === k
+                  ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-300"
+                  : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
+              )}
+            >
               {k === "all" ? "Toutes" : t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}`)}
               {unread > 0 && (
-                <span className={cn(
-                  "min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold",
-                  filter === k ? "bg-cyan-500/20 text-cyan-300" : "bg-white/[0.08] text-slate-400",
-                )}>
+                <span
+                  className={cn(
+                    "min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold",
+                    filter === k
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : "bg-white/[0.08] text-slate-400",
+                  )}
+                >
                   {unread}
                 </span>
               )}
@@ -217,8 +224,10 @@ export default function Inbox() {
           );
         })}
         {hasUnreadFiltered && (
-          <button onClick={markAllRead}
-            className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all">
+          <button
+            onClick={markAllRead}
+            className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all"
+          >
             <CheckCheck className="w-3.5 h-3.5" />
             Tout lu
           </button>
@@ -233,7 +242,8 @@ export default function Inbox() {
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400" />
           </span>
           <span className="text-xs text-cyan-200/90 font-medium">
-            {unreadTotal} nouvelle{unreadTotal > 1 ? "s" : ""} notification{unreadTotal > 1 ? "s" : ""} depuis ta dernière visite
+            {unreadTotal} nouvelle{unreadTotal > 1 ? "s" : ""} notification
+            {unreadTotal > 1 ? "s" : ""} depuis ta dernière visite
           </span>
         </div>
       )}
@@ -266,7 +276,10 @@ export default function Inbox() {
                   const Icon = CATEGORY_ICON[n.category] ?? Bell;
                   const unread = !n.readAt;
                   const time = new Date(n.createdAt);
-                  const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                  const timeStr = time.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
 
                   return (
                     <div
@@ -286,18 +299,22 @@ export default function Inbox() {
                         <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-cyan-400" />
                       )}
                       {/* Category icon */}
-                      <span className={cn(
-                        "grid h-7 w-7 shrink-0 place-items-center rounded-lg mt-0.5",
-                        CATEGORY_ACCENT[n.category] ?? "text-slate-400 bg-slate-500/10",
-                      )}>
+                      <span
+                        className={cn(
+                          "grid h-7 w-7 shrink-0 place-items-center rounded-lg mt-0.5",
+                          CATEGORY_ACCENT[n.category] ?? "text-slate-400 bg-slate-500/10",
+                        )}
+                      >
                         <Icon className="w-3.5 h-3.5" />
                       </span>
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="flex items-center gap-2">
-                          <p className={cn(
-                            "text-sm truncate flex-1",
-                            unread ? "text-white font-semibold" : "text-slate-400",
-                          )}>
+                          <p
+                            className={cn(
+                              "text-sm truncate flex-1",
+                              unread ? "text-white font-semibold" : "text-slate-400",
+                            )}
+                          >
                             {n.title}
                           </p>
                           <span className="text-[10px] text-slate-600 font-medium shrink-0 tabular-nums">
@@ -312,7 +329,10 @@ export default function Inbox() {
                       </div>
                       {unread && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleMarkRead(n.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkRead(n.id);
+                          }}
                           className="absolute bottom-2 right-2.5 grid h-6 w-6 place-items-center rounded-md bg-white/[0.04] hover:bg-white/[0.08] transition text-slate-400 opacity-0 group-hover:opacity-100"
                           title="Marquer comme lu"
                         >

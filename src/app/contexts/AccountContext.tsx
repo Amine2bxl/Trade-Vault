@@ -88,7 +88,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         try {
           const icon = localStorage.getItem(`tv.accountIcon.${a.id}`);
           if (icon) a.icon = icon;
-        } catch {}
+        } catch {
+          /* localStorage indisponible (navigation privée, quota) — l'icône
+             est un confort, jamais un prérequis. */
+        }
       }
       setAccounts(list);
 
@@ -133,9 +136,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const addAccount = useCallback(
     async (input: { name: string; type: AccountType; icon?: string; startingBalance: number }) => {
       if (!user) throw new Error("not authenticated");
-      const acc = await createAccount(user.id, { name: input.name, type: input.type, startingBalance: input.startingBalance });
+      const acc = await createAccount(user.id, {
+        name: input.name,
+        type: input.type,
+        startingBalance: input.startingBalance,
+      });
       if (input.icon) {
-        try { localStorage.setItem(`tv.accountIcon.${acc.id}`, input.icon); } catch {}
+        try {
+          localStorage.setItem(`tv.accountIcon.${acc.id}`, input.icon);
+        } catch {
+          /* localStorage indisponible (navigation privée, quota) — l'icône
+             est un confort, jamais un prérequis. */
+        }
         acc.icon = input.icon;
       }
       setAccounts((prev) => [...prev, acc]);
@@ -153,9 +165,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     ) => {
       if (!user) return;
       const { icon, ...dbPatch } = patch;
-      await updateAccount(user.id, id, dbPatch as Partial<{ name: string; type: AccountType; startingBalance: number }>);
+      await updateAccount(
+        user.id,
+        id,
+        dbPatch as Partial<{ name: string; type: AccountType; startingBalance: number }>,
+      );
       if (icon !== undefined) {
-        try { localStorage.setItem(`tv.accountIcon.${id}`, icon); } catch {}
+        try {
+          localStorage.setItem(`tv.accountIcon.${id}`, icon);
+        } catch {
+          /* localStorage indisponible (navigation privée, quota) — l'icône
+             est un confort, jamais un prérequis. */
+        }
       }
       setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
     },

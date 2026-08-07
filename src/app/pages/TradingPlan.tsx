@@ -226,12 +226,14 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
         )}
         delay={2}
         action={
-          <span className={cn(
-            "inline-flex items-center gap-1.5 h-6 px-2 rounded-lg text-[10px] font-bold border shrink-0",
-            plan.setups.length >= MAX_SETUPS
-              ? "bg-amber-500/10 border-amber-500/25 text-amber-300"
-              : "bg-cyan-500/10 border-cyan-500/20 text-cyan-300",
-          )}>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 h-6 px-2 rounded-lg text-[10px] font-bold border shrink-0",
+              plan.setups.length >= MAX_SETUPS
+                ? "bg-amber-500/10 border-amber-500/25 text-amber-300"
+                : "bg-cyan-500/10 border-cyan-500/20 text-cyan-300",
+            )}
+          >
             <Layers className="w-3 h-3" />
             {plan.setups.length}/{MAX_SETUPS}
           </span>
@@ -248,12 +250,14 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           )}
 
           {plan.setups.length >= 3 && (
-            <div className={cn(
-              "rounded-xl px-3 py-2.5 text-xs flex items-start gap-2",
-              plan.setups.length >= MAX_SETUPS
-                ? "bg-amber-500/[0.07] border border-amber-500/20 text-amber-200/90"
-                : "bg-cyan-500/[0.04] border border-cyan-500/15 text-cyan-200/70",
-            )}>
+            <div
+              className={cn(
+                "rounded-xl px-3 py-2.5 text-xs flex items-start gap-2",
+                plan.setups.length >= MAX_SETUPS
+                  ? "bg-amber-500/[0.07] border border-amber-500/20 text-amber-200/90"
+                  : "bg-cyan-500/[0.04] border border-cyan-500/15 text-cyan-200/70",
+              )}
+            >
               <Layers className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               <span>
                 {plan.setups.length >= MAX_SETUPS
@@ -271,7 +275,10 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
           {plan.setups.map((s, i) => (
             <SetupCard
-              key={s.id} setup={s} index={i} fr={fr}
+              key={s.id}
+              setup={s}
+              index={i}
+              fr={fr}
               onChange={(next) =>
                 update((p) => ({
                   ...p,

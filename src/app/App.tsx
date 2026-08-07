@@ -594,7 +594,10 @@ function AppContent() {
         </div>
       </main>
       {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
-      <AccountSwitcher variant="fab" balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl} />
+      <AccountSwitcher
+        variant="fab"
+        balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
+      />
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />

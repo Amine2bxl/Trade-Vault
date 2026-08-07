@@ -24,14 +24,21 @@ type EquityPoint = { date: string; equity: number };
 
 function EquityChart({ data }: { data: EquityPoint[] }) {
   const { min, max, breakEven, keyDots } = useMemo(() => {
-    if (data.length === 0) return { min: 0, max: 0, breakEven: 0, keyDots: {} as Record<number, boolean> };
+    if (data.length === 0)
+      return { min: 0, max: 0, breakEven: 0, keyDots: {} as Record<number, boolean> };
     let lo = data[0].equity;
     let hi = data[0].equity;
     let bestIdx = 0;
     let worstIdx = 0;
     for (let i = 1; i < data.length; i++) {
-      if (data[i].equity > hi) { hi = data[i].equity; bestIdx = i; }
-      if (data[i].equity < lo) { lo = data[i].equity; worstIdx = i; }
+      if (data[i].equity > hi) {
+        hi = data[i].equity;
+        bestIdx = i;
+      }
+      if (data[i].equity < lo) {
+        lo = data[i].equity;
+        worstIdx = i;
+      }
     }
     const keyDots: Record<number, boolean> = {};
     if (data.length >= 2) {
@@ -39,7 +46,8 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
       keyDots[data.length - 1] = true;
     }
     if (bestIdx > 0 && bestIdx < data.length - 1) keyDots[bestIdx] = true;
-    if (worstIdx > 0 && worstIdx < data.length - 1 && worstIdx !== bestIdx) keyDots[worstIdx] = true;
+    if (worstIdx > 0 && worstIdx < data.length - 1 && worstIdx !== bestIdx)
+      keyDots[worstIdx] = true;
     return { min: lo, max: hi, breakEven: data[0].equity, keyDots };
   }, [data]);
 
@@ -66,7 +74,10 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
           padding={EQUITY_X_PADDING}
           tick={AXIS_TICK}
           minTickGap={28}
-          tickFormatter={(v) => { const p = v.split("-"); return `${p[2]}/${p[1]}`; }}
+          tickFormatter={(v) => {
+            const p = v.split("-");
+            return `${p[2]}/${p[1]}`;
+          }}
           axisLine={false}
           tickLine={false}
         />
@@ -78,21 +89,51 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
           tickLine={false}
           width={52}
         />
-        <ReferenceLine y={breakEven} stroke="rgba(148,163,184,0.22)" strokeWidth={1} strokeDasharray="6 6" />
+        <ReferenceLine
+          y={breakEven}
+          stroke="rgba(148,163,184,0.22)"
+          strokeWidth={1}
+          strokeDasharray="6 6"
+        />
         <Tooltip
           content={({ active, payload, label }) => {
             if (!active || !payload?.length) return null;
             const val = payload[0].value as number;
             const delta = val - breakEven;
             return (
-              <div className="rounded-xl border border-white/[0.08] px-3 py-2"
-                style={{ background: "rgba(10,15,30,0.98)", boxShadow: "0 12px 32px -8px rgba(0,0,0,0.7)" }}>
-                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">{formatShortDate(label as string)}</p>
-                <p className="mt-0.5 text-sm font-extrabold text-white tabular-nums" style={{ fontFamily: "'Sora','Manrope',sans-serif" }}>
-                  ${Number(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div
+                className="rounded-xl border border-white/[0.08] px-3 py-2"
+                style={{
+                  background: "rgba(10,15,30,0.98)",
+                  boxShadow: "0 12px 32px -8px rgba(0,0,0,0.7)",
+                }}
+              >
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                  {formatShortDate(label as string)}
                 </p>
-                <p className={delta >= 0 ? "text-[11px] text-emerald-400 font-semibold" : "text-[11px] text-red-400 font-semibold"}>
-                  {delta >= 0 ? "+" : ""}{delta >= 0 ? "$" : "-$"}{Math.abs(delta).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p
+                  className="mt-0.5 text-sm font-extrabold text-white tabular-nums"
+                  style={{ fontFamily: "'Sora','Manrope',sans-serif" }}
+                >
+                  $
+                  {Number(val).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+                <p
+                  className={
+                    delta >= 0
+                      ? "text-[11px] text-emerald-400 font-semibold"
+                      : "text-[11px] text-red-400 font-semibold"
+                  }
+                >
+                  {delta >= 0 ? "+" : ""}
+                  {delta >= 0 ? "$" : "-$"}
+                  {Math.abs(delta).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             );
@@ -105,7 +146,13 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
           strokeWidth={2}
           fill="url(#eqGrad)"
           dot={false}
-          activeDot={{ r: 5, strokeWidth: 2.5, stroke: "#0a0f1e", fill: accent, filter: "url(#dotGlow)" }}
+          activeDot={{
+            r: 5,
+            strokeWidth: 2.5,
+            stroke: "#0a0f1e",
+            fill: accent,
+            filter: "url(#dotGlow)",
+          }}
           {...EQUITY_ANIMATION}
         />
         <Line

@@ -1439,8 +1439,11 @@ export default function Landing() {
                   ["problem", "Problème"],
                   ["ai", "Coach IA"],
                 ].map(([id, label]) => (
-                  <button key={id} onClick={() => go(id)}
-                    className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition text-left">
+                  <button
+                    key={id}
+                    onClick={() => go(id)}
+                    className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition text-left"
+                  >
                     {label}
                   </button>
                 ))}
@@ -1451,16 +1454,28 @@ export default function Landing() {
                 Légal
               </p>
               <div className="flex flex-col gap-2">
-                <a href="/terms" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                <a
+                  href="/terms"
+                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
+                >
                   Conditions d'utilisation
                 </a>
-                <a href="/privacy" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                <a
+                  href="/privacy"
+                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
+                >
                   Politique de confidentialité
                 </a>
-                <a href="/contact" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                <a
+                  href="/contact"
+                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
+                >
                   Contact
                 </a>
-                <a href="/demo" className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition">
+                <a
+                  href="/demo"
+                  className="text-xs font-medium text-slate-500 hover:text-cyan-300 transition"
+                >
                   Démo
                 </a>
               </div>
@@ -1479,9 +1494,12 @@ export default function Landing() {
                     { icon: Youtube, label: "YouTube" },
                   ] as const
                 ).map((s) => (
-                  <span key={s.label} aria-label={s.label}
+                  <span
+                    key={s.label}
+                    aria-label={s.label}
                     title={`${s.label} — bientôt`}
-                    className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[.08] bg-white/[.02] text-slate-600 transition-colors">
+                    className="grid h-9 w-9 cursor-not-allowed place-items-center rounded-xl border border-white/[.08] bg-white/[.02] text-slate-600 transition-colors"
+                  >
                     <s.icon className="w-4 h-4" />
                   </span>
                 ))}

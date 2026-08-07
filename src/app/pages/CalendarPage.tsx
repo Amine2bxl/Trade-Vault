@@ -601,7 +601,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
 }
 
 function MissedMobileCard({ missedCount }: { missedCount: number }) {
-  const navigate = () => window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "missed" } }));
+  const navigate = () =>
+    window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "missed" } }));
   return (
     <button
       onClick={navigate}

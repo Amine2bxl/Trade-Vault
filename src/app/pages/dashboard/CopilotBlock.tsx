@@ -258,8 +258,8 @@ function CopilotBlock({
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
             <div className="flex gap-2.5 items-start">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
-              <Bot className="w-3 h-3 text-white" />
-            </span>
+                <Bot className="w-3 h-3 text-white" />
+              </span>
               <p className="text-[13px] leading-relaxed text-slate-200 min-w-0">
                 <span className="font-semibold text-cyan-300">Jarvis</span>{" "}
                 <span className="text-slate-500">·</span> {jarvisLine}
