@@ -1115,28 +1115,28 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
         {years.length > 0 && (
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Heatmap annuel</div>
-            <div className="overflow-x-auto">
-              <div className="inline-flex flex-col gap-0.5 min-w-[600px]">
-                <div className="flex gap-0.5 text-[9px] font-bold uppercase text-slate-600 pl-10">
-                  {monthly.map((m, i) => <div key={i} className="w-10 text-center">{m.month}</div>)}
-                </div>
-                {years.map(([year, months]) => (
-                  <div key={year} className="flex gap-0.5 items-center">
-                    <div className="w-9 text-[10px] font-bold text-slate-400 shrink-0 text-right pr-1">{year}</div>
+            <div className="flex flex-col gap-0.5 w-full">
+              <div className="grid grid-cols-12 gap-0.5 text-[9px] font-bold uppercase text-slate-600 pl-9">
+                {monthly.map((m, i) => <div key={i} className="text-center">{m.month}</div>)}
+              </div>
+              {years.map(([year, months]) => (
+                <div key={year} className="flex gap-0.5 items-center">
+                  <div className="w-8 text-[10px] font-bold text-slate-400 shrink-0 text-right pr-1">{year}</div>
+                  <div className="grid grid-cols-12 gap-0.5 flex-1">
                     {months.map((val, i) => {
                       const mag = heatMax > 0 ? Math.min(1, Math.abs(val) / heatMax) : 0;
                       const a = 0.05 + 0.25 * mag;
                       const isWin = val >= 0;
                       return (
-                        <div key={i} className="w-10 h-7 rounded flex items-center justify-center text-[9px] font-bold tabular-nums"
+                        <div key={i} className="h-7 rounded flex items-center justify-center text-[9px] font-bold tabular-nums"
                           style={{ background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`, color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b" }}>
                           {val === 0 && months.every(v => v === 0) ? "—" : `${isWin ? "+" : ""}${Math.round(val)}`}
                         </div>
                       );
                     })}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
