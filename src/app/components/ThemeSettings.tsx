@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, Wand2, ChevronDown } from "lucide-react";
+import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useT } from "../i18n/LanguageContext";
 import { useConfirm } from "../contexts/ConfirmContext";
-import { ThemeDef, harmonize, lighten } from "../utils/themes";
+import ThemeStudioModal from "./ThemeStudioModal";
+import { ThemeDef } from "../utils/themes";
 import { cn } from "../utils/cn";
 
 // Per-theme preview: a full colour band (primary · secondary · highlight, so
@@ -68,7 +69,6 @@ export default function ThemeSettings() {
     setActive,
     setDefault,
     createTheme,
-    updateTheme,
     duplicateTheme,
     deleteTheme,
   } = useTheme();
@@ -214,55 +214,12 @@ export default function ThemeSettings() {
         </div>
       </Section>
 
-      {editing && (
-        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-4 space-y-3 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <input
-              value={editing.name}
-              onChange={(e) => updateTheme(editing.id, { name: e.target.value })}
-              placeholder={t("appearance.namePlaceholder")}
-              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/40"
-            />
-            <button
-              onClick={() =>
-                updateTheme(editing.id, {
-                  secondary: harmonize(editing.primary),
-                  highlight: lighten(editing.primary),
-                })
-              }
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold hover:bg-cyan-500/15 transition-all shrink-0"
-              title={t("appearance.auto")}
-            >
-              <Wand2 className="w-3.5 h-3.5" /> {t("appearance.auto")}
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <ColorField
-              label={t("appearance.primary")}
-              value={editing.primary}
-              onChange={(v) => updateTheme(editing.id, { primary: v })}
-            />
-            <ColorField
-              label={t("appearance.secondary")}
-              value={editing.secondary}
-              onChange={(v) => updateTheme(editing.id, { secondary: v })}
-            />
-            <ColorField
-              label={t("appearance.highlight")}
-              value={editing.highlight}
-              onChange={(v) => updateTheme(editing.id, { highlight: v })}
-            />
-          </div>
-          <div className="flex justify-end">
-            <button
-              onClick={() => setEditingId(null)}
-              className="px-5 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20 transition-all"
-            >
-              {t("appearance.done")}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Édition : le STUDIO, unique éditeur de thème du produit.
+          Un panneau d'édition en ligne vivait ici et ne proposait que les
+          trois couleurs d'accent. Le conserver à côté du studio aurait fait
+          deux éditeurs pour une même chose — et deux endroits à tenir à jour
+          chaque fois qu'un réglage s'ajoute. */}
+      {editing && <ThemeStudioModal themeId={editing.id} onClose={() => setEditingId(null)} />}
     </div>
   );
 }
@@ -345,33 +302,5 @@ function IconBtn({
     >
       {children}
     </button>
-  );
-}
-
-function ColorField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">
-        {label}
-      </span>
-      <div className="relative flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-2 py-1.5">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0 p-0 shrink-0"
-          style={{ appearance: "none" }}
-        />
-        <span className="text-[11px] font-mono text-slate-300 uppercase truncate">{value}</span>
-      </div>
-    </label>
   );
 }

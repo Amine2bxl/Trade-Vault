@@ -1,23 +1,36 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Palette } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import ThemeSettings from "../components/ThemeSettings";
+import ThemeStudioModal from "../components/ThemeStudioModal";
 import { PageHeader } from "@/shared/ui";
 
 export default function Appearance() {
   const { lang } = useT();
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
-  const { createTheme } = useTheme();
+  const { createTheme, active } = useTheme();
 
+  const [studioId, setStudioId] = useState<string | null>(null);
+
+  /**
+   * Le CTA ouvre le STUDIO, il ne fabrique plus un thème violet en dur.
+   *
+   * Il part de l'identité actuelle (`active`) plutôt que d'une palette
+   * arbitraire : personnaliser, c'est ajuster ce qu'on a sous les yeux, pas
+   * repartir d'un thème inconnu qu'il faudrait d'abord défaire.
+   */
   const handleCreateTheme = () => {
-    createTheme({
-      name: tr("Nouveau thème", "New theme"),
-      primary: "#8b5cf6",
-      secondary: "#ec4899",
-      highlight: "#c4b5fd",
+    const id = createTheme({
+      name: tr("Mon thème", "My theme"),
+      primary: active.primary,
+      secondary: active.secondary,
+      highlight: active.highlight,
+      background: active.background,
+      text: active.text,
     });
+    setStudioId(id);
   };
 
   return (
@@ -47,6 +60,7 @@ export default function Appearance() {
       <div className="animate-fade-in-up stagger-1">
         <ThemeSettings />
       </div>
+      {studioId && <ThemeStudioModal themeId={studioId} onClose={() => setStudioId(null)} />}
     </div>
   );
 }
