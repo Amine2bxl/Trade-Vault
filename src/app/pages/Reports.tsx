@@ -8,17 +8,21 @@ import {
   AlertTriangle,
   RefreshCw,
   Bot,
+  History,
+  CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { useT } from "../i18n/LanguageContext";
 import { loadMonthlyReports, type MonthlyReportRow } from "../store";
-import { prevMonthOf, type MonthlyReportData } from "../utils/monthlyReport";
+import { type MonthlyReportData } from "../utils/monthlyReport";
+import { missingReportMonths } from "../utils/reportMonths";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { Skeleton } from "../components/Skeleton";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 import { cn } from "../utils/cn";
+import type { Trade } from "../types";
 import { PageHeader, Button } from "@/shared/ui";
 
 const LOCALE_MAP: Record<string, string> = {
@@ -44,7 +48,7 @@ function monthLabel(month: string, locale: string): string {
   );
 }
 
-export default function Reports() {
+export default function Reports({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
   const { t, lang } = useT();
   const { toast } = useToast();
@@ -76,28 +80,62 @@ export default function Reports() {
     refresh();
   }, [refresh]);
 
-  const lastMonth = useMemo(() => prevMonthOf(new Date().toISOString().slice(0, 7)), []);
-  const hasLastMonth = rows.some((r) => r.month === lastMonth);
+  // Les mois générables viennent des TRADES, plus du seul « mois dernier ».
+  // Un historique de six mois saisi à la main ou importé donne donc bien six
+  // rapports — c'est exactement ce que le backfill CSV fait déjà, via la même
+  // fonction pure (`missingReportMonths`) pour éviter deux définitions.
+  const missing = useMemo(
+    () =>
+      missingReportMonths(
+        trades.map((tr) => tr.date),
+        rows.map((r) => r.month),
+      ),
+    [trades, rows],
+  );
 
-  const generate = useCallback(async () => {
-    if (generating) return;
-    setGenerating(true);
-    try {
-      const res = await generateMyMonthlyReport({ data: { month: lastMonth } });
-      if (!res.report) {
-        toast(t("reports.noTradesForMonth"), "info");
-      } else {
-        toast(t("reports.generated"), "success");
-        setOpenMonth(lastMonth);
-        await refresh();
-      }
-    } catch (e) {
-      console.error("Failed to generate report", e);
-      toast(t("reports.generateFailed"), "error");
-    } finally {
-      setGenerating(false);
+  /** Nombre de trades par mois — sert à montrer ce que le rapport contiendra. */
+  const tradesByMonth = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const tr of trades) {
+      const m = tr.date.slice(0, 7);
+      map.set(m, (map.get(m) ?? 0) + 1);
     }
-  }, [generating, lastMonth, refresh, t, toast]);
+    return map;
+  }, [trades]);
+
+  /** Génère une liste de mois à la suite, puis rafraîchit une seule fois. */
+  const generateMonths = useCallback(
+    async (months: string[]) => {
+      if (generating || months.length === 0) return;
+      setGenerating(true);
+      let done = 0;
+      try {
+        for (const month of months) {
+          try {
+            const res = await generateMyMonthlyReport({ data: { month } });
+            if (res.report) done++;
+          } catch (e) {
+            console.error("Failed to generate report", month, e);
+          }
+        }
+        if (done === 0) {
+          toast(t("reports.noTradesForMonth"), "info");
+        } else {
+          toast(
+            done === 1
+              ? t("reports.generated")
+              : t("reports.generatedN").replace("{n}", String(done)),
+            "success",
+          );
+          if (months.length === 1) setOpenMonth(months[0]);
+          await refresh();
+        }
+      } finally {
+        setGenerating(false);
+      }
+    },
+    [generating, refresh, t, toast],
+  );
 
   return (
     <div className="p-4 md:p-5 max-w-[900px] mx-auto">
@@ -111,10 +149,10 @@ export default function Reports() {
         title={t("reports.title")}
         subtitle={t("reports.subtitle")}
         actions={
-          !hasLastMonth &&
+          missing.length > 0 &&
           !loading && (
             <Button
-              onClick={generate}
+              onClick={() => generateMonths(missing)}
               disabled={generating}
               className="shrink-0 disabled:opacity-60 animate-fade-in-up stagger-1"
             >
@@ -124,7 +162,11 @@ export default function Reports() {
                 <RefreshCw className="w-4 h-4" />
               )}
               <span className="hidden sm:inline">
-                {generating ? t("reports.generating") : t("reports.generate")}
+                {generating
+                  ? t("reports.generating")
+                  : missing.length === 1
+                    ? t("reports.generate")
+                    : t("reports.generateAll").replace("{n}", String(missing.length))}
               </span>
             </Button>
           )
@@ -137,34 +179,80 @@ export default function Reports() {
             <Skeleton key={i} className="h-20 rounded-2xl" />
           ))}
         </div>
-      ) : rows.length === 0 ? (
-        <div className="glass rounded-3xl p-10 md:p-14 text-center animate-fade-in-up stagger-1">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4">
-            <FileText className="w-6 h-6 text-cyan-400" />
-          </div>
-          <h2 className="text-base font-bold text-white mb-1.5">{t("reports.empty")}</h2>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto mb-5">{t("reports.emptySub")}</p>
-          <Button onClick={generate} disabled={generating} className="disabled:opacity-60">
-            {generating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            {generating ? t("reports.generating") : t("reports.generate")}
-          </Button>
-        </div>
       ) : (
-        <div className="space-y-3">
-          {rows.map((row, i) => (
-            <ReportCard
-              key={row.id}
-              row={row}
-              locale={locale}
-              open={openMonth === row.month}
-              onToggle={() => setOpenMonth((m) => (m === row.month ? null : row.month))}
-              delay={i * 60}
-            />
-          ))}
+        <div className="space-y-4">
+          {/* Historique générable — le cœur du chantier : tous les mois clos
+              qui ont des trades mais pas encore de rapport. */}
+          {missing.length > 0 && (
+            <section className="glass rounded-2xl overflow-hidden animate-fade-in-up stagger-1">
+              <header className="flex items-center gap-2.5 px-4 md:px-5 py-3.5 border-b border-white/[0.05]">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <History className="w-3.5 h-3.5 text-amber-400" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="font-display text-sm font-bold text-white leading-tight">
+                    {t("reports.available")}
+                  </h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {t("reports.availableSub").replace("{n}", String(missing.length))}
+                  </p>
+                </div>
+              </header>
+              <ul className="divide-y divide-white/[0.04]">
+                {missing.map((month) => (
+                  <li
+                    key={month}
+                    className="flex items-center gap-3 px-4 md:px-5 py-2.5 hover:bg-white/[0.02] transition"
+                  >
+                    <span className="font-display text-[13px] font-semibold text-slate-200 capitalize flex-1 min-w-0 truncate">
+                      {monthLabel(month, locale)}
+                    </span>
+                    <span className="text-[11px] text-slate-500 tabular-nums shrink-0">
+                      {tradesByMonth.get(month) ?? 0} {t("common.trades")}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => generateMonths([month])}
+                      disabled={generating}
+                      className="shrink-0 disabled:opacity-50"
+                    >
+                      {t("reports.generateOne")}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {rows.length === 0 ? (
+            <div className="glass rounded-3xl p-10 md:p-14 text-center animate-fade-in-up stagger-2">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4">
+                <FileText className="w-6 h-6 text-cyan-400" />
+              </div>
+              <h2 className="text-base font-bold text-white mb-1.5">{t("reports.empty")}</h2>
+              <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("reports.emptySub")}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {rows.map((row, i) => (
+                <ReportCard
+                  key={row.id}
+                  row={row}
+                  locale={locale}
+                  open={openMonth === row.month}
+                  onToggle={() => setOpenMonth((m) => (m === row.month ? null : row.month))}
+                  delay={i * 60}
+                />
+              ))}
+              {missing.length === 0 && (
+                <p className="flex items-center justify-center gap-1.5 text-[11px] text-slate-600 pt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/70" />
+                  {t("reports.upToDate")}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -190,9 +278,20 @@ function ReportCard({
 
   return (
     <div
-      className="glass rounded-2xl overflow-hidden card-premium animate-fade-in-up"
+      className="relative glass rounded-2xl overflow-hidden card-premium animate-fade-in-up"
       style={{ animationDelay: `${delay}ms` }}
     >
+      {/* Liseré vertical : signature « document de performance ». La couleur
+          donne le verdict du mois avant même de lire un chiffre. */}
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-y-0 left-0 w-[3px]",
+          gain
+            ? "bg-gradient-to-b from-emerald-400 to-emerald-600/30"
+            : "bg-gradient-to-b from-red-400 to-red-600/30",
+        )}
+      />
       {/* Header row (always visible) */}
       <button
         onClick={() => {
@@ -203,7 +302,7 @@ function ReportCard({
           }
         }}
         aria-expanded={open}
-        className="w-full flex items-center gap-3 px-4 md:px-5 py-4 text-left hover:bg-white/[0.02] transition"
+        className="w-full flex items-center gap-3 pl-5 pr-4 md:pl-6 md:pr-5 py-4 text-left hover:bg-white/[0.02] transition"
       >
         <div className="relative shrink-0">
           <span
@@ -228,7 +327,10 @@ function ReportCard({
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-display text-sm md:text-[15px] font-bold text-white capitalize leading-tight">
+          <div className="text-[9.5px] uppercase tracking-[0.14em] text-slate-600 font-bold">
+            {t("reports.docLabel")}
+          </div>
+          <div className="font-display text-base md:text-lg font-bold text-white capitalize leading-tight">
             {monthLabel(row.month, locale)}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
@@ -268,7 +370,7 @@ function ReportCard({
       </button>
 
       {open && (
-        <div className="px-4 md:px-5 pb-5 animate-fade-in border-t border-white/[0.05] pt-4 space-y-4">
+        <div className="pl-5 pr-4 md:pl-6 md:pr-5 pb-5 animate-fade-in border-t border-white/[0.05] pt-4 space-y-5">
           {/* KPI grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
             <Kpi
@@ -331,12 +433,29 @@ function ReportCard({
             </div>
           )}
 
+          {/* Débrief du coach — placé AVANT le détail chiffré : c'est la
+              lecture experte du mois, ce qu'un vrai rapport met en synthèse. */}
+          {r.aiSummary && (
+            <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 p-4 overflow-hidden">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
+                  <Bot className="w-3.5 h-3.5 text-white" />
+                </span>
+                <h4 className="text-[11px] uppercase tracking-wider text-cyan-400 font-bold">
+                  {t("reports.aiSummary")}
+                </h4>
+              </div>
+              <div className="text-sm text-slate-300 leading-relaxed">
+                <MarkdownAnswer content={r.aiSummary} />
+              </div>
+            </div>
+          )}
+
           {/* Weekly P&L bars */}
           {r.weekly.length > 0 && (
             <div>
-              <h4 className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-2">
-                {t("reports.weekly")}
-              </h4>
+              <SectionTitle>{t("reports.weekly")}</SectionTitle>
               <div className="space-y-1.5">
                 {r.weekly.map((w) => {
                   const max = Math.max(...r.weekly.map((x) => Math.abs(x.pnl)), 1);
@@ -391,9 +510,9 @@ function ReportCard({
           {/* Mistakes */}
           {r.mistakes.length > 0 && (
             <div>
-              <h4 className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> {t("reports.mistakes")}
-              </h4>
+              <SectionTitle icon={<AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}>
+                {t("reports.mistakes")}
+              </SectionTitle>
               <div className="space-y-1">
                 {r.mistakes.map((m) => (
                   <div
@@ -416,27 +535,27 @@ function ReportCard({
               </div>
             </div>
           )}
-
-          {/* AI summary (Étape 5, option A) */}
-          {r.aiSummary && (
-            <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 p-4 overflow-hidden">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
-              <div className="flex items-center gap-2 mb-2.5">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
-                  <Bot className="w-3.5 h-3.5 text-white" />
-                </span>
-                <h4 className="text-[11px] uppercase tracking-wider text-cyan-400 font-bold">
-                  {t("reports.aiSummary")}
-                </h4>
-              </div>
-              <div className="text-sm text-slate-300 leading-relaxed">
-                <MarkdownAnswer content={r.aiSummary} />
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Titre de section d'un rapport : filet horizontal + libellé court.
+ *
+ * Un même composant pour toutes les sections — c'est ce qui donne au rapport
+ * sa hiérarchie régulière plutôt qu'une suite de blocs juxtaposés.
+ */
+function SectionTitle({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
+  return (
+    <h4 className="flex items-center gap-2 mb-2.5">
+      {icon}
+      <span className="text-[11px] uppercase tracking-[0.12em] text-slate-400 font-bold shrink-0">
+        {children}
+      </span>
+      <span aria-hidden className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
+    </h4>
   );
 }
 
@@ -489,9 +608,7 @@ function SetupList({
   const { t } = useT();
   return (
     <div>
-      <h4 className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-2">
-        {title}
-      </h4>
+      <SectionTitle>{title}</SectionTitle>
       <div className="space-y-1">
         {setups.map((s) => (
           <div

@@ -44,6 +44,7 @@ import {
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
+import { missingReportMonths } from "./utils/reportMonths";
 import { useTradeStats } from "./hooks/useTradeStats";
 import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
 import { sendPushToSelf } from "@/backend/push.functions";
@@ -491,13 +492,13 @@ function AppContent() {
         // modal closes instantly.
         void (async () => {
           try {
-            const nowMonth = new Date().toISOString().slice(0, 7);
-            const months = [...new Set(saved.map((tr) => tr.date.slice(0, 7)))]
-              .filter((m) => /^\d{4}-\d{2}$/.test(m) && m < nowMonth)
-              .sort();
-            if (months.length === 0) return;
-            const existing = new Set((await loadMonthlyReports(user.id)).map((r) => r.month));
-            const missing = months.filter((m) => !existing.has(m));
+            const existing = (await loadMonthlyReports(user.id)).map((r) => r.month);
+            // Même définition que la page Rapports : « mois clos, avec des
+            // trades, sans rapport ». Une seule source de vérité.
+            const missing = missingReportMonths(
+              saved.map((tr) => tr.date),
+              existing,
+            );
             let generated = 0;
             for (const month of missing) {
               try {
@@ -605,7 +606,7 @@ function AppContent() {
                   onOpenReports={() => setPage("reports")}
                 />
               )}
-              {page === "reports" && <Reports />}
+              {page === "reports" && <Reports trades={trades} />}
               {page === "goals" && <Goals trades={trades} />}
               {page === "tradingplan" && <TradingPlan setPage={setPage} />}
               {page === "appearance" && <Appearance />}
