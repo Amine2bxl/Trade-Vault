@@ -1,7 +1,8 @@
 # TradeVault — Checklist Go-Live
 
-> **Verdict au 2026-08-06 : PAS PRÊT.** Trois bloquants, tous identifiés, aucun
-> insurmontable.
+> **Verdict au 2026-08-07 : PAS PRÊT.** Deux bloquants restants — la chaîne de
+> migrations est débloquée. Aucun n'est insurmontable, et **aucun des deux ne
+> dépend du code** : ce sont une validation humaine et un parcours d'achat réel.
 >
 > **Règle d'écriture** : chaque ligne a été vérifiée dans le code, dans la base
 > réelle ou en CI. Ce qui n'a pas pu l'être est marqué **[NON VÉRIFIÉ]** — c'est
@@ -12,7 +13,14 @@
 
 ## 1. Bloquants — le lancement est impossible tant qu'ils tiennent
 
-### 1.1 Chaîne de migrations non vérifiable ⛔
+### ~~1.1 Chaîne de migrations non vérifiable~~ ✅ **RÉSOLU le 2026-08-07**
+
+Le propriétaire a réactivé l'intégration de branching : la branche Supabase est
+passée en `FUNCTIONS_DEPLOYED`. Le check `Supabase Preview` n'est plus `skipped`.
+Historique conservé ci-dessous parce que la cause racine mérite d'être retenue.
+
+<details><summary>Diagnostic d'origine</summary>
+
 
 La branche Supabase `main` est marquée `MIGRATIONS_FAILED`, donc le check
 `Supabase Preview` est `skipped` à chaque PR : **aucune migration n'est vérifiée
@@ -28,6 +36,8 @@ avant d'atteindre la production.**
   branching depuis le dashboard Supabase. `reset_branch` porte ici sur la branche
   **par défaut**, c'est-à-dire la production — à ne pas lancer à l'aveugle.
 
+</details>
+
 ### 1.2 Aucune validation visuelle ⛔ **[NON VÉRIFIÉ]**
 
 Tout ce qui a été livré est validé par le typage, les tests et la CI. **Rien n'a
@@ -35,8 +45,18 @@ Tout ce qui a été livré est validé par le typage, les tests et la CI. **Rien
 contraste passerait intact.
 
 À parcourir sur la preview, mobile ET desktop : Dashboard · Journal · Checklist ·
-Analytics · Jarvis · Inbox · Goals · Settings. Vérifier en particulier le bouton
-retour Android, qui vient de changer de comportement.
+Analytics · Jarvis · Inbox · Goals · Settings.
+
+**Points chauds du 2026-08-07**, tous livrés sans aucune observation navigateur :
+
+| Livré | À vérifier en priorité |
+|---|---|
+| URLs propres (#152) | bouton retour Android · un ancien lien `?p=` · rechargement direct sur `/settings` |
+| Édition des sous-comptes (#153) | ouvrir un compte au capital non nul : le champ doit afficher ce capital, **pas 0** |
+| Studio de thèmes (#154) | changer fond et texte : lisibilité conservée sur toutes les pages |
+| Rapports historiques (#155) | « Tout générer » sur plusieurs mois |
+| Import CSV (#156) | un vrai export broker · un **réimport du même fichier** (doit annoncer 100 % de doublons et n'écrire aucune ligne) |
+| Navigation instantanée (#157) | Journal → Dashboard → Journal : filtres et défilement **conservés** · onglet Réseau : le chunk doit partir **au survol**, avant le clic |
 
 ### 1.3 Paiements jamais éprouvés de bout en bout ⛔ **[NON VÉRIFIÉ]**
 
@@ -56,12 +76,12 @@ d'achat réel n'a été testé dans cette session.**
 | ~~2.1~~ | ~~**Purge de `ai_agent_runs`**~~ — **FAIT** : rétention 90 jours, greffée sur le tick quotidien existant (`/api/cron/lifecycle-emails`), best-effort. Ni `pg_cron` (extension non installée, l'activer serait une opération sur la production) ni cron dédié. **Non observée en conditions réelles** : le premier passage aura lieu au prochain déclenchement quotidien | ✅ |
 | 2.2 | **Activation de l'extraction mémoire** — codée, testée, `AI_MEMORY_EXTRACTION` éteint. Activer d'abord en préproduction et mesurer le **taux de rejet** | À faire |
 | 2.3 | **Synchronisation serveur des conversations** — l'historique est persistant mais LOCAL : changer d'appareil le perd | À faire |
-| 2.4 | **Analytics par écran** — désormais possible (la page vit dans l'URL), mais aucun outil n'est branché | À faire |
+| 2.4 | **Analytics par écran** — désormais possible (chaque écran a son propre chemin depuis #152), mais aucun outil n'est branché | À faire |
 | 2.5 | **Monitoring d'erreurs** — la COUTURE est en place : `reportAppError` est l'entonnoir unique (error boundaries React, échec de préchargement de chunk, et depuis le 2026-08-06 les erreurs non capturées du navigateur + promesses rejetées). La destination reste la console : **un plantage en production est toujours invisible**. Brancher un fournisseur = une clé + cette seule fonction | **Clé requise** |
 | 2.6 | **Politique de mots de passe / rate-limit auth** | **[NON VÉRIFIÉ]** |
 | 2.7 | **RGPD** — export et suppression de compte | **[NON VÉRIFIÉ]** |
 | 2.8 | **Emails transactionnels** — Resend câblé, délivrabilité non éprouvée | **[NON VÉRIFIÉ]** |
-| 2.9 | **Quatre pages d'analyse jamais auditées** — Analytics, Seasonality, Reports, Calendar : ~3 000 lignes et la majorité des chiffres affichés. Huit défauts « chiffre juste, interprétation fausse » ont été trouvés sur les pages auditées ; rien n'indique que celles-ci en soient exemptes | À faire |
+| 2.9 | **Quatre pages d'analyse jamais auditées** — Analytics, Seasonality, Reports (revue le 2026-08-07 côté génération et rendu, **pas** côté justesse des chiffres), Calendar : ~3 000 lignes et la majorité des chiffres affichés. Huit défauts « chiffre juste, interprétation fausse » ont été trouvés sur les pages auditées ; rien n'indique que celles-ci en soient exemptes | À faire |
 | 2.10 | **12 langues proposées, 2 réellement traduites** — `fr` et `en` comptent 1 127 clés ; les **dix autres en comptent 293**, soit **26 %**. Le reste retombe sur l'anglais : un utilisateur qui choisit « Deutsch » obtient une interface à ~74 % en anglais. Vérifié par comptage, et par sondage : la navigation et les titres de page sont traduits, mais ni les statistiques (`quant.*`), ni la checklist, ni Jarvis, ni Goals. **Décision produit requise** : réduire le sélecteur aux langues complètes, ou compléter les traductions | **À arbitrer** |
 
 ---
@@ -85,6 +105,17 @@ d'achat réel n'a été testé dans cette session.**
   `sessionStorage`.
 - **CI verte** sur les trente derniers commits (un seul échec dans la journée,
   corrigé).
+- **Deux « fonctionnalités » qui n'en étaient pas, trouvées le 2026-08-07** et
+  corrigées : le préchargement des pages appelait `import(mod)` sur une variable
+  de chaîne — Vite ne peut pas résoudre un tel spécificateur, l'import échouait
+  et le `.catch()` avalait l'échec, donc il n'a **jamais** rien préchargé ; et le
+  formulaire d'édition de compte pré-remplissait le capital par une condition
+  inversée, si bien que **chaque édition écrasait le capital**, dénominateur de
+  la variation de période, de l'Edge Score et des objectifs. Leçon : du code qui
+  a l'air de faire quelque chose n'est pas du code qui le fait.
+- **L'import CSV ne ment plus** : contrôle du fichier avant lecture, écriture par
+  lots séquentiels (elle ouvrait une requête par trade, toutes en parallèle),
+  confirmation chiffrée avant écriture et comptage honnête des échecs.
 - **RTL** : `document.documentElement.dir` bascule en `rtl` pour l'arabe, et les
   pages publiques le gèrent aussi. L'arabe est incomplet (cf. 2.10) mais **pas
   cassé**.

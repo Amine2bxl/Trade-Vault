@@ -85,10 +85,12 @@ Modules purs testés : `edgeHistory` · `checklistStreak` · `ruleAdherence` ·
 | Habitudes / signaux | recalculés depuis `trades` | mémoire IA |
 | Préférences | `profiles` (onboarding) | mémoire IA |
 | Liste des pages | `PAGES` (`app/types.ts`) | ~~3 copies dans `App.tsx`~~ |
+| Module d'une page (chunk + préchargement) | `pageModules.ts` | ~~`lazy()` dans `App.tsx` + liste de chemins en dur~~ |
+| « Quels mois méritent un rapport » | `reportMonths.ts` | ~~backfill CSV en ligne dans `App.tsx`~~ |
 | « Violer une règle » | `ruleCheck.checkTradeAgainstRules` | temps réel **et** bilan |
 | « Où en est cet objectif » | hook `useGoalProgress` | Goals **et** Jarvis |
 | « Où en est l'Edge Score » | hook `useEdgeScore` | Dashboard **et** Jarvis |
-| Page courante | l'**URL** (`?p=`) | ~~état React + `sessionStorage`~~ |
+| Page courante | l'**URL** (chemin propre : `/settings`) | ~~état React + `sessionStorage`~~ · ~~`?p=`~~ |
 
 **Et une seule DÉFINITION par métrique** — voir le glossaire §4, écrit après que
 huit défauts eurent partagé la même cause : plusieurs grandeurs différentes
@@ -258,7 +260,7 @@ code**.
 | **Mistakes** (650 l.) | Erreurs récurrentes et leur coût | `behavioral` · `ruleAdherence` · `tradeCalcs` | Son score de tête félicitait les traders qui ne journalisent pas — corrigé le 2026-08-06 |
 | **Calendar** (591 l.) | P&L jour par jour | — (props) | Aucun moteur importé : tout vient des props |
 | **Seasonality** (781 l.) | Performance par période / actif | `assetSeasonality` · `tradeCalcs` | **Non auditée** |
-| **Reports** (529 l.) | Bilans mensuels — génération de **tout** mois clos ayant des trades (`reportMonths`, même définition que le backfill CSV) | `monthlyReport` · `reportMonths` · `tradeCalcs` | **Non auditée** ; table `monthly_reports` |
+| **Reports** (~600 l.) | Bilans mensuels — génération de **tout** mois clos ayant des trades (`reportMonths`, même définition que le backfill CSV) | `monthlyReport` · `reportMonths` · `tradeCalcs` | **Non auditée** ; table `monthly_reports` |
 | **Missed** (798 l.) | Setups vus mais non pris | `image` · `tradeCalcs` | Différenciant réel : aucun concurrent ne journalise l'inaction |
 
 ### Cadre — engagement du trader
@@ -396,6 +398,31 @@ pas mesurer**.
 
 `edgeHistory` conserve 30 jours pour afficher une **trajectoire** (sparkline).
 Un score sans historique est un constat ; avec historique, c'est une progression.
+
+### Import CSV (`csvImport.ts`)
+
+Lecture d'un export broker : découpage respectant guillemets et BOM, séparateur
+deviné (virgule, point-virgule, tabulation), montants aux formats anglo-saxon et
+européen, **parenthèses comptables = négatif**, dates ISO et US avec AM/PM,
+correspondance automatique des colonnes (NinjaTrader, TradingView, TopStep,
+TradeVault), et signature de doublon `date|symbole|P&L|heure d'entrée`.
+
+> **Une ligne inexploitable est COMPTÉE, jamais devinée.** Un trade faux pollue
+> durablement toutes les statistiques ; un trade manquant se voit et se corrige.
+
+Ce code vivait dans le composant React de la modale et n'était donc pas testable.
+Extrait le 2026-08-07, 27 tests. Il importe `generateId` depuis `@/domain` et non
+depuis la façade du store, qui tirerait le client Supabase et le rendrait à
+nouveau intestable hors navigateur.
+
+### Mois de rapport (`reportMonths.ts`)
+
+« Mois clos, avec des trades, sans rapport encore. » Une seule définition,
+utilisée par la page Rapports **et** par le backfill après import CSV — la règle
+existait auparavant en double.
+
+> **Le mois EN COURS est exclu.** Figer un bilan partiel ferait croire, un mois
+> plus tard, que c'est le bilan complet.
 
 ### Erreurs récurrentes (`behavioral.ts`)
 
