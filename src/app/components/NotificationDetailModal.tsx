@@ -111,7 +111,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
             <h2 className="text-[15px] font-bold text-white tracking-tight truncate">Jarvis</h2>
             <span
               className={cn(
-                "shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                "shrink-0 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider",
                 n.severity === "success" &&
                   "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20",
                 n.severity === "warning" &&

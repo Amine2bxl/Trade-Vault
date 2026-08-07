@@ -14,6 +14,7 @@ import {
   CalendarDays,
   Gauge,
   Scale,
+  LayoutDashboard,
 } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
@@ -26,9 +27,17 @@ import {
 } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
 import { loadStartingBalance } from "../store";
-import { loadTradingPlan } from "../utils/tradingPlan";
 import { loadOnboarding } from "../store/profile";
-import { computeEdgeScore, deriveDailyRule, EDGE_WINDOW_DAYS } from "../utils/edgeScore";
+import { deriveDailyRule } from "../utils/edgeScore";
+import { useEdgeScore } from "../hooks/useEdgeScore";
+import {
+  readHistory,
+  writeHistory,
+  appendToday,
+  dayOverDayDelta,
+  trend,
+  type EdgePoint,
+} from "../utils/edgeHistory";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
@@ -49,6 +58,11 @@ interface DashboardProps {
   tradesLoading?: boolean;
   onOpenChecklist?: () => void;
   onOpenImport?: () => void;
+  /** Ouvre un trade récent en édition. La liste affichait déjà un état `hover`
+   *  qui promettait cette interaction sans la fournir. */
+  onEditTrade?: (trade: Trade) => void;
+  /** « Tout voir » — la liste est tronquée à 4, il faut un accès au reste. */
+  onOpenJournal?: () => void;
 }
 
 type Period = "7d" | "30d" | "ytd" | "all";
@@ -76,6 +90,13 @@ export default function Dashboard({
   onAddTrade,
   tradesLoading,
   onOpenChecklist,
+  // Déclaré dans `DashboardProps` et UTILISÉ dans l'état vide, mais il n'était
+  // pas destructuré : la référence levait un ReferenceError au rendu du premier
+  // écran d'un nouvel utilisateur. Vite ne typecheckant pas au build, le défaut
+  // passait la CI.
+  onOpenImport,
+  onEditTrade,
+  onOpenJournal,
 }: DashboardProps) {
   const { t } = useT();
   const { toast } = useToast();
@@ -90,7 +111,6 @@ export default function Dashboard({
     }
   });
   const [startingBalance, setStartingBalance] = useState(0);
-  const [maxRiskPct, setMaxRiskPct] = useState<number | null>(null);
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
   const hasDraft = useHasTradeDraft(user?.id);
 
@@ -101,15 +121,6 @@ export default function Dashboard({
       loadStartingBalance(user.id)
         .then((b) => {
           if (active) setStartingBalance(b);
-        })
-        .catch(() => {
-          if (active) toast(t("dashboard.loadError"), "error");
-        }),
-      loadTradingPlan(user.id)
-        .then((p) => {
-          if (!active) return;
-          const pct = parseFloat(p.risk.maxRiskPerTradePct);
-          setMaxRiskPct(Number.isFinite(pct) && pct > 0 ? pct : null);
         })
         .catch(() => {
           if (active) toast(t("dashboard.loadError"), "error");
@@ -190,72 +201,43 @@ export default function Dashboard({
   }, [user?.id]);
 
   // ── Copilot block: Edge Score, rule of the day, objective ──
-  // Checklist completion per day over the Edge window, read from the same
-  // localStorage keys the Checklist page writes (tv-chk-{uid}-{ISO date}).
-  const checklistByDay = useMemo(() => {
-    const map: Record<string, number> = {};
-    if (!user) return map;
-    const now = new Date();
-    for (let i = 0; i < EDGE_WINDOW_DAYS; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      try {
-        const raw = localStorage.getItem(`tv-chk-${user.id}-${iso}`);
-        if (!raw) continue;
-        const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
-        if (p.locked) map[iso] = 1;
-        else if (Array.isArray(p.checked) && p.checked.length > 0)
-          map[iso] = p.checked.filter(Boolean).length / p.checked.length;
-      } catch {
-        /* ignore malformed entry */
-      }
-    }
-    return map;
-  }, [user?.id]);
+  // Edge Score via le hook PARTAGÉ avec Jarvis : une seule définition de ce
+  // score dans tout le produit. L'assemblage des entrées (checklist par jour,
+  // risque max, solde initial) vit désormais dans `useEdgeScore`.
+  const edge = useEdgeScore(trades, user?.id);
 
-  // Edge Score is computed over the whole account history (not the period
-  // filter) so it reflects recent discipline, not the selected window.
-  const edge = useMemo(
-    () => computeEdgeScore(trades, { maxRiskPct, startingBalance, checklistByDay }),
-    [trades, maxRiskPct, startingBalance, checklistByDay],
-  );
   const dailyRule = useMemo(() => deriveDailyRule(computeStats(trades)), [trades]);
 
-  // Day-over-day delta: compare today's score with the last stored snapshot.
-  const edgeDelta = useMemo(() => {
-    if (!user || edge.score === null) return null;
-    try {
-      const raw = localStorage.getItem(`tv.edge.${user.id}`);
-      if (!raw) return null;
-      const snap = JSON.parse(raw) as { date?: string; score?: number };
-      const today = new Date().toISOString().slice(0, 10);
-      if (snap.date && snap.date !== today && typeof snap.score === "number") {
-        return edge.score - snap.score;
-      }
-    } catch {
-      /* ignore */
-    }
-    return null;
-  }, [user?.id, edge.score]);
+  // ── Trajectoire de discipline ──────────────────────────────────────────────
+  // On conserve un HISTORIQUE borné du score, pas seulement l'instantané de la
+  // veille : le delta jour/jour dit « tu as monté depuis hier », il ne dit pas
+  // « tu progresses ». La logique vit dans un module pur et testé
+  // (`utils/edgeHistory.ts`), ici on ne fait que la brancher.
+  const today = new Date().toISOString().slice(0, 10);
+  const [edgeHistory, setEdgeHistory] = useState<EdgePoint[]>([]);
 
-  // Persist today's score once known, so tomorrow can show a delta.
   useEffect(() => {
-    if (!user || edge.score === null) return;
-    const today = new Date().toISOString().slice(0, 10);
-    try {
-      const raw = localStorage.getItem(`tv.edge.${user.id}`);
-      const snap = raw ? (JSON.parse(raw) as { date?: string }) : null;
-      if (!snap || snap.date !== today) {
-        localStorage.setItem(
-          `tv.edge.${user.id}`,
-          JSON.stringify({ date: today, score: edge.score }),
-        );
-      }
-    } catch {
-      /* best-effort */
-    }
-  }, [user?.id, edge.score]);
+    if (!user || typeof window === "undefined") return;
+    setEdgeHistory(readHistory(window.localStorage, user.id));
+  }, [user?.id]);
+
+  // Enregistre (ou réécrit) le score du jour : il bouge à chaque trade ajouté,
+  // c'est la valeur de fin de journée qui fait foi.
+  useEffect(() => {
+    if (!user || edge.score === null || typeof window === "undefined") return;
+    setEdgeHistory((prev) => {
+      const next = appendToday(prev, today, edge.score as number);
+      writeHistory(window.localStorage, user.id, next);
+      return next;
+    });
+  }, [user?.id, edge.score, today]);
+
+  const edgeDelta = useMemo(
+    () => (edge.score === null ? null : dayOverDayDelta(edgeHistory, today, edge.score)),
+    [edgeHistory, edge.score, today],
+  );
+
+  const edgeTrend = useMemo(() => trend(edgeHistory), [edgeHistory]);
 
   // Monthly objective: current-month PnL as a fraction of the month's opening
   // equity (starting balance + PnL accumulated before this month).
@@ -301,6 +283,11 @@ export default function Dashboard({
     <PageContainer>
       <PageHeader
         className="items-center"
+        icon={
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <LayoutDashboard className="w-4 h-4 text-white" />
+          </span>
+        }
         eyebrow={
           <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-1">
             <Sparkles className="w-3.5 h-3.5" />
@@ -340,6 +327,8 @@ export default function Dashboard({
             <CopilotBlock
               edge={edge}
               edgeDelta={edgeDelta}
+              edgeTrend={edgeTrend}
+              edgeScores={edgeHistory.map((p) => p.score)}
               rule={dailyRule}
               checklist={chkStatus}
               objective={objective}
@@ -394,7 +383,7 @@ export default function Dashboard({
                   onClick={onOpenImport}
                   className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
                 >
-                  {t("import.importCsv")}
+                  {t("settings.importCsv")}
                 </button>
               )}
               {/* Ghost example of what a logged trade looks like */}
@@ -614,9 +603,9 @@ export default function Dashboard({
                         : undefined,
                   }}
                   footer={{
-                    label: t("quant.planAdherence"),
-                    value: formatPct(quant.planAdherence),
-                    className: quant.planAdherence >= 0.8 ? "text-emerald-400" : "text-amber-400",
+                    label: t("quant.cleanTrades"),
+                    value: formatPct(quant.cleanTrades),
+                    className: quant.cleanTrades >= 0.8 ? "text-emerald-400" : "text-amber-400",
                   }}
                   delay={180}
                 />
@@ -625,10 +614,18 @@ export default function Dashboard({
               <div>
                 {/* Recent Trades */}
                 <Card hover className="overflow-hidden ">
-                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06]">
+                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06] flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold text-white">
                       {t("dashboard.recentTrades")}
                     </h3>
+                    {onOpenJournal && trades.length > recentTrades.length && (
+                      <button
+                        onClick={onOpenJournal}
+                        className="text-xs font-semibold text-cyan-400/90 hover:text-cyan-300 transition-colors shrink-0"
+                      >
+                        {t("common.viewAll")}
+                      </button>
+                    )}
                   </div>
                   <div className="divide-y divide-white/[0.04]">
                     {recentTrades.length === 0 ? (
@@ -638,10 +635,26 @@ export default function Dashboard({
                     ) : (
                       recentTrades.map((trade) => {
                         const be = isBreakEven(trade);
+                        // `button` et non `div` quand l'action existe : le clavier
+                        // et les lecteurs d'écran doivent atteindre l'édition,
+                        // pas seulement la souris.
+                        const RowTag = onEditTrade ? "button" : "div";
                         return (
-                          <div
+                          <RowTag
                             key={trade.id}
-                            className="px-4 md:px-5 py-3 trade-card flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
+                            {...(onEditTrade
+                              ? {
+                                  type: "button" as const,
+                                  onClick: () => onEditTrade(trade),
+                                  "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
+                                }
+                              : {})}
+                            className={cn(
+                              "px-4 md:px-5 py-3 trade-card flex items-center gap-3 transition-colors",
+                              onEditTrade
+                                ? "w-full text-left hover:bg-white/[0.04] focus-visible:bg-white/[0.06] focus-visible:outline-none cursor-pointer"
+                                : "hover:bg-white/[0.02]",
+                            )}
                           >
                             <div
                               className={cn(
@@ -697,7 +710,7 @@ export default function Dashboard({
                                 ${trade.riskAmount.toFixed(0)} {t("dashboard.riskSuffix")}
                               </div>
                             </div>
-                          </div>
+                          </RowTag>
                         );
                       })
                     )}

@@ -32,7 +32,8 @@ const CommandPalette = lazy(() => import("./components/CommandPalette"));
 const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
 import TradeDetailModal from "./components/TradeDetailModal";
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
-import { Trade, Page } from "./types";
+import { Trade, isPage, type Page } from "./types";
+import { pageFromSearch, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
 import {
   upsertTrade,
   deleteTrade,
@@ -56,6 +57,8 @@ import {
 } from "@/modules/notifications";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
+import { computeBehavioral } from "./utils/behavioral";
+import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
@@ -73,7 +76,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
-  const { activeId, ready: accountsReady } = useAccounts();
+  const { activeId, ready: accountsReady, activeAccount } = useAccounts();
   const { t } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -91,51 +94,45 @@ function AppContent() {
     },
     [queryClient, user?.id, activeId],
   );
+  // L'URL est la SOURCE DE VÉRITÉ de la page courante — plus `sessionStorage`.
+  // Deux emplacements auraient divergé au premier retour arrière, et c'est
+  // l'URL qui rend la page partageable, mesurable et navigable au bouton
+  // retour (voir `utils/pageUrl.ts` pour le raisonnement complet).
   const [page, setPage] = useState<Page>(() => {
+    if (typeof window === "undefined") return DEFAULT_PAGE;
+    const fromUrl = pageFromSearch(window.location.search);
+    if (fromUrl) return fromUrl;
+    // Reprise unique de l'ancien emplacement : un trader dont l'onglet est
+    // ouvert au moment du déploiement reste sur sa page.
     try {
       const saved = sessionStorage.getItem("tv.page");
-      if (
-        saved &&
-        [
-          "dashboard",
-          "inbox",
-          "journal",
-          "checklist",
-          "calendar",
-          "analytics",
-          "mistakes",
-          "missed",
-          "insights",
-          "news",
-          "seasonality",
-          "calculator",
-          "settings",
-          "reports",
-          "goals",
-          "tradingplan",
-          "appearance",
-          "subscription",
-          "profile",
-        ].includes(saved)
-      ) {
-        return saved as Page;
-      }
+      if (isPage(saved)) return saved;
     } catch {
-      /* sessionStorage unavailable */
+      /* sessionStorage indisponible */
     }
-    return "dashboard";
+    return DEFAULT_PAGE;
   });
 
-  // Persist page changes to sessionStorage (survives refresh, not tabs)
   const pageRef = useRef(page);
   pageRef.current = page;
+
+  // Écrit la page dans l'URL. `pushState` — et non `replaceState` — parce que
+  // c'est précisément l'entrée d'historique qui fait fonctionner le bouton
+  // retour ; sans elle, « retour » quitte l'application sur Android.
   useEffect(() => {
-    try {
-      sessionStorage.setItem("tv.page", page);
-    } catch {
-      /* sessionStorage unavailable */
-    }
+    if (typeof window === "undefined") return;
+    const next = buildPageUrl(window.location.pathname, window.location.search, page);
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next === current) return;
+    window.history.pushState({ page }, "", next);
   }, [page]);
+
+  // Bouton retour / avant du navigateur.
+  useEffect(() => {
+    const onPop = () => setPage(pageFromSearch(window.location.search) ?? DEFAULT_PAGE);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -175,32 +172,9 @@ function AppContent() {
   useEffect(() => {
     const onNavigate = (e: Event) => {
       const detail = (e as CustomEvent<{ page?: string }>).detail;
-      if (
-        detail?.page &&
-        [
-          "dashboard",
-          "inbox",
-          "journal",
-          "checklist",
-          "calendar",
-          "analytics",
-          "mistakes",
-          "missed",
-          "insights",
-          "news",
-          "seasonality",
-          "calculator",
-          "settings",
-          "reports",
-          "goals",
-          "tradingplan",
-          "appearance",
-          "subscription",
-          "profile",
-        ].includes(detail.page)
-      ) {
-        setPage(detail.page as Page);
-      }
+      // Même garde que la restauration de session : la cible vient d'un
+      // événement externe, elle doit être validée avant d'être appliquée.
+      if (isPage(detail?.page)) setPage(detail.page);
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);
@@ -316,20 +290,44 @@ function AppContent() {
   // fois par jour via l'engine (persist → inbox). Dédupliqué côté runner.
   useEffect(() => {
     if (!user?.id || !accountsReady || tradesLoading) return;
-    void dispatchCodedNotifications(
-      user.id,
-      {
-        trades: trades.map((t) => ({ date: t.date, pnl: t.pnl, mistakes: t.mistakes ?? [] })),
-        stats: {
-          totalPnl: stats.totalPnl,
-          winRate: stats.winRate,
-          tradeCount: stats.totalTrades,
-          mistakeStats: stats.mistakeStats,
+    const uid = user.id;
+    void (async () => {
+      // Le solde est nécessaire aux règles de risque en % ; il est chargé une
+      // fois ici plutôt qu'à chaque évaluation.
+      const balance =
+        (await loadStartingBalance(uid).catch(() => 0)) + trades.reduce((s, tr) => s + tr.pnl, 0);
+      await dispatchCodedNotifications(
+        uid,
+        {
+          trades: trades.map((t) => ({ date: t.date, pnl: t.pnl, mistakes: t.mistakes ?? [] })),
+          stats: {
+            totalPnl: stats.totalPnl,
+            winRate: stats.winRate,
+            tradeCount: stats.totalTrades,
+            mistakeStats: stats.mistakeStats,
+          },
+          rulesEnabled: rulesRef.current.filter((r) => r.enabled).length,
+          // Alimenté par les moteurs déterministes : Jarvis peut désormais
+          // signaler un progrès chiffré ou une règle qui échappe — sans appel
+          // IA, donc sans coût et sans risque d'invention.
+          mistakeTrends: computeBehavioral(trades)
+            .rows.filter((r) => r.trend)
+            .map((r) => ({
+              mistake: r.mistake,
+              deltaPct: r.trend!.deltaPct,
+              recent: r.trend!.recent,
+              previous: r.trend!.previous,
+            })),
+          adherence: computeRuleAdherence(trades, rulesRef.current, balance).map((a) => ({
+            text: a.text,
+            kept: a.kept,
+            applicable: a.applicable,
+            ratePct: a.ratePct,
+          })),
         },
-        rulesEnabled: rulesRef.current.filter((r) => r.enabled).length,
-      },
-      (uid, input) => NotificationEngine.notify(uid, input),
-    ).catch(() => {});
+        (id, input) => NotificationEngine.notify(id, input),
+      );
+    })().catch(() => {});
   }, [user?.id, accountsReady, tradesLoading, trades, stats]);
 
   const handleSave = useCallback(
@@ -452,10 +450,14 @@ function AppContent() {
       const results = await Promise.allSettled(imported.map((tr) => upsertTrade(user.id, tr)));
       const saved: Trade[] = [];
       for (let i = 0; i < results.length; i++) {
-        if (results[i].status === "fulfilled") {
+        // Liaison locale : TypeScript n'affine pas un accès indexé répété
+        // (`results[i]`), donc `.reason` était inaccessible au typage alors que
+        // le code était correct à l'exécution.
+        const result = results[i];
+        if (result.status === "fulfilled") {
           saved.push(imported[i]);
         } else {
-          console.error("Failed to import trade", results[i].reason);
+          console.error("Failed to import trade", result.reason);
         }
       }
       if (saved.length > 0) {
@@ -547,6 +549,8 @@ function AppContent() {
                   tradesLoading={tradesLoading}
                   onOpenChecklist={() => setPage("checklist")}
                   onOpenImport={() => setImportOpen(true)}
+                  onEditTrade={handleEdit}
+                  onOpenJournal={() => setPage("journal")}
                 />
               )}
               {page === "journal" && (
@@ -585,44 +589,15 @@ function AppContent() {
               {page === "subscription" && <Subscription />}
               {page === "inbox" && <Inbox />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-              {![
-                "dashboard",
-                "journal",
-                "checklist",
-                "calendar",
-                "analytics",
-                "mistakes",
-                "missed",
-                "insights",
-                "news",
-                "seasonality",
-                "calculator",
-                "settings",
-                "reports",
-                "goals",
-                "tradingplan",
-                "appearance",
-                "subscription",
-                "inbox",
-                "profile",
-              ].includes(page) && (
-                <Dashboard
-                  trades={trades}
-                  stats={stats}
-                  onAddTrade={handleAdd}
-                  onEditTrade={handleEdit}
-                  onOpenJournal={() => setPage("journal")}
-                  onOpenMissed={() => setPage("missed")}
-                  onOpenChecklist={() => setPage("checklist")}
-                  onOpenImport={() => setImportOpen(true)}
-                />
-              )}
             </Suspense>
           </PageErrorBoundary>
         </div>
       </main>
-      {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}
-      <AccountSwitcher variant="fab" />
+      {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
+      <AccountSwitcher
+        variant="fab"
+        balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
+      />
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />

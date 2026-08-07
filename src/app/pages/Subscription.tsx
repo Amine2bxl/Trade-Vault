@@ -86,11 +86,8 @@ export default function Subscription() {
       <PageHeader
         className="mb-1 md:mb-1"
         icon={
-          <span className="relative shrink-0">
-            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
-              <Crown className="w-4.5 h-4.5 text-white" />
-            </span>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <Crown className="w-4 h-4 text-white" />
           </span>
         }
         title={tr("Abonnement", "Subscription")}
@@ -106,8 +103,8 @@ export default function Subscription() {
         <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl" />
 
         <div className="relative flex items-start gap-4 flex-wrap">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
-            <Crown className="w-7 h-7 text-white" />
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shrink-0">
+            <Crown className="w-6 h-6 text-white" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -288,7 +285,7 @@ function Fact({
 }) {
   return (
     <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] px-3 py-2.5 min-w-0">
-      <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
         <span className="text-cyan-400/70 shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
       </div>

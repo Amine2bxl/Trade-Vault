@@ -6,7 +6,9 @@
  * attributable (which agent, which model), and reproducible (input/output
  * summaries). It also feeds per-user rate/cost governance later.
  *
- * FOUNDATION ONLY: the record shape + a recorder contract. No writer yet.
+ * Le writer vit dans `backend/telemetry.server.ts` (service role) : la table
+ * n'a aucune politique d'insertion, pour qu'un client ne puisse pas fabriquer
+ * de fausses métriques.
  */
 import type { AgentId } from "./agents/types";
 import type { AiIntent } from "./router/types";
@@ -18,7 +20,13 @@ export interface AgentRun {
   intent: AiIntent;
   provider: string;
   model: string;
-  status: "ok" | "error";
+  /**
+   * `fallback` = la réponse déterministe a été servie (aucun provider
+   * disponible, ou texte vide). C'est un état DISTINCT d'une erreur : le
+   * trader a bien obtenu une réponse fondée sur ses données. Les confondre
+   * masquerait le taux de repli, qui est précisément ce qu'il faut surveiller.
+   */
+  status: "ok" | "error" | "fallback";
   inputTokens?: number;
   outputTokens?: number;
   latencyMs: number;

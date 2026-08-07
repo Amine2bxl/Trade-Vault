@@ -50,7 +50,6 @@ export function buildHomeData(trades: Trade[]): JarvisHomeData {
     trades,
     stats,
     signals: computeBehaviorSignals(trades),
-    edge: null,
     rule: deriveDailyRule(stats),
     profile: {
       firstName: "Amine",

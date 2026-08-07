@@ -41,15 +41,37 @@ interface JournalProps {
 type SortKey = "date" | "symbol" | "pnl" | "strategy" | "rMultiple";
 type SortDir = "asc" | "desc";
 type ResultFilter = "all" | "win" | "loss" | "be";
+type DurationFilter = "all" | "lt30" | "30to60" | "1to4" | "gt4";
 
 const PAGE_SIZE = 50;
 const FILTERS_STORAGE_KEY = "tv.journal.filters";
+
+const DAY_NAMES = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+const DURATION_OPTIONS: { value: DurationFilter; label: string }[] = [
+  { value: "all", label: "Toute durée" },
+  { value: "lt30", label: "< 30 min" },
+  { value: "30to60", label: "30 min – 1h" },
+  { value: "1to4", label: "1h – 4h" },
+  { value: "gt4", label: "> 4h" },
+];
+
+function tradeDurationMinutes(t: Trade): number | null {
+  if (!t.entryTime || !t.exitTime) return null;
+  const [eh, em] = t.entryTime.split(":").map(Number);
+  const [xh, xm] = t.exitTime.split(":").map(Number);
+  let diffMin = xh * 60 + xm - (eh * 60 + em);
+  if (diffMin < 0) diffMin += 24 * 60;
+  return diffMin;
+}
 
 interface StoredFilters {
   strategyFilter: string;
   resultFilter: ResultFilter;
   sortKey: SortKey;
   sortDir: SortDir;
+  dayFilter: string;
+  durationFilter: DurationFilter;
 }
 
 function loadStoredFilters(): Partial<StoredFilters> {
@@ -77,27 +99,38 @@ export default function Journal({
   const [resultFilter, setResultFilter] = useState<ResultFilter>(stored.resultFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? "date");
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
+  const [dayFilter, setDayFilter] = useState<string>(stored.dayFilter ?? "all");
+  const [durationFilter, setDurationFilter] = useState<DurationFilter>(
+    stored.durationFilter ?? "all",
+  );
   const [viewingIdx, setViewingIdx] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // Filters survive reloads.
   useEffect(() => {
     try {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify({ strategyFilter, resultFilter, sortKey, sortDir } satisfies StoredFilters),
+        JSON.stringify({
+          strategyFilter,
+          resultFilter,
+          sortKey,
+          sortDir,
+          dayFilter,
+          durationFilter,
+        } satisfies StoredFilters),
       );
     } catch {
-      /* best-effort persistence — ignore */
+      /* best-effort persistence */
     }
-  }, [strategyFilter, resultFilter, sortKey, sortDir]);
+  }, [strategyFilter, resultFilter, sortKey, sortDir, dayFilter, durationFilter]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [strategyFilter, resultFilter]);
+  }, [strategyFilter, resultFilter, dayFilter, durationFilter]);
 
   const filtered = useMemo(() => {
     let list = [...trades];
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -107,6 +140,7 @@ export default function Journal({
           t.notes.toLowerCase().includes(q),
       );
     }
+
     if (periodFilter !== "all") {
       const cutoff = new Date();
       if (periodFilter === "7d") cutoff.setDate(cutoff.getDate() - 7);
@@ -115,10 +149,36 @@ export default function Journal({
       else if (periodFilter === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
       list = list.filter((t) => new Date(t.date) >= cutoff);
     }
+
     if (strategyFilter !== "all") list = list.filter((t) => t.strategy === strategyFilter);
+
+    if (dayFilter !== "all") {
+      list = list.filter((t) => new Date(t.date).getDay().toString() === dayFilter);
+    }
+
+    if (durationFilter !== "all") {
+      list = list.filter((t) => {
+        const mins = tradeDurationMinutes(t);
+        if (mins === null) return false;
+        switch (durationFilter) {
+          case "lt30":
+            return mins < 30;
+          case "30to60":
+            return mins >= 30 && mins <= 60;
+          case "1to4":
+            return mins > 60 && mins <= 240;
+          case "gt4":
+            return mins > 240;
+          default:
+            return true;
+        }
+      });
+    }
+
     if (resultFilter === "win") list = list.filter((t) => !isBreakEven(t) && t.pnl > 0);
     if (resultFilter === "loss") list = list.filter((t) => !isBreakEven(t) && t.pnl < 0);
     if (resultFilter === "be") list = list.filter((t) => isBreakEven(t));
+
     list.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "date") cmp = a.date.localeCompare(b.date);
@@ -129,10 +189,18 @@ export default function Journal({
       return sortDir === "desc" ? -cmp : cmp;
     });
     return list;
-  }, [trades, searchQuery, periodFilter, strategyFilter, resultFilter, sortKey, sortDir]);
+  }, [
+    trades,
+    searchQuery,
+    periodFilter,
+    strategyFilter,
+    resultFilter,
+    sortKey,
+    sortDir,
+    dayFilter,
+    durationFilter,
+  ]);
 
-  // Counts per result filter — shown inside the pills so the trader sees the
-  // shape of their journal before clicking, not after.
   const counts = useMemo(() => {
     const base =
       strategyFilter === "all" ? trades : trades.filter((t) => t.strategy === strategyFilter);
@@ -144,12 +212,8 @@ export default function Journal({
     } as Record<ResultFilter, number>;
   }, [trades, strategyFilter]);
 
-  // The journal's headline numbers, recomputed on the CURRENT selection. Making
-  // the summary follow the filter is what turns the list into an analysis tool:
-  // "show me my losses" instantly answers "what do they cost me".
   const summary = useMemo(() => computeStats(filtered), [filtered]);
 
-  // Render at most `visibleCount` rows — keeps the DOM light on big journals
   const shown = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = filtered.length > visibleCount;
   const viewing = viewingIdx !== null ? (filtered[viewingIdx] ?? null) : null;
@@ -170,12 +234,25 @@ export default function Journal({
     );
   };
 
+  const activeFilterCount =
+    (periodFilter !== "all" ? 1 : 0) +
+    (strategyFilter !== "all" ? 1 : 0) +
+    (dayFilter !== "all" ? 1 : 0) +
+    (durationFilter !== "all" ? 1 : 0) +
+    (resultFilter !== "all" ? 1 : 0) +
+    (searchQuery.trim() ? 1 : 0);
+
   return (
     <PageContainer>
       <PageHeader
         className="mb-3 md:mb-4 items-center"
         title={t("journal.title")}
         subtitle={`${filtered.length} ${t("common.trades")}`}
+        icon={
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <BookOpen className="w-4 h-4 text-white" />
+          </span>
+        }
         actions={
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
@@ -198,10 +275,8 @@ export default function Journal({
         }
       />
 
-      {/* Summary of the CURRENT selection — the journal reads as an analysis,
-          not just a list. Recomputed from the same deterministic engine. */}
       {filtered.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5 ">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
           <SummaryTile
             label={t("stats.totalPnl")}
             value={formatPnl(summary.totalPnl)}
@@ -218,92 +293,121 @@ export default function Journal({
         </div>
       )}
 
-      {/* Search + Period + Strategy + Result filter */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-2.5 md:mb-3">
-        {/* Search */}
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("journal.searchPlaceholder")}
-          className="w-full md:w-auto bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm text-slate-200 placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-400/30"
-        />
-        {/* Period filter */}
-        <select
-          value={periodFilter}
-          onChange={(e) => setPeriodFilter(e.target.value)}
-          className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
-        >
-          <option value="all">{t("common.all")}</option>
-          <option value="7d">{t("common.7d")}</option>
-          <option value="30d">{t("common.30d")}</option>
-          <option value="90d">{t("common.90d")}</option>
-          <option value="1y">{t("common.1y")}</option>
-        </select>
-        {/* Strategy filter */}
-        <select
-          value={strategyFilter}
-          onChange={(e) => setStrategyFilter(e.target.value)}
-          className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
-        >
-          <option value="all">{t("common.all")}</option>
-          {STRATEGIES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
-          {(
-            [
-              { v: "all", label: t("common.all") },
-              { v: "win", label: t("common.win") },
-              { v: "loss", label: t("common.loss") },
-              { v: "be", label: t("common.be") },
-            ] as { v: ResultFilter; label: string }[]
-          ).map((opt) => (
-            <button
-              key={opt.v}
-              onClick={() => setResultFilter(opt.v)}
-              className={cn(
-                "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
-                resultFilter === opt.v
-                  ? opt.v === "win"
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : opt.v === "loss"
-                      ? "bg-red-500/15 text-red-400"
-                      : opt.v === "be"
-                        ? "bg-slate-500/20 text-slate-200"
-                        : "bg-cyan-500/15 text-cyan-400"
-                  : "text-slate-500 hover:text-slate-300",
-              )}
-            >
-              {opt.label}
-              <span
+      {/* Filter bar — 2 rows on mobile for all the new filters */}
+      <div className="flex flex-col gap-1.5 mb-2.5 md:mb-3">
+        {/* Row 1: search + period + strategy + result pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("journal.searchPlaceholder")}
+            enterKeyHint="search"
+            className="w-full md:w-44 bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm text-slate-200 placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-400/30"
+          />
+          <select
+            value={periodFilter}
+            onChange={(e) => setPeriodFilter(e.target.value)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            <option value="all">{t("common.all")}</option>
+            <option value="7d">{t("common.7d")}</option>
+            <option value="30d">{t("common.30d")}</option>
+            <option value="90d">{t("common.90d")}</option>
+            <option value="1y">{t("common.1y")}</option>
+          </select>
+          <select
+            value={strategyFilter}
+            onChange={(e) => setStrategyFilter(e.target.value)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            <option value="all">{t("common.all")}</option>
+            {STRATEGIES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 flex-1 md:flex-none md:w-auto md:inline-flex">
+            {(
+              [
+                { v: "all", label: t("common.all") },
+                { v: "win", label: t("common.win") },
+                { v: "loss", label: t("common.loss") },
+                { v: "be", label: t("common.be") },
+              ] as { v: ResultFilter; label: string }[]
+            ).map((opt) => (
+              <button
+                key={opt.v}
+                onClick={() => setResultFilter(opt.v)}
                 className={cn(
-                  "tabular-nums text-[10px] font-bold",
-                  resultFilter === opt.v ? "opacity-70" : "text-slate-600",
+                  "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
+                  resultFilter === opt.v
+                    ? opt.v === "win"
+                      ? "bg-emerald-500/15 text-emerald-400"
+                      : opt.v === "loss"
+                        ? "bg-red-500/15 text-red-400"
+                        : opt.v === "be"
+                          ? "bg-slate-500/20 text-slate-200"
+                          : "bg-cyan-500/15 text-cyan-400"
+                    : "text-slate-500 hover:text-slate-300",
                 )}
               >
-                {counts[opt.v]}
-              </span>
-            </button>
-          ))}
+                {opt.label}
+                <span
+                  className={cn(
+                    "tabular-nums text-[10px] font-bold",
+                    resultFilter === opt.v ? "opacity-70" : "text-slate-600",
+                  )}
+                >
+                  {counts[opt.v]}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={onOpenMissed}
-          title={t("missed.title")}
-          className="shrink-0 shadow-[0_4px_16px_rgba(34,211,238,0.25)]"
-        >
-          <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          <span className="hidden sm:inline">{t("missed.title")}</span>
-        </Button>
+
+        {/* Row 2: day-of-week + duration + missed setups button */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <select
+            value={dayFilter}
+            onChange={(e) => setDayFilter(e.target.value)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            <option value="all">Tous les jours</option>
+            {DAY_NAMES.map((name, i) => (
+              <option key={i} value={String(i)}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={durationFilter}
+            onChange={(e) => setDurationFilter(e.target.value as DurationFilter)}
+            className="appearance-none bg-white/[0.03] border border-white/[0.06] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 cursor-pointer outline-none transition-colors"
+          >
+            {DURATION_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <div className="flex-1" />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onOpenMissed}
+            title={t("missed.title")}
+            className="shrink-0 shadow-[0_4px_16px_rgba(34,211,238,0.25)]"
+          >
+            <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">{t("missed.title")}</span>
+          </Button>
+        </div>
       </div>
 
       {/* ── Mobile: Card List ── */}
-      <div className="md:hidden space-y-1.5 ">
+      <div className="md:hidden space-y-1.5">
         {trades.length === 0 ? (
           <EmptyState
             icon={<Target className="w-7 h-7" />}
@@ -319,7 +423,16 @@ export default function Journal({
           <EmptyState
             title={t("common.noTradesFound")}
             action={
-              <Button size="sm" variant="ghost" onClick={() => setResultFilter("all")}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setResultFilter("all");
+                  setStrategyFilter("all");
+                  setDayFilter("all");
+                  setDurationFilter("all");
+                }}
+              >
                 {t("common.all")}
               </Button>
             }
@@ -427,7 +540,7 @@ export default function Journal({
       </div>
 
       {/* ── Desktop: Table ── */}
-      <Card className="hidden md:block overflow-hidden ">
+      <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[880px]">
             <thead className="sticky top-0 z-10 bg-[#0a0f1e]/85 backdrop-blur-md">
@@ -582,7 +695,6 @@ export default function Journal({
         </div>
       </Card>
 
-      {/* Load more (both layouts) */}
       {hasMore && (
         <div className="mt-3 text-center">
           <button
@@ -618,12 +730,6 @@ export default function Journal({
   );
 }
 
-/**
- * One number of the current selection. Deliberately flatter than `Metric` (no
- * hover glow, no corner accent): four of these sit in a row directly under the
- * page title, so they have to read as a quiet summary line, not as four cards
- * competing with the table below.
- */
 function SummaryTile({
   label,
   value,

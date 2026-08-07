@@ -17,6 +17,8 @@ export function enHeroLines(insight: JarvisInsight, mode: JarvisVoiceMode): Hero
       return enCostliestMistake(insight, mode);
     case "discipline_streak":
       return enDisciplineStreak(insight, mode);
+    case "rule_kept":
+      return enRuleKept(insight, mode);
     default:
       return [{ kind: "context", text: `I analysed your last ${insight.sampleSize} trades.` }];
   }
@@ -50,7 +52,7 @@ function enRiskAfterLoss(insight: JarvisInsight, mode: JarvisVoiceMode): HeroLin
   if (insight.impact) {
     lines.push({
       kind: "impact",
-      text: `This behaviour has cost you ${formatMoney(insight.impact.amount, "en")} across those ${insight.sampleSize} trades.`,
+      text: `Your post-loss trades add up to ${formatMoney(insight.impact.amount, "en")} across those ${insight.sampleSize} trades.`,
     });
   }
   lines.push({ kind: "action", text: `Today: ${actionLine(insight, "en")}.` });
@@ -126,7 +128,7 @@ function enDisciplineStreak(insight: JarvisInsight, mode: JarvisVoiceMode): Hero
   if (mode === "beginner") {
     lines.push({
       kind: "observation",
-      text: `You're on a ${streak}-win streak — a sign your process is working.`,
+      text: `You're on a ${streak}-win streak. That's an outcome, not yet proof: rule adherence is what tells you whether the process held.`,
     });
   } else if (mode === "advanced") {
     lines.push({ kind: "observation", text: `Current streak: ${streak} wins.` });
@@ -134,6 +136,36 @@ function enDisciplineStreak(insight: JarvisInsight, mode: JarvisVoiceMode): Hero
     lines.push({
       kind: "observation",
       text: `You're on a ${streak}-trade winning streak.`,
+    });
+  }
+  lines.push({ kind: "action", text: `Today: ${actionLine(insight, "en")}.` });
+  return lines;
+}
+
+/**
+ * "You held it 11 times out of 12" — the sentence the product documentation
+ * names as TradeVault's central loop.
+ *
+ * It names a DISCIPLINE, not an outcome: unlike a winning streak, holding a
+ * rule is entirely under the trader's control. It is the only congratulation
+ * in the product that rewards what they decided to do.
+ */
+function enRuleKept(insight: JarvisInsight, mode: JarvisVoiceMode): HeroLineSpec[] {
+  const kept = num(insight.evidence.kept);
+  const applicable = num(insight.evidence.applicable);
+  const rule = String(insight.evidence.ruleText ?? "");
+  const lines: HeroLineSpec[] = [{ kind: "context", text: `I looked at your last 30 days.` }];
+  if (mode === "beginner") {
+    lines.push({
+      kind: "observation",
+      text: `Your rule "${rule}" — you held it ${kept} times out of ${applicable}. That one is on you, not the market.`,
+    });
+  } else if (mode === "advanced") {
+    lines.push({ kind: "observation", text: `"${rule}": ${kept}/${applicable} held.` });
+  } else {
+    lines.push({
+      kind: "observation",
+      text: `You held "${rule}" ${kept} times out of ${applicable}.`,
     });
   }
   lines.push({ kind: "action", text: `Today: ${actionLine(insight, "en")}.` });

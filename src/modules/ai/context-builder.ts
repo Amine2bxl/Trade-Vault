@@ -58,6 +58,17 @@ export class ContextBuilder {
     return this;
   }
 
+  /** Tenue des règles — bornée à 5 : au-delà le coach dilue son message. */
+  withAdherence(rows: { text: string; kept: number; applicable: number; ratePct: number }[]): this {
+    this.ctx.adherence = rows.slice(0, 5).map((r) => ({
+      text: r.text.slice(0, 300),
+      kept: r.kept,
+      applicable: r.applicable,
+      ratePct: r.ratePct,
+    }));
+    return this;
+  }
+
   withMemory(memory: Memory[]): this {
     this.ctx.memory = memory.slice(0, CONTEXT_CAPS.memory).map((m) => ({
       kind: m.kind,

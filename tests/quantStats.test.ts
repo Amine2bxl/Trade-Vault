@@ -79,12 +79,17 @@ describe("computeQuantStats", () => {
   });
 
   it("kelly = W - (1-W)/R", () => {
-    // 2 wins avg 200, 2 losses avg 100 → W=0.5, R=2 → 0.5 - 0.5/2 = 0.25
+    // W=0.5, R=2 → 0.5 - 0.5/2 = 0.25.
+    // L'échantillon compte 40 trades décisifs : ce test vérifiait auparavant la
+    // formule sur QUATRE trades, ce qui validait au passage l'affichage d'une
+    // recommandation de taille de position sur un échantillon dénué de sens.
     const q = computeQuantStats([
-      mkTrade({ pnl: 200 }),
-      mkTrade({ pnl: 200 }),
-      mkTrade({ pnl: -100 }),
-      mkTrade({ pnl: -100 }),
+      ...Array(20)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(20)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -100 })),
     ]);
     expect(q.kelly).toBeCloseTo(0.25);
   });
@@ -151,14 +156,18 @@ describe("computeQuantStats", () => {
     expect(computeQuantStats([mkTrade({ pnl: -100 })]).consistencyScore).toBeNull();
   });
 
-  it("plan adherence = share of mistake-free trades", () => {
+  // Nommé `cleanTrades`, et non « adhérence au plan » : cet indicateur mesure
+  // ce que le trader s'est lui-même reproché, pas ce que le moteur de
+  // discipline constate (`ruleAdherence.ts`). Les deux portaient le même
+  // libellé et affichaient des valeurs différentes.
+  it("cleanTrades = part des trades sans erreur cochée", () => {
     const q = computeQuantStats([
       mkTrade({ mistakes: [] }),
       mkTrade({ mistakes: ["FOMO entry"] }),
       mkTrade({ mistakes: [] }),
       mkTrade({ mistakes: [] }),
     ]);
-    expect(q.planAdherence).toBeCloseTo(0.75);
+    expect(q.cleanTrades).toBeCloseTo(0.75);
   });
 });
 
@@ -176,7 +185,7 @@ describe("breakdowns", () => {
     expect(s.asia.count).toBe(1);
   });
 
-  it("statsByHour and winRateOf", () => {
+  it("statsByHour regroupe par heure d'entrée", () => {
     const byHour = statsByHour([
       mkTrade({ entryTime: "09:30", pnl: 100 }),
       mkTrade({ entryTime: "09:55", pnl: -60 }),
@@ -184,12 +193,82 @@ describe("breakdowns", () => {
       mkTrade({ entryTime: "09:10", pnl: 0, direction: "be" }),
     ]);
     expect(byHour[9].count).toBe(3);
-    expect(winRateOf(byHour[9])).toBeCloseTo(0.5); // 1W/1L, BE excluded
     expect(byHour[10].count).toBe(1);
+  });
+
+  it("winRateOf EXCLUT les break-even du dénominateur", () => {
+    const byHour = statsByHour([
+      ...Array(3)
+        .fill(null)
+        .map(() => mkTrade({ entryTime: "09:30", pnl: 100 })),
+      ...Array(3)
+        .fill(null)
+        .map(() => mkTrade({ entryTime: "09:40", pnl: -60 })),
+      mkTrade({ entryTime: "09:10", pnl: 0, direction: "be" }),
+    ]);
+    expect(winRateOf(byHour[9])).toBeCloseTo(0.5); // 3W/3L, le BE ne compte pas
+  });
+
+  it("winRateOf REFUSE de produire un taux sous l'échantillon minimum", () => {
+    // Un total reste vrai à toute taille ; un TAUX sur trois trades ne veut
+    // rien dire, et invite pourtant à « ma meilleure heure est 9 h ».
+    const byHour = statsByHour([
+      mkTrade({ entryTime: "09:30", pnl: 100 }),
+      mkTrade({ entryTime: "09:55", pnl: -60 }),
+    ]);
+    expect(winRateOf(byHour[9])).toBeNull();
   });
 
   it("dayHourMatrix keys are dow-hour", () => {
     const m = dayHourMatrix([mkTrade({ date: "2026-07-01", entryTime: "09:30", pnl: 10 })]);
     expect(m["3-9"].count).toBe(1); // 2026-07-01 = Wednesday
+  });
+});
+
+describe("Kelly — plancher d'échantillon", () => {
+  // Kelly ne DÉCRIT pas le passé, il RECOMMANDE une taille de position.
+  // Il s'affichait dès deux trades : trois trades chanceux donnaient un Kelly
+  // de plusieurs dizaines de pourcents, et un trader qui le suit fait sauter
+  // son compte. « Indicatif uniquement » ne protège personne.
+  it("ne s'affiche PAS sous 30 trades décisifs", () => {
+    const few = [
+      ...Array(5)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(2)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -50 })),
+    ];
+    expect(computeQuantStats(few).kelly).toBeNull();
+  });
+
+  it("s'affiche une fois l'échantillon suffisant", () => {
+    const many = [
+      ...Array(20)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(15)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -100 })),
+    ];
+    const k = computeQuantStats(many).kelly;
+    expect(k).not.toBeNull();
+    expect(k!).toBeGreaterThan(0);
+  });
+
+  it("les break-even ne comptent pas dans l'échantillon", () => {
+    // Même convention que le win rate : un BE n'est pas une décision tranchée.
+    const padded = [
+      ...Array(5)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 200 })),
+      ...Array(2)
+        .fill(null)
+        .map(() => mkTrade({ pnl: -50 })),
+      ...Array(40)
+        .fill(null)
+        .map(() => mkTrade({ pnl: 0, direction: "be" })),
+    ];
+    expect(computeQuantStats(padded).kelly).toBeNull();
   });
 });

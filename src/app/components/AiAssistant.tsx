@@ -10,7 +10,7 @@ import type { JarvisContext } from "./jarvis/context";
 import type { JarvisWorkspaceId } from "./jarvis/workspaces";
 import {
   migrateLegacyChat,
-  sessionConversationStore,
+  jarvisConversationStore,
   useConversations,
 } from "./jarvis/conversations";
 import JarvisSidebar from "./jarvis/components/JarvisSidebar";
@@ -48,7 +48,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   // Migration one-shot de l'ancien chat unique vers le store.
   useEffect(() => {
     if (!user?.id) return;
-    void migrateLegacyChat(sessionConversationStore(user.id), user.id);
+    void migrateLegacyChat(jarvisConversationStore(user.id), user.id);
   }, [user?.id]);
 
   const openConversation = useCallback((id: string) => {
@@ -58,16 +58,16 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
 
   const newConversation = useCallback(async () => {
     if (!user?.id) return;
-    const conv = await sessionConversationStore(user.id).create();
+    const conv = await jarvisConversationStore(user.id).create();
     openConversation(conv.id);
   }, [user?.id, openConversation]);
 
   const deleteConversation = useCallback(
     async (id: string) => {
       if (!user?.id) return;
-      await sessionConversationStore(user.id).remove(id);
+      await jarvisConversationStore(user.id).remove(id);
       if (conversationId === id) {
-        const list = await sessionConversationStore(user.id).list();
+        const list = await jarvisConversationStore(user.id).list();
         setConversationId(list[0]?.id ?? null);
         if (list.length === 0) setActiveWorkspace("home");
       }
@@ -78,7 +78,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   const renameConversation = useCallback(
     async (id: string, title: string) => {
       if (!user?.id || !title) return;
-      await sessionConversationStore(user.id).rename(id, title);
+      await jarvisConversationStore(user.id).rename(id, title);
     },
     [user?.id],
   );
@@ -86,7 +86,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   const togglePinConversation = useCallback(
     async (id: string) => {
       if (!user?.id) return;
-      await sessionConversationStore(user.id).togglePin(id);
+      await jarvisConversationStore(user.id).togglePin(id);
     },
     [user?.id],
   );
@@ -97,7 +97,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       setPendingPrompt(prompt);
       setActiveWorkspace("conversation");
       if (user?.id && !conversationIdRef.current) {
-        void sessionConversationStore(user.id)
+        void jarvisConversationStore(user.id)
           .create()
           .then((c) => setConversationId(c.id))
           .catch(() => {});

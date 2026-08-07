@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { aiRuntimeStatus } from "@/modules/ai/runtime/status";
 import { aiRuntimeProbe } from "@/modules/ai/runtime/probe";
+import { aiTelemetryStats } from "@/modules/ai/runtime/telemetry-stats";
 
 /**
  * Page de diagnostic interne — réservée au développement, jamais liée depuis
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/dev/ai")({
 
 type Status = Awaited<ReturnType<typeof aiRuntimeStatus>>;
 type ProbeResult = Awaited<ReturnType<typeof aiRuntimeProbe>>;
+type Telemetry = Awaited<ReturnType<typeof aiTelemetryStats>>;
 
 const CIRCUIT_LABEL: Record<string, string> = {
   closed: "fermé",
@@ -30,11 +32,19 @@ function DevAiPage() {
   const [error, setError] = useState<string | null>(null);
   const [testing, setTesting] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, ProbeResult>>({});
+  // Télémétrie PERSISTANTE (ai_agent_runs), par opposition aux compteurs
+  // runtime ci-dessous qui sont en mémoire et repartent à zéro à chaque cold
+  // start serverless. C'est la seule source qui survit aux redéploiements.
+  const [telemetry, setTelemetry] = useState<Telemetry | null>(null);
 
   const load = () => {
     aiRuntimeStatus()
       .then(setStatus)
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    // Best-effort : un diagnostic partiel vaut mieux qu'une page en erreur.
+    aiTelemetryStats()
+      .then(setTelemetry)
+      .catch(() => setTelemetry(null));
   };
   useEffect(() => {
     load();
@@ -93,6 +103,99 @@ function DevAiPage() {
           <div className="mt-6 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             Impossible de charger le diagnostic : {error}
           </div>
+        )}
+
+        {telemetry && (
+          <>
+            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
+              Télémétrie · {telemetry.days} derniers jours · compte connecté
+            </h2>
+            {!telemetry.available ? (
+              <div className="mt-2 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+                Table <code>ai_agent_runs</code> introuvable — migration non appliquée. Aucun
+                chiffre n'est affiché plutôt que des zéros trompeurs.
+              </div>
+            ) : telemetry.total === 0 ? (
+              <div className="mt-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-xs text-slate-500">
+                Aucun appel enregistré sur la période.
+              </div>
+            ) : (
+              <>
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { label: "Appels", value: String(telemetry.total) },
+                    { label: "Latence médiane", value: `${telemetry.medianMs} ms` },
+                    { label: "p95", value: `${telemetry.p95Ms} ms` },
+                    {
+                      label: "Dégradés",
+                      value: `${telemetry.degradedPct}%`,
+                      warn: telemetry.degradedPct > 10,
+                    },
+                  ].map((m) => (
+                    <div
+                      key={m.label}
+                      className="rounded-2xl border border-white/[0.08] bg-white/[0.02] px-3 py-2.5"
+                    >
+                      <div className="text-[11px] text-slate-500">{m.label}</div>
+                      <div
+                        className={`text-lg font-bold tabular-nums ${m.warn ? "text-amber-400" : "text-white"}`}
+                      >
+                        {m.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-xs text-slate-400">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    <span>
+                      OK <b className="text-emerald-400">{telemetry.ok}</b>
+                    </span>
+                    <span>
+                      Repli <b className="text-amber-400">{telemetry.fallbacks}</b>
+                    </span>
+                    <span>
+                      Erreurs <b className="text-red-400">{telemetry.errors}</b>
+                    </span>
+                    <span>
+                      Tokens in{" "}
+                      <b className="text-slate-200 tabular-nums">
+                        {telemetry.totalInputTokens.toLocaleString("fr-FR")}
+                      </b>
+                    </span>
+                    <span>
+                      out{" "}
+                      <b className="text-slate-200 tabular-nums">
+                        {telemetry.totalOutputTokens.toLocaleString("fr-FR")}
+                      </b>
+                    </span>
+                  </div>
+                </div>
+                {telemetry.byModel.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    {telemetry.byModel.map((m) => (
+                      <div
+                        key={m.model}
+                        className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 flex items-center gap-3 text-xs"
+                      >
+                        <span className="font-semibold text-slate-200 flex-1 truncate">
+                          {m.model}
+                        </span>
+                        <span className="text-slate-500 tabular-nums shrink-0">
+                          {m.runs} appels
+                        </span>
+                        <span className="text-slate-400 tabular-nums shrink-0">
+                          {m.medianMs} / {m.p95Ms} ms
+                        </span>
+                        <span className="text-slate-500 tabular-nums shrink-0 hidden md:inline">
+                          {m.avgInputTokens}→{m.avgOutputTokens} tk
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
 
         {status && (

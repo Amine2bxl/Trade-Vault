@@ -65,6 +65,7 @@ const en = {
   "common.rename": "Rename",
   "common.cancel": "Cancel",
   "common.delete": "Delete",
+  "common.viewAll": "View all",
   "common.edit": "Edit",
   // Onboarding (3-moment redesign)
   "onb.nameTitle": "What should we call you?",
@@ -412,6 +413,7 @@ const en = {
   "jarvisHome.subtitle": "Here is your trading state today.",
   "jarvisHome.ask": "How can I help you today?",
   "jarvisHome.suggestions": "Questions to explore",
+  "jarvisHome.analyzing": "Reading your last {n} trades…",
   "jarvisHome.proposal": "Proposed action",
   "jarvisHome.speaking": "speaking",
   "jarvisHome.addRule": "Add to my checklist",
@@ -510,12 +512,13 @@ const en = {
   // Dashboard — Copilot block (Edge Score, rule of the day, objective)
   "copilot.title": "Today's copilot",
   "copilot.edgeLabel": "Edge score",
+  "copilot.trendTitle": "Your discipline trajectory over the last sessions",
   "copilot.scoreBuilding": "Score building — log more trades",
   "copilot.cleanDays": "Clean days",
   "copilot.cleanDaysWord": "clean days",
   "copilot.jarvisBuilding":
     "Not enough recent data yet — log your trades and I'll start scoring your discipline.",
-  "copilot.obsPlan": "Plan adherence is your weak spot right now.",
+  "copilot.obsCleanTrades": "You are flagging mistakes on many recent trades.",
   "copilot.obsRisk": "Position sizing slipped above your limit recently.",
   "copilot.obsRoutine": "Your pre-market routine has been inconsistent.",
   "copilot.obsClean": "{clean} lately.",
@@ -594,7 +597,7 @@ const en = {
   "mistakes.mostCommon": "Most Common",
   "mistakes.noMistakesShort": "No mistakes!",
   "mistakes.noMistakes": "No mistakes",
-  "mistakes.noMistakesGreat": "No mistakes — great discipline!",
+  "mistakes.noMistakesGreat": "No mistakes flagged in this period.",
   "mistakes.improvementTips": "Improvement Tips",
   "mistakes.priority": "PRIORITY",
   "mistakes.defaultTip": "Focus on reducing this mistake.",
@@ -722,10 +725,10 @@ const en = {
 
   // Quant metrics
   "quant.expectancy": "Expectancy",
-  "quant.planAdherence": "Plan adherence",
+  "quant.cleanTrades": "Clean trades",
   "quant.needTenDays": "needs ≥10 trading days",
   "quant.annualized": "annualized, daily PnL",
-  "quant.kellyHint": "indication only",
+  "quant.kellyHint": "indicative — from 30 trades",
   "quant.consistency": "Consistency",
   "quant.bestDay": "best day",
   "quant.recovery": "Recovery",
@@ -805,14 +808,18 @@ const en = {
   "import.duplicatesSkipped": "duplicates skipped",
 
   // Mistakes — behavioral analytics
-  "mistakes.discipline": "Discipline score",
-  "mistakes.disciplineSub": "Weighted by mistake severity across all trades",
+  "mistakes.discipline": "Clean journal score",
+  "mistakes.disciplineSub": "Based on the mistakes you flagged, weighted by severity",
   "mistakes.severity": "Severity distribution",
   "mistakes.severityHint":
     "High-severity errors (no stop, revenge, oversizing) blow up accounts fastest.",
   "mistakes.sev_high": "High",
   "mistakes.sev_medium": "Medium",
   "mistakes.sev_low": "Low",
+  "mistakes.trendWindow": "vs previous 30 days",
+  "mistakes.adherence": "Your rules — how well you hold them",
+  "mistakes.adherenceSub":
+    "Trades checked over the last {n} days. Free-text rules cannot be auto-checked and are excluded.",
   "mistakes.weeklyTrend": "Weekly trend",
   "mistakes.weeklyTrendSub": "Are you cleaning up your act over time?",
   "mistakes.bySession": "By session",
@@ -820,7 +827,7 @@ const en = {
   "mistakes.incidents": "Incidents",
   "mistakes.edgePrefix": "Your clean trades win",
   "mistakes.edgePoints": "points",
-  "mistakes.edgeSuffix": "more often than trades with mistakes — discipline is your edge.",
+  "mistakes.edgeSuffix": "more often than trades where you flagged a mistake.",
   "mistakes.goal": "Next goal",
   "mistakes.goalIntro": "Cut",
   "mistakes.goalMid": "this week to lift discipline toward",
@@ -1066,6 +1073,8 @@ const en = {
 
   // AI generic
   "ai.noResponse": "No response.",
+  "ai.offlineAnalysis":
+    "Offline analysis: the numbers are still accurate, the interpretation is more limited.",
   "ai.genericError": "Something went wrong. Please try again.",
   "ai.rateLimited": "Too many requests in a short window. Wait a moment and try again.",
   "ai.sessionExpired": "Your session expired. Reconnect and try again.",
@@ -1135,6 +1144,10 @@ const en = {
   "account.startingBalance": "Starting balance",
   "account.creating": "Creating…",
   "account.create": "Create account",
+  "account.editTitle": "Modifier le compte",
+  "account.editShort": "Modifier",
+  "account.editSave": "Save changes",
+  "account.editSaving": "Saving…",
   "account.typePersonal": "Personal",
   "account.typeProp": "Prop Firm",
   "account.typeDemo": "Demo",

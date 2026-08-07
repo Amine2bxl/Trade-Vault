@@ -132,7 +132,11 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
                 onClick: () => setMoreOpen(true),
               })}
               {unread > 0 && (
-                <span className="absolute top-0 right-1 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]">
+                <span
+                  className="absolute top-0 right-1 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]"
+                  role="status"
+                  aria-label={`${unread} ${unread > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
+                >
                   {unread > 99 ? "99+" : unread}
                 </span>
               )}

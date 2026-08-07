@@ -56,6 +56,9 @@ export function getMacroEvents(date: string): string[] {
 }
 
 // ── Quant metrics ───────────────────────────────────────────────────────────
+/** Trades décisifs requis avant d'afficher Kelly (cf. commentaire du calcul). */
+export const MIN_KELLY_SAMPLE = 30;
+
 export interface QuantStats {
   /** Average $ result per trade (all trades, BE included) */
   expectancy: number;
@@ -76,7 +79,18 @@ export interface QuantStats {
   /** Days from max-drawdown trough back to a new equity high; null = no drawdown, -1 = still in it */
   recoveryDays: number | null;
   /** Share of trades logged with zero mistakes */
-  planAdherence: number;
+  /**
+   * Part des trades journalisés SANS erreur cochée.
+   *
+   * ATTENTION — ce n'est PAS l'adhérence aux règles. Cet indicateur mesure ce
+   * que le trader s'est lui-même reproché ; `ruleAdherence.ts` mesure ce que le
+   * moteur de discipline constate, règle par règle, sur une fenêtre de 30 jours.
+   * Les deux portaient le même libellé « Respect du plan » et affichaient des
+   * valeurs différentes : le tableau de bord pouvait annoncer 90 % pendant que
+   * Jarvis disait 55 %. Un chiffre qui diverge entre deux écrans détruit la
+   * confiance dans un produit d'analyse — c'est la règle n°1 du projet.
+   */
+  cleanTrades: number;
 }
 
 export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantStats {
@@ -90,7 +104,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     bestDayShare: null,
     consistencyScore: null,
     recoveryDays: null,
-    planAdherence: 0,
+    cleanTrades: 0,
   };
   if (trades.length === 0) return empty;
 
@@ -162,12 +176,24 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
       : -1;
   }
 
-  // Kelly: W − (1−W)/R with R = avgWin/|avgLoss|
+  // Kelly: W − (1−W)/R avec R = avgWin/|avgLoss|
+  //
+  // PLANCHER D'ÉCHANTILLON — le garde-fou le plus important de ce fichier.
+  // Kelly ne décrit pas une performance passée : il RECOMMANDE une taille de
+  // position. Il était calculé dès qu'un gagnant et un perdant existaient, donc
+  // affiché à partir de DEUX trades. Trois trades chanceux produisent un Kelly
+  // de plusieurs dizaines de pourcents ; un trader qui le suit fait sauter son
+  // compte. La mention « indicatif uniquement » ne protège personne — un
+  // chiffre affiché est un chiffre lu.
+  //
+  // 30 trades décisifs : même esprit que le plancher de 10 jours du Sharpe, à
+  // un seuil plus élevé parce que la conséquence d'une erreur est ici une
+  // décision de risque, pas une appréciation.
   const decisive = trades.filter((t) => !isBreakEven(t));
   const wins = decisive.filter((t) => t.pnl > 0);
   const losses = decisive.filter((t) => t.pnl < 0);
   let kelly: number | null = null;
-  if (wins.length > 0 && losses.length > 0) {
+  if (decisive.length >= MIN_KELLY_SAMPLE && wins.length > 0 && losses.length > 0) {
     const w = wins.length / (wins.length + losses.length);
     const avgWin = wins.reduce((s, t) => s + t.pnl, 0) / wins.length;
     const avgLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0) / losses.length);
@@ -185,7 +211,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     }
   }
 
-  const planAdherence = trades.filter((t) => t.mistakes.length === 0).length / trades.length;
+  const cleanTrades = trades.filter((t) => t.mistakes.length === 0).length / trades.length;
 
   return {
     expectancy,
@@ -197,7 +223,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     bestDayShare,
     consistencyScore,
     recoveryDays,
-    planAdherence,
+    cleanTrades,
   };
 }
 
@@ -256,7 +282,23 @@ export function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
   return map;
 }
 
+/**
+ * Échantillon minimum avant d'exposer un TAUX par bucket.
+ *
+ * Un total (P&L) reste vrai à n'importe quelle taille d'échantillon : la somme
+ * de deux trades est exactement la somme de deux trades. Un TAUX, lui, ne veut
+ * rien dire sur trois trades — et il invite pourtant à une conclusion
+ * généralisante : « ma meilleure heure est 14 h » tiré d'un unique gagnant.
+ *
+ * Le graphique horaire traçait un taux pour chaque heure sans plancher, et
+ * `behaviorSignals` transmettait ces mêmes taux à Jarvis comme preuve. Le
+ * garde vit donc ICI, dans l'unique définition du taux par bucket, plutôt que
+ * dans chaque consommateur — ils sont tous protégés du même coup.
+ */
+export const MIN_BUCKET_SAMPLE = 5;
+
 export function winRateOf(b: BucketStat): number | null {
   const decided = b.count - b.breakEven;
-  return decided > 0 ? b.wins / decided : null;
+  if (decided < MIN_BUCKET_SAMPLE) return null;
+  return b.wins / decided;
 }

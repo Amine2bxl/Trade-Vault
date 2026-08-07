@@ -122,9 +122,12 @@ html {
      (landing, privacy, terms). clip hides overflow WITHOUT creating a
      scroller, so <html> stays the one true scroll root. */
   overflow-x: clip;
+  /* PWA: kill pull-to-refresh and rubber-banding at both edges */
+  overscroll-behavior-y: none;
 }
 body {
   overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 
 /* ══ Onboarding premium motion ══ */
@@ -417,7 +420,6 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;

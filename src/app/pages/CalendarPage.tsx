@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Target, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target, CalendarDays, ArrowRight } from "lucide-react";
 import { Trade, MissedOpportunity } from "../types";
 import { loadMissedOpportunities } from "../store";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,7 +8,6 @@ import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import MissedOpportunities from "./MissedOpportunities";
 import { useT } from "../i18n/LanguageContext";
 import { PageHeader, PageContainer, Card } from "@/shared/ui";
 
@@ -88,7 +87,6 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         totalRR: number;
         wins: number;
         breakEven: number;
-        winRate: number;
       }
     > = {};
     for (const t of trades) {
@@ -101,7 +99,6 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           totalRR: 0,
           wins: 0,
           breakEven: 0,
-          winRate: 0,
         };
       map[t.date].pnl += t.pnl;
       map[t.date].count++;
@@ -111,10 +108,13 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       if (t.direction === "be") map[t.date].breakEven++;
       else if (t.pnl > 0) map[t.date].wins++;
     }
+    // Un taux de réussite PAR JOUR était calculé ici — et n'était affiché nulle
+    // part. Supprimé plutôt que conservé « au cas où » : c'était une quatrième
+    // définition du win rate, sans plancher d'échantillon, prête à être branchée
+    // un jour sur un rendu par un contributeur qui n'aurait pas su qu'elle
+    // n'était pas fiable sur une journée.
     for (const k of Object.keys(map)) {
       if (map[k].count > 0) map[k].avgRR = map[k].avgRR / map[k].count;
-      const decided = map[k].count - map[k].breakEven;
-      map[k].winRate = decided > 0 ? map[k].wins / decided : 0;
     }
     return map;
   }, [trades]);
@@ -184,7 +184,9 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       beDays,
       avgRR: tradeCount > 0 ? absRRsum / tradeCount : 0,
       totalRR,
-      winRate: decidedTrades > 0 ? totalWins / decidedTrades : 0,
+      // `null` et non 0 : un mois sans trade tranché n'a pas « 0 % de
+      // réussite », il n'a pas de taux du tout.
+      winRate: decidedTrades > 0 ? totalWins / decidedTrades : null,
     };
   }, [year, month, dailyData]);
 
@@ -234,6 +236,11 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         className="mb-3 md:mb-6 stagger-0"
         title={t("calendar.title")}
         subtitle={t("calendar.subtitle")}
+        icon={
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <CalendarDays className="w-4 h-4 text-white" />
+          </span>
+        }
       />
 
       {/* Summary Cards */}
@@ -288,9 +295,12 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           },
           {
             label: t("stats.winRate"),
-            value: `${(monthlySummary.winRate * 100).toFixed(1)}%`,
+            value:
+              monthlySummary.winRate === null
+                ? "—"
+                : `${(monthlySummary.winRate * 100).toFixed(1)}%`,
             color:
-              monthlySummary.tradingDays === 0
+              monthlySummary.winRate === null
                 ? "text-white"
                 : monthlySummary.winRate > 0.5
                   ? "text-emerald-400"
@@ -358,7 +368,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <div
               key={d + i}
               className={cn(
-                "py-1.5 md:py-3 text-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest",
+                "py-1.5 md:py-3 text-center text-[11px] md:text-xs font-bold uppercase tracking-widest",
                 i >= 5 ? "text-slate-700" : "text-slate-500",
               )}
             >
@@ -432,7 +442,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       <div className="flex items-center justify-between">
                         <span
                           className={cn(
-                            "text-[9px] md:text-xs font-semibold tabular-nums",
+                            "text-[11px] md:text-xs font-semibold tabular-nums",
                             isToday
                               ? "text-cyan-300"
                               : data
@@ -582,10 +592,41 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         <MissedSetupDetailModal missed={selectedMissed} onClose={() => setSelectedMissed(null)} />
       )}
 
-      {/* Mobile: Missed Opportunities embedded below calendar */}
-      <div className="md:hidden mt-6">
-        <MissedOpportunities />
+      {/* Mobile: Missed setups — lightweight redirect card instead of full inline component */}
+      <div className="md:hidden mt-4">
+        <MissedMobileCard missedCount={missed.length} />
       </div>
     </PageContainer>
+  );
+}
+
+function MissedMobileCard({ missedCount }: { missedCount: number }) {
+  const navigate = () =>
+    window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "missed" } }));
+  return (
+    <button
+      onClick={navigate}
+      className="w-full glass rounded-2xl p-4 flex items-center gap-3.5 active:scale-[0.98] transition-all text-left"
+    >
+      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-300 shrink-0">
+        <Target className="w-5 h-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold text-white flex items-center gap-1.5">
+          Setups manqués
+          {missedCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500/20 text-[11px] font-bold text-amber-300 border border-amber-500/25">
+              {missedCount}
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-slate-500 mt-0.5">
+          {missedCount === 0
+            ? "Aucun setup manqué ce mois-ci"
+            : `${missedCount} setup${missedCount > 1 ? "s" : ""} à analyser`}
+        </div>
+      </div>
+      <ArrowRight className="w-4 h-4 text-amber-400 shrink-0" />
+    </button>
   );
 }

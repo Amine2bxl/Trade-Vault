@@ -1,6 +1,6 @@
 import { Trade } from "../types";
 import { computeStats } from "./tradeCalcs";
-import { computeQuantStats } from "./quantStats";
+import { computeQuantStats, winRateOf, MIN_BUCKET_SAMPLE } from "./quantStats";
 
 // Pure report builder — shared by the Vercel cron (service role) and the
 // on-demand server function. No I/O here; callers fetch the trades.
@@ -92,16 +92,29 @@ export function buildMonthlyReport(
   }
   weekly.sort((a, b) => a.week - b.week);
 
-  const setups: SetupLine[] = Object.entries(stats.pnlByStrategy).map(([strategy, s]) => {
-    const decisive = s.count - s.breakEven;
-    return {
-      strategy,
-      pnl: round2(s.pnl),
-      count: s.count,
-      winRate: decisive > 0 ? Math.round((s.wins / decisive) * 100) / 100 : null,
-    };
-  });
-  const byPnl = [...setups].sort((a, b) => b.pnl - a.pnl);
+  const setups: SetupLine[] = Object.entries(stats.pnlByStrategy).map(([strategy, s]) => ({
+    strategy,
+    pnl: round2(s.pnl),
+    count: s.count,
+    // `winRateOf` — l'unique définition du produit. Ce fichier recalculait la
+    // sienne, ce qui en faisait la TROISIÈME et la faisait échapper au plancher
+    // d'échantillon.
+    winRate: (() => {
+      const wr = winRateOf(s);
+      return wr === null ? null : Math.round(wr * 100) / 100;
+    })(),
+  }));
+  // Un bilan mensuel AFFIRME plus fortement qu'un graphique : il est écrit,
+  // archivé, et relu à froid. Désigner « ton meilleur setup du mois » sur deux
+  // trades y est donc plus coûteux qu'ailleurs — le trader relira ce rapport
+  // dans six mois en le prenant pour un constat établi.
+  //
+  // Les setups sous le plancher restent dans `setups` (le tableau complet, où
+  // leur nombre de trades est visible) ; ils ne peuvent simplement pas être
+  // couronnés ni cloués au pilori.
+  const byPnl = [...setups]
+    .filter((s) => s.count >= MIN_BUCKET_SAMPLE)
+    .sort((a, b) => b.pnl - a.pnl);
   const bestSetups = byPnl.filter((s) => s.pnl > 0).slice(0, 3);
   const worstSetups = byPnl
     .filter((s) => s.pnl < 0)

@@ -13,7 +13,7 @@ import type { Trade, TradeStats } from "../types";
 export const EDGE_WINDOW_DAYS = 10;
 
 /** Weights (sum = 1) applied when every component has data. */
-const WEIGHTS = { plan: 0.35, risk: 0.25, cleanDays: 0.25, routine: 0.15 } as const;
+const WEIGHTS = { cleanTrades: 0.35, risk: 0.25, cleanDays: 0.25, routine: 0.15 } as const;
 
 export interface EdgeInputs {
   /** Max risk per trade, in %, from the written plan (`risk.maxRiskPerTradePct`). */
@@ -38,7 +38,21 @@ export interface EdgeResult {
   /** 0..100 rounded, or null when the sample is too thin to score. */
   score: number | null;
   subs: {
-    plan: EdgeSubScore;
+    /**
+     * Part des trades de la fenêtre journalisés SANS erreur cochée.
+     *
+     * Ce sous-score s'appelait `plan` et son commentaire disait « plan
+     * adherence » — la MÊME confusion que l'indicateur du tableau de bord, en
+     * pire : elle alimentait une phrase adressée au trader (« le respect du
+     * plan est ton point faible »). Jarvis pouvait donc reprocher un manque de
+     * discipline à un trader qui tient ses règles à 95 %, simplement parce
+     * qu'il coche honnêtement ses erreurs. Punir l'honnêteté de la
+     * journalisation est le pire signal possible dans un journal de trading.
+     *
+     * La tenue des règles se mesure dans `ruleAdherence.ts`, et nulle part
+     * ailleurs.
+     */
+    cleanTrades: EdgeSubScore;
     risk: EdgeSubScore;
     cleanDays: EdgeSubScore;
     routine: EdgeSubScore;
@@ -47,7 +61,7 @@ export interface EdgeResult {
   tradedDays: number;
   cleanDays: number;
   /** The dominant weakness key (lowest measured sub-score), for the Jarvis line. */
-  weakest: "plan" | "risk" | "cleanDays" | "routine" | null;
+  weakest: "cleanTrades" | "risk" | "cleanDays" | "routine" | null;
 }
 
 function median(nums: number[]): number {
@@ -92,7 +106,7 @@ export function computeEdgeScore(allTrades: Trade[], inputs: EdgeInputs = {}): E
   const window = allTrades.filter((t) => windowDates.has(t.date));
 
   const subs = {
-    plan: empty(),
+    cleanTrades: empty(),
     risk: empty(),
     cleanDays: empty(),
     routine: empty(),
@@ -102,8 +116,9 @@ export function computeEdgeScore(allTrades: Trade[], inputs: EdgeInputs = {}): E
     return { score: null, subs, tradedDays: 0, cleanDays: 0, weakest: null };
   }
 
-  // Plan adherence: share of window trades logged with zero mistakes.
-  subs.plan = {
+  // Part des trades de la fenêtre sans erreur cochée — PAS l'adhérence aux
+  // règles, qui est mesurée par `ruleAdherence.ts`.
+  subs.cleanTrades = {
     value: (window.filter((t) => t.mistakes.length === 0).length / window.length) * 100,
   };
 

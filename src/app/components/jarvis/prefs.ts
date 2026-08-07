@@ -2,7 +2,8 @@
  * Préférences de Jarvis (Phase UX) — langue de réponse.
  *
  * `auto` → suit la langue de l'app · `fr`/`en` → force la langue des réponses.
- * Stockage sessionStorage (léger, per-onglet). Additif : ne touche aucune
+ * Stockage localStorage : une préférence de langue qui se réinitialise à
+ * chaque onglet n'est pas une préférence. Additif : ne touche aucune
  * structure existante.
  */
 
@@ -11,9 +12,9 @@ export type JarvisResponseLang = "auto" | "fr" | "en";
 const KEY = "tv:jarvis:lang";
 
 export function readResponseLang(): JarvisResponseLang {
-  if (typeof sessionStorage === "undefined") return "auto";
+  if (typeof localStorage === "undefined") return "auto";
   try {
-    const v = sessionStorage.getItem(KEY);
+    const v = localStorage.getItem(KEY);
     return v === "fr" || v === "en" ? v : "auto";
   } catch {
     return "auto";
@@ -21,10 +22,10 @@ export function readResponseLang(): JarvisResponseLang {
 }
 
 export function writeResponseLang(lang: JarvisResponseLang): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (typeof localStorage === "undefined") return;
   try {
-    if (lang === "auto") sessionStorage.removeItem(KEY);
-    else sessionStorage.setItem(KEY, lang);
+    if (lang === "auto") localStorage.removeItem(KEY);
+    else localStorage.setItem(KEY, lang);
   } catch {
     /* best-effort */
   }

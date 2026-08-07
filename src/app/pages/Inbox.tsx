@@ -21,14 +21,6 @@ import { useT } from "../i18n/LanguageContext";
 import { PageContainer } from "@/shared/ui/PageContainer";
 import { cn } from "../utils/cn";
 
-/**
- * Inbox — toutes les notifications de Jarvis, au même endroit.
- *
- * Chaque entrée est SIGNÉE Jarvis (avatar gradient) et classée par catégorie
- * produit. Un clic redirige vers la bonne page puis ouvre le popup de détail
- * (résumé + CTA + plan d'action) via `tv:open-notification`.
- */
-
 type FilterKind = NotificationCategory | "all";
 
 const CATEGORY_ICON: Record<NotificationCategory, typeof Bell> = {
@@ -61,6 +53,37 @@ const FILTER_KINDS: FilterKind[] = [
   "economic",
 ];
 
+/** Groupe une date sous un libellé naturel. */
+function groupLabel(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.floor((today.getTime() - target.getTime()) / 86_400_000);
+
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return "Cette semaine";
+  if (diffDays < 30) return "Ce mois-ci";
+  return "Plus ancien";
+}
+
+/** Premier-login badge : localStorage stocke la date de dernière visite. */
+function useFirstLoginToday(): boolean {
+  return useMemo(() => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const last = localStorage.getItem("tv.lastInboxVisit");
+      if (last !== today) {
+        localStorage.setItem("tv.lastInboxVisit", today);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
+}
+
 export default function Inbox() {
   const { t } = useT();
   const { user } = useAuth();
@@ -68,11 +91,16 @@ export default function Inbox() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKind>("all");
 
+  const isFirstVisitToday = useFirstLoginToday();
+
   useEffect(() => {
     if (!user?.id) return;
     setLoading(true);
     loadNotifications(user.id)
-      .then(setNotifs)
+      .then((list) => {
+        // Marque les non lues comme "nouvelles aujourd'hui" au premier chargement
+        setNotifs(list);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user?.id]);
@@ -82,8 +110,10 @@ export default function Inbox() {
     return notifs.filter((n) => n.category === filter);
   }, [notifs, filter]);
 
-  const unreadCount = notifs.filter((n) => !n.readAt).length;
-  const hasUnreadFiltered = filtered.some((n) => !n.readAt);
+  // Compte les non lues du filtre courant
+  const unreadTotal = notifs.filter((n) => !n.readAt).length;
+  const unreadFiltered = filtered.filter((n) => !n.readAt).length;
+  const hasUnreadFiltered = unreadFiltered > 0;
 
   const handleMarkRead = useCallback(
     async (id: string) => {
@@ -99,61 +129,126 @@ export default function Inbox() {
 
   const markAllRead = useCallback(async () => {
     if (!user?.id) return;
-    for (const n of filtered) {
-      if (!n.readAt) await handleMarkRead(n.id);
+    const unread = filtered.filter((n) => !n.readAt);
+    for (const n of unread) {
+      await markNotificationRead(user.id, n.id);
+      setNotifs((prev) =>
+        prev.map((x) => (x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x)),
+      );
     }
     window.dispatchEvent(new CustomEvent("tv:notif-updated"));
-  }, [user?.id, filtered, handleMarkRead]);
+  }, [user?.id, filtered]);
 
-  // Cliquer une notification → OUVRE LE POPUP uniquement. La redirection vers
-  // la page cible ne se fait QUE quand l'utilisateur appuie sur le bouton CTA
-  // (dans le popup) — pas de navigation surprise au clic.
   const openNotification = useCallback((n: AppNotification) => {
     window.dispatchEvent(new CustomEvent("tv:open-notification", { detail: { notification: n } }));
   }, []);
 
+  // Regroupe les notifs par période
+  const groups = useMemo(() => {
+    const map = new Map<string, AppNotification[]>();
+    for (const n of filtered) {
+      const label = groupLabel(new Date(n.createdAt));
+      const existing = map.get(label) ?? [];
+      existing.push(n);
+      map.set(label, existing);
+    }
+    // Ordre : plus récent d'abord (Aujourd'hui → Hier → ...)
+    const order = ["Aujourd'hui", "Hier", "Cette semaine", "Ce mois-ci", "Plus ancien"];
+    return order.filter((l) => map.has(l)).map((l) => ({ label: l, items: map.get(l)! }));
+  }, [filtered]);
+
+  const countByCategory = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const n of notifs) {
+      counts[n.category] = (counts[n.category] ?? 0) + 1;
+    }
+    return counts;
+  }, [notifs]);
+
   return (
     <PageContainer>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h1 className="text-xl font-bold text-white">{t("inbox.title")}</h1>
-          <p className="text-sm text-slate-500 mt-1">{t("inbox.subtitle")}</p>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+            <Bell className="w-4 h-4 text-white" />
+          </span>
+          <div>
+            <h1 className="text-lg font-bold text-white">{t("inbox.title")}</h1>
+            <p className="text-xs text-slate-500">
+              {unreadTotal > 0
+                ? `${unreadTotal} non ${unreadTotal > 1 ? "lues" : "lue"}`
+                : "Tout lu"}
+            </p>
+          </div>
         </div>
-        {unreadCount > 0 && (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
+        {unreadTotal > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
             <BellRing className="w-3.5 h-3.5" />
-            {unreadCount} {unreadCount > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}
+            {unreadTotal}
           </span>
         )}
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
-        {FILTER_KINDS.map((k) => (
-          <button
-            key={k}
-            onClick={() => setFilter(k)}
-            className={cn(
-              "shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-              filter === k
-                ? "bg-cyan-500/15 text-cyan-400"
-                : "text-slate-500 hover:text-slate-300 bg-white/[0.02] hover:bg-white/[0.04]",
-            )}
-          >
-            {t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}`)}
-          </button>
-        ))}
+      {/* Filter tabs with category counts */}
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+        {FILTER_KINDS.map((k) => {
+          const count = k === "all" ? notifs.length : (countByCategory[k] ?? 0);
+          const unread =
+            k === "all" ? unreadTotal : notifs.filter((n) => n.category === k && !n.readAt).length;
+          return (
+            <button
+              key={k}
+              onClick={() => setFilter(k)}
+              className={cn(
+                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border",
+                filter === k
+                  ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-300"
+                  : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
+              )}
+            >
+              {k === "all" ? "Toutes" : t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}`)}
+              {unread > 0 && (
+                <span
+                  className={cn(
+                    "min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold",
+                    filter === k
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : "bg-white/[0.08] text-slate-400",
+                  )}
+                >
+                  {unread}
+                </span>
+              )}
+            </button>
+          );
+        })}
         {hasUnreadFiltered && (
           <button
             onClick={markAllRead}
-            className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all"
+            className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all"
           >
             <CheckCheck className="w-3.5 h-3.5" />
-            {t("inbox.markAllRead")}
+            Tout lu
           </button>
         )}
       </div>
 
+      {/* New today banner */}
+      {isFirstVisitToday && unreadTotal > 0 && (
+        <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-cyan-500/[0.06] border border-cyan-500/15 px-3.5 py-2.5">
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400" />
+          </span>
+          <span className="text-xs text-cyan-200/90 font-medium">
+            {unreadTotal} nouvelle{unreadTotal > 1 ? "s" : ""} notification
+            {unreadTotal > 1 ? "s" : ""} depuis ta dernière visite
+          </span>
+        </div>
+      )}
+
+      {/* Notification list grouped by period */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
@@ -166,88 +261,90 @@ export default function Inbox() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((n) => {
-            const Icon = CATEGORY_ICON[n.category] ?? Bell;
-            return (
-              <div
-                key={n.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => openNotification(n)}
-                onKeyDown={(e) => e.key === "Enter" && openNotification(n)}
-                className={cn(
-                  "group relative w-full text-left rounded-2xl border px-3.5 py-2.5 transition-all cursor-pointer",
-                  "hover:border-cyan-500/25 hover:bg-white/[0.03]",
-                  n.readAt
-                    ? "border-white/[.04] bg-white/[.02]"
-                    : "border-cyan-500/15 bg-cyan-500/05",
-                )}
-              >
-                {!n.readAt && (
-                  <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-cyan-400" />
-                )}
-                <div className="flex items-start gap-3 pr-4">
-                  {/* Avatar Jarvis — chaque notification est signée. */}
-                  <span className="relative shrink-0">
-                    <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/25 blur-sm" />
-                    <span
+        <div className="space-y-5">
+          {groups.map(({ label, items }) => (
+            <div key={label}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">
+                  {label}
+                </span>
+                <span className="flex-1 h-px bg-white/[0.04]" />
+                <span className="text-[10px] text-slate-600 font-semibold">{items.length}</span>
+              </div>
+              <div className="space-y-1">
+                {items.map((n) => {
+                  const Icon = CATEGORY_ICON[n.category] ?? Bell;
+                  const unread = !n.readAt;
+                  const time = new Date(n.createdAt);
+                  const timeStr = time.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+
+                  return (
+                    <div
+                      key={n.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openNotification(n)}
+                      onKeyDown={(e) => e.key === "Enter" && openNotification(n)}
                       className={cn(
-                        "relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-md shadow-cyan-500/20",
-                        n.readAt && "opacity-60 saturate-50",
+                        "group relative w-full text-left rounded-xl border transition-all cursor-pointer flex items-start gap-3 px-3 py-2.5",
+                        unread
+                          ? "border-cyan-500/10 bg-cyan-500/[0.03] hover:border-cyan-500/25"
+                          : "border-white/[0.04] bg-transparent hover:bg-white/[0.02]",
                       )}
                     >
-                      <Bot className="w-4 h-4 text-white" />
-                    </span>
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider shrink-0">
-                        Jarvis
-                      </span>
-                      <span className="h-px flex-1 bg-white/[0.06]" />
+                      {unread && (
+                        <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-cyan-400" />
+                      )}
+                      {/* Category icon */}
                       <span
                         className={cn(
-                          "shrink-0 grid h-5 w-5 place-items-center rounded-md",
+                          "grid h-7 w-7 shrink-0 place-items-center rounded-lg mt-0.5",
                           CATEGORY_ACCENT[n.category] ?? "text-slate-400 bg-slate-500/10",
                         )}
                       >
-                        <Icon className="w-3 h-3" />
+                        <Icon className="w-3.5 h-3.5" />
                       </span>
-                    </div>
-                    <p
-                      className={cn(
-                        "text-sm truncate mt-1",
-                        n.readAt ? "text-slate-400" : "text-white font-semibold",
+                      <div className="flex-1 min-w-0 pr-4">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={cn(
+                              "text-sm truncate flex-1",
+                              unread ? "text-white font-semibold" : "text-slate-400",
+                            )}
+                          >
+                            {n.title}
+                          </p>
+                          <span className="text-[10px] text-slate-600 font-medium shrink-0 tabular-nums">
+                            {timeStr}
+                          </span>
+                        </div>
+                        {n.body && (
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                            {n.body}
+                          </p>
+                        )}
+                      </div>
+                      {unread && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkRead(n.id);
+                          }}
+                          className="absolute bottom-2 right-2.5 grid h-6 w-6 place-items-center rounded-md bg-white/[0.04] hover:bg-white/[0.08] transition text-slate-400 opacity-0 group-hover:opacity-100"
+                          title="Marquer comme lu"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
                       )}
-                    >
-                      {n.title}
-                    </p>
-                    {n.body && (
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                        {n.body}
-                      </p>
-                    )}
-                    <p className="text-[10px] text-slate-600 mt-1.5">
-                      {new Date(n.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                {!n.readAt && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMarkRead(n.id);
-                    }}
-                    className="absolute bottom-3 right-3 grid h-6 w-6 place-items-center rounded-md bg-white/[.04] hover:bg-white/[.08] transition text-slate-400"
-                    title={t("inbox.markRead")}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
     </PageContainer>

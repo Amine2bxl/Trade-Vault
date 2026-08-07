@@ -34,6 +34,11 @@ export interface AIUserContext {
    * serializes whatever structured object it is handed.
    */
   signals?: Record<string, unknown>;
+  /**
+   * Tenue MESURÉE des règles sur la fenêtre récente. Ce qui transforme un
+   * rappel (« tu as violé ta règle ») en progression (« tenue 11 fois sur 12 »).
+   */
+  adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
   /** The trader's own written rules. */
   rules?: { kind: string; text: string; enabled: boolean }[];
   /** Long-term memory entries (profile facts, recurring lessons). */
@@ -70,6 +75,13 @@ export function contextBlocks(ctx: AIUserContext): string {
     blocks.push(
       `LONG-TERM MEMORY about this trader (facts you already know — use them):\n${ctx.memory
         .map((m) => `- [${m.kind}] ${m.content}`)
+        .join("\n")}`,
+    );
+  }
+  if (ctx.adherence?.length) {
+    blocks.push(
+      `RULE ADHERENCE (measured over the recent window — cite these, they prove progress):\n${ctx.adherence
+        .map((a) => `- "${a.text}": kept ${a.kept}/${a.applicable} (${a.ratePct}%)`)
         .join("\n")}`,
     );
   }

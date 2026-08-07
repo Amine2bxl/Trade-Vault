@@ -8,8 +8,20 @@ import type { JarvisMessage } from "./blocks";
  * `user_plan` et `retention_policy` (FREE limité / PREMIUM complet) sont prévus
  * par le modèle métier mais NON implémentés (aucun paywall pour l'instant).
  *
- * Stockage Phase 1 : sessionStorage, derrière une interface `ConversationStore`
- * (future migration Supabase sans toucher aux workspaces).
+ * Stockage : `localStorage`, derrière une interface `ConversationStore` (une
+ * future synchronisation Supabase se fera sans toucher aux workspaces).
+ *
+ * POURQUOI PAS `sessionStorage` — c'était le choix initial, et c'était un vrai
+ * défaut produit. `sessionStorage` est détruit à la fermeture de l'onglet : un
+ * trader qui revenait le lendemain retrouvait Jarvis amnésique, alors que la
+ * promesse du produit est précisément l'inverse. On peut construire la
+ * meilleure mémoire long terme du marché — si l'historique visible s'efface
+ * chaque soir, le trader ne croira jamais que Jarvis se souvient de lui.
+ *
+ * Limite assumée : le stockage reste LOCAL à l'appareil. Changer de machine ne
+ * rapatrie pas l'historique. La synchronisation serveur est le prochain palier ;
+ * `localStorage` corrige aujourd'hui le défaut le plus visible sans introduire
+ * de table, de migration ni de coût.
  */
 
 export interface ConversationMeta {
@@ -46,19 +58,29 @@ function notify(): void {
 }
 
 function read<T>(key: string, fallback: T): T {
-  if (typeof sessionStorage === "undefined") return fallback;
+  if (typeof localStorage === "undefined") return fallback;
   try {
-    const raw = sessionStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+    // Récupération de l'ancien emplacement : un trader dont la session est en
+    // cours au moment du déploiement ne doit pas voir sa conversation
+    // disparaître. La reprise est transparente et ne s'exécute qu'une fois,
+    // puisque la valeur est ensuite écrite dans `localStorage`.
+    const legacy = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(key) : null;
+    if (legacy) {
+      localStorage.setItem(key, legacy);
+      return JSON.parse(legacy) as T;
+    }
+    return fallback;
   } catch {
     return fallback;
   }
 }
 
 function write(key: string, value: unknown): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (typeof localStorage === "undefined") return;
   try {
-    sessionStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
     /* best-effort */
   }
@@ -89,7 +111,7 @@ function sortList(list: ConversationMeta[]): ConversationMeta[] {
   });
 }
 
-export class SessionConversationStore implements ConversationStore {
+export class JarvisConversationStore implements ConversationStore {
   constructor(private readonly userId: string) {}
 
   async list(): Promise<ConversationMeta[]> {
@@ -157,9 +179,15 @@ export class SessionConversationStore implements ConversationStore {
   }
 
   async remove(id: string): Promise<void> {
-    if (typeof sessionStorage !== "undefined") {
+    // Les DEUX emplacements sont purgés. Ne nettoyer que l'ancien laisserait
+    // les messages d'une conversation « supprimée » sur le disque : une fuite
+    // silencieuse, et une promesse de suppression non tenue.
+    for (const store of [
+      typeof localStorage !== "undefined" ? localStorage : null,
+      typeof sessionStorage !== "undefined" ? sessionStorage : null,
+    ]) {
       try {
-        sessionStorage.removeItem(convKey(this.userId, id));
+        store?.removeItem(convKey(this.userId, id));
       } catch {
         /* best-effort */
       }
@@ -173,8 +201,8 @@ export class SessionConversationStore implements ConversationStore {
 }
 
 /** Fabrique : l'UI obtient un store sans connaître la classe. */
-export function sessionConversationStore(userId: string): ConversationStore {
-  return new SessionConversationStore(userId);
+export function jarvisConversationStore(userId: string): ConversationStore {
+  return new JarvisConversationStore(userId);
 }
 
 /**
@@ -219,7 +247,7 @@ export function useConversations(userId: string | undefined): ConversationMeta[]
       setList([]);
       return;
     }
-    void sessionConversationStore(userId)
+    void jarvisConversationStore(userId)
       .list()
       .then(setList)
       .catch(() => {});

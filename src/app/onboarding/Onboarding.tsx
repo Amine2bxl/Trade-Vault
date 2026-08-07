@@ -19,13 +19,15 @@ import {
   Rocket,
   Wallet,
   Palette,
+  Plus,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, saveAccountBalance, type OnboardingData } from "../store";
-import { useTheme } from "../contexts/ThemeContext";
+import ThemeSettings from "../components/ThemeSettings";
 import { oc } from "./onboardingCopy";
 import logoSrc from "@/assets/tradevault-logo.webp";
 
@@ -39,7 +41,7 @@ export type OnboardingAction = "import" | "demo" | null;
 //   4. NIVEAU     — nouveau / intermédiaire / aguerri / prop  (simple)
 //   5. OBJECTIF   — régularité / prop / discipline / temps plein / en parallèle
 //   6. FAIBLESSES — émotions / constance / sur-trading / risque / journalisation (MULTI)
-//   7. RÉGLAGES   — cible mensuelle % + méthodologie ICT
+//   7. RÉGLAGES   — cible mensuelle % + capital + thème
 //   8. NOTIFICATIONS — permission push (ré-intégrée, non bloquante)
 //   9. C'EST PARTI — Import CSV / Démo / Démarrer à zéro
 // Chaque écran est court (un tap) : progress bar, back, skip si optionnel.
@@ -85,13 +87,11 @@ function ScreenShell({
   title,
   subtitle,
   children,
-  footer,
 }: {
   icon: typeof Target;
   title: string;
   subtitle?: string;
   children: ReactNode;
-  footer?: ReactNode;
 }) {
   return (
     <div className="text-center">
@@ -103,7 +103,6 @@ function ScreenShell({
         <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">{subtitle}</p>
       )}
       {children}
-      {footer}
     </div>
   );
 }
@@ -125,7 +124,7 @@ function OptionCard({
     <button
       onClick={onClick}
       className={cn(
-        "onb-card relative rounded-2xl px-3 py-3 border text-left w-full",
+        "onb-card relative rounded-2xl p-4 border text-left w-full transition-all",
         selected
           ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
           : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
@@ -134,7 +133,7 @@ function OptionCard({
       {multi && (
         <span
           className={cn(
-            "absolute top-2.5 right-2.5 grid h-5 w-5 place-items-center rounded-full border transition-all",
+            "absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full border transition-all",
             selected
               ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent"
               : "border-white/15",
@@ -145,13 +144,13 @@ function OptionCard({
       )}
       <div
         className={cn(
-          "text-[13.5px] font-semibold pr-5",
+          "text-[13.5px] font-semibold pr-6",
           selected ? "text-white" : "text-slate-300",
         )}
       >
         {label}
       </div>
-      {desc && <div className="text-[11px] text-slate-500 leading-tight mt-0.5">{desc}</div>}
+      {desc && <div className="text-[11px] text-slate-500 leading-tight mt-1">{desc}</div>}
     </button>
   );
 }
@@ -169,7 +168,7 @@ function Chip({
     <button
       onClick={onClick}
       className={cn(
-        "onb-card rounded-xl px-3.5 py-2.5 border text-[13px] font-semibold inline-flex items-center gap-1.5",
+        "onb-card rounded-xl px-3.5 py-2.5 border text-[13px] font-semibold inline-flex items-center gap-1.5 transition-all",
         selected
           ? "bg-cyan-500/15 border-cyan-400/50 text-white"
           : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
@@ -193,6 +192,7 @@ export default function Onboarding({
   const { lang, setLang, t } = useT();
   const c = oc(lang);
   const { subscribe } = usePushNotifications();
+  const { createTheme } = useTheme();
   const [idx, setIdx] = useState(0);
   const [saving, setSaving] = useState<OnboardingAction | "fresh" | null>(null);
   const [saveError, setSaveError] = useState(false);
@@ -208,8 +208,6 @@ export default function Onboarding({
   const [usesIct, setUsesIct] = useState(false);
   // Taille du compte — Jarvis calibre le risque réel. Apparence — thème de l'app.
   const [accountSize, setAccountSize] = useState("");
-  const { themes, activeId, setActive } = useTheme();
-  const builtinThemes = themes.filter((th) => th.builtin);
 
   const steps: StepKey[] = [
     "identity",
@@ -328,7 +326,7 @@ export default function Onboarding({
 
   return (
     <div
-      className="relative h-dvh w-full overflow-hidden"
+      className="relative h-dvh w-full overflow-hidden flex flex-col"
       style={{ background: "linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)" }}
     >
       <div
@@ -369,8 +367,8 @@ export default function Onboarding({
       </div>
 
       {/* Body */}
-      <div className="relative z-10 h-[calc(100%-3.5rem)] flex items-center justify-center px-4 py-4 overflow-y-auto">
-        <div key={step} className="w-full max-w-lg animate-fade-in-up pb-2">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 pt-6 overflow-y-auto">
+        <div key={step} className="w-full max-w-lg animate-fade-in-up pb-6">
           {/* ── 1 · IDENTITÉ ── */}
           {step === "identity" && (
             <div className="text-center">
@@ -388,14 +386,14 @@ export default function Onboarding({
               </div>
 
               <div className="flex justify-center mb-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-500/15 border border-cyan-500/20">
-                  <UserRound className="w-5 h-5 text-cyan-300" />
+                <div className="grid h-9 w-9 place-items-center rounded-xl bg-cyan-500/15 border border-cyan-500/20">
+                  <UserRound className="w-4 h-4 text-cyan-300" />
                 </div>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1.5">
+              <h1 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
                 {t("onb.nameTitle")}
               </h1>
-              <p className="text-sm text-slate-400 max-w-sm mx-auto mb-6">{t("onb.nameSub")}</p>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">{t("onb.nameSub")}</p>
 
               <input
                 type="text"
@@ -404,7 +402,7 @@ export default function Onboarding({
                 onKeyDown={(e) => e.key === "Enter" && next()}
                 placeholder={t("onb.namePlaceholder")}
                 maxLength={40}
-                className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-base font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
               />
 
               <div className="mt-6 mb-1">
@@ -418,7 +416,7 @@ export default function Onboarding({
                       key={code}
                       onClick={() => setLang(code)}
                       className={cn(
-                        "onb-card rounded-xl px-2.5 py-2.5 border text-center text-[13px] font-semibold",
+                        "onb-card rounded-xl px-2.5 py-2.5 border text-center text-xs font-semibold",
                         code === lang
                           ? "bg-cyan-500/15 border-cyan-400/50 text-white"
                           : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
@@ -568,120 +566,93 @@ export default function Onboarding({
             </ScreenShell>
           )}
 
-          {/* ── 7 · RÉGLAGES (cible + ICT) ── */}
+          {/* ── 7 · OBJECTIF + CAPITAL + APPARENCE ── */}
           {step === "settings" && (
             <ScreenShell icon={SlidersHorizontal} title={c.targetTitle} subtitle={c.targetSub}>
-              <div className="relative max-w-[200px] mx-auto mb-6">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  placeholder="3"
-                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-10 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                  %
-                </span>
+              {/* Two cards: target + capital */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 onb-in max-w-md mx-auto">
+                <div className="glass-strong rounded-2xl p-4 text-center">
+                  <Target className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Objectif mensuel
+                  </div>
+                  <div className="relative max-w-[120px] mx-auto">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      placeholder="3"
+                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
+                      %
+                    </span>
+                  </div>
+                </div>
+                <div className="glass-strong rounded-2xl p-4 text-center">
+                  <Wallet className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Capital de départ
+                  </div>
+                  <div className="relative max-w-[140px] mx-auto">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      value={accountSize}
+                      onChange={(e) => setAccountSize(e.target.value)}
+                      placeholder="25000"
+                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                    />
+                  </div>
+                </div>
               </div>
+              <p className="text-[11px] text-slate-500 text-center mb-8 -mt-2">
+                Modifiable à tout moment depuis tes paramètres
+              </p>
 
-              {/* Taille du compte — Jarvis calibre le risque réel */}
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Wallet className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-base font-bold text-white">{t("onb.accountSize")}</h3>
-              </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{t("onb.accountSizeSub")}</p>
-              <div className="relative max-w-[200px] mx-auto mb-7">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">
-                  $
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  value={accountSize}
-                  onChange={(e) => setAccountSize(e.target.value)}
-                  placeholder="25 000"
-                  className="w-full h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-10 pr-4 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-all"
-                />
-              </div>
-
-              {/* Apparence de l'app — aperçu direct du thème avant le choix */}
-              <div className="flex items-center justify-center gap-2 mb-1">
+              {/* Thème */}
+              <div className="flex items-center justify-center gap-2 mb-2">
                 <Palette className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-base font-bold text-white">{t("onb.appearance")}</h3>
+                <h3 className="text-sm font-bold text-white">{t("onb.appearance")}</h3>
               </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{t("onb.appearanceSub")}</p>
-              <div className="grid grid-cols-2 gap-2.5 max-w-[300px] mx-auto mb-7 onb-in">
-                {builtinThemes.map((th) => (
-                  <button
-                    key={th.id}
-                    type="button"
-                    onClick={() => setActive(th.id)}
-                    className={cn(
-                      "onb-card rounded-2xl border p-3 text-left transition-all",
-                      activeId === th.id
-                        ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
-                        : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      {/* Aperçu du thème */}
-                      <span className="relative h-8 w-8 shrink-0 rounded-xl overflow-hidden ring-1 ring-white/10">
-                        <span
-                          className="absolute inset-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${th.primary}, ${th.secondary})`,
-                          }}
-                        />
-                      </span>
-                      <span className="flex-1 min-w-0">
-                        <span
-                          className={cn(
-                            "block text-[13px] font-semibold truncate",
-                            activeId === th.id ? "text-white" : "text-slate-300",
-                          )}
-                        >
-                          {th.name}
-                        </span>
-                        <span className="block text-[10px] text-slate-500">
-                          {activeId === th.id ? "Actif" : "Appliquer"}
-                        </span>
-                      </span>
-                      {activeId === th.id && (
-                        <Check className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
-                      )}
-                    </div>
-                  </button>
-                ))}
+              <p className="text-xs text-slate-400 text-center mb-4">{t("onb.appearanceSub")}</p>
+              <div className="max-w-full overflow-visible mb-3">
+                <ThemeSettings />
               </div>
+              <button
+                onClick={() =>
+                  createTheme({
+                    name: "Mon thème",
+                    primary: "#06b6d4",
+                    secondary: "#10b981",
+                    highlight: "#22d3ee",
+                  })
+                }
+                className="w-full h-11 rounded-xl text-sm font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 hover:text-cyan-200 transition-all flex items-center justify-center gap-2 mb-7"
+              >
+                <Plus className="w-4 h-4" /> + Personnaliser mon thème
+              </button>
 
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Compass className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-base font-bold text-white">{c.ictTitle}</h3>
-              </div>
-              <p className="text-xs text-slate-400 text-center mb-3">{c.ictSub}</p>
-              <div className="grid grid-cols-2 gap-2.5 max-w-[280px] mx-auto onb-in">
-                {(
-                  [
-                    [true, c.ictYes],
-                    [false, c.ictNo],
-                  ] as const
-                ).map(([val, label]) => (
-                  <OptionCard
-                    key={String(val)}
-                    selected={usesIct === val}
-                    onClick={() => setUsesIct(val)}
-                    label={label}
-                  />
-                ))}
-              </div>
-
-              <ContinueBtn onClick={next}>{c.cont}</ContinueBtn>
-              <SkipBtn onClick={next} label={c.skip} />
+              <button
+                onClick={next}
+                className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all"
+              >
+                {c.cont}
+              </button>
+              <button
+                onClick={next}
+                className="w-full mt-2.5 py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {c.skip}
+              </button>
             </ScreenShell>
           )}
 
@@ -689,17 +660,17 @@ export default function Onboarding({
           {step === "notify" && (
             <div className="text-center">
               <div className="flex justify-center">
-                <div className="relative mb-5">
-                  <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
-                  <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
-                    <Bell className="w-7 h-7 text-white" />
+                <div className="relative mb-4">
+                  <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-md" />
+                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+                    <Bell className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>
-              <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-2">
+              <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1">
                 {t("onb.notifyTitle")}
               </h2>
-              <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">
+              <p className="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">
                 {t("onb.notifySub")}
               </p>
 
@@ -707,7 +678,7 @@ export default function Onboarding({
                 <button
                   onClick={enableNotify}
                   disabled={notifBusy}
-                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-4 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60 text-sm font-bold text-white"
+                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-3 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60 text-xs font-bold text-white"
                 >
                   {notifBusy ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -733,17 +704,17 @@ export default function Onboarding({
             <div>
               <div className="text-center">
                 <div className="flex justify-center">
-                  <div className="relative mb-5">
-                    <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-lg" />
-                    <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
-                      <Rocket className="w-7 h-7 text-white" />
+                  <div className="relative mb-4">
+                    <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-md" />
+                    <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
+                      <Rocket className="w-6 h-6 text-white" />
                     </div>
                   </div>
                 </div>
-                <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-1.5">
+                <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
                   {c.startTitle}
                 </h2>
-                <p className="text-sm text-slate-400 max-w-md mx-auto mb-7">{c.startSub}</p>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">{c.startSub}</p>
               </div>
 
               {saveError && (

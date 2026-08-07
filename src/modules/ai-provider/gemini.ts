@@ -9,6 +9,31 @@ function getModel(): string {
   return process.env.GEMINI_MODEL || "gemini-2.5-flash";
 }
 
+/**
+ * Thinking budget (Gemini 2.5+).
+ *
+ * These models reason before answering and, left alone, use a DYNAMIC budget:
+ * the model decides how long to think, with no ceiling we control. Those tokens
+ * are produced before the first visible character and are billed as output, so
+ * an unbounded budget is the single largest source of variable latency here.
+ *
+ * Coaching answers interpret numbers that a deterministic engine already
+ * computed — they need some reasoning, but not an open-ended budget. We cap it
+ * rather than disable it: `0` would remove reasoning entirely and risk flatter,
+ * less accurate synthesis, which is the opposite of what we want.
+ *
+ * Override with `GEMINI_THINKING_BUDGET` (0 disables, -1 restores dynamic) so
+ * the trade-off can be tuned in production without a code change.
+ */
+function getThinkingBudget(): number {
+  const raw = process.env.GEMINI_THINKING_BUDGET;
+  if (raw !== undefined) {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 512;
+}
+
 export const GeminiProvider: AIProvider = {
   id: "gemini",
 
@@ -40,6 +65,10 @@ export const GeminiProvider: AIProvider = {
           })),
           generationConfig: {
             maxOutputTokens: req.maxTokens ?? 4096,
+            // Bounded reasoning — see getThinkingBudget(). Thinking tokens are
+            // charged against maxOutputTokens, so the cap also protects the
+            // answer from being squeezed out by an over-long reasoning pass.
+            thinkingConfig: { thinkingBudget: getThinkingBudget() },
             ...(req.temperature !== undefined && { temperature: req.temperature }),
             ...(req.json && { responseMimeType: "application/json" }),
           },

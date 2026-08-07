@@ -1,10 +1,11 @@
-import type { Trade } from "../types";
+import type { Trade, TradeStats } from "../types";
 import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "./tradingRules";
-import { loadMemory, remember } from "@/modules/ai/memory";
+import { remember } from "@/modules/ai/memory";
+import { selectMemories, type MemoryLike } from "@/modules/ai/memory-select";
+import { slimSignals } from "./signalContext";
 import { loadOnboarding, loadJarvisProfile, type OnboardingData } from "../store";
-import type { AIUserContext } from "@/modules/ai/context";
 
 /**
  * Coach context builder — the glue that turns the coach from a stateless Q&A
@@ -25,9 +26,13 @@ export interface CoachTurn {
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
-/** Scalar-only snapshot the coach can cite — no arrays/maps (schema + size). */
-function compactStats(trades: Trade[]): Record<string, number | string | null> {
-  const s = computeStats(trades);
+/**
+ * Instantané scalaire que le coach peut citer — ni tableaux ni maps (schéma + taille).
+ *
+ * Reçoit les stats DÉJÀ calculées : les recalculer ici en faisait la troisième
+ * exécution de `computeStats` pour une seule question, sur le thread principal.
+ */
+function compactStats(s: TradeStats): Record<string, number | string | null> {
   return {
     totalPnl: round(s.totalPnl),
     winRatePct: round(s.winRate * 100),
@@ -45,39 +50,6 @@ function compactStats(trades: Trade[]): Record<string, number | string | null> {
   };
 }
 
-export async function buildCoachContext(opts: {
-  userId?: string;
-  trades: Trade[];
-  conversation?: CoachTurn[];
-  language?: string;
-  /** How many trailing turns of the thread to send (protects payload size). */
-  maxTurns?: number;
-}): Promise<AIUserContext> {
-  const { userId, trades, conversation = [], language, maxTurns = 16 } = opts;
-
-  let memory: { kind: string; content: string }[] | undefined;
-  if (userId) {
-    try {
-      const entries = await loadMemory(userId);
-      if (entries.length) {
-        memory = entries.map((m) => ({ kind: m.kind, content: m.content.slice(0, 2000) }));
-      }
-    } catch {
-      // Best-effort: never let a memory read failure block the coach.
-    }
-  }
-
-  return {
-    trades: toInsightTradesPayload(trades),
-    stats: trades.length ? compactStats(trades) : undefined,
-    memory,
-    conversation: conversation
-      .slice(-maxTurns)
-      .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),
-    language,
-  };
-}
-
 /**
  * Seed a one-line `profile` memory from the onboarding answers so the coach
  * "knows" the trader from the very first message — deterministic, zero AI cost,
@@ -92,8 +64,26 @@ export interface CoachV1Payload {
   signals?: Record<string, unknown>;
   /** The rules the trader wrote for themselves, so the coach can enforce them. */
   rules?: { kind: string; text: string; enabled: boolean }[];
+  /**
+   * Objectifs actifs et progression MESURÉE. Lus depuis `goal_plans` (source de
+   * vérité unique) — jamais mémorisés : un objectif atteint à 40 % hier ne l'est
+   * plus aujourd'hui.
+   */
+  goals?: { kind: string; target: number; current: number }[];
+  /**
+   * Tenue des règles sur la fenêtre récente. C'est ce qui permet à Jarvis de
+   * dire « tu l'as tenue 11 fois sur 12 » au lieu de « tu as violé ta règle » —
+   * la différence entre un outil qui gronde et un coach qui accompagne.
+   */
+  adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
   conversation?: { role: "user" | "assistant"; content: string }[];
   profile?: string;
+  /**
+   * Souvenirs SÉLECTIONNÉS pour cette question précise — jamais l'historique
+   * complet. Le tri et le budget de tokens sont appliqués par
+   * `modules/ai/memory-select`, sous contrainte dure.
+   */
+  memory?: { kind: string; content: string }[];
   language?: string;
 }
 
@@ -141,20 +131,8 @@ export function describeProfile(
  * rejetée (400) → « une erreur est survenue ». On borne les buckets et on
  * retire en dernier les sections les moins critiques.
  */
-function slimSignals(signals: ReturnType<typeof computeBehaviorSignals>): Record<string, unknown> {
-  const cap = 10_000;
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(signals)) {
-    const v = (signals as Record<string, unknown>)[k];
-    out[k] = Array.isArray(v) ? v.slice(0, 4) : v;
-  }
-  if (JSON.stringify(out).length <= cap) return out;
-  for (const drop of ["conviction", "setupQuality", "bySession", "bySymbol", "byWeekday"]) {
-    if (JSON.stringify(out).length <= cap) break;
-    delete out[drop];
-  }
-  return out;
-}
+/* La sélection des signaux vit dans `signalContext.ts` — module pur, testable
+   sans dépendance DB. Voir ce fichier pour la stratégie de conservation. */
 
 export function buildCoachV1Payload(opts: {
   trades: Trade[];
@@ -173,6 +151,32 @@ export function buildCoachV1Payload(opts: {
   } | null;
   /** The trader's own rules, so the coach holds them to their own standard. */
   rules?: TradingRule[];
+  /** Objectifs déjà mesurés par `useGoalProgress` — recalculés, jamais stockés. */
+  goals?: { kind: string; target: number; current: number }[];
+  /** Adhérence déjà mesurée par `computeRuleAdherence` — recalculée à chaque fois. */
+  adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
+  /**
+   * La question posée — nécessaire pour choisir les souvenirs UTILES à
+   * celle-ci plutôt que d'envoyer toute la mémoire.
+   */
+  question?: string;
+  /** Souvenirs bruts déjà chargés par l'appelant (lecture Supabase asynchrone). */
+  memory?: MemoryLike[];
+  /**
+   * Signaux comportementaux DÉJÀ calculés par l'appelant. L'appelant les a
+   * presque toujours sous la main (memo du workspace) : les recalculer ici
+   * doublait un parcours complet des trades à chaque question.
+   */
+  signals?: ReturnType<typeof computeBehaviorSignals>;
+  /**
+   * Edge Score déjà calculé (hook `useEdgeScore`).
+   *
+   * C'est l'indicateur de TÊTE du tableau de bord — le premier chiffre que le
+   * trader voit. Jusqu'ici Jarvis l'ignorait : « pourquoi mon Edge Score
+   * baisse ? » recevait la réponse d'un coach qui ne savait pas ce qu'est ce
+   * score. Il n'est PAS recalculé ici (une seule définition, cf. `useEdgeScore`).
+   */
+  edge?: { score: number | null; weakest: string | null };
 }): CoachV1Payload {
   const {
     trades,
@@ -182,7 +186,14 @@ export function buildCoachV1Payload(opts: {
     onboarding,
     jarvisProfile,
     rules,
+    goals,
+    adherence,
+    question,
+    memory,
+    signals: providedSignals,
+    edge,
   } = opts;
+  // UNE seule exécution, réutilisée pour les erreurs récurrentes ET l'instantané.
   const stats = trades.length ? computeStats(trades) : null;
   const mistakes = stats
     ? Object.entries(stats.mistakeStats)
@@ -192,14 +203,32 @@ export function buildCoachV1Payload(opts: {
     : [];
   // The behavioural read is what turns "here are your stats" into "here is why
   // you lose on Fridays". Computed deterministically, never by the model.
-  const signals = computeBehaviorSignals(trades);
+  const baseSignals = providedSignals ?? computeBehaviorSignals(trades);
+  // L'Edge Score rejoint les SIGNAUX : c'est exactement leur nature — une
+  // mesure déterministe déjà calculée, que le modèle interprète sans jamais la
+  // recalculer. Aucun nouveau canal, aucun nouveau contrat.
+  const signals = edge && edge.score !== null ? { ...baseSignals, edgeScore: edge } : baseSignals;
   return {
     // Les 25 derniers trades suffisent pour les exemples du coach (les stats et
     // signaux portent la vue d'ensemble). Un payload plus léger = l'IA répond
     // plus vite et reste sous les limites de temps (serverless Vercel ~10s).
     trades: toInsightTradesPayload(trades.slice(-25)),
-    stats: trades.length ? compactStats(trades) : undefined,
+    stats: stats ? compactStats(stats) : undefined,
+    // Mémoire : on n'envoie QUE les souvenirs utiles à cette question, sous
+    // budget de tokens strict. Envoyer l'historique complet noierait le modèle
+    // et ferait exploser la latence sans rien améliorer.
+    memory:
+      memory?.length && question
+        ? selectMemories(memory, question).selected.map((m) => ({
+            kind: m.kind,
+            content: m.content,
+          }))
+        : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
+    goals: goals?.length ? goals.slice(0, 10) : undefined,
+    // 5 règles suffisent : au-delà, le coach dilue son message au lieu de
+    // pointer celle qui coûte le plus.
+    adherence: adherence?.length ? adherence.slice(0, 5) : undefined,
     signals: Object.keys(signals).length ? slimSignals(signals) : undefined,
     rules: rules?.length
       ? rules
@@ -216,9 +245,10 @@ export function buildCoachV1Payload(opts: {
 
 export async function seedProfileMemory(userId: string): Promise<void> {
   try {
-    const existing = await loadMemory(userId, ["profile"], 1);
-    if (existing.length) return;
-
+    // Plus de garde « écrire une seule fois » : elle figeait le profil à vie.
+    // Si le trader corrige sa faiblesse déclarée ou sa cible mensuelle, le
+    // souvenir doit suivre. L'upsert par clé rend l'opération idempotente —
+    // réécrire le même contenu ne crée pas de doublon.
     const [onb, jarvis] = await Promise.all([
       loadOnboarding(userId).catch(() => null),
       loadJarvisProfile(userId).catch(() => null),
@@ -234,7 +264,16 @@ export async function seedProfileMemory(userId: string): Promise<void> {
     if (onb?.usesIct) parts.push("uses ICT concepts");
     if (!parts.length) return;
 
-    await remember(userId, "profile", `Trader profile — ${parts.join("; ")}.`);
+    await remember(userId, "profile", `Trader profile — ${parts.join("; ")}.`, {
+      // Clé stable : il n'existe qu'UN profil par trader, par construction.
+      key: "trader_profile",
+      // Importance maximale : c'est l'identité, elle cadre toute réponse.
+      importance: 5,
+      // Confiance élevée mais pas totale — le trader s'est décrit lui-même,
+      // et une auto-description peut être optimiste.
+      confidence: 0.9,
+      source: "onboarding",
+    });
   } catch {
     // Best-effort: seeding must never surface an error to the user.
   }

@@ -53,6 +53,10 @@ export const MISSION_LABELS: Record<string, { fr: string; en: string }> = {
     fr: "Ne pas augmenter la taille après une perte",
     en: "Never increase size after a loss",
   },
+  keep_rule_streak: {
+    fr: "Tenir cette règle aujourd'hui aussi",
+    en: "Hold this rule again today",
+  },
   day_trade_cap: {
     fr: "Limiter la journée à {cap} trades max",
     en: "Cap the day at {cap} trades",
@@ -108,7 +112,8 @@ export const PATTERN_LABELS: Record<string, { fr: string; en: string }> = {
   risk_after_loss: { fr: "Risque après perte", en: "Risk after a loss" },
   overtrading: { fr: "Journées chargées", en: "Busy days" },
   costliest_mistake: { fr: "Erreur la plus coûteuse", en: "Costliest mistake" },
-  discipline_streak: { fr: "Série de discipline", en: "Discipline streak" },
+  discipline_streak: { fr: "Série de gains", en: "Winning streak" },
+  rule_kept: { fr: "Règle tenue", en: "Rule held" },
 };
 
 export function patternLabel(pattern: string, lang: "fr" | "en"): string {

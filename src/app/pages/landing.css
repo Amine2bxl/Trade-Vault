@@ -13,6 +13,20 @@
     system-ui,
     -apple-system,
     sans-serif;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Main content wrapper: ensures footer hugs the bottom naturally on short screens
+   and doesn't crowd on long pages. */
+.landing-root > main {
+  min-height: calc(100vh - 200px);
+}
+
+/* Mobile section spacing — tighter, cleaner */
+@media (max-width: 767px) {
+  .landing-root section {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+  }
 }
 .landing-root .font-display {
   font-family: "Sora", "Manrope", ui-sans-serif, system-ui, sans-serif;
@@ -37,16 +51,17 @@
    flush at the top — never hidden behind the bar or stopped between two. */
 .landing-root section[id] {
   scroll-margin-top: 82px;
-  /* Each nav-linked section fills the viewport below the header and centres its
-     own content, so a nav click lands on a section shown whole and centred at
-     any screen size. `min-height` (not `height`) is a floor: when the content
-     is taller than the viewport — small laptops, zoomed text — the section
-     grows and the page scrolls, so nothing is ever clipped. `dvh` tracks the
-     mobile URL bar. */
   min-height: calc(100dvh - 66px);
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+/* On mobile, sections don't need to fill the viewport — content flows naturally */
+@media (max-width: 767px) {
+  .landing-root section[id] {
+    min-height: auto;
+    scroll-margin-top: 70px;
+  }
 }
 /* The direct content wrapper of each section must still span the section so its
    own `max-width` + `mx-auto` keep it horizontally centred inside the flex. */
