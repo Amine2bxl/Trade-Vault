@@ -25,7 +25,19 @@ export interface ThemeDef {
   secondary: string;
   /** bright highlight used for glows / gradient tips */
   highlight: string;
+  /**
+   * Fond de l'application. OPTIONNEL — et c'est ce qui rend l'extension sûre :
+   * les thèmes déjà enregistrés par les utilisateurs ne portent pas ce champ,
+   * ils retombent donc sur la valeur d'origine et restent identiques.
+   */
+  background?: string;
+  /** Couleur de texte principale. Optionnelle, même raison. */
+  text?: string;
 }
+
+/** Valeurs d'origine — le rendu sans thème personnalisé, à l'identique. */
+export const DEFAULT_BACKGROUND = "#060d16";
+export const DEFAULT_TEXT = "#e2e8f0";
 
 export type ThemeVars = Record<string, string>;
 
@@ -89,6 +101,8 @@ export function computeThemeVars(theme: ThemeDef): ThemeVars {
     "--tv-accent-rgb": rgbStr(theme.primary),
     "--tv-accent-2-rgb": rgbStr(theme.secondary),
     "--tv-highlight-rgb": rgbStr(theme.highlight),
+    "--tv-bg": theme.background ?? DEFAULT_BACKGROUND,
+    "--tv-text": theme.text ?? DEFAULT_TEXT,
   };
 }
 

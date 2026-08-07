@@ -37,8 +37,8 @@
   body {
     /* Same deep navy as <html> — no white flash on overscroll or before
        pages paint their own surfaces. */
-    background-color: #060d16;
-    color: #e2e8f0;
+    background-color: var(--tv-bg);
+    color: var(--tv-text);
   }
 }
 
@@ -95,6 +95,11 @@
 :root {
   /* Default identity = "Jarvis" cyan/teal — matches the public landing page so
      the signed-in app and the marketing site share one visual identity. */
+  /* Surfaces et textes — extraits en variables pour que le studio de thème
+     puisse les piloter. Les valeurs par défaut sont EXACTEMENT celles qui
+     étaient codées en dur : sans thème personnalisé, le rendu est inchangé. */
+  --tv-bg: #060d16;
+  --tv-text: #e2e8f0;
   --tv-primary-h: 215.2;
   --tv-primary-c: 0.898;
   --tv-secondary-h: 182.5;
@@ -110,7 +115,7 @@
 html {
   /* Deep navy — the landing page's base (#060d16), shared by the whole app
      so marketing site and product read as ONE surface. */
-  background: #060d16;
+  background: var(--tv-bg);
   /* App-like: allow scroll panning but kill pinch-zoom and double-tap zoom. */
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
@@ -414,9 +419,9 @@ body {
       transparent 70%
     ),
     radial-gradient(ellipse 50% 60% at 0% 85%, rgba(14, 165, 233, 0.055) 0%, transparent 60%),
-    #060d16;
+    var(--tv-bg);
   background-attachment: fixed;
-  color: #e2e8f0;
+  color: var(--tv-text);
   min-height: 100vh;
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
@@ -1077,7 +1082,7 @@ svg.lucide {
 .btn-ghost:hover {
   border-color: rgba(34, 211, 238, 0.45);
   background: rgba(34, 211, 238, 0.08);
-  color: #e2e8f0;
+  color: var(--tv-text);
   transform: translateY(-2px);
 }
 .btn-ghost:active {
