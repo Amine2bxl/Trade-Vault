@@ -23,6 +23,7 @@ export {
 export {
   loadUserTrades,
   upsertTrade,
+  importTrades,
   deleteTrade,
   deleteAllTrades,
   migrateLegacyTradeScreenshots,

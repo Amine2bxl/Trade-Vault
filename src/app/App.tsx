@@ -36,6 +36,7 @@ import { Trade, isPage, type Page } from "./types";
 import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
 import {
   upsertTrade,
+  importTrades,
   deleteTrade,
   deleteAllTrades,
   loadOnboarding,
@@ -466,24 +467,16 @@ function AppContent() {
     [user, t, toast],
   );
 
-  // CSV import: persist each row, keep the ones that made it
+  // Import CSV : écriture par lots séquentiels, avec progression réelle et
+  // comptage honnête des échecs (voir `importTrades`).
   const generateReport = useServerFn(generateMyMonthlyReport);
   const handleImportTrades = useCallback(
-    async (imported: Trade[]): Promise<number> => {
-      if (!user) return 0;
-      const results = await Promise.allSettled(imported.map((tr) => upsertTrade(user.id, tr)));
-      const saved: Trade[] = [];
-      for (let i = 0; i < results.length; i++) {
-        // Liaison locale : TypeScript n'affine pas un accès indexé répété
-        // (`results[i]`), donc `.reason` était inaccessible au typage alors que
-        // le code était correct à l'exécution.
-        const result = results[i];
-        if (result.status === "fulfilled") {
-          saved.push(imported[i]);
-        } else {
-          console.error("Failed to import trade", result.reason);
-        }
-      }
+    async (
+      imported: Trade[],
+      onProgress?: (done: number, total: number) => void,
+    ): Promise<{ saved: number; failed: number }> => {
+      if (!user) return { saved: 0, failed: imported.length };
+      const { saved, failed } = await importTrades(user.id, imported, onProgress);
       if (saved.length > 0) {
         setTrades((prev) => [...saved, ...prev]);
         // Backfill: a multi-month CSV history should come with its monthly
@@ -516,7 +509,7 @@ function AppContent() {
           }
         })();
       }
-      return saved.length;
+      return { saved: saved.length, failed };
     },
     [user, generateReport, t, toast],
   );

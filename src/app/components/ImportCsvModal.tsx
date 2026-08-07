@@ -1,185 +1,42 @@
 import { useMemo, useRef, useState } from "react";
-import { X, Upload, FileSpreadsheet, Check, Loader2 } from "lucide-react";
+import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "lucide-react";
 import { Trade } from "../types";
-import { generateId } from "../store";
 import { formatPnl } from "../utils/tradeCalcs";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { Button, Modal } from "@/shared/ui";
+import {
+  FIELDS,
+  REQUIRED,
+  detectFormat,
+  guessMapping,
+  mapRowsToTrades,
+  parseCsv,
+  rejectFile,
+  splitDuplicates,
+  type Field,
+  type FileRejection,
+} from "../utils/csvImport";
 
 interface ImportCsvModalProps {
   existing: Trade[];
   onClose: () => void;
-  onImport: (trades: Trade[]) => Promise<number>;
+  /** Rend le nombre de trades réellement écrits et le nombre d'échecs. */
+  onImport: (
+    trades: Trade[],
+    onProgress?: (done: number, total: number) => void,
+  ) => Promise<{ saved: number; failed: number }>;
 }
 
-// ── CSV parsing ─────────────────────────────────────────────────────────────
-function detectDelimiter(firstLine: string): string {
-  const counts: [string, number][] = [",", ";", "\t"].map((d) => [
-    d,
-    firstLine.split(d).length - 1,
-  ]);
-  counts.sort((a, b) => b[1] - a[1]);
-  return counts[0][1] > 0 ? counts[0][0] : ",";
-}
-
-function parseCsv(text: string): { headers: string[]; rows: string[][] } {
-  const clean = text.replace(/^\uFEFF/, "");
-  const delim = detectDelimiter(clean.split(/\r?\n/, 1)[0] ?? "");
-  const rows: string[][] = [];
-  let cur: string[] = [],
-    field = "",
-    inQuotes = false;
-  for (let i = 0; i < clean.length; i++) {
-    const c = clean[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (clean[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else inQuotes = false;
-      } else field += c;
-    } else if (c === '"') inQuotes = true;
-    else if (c === delim) {
-      cur.push(field);
-      field = "";
-    } else if (c === "\n" || c === "\r") {
-      if (c === "\r" && clean[i + 1] === "\n") i++;
-      cur.push(field);
-      field = "";
-      if (cur.some((f) => f.trim() !== "")) rows.push(cur);
-      cur = [];
-    } else field += c;
-  }
-  if (field !== "" || cur.length > 0) {
-    cur.push(field);
-    if (cur.some((f) => f.trim() !== "")) rows.push(cur);
-  }
-  if (rows.length === 0) return { headers: [], rows: [] };
-  return { headers: rows[0].map((h) => h.trim()), rows: rows.slice(1) };
-}
-
-// ── Value normalization ─────────────────────────────────────────────────────
-function parseMoney(raw: string): number | null {
-  let s = raw.trim();
-  if (!s) return null;
-  let negative = false;
-  if (/^\(.*\)$/.test(s)) {
-    negative = true;
-    s = s.slice(1, -1);
-  }
-  s = s.replace(/[$€£\s]/g, "");
-  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))
-    s = s.replace(/\./g, "").replace(",", "."); // 1.234,56
-  else if (/^-?\d+,\d+$/.test(s))
-    s = s.replace(",", "."); // 12,5
-  else s = s.replace(/,/g, ""); // 1,234.56
-  const n = parseFloat(s);
-  if (Number.isNaN(n)) return null;
-  return negative ? -Math.abs(n) : n;
-}
-
-function parseDateTime(raw: string): { date: string; time: string } | null {
-  const s = raw.trim();
-  if (!s) return null;
-  // ISO / YYYY-MM-DD [HH:MM]
-  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
-  if (m) return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
-  // MM/DD/YYYY [HH:MM[:SS] [AM/PM]] (US default for broker exports)
-  m = s.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)?)?/,
-  );
-  if (m) {
-    let hh = m[4] ? parseInt(m[4], 10) : 0;
-    const ampm = m[6]?.toUpperCase();
-    if (ampm === "PM" && hh < 12) hh += 12;
-    if (ampm === "AM" && hh === 12) hh = 0;
-    return {
-      date: `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`,
-      time: m[4] ? `${String(hh).padStart(2, "0")}:${m[5]}` : "",
-    };
-  }
-  return null;
-}
-
-function parseDirection(raw: string): "long" | "short" | null {
-  const s = raw.trim().toLowerCase();
-  if (["long", "buy", "bot", "b", "l"].includes(s)) return "long";
-  if (["short", "sell", "sld", "s", "sellshort"].includes(s)) return "short";
-  return null;
-}
-
-// ── Column auto-mapping ─────────────────────────────────────────────────────
-type Field =
-  | "date"
-  | "symbol"
-  | "direction"
-  | "pnl"
-  | "risk"
-  | "rMultiple"
-  | "entryTime"
-  | "exitTime"
-  | "strategy"
-  | "slippage"
-  | "notes";
-const FIELDS: Field[] = [
-  "date",
-  "symbol",
-  "pnl",
-  "direction",
-  "entryTime",
-  "exitTime",
-  "risk",
-  "rMultiple",
-  "strategy",
-  "slippage",
-  "notes",
-];
-const REQUIRED: Field[] = ["date", "symbol", "pnl"];
-
-// Header keywords per field, checked in order — covers TradeVault, NinjaTrader,
-// TradingView and TopStep(X) export headers plus generic names.
-const GUESSES: Record<Field, string[]> = {
-  date: ["date", "enteredat", "entry time", "entrytime", "date/time", "datetime", "time", "opened"],
-  symbol: ["symbol", "instrument", "contractname", "contract", "ticker", "market"],
-  direction: ["direction", "side", "market pos", "marketpos", "type", "position"],
-  pnl: ["p&l", "pnl", "profit", "net profit", "netprofit", "realized", "gain"],
-  risk: ["risk"],
-  rMultiple: ["r multiple", "rmultiple", "r-multiple", "r:r"],
-  entryTime: ["entry time", "entrytime", "enteredat", "open time", "opened"],
-  exitTime: ["exit time", "exittime", "exitedat", "close time", "closed"],
-  strategy: ["strategy", "setup", "signal"],
-  slippage: ["slippage", "fees", "commission"],
-  notes: ["notes", "comment", "description"],
-};
-
-function guessMapping(headers: string[]): Partial<Record<Field, number>> {
-  const mapping: Partial<Record<Field, number>> = {};
-  const used = new Set<number>();
-  for (const field of FIELDS) {
-    const lower = headers.map((h) => h.toLowerCase());
-    for (const kw of GUESSES[field]) {
-      const idx = lower.findIndex((h, i) => !used.has(i) && h.includes(kw));
-      if (idx !== -1) {
-        mapping[field] = idx;
-        used.add(idx);
-        break;
-      }
-    }
-  }
-  return mapping;
-}
-
-function detectFormat(headers: string[]): string | null {
-  const h = headers.map((x) => x.toLowerCase()).join("|");
-  if (h.includes("market pos") || (h.includes("instrument") && h.includes("cum.")))
-    return "NinjaTrader";
-  if (h.includes("contractname") || (h.includes("enteredat") && h.includes("exitedat")))
-    return "TopStep";
-  if (h.includes("signal") && h.includes("contracts")) return "TradingView";
-  if (h.includes("setup quality") && h.includes("confluences")) return "TradeVault";
-  return null;
-}
+/** Chaque refus a son message : « il ne s'est rien passé » n'est pas une
+ *  réponse acceptable quand l'utilisateur vient de choisir un fichier. */
+const ERROR_KEY = {
+  tooLarge: "import.errTooLarge",
+  notCsv: "import.errNotCsv",
+  empty: "import.errEmpty",
+  noHeaders: "import.errNoHeaders",
+  unreadable: "import.errUnreadable",
+} as const;
 
 export default function ImportCsvModal({ existing, onClose, onImport }: ImportCsvModalProps) {
   const { t } = useT();
@@ -190,91 +47,94 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     format: string | null;
   } | null>(null);
   const [mapping, setMapping] = useState<Partial<Record<Field, number>>>({});
-  const [importing, setImporting] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [error, setError] = useState<FileRejection | "unreadable" | null>(null);
+  /** Étape de confirmation : ce qui SERA écrit, avant d'écrire quoi que ce soit. */
+  const [confirming, setConfirming] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<{
     imported: number;
     duplicates: number;
     invalid: number;
+    failed: number;
   } | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
+  const importing = progress !== null;
+
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
-    const text = await file.text();
-    const { headers, rows } = parseCsv(text);
-    if (headers.length === 0) return;
-    setParsed({ headers, rows, format: detectFormat(headers) });
-    setMapping(guessMapping(headers));
-    setResult(null);
+    setError(null);
+    // Contrôle AVANT lecture : sans lui, choisir un PDF ou un fichier vide ne
+    // produisait rien du tout à l'écran et l'application semblait figée.
+    const rejection = rejectFile(file);
+    if (rejection) {
+      setError(rejection);
+      return;
+    }
+    setReading(true);
+    try {
+      const text = await file.text();
+      const { headers, rows } = parseCsv(text);
+      if (headers.length === 0 || rows.length === 0) {
+        setError("noHeaders");
+        return;
+      }
+      setParsed({ headers, rows, format: detectFormat(headers) });
+      setMapping(guessMapping(headers));
+      setResult(null);
+    } catch (e) {
+      console.error("Could not read the CSV file", e);
+      setError("unreadable");
+    } finally {
+      setReading(false);
+    }
   };
 
-  const mappedTrades = useMemo(() => {
-    if (!parsed) return { valid: [] as Trade[], invalid: 0 };
-    const get = (row: string[], f: Field) =>
-      mapping[f] !== undefined ? (row[mapping[f]!] ?? "").trim() : "";
-    const valid: Trade[] = [];
-    let invalid = 0;
-    for (const row of parsed.rows) {
-      const dt = parseDateTime(get(row, "date"));
-      const symbol = get(row, "symbol").toUpperCase().slice(0, 20);
-      const pnl = parseMoney(get(row, "pnl"));
-      if (!dt || !symbol || pnl === null) {
-        invalid++;
-        continue;
-      }
-      const entryDt = parseDateTime(get(row, "entryTime"));
-      const exitDt = parseDateTime(get(row, "exitTime"));
-      const risk = parseMoney(get(row, "risk"));
-      const rRaw = parseMoney(get(row, "rMultiple"));
-      const slippage = parseMoney(get(row, "slippage"));
-      const riskAmount = risk !== null && risk > 0 ? risk : 0;
-      valid.push({
-        id: generateId(),
-        date: dt.date,
-        symbol,
-        direction: parseDirection(get(row, "direction")) ?? "long",
-        pnl: Math.round(pnl * 100) / 100,
-        riskAmount,
-        rMultiple:
-          rRaw !== null ? rRaw : riskAmount > 0 ? Math.round((pnl / riskAmount) * 100) / 100 : 0,
-        strategy: get(row, "strategy").slice(0, 50) || "Other",
-        mistakes: [],
-        setupQuality: 3,
-        notes: get(row, "notes").slice(0, 10000),
-        screenshots: [],
-        entryTime: entryDt?.time || dt.time || "",
-        exitTime: exitDt?.time || "",
-        confluences: [],
-        confidence: 50,
-        mae: null,
-        mfe: null,
-        slippage: slippage !== null ? slippage : null,
-      });
-    }
-    return { valid, invalid };
-  }, [parsed, mapping]);
+  const reset = () => {
+    setParsed(null);
+    setMapping({});
+    setError(null);
+    setConfirming(false);
+  };
+
+  const mappedTrades = useMemo(
+    () => (parsed ? mapRowsToTrades(parsed.rows, mapping) : { valid: [] as Trade[], invalid: 0 }),
+    [parsed, mapping],
+  );
+
+  /** Ce que l'import fera exactement — calculé AVANT toute écriture, pour que
+   *  la confirmation porte sur des chiffres et pas sur une promesse. */
+  const plan = useMemo(
+    () => splitDuplicates(mappedTrades.valid, existing),
+    [mappedTrades.valid, existing],
+  );
 
   const doImport = async () => {
-    if (mappedTrades.valid.length === 0) return;
-    setImporting(true);
-    // Dedupe against existing journal entries on (date, symbol, pnl, entryTime)
-    const sig = (tr: Pick<Trade, "date" | "symbol" | "pnl" | "entryTime">) =>
-      `${tr.date}|${tr.symbol}|${tr.pnl}|${tr.entryTime}`;
-    const known = new Set(existing.map(sig));
-    const fresh: Trade[] = [];
-    let duplicates = 0;
-    for (const tr of mappedTrades.valid) {
-      const s = sig(tr);
-      if (known.has(s)) {
-        duplicates++;
-        continue;
-      }
-      known.add(s);
-      fresh.push(tr);
+    if (plan.fresh.length === 0) return;
+    setConfirming(false);
+    setProgress({ done: 0, total: plan.fresh.length });
+    try {
+      const { saved, failed } = await onImport(plan.fresh, (done, total) =>
+        setProgress({ done, total }),
+      );
+      setResult({
+        imported: saved,
+        duplicates: plan.duplicates,
+        invalid: mappedTrades.invalid,
+        failed,
+      });
+    } catch (e) {
+      console.error("Import failed", e);
+      setResult({
+        imported: 0,
+        duplicates: plan.duplicates,
+        invalid: mappedTrades.invalid,
+        failed: plan.fresh.length,
+      });
+    } finally {
+      setProgress(null);
     }
-    const imported = fresh.length > 0 ? await onImport(fresh) : 0;
-    setResult({ imported, duplicates, invalid: mappedTrades.invalid });
-    setImporting(false);
   };
 
   const canImport =
@@ -302,10 +162,39 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       </div>
 
       <div className="overflow-y-auto max-h-[calc(90vh-70px)] px-6 py-5 space-y-4">
-        {result ? (
+        {importing ? (
+          /* Progression réelle : le compteur vient des lots effectivement
+             écrits, pas d'une animation décorative. */
+          <div className="py-10 text-center">
+            <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-4" />
+            <div className="text-sm font-semibold text-white mb-3">
+              {t("import.importing")
+                .replace("{done}", String(progress.done))
+                .replace("{total}", String(progress.total))}
+            </div>
+            <div className="h-1.5 w-full max-w-xs mx-auto rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 transition-[width] duration-300"
+                style={{
+                  width: `${progress.total ? Math.round((progress.done / progress.total) * 100) : 0}%`,
+                }}
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 mt-3">{t("import.dontClose")}</p>
+          </div>
+        ) : result ? (
           <div className="text-center py-8">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-              <Check className="w-7 h-7 text-emerald-400" />
+            <div
+              className={cn(
+                "w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4",
+                result.imported > 0 ? "bg-emerald-500/10" : "bg-red-500/10",
+              )}
+            >
+              {result.imported > 0 ? (
+                <Check className="w-7 h-7 text-emerald-400" />
+              ) : (
+                <AlertCircle className="w-7 h-7 text-red-400" />
+              )}
             </div>
             <div className="text-xl font-bold text-white mb-1">
               {result.imported} {t("import.imported")}
@@ -322,43 +211,65 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 </span>
               )}
             </div>
+            {/* Un échec silencieux ferait croire que tout est passé. */}
+            {result.failed > 0 && (
+              <p className="mt-3 text-xs text-red-400">
+                {t("import.failedRows").replace("{n}", String(result.failed))}
+              </p>
+            )}
             <Button onClick={onClose} className="mt-6">
               {t("common.close")}
             </Button>
           </div>
         ) : !parsed ? (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-              handleFile(e.dataTransfer.files?.[0]);
-            }}
-            onClick={() => fileRef.current?.click()}
-            className={cn(
-              "rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all",
-              dragOver
-                ? "border-cyan-500/50 bg-cyan-500/[0.05]"
-                : "border-white/[0.08] hover:border-cyan-500/30 hover:bg-cyan-500/[0.02]",
+          <>
+            {/* Message d'erreur explicite : avant, un fichier refusé ne
+                déclenchait strictement rien. */}
+            {error && (
+              <div className="flex items-start gap-2.5 rounded-xl bg-red-500/[0.07] border border-red-500/20 px-3.5 py-3">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-red-300 leading-relaxed">{t(ERROR_KEY[error])}</p>
+              </div>
             )}
-          >
-            <FileSpreadsheet className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-            <div className="text-sm font-semibold text-white mb-1">{t("import.dropHint")}</div>
-            <div className="text-[11px] text-slate-500">
-              NinjaTrader · TradingView · TopStep · TradeVault · CSV
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                handleFile(e.dataTransfer.files?.[0]);
+              }}
+              onClick={() => fileRef.current?.click()}
+              className={cn(
+                "rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all",
+                dragOver
+                  ? "border-cyan-500/50 bg-cyan-500/[0.05]"
+                  : "border-white/[0.08] hover:border-cyan-500/30 hover:bg-cyan-500/[0.02]",
+              )}
+            >
+              {reading ? (
+                <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mx-auto mb-3" />
+              ) : (
+                <FileSpreadsheet className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+              )}
+              <div className="text-sm font-semibold text-white mb-1">
+                {reading ? t("import.analyzing") : t("import.dropHint")}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                NinjaTrader · TradingView · TopStep · TradeVault · CSV
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv,text/plain"
+                onChange={(e) => handleFile(e.target.files?.[0])}
+                className="hidden"
+              />
             </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(e) => handleFile(e.target.files?.[0])}
-              className="hidden"
-            />
-          </div>
+          </>
         ) : (
           <>
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -371,10 +282,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 )}
               </div>
               <button
-                onClick={() => {
-                  setParsed(null);
-                  setMapping({});
-                }}
+                onClick={reset}
                 className="text-[11px] text-slate-500 hover:text-white transition-colors"
               >
                 {t("import.otherFile")}
@@ -470,23 +378,61 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
               </div>
             </div>
 
-            <Button
-              onClick={doImport}
-              disabled={!canImport || importing}
-              className={cn(
-                "w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-                canImport && !importing
-                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
-                  : "bg-slate-800 text-slate-500 cursor-not-allowed",
-              )}
-            >
-              {importing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
+            {/* Confirmation chiffrée AVANT écriture : l'utilisateur voit
+                exactement ce qui sera ajouté et ce qui sera ignoré. */}
+            {confirming ? (
+              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4 space-y-3">
+                <p className="text-sm font-semibold text-white">{t("import.confirmTitle")}</p>
+                <ul className="text-xs text-slate-400 space-y-1">
+                  <li>
+                    <span className="font-bold text-emerald-400 tabular-nums">
+                      {plan.fresh.length}
+                    </span>{" "}
+                    {t("import.willAdd")}
+                  </li>
+                  {plan.duplicates > 0 && (
+                    <li>
+                      <span className="font-bold text-slate-300 tabular-nums">
+                        {plan.duplicates}
+                      </span>{" "}
+                      {t("import.duplicatesSkipped")}
+                    </li>
+                  )}
+                  {mappedTrades.invalid > 0 && (
+                    <li>
+                      <span className="font-bold text-slate-300 tabular-nums">
+                        {mappedTrades.invalid}
+                      </span>{" "}
+                      {t("import.invalidSkipped")}
+                    </li>
+                  )}
+                </ul>
+                <p className="text-[11px] text-slate-500">{t("import.confirmSafe")}</p>
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => setConfirming(false)} className="flex-1">
+                    {t("common.cancel")}
+                  </Button>
+                  <Button onClick={doImport} disabled={plan.fresh.length === 0} className="flex-1">
+                    <Upload className="w-4 h-4" />
+                    {t("import.confirmBtn")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                onClick={() => setConfirming(true)}
+                disabled={!canImport}
+                className={cn(
+                  "w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                  canImport
+                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
+                    : "bg-slate-800 text-slate-500 cursor-not-allowed",
+                )}
+              >
                 <Upload className="w-4 h-4" />
-              )}
-              {t("import.importBtn")} ({mappedTrades.valid.length})
-            </Button>
+                {t("import.importBtn")} ({mappedTrades.valid.length})
+              </Button>
+            )}
           </>
         )}
       </div>

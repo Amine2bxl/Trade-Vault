@@ -739,6 +739,24 @@ const fr: Dict = {
   "import.importBtn": "Importer",
   "import.imported": "trades importés",
   "import.duplicatesSkipped": "doublons ignorés",
+  "import.analyzing": "Analyse de ton fichier…",
+  "import.importing": "Import en cours… {done} / {total}",
+  "import.dontClose": "Garde cette fenêtre ouverte jusqu'à la fin.",
+  "import.confirmTitle": "Prêt à importer",
+  "import.willAdd": "trades seront ajoutés à ton journal",
+  "import.confirmSafe": "Rien de ce qui est déjà dans ton journal n'est modifié ni supprimé.",
+  "import.confirmBtn": "Confirmer l'import",
+  "import.failedRows":
+    "{n} trades n'ont pas pu être enregistrés. Ton journal existant est intact — tu peux relancer avec le même fichier, les doublons seront ignorés.",
+  "import.errTooLarge":
+    "Ce fichier est trop volumineux (10 Mo maximum). Découpe ton export en plusieurs fichiers.",
+  "import.errNotCsv":
+    "Ce fichier n'est pas un CSV. Exporte ton historique au format CSV depuis ton broker ou ton journal.",
+  "import.errEmpty": "Ce fichier est vide.",
+  "import.errNoHeaders":
+    "Aucune donnée lisible — le fichier doit contenir une ligne d'en-tête et au moins un trade.",
+  "import.errUnreadable":
+    "Ce fichier n'a pas pu être lu. Il est peut-être corrompu ou dans un encodage non pris en charge.",
 
   "mistakes.discipline": "Score de journal propre",
   "mistakes.disciplineSub": "D'après les erreurs que tu as cochées, pondérées par gravité",

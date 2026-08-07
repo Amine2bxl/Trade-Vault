@@ -806,6 +806,23 @@ const en = {
   "import.importBtn": "Import",
   "import.imported": "trades imported",
   "import.duplicatesSkipped": "duplicates skipped",
+  "import.analyzing": "Analysing your file…",
+  "import.importing": "Importing… {done} / {total}",
+  "import.dontClose": "Keep this window open until it finishes.",
+  "import.confirmTitle": "Ready to import",
+  "import.willAdd": "trades will be added to your journal",
+  "import.confirmSafe": "Nothing already in your journal is modified or deleted.",
+  "import.confirmBtn": "Confirm import",
+  "import.failedRows":
+    "{n} trades could not be saved. Your existing journal is untouched — you can retry with the same file, duplicates will be skipped.",
+  "import.errTooLarge": "This file is too large (max 10 MB). Split your export into several files.",
+  "import.errNotCsv":
+    "This file is not a CSV. Export your history as CSV from your broker or journal.",
+  "import.errEmpty": "This file is empty.",
+  "import.errNoHeaders":
+    "No readable data found — the file needs a header row and at least one trade.",
+  "import.errUnreadable":
+    "This file could not be read. It may be corrupted or use an unsupported encoding.",
 
   // Mistakes — behavioral analytics
   "mistakes.discipline": "Clean journal score",
