@@ -533,13 +533,8 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
-        {/* Push opt-in now lives in onboarding (and Settings), not as a
-            dashboard banner. */}
-        <div key={page}>
-          {/* Contextual skeleton: the loading frame mimics the destination
-              page's real layout (chart grid, trade list, calendar…). */}
-          <PageErrorBoundary resetKey={page}>
-            <Suspense fallback={<SkeletonForPage page={page} />}>
+        <PageErrorBoundary resetKey={page}>
+          <Suspense fallback={<SkeletonForPage page={page} />}>
               {page === "dashboard" && (
                 <Dashboard
                   trades={trades}
@@ -619,7 +614,6 @@ function AppContent() {
               )}
             </Suspense>
           </PageErrorBoundary>
-        </div>
       </main>
       {/* Mobile quick account switcher — floating FAB, bottom-left mirror of the AI Coach */}
       <AccountSwitcher variant="fab" />
