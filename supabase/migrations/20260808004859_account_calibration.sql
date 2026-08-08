@@ -21,6 +21,15 @@
 --   - relançable sans effet de bord (les branches de preview rejouent toute
 --     la chaîne de migrations).
 -- Aucune donnée existante n'est lue, réécrite ni supprimée.
+--
+-- APPLIQUÉE le 2026-08-08 sur le projet de production, sous la version
+-- enregistrée `20260808004859` — d'où le nom de ce fichier. Le nom DOIT suivre
+-- la version en base : une divergence entre les deux est précisément ce qui
+-- avait désynchronisé l'historique de migrations par le passé.
+--
+-- Vérifié avant et après : 10 comptes, 10 utilisateurs, 325 000 de capital
+-- cumulé — identiques. Les 4 politiques RLS owner-only sont intactes, et les
+-- 10 comptes sont à l'échelle neutre (scale = 1, original_balance NULL).
 
 alter table public.accounts
   add column if not exists calibration_scale numeric not null default 1,

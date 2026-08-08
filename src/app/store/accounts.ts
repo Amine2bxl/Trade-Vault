@@ -63,17 +63,26 @@ function rowToAccount(r: AccountRow): Account {
   };
 }
 
+/**
+ * `select("*")` et NON une liste explicite de colonnes.
+ *
+ * RÉGRESSION CORRIGÉE : lister nommément les colonnes de calibration faisait
+ * échouer la requête entière (`column accounts.calibration_scale does not
+ * exist`) tant que la migration n'était pas appliquée. `loadAccounts` levait,
+ * la liste des comptes restait vide, et les sous-comptes DISPARAISSAIENT de
+ * l'interface — la fonctionnalité cassait ce qu'elle venait enrichir.
+ *
+ * Le code est déployé AVANT que la migration ne tourne : il doit donc tolérer
+ * l'ancien schéma. `*` rend ce qui existe, et `rowToAccount` retombe sur les
+ * valeurs neutres pour ce qui manque.
+ */
 export async function loadAccounts(userId: string): Promise<Account[]> {
   const { data, error } = await supabase
     .from("accounts")
-    .select(
-      "id, name, type, starting_balance, currency, color, is_default, calibration_scale, original_balance, calibrated_at",
-    )
+    .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  // Cast explicite : les colonnes de calibration ont été ajoutées après la
-  // génération des types Supabase, qui ne les connaît donc pas encore.
   return ((data ?? []) as unknown as AccountRow[]).map(rowToAccount);
 }
 
@@ -98,9 +107,9 @@ export async function createAccount(
       color: input.color ?? "#22d3ee",
       is_default: false,
     })
-    .select(
-      "id, name, type, starting_balance, currency, color, is_default, calibration_scale, original_balance, calibrated_at",
-    )
+    // Même raison que dans `loadAccounts` : ne jamais nommer une colonne qui
+    // peut ne pas encore exister en base.
+    .select("*")
     .single();
   if (error) throw error;
   return rowToAccount(data as unknown as AccountRow);
