@@ -47,7 +47,7 @@ export async function getScreenshotUrl(path: string): Promise<string> {
   if (path.startsWith("data:")) return path;
   const { data, error } = await supabase.storage
     .from(SCREENSHOTS_BUCKET)
-    .createSignedUrl(path, 60 * 60);
+    .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days — prevents screenshots from disappearing mid-session
   if (error) throw error;
   return data.signedUrl;
 }
