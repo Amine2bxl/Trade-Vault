@@ -52,6 +52,7 @@ import {
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { missingReportMonths } from "./utils/reportMonths";
+import { uncalibrateTrade, withPnlFromRiskAndR } from "./utils/accountCalibration";
 import { useTradeStats } from "./hooks/useTradeStats";
 import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
 import { sendPushToSelf } from "@/backend/push.functions";
@@ -92,12 +93,8 @@ function AppContent() {
   // Trades now live in the React Query cache (keyed by user + active account).
   // Le facteur de recalibrage du compte actif traverse le hook : c'est là, et
   // nulle part ailleurs, que l'historique prend son échelle courante.
-  const { trades, tradesLoading } = useTrades(
-    user?.id,
-    activeId,
-    accountsReady,
-    activeAccount?.calibrationScale ?? 1,
-  );
+  const calibrationScale = activeAccount?.calibrationScale ?? 1;
+  const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady, calibrationScale);
   // Shim preserving the exact `setTrades` signature the optimistic write
   // handlers already use — updates the cache in place instead of local state,
   // so none of the save/delete/import logic below had to change.
@@ -373,10 +370,16 @@ function AppContent() {
   }, [user?.id, accountsReady, tradesLoading, trades, stats]);
 
   const handleSave = useCallback(
-    async (trade: Trade) => {
+    async (edited: Trade) => {
       if (!user) return;
       setModalOpen(false);
       setEditingTrade(null);
+      // Le formulaire est alimenté par les trades AFFICHÉS, donc déjà à
+      // l'échelle courante. Les réécrire tels quels les multiplierait une
+      // seconde fois : sur un compte 2×, chaque édition doublerait les
+      // montants stockés. On repasse donc à l'échelle d'origine avant
+      // d'écrire — en base comme dans le cache, qui garde le brut.
+      const trade = uncalibrateTrade(edited, calibrationScale);
       let snapshot: Trade[] = [];
       setTrades((prev) => {
         snapshot = prev;
@@ -409,7 +412,43 @@ function AppContent() {
         });
       })();
     },
-    [user],
+    [user, calibrationScale],
+  );
+
+  /**
+   * Édition RAPIDE depuis le journal : R multiple ou montant du risque, en
+   * place, sans ouvrir le formulaire complet.
+   *
+   * Instantané par construction : le cache est mis à jour d'abord (le trade
+   * est déjà à jour à l'écran avant même la réponse du serveur), et comme
+   * toutes les pages dérivent de ce même cache, le Dashboard, l'Analytics et
+   * Jarvis suivent dans la même frame. Aucun rechargement, aucune nouvelle
+   * session.
+   *
+   * Le patch arrive à l'échelle AFFICHÉE — il est appliqué à cette échelle
+   * (pour que `pnl = risque × R` reste vrai de ce que voit le trader), puis
+   * l'ensemble repasse à l'échelle d'origine avant écriture.
+   */
+  const handleQuickEdit = useCallback(
+    async (id: string, patch: Partial<Pick<Trade, "riskAmount" | "rMultiple">>) => {
+      if (!user) return;
+      const shown = trades.find((t) => t.id === id);
+      if (!shown) return;
+      const next = uncalibrateTrade(withPnlFromRiskAndR(shown, patch), calibrationScale);
+      let snapshot: Trade[] = [];
+      setTrades((prev) => {
+        snapshot = prev;
+        return prev.map((t) => (t.id === id ? next : t));
+      });
+      try {
+        await upsertTrade(user.id, next);
+      } catch (e) {
+        console.error("Failed to quick-edit trade", e);
+        setTrades(snapshot);
+        toast(t("app.saveTradeFailed"), "error");
+      }
+    },
+    [user, trades, calibrationScale, t, toast],
   );
 
   const handleDelete = useCallback(
@@ -493,7 +532,12 @@ function AppContent() {
       onProgress?: (done: number, total: number) => void,
     ): Promise<{ saved: number; failed: number }> => {
       if (!user) return { saved: 0, failed: imported.length };
-      const { saved, failed } = await importTrades(user.id, imported, onProgress);
+      // Les montants du CSV sont ceux que le trader vient de vivre, donc à
+      // l'échelle ACTUELLE du compte. Les stocker tels quels les ferait
+      // afficher multipliés par le facteur : on repasse à l'échelle d'origine,
+      // comme pour toute écriture partant d'une valeur vue par l'utilisateur.
+      const toStore = imported.map((tr) => uncalibrateTrade(tr, calibrationScale));
+      const { saved, failed } = await importTrades(user.id, toStore, onProgress);
       if (saved.length > 0) {
         setTrades((prev) => [...saved, ...prev]);
         // Backfill: a multi-month CSV history should come with its monthly
@@ -528,7 +572,7 @@ function AppContent() {
       }
       return { saved: saved.length, failed };
     },
-    [user, generateReport, t, toast],
+    [user, generateReport, t, toast, calibrationScale],
   );
 
   if (loading) {
@@ -598,6 +642,7 @@ function AppContent() {
                 <Journal
                   trades={trades}
                   onEdit={handleEdit}
+                  onQuickEdit={handleQuickEdit}
                   onDelete={handleDelete}
                   onDeleteAll={handleDeleteAll}
                   onAdd={handleAdd}

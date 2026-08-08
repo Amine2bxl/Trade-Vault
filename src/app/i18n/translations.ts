@@ -537,6 +537,8 @@ const en = {
   "journal.colSymbol": "symbol",
   "journal.colStrategy": "strategy",
   "journal.colPnl": "P&L",
+  "journal.quickEditR": "Click to edit the R multiple",
+  "journal.quickEditRisk": "Click to edit the risk",
   "journal.colRR": "R:R",
   "journal.detailRMultiple": "R Multiple",
 

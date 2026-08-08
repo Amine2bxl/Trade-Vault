@@ -10,6 +10,8 @@ import {
   previewCalibration,
   scaleFor,
   scaleMoney,
+  uncalibrateTrade,
+  withPnlFromRiskAndR,
 } from "../accountCalibration";
 import type { Trade } from "../../types";
 
@@ -309,5 +311,112 @@ describe("normalizedReturns — compatibilité Monte Carlo", () => {
     const { r, pctOfBalance } = normalizedReturns([trade()], 0);
     expect(r).toHaveLength(1);
     expect(pctOfBalance).toHaveLength(0);
+  });
+});
+
+describe("uncalibrateTrade — l'écriture repasse à l'échelle d'origine", () => {
+  it("aller-retour : ce qui est affiché puis réécrit retrouve la valeur stockée", () => {
+    // LE défaut que cette fonction empêche : le formulaire est alimenté par le
+    // trade AFFICHÉ (déjà converti) ; le réécrire tel quel doublerait les
+    // montants stockés, et les redoublerait à chaque édition suivante.
+    const brut = trade({ pnl: -250, riskAmount: 250, mae: -300, mfe: 120, slippage: -12.5 });
+    const affiche = calibrateTrade(brut, 2);
+    expect(affiche.pnl).toBe(-500);
+
+    const aStocker = uncalibrateTrade(affiche, 2);
+    expect(aStocker.pnl).toBe(brut.pnl);
+    expect(aStocker.riskAmount).toBe(brut.riskAmount);
+    expect(aStocker.mae).toBe(brut.mae);
+    expect(aStocker.mfe).toBe(brut.mfe);
+    expect(aStocker.slippage).toBe(brut.slippage);
+  });
+
+  it("l'aller-retour tient sur un facteur non décimal", () => {
+    const brut = trade({ pnl: 300, riskAmount: 250 });
+    const scale = scaleFor(25_000, 30_000); // 1,2
+    expect(uncalibrateTrade(calibrateTrade(brut, scale), scale).pnl).toBe(300);
+  });
+
+  it("sans calibration, le trade est rendu tel quel", () => {
+    const t = trade();
+    expect(uncalibrateTrade(t, IDENTITY_SCALE)).toBe(t);
+  });
+
+  it("le comportement traverse l'aller-retour intact", () => {
+    const t = trade();
+    const r = uncalibrateTrade(calibrateTrade(t, 4), 4);
+    expect(r.mistakes).toEqual(t.mistakes);
+    expect(r.rMultiple).toBe(t.rMultiple);
+    expect(r.notes).toBe(t.notes);
+  });
+});
+
+describe("withPnlFromRiskAndR — une seule définition du lien P&L / risque / R", () => {
+  it("changer le R recalcule le P&L", () => {
+    const r = withPnlFromRiskAndR(trade({ riskAmount: 250, rMultiple: -1, pnl: -250 }), {
+      rMultiple: 2,
+    });
+    expect(r.pnl).toBe(500);
+    expect(r.riskAmount).toBe(250);
+  });
+
+  it("changer le risque recalcule le P&L, à R constant", () => {
+    const r = withPnlFromRiskAndR(trade({ riskAmount: 250, rMultiple: 2, pnl: 500 }), {
+      riskAmount: 500,
+    });
+    expect(r.pnl).toBe(1000);
+    expect(r.rMultiple).toBe(2);
+  });
+
+  it("un break-even reste à zéro — son P&L ne se déduit pas d'un risque", () => {
+    const r = withPnlFromRiskAndR(trade({ direction: "be" }), { riskAmount: 500 });
+    expect(r.pnl).toBe(0);
+    expect(r.rMultiple).toBe(0);
+  });
+
+  it("arrondit au cent, sans laisser de flottant", () => {
+    const r = withPnlFromRiskAndR(trade(), { riskAmount: 333.33, rMultiple: 3 });
+    expect(r.pnl).toBe(999.99);
+  });
+});
+
+describe("édition rapide sur un compte recalibré — le scénario complet", () => {
+  it("saisir 500 $ de risque sur un compte 2× stocke 250 et réaffiche 500", () => {
+    // La chaîne réelle : le trader voit un trade calibré, corrige une valeur
+    // à l'échelle qu'il a sous les yeux, et l'écriture repasse à l'origine.
+    // Sans ce retour, le stockage vaudrait 500 et l'affichage 1 000.
+    const stocke = trade({ pnl: -250, riskAmount: 250, rMultiple: -1 });
+    const affiche = calibrateTrade(stocke, 2);
+
+    const corrige = withPnlFromRiskAndR(affiche, { riskAmount: 500 });
+    const aStocker = uncalibrateTrade(corrige, 2);
+
+    expect(aStocker.riskAmount).toBe(250); // ce qui part en base
+    expect(calibrateTrade(aStocker, 2).riskAmount).toBe(500); // ce qui revient à l'écran
+  });
+
+  it("corriger le R met le P&L d'accord avec lui, aux deux échelles", () => {
+    const stocke = trade({ pnl: -250, riskAmount: 250, rMultiple: -1 });
+    const affiche = calibrateTrade(stocke, 2); // risque 500, P&L -500
+
+    const corrige = withPnlFromRiskAndR(affiche, { rMultiple: 2 });
+    expect(corrige.pnl).toBe(1000); // 500 × 2, cohérent avec ce qui est affiché
+
+    const aStocker = uncalibrateTrade(corrige, 2);
+    expect(aStocker.pnl).toBe(500); // 250 × 2 à l'échelle d'origine
+    expect(aStocker.rMultiple).toBe(2); // le R est un ratio : identique partout
+  });
+
+  it("éditer DEUX fois de suite ne fait pas dériver la valeur stockée", () => {
+    // Le piège d'une correction sans retour à l'échelle : chaque édition
+    // multiplierait de nouveau. Ici, dix éditions successives laissent le
+    // risque exactement où le trader l'a mis.
+    let stocke = trade({ riskAmount: 250, rMultiple: 1, pnl: 250 });
+    for (let i = 0; i < 10; i++) {
+      const affiche = calibrateTrade(stocke, 2);
+      stocke = uncalibrateTrade(withPnlFromRiskAndR(affiche, { riskAmount: 600 }), 2);
+    }
+    expect(stocke.riskAmount).toBe(300);
+    expect(calibrateTrade(stocke, 2).riskAmount).toBe(600);
   });
 });

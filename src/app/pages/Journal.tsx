@@ -33,6 +33,8 @@ import { PageHeader, PageContainer, Button, EmptyState, Card } from "@/shared/ui
 interface JournalProps {
   trades: Trade[];
   onEdit: (trade: Trade) => void;
+  /** Édition en place du R multiple ou du risque, sans ouvrir le formulaire. */
+  onQuickEdit?: (id: string, patch: Partial<Pick<Trade, "riskAmount" | "rMultiple">>) => void;
   onDelete: (id: string) => void;
   onDeleteAll: () => void;
   onAdd: () => void;
@@ -86,6 +88,7 @@ function loadStoredFilters(): Partial<StoredFilters> {
 export default function Journal({
   trades,
   onEdit,
+  onQuickEdit,
   onDelete,
   onDeleteAll,
   onAdd,
@@ -628,8 +631,14 @@ export default function Journal({
                           {formatPnl(trade.pnl)}
                         </span>
                       </td>
-                      <td className="px-4 py-1.5">
-                        <span
+                      <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
+                        <QuickEditCell
+                          value={trade.rMultiple}
+                          suffix="R"
+                          decimals={2}
+                          disabled={be || !onQuickEdit}
+                          onCommit={(v) => onQuickEdit?.(trade.id, { rMultiple: v })}
+                          title={t("journal.quickEditR")}
                           className={cn(
                             "text-sm font-bold",
                             be
@@ -638,9 +647,7 @@ export default function Journal({
                                 ? "text-emerald-400"
                                 : "text-red-400",
                           )}
-                        >
-                          {trade.rMultiple.toFixed(2)}R
-                        </span>
+                        />
                       </td>
                       <td className="px-4 py-1.5">
                         <span
@@ -652,8 +659,17 @@ export default function Journal({
                           {directionLabel(trade.direction)}
                         </span>
                       </td>
-                      <td className="px-4 py-1.5 text-sm font-semibold text-slate-300 tabular-nums">
-                        ${trade.riskAmount.toFixed(0)}
+                      <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
+                        <QuickEditCell
+                          value={trade.riskAmount}
+                          prefix="$"
+                          decimals={0}
+                          min={0}
+                          disabled={!onQuickEdit}
+                          onCommit={(v) => onQuickEdit?.(trade.id, { riskAmount: v })}
+                          title={t("journal.quickEditRisk")}
+                          className="text-sm font-semibold text-slate-300 tabular-nums"
+                        />
                       </td>
                       <td className="px-4 py-1.5">
                         <div
@@ -762,5 +778,103 @@ function SummaryTile({
         {value}
       </div>
     </div>
+  );
+}
+
+/**
+ * Cellule éditable en place — un clic, on tape, Entrée valide.
+ *
+ * POURQUOI PAS LA MODALE. Corriger un R mal saisi ou un risque arrondi est le
+ * geste de correction le plus fréquent du journal. L'ouvrir dans le formulaire
+ * complet coûte cinq clics et fait perdre le contexte de la ligne. Ici, la
+ * valeur est modifiée là où elle est lue.
+ *
+ * `Échap` annule, la perte de focus valide (personne ne s'attend à perdre sa
+ * saisie en cliquant ailleurs), et une valeur inchangée ou illisible n'écrit
+ * rien — une écriture inutile ferait clignoter toutes les statistiques.
+ */
+function QuickEditCell({
+  value,
+  onCommit,
+  className,
+  title,
+  prefix = "",
+  suffix = "",
+  decimals = 2,
+  min,
+  disabled = false,
+}: {
+  value: number;
+  onCommit: (next: number) => void;
+  className?: string;
+  title?: string;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+  min?: number;
+  disabled?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const commit = () => {
+    setEditing(false);
+    const next = parseFloat(draft.replace(",", "."));
+    if (!Number.isFinite(next)) return;
+    if (min !== undefined && next < min) return;
+    if (Math.abs(next - value) < 1e-9) return;
+    onCommit(next);
+  };
+
+  if (disabled) {
+    return (
+      <span className={className}>
+        {prefix}
+        {value.toFixed(decimals)}
+        {suffix}
+      </span>
+    );
+  }
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        step="any"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        className={cn(
+          "w-20 bg-white/[0.06] border border-cyan-500/50 rounded-md px-1.5 py-0.5",
+          "text-sm font-bold text-white tabular-nums focus:outline-none",
+        )}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={() => {
+        setDraft(String(value));
+        setEditing(true);
+      }}
+      className={cn(
+        className,
+        "rounded-md px-1 -mx-1 text-left transition-colors",
+        "hover:bg-white/[0.08] hover:ring-1 hover:ring-cyan-500/30",
+        "focus:outline-none focus:ring-1 focus:ring-cyan-500/60",
+      )}
+    >
+      {prefix}
+      {value.toFixed(decimals)}
+      {suffix}
+    </button>
   );
 }

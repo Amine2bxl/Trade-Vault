@@ -172,6 +172,43 @@ export function calibrateTrades(trades: Trade[], scale: number): Trade[] {
   return trades.map((t) => calibrateTrade(t, scale));
 }
 
+/**
+ * L'INVERSE exact de `calibrateTrade` : repasse un trade de l'échelle affichée
+ * à son échelle d'origine, celle sous laquelle il doit être STOCKÉ.
+ *
+ * POURQUOI C'EST INDISPENSABLE. Les formulaires et l'édition rapide sont
+ * alimentés par les trades tels qu'AFFICHÉS, donc déjà convertis. Réécrire
+ * cette valeur telle quelle en base la multiplierait une seconde fois : sur un
+ * compte 2×, éditer un trade doublerait ses montants stockés, puis les
+ * redoublerait à chaque édition suivante. Une corruption silencieuse et
+ * cumulative de la source de vérité.
+ *
+ * Toute écriture partant d'une valeur affichée DOIT passer par ici.
+ */
+export function uncalibrateTrade(trade: Trade, scale: number): Trade {
+  if (!isCalibrated(scale)) return trade;
+  return calibrateTrade(trade, 1 / scale);
+}
+
+/**
+ * Applique la relation canonique du produit : **`pnl = riskAmount × rMultiple`**.
+ *
+ * C'est la définition déjà portée par le formulaire de trade ; elle est
+ * extraite ici pour que l'édition rapide du journal la partage au lieu d'en
+ * écrire une seconde. Deux formules pour un même lien finiraient par diverger,
+ * et le P&L cesserait de concorder avec le R affiché juste à côté.
+ *
+ * Un break-even reste à zéro : son P&L ne se déduit pas d'un risque.
+ */
+export function withPnlFromRiskAndR(trade: Trade, patch: Partial<Trade>): Trade {
+  const next = { ...trade, ...patch };
+  if (next.direction === "be") return { ...next, pnl: 0, rMultiple: 0 };
+  return {
+    ...next,
+    pnl: Math.round(next.riskAmount * next.rMultiple * 100) / 100,
+  };
+}
+
 // ── Aperçu avant confirmation ───────────────────────────────────────────────
 
 /** Les clés i18n que l'aperçu peut produire. Union fermée plutôt que `string` :

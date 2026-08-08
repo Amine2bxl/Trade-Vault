@@ -492,6 +492,8 @@ const fr: Dict = {
   "journal.colSymbol": "symbole",
   "journal.colStrategy": "stratégie",
   "journal.colPnl": "P&L",
+  "journal.quickEditR": "Clique pour modifier le R multiple",
+  "journal.quickEditRisk": "Clique pour modifier le risque",
   "journal.colRR": "R:R",
   "journal.detailRMultiple": "Multiple R",
   "calendar.title": "Calendrier",
