@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Twitter, Linkedin, Instagram, Facebook, Youtube, ArrowRight, Bot, Shield, TrendingUp, Brain, Target, BarChart3, Sparkles, MessageSquare, Clock, AlertTriangle, CalendarDays, Zap, Layers } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { ArrowRight, Bot, Shield, TrendingUp, Brain, Target, BarChart3, Sparkles, Clock, AlertTriangle, Zap, Check } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
@@ -8,328 +8,335 @@ import { SUPPORT_EMAIL } from "../types";
 import { CookieConsent } from "../components/CookieConsent";
 import "./landing.css";
 
-/* ─────────────────── LOGO ─────────────────── */
-function Logo({ compact }: { compact?: boolean }) {
-  return (
-    <a href="#" className="flex items-center gap-2.5 shrink-0">
-      <img src={logoSrc} alt="TradeVault" width={compact ? 28 : 36} height={compact ? 28 : 36}
-        className={`${compact ? "h-7 w-7" : "h-9 w-9"} object-contain drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]`} />
-      <span className={`font-display font-extrabold tracking-[-0.04em] text-white leading-none hidden sm:block ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}>TradeVault</span>
-    </a>
-  );
+/* ── HOOKS ── */
+function useScroll() { const [y, setY] = useState(0); const [pct, setPct] = useState(0); useEffect(() => { const h = () => { const sy = window.scrollY; setY(sy); setPct(sy > 0 ? Math.min(sy / (document.documentElement.scrollHeight - window.innerHeight), 1) : 0); }; h(); window.addEventListener("scroll", h, { passive: true }); return () => window.removeEventListener("scroll", h); }, []); return { y, pct }; }
+
+function useInView(ref: React.RefObject<HTMLElement | null>, threshold = 0.3) {
+  const [inView, setInView] = useState(false);
+  useEffect(() => { const el = ref.current; if (!el) return; const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setInView(true); io.disconnect(); } }, { threshold }); io.observe(el); return () => io.disconnect(); }, [ref, threshold]);
+  return inView;
 }
 
-/* ─────────────────── HOOKS ─────────────────── */
-function useScroll() { const [y, setY] = useState(0); const [pct, setPct] = useState(0); useEffect(() => { const h = () => { const sy = window.scrollY; setY(sy); setPct(document.documentElement.scrollHeight > window.innerHeight ? Math.min(sy / (document.documentElement.scrollHeight - window.innerHeight), 1) : 0); }; h(); window.addEventListener("scroll", h, { passive: true }); return () => window.removeEventListener("scroll", h); }, []); return { y, pct }; }
-function useReveal() { useEffect(() => { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("reveal-visible"); io.unobserve(e.target); } }), { threshold: 0.06 }); setTimeout(() => document.querySelectorAll(".reveal").forEach((el) => io.observe(el)), 100); return () => io.disconnect(); }, []); }
-
-/* ─────────────────── PRODUCT MOCKUPS (from LandingDemo) ─────────────────── */
-function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"><div className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">{label}</div><div className={`font-display text-base font-extrabold tabular-nums ${color}`}>{value}</div></div>;
+function AnimatedNumber({ target, duration = 2000, prefix = "", suffix = "", inView }: { target: number; duration?: number; prefix?: string; suffix?: string; inView: boolean }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => { if (!inView) return; let start = 0; const step = (t: number) => { const progress = Math.min(t / duration, 1); setVal(Math.round(target * progress)); if (progress < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }, [inView, target, duration]);
+  return <span className="font-display font-extrabold tabular-nums">{prefix}{val.toLocaleString()}{suffix}</span>;
 }
 
-function DashboardMock() {
+/* ── PRODUCT PANELS ── */
+function LiveDashboard({ inView }: { inView: boolean }) {
   return (
-    <div className="space-y-2.5">
-      <div className="grid grid-cols-3 gap-2">
-        <StatCard label="P&L du jour" value="+$1,240" color="text-emerald-400" />
-        <StatCard label="Win rate" value="64%" color="text-cyan-300" />
-        <StatCard label="Trades" value="12" color="text-white" />
-      </div>
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-        <div className="flex items-end justify-between gap-1 h-16">
-          {[35,48,30,55,42,62,50,72,58,80,66,92].map((h,i) => (<div key={i} className="w-full rounded-t bg-gradient-to-t from-cyan-600/40 to-teal-400/80" style={{ height: `${h}%` }} />))}
+    <div className="rounded-2xl border border-white/[0.06] bg-[#0a1625]/95 backdrop-blur-xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,.5)]">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,.4)]" /><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Live Dashboard</span></div>
+        <div className="flex gap-1">
+          {["7D","30D","ALL"].map((l,i) => (<span key={l} className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${i===0?"bg-cyan-500/15 text-cyan-300":"text-slate-600"}`}>{l}</span>))}
         </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 p-3">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+          <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">P&L</div>
+          <div className={`font-display text-sm font-extrabold tabular-nums mt-0.5 ${inView ? "text-emerald-400 animate-fade" : "text-emerald-400"}`}>
+            {inView ? <AnimatedNumber target={1240} prefix="+$" inView={true} /> : "+$0"}
+          </div>
+        </div>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+          <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Win Rate</div>
+          <div className="font-display text-sm font-extrabold tabular-nums mt-0.5 text-cyan-300">{inView ? <AnimatedNumber target={64} suffix="%" inView={true} /> : "0%"}</div>
+        </div>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 text-center">
+          <div className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Trades</div>
+          <div className="font-display text-sm font-extrabold tabular-nums mt-0.5 text-white">{inView ? <AnimatedNumber target={248} inView={true} /> : "0"}</div>
+        </div>
+      </div>
+      <div className="px-3 pb-3">
+        <svg viewBox="0 0 300 70" className="w-full h-16" preserveAspectRatio="none">
+          <defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#22d3ee" stopOpacity=".15" /><stop offset="1" stopColor="#22d3ee" stopOpacity="0" /></linearGradient></defs>
+          {[17,34,51].map(y => (<path key={y} d={`M0 ${y}H300`} stroke="rgba(148,163,184,.06)" />))}
+          <polygon points="0,58 38,48 76,52 114,34 152,44 190,24 228,36 266,16 300,10 300,70 0,70" fill="url(#lg1)" />
+          <polyline points="0,58 38,48 76,52 114,34 152,44 190,24 228,36 266,16 300,10" fill="none" stroke="#22d3ee" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        </svg>
       </div>
     </div>
   );
 }
 
-function JarvisMiniMock() {
+function JarvisPanel({ inView }: { inView: boolean }) {
+  const [line, setLine] = useState(0);
+  useEffect(() => { if (!inView) return; const t = setTimeout(() => setLine(1), 600); const t2 = setTimeout(() => setLine(2), 2000); const t3 = setTimeout(() => setLine(3), 3400); return () => { clearTimeout(t); clearTimeout(t2); clearTimeout(t3); }; }, [inView]);
+  const TYPING_DELAY = "animate-typing";
+
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.06]">
-        <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center"><Bot className="w-3.5 h-3.5 text-white" /></div>
-        <span className="text-[11px] font-bold text-white">Jarvis</span>
-        <span className="text-[9px] text-emerald-400 font-semibold ml-auto">en direct</span>
+    <div className="rounded-2xl border border-white/[0.06] bg-[#0a1525]/95 backdrop-blur-xl overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06]">
+        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center"><Bot className="w-3.5 h-3.5 text-white" /></div>
+        <div><div className="text-[11px] font-bold text-white">Jarvis</div><div className="text-[9px] text-emerald-400 font-semibold">analyzing 248 trades</div></div>
+        <span className="ml-auto h-5 px-1.5 rounded-md bg-emerald-400/10 border border-emerald-400/20 text-[9px] font-bold uppercase text-emerald-300">Live</span>
       </div>
-      <div className="p-3 space-y-2.5">
-        <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2.5 text-[11px] text-slate-200 leading-relaxed">
-          <span className="text-red-300 font-bold">Pattern détecté</span> : tes pertes sont 2.4× plus grandes après 2 trades gagnants. Excès de confiance.
-        </div>
-        <div className="rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-3 py-2.5 text-[11px] text-white font-medium">Comment je corrige ça demain ?</div>
-        <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-3 py-2 text-[10px]"><span className="text-emerald-400 font-bold uppercase text-[9px] tracking-wider">Plan</span><div className="text-slate-200 mt-0.5">2 trades max · stop après 1 perte</div></div>
+      <div className="p-4 space-y-3">
+        <div className="flex justify-end"><div className="max-w-[80%] rounded-xl bg-white/[0.05] border border-white/[0.08] px-3.5 py-2.5 text-[11px] text-slate-200 rounded-tr-sm">Why do I keep losing after good days?</div></div>
+        {line >= 1 && (
+          <div className="flex gap-2"><div className="h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center"><Bot className="w-3.5 h-3.5 text-white" /></div>
+            <div className="max-w-[88%] rounded-xl bg-cyan-400/[0.04] border border-cyan-400/15 px-3.5 py-2.5 text-[11px] text-slate-200 rounded-tl-sm">After a winning session, your risk increases by <span className="text-red-300 font-bold">42%</span>. Losses after wins are <span className="text-red-300 font-bold">2.4× larger</span>.</div>
+          </div>
+        )}
+        {line >= 2 && (
+          <div className="flex justify-end"><div className="max-w-[70%] rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-3.5 py-2.5 text-[11px] text-white font-medium rounded-tr-sm">How do I fix this?</div></div>
+        )}
+        {line >= 3 && (
+          <div className="flex gap-2"><div className="h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center"><Bot className="w-3.5 h-3.5 text-white" /></div>
+            <div className="max-w-[88%] rounded-xl bg-emerald-400/[0.04] border border-emerald-400/20 px-3.5 py-2.5 text-[11px] text-slate-200 rounded-tl-sm"><span className="text-emerald-300 font-bold text-[10px] uppercase tracking-wider">Mission du jour</span><div className="mt-1">2 trades max · stop after 1 loss · fixed size</div></div>
+          </div>
+        )}
+        {line < 3 && <div className="flex gap-1.5 py-1"><div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{animationDelay:"0ms"}} /><div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{animationDelay:"200ms"}} /><div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{animationDelay:"400ms"}} /></div>}
       </div>
     </div>
   );
 }
 
-function AnalyticsMiniMock() {
-  const days = [{d:"L",v:58,w:true},{d:"M",v:34,w:false},{d:"M",v:72,w:true},{d:"J",v:46,w:false},{d:"V",v:88,w:true}];
+function BehavioralPanel({ inView }: { inView: boolean }) {
+  const [activeTab, setActiveTab] = useState<"performance" | "behavior" | "risk" | "discipline">("behavior");
+  const tabs = { performance: { label: "Performance", color: "text-cyan-400", bg: "bg-cyan-500/10", data: ["Win rate: 64%","Profit Factor: 2.31","Expectancy: +$18.40","Sharpe: 1.84"] },
+    behavior: { label: "Behavior", color: "text-violet-400", bg: "bg-violet-500/10", data: ["Revenge trading: 7×","Avg loss after revenge: -1.4R","FOMO entries: 12× this month","Overtrading on Thu: +42%"] },
+    risk: { label: "Risk", color: "text-amber-400", bg: "bg-amber-500/10", data: ["Max drawdown: -$2,840","Risk of ruin: 4.2%","Avg risk per trade: 1.1%","Kelly optimal: 2.4%"] },
+    discipline: { label: "Discipline", color: "text-emerald-400", bg: "bg-emerald-500/10", data: ["Plan adherence: 78%","Checklist completed: 92%","Stop-loss respected: 88%","Rules followed: 14/18"] },
+  };
+  const t = tabs[activeTab];
   return (
-    <div className="space-y-2.5">
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2.5">Edge par jour</div>
-        <div className="flex items-end justify-between gap-1.5 h-16">
-          {days.map((x,i) => (<div key={i} className="flex flex-col items-center gap-1 flex-1"><div className={`w-full rounded-t ${x.w ? "bg-gradient-to-t from-emerald-600/40 to-emerald-400/80" : "bg-gradient-to-t from-red-600/40 to-red-400/80"}`} style={{height:`${x.v}%`}} /><span className="text-[10px] text-slate-500">{x.d}</span></div>))}
-        </div>
+    <div className="rounded-2xl border border-white/[0.06] bg-[#0a1625]/95 backdrop-blur-xl overflow-hidden">
+      <div className="flex gap-1 p-2 border-b border-white/[0.06]">
+        {(Object.keys(tabs) as Array<keyof typeof tabs>).map(k => (
+          <button key={k} onClick={() => setActiveTab(k)} className={`flex-1 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeTab===k ? `${tabs[k].bg} ${tabs[k].color} border border-current/20` : "text-slate-500 hover:text-slate-300"}`}>{tabs[k].label}</button>
+        ))}
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <StatCard label="Profit factor" value="1.84" color="text-emerald-400" />
-        <StatCard label="R-moyen" value="+1.6R" color="text-cyan-300" />
+      <div className="p-4 space-y-2.5">
+        {t.data.map((d, i) => (
+          <div key={i} className="flex items-center justify-between rounded-lg border border-white/[0.04] bg-white/[0.01] px-3 py-2 animate-fade" style={{animationDelay:`${i*150+300}ms`}}>
+            <span className="text-[11px] text-slate-300">{d}</span>
+            <div className="w-16 h-1 rounded-full bg-white/[0.05] overflow-hidden"><div className={`h-full rounded-full ${activeTab==="behavior"?"bg-violet-500/60":activeTab==="risk"?"bg-amber-500/60":activeTab==="discipline"?"bg-emerald-500/60":"bg-cyan-500/60"}`} style={{width:`${60+Math.random()*35}%`}} /></div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ─────────────────── DATA ─────────────────── */
-const PAINS = [
-  { n: "err" as IName, t: "Tu analyses tes résultats, pas tes comportements", d: "Ton win rate te dit si tu gagnes. Pas pourquoi tu perds quand tu perds." },
-  { n: "heart" as IName, t: "Tu sais que l'émotion te coûte de l'argent", d: "Revenge trading, FOMO, sizing au feeling. Tu le sais. Tu n'arrives pas à l'arrêter." },
-  { n: "compass" as IName, t: "Tu changes de stratégie sans savoir ce qui marche", d: "Sans feedback objectif, chaque mois tu repars de zéro avec une nouvelle méthode." },
-];
+function ProgressPanel({ inView }: { inView: boolean }) {
+  const metrics = [
+    { label: "Discipline Score", from: 61, to: 87, color: "emerald" },
+    { label: "Plan Adherence", from: 64, to: 87, color: "cyan" },
+    { label: "Revenge Trading", from: 12, to: 2, color: "red", inverse: true },
+    { label: "Avg R-Multiple", from: 1.2, to: 2.1, color: "emerald" },
+  ];
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-[#0a1625]/95 backdrop-blur-xl overflow-hidden p-5">
+      <h4 className="text-sm font-bold text-white mb-4">Your Progress</h4>
+      <div className="space-y-3">
+        {metrics.map((m, i) => (
+          <div key={m.label} className="animate-fade" style={{animationDelay:`${i*200+400}ms`}}>
+            <div className="flex justify-between text-[10px] mb-1"><span className="text-slate-400">{m.label}</span>
+              <span className={`font-bold tabular-nums ${m.color==="emerald"?"text-emerald-400":m.color==="red"?"text-red-400":"text-cyan-400"}`}>
+                {inView ? <AnimatedNumber target={m.inverse ? m.from : m.to} suffix={m.to>10?"%":m.to>1?"R":""} inView={true} /> : "—"}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-[2500ms] ease-out ${m.color==="emerald"?"bg-emerald-500/60":m.color==="red"?"bg-red-500/60":"bg-cyan-500/60"}`}
+                style={{width: inView ? `${(m.to/(m.inverse?m.from:m.to))*100}%` : "0%"}} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-const SYSTEM = [
-  { icon: Clock, title: "Avant", desc: "Briefing IA, checklist, validation du risque — tout est prêt avant ton premier trade." },
-  { icon: Shield, title: "Pendant", desc: "Alerte quand tu dévies de ton plan. Limites de pertes, blocage du revenge trading." },
-  { icon: Brain, title: "Après", desc: "Analyse immédiate de chaque trade. Leçons enregistrées. Objectifs du lendemain." },
-];
+function DisciplineFlow() {
+  const steps = [
+    { icon: Clock, label: "Pre-session", desc: "AI briefing + checklist" },
+    { icon: Shield, label: "Risk check", desc: "Position size validated" },
+    { icon: TrendingUp, label: "Trade", desc: "Execution tracked" },
+    { icon: Brain, label: "Reflection", desc: "Emotion + lesson saved" },
+    { icon: BarChart3, label: "Weekly review", desc: "Patterns + new goals" },
+  ];
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-[#0a1625]/95 backdrop-blur-xl overflow-hidden p-5">
+      <h4 className="text-sm font-bold text-white mb-4">Discipline OS</h4>
+      <div className="space-y-1.5">
+        {steps.map((s, i) => (
+          <div key={s.label} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-white/[0.04] bg-white/[0.01] animate-fade" style={{animationDelay:`${i*200}ms`}}>
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-400/20 flex items-center justify-center shrink-0"><s.icon className="w-3.5 h-3.5 text-cyan-400" /></div>
+            <div className="flex-1 min-w-0"><div className="text-[11px] font-semibold text-white">{s.label}</div><div className="text-[10px] text-slate-500">{s.desc}</div></div>
+            {i < steps.length-1 && <ArrowRight className="w-3.5 h-3.5 text-cyan-500/30 shrink-0 hidden sm:block" />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-const PIPELINE = [
-  { label: "Tes trades", desc: "Chaque trade est enregistré : setup, émotion, capture, résultat." },
-  { label: "Analyse", desc: "L'IA analyse tes patterns, erreurs, comportements et discipline." },
-  { label: "Compréhension", desc: "Tu vois enfin ce qui te coûte de l'argent et ce qui fonctionne." },
-  { label: "Action", desc: "Jarvis te donne un plan d'action concret pour demain." },
-];
+/* ── LANDING ── */
+const NAV: [string,string][] = [];
 
-const NAV: [string, string][] = [["Problème","problem"],["Coach IA","jarvis"],["Système","discipline"],["Analytics","stats"],["Tarifs","pricing"]];
-
-/* ─────────────────── LANDING ─────────────────── */
 export default function Landing() {
   const [auth, setAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [authPlan, setAuthPlan] = useState<string | undefined>();
   const [menu, setMenu] = useState(false);
-  const [activeSec, setActiveSec] = useState("");
   const { y, pct } = useScroll();
-  useReveal();
-
-  const scrollLockRef = useRef(false); const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    const onScroll = () => { if (scrollLockRef.current) return; let cur = ""; for (const [, id] of NAV) { const el = document.getElementById(id); if (el && el.getBoundingClientRect().top + window.scrollY <= window.scrollY + 120) cur = id; } setActiveSec(cur); };
-    onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
-    return () => { window.removeEventListener("scroll", onScroll); if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current); };
-  }, []);
+  const s1Ref = useRef<HTMLDivElement>(null); const s1InView = useInView(s1Ref, 0.2);
+  const s2Ref = useRef<HTMLDivElement>(null); const s2InView = useInView(s2Ref, 0.2);
+  const s3Ref = useRef<HTMLDivElement>(null); const s3InView = useInView(s3Ref, 0.15);
+  const s4Ref = useRef<HTMLDivElement>(null); const s4InView = useInView(s4Ref, 0.15);
+  const s6Ref = useRef<HTMLDivElement>(null); const s6InView = useInView(s6Ref, 0.2);
 
   const open = (m: "login" | "signup", plan?: string) => { setMenu(false); setAuthMode(m); setAuthPlan(plan); setAuth(true); };
-  const go = (id: string) => { setMenu(false); setActiveSec(id); if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current); scrollLockRef.current = true; document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }); scrollTimerRef.current = setTimeout(() => { scrollLockRef.current = false; }, 1000); };
 
   return (
     <div className="landing-root min-h-screen overflow-x-clip bg-[#060d16] text-slate-100">
       <div className="pointer-events-none fixed inset-0 z-0" style={{ background: "radial-gradient(ellipse 80% 60% at 60% -10%,rgba(6,182,212,.08),transparent 60%),radial-gradient(ellipse 50% 50% at 90% 60%,rgba(99,102,241,.05),transparent 55%)" }} />
 
-      {/* NAV */}
-      <header className={`fixed inset-x-0 top-0 z-50 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 20 ? "bg-[#060d16]/90 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/30"}`}
+      <header className={`z-50 fixed inset-x-0 top-0 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 20 ? "bg-[#060d16]/90 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/30"}`}
         style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}>
         <div className="scroll-bar absolute inset-x-0 top-0 h-[2px]" style={{ transform: `scaleX(${pct})` }} />
-        <div className="mx-auto flex h-[60px] md:h-[66px] max-w-[1400px] items-center justify-between gap-3 px-4 md:px-5 lg:px-8">
-          <Logo />
-          <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-white/[.03] p-1 backdrop-blur-md xl:flex">
-            {NAV.map(([l, id]) => <button key={id} onClick={() => go(id)} className={`rounded-full px-3 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${activeSec === id ? "bg-cyan-400/[.14] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.28)]" : "text-slate-400 hover:text-cyan-100"}`}>{l}</button>)}
-          </nav>
-          <div className="flex items-center gap-2">
-            <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-3.5 sm:px-5">Start Free</button>
-            <button onClick={() => setMenu(!menu)} className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] bg-white/[.03] text-slate-200 xl:hidden"><Icon n={menu ? "close" : "menu"} cls="h-5 w-5" /></button>
-          </div>
+        <div className="mx-auto flex h-[56px] md:h-[62px] max-w-[1400px] items-center justify-between px-4 md:px-6">
+          <a href="#" className="flex items-center gap-2.5"><img src={logoSrc} alt="TradeVault" width={28} height={28} className="h-7 w-7 object-contain drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]" /><span className="font-display font-extrabold tracking-[-0.04em] text-white leading-none hidden sm:block text-[1.15rem]">TradeVault</span></a>
+          <button onClick={() => open("signup")} className="btn-primary px-4 sm:px-6">Start Free</button>
         </div>
-        {menu && (
-          <div className="xl:hidden border-t border-white/[.07] bg-[#070f1a]/98 backdrop-blur-xl px-5 py-4">
-            {NAV.map(([l, id]) => <button key={id} onClick={() => go(id)} className={`mobile-nav-link ${activeSec === id ? "text-cyan-300" : ""}`}>{l}</button>)}
-            <button onClick={() => open("signup")} className="btn-primary mt-4 w-full">Start Free <ArrowRight className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
       </header>
 
       <main className="relative z-10">
-        {/* ═══ 1 · HERO — product visible immediately ═══ */}
-        <section className="hero-mesh relative overflow-hidden pt-[100px] pb-16 lg:pt-[150px] lg:pb-24">
-          <div className="mx-auto max-w-[1300px] px-5 lg:px-8">
-            <div className="grid lg:grid-cols-[1fr_1.05fr] items-center gap-10 lg:gap-14">
-              <div className="text-center lg:text-left max-w-[540px] mx-auto lg:mx-0">
-                <div className="fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/22 bg-cyan-400/[.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[.13em] text-cyan-300 mb-7">
+        {/* ═══ SCREEN 1 · IMPACT ═══ */}
+        <section ref={s1Ref} className="hero-mesh relative min-h-screen flex items-center py-20 lg:py-0">
+          <div className="mx-auto max-w-[1300px] px-5 lg:px-8 w-full">
+            <div className="grid lg:grid-cols-[1fr_1.1fr] items-center gap-10 lg:gap-16">
+              <div className="text-center lg:text-left max-w-[520px] mx-auto lg:mx-0">
+                <div className={`fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/22 bg-cyan-400/[.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[.13em] text-cyan-300 mb-7 ${s1InView ? "opacity-100" : "opacity-0"}`} style={{transition:"opacity 0.6s 0.2s"}}>
                   <span className="ping-dot relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" /> AI Trading Coach
                 </div>
-                <h1 className="fade-up d1 font-display text-[clamp(2.5rem,5vw,4.2rem)] font-extrabold leading-[1.04] tracking-[-0.04em] text-white">
-                  Your trading data<br />
-                  <span className="text-gradient">already has the answers.</span>
+                <h1 className={`font-display text-[clamp(2.4rem,5vw,4rem)] font-extrabold leading-[1.04] tracking-[-0.04em] text-white transition-all duration-700 ${s1InView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                  Stop guessing<br />
+                  <span className="text-gradient">why you lose.</span>
                 </h1>
-                <p className="fade-up d2 mt-5 text-base sm:text-lg leading-7 text-slate-400">
-                  TradeVault reads your history, finds your patterns, and turns everything into a personal coach that helps you trade with more discipline — every single day.
+                <p className={`mt-5 text-base sm:text-lg leading-7 text-slate-400 transition-all duration-700 delay-200 ${s1InView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                  TradeVault reads your trading history, finds the patterns you don't see, and turns everything into a personal coach that helps you trade with more discipline.
                 </p>
-                <div className="fade-up d3 mt-7 flex flex-col sm:flex-row items-center gap-3 lg:justify-start">
-                  <button onClick={() => open("signup", "Essai Premium 14 jours")} className="btn-primary px-8 py-4 text-[.95rem]">
-                    Start Free <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <span className="text-xs text-slate-500">Free forever · No credit card</span>
+                <div className={`mt-7 flex flex-col sm:flex-row items-center gap-3 lg:justify-start transition-all duration-700 delay-300 ${s1InView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                  <button onClick={() => open("signup")} className="btn-primary px-8 py-4 text-[.95rem]">Start Free — €0 <ArrowRight className="w-4 h-4" /></button>
+                  <span className="text-xs text-slate-500">No credit card required</span>
                 </div>
-                <a href="https://www.trustpilot.com/review/tradevaultt.vercel.app" target="_blank" rel="noreferrer"
-                  className="fade-up d4 mt-5 inline-flex items-center gap-2.5 rounded-full border border-white/[.08] bg-white/[.03] py-1.5 pl-2 pr-3.5 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]">
-                  <span className="flex gap-0.5">{[0,1,2,3,4].map((i) => (<span key={i} className="grid h-4 w-4 place-items-center rounded-[2px] bg-[#00b67a]"><Icon n="star" cls="h-2.5 w-2.5 text-white fill-white" /></span>))}</span>
-                  <span className="text-xs font-semibold text-slate-300">Trustpilot</span>
-                </a>
               </div>
-              <div className="fade-up d2 grid gap-3">
-                <DashboardMock />
-                <JarvisMiniMock />
+              <div className={`transition-all duration-1000 delay-400 ${s1InView ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}`}>
+                <LiveDashboard inView={s1InView} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* ═══ 2 · THE PROBLEM ═══ */}
-        <section id="problem" className="relative border-t border-white/[.06] py-20 lg:py-28">
-          <div className="mx-auto max-w-[1100px] px-5 lg:px-8">
-            <div className="reveal text-center max-w-2xl mx-auto mb-14">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-red-400/20 bg-red-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-red-400/80 mb-6">The real problem</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.12]">
-                Your journal records what happened.<br />
-                <span className="text-slate-500">But it never tells you how to get better.</span>
-              </h2>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto">
-              {PAINS.map((p, i) => (
-                <div key={p.t} className="reveal group rounded-2xl border border-red-400/[0.08] bg-red-400/[0.015] hover:border-red-400/20 transition-all duration-500 p-6" style={{ transitionDelay: `${i*80}ms` }}>
-                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-red-400/[0.06] border border-red-400/15 text-red-400 mb-4"><Icon n={p.n} cls="w-4 h-4" /></div>
-                  <h3 className="text-sm font-bold text-white mb-2">{p.t}</h3>
-                  <p className="text-xs leading-5 text-slate-500">{p.d}</p>
-                </div>
+        {/* ═══ SCREEN 2 · PROBLEM + RECOGNITION ═══ */}
+        <section ref={s2Ref} className="relative border-t border-white/[.06] min-h-screen flex items-center py-20 lg:py-0 bg-[#080f1b]/80">
+          <div className="mx-auto max-w-[900px] px-5 lg:px-8 text-center w-full">
+            <h2 className={`font-display text-[clamp(1.8rem,3.5vw,2.4rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.14] transition-all duration-700 ${s2InView ? "opacity-100" : "opacity-0"}`}>
+              Your journal records.<br />
+              <span className="text-slate-500">TradeVault understands.</span>
+            </h2>
+            <p className={`mt-5 text-slate-400 text-base max-w-lg mx-auto transition-all duration-700 delay-300 ${s2InView ? "opacity-100" : "opacity-0"}`}>
+              You have hundreds of trades. You know your win rate. But you still don't know WHY you keep repeating the same mistakes.
+            </p>
+            <div className="mt-12 max-w-sm mx-auto">
+              {[
+                { label: "LOSS", color: "text-red-400", delay: 600 },
+                { label: "LOSS", color: "text-red-400", delay: 900 },
+                { label: "WIN", color: "text-emerald-400", delay: 1200 },
+                { label: "LOSS", color: "text-red-400", delay: 1500 },
+                { label: "WIN", color: "text-emerald-400", delay: 1800 },
+                { label: "LOSS", color: "text-red-400", delay: 2100 },
+              ].map((t, i) => (
+                <div key={i} className={`inline-flex items-center gap-2 px-3 py-1.5 mx-1 my-1 rounded-lg border border-white/[0.06] bg-white/[0.02] text-[11px] font-bold transition-all duration-500 ${t.color} ${s2InView ? "opacity-100 scale-100" : "opacity-0 scale-50"}`}
+                  style={{ transitionDelay: `${t.delay}ms` }}>{t.label}</div>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* ═══ 3 · HOW IT WORKS — the pipeline ═══ */}
-        <section className="relative border-t border-white/[.06] py-20 lg:py-28 bg-[#080f1b]/70">
-          <div className="mx-auto max-w-[1000px] px-5 lg:px-8">
-            <div className="reveal text-center max-w-2xl mx-auto mb-14">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-cyan-400/20 bg-cyan-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-cyan-400/80 mb-6">How TradeVault works</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.12]">
-                From raw data to<br />
-                <span className="text-gradient">personal coaching.</span>
-              </h2>
-            </div>
-            <div className="reveal grid gap-3 sm:grid-cols-2 lg:grid-cols-4 max-w-4xl mx-auto">
-              {PIPELINE.map((step, i) => (
-                <div key={step.label} className="text-center p-5" style={{ transitionDelay: `${i*100}ms` }}>
-                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-400/25 flex items-center justify-center mx-auto mb-4"><span className="font-display text-lg font-extrabold text-cyan-400">{i+1}</span></div>
-                  <h3 className="text-sm font-bold text-white mb-1.5">{step.label}</h3>
-                  <p className="text-[11px] leading-5 text-slate-500">{step.desc}</p>
-                </div>
-              ))}
+            <div className={`mt-8 rounded-xl border border-cyan-400/15 bg-cyan-400/[0.03] px-5 py-4 max-w-md mx-auto transition-all duration-700 delay-[2500ms] ${s2InView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+              <p className="text-sm text-cyan-200 font-medium">Pattern detected:</p>
+              <p className="text-[13px] text-slate-300 mt-1 leading-relaxed">43% of your losses happen after your first losing trade of the day.</p>
+              <p className="text-[11px] text-slate-500 mt-2">The problem might not be your setup. It might be what happens AFTER the setup.</p>
             </div>
           </div>
         </section>
 
-        {/* ═══ 4 · JARVIS — the hero product ═══ */}
-        <section id="jarvis" className="relative border-t border-white/[.06] overflow-hidden py-20 lg:py-28">
-          <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 50% at 55% 30%,rgba(34,211,238,.08),transparent 65%)" }} />
-          <div className="relative mx-auto max-w-[1100px] px-5 lg:px-8">
-            <div className="reveal text-center max-w-2xl mx-auto mb-14">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-cyan-400/20 bg-cyan-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-cyan-400/80 mb-6">Meet Jarvis</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.12]">
-                A coach that knows<br />
-                <span className="text-gradient">your entire trading history.</span>
-              </h2>
-              <p className="mt-4 text-sm text-slate-400 max-w-md mx-auto">
-                Not a generic chatbot. Jarvis analyzes your actual trades and gives you advice based on YOUR patterns, YOUR mistakes, YOUR progress.
-              </p>
-            </div>
-            <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-start">
-              <div className="reveal rounded-2xl border border-white/[0.06] bg-[#0a1525]/95 backdrop-blur-xl overflow-hidden shadow-xl">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
-                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06]">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-md shadow-cyan-500/20"><Bot className="w-4 h-4 text-white" /></div>
-                  <div><div className="text-xs font-bold text-white">Jarvis · Coach IA</div><div className="text-[9px] text-emerald-400 font-semibold">Analyzing trades · in real time</div></div>
-                  <span className="ml-auto h-5 px-1.5 rounded-md bg-emerald-400/10 border border-emerald-400/20 text-[9px] font-bold uppercase text-emerald-300">Live</span>
-                </div>
-                <div className="px-4 py-4 space-y-3">
-                  <div className="flex justify-end"><div className="max-w-[80%] rounded-xl bg-white/[0.05] border border-white/[0.08] px-4 py-2.5 text-xs text-slate-200 rounded-tr-sm">Why do I keep losing money after good days?</div></div>
-                  <div className="flex gap-2"><div className="h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center"><Bot className="w-3.5 h-3.5 text-white" /></div><div className="max-w-[88%] rounded-xl bg-cyan-400/[0.04] border border-cyan-400/15 px-4 py-2.5 text-xs text-slate-200 rounded-tl-sm">I analyzed your last 3 months. After a winning session, your risk increases by <span className="text-red-300 font-bold">42%</span> on average. Losses that follow are <span className="text-red-300 font-bold">2.4× larger</span> than normal.</div></div>
-                  <div className="flex gap-2"><div className="h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center"><Bot className="w-3.5 h-3.5 text-white" /></div><div className="max-w-[88%] rounded-xl bg-cyan-400/[0.04] border border-cyan-400/15 px-4 py-2.5 text-xs text-slate-200 rounded-tl-sm">This isn't your strategy. It's a confidence bias. Stop after 2 wins or 1 loss — that alone would save you <span className="text-emerald-300 font-bold">~$1,800/month</span>.</div></div>
-                  <div className="flex justify-end"><div className="max-w-[75%] rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-2.5 text-xs text-white font-medium rounded-tr-sm">Add this rule to my checklist.</div></div>
-                  <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-3.5 py-3"><div className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Mission du jour</div><div className="text-xs text-slate-200 mt-1">Max 2 trades · Stop après 1 perte · Taille fixe</div></div>
-                </div>
+        {/* ═══ SCREEN 3 · INTERACTIVE EXPLORER ═══ */}
+        <section ref={s3Ref} className="relative border-t border-white/[.06] min-h-screen flex items-center py-16 lg:py-0">
+          <div className="mx-auto max-w-[1100px] px-5 lg:px-8 w-full">
+            <div className="grid lg:grid-cols-2 gap-10 items-center">
+              <div>
+                <h2 className={`font-display text-[clamp(1.8rem,3.5vw,2.4rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.14] transition-all duration-700 ${s3InView ? "opacity-100" : "opacity-0"}`}>
+                  Explore what TradeVault<br />
+                  <span className="text-gradient">can detect.</span>
+                </h2>
+                <p className={`mt-4 text-slate-400 text-sm transition-all duration-700 delay-200 ${s3InView ? "opacity-100" : "opacity-0"}`}>Select a category to see what the product reveals.</p>
               </div>
-              <div className="reveal space-y-5" style={{ transitionDelay: "150ms" }}>
-                <h3 className="text-lg font-bold text-white">Your personal trading intelligence.</h3>
-                <ul className="space-y-3">
-                  {["Knows your win rate by setup, session, and day of the week","Detects when you're about to repeat a known mistake","Builds a daily mission based on YOUR recent performance","Remembers every lesson you've learned and tracks your progress"].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm text-slate-300"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cyan-400/10 text-cyan-300 mt-0.5"><Icon n="check" cls="h-3 w-3" /></span>{item}</li>
+              <div className={`transition-all duration-1000 delay-400 ${s3InView ? "opacity-100" : "opacity-0"}`}>
+                <BehavioralPanel inView={s3InView} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ SCREEN 4 · JARVIS ═══ */}
+        <section ref={s4Ref} className="relative border-t border-white/[.06] min-h-screen flex items-center py-16 lg:py-0 bg-[#080f1b]/70">
+          <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 50% at 50% 30%,rgba(34,211,238,.07),transparent 65%)" }} />
+          <div className="relative mx-auto max-w-[1100px] px-5 lg:px-8 w-full">
+            <div className="grid lg:grid-cols-2 gap-10 items-center">
+              <div>
+                <div className={`inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-cyan-400/80 mb-6 transition-all duration-700 ${s4InView ? "opacity-100" : "opacity-0"}`}>Meet Jarvis</div>
+                <h2 className={`font-display text-[clamp(1.8rem,3.5vw,2.4rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.14] transition-all duration-700 ${s4InView ? "opacity-100" : "opacity-0"}`}>
+                  A coach that knows<br />
+                  <span className="text-gradient">your entire history.</span>
+                </h2>
+                <p className={`mt-4 text-slate-400 text-sm max-w-md transition-all duration-700 delay-200 ${s4InView ? "opacity-100" : "opacity-0"}`}>
+                  Not a generic chatbot. Jarvis analyzes your actual trades and gives you advice based on YOUR patterns, YOUR mistakes, YOUR progress.
+                </p>
+                <div className={`mt-6 space-y-2 transition-all duration-700 delay-300 ${s4InView ? "opacity-100" : "opacity-0"}`}>
+                  {["Knows your best setups and worst sessions","Detects behavioral patterns before you repeat them","Builds a daily mission based on recent performance","Remembers every lesson and tracks your improvement"].map((item) => (
+                    <div key={item} className="flex items-start gap-2.5 text-sm text-slate-300"><Check className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />{item}</div>
                   ))}
-                </ul>
-                <div className="pt-2"><button onClick={() => open("signup")} className="btn-primary px-6 py-3 text-sm">Try Jarvis Free <ArrowRight className="w-3.5 h-3.5" /></button></div>
+                </div>
+              </div>
+              <div className={`transition-all duration-1000 delay-400 ${s4InView ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}`}>
+                <JarvisPanel inView={s4InView} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* ═══ 5 · THE SYSTEM ═══ */}
-        <section id="discipline" className="relative border-t border-white/[.06] py-20 lg:py-28">
-          <div className="mx-auto max-w-[1100px] px-5 lg:px-8">
-            <div className="reveal text-center max-w-2xl mx-auto mb-14">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-cyan-400/20 bg-cyan-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-cyan-400/80 mb-6">Discipline OS</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.12]">
-                Trade with a system.<br />
-                <span className="text-gradient">Not with your emotions.</span>
-              </h2>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3 max-w-5xl mx-auto">
-              {SYSTEM.map((s, i) => (
-                <div key={s.title} className="reveal group rounded-2xl border border-white/[0.06] bg-white/[0.015] hover:border-cyan-400/15 transition-all duration-500 p-6" style={{ transitionDelay: `${i*80}ms` }}>
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-400/20 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform"><s.icon className="w-5 h-5 text-cyan-400" /></div>
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-cyan-400/70 mb-1.5">{s.title} le trade</div>
-                  <p className="text-xs leading-6 text-slate-400">{s.desc}</p>
-                </div>
-              ))}
+        {/* ═══ SCREEN 5 · DISCIPLINE + PROGRESS ═══ */}
+        <section className="relative border-t border-white/[.06] min-h-screen flex items-center py-16 lg:py-0">
+          <div className="mx-auto max-w-[1100px] px-5 lg:px-8 w-full">
+            <div className="grid lg:grid-cols-2 gap-10 items-center">
+              <DisciplineFlow />
+              <ProgressPanel inView={true} />
             </div>
           </div>
         </section>
 
-        {/* ═══ 6 · ANALYTICS ═══ */}
-        <section id="stats" className="section-mesh relative border-t border-white/[.06] py-20 lg:py-28">
-          <div className="mx-auto max-w-[1100px] px-5 lg:px-8">
-            <div className="reveal text-center max-w-2xl mx-auto mb-14">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-cyan-400/20 bg-cyan-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-cyan-400/80 mb-6">Advanced analytics</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.12]">
-                Numbers that actually<br />
-                <span className="text-gradient">tell you something.</span>
-              </h2>
-              <p className="mt-4 text-sm text-slate-400 max-w-md mx-auto">
-                20+ metrics, all computed from YOUR trading data. Not market averages.
-              </p>
-            </div>
-            <div className="reveal max-w-lg mx-auto"><AnalyticsMiniMock /></div>
-          </div>
-        </section>
-
-        {/* ═══ 7 · PRICING ═══ */}
-        <section id="pricing" className="section-mesh relative border-t border-white/[.06] py-20 lg:py-28">
-          <div className="mx-auto max-w-[1000px] px-5 lg:px-8">
-            <div className="reveal text-center max-w-2xl mx-auto mb-14">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-cyan-400/20 bg-cyan-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-cyan-400/80 mb-6">Pricing</div>
-              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.5rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.12]">
-                An investment that pays for itself<br />
-                <span className="text-gradient">in one good trade.</span>
+        {/* ═══ SCREEN 6 · PRICING ═══ */}
+        <section ref={s6Ref} className="section-mesh relative border-t border-white/[.06] min-h-screen flex items-center py-16 lg:py-0">
+          <div className="mx-auto max-w-[1000px] px-5 lg:px-8 w-full">
+            <div className={`text-center mb-12 transition-all duration-700 ${s6InView ? "opacity-100" : "opacity-0"}`}>
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[.04] px-4 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-cyan-400/80 mb-5">Pricing</div>
+              <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.4rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.12]">
+                Pays for itself<br /><span className="text-gradient">in one good trade.</span>
               </h2>
             </div>
-            <div className="reveal grid gap-4 lg:grid-cols-3 max-w-4xl mx-auto">
+            <div className={`grid gap-4 lg:grid-cols-3 max-w-4xl mx-auto transition-all duration-700 delay-200 ${s6InView ? "opacity-100" : "opacity-0"}`}>
               <div className="flex flex-col rounded-2xl border border-white/[.06] bg-white/[.015] p-7">
                 <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400">Free</p>
                 <div className="mt-4"><span className="font-display text-4xl font-extrabold text-white">€0</span><span className="text-sm text-slate-500 ml-1">/ forever</span></div>
-                <p className="mt-2 text-sm text-slate-500">Start building your discipline.</p>
+                <p className="mt-3 text-sm text-slate-500">Start understanding your trading.</p>
                 <button onClick={() => open("signup")} className="btn-ghost w-full mt-6">Start Free</button>
-                <div className="mt-6 space-y-2 text-xs">
-                  {["30 trades/month","Dashboard & equity","Pre-market checklist","Basic statistics"].map((f,i) => (<p key={i} className="flex items-center gap-2 text-slate-400"><Icon n="check" cls="h-3.5 w-3.5 text-slate-500 shrink-0" />{f}</p>))}
+                <div className="mt-6 space-y-2 text-xs text-slate-400">
+                  {["30 trades/month","Dashboard & equity","Pre-market checklist","Basic statistics"].map((f,i) => (<div key={i} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-slate-500 shrink-0" />{f}</div>))}
                 </div>
               </div>
               <div className="flex flex-col rounded-2xl plan-popular bg-[linear-gradient(160deg,rgba(14,58,82,.55),rgba(7,14,24,.92)_60%)] p-7 lg:-my-6 lg:py-12">
@@ -337,64 +344,54 @@ export default function Landing() {
                 <div className="mt-4"><span className="font-display text-5xl font-extrabold text-white">{eur(Math.round(YEARLY_PER_MONTH*100)/100)}</span><span className="text-sm text-slate-400 ml-1">/ month</span></div>
                 <p className="mt-2 text-xs text-slate-300">{eur(YEARLY_EUR)} billed yearly <span className="text-slate-500 line-through ml-1">{eur(YEARLY_FULL_PRICE)}</span></p>
                 <p className="mt-2 text-[11px] font-bold text-emerald-300">Save {eur(YEARLY_SAVING)}/year</p>
-                <button onClick={() => open("signup", "Pro Annuel — 14 jours d'essai")} className="btn-primary w-full mt-5 py-3 text-sm">Start — 14 days free</button>
+                <button onClick={() => open("signup","Pro Annuel — 14 jours d'essai")} className="btn-primary w-full mt-5 py-3 text-sm">Start — 14 days free</button>
                 <p className="mt-2 text-center text-[10px] text-slate-500">No card required</p>
                 <p className="mt-6 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/80">Everything in Free +</p>
-                <div className="mt-3 space-y-2 text-xs">
-                  {["Jarvis AI Coach · unlimited","Unlimited trades & accounts","20+ quantitative metrics","Error & pattern detection","Monthly automated reports","Position size calculator"].map((f,i) => (<p key={i} className="flex items-center gap-2 text-slate-300"><Icon n="check" cls="h-3.5 w-3.5 text-cyan-400 shrink-0" />{f}</p>))}
+                <div className="mt-3 space-y-2 text-xs text-slate-300">
+                  {["Jarvis AI Coach · unlimited","Unlimited trades & accounts","20+ quantitative metrics","Error & pattern detection","Monthly automated reports"].map((f,i) => (<div key={i} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />{f}</div>))}
                 </div>
               </div>
               <div className="flex flex-col rounded-2xl border border-white/[.06] bg-white/[.015] p-7">
                 <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400">Pro Monthly</p>
                 <div className="mt-4"><span className="font-display text-4xl font-extrabold text-slate-200">{eur(MONTHLY_EUR)}</span><span className="text-sm text-slate-500 ml-1">/ month</span></div>
-                <p className="mt-2 text-sm text-slate-500">Full Pro, monthly billing.</p>
-                <button onClick={() => open("signup", "Pro Mensuel — 14 jours d'essai")} className="btn-ghost w-full mt-6">Go Monthly</button>
-                <div className="mt-6 space-y-2 text-xs">
-                  {["Jarvis AI Coach","Unlimited trades","20+ metrics","Monthly reports"].map((f,i) => (<p key={i} className="flex items-center gap-2 text-slate-400"><Icon n="check" cls="h-3.5 w-3.5 text-slate-500 shrink-0" />{f}</p>))}
+                <p className="mt-3 text-sm text-slate-500">Full Pro, monthly billing.</p>
+                <button onClick={() => open("signup","Pro Mensuel — 14 jours d'essai")} className="btn-ghost w-full mt-6">Go Monthly</button>
+                <div className="mt-6 space-y-2 text-xs text-slate-400">
+                  {["Jarvis AI Coach","Unlimited trades","20+ metrics","Monthly reports"].map((f,i) => (<div key={i} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-slate-500 shrink-0" />{f}</div>))}
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ═══ 8 · FINAL CTA ═══ */}
-        <section className="relative overflow-hidden border-t border-white/[.06] py-24 lg:py-32">
+        {/* ═══ SCREEN 7 · FINAL CTA ═══ */}
+        <section className="relative overflow-hidden border-t border-white/[.06] min-h-[60vh] flex items-center justify-center py-20">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_120%,rgba(34,211,238,.1),transparent_60%)]" />
-          <div className="reveal relative mx-auto max-w-[600px] px-5 text-center">
+          <div className="relative mx-auto max-w-[600px] px-5 text-center">
             <Sparkles className="w-8 h-8 text-cyan-400 mx-auto mb-6" />
             <h2 className="font-display text-[clamp(2rem,4vw,2.8rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.1]">
-              Ready to understand<br />your trading?
+              Your trades already contain<br />the answers.
             </h2>
-            <p className="mt-4 text-slate-400 text-lg">Your data already knows what's next. TradeVault just connects the dots.</p>
-            <button onClick={() => open("signup")} className="btn-primary px-12 py-4 mt-8 text-base">Start Free — forever</button>
+            <p className="mt-4 text-slate-400 text-lg">TradeVault helps you find them.</p>
+            <button onClick={() => open("signup")} className="btn-primary px-12 py-4 mt-8 text-base">Start Free — €0 forever</button>
             <p className="mt-3 text-xs text-slate-600">No credit card · Cancel anytime</p>
           </div>
         </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="relative z-10 border-t border-white/[.06] bg-[#050b14]">
-        <div className="mx-auto max-w-[1200px] px-5 py-10 lg:py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <Logo compact />
-              <p className="mt-3 text-[11px] leading-5 text-slate-500 max-w-[200px]">The AI coach that helps traders progress with method.</p>
-            </div>
-            <div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">Product</p>
-              {[["jarvis","Coach IA"],["discipline","Discipline OS"],["stats","Analytics"],["pricing","Pricing"]].map(([id,l]) => (<button key={id} onClick={() => go(id)} className="block text-xs font-medium text-slate-500 hover:text-cyan-300 transition mb-1.5">{l}</button>))}
-            </div>
-            <div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">Legal</p>
-              <a href="/terms" className="block text-xs font-medium text-slate-500 hover:text-cyan-300 transition mb-1.5">Terms</a>
-              <a href="/privacy" className="block text-xs font-medium text-slate-500 hover:text-cyan-300 transition mb-1.5">Privacy</a>
-              <a href="/contact" className="block text-xs font-medium text-slate-500 hover:text-cyan-300 transition">Contact</a>
-            </div>
-            <div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-600 mb-3">Connect</p>
-              <div className="flex gap-2">
-                {[{icon:Twitter,l:"X"},{icon:Linkedin,l:"LI"},{icon:Instagram,l:"IG"},{icon:Youtube,l:"YT"}].map(s => (<span key={s.l} className="grid h-8 w-8 place-items-center rounded-lg border border-white/[.06] bg-white/[.02] text-slate-600 cursor-not-allowed" title={`${s.l} — soon`}><s.icon className="w-3.5 h-3.5" /></span>))}
-              </div>
-            </div>
+      <footer className="relative z-10 border-t border-white/[.06] bg-[#050b14] py-8">
+        <div className="mx-auto max-w-[1200px] px-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <img src={logoSrc} alt="TradeVault" width={22} height={22} className="h-5.5 w-5.5 object-contain" />
+            <span className="font-display font-bold text-sm text-white">TradeVault</span>
           </div>
-          <div className="mt-8 border-t border-white/[.05] pt-5 text-center text-[10px] text-slate-700">© {new Date().getFullYear()} TradeVault · Trading involves risk</div>
+          <div className="flex items-center gap-5 text-[11px] text-slate-500">
+            <a href="/terms" className="hover:text-slate-300 transition">Terms</a>
+            <a href="/privacy" className="hover:text-slate-300 transition">Privacy</a>
+            <a href="/contact" className="hover:text-slate-300 transition">Contact</a>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-cyan-300 transition">{SUPPORT_EMAIL}</a>
+          </div>
+          <span className="text-[10px] text-slate-700">© {new Date().getFullYear()}</span>
         </div>
       </footer>
 
