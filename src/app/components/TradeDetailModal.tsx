@@ -17,7 +17,7 @@ import { getSession, getMacroEvents } from "../utils/quantStats";
 import { cn } from "../utils/cn";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/LanguageContext";
-import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
+import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
 import { Modal } from "@/shared/ui";
 
@@ -463,6 +463,7 @@ export default function TradeDetailModal({
                               loading="lazy"
                               decoding="async"
                               className="w-full max-h-[420px] object-contain"
+                              onError={() => { invalidateScreenshot(shot); }}
                             />
                           ) : (
                             <div className="w-full h-32 flex items-center justify-center">

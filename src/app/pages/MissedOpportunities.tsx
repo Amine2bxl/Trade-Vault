@@ -23,7 +23,7 @@ import {
   uploadMissedScreenshot,
   deleteScreenshot,
 } from "../store";
-import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
+import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import { formatShortDate } from "../utils/tradeCalcs";
 import { compressImageToFile } from "../utils/image";
 import { cn } from "../utils/cn";
@@ -428,6 +428,7 @@ export function ScreenshotsView({
                   src={urls[p]}
                   alt=""
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={() => { invalidateScreenshot(p); }}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                   <span

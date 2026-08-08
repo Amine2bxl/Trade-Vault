@@ -28,7 +28,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
-import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
+import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
 import { Modal, FIELD_BASE, Button, Chip, RemovableChip, CHIP_ROW } from "@/shared/ui";
 import {
@@ -989,6 +989,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         src={screenshotUrls[shot]}
                         alt={`Screenshot ${i + 1}`}
                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        onError={() => { invalidateScreenshot(shot); }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
