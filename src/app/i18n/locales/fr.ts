@@ -1286,6 +1286,38 @@ const fr: Dict = {
   "reports.profitFactor": "Profit factor",
   "reports.hide": "Masquer les détails",
   "reports.show": "Voir le rapport",
+  // Recalibrage d'échelle de compte
+  "recal.title": "Recalibrer l'échelle du compte",
+  "recal.subtitle":
+    "Représente ton historique comme s'il avait été tradé sur ton capital actuel. Tes trades ne sont jamais réécrits.",
+  "recal.original": "Réellement tradé sur",
+  "recal.currentScale": "Actuellement représenté à",
+  "recal.none": "Échelle d'origine",
+  "recal.targetLabel": "Nouvelle taille de compte",
+  "recal.scaleIs": "Facteur : {scale}",
+  "recal.preview": "Aperçu",
+  "recal.previewOn": "Aperçu sur ton trade du {date}",
+  "recal.unchanged": "inchangé",
+  "recal.rowBalance": "Taille du compte",
+  "recal.rowPnl": "P&L",
+  "recal.rowRisk": "Risque",
+  "recal.rowRMultiple": "R multiple",
+  "recal.rowRiskPct": "Risque %",
+  "recal.safeTitle": "Tes données d'origine sont préservées",
+  "recal.safeBody":
+    "Rien n'est écrit dans tes trades. TradeVault mémorise l'échelle et convertit les montants à la lecture — tu peux revenir à tes valeurs d'origine à tout moment.",
+  "recal.safeBehaviour":
+    "Les ratios (R multiple, risque %) et le comportement (erreurs, respect des règles, checklists) ne sont jamais modifiés : seule l'échelle financière change.",
+  "recal.goalsNote":
+    "Les objectifs exprimés en $ (cible de capital) ne sont pas convertis — ils appartiennent à ton plan, pas à un compte. Vérifie le tien après recalibrage.",
+  "recal.confirm": "Recalibrer",
+  "recal.reset": "Revenir à l'origine",
+  "recal.done": "Historique recalibré.",
+  "recal.failed": "Impossible de recalibrer. Réessaie.",
+  "recal.action": "Recalibrer l'échelle du compte",
+  "recal.actionSub":
+    "Changement de taille de compte ? Représente ton historique sur le nouveau capital",
+  "recal.badge": "Recalibré {scale}",
   "settings.reports": "Rapports mensuels",
   "settings.reportsSub": "Historique de performance, généré chaque mois",
 

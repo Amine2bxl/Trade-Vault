@@ -3,6 +3,8 @@ import { Bot, Eraser, Send, Loader2, Mic, MicOff, Zap } from "lucide-react";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
+import { useAccounts } from "../../../contexts/AccountContext";
+import { isCalibrated } from "../../../utils/accountCalibration";
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
@@ -82,6 +84,17 @@ const seededUsers = new Set<string>();
 
 export default function ConversationWorkspace({ context, initialPrompt }: JarvisWorkspaceProps) {
   const { t, lang } = useT();
+  const { activeAccount } = useAccounts();
+  // Contexte d'échelle transmis à Jarvis. `null` — donc bloc absent du prompt —
+  // tant que l'historique est à son échelle d'origine.
+  const calibration = useMemo(() => {
+    if (!activeAccount || !isCalibrated(activeAccount.calibrationScale)) return null;
+    return {
+      originalBalance: activeAccount.originalBalance,
+      currentBalance: activeAccount.startingBalance,
+      scale: activeAccount.calibrationScale,
+    };
+  }, [activeAccount]);
   const { user } = useAuth();
   const { toast } = useToast();
   const rules = useTradingRules();
@@ -350,6 +363,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         // Déjà mémoïsés au-dessus : sans ça, `buildCoachV1Payload` reparcourait
         // tous les trades une seconde fois à chaque question.
         signals,
+        // Sans ce contexte, Jarvis lirait des montants recalibrés comme s'ils
+        // avaient été tradés tels quels et conclurait « tu as doublé ton
+        // risque » alors que le trader risque toujours 1 %.
+        calibration,
       });
       // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
       // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux

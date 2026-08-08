@@ -1349,6 +1349,37 @@ const en = {
   "reports.profitFactor": "Profit factor",
   "reports.hide": "Hide details",
   "reports.show": "View report",
+  // Recalibrage d'échelle de compte
+  "recal.title": "Recalibrate account scale",
+  "recal.subtitle":
+    "Represent your history as if it had been traded on your current capital. Your trades are never rewritten.",
+  "recal.original": "Originally traded on",
+  "recal.currentScale": "Currently represented at",
+  "recal.none": "Original scale",
+  "recal.targetLabel": "New account size",
+  "recal.scaleIs": "Scale: {scale}",
+  "recal.preview": "Preview",
+  "recal.previewOn": "Preview on your trade of {date}",
+  "recal.unchanged": "unchanged",
+  "recal.rowBalance": "Account size",
+  "recal.rowPnl": "P&L",
+  "recal.rowRisk": "Risk",
+  "recal.rowRMultiple": "R multiple",
+  "recal.rowRiskPct": "Risk %",
+  "recal.safeTitle": "Your original data is preserved",
+  "recal.safeBody":
+    "Nothing is written to your trades. TradeVault stores the scale and converts amounts as it reads them — you can go back to your original values at any time.",
+  "recal.safeBehaviour":
+    "Ratios (R multiple, risk %) and behaviour (mistakes, rule adherence, checklists) are never altered: only the financial scale changes.",
+  "recal.goalsNote":
+    "Goals expressed in $ (capital target) are not converted — they belong to your plan, not to one account. Check yours after recalibrating.",
+  "recal.confirm": "Recalibrate",
+  "recal.reset": "Back to original",
+  "recal.done": "History recalibrated.",
+  "recal.failed": "Could not recalibrate. Try again.",
+  "recal.action": "Recalibrate account scale",
+  "recal.actionSub": "Changed account size? Represent your history on the new capital",
+  "recal.badge": "Recalibrated {scale}",
   "settings.reports": "Monthly reports",
   "settings.reportsSub": "Performance history, generated every month",
 

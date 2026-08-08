@@ -45,6 +45,11 @@ export interface AIUserContext {
   memory?: { kind: string; content: string }[];
   /** Recent conversation turns for chat continuity. */
   conversation?: { role: "user" | "assistant"; content: string }[];
+  /**
+   * Échelle de représentation de l'historique quand il a été recalibré.
+   * Absente = échelle d'origine. Voir `app/utils/accountCalibration.ts`.
+   */
+  calibration?: { originalBalance: number; currentBalance: number; scale: number };
   /** UI language (ISO 639-1) — answers are written in this language. */
   language?: string;
 }
@@ -104,6 +109,24 @@ export function contextBlocks(ctx: AIUserContext): string {
       `RECURRING MISTAKES (name · times · net P&L — trust these numbers):\n${ctx.mistakes
         .map((m) => `- ${m.name}: ${m.count}×, net ${m.totalPnl}`)
         .join("\n")}`,
+    );
+  }
+  // Placé AVANT les chiffres : le modèle doit connaître l'échelle avant de
+  // lire le premier montant, sinon il interprète des dollars recalibrés comme
+  // s'ils avaient été tradés tels quels.
+  if (ctx.calibration && ctx.calibration.scale !== 1) {
+    const c = ctx.calibration;
+    blocks.push(
+      "ACCOUNT SCALE — this history has been RECALIBRATED. It was actually " +
+        `traded on a ${c.originalBalance} account and is now represented on a ` +
+        `${c.currentBalance} account (${c.scale}× scale). Every monetary value ` +
+        "below is ALREADY expressed at the current scale — never convert them " +
+        "yourself. Ratios (R multiple, risk %, win rate) and behaviour " +
+        "(mistakes, rule adherence, streaks) are UNAFFECTED by recalibration: " +
+        "never explain a change in them by the scale change. Do not claim the " +
+        "trader increased their risk just because dollar amounts grew — their " +
+        "relative risk is unchanged. Mention the recalibration only when the " +
+        "question is about monetary amounts or account size.",
     );
   }
   if (ctx.stats && Object.keys(ctx.stats).length) {

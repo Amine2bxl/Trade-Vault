@@ -90,6 +90,7 @@ Modules purs testés : `edgeHistory` · `checklistStreak` · `ruleAdherence` ·
 | « Violer une règle » | `ruleCheck.checkTradeAgainstRules` | temps réel **et** bilan |
 | « Où en est cet objectif » | hook `useGoalProgress` | Goals **et** Jarvis |
 | « Où en est l'Edge Score » | hook `useEdgeScore` | Dashboard **et** Jarvis |
+| Échelle de représentation d'un historique | `accounts.calibration_scale` + `original_balance` | ~~une copie recalibrée des trades~~ |
 | Page courante | l'**URL** (chemin propre : `/settings`) | ~~état React + `sessionStorage`~~ · ~~`?p=`~~ |
 
 **Et une seule DÉFINITION par métrique** — voir le glossaire §4, écrit après que
@@ -398,6 +399,39 @@ pas mesurer**.
 
 `edgeHistory` conserve 30 jours pour afficher une **trajectoire** (sparkline).
 Un score sans historique est un constat ; avec historique, c'est une progression.
+
+### Recalibrage d'échelle de compte (`accountCalibration.ts`)
+
+Représenter un historique tradé sur 25 000 $ comme s'il l'avait été sur
+50 000 $, quand le trader change de taille de compte et veut continuer dans le
+même journal.
+
+> **Aucune ligne `trades` n'est jamais modifiée.** La calibration est une
+> métadonnée du compte (`calibration_scale`, `original_balance`), appliquée à
+> la LECTURE, en un point unique : le hook `useTrades`. La vérité d'origine
+> reste intacte et l'opération est réversible.
+
+> **Le facteur vient TOUJOURS du capital d'origine** : `cible / original`, une
+> division unique. 25k → 50k → 100k donne 4×, jamais 2× puis 2×. C'est ce qui
+> interdit la double multiplication et l'accumulation d'erreur flottante.
+
+Recalibrés : `pnl` · `riskAmount` · `mae` · `mfe` · `slippage`.
+Jamais recalibrés : le `rMultiple` (ratio) et **tout le comportemental**
+(erreurs, qualité de setup, confiance, respect des règles, checklists) —
+changer d'échelle financière ne réécrit pas ce que le trader a fait.
+
+Le solde du compte étant recalibré du même facteur, tous les moteurs qui
+expriment leurs grandeurs **relativement à ce solde** (Risk Guard `max_risk_pct`,
+drawdown % de `quantStats`, composante risque de l'Edge Score) restent
+invariants sans qu'une seule ligne de calcul soit modifiée ou dupliquée.
+
+`normalizedReturns()` expose l'historique en R et en % du capital — les deux
+grandeurs invariantes à l'échelle, sur lesquelles un futur moteur Monte Carlo
+devra tirer pour qu'une probabilité de ruine garde un sens après recalibrage.
+
+**Limite assumée** : les objectifs vivent dans `goal_plans`, table qui n'a
+**pas** de `account_id`. Une cible de capital en dollars n'est donc rattachable
+à aucun compte : elle n'est pas convertie, et la modale le dit explicitement.
 
 ### Import CSV (`csvImport.ts`)
 
