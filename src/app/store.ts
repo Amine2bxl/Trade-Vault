@@ -17,6 +17,7 @@ export {
   createAccount,
   updateAccount,
   deleteAccount,
+  recalibrateAccount,
   loadActiveAccountId,
   saveActiveAccountId,
 } from "./store/accounts";

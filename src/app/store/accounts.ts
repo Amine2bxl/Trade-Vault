@@ -11,6 +11,14 @@ export interface Account {
   currency: string;
   color: string;
   isDefault: boolean;
+  /** Facteur appliqué aux montants historiques à la lecture (1 = aucun
+   *  recalibrage). Voir `utils/accountCalibration.ts`. */
+  calibrationScale: number;
+  /** Capital sur lequel les trades ont RÉELLEMENT été pris — source canonique
+   *  du facteur. Égal au solde courant tant qu'aucun recalibrage n'a eu lieu. */
+  originalBalance: number;
+  /** Date du dernier recalibrage, `null` s'il n'y en a jamais eu. */
+  calibratedAt: string | null;
 }
 
 // The active account is ambient module state so every trade/missed/balance
@@ -34,6 +42,9 @@ interface AccountRow {
   currency: string;
   color: string;
   is_default: boolean;
+  calibration_scale?: number | null;
+  original_balance?: number | null;
+  calibrated_at?: string | null;
 }
 function rowToAccount(r: AccountRow): Account {
   return {
@@ -44,17 +55,35 @@ function rowToAccount(r: AccountRow): Account {
     currency: r.currency ?? "USD",
     color: r.color ?? "#22d3ee",
     isDefault: !!r.is_default,
+    // Colonnes ajoutées après coup : un compte créé avant la migration les
+    // lit à NULL et doit se comporter comme « jamais recalibré ».
+    calibrationScale: Number(r.calibration_scale) || 1,
+    originalBalance: Number(r.original_balance) || Number(r.starting_balance),
+    calibratedAt: r.calibrated_at ?? null,
   };
 }
 
+/**
+ * `select("*")` et NON une liste explicite de colonnes.
+ *
+ * RÉGRESSION CORRIGÉE : lister nommément les colonnes de calibration faisait
+ * échouer la requête entière (`column accounts.calibration_scale does not
+ * exist`) tant que la migration n'était pas appliquée. `loadAccounts` levait,
+ * la liste des comptes restait vide, et les sous-comptes DISPARAISSAIENT de
+ * l'interface — la fonctionnalité cassait ce qu'elle venait enrichir.
+ *
+ * Le code est déployé AVANT que la migration ne tourne : il doit donc tolérer
+ * l'ancien schéma. `*` rend ce qui existe, et `rowToAccount` retombe sur les
+ * valeurs neutres pour ce qui manque.
+ */
 export async function loadAccounts(userId: string): Promise<Account[]> {
   const { data, error } = await supabase
     .from("accounts")
-    .select("id, name, type, starting_balance, currency, color, is_default")
+    .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((r) => rowToAccount(r as AccountRow));
+  return ((data ?? []) as unknown as AccountRow[]).map(rowToAccount);
 }
 
 export async function createAccount(
@@ -78,10 +107,12 @@ export async function createAccount(
       color: input.color ?? "#22d3ee",
       is_default: false,
     })
-    .select("id, name, type, starting_balance, currency, color, is_default")
+    // Même raison que dans `loadAccounts` : ne jamais nommer une colonne qui
+    // peut ne pas encore exister en base.
+    .select("*")
     .single();
   if (error) throw error;
-  return rowToAccount(data as AccountRow);
+  return rowToAccount(data as unknown as AccountRow);
 }
 
 export async function updateAccount(
@@ -104,6 +135,35 @@ export async function updateAccount(
   const { error } = await supabase
     .from("accounts")
     .update(row as never)
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+/**
+ * Recalibre l'échelle d'un compte — écrit UNIQUEMENT la métadonnée.
+ *
+ * Aucune ligne `trades` n'est touchée : la conversion se fait à la lecture.
+ * `original_balance` est figé au premier recalibrage sur le capital réellement
+ * tradé, puis ne bouge plus — c'est de lui, et de lui seul, que tout facteur
+ * ultérieur est recalculé (25k → 50k → 100k donne 4×, jamais 2× puis 2×).
+ *
+ * Le `.eq("user_id", userId)` double la protection RLS : même avec un id de
+ * compte deviné, l'écriture ne peut pas sortir des comptes de l'appelant.
+ */
+export async function recalibrateAccount(
+  userId: string,
+  id: string,
+  input: { originalBalance: number; targetBalance: number; scale: number },
+): Promise<void> {
+  const { error } = await supabase
+    .from("accounts")
+    .update({
+      starting_balance: input.targetBalance,
+      calibration_scale: input.scale,
+      original_balance: input.originalBalance,
+      calibrated_at: new Date().toISOString(),
+    } as never)
     .eq("id", id)
     .eq("user_id", userId);
   if (error) throw error;

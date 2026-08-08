@@ -15,10 +15,12 @@ import {
   createAccount,
   updateAccount,
   deleteAccount as deleteAccountRow,
+  recalibrateAccount,
   loadActiveAccountId,
   saveActiveAccountId,
   setActiveAccountId,
 } from "../store";
+import { scaleFor } from "../utils/accountCalibration";
 
 interface Ctx {
   accounts: Account[];
@@ -38,6 +40,9 @@ interface Ctx {
     patch: Partial<{ name: string; type: AccountType; icon: string; startingBalance: number }>,
   ) => Promise<void>;
   removeAccount: (id: string) => Promise<void>;
+  /** Recalibre l'échelle d'un compte. N'écrit QUE la métadonnée : les trades
+   *  en base restent intacts (voir `utils/accountCalibration.ts`). */
+  recalibrate: (id: string, targetBalance: number) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -199,6 +204,38 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     [user, accounts, activeId, apply],
   );
 
+  const recalibrate = useCallback(
+    async (id: string, targetBalance: number) => {
+      if (!user) return;
+      const account = accounts.find((a) => a.id === id);
+      // Un compte introuvable dans la liste de CET utilisateur n'est pas
+      // recalibrable : première barrière, avant même le filtre user_id de la
+      // requête et les politiques RLS.
+      if (!account) throw new Error("Unknown account");
+      const original = account.originalBalance || account.startingBalance;
+      const scale = scaleFor(original, targetBalance);
+      await recalibrateAccount(user.id, id, {
+        originalBalance: original,
+        targetBalance,
+        scale,
+      });
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                startingBalance: targetBalance,
+                calibrationScale: scale,
+                originalBalance: original,
+                calibratedAt: new Date().toISOString(),
+              }
+            : a,
+        ),
+      );
+    },
+    [user, accounts],
+  );
+
   const refresh = useCallback(async () => {
     if (user) await load(user.id);
   }, [user, load]);
@@ -213,9 +250,20 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       addAccount,
       editAccount,
       removeAccount,
+      recalibrate,
       refresh,
     }),
-    [accounts, activeId, ready, switchAccount, addAccount, editAccount, removeAccount, refresh],
+    [
+      accounts,
+      activeId,
+      ready,
+      switchAccount,
+      addAccount,
+      editAccount,
+      removeAccount,
+      recalibrate,
+      refresh,
+    ],
   );
 
   return <AccountCtx.Provider value={value}>{children}</AccountCtx.Provider>;

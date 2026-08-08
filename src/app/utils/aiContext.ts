@@ -84,6 +84,18 @@ export interface CoachV1Payload {
    * `modules/ai/memory-select`, sous contrainte dure.
    */
   memory?: { kind: string; content: string }[];
+  /**
+   * Échelle de représentation de l'historique, quand elle a été recalibrée.
+   *
+   * SANS ce bloc, Jarvis comparerait des montants d'échelles différentes sans
+   * le savoir : « ton risque moyen est passé de 250 $ à 500 $, tu sur-risques »
+   * alors que le trader a simplement changé de taille de compte et risque
+   * toujours 1 %. Le diagnostic serait faux ET accusateur.
+   *
+   * Les montants transmis sont DÉJÀ à l'échelle courante (la conversion a lieu
+   * en amont, dans `useTrades`) : ce bloc sert à l'expliquer, pas à convertir.
+   */
+  calibration?: { originalBalance: number; currentBalance: number; scale: number };
   language?: string;
 }
 
@@ -177,6 +189,9 @@ export function buildCoachV1Payload(opts: {
    * score. Il n'est PAS recalculé ici (une seule définition, cf. `useEdgeScore`).
    */
   edge?: { score: number | null; weakest: string | null };
+  /** Calibration du compte actif — omise quand l'historique est à son échelle
+   *  d'origine, ce qui est le cas de l'immense majorité des comptes. */
+  calibration?: { originalBalance: number; currentBalance: number; scale: number } | null;
 }): CoachV1Payload {
   const {
     trades,
@@ -192,6 +207,7 @@ export function buildCoachV1Payload(opts: {
     memory,
     signals: providedSignals,
     edge,
+    calibration,
   } = opts;
   // UNE seule exécution, réutilisée pour les erreurs récurrentes ET l'instantané.
   const stats = trades.length ? computeStats(trades) : null;
@@ -239,6 +255,9 @@ export function buildCoachV1Payload(opts: {
       .slice(-maxTurns)
       .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),
     profile: describeProfile(onboarding, jarvisProfile),
+    // Omise quand l'échelle est d'origine : ne pas encombrer le prompt d'un
+    // bloc qui, dans ce cas, ne dit rien.
+    calibration: calibration && calibration.scale !== 1 ? calibration : undefined,
     language,
   };
 }

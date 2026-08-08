@@ -5,6 +5,7 @@ import {
   Check,
   Download,
   Upload,
+  Scale,
   Trash2,
   Database,
   SlidersHorizontal,
@@ -22,6 +23,9 @@ import { useT } from "../i18n/LanguageContext";
 import { PushNotificationSettings } from "../components/PushNotificationSettings";
 import { cn } from "../utils/cn";
 import { Button, Card, FIELD_BASE, Modal, PageContainer, PageHeader } from "@/shared/ui";
+import { useAccounts } from "../contexts/AccountContext";
+import { isCalibrated } from "../utils/accountCalibration";
+import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
 
 interface SettingsProps {
   trades: Trade[];
@@ -37,6 +41,8 @@ export default function Settings({
   onOpenReports,
 }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
+  const { activeId, activeAccount } = useAccounts();
+  const [recalOpen, setRecalOpen] = useState(false);
   const { t, setLang } = useT();
   const [language, setLanguage] = useState("en");
   const [startingEquity, setStartingEquity] = useState("25000");
@@ -252,6 +258,24 @@ export default function Settings({
             sub={t("settings.importCsvSub")}
             onClick={onOpenImport}
           />
+          {/* Recalibrage d'échelle : dans la section Données, à côté de
+              l'import et de l'export — c'est bien une opération sur
+              l'historique, pas un réglage d'apparence. */}
+          {activeId && (
+            <ActionRow
+              icon={<Scale className="w-4 h-4" />}
+              label={t("recal.action")}
+              sub={
+                isCalibrated(activeAccount?.calibrationScale)
+                  ? t("recal.badge").replace(
+                      "{scale}",
+                      `${Number((activeAccount?.calibrationScale ?? 1).toFixed(4))}×`,
+                    )
+                  : t("recal.actionSub")
+              }
+              onClick={() => setRecalOpen(true)}
+            />
+          )}
           <ActionRow
             icon={<FileText className="w-4 h-4" />}
             label={t("settings.reports")}
@@ -305,6 +329,13 @@ export default function Settings({
 
       {deleteOpen && (
         <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />
+      )}
+      {recalOpen && activeId && (
+        <RecalibrateAccountModal
+          accountId={activeId}
+          trades={trades}
+          onClose={() => setRecalOpen(false)}
+        />
       )}
     </PageContainer>
   );

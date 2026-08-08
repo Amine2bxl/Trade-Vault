@@ -90,7 +90,14 @@ function AppContent() {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
   // Trades now live in the React Query cache (keyed by user + active account).
-  const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  // Le facteur de recalibrage du compte actif traverse le hook : c'est là, et
+  // nulle part ailleurs, que l'historique prend son échelle courante.
+  const { trades, tradesLoading } = useTrades(
+    user?.id,
+    activeId,
+    accountsReady,
+    activeAccount?.calibrationScale ?? 1,
+  );
   // Shim preserving the exact `setTrades` signature the optimistic write
   // handlers already use — updates the cache in place instead of local state,
   // so none of the save/delete/import logic below had to change.
