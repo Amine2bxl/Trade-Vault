@@ -989,7 +989,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         src={screenshotUrls[shot]}
                         alt={`Screenshot ${i + 1}`}
                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        onError={() => { invalidateScreenshot(shot); }}
+                        onError={() => {
+                          invalidateScreenshot(shot);
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
