@@ -96,6 +96,28 @@ export interface CoachV1Payload {
    * en amont, dans `useTrades`) : ce bloc sert à l'expliquer, pas à convertir.
    */
   calibration?: { originalBalance: number; currentBalance: number; scale: number };
+  /**
+   * Résultat de simulation DÉJÀ CALCULÉ par le moteur probabiliste.
+   *
+   * RÈGLE ABSOLUE : Jarvis LIT ce bloc, il ne simule jamais. Un modèle de
+   * langage ne sait pas rééchantillonner 2 000 trajectoires ; s'il produit un
+   * pourcentage de sa propre initiative, ce pourcentage est inventé — et il
+   * aura l'air aussi assuré qu'un vrai. Le champ `method` et `engineVersion`
+   * voyagent avec le chiffre pour que la réponse puisse dire d'où il vient.
+   *
+   * Absent quand aucune simulation n'a été lancée. Jarvis doit alors répondre
+   * qu'il n'en a pas encore, PAS estimer de tête.
+   */
+  simulation?: {
+    engineVersion: string;
+    method: string;
+    sampleSize: number;
+    passProbability: number;
+    riskOfRuin: number;
+    medianPnl: number;
+    medianDrawdown: number;
+    horizonTrades: number;
+  };
   language?: string;
 }
 
@@ -189,6 +211,11 @@ export function buildCoachV1Payload(opts: {
    * score. Il n'est PAS recalculé ici (une seule définition, cf. `useEdgeScore`).
    */
   edge?: { score: number | null; weakest: string | null };
+  /**
+   * Simulation déjà produite par `modules/probability`. L'appelant la passe
+   * telle quelle : rien n'est recalculé ici, et surtout pas par le modèle.
+   */
+  simulation?: CoachV1Payload["simulation"];
   /** Calibration du compte actif — omise quand l'historique est à son échelle
    *  d'origine, ce qui est le cas de l'immense majorité des comptes. */
   calibration?: { originalBalance: number; currentBalance: number; scale: number } | null;
@@ -208,6 +235,7 @@ export function buildCoachV1Payload(opts: {
     signals: providedSignals,
     edge,
     calibration,
+    simulation,
   } = opts;
   // UNE seule exécution, réutilisée pour les erreurs récurrentes ET l'instantané.
   const stats = trades.length ? computeStats(trades) : null;
@@ -258,6 +286,10 @@ export function buildCoachV1Payload(opts: {
     // Omise quand l'échelle est d'origine : ne pas encombrer le prompt d'un
     // bloc qui, dans ce cas, ne dit rien.
     calibration: calibration && calibration.scale !== 1 ? calibration : undefined,
+    // Omise quand aucune simulation n'existe : mieux vaut que Jarvis dise
+    // « je n'ai pas encore de simulation là-dessus » que d'avoir un bloc vide
+    // à interpréter, ce qu'un modèle comble volontiers tout seul.
+    simulation,
     language,
   };
 }
