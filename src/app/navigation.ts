@@ -77,7 +77,10 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     labelKey: "nav.groupJarvis",
-    items: [{ id: "insights", labelKey: "nav.jarvis", icon: Bot }],
+    items: [
+      { id: "insights", labelKey: "nav.jarvis", icon: Bot },
+      { id: "montecarlo", labelKey: "nav.montecarlo", icon: BarChart3 },
+    ],
   },
   {
     labelKey: "nav.groupAccount",

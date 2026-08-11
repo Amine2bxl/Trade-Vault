@@ -28,6 +28,7 @@ import {
   Appearance,
   Subscription,
   Inbox,
+  MonteCarlo,
   preloadPage,
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
@@ -662,6 +663,7 @@ function AppContent() {
               {page === "tradingplan" && <TradingPlan setPage={setPage} />}
               {page === "appearance" && <Appearance />}
               {page === "subscription" && <Subscription />}
+              {page === "montecarlo" && <MonteCarlo trades={trades} />}
               {page === "inbox" && <Inbox />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
             </Suspense>
