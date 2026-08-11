@@ -29,6 +29,14 @@ const fr: Dict = {
   "sim.title": "Simulateur de probabilités",
   "sim.subtitle": "Si tu continues à trader comme ça, que peut-il se passer ?",
   "sim.rulesTitle": "Règles du compte",
+  "sim.quality": "Journal complété à {score}/100 — certaines analyses restent limitées.",
+  "sim.gap.risk":
+    "{pct} % de tes trades n'ont pas de risque saisi : les scénarios en R sont approximatifs.",
+  "sim.gap.direction":
+    "{pct} % n'ont pas de sens (long/short) : pas de comparaison acheteur/vendeur.",
+  "sim.gap.strategy": "{pct} % n'ont pas de stratégie : impossible de simuler setup par setup.",
+  "sim.gap.times": "{pct} % n'ont pas d'horaires complets : pas d'analyse par session.",
+  "sim.gap.screenshots": "{pct} % n'ont pas de capture : la revue visuelle est incomplète.",
   "sim.save": "Enregistrer ce scénario",
   "sim.savedTitle": "Scénarios enregistrés",
   "sim.saved": "Scénario enregistré",

@@ -159,35 +159,122 @@ export const FIELDS: Field[] = [
 /** Sans date, symbole et P&L, une ligne n'est pas un trade. */
 export const REQUIRED: Field[] = ["date", "symbol", "pnl"];
 
-// Mots-clés d'en-tête par champ, testés dans l'ordre — couvre TradeVault,
-// NinjaTrader, TradingView et TopStep(X) en plus des noms génériques.
+/**
+ * Synonymes d'en-tête par champ.
+ *
+ * L'objectif est qu'un trader n'ait RIEN à mapper à la main dans le cas
+ * courant : chaque colonne devinée est une friction de moins sur le premier
+ * geste du produit, celui où l'on perd le plus d'inscrits.
+ *
+ * La liste couvre les exports TradeVault, NinjaTrader, TradingView et
+ * TopStep(X), les noms génériques anglais, et les en-têtes français — un
+ * export de broker européen arrive avec « Symbole » et « Résultat », que la
+ * version précédente ne reconnaissait pas du tout.
+ */
 const GUESSES: Record<Field, string[]> = {
-  date: ["date", "enteredat", "entry time", "entrytime", "date/time", "datetime", "time", "opened"],
-  symbol: ["symbol", "instrument", "contractname", "contract", "ticker", "market"],
-  direction: ["direction", "side", "market pos", "marketpos", "type", "position"],
-  pnl: ["p&l", "pnl", "profit", "net profit", "netprofit", "realized", "gain"],
-  risk: ["risk"],
-  rMultiple: ["r multiple", "rmultiple", "r-multiple", "r:r"],
-  entryTime: ["entry time", "entrytime", "enteredat", "open time", "opened"],
-  exitTime: ["exit time", "exittime", "exitedat", "close time", "closed"],
-  strategy: ["strategy", "setup", "signal"],
-  slippage: ["slippage", "fees", "commission"],
-  notes: ["notes", "comment", "description"],
+  date: ["date", "enteredat", "date/time", "datetime", "opened", "jour", "dateouverture"],
+  symbol: [
+    "symbol",
+    "symbole",
+    "instrument",
+    "contractname",
+    "contract",
+    "ticker",
+    "market",
+    "marche",
+    "actif",
+    "paire",
+  ],
+  direction: ["direction", "side", "market pos", "marketpos", "position", "sens", "type"],
+  pnl: [
+    "p&l",
+    "pnl",
+    "profit",
+    "net profit",
+    "netprofit",
+    "realized",
+    "gain",
+    "resultat",
+    "gain/perte",
+    "profit net",
+    "benefice",
+  ],
+  risk: ["risk", "risque", "montant risque", "risk amount"],
+  rMultiple: ["r multiple", "rmultiple", "r-multiple", "r:r", "multiple r", "ratio r"],
+  entryTime: ["entry time", "entrytime", "enteredat", "open time", "opened", "heure entree"],
+  exitTime: ["exit time", "exittime", "exitedat", "close time", "closed", "heure sortie"],
+  strategy: ["strategy", "strategie", "setup", "signal", "systeme"],
+  slippage: ["slippage", "fees", "commission", "frais", "glissement"],
+  notes: ["notes", "note", "comment", "commentaire", "description", "remarque"],
 };
 
+/** Enlève accents, ponctuation et espaces : « Date d'entrée » et
+ *  « date_entree » deviennent la même chaîne, donc comparables. */
+function normalizeHeader(header: string): string {
+  return header
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9&:]/g, "");
+}
+
+/**
+ * Force de la correspondance entre un en-tête et un synonyme.
+ *
+ * POURQUOI UN SCORE, ET NON LA PREMIÈRE SOUS-CHAÎNE TROUVÉE. L'ancienne
+ * version prenait la première colonne dont le nom CONTENAIT le mot-clé, dans
+ * l'ordre des champs. Sur un fichier portant « Exit Time » avant « Date », le
+ * champ `date` — dont la liste contenait « time » — s'accaparait « Exit Time »,
+ * et la date se retrouvait mappée sur une heure de sortie. L'import passait
+ * sans erreur et produisait un journal faux.
+ *
+ * Une correspondance exacte l'emporte donc toujours sur un simple préfixe, et
+ * un préfixe sur une inclusion. Un mot-clé long qui correspond vaut mieux
+ * qu'un mot-clé court : « entrytime » est plus informatif que « time ».
+ */
+function matchScore(header: string, keyword: string): number {
+  const kw = normalizeHeader(keyword);
+  if (!kw || !header) return 0;
+  if (header === kw) return 1000 + kw.length;
+  if (header.startsWith(kw)) return 500 + kw.length;
+  if (header.includes(kw)) return 100 + kw.length;
+  return 0;
+}
+
+/**
+ * Devine la correspondance colonnes → champs.
+ *
+ * Toutes les paires (champ, colonne) sont évaluées, puis attribuées de la
+ * meilleure à la moins bonne. Un champ et une colonne ne servent qu'une fois :
+ * la colonne qui correspond le mieux gagne, où qu'elle soit dans le fichier —
+ * l'ordre des colonnes ne décide plus du résultat.
+ */
 export function guessMapping(headers: string[]): Partial<Record<Field, number>> {
-  const mapping: Partial<Record<Field, number>> = {};
-  const used = new Set<number>();
-  const lower = headers.map((h) => h.toLowerCase());
+  const normalized = headers.map(normalizeHeader);
+  const candidates: { field: Field; index: number; score: number }[] = [];
+
   for (const field of FIELDS) {
-    for (const kw of GUESSES[field]) {
-      const idx = lower.findIndex((h, i) => !used.has(i) && h.includes(kw));
-      if (idx !== -1) {
-        mapping[field] = idx;
-        used.add(idx);
-        break;
+    for (let i = 0; i < normalized.length; i++) {
+      let best = 0;
+      for (const kw of GUESSES[field]) {
+        const score = matchScore(normalized[i], kw);
+        if (score > best) best = score;
       }
+      if (best > 0) candidates.push({ field, index: i, score: best });
     }
+  }
+
+  // À score égal, l'ordre de `FIELDS` tranche : les champs obligatoires y
+  // figurent en tête, donc ce sont eux qui obtiennent la colonne ambiguë.
+  const rank = new Map(FIELDS.map((f, i) => [f, i]));
+  candidates.sort((a, b) => b.score - a.score || rank.get(a.field)! - rank.get(b.field)!);
+
+  const mapping: Partial<Record<Field, number>> = {};
+  const usedColumns = new Set<number>();
+  for (const c of candidates) {
+    if (mapping[c.field] !== undefined || usedColumns.has(c.index)) continue;
+    mapping[c.field] = c.index;
+    usedColumns.add(c.index);
   }
   return mapping;
 }

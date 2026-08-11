@@ -107,6 +107,51 @@ describe("guessMapping", () => {
     const used = Object.values(m);
     expect(new Set(used).size).toBe(used.length);
   });
+
+  it("reconnaît des en-têtes français, accents compris", () => {
+    // Un export de broker européen arrive avec ces noms-là. Sans eux, le
+    // trader doit tout mapper à la main dès son premier geste dans le produit.
+    const m = guessMapping(["Date", "Symbole", "Résultat", "Sens", "Risque", "Stratégie"]);
+    expect(m.date).toBe(0);
+    expect(m.symbol).toBe(1);
+    expect(m.pnl).toBe(2);
+    expect(m.direction).toBe(3);
+    expect(m.risk).toBe(4);
+    expect(m.strategy).toBe(5);
+  });
+
+  it("une colonne exacte l'emporte sur une simple inclusion", () => {
+    // Le piège corrigé : « Exit Time » contient « time », que la version
+    // precedente attribuait a `date`. La date se retrouvait alors mappee sur
+    // une heure de sortie, et l'import produisait un journal faux sans jamais
+    // signaler d'erreur.
+    const m = guessMapping(["Exit Time", "Entry Time", "Symbol", "Profit", "Date"]);
+    expect(m.date).toBe(4);
+    expect(m.entryTime).toBe(1);
+    expect(m.exitTime).toBe(0);
+  });
+
+  it("l'ordre des colonnes ne change pas le résultat", () => {
+    const a = guessMapping(["Date", "Symbol", "PnL"]);
+    const b = guessMapping(["PnL", "Symbol", "Date"]);
+    expect(a.date).toBe(0);
+    expect(b.date).toBe(2);
+    expect(b.pnl).toBe(0);
+  });
+
+  it("ignore la ponctuation et la casse des en-têtes", () => {
+    const m = guessMapping(["date_du_trade", "SYMBOLE", "P&L net"]);
+    expect(m.date).toBe(0);
+    expect(m.symbol).toBe(1);
+    expect(m.pnl).toBe(2);
+  });
+
+  it("ne devine rien sur des en-têtes qui ne veulent rien dire", () => {
+    // Inventer une correspondance ici produirait un import silencieusement
+    // faux : mieux vaut rendre la main au trader.
+    const m = guessMapping(["col1", "col2", "col3"]);
+    expect(Object.keys(m)).toHaveLength(0);
+  });
 });
 
 describe("mapRowsToTrades", () => {
