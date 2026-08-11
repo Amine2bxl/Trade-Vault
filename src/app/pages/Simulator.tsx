@@ -23,6 +23,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { loadScenarios, saveScenario, type SavedScenario } from "../store/simulations";
 import { cn } from "../utils/cn";
+import { assessDataset } from "../utils/datasetQuality";
 import { Button, Card, CardBody, FIELD_BASE, PageHeader, Badge } from "@/shared/ui";
 import { buildDataset } from "@/modules/probability/dataset";
 import { buildScenario, type Horizon } from "@/modules/probability/scenario";
@@ -71,6 +72,10 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
   const [risk, setRisk] = useState(1);
 
   const dataset = useMemo(() => buildDataset(trades), [trades]);
+  // Ce que le journal permet — ou non — de simuler. Calcule ici, affiche a
+  // cote du resultat : un manque signale loin du chiffre qu'il limite ne se
+  // traduit jamais en action.
+  const quality = useMemo(() => assessDataset(trades), [trades]);
 
   const rules: AccountRules = useMemo(
     () => ({
@@ -316,6 +321,26 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                   <p className="text-[11px] text-slate-500">
                     {t("sim.disclaimer")} · {result.engineVersion}
                   </p>
+
+                  {/* Ce que le journal ne permet PAS encore de simuler. Le
+                      trader voit le manque au moment où il regarde le
+                      résultat, avec le geste précis qui le comble — pas une
+                      analyse grisée sans explication. */}
+                  {quality.gaps.length > 0 && (
+                    <div className="rounded-xl border border-amber-500/15 bg-amber-500/[0.04] p-3 space-y-1">
+                      <p className="text-[11px] text-amber-400/90">
+                        {t("sim.quality").replace("{score}", String(quality.score))}
+                      </p>
+                      {quality.gaps.slice(0, 2).map((gap) => (
+                        <p key={gap.dimension} className="text-[11px] text-slate-400">
+                          {t(`sim.gap.${gap.dimension}` as never).replace(
+                            "{pct}",
+                            String(Math.round((1 - gap.coverage) * 100)),
+                          )}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </CardBody>
               </Card>
 
