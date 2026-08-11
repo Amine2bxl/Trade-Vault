@@ -62,7 +62,10 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           <h1 className="text-base font-bold text-white tracking-tight leading-tight">
             TradeVault
           </h1>
-          <p className="text-[9px] text-slate-600 uppercase tracking-[0.2em] mt-0.5">
+          {/* 10px is the documented type floor (tokens.ts `type.micro`). The
+              9px here and on the group labels below sat under it — small enough
+              that the eye reads a texture instead of a word. */}
+          <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] mt-0.5">
             {t("nav.journal")}
           </p>
         </div>
@@ -78,7 +81,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
         {NAV_GROUPS.map((group) => (
           <div key={group.labelKey}>
-            <div className="px-3 pb-1 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+            <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
               {t(group.labelKey)}
             </div>
             <div className="space-y-px">
@@ -91,23 +94,33 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                   // déjà là et le squelette n'a plus lieu d'apparaître.
                   onPointerEnter={() => preloadPage(id)}
                   onFocus={() => preloadPage(id)}
+                  aria-current={page === id ? "page" : undefined}
+                  // UN seul état actif, pas quatre. L'entrée active portait
+                  // simultanément un dégradé de fond, une ombre accent, une
+                  // barre à gauche, une icône teintée ET un point à droite :
+                  // cinq signaux pour une information binaire. Il reste la
+                  // barre (la signature) + une teinte plate + la couleur du
+                  // texte. `transition-colors` et non `transition-all` : « all »
+                  // anime aussi la géométrie, donc chaque survol du menu
+                  // demandait un calcul de mise en page.
                   className={cn(
-                    "relative w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200",
+                    "relative w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium",
+                    "transition-colors duration-[var(--tv-dur-1)] ease-[var(--tv-ease)]",
                     page === id
-                      ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10"
+                      ? "bg-cyan-500/[0.10] text-cyan-300"
                       : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
                   )}
                 >
                   {page === id && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-cyan-400" />
                   )}
                   <div className="relative shrink-0">
                     <Icon
-                      className={cn("w-4 h-4", page === id ? "text-cyan-400" : "text-slate-600")}
+                      className={cn("w-4 h-4", page === id ? "text-cyan-300" : "text-slate-500")}
                     />
                     {id === "inbox" && unread > 0 && (
                       <span
-                        className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]"
+                        className="absolute -top-1 -right-1.5 h-4 min-w-[16px] px-[3px] rounded-full bg-cyan-500 text-[10px] font-bold text-white flex items-center justify-center leading-none"
                         role="status"
                         aria-label={`${unread} ${unread > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
                       >
@@ -116,9 +129,6 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                     )}
                   </div>
                   <span className="truncate">{t(labelKey)}</span>
-                  {page === id && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-                  )}
                 </button>
               ))}
             </div>

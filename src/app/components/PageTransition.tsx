@@ -32,9 +32,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 export function DeferredFallback({
   children,
   delay = 320,
+  reserve = "min-h-[70vh]",
 }: {
   children: ReactNode;
   delay?: number;
+  /** Height to hold during the silent window. Match the content it stands in
+   *  for: a full page reserves a viewport, an inline section reserves its own
+   *  box. Getting this wrong is how a "no skeleton" fix reintroduces the very
+   *  layout shift it was meant to remove. */
+  reserve?: string;
 }) {
   const [show, setShow] = useState(false);
 
@@ -46,7 +52,7 @@ export function DeferredFallback({
   if (!show) {
     // Reserved space, not emptiness: the scroll container keeps its height, so
     // the sidebar, the scrollbar and the mobile dock never move while we wait.
-    return <div className="min-h-[70vh]" aria-hidden="true" />;
+    return <div className={reserve} aria-hidden="true" />;
   }
   return <>{children}</>;
 }

@@ -120,7 +120,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
                 {hasDraft && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#060d16] shadow-[0_0_8px_rgba(251,191,36,0.7)] animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#060d16] shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
                 )}
               </button>
             </div>
@@ -137,7 +137,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               })}
               {unread > 0 && (
                 <span
-                  className="absolute top-0 right-1 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]"
+                  className="absolute top-0 right-1 h-4 min-w-[16px] px-[3px] rounded-full bg-cyan-500 text-[10px] font-bold text-white flex items-center justify-center leading-none"
                   role="status"
                   aria-label={`${unread} ${unread > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
                 >
@@ -236,7 +236,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               ) : (
                 groups.map((g) => (
                   <div key={g.labelKey} className="mb-2">
-                    <div className="px-1 pt-3 pb-1.5 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+                    <div className="px-1 pt-3 pb-1.5 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
                       {t(g.labelKey)}
                     </div>
                     <div className="divide-y divide-white/[0.04] rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">

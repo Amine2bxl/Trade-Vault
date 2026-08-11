@@ -44,6 +44,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
 import CopilotBlock from "./dashboard/CopilotBlock";
+import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 
@@ -300,7 +301,7 @@ export default function Dashboard({
             <Plus className="w-4 h-4" /> {t("common.addTrade")}
             {hasDraft && (
               <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />{" "}
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />{" "}
                 {t("trade.draftBadge")}
               </span>
             )}
@@ -308,18 +309,26 @@ export default function Dashboard({
         }
       />
 
-      {/* Frame paints instantly; data sections show a skeleton only while the
-          first trades load. No full-page blocker. */}
+      {/* Le cadre est peint immédiatement ; seules les sections de données
+          attendent. Et elles attendent EN SILENCE : la liste des trades vient
+          du cache React Query, donc au retour sur le tableau de bord elle est
+          déjà là. Faire pulser deux grandes cartes pendant les 50 ms où le
+          cache se relit, c'était annoncer un chargement qui n'existe pas.
+          `DeferredFallback` réserve la place et ne montre l'attente que si
+          elle dure vraiment (>320 ms, c'est-à-dire un vrai aller-retour
+          réseau au tout premier chargement). */}
       {tradesLoading ? (
-        <div className="space-y-4">
-          <div className="glass rounded-3xl p-5 animate-pulse">
-            <div className="h-4 w-1/3 bg-white/10 rounded-lg mb-3" />
-            <div className="h-20 bg-white/[0.06] rounded-2xl" />
+        <DeferredFallback reserve="min-h-[420px]">
+          <div className="space-y-4">
+            <div className="glass rounded-3xl p-5">
+              <div className="skeleton h-4 w-1/3 rounded-lg mb-3" />
+              <div className="skeleton h-20 rounded-2xl" />
+            </div>
+            <div className="glass rounded-3xl p-5">
+              <div className="skeleton h-32 rounded-2xl" />
+            </div>
           </div>
-          <div className="glass rounded-3xl p-5 animate-pulse">
-            <div className="h-32 bg-white/[0.06] rounded-2xl" />
-          </div>
-        </div>
+        </DeferredFallback>
       ) : (
         <>
           {/* Copilot block — the day's focus (Edge Score, rule, checklist, objective) */}

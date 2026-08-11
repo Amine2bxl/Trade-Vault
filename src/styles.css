@@ -970,15 +970,15 @@ input[type="range"]::-webkit-slider-thumb {
   transform: translateY(-1px);
 }
 
-@keyframes fabBreathe {
-  0%,
-  100% {
-    box-shadow: 0 4px 20px rgb(var(--tv-accent-rgb) / 0.4);
-  }
-  50% {
-    box-shadow: 0 4px 30px rgb(var(--tv-accent-rgb) / 0.7);
-  }
-}
+/* The "add trade" FAB.
+ *
+ * It used to breathe forever (`fabBreathe`, a 3.2s infinite box-shadow pulse).
+ * Two problems, both real: an animated box-shadow is a paint on every frame,
+ * for the entire session, on the device least able to afford it; and a control
+ * that pulses without anything having happened is decoration pretending to be
+ * feedback. The button is already the largest, brightest, most central element
+ * on the bar — it does not need to wave. Static now; the press response is
+ * where the motion belongs. */
 .fab-button {
   width: 54px;
   height: 54px;
@@ -988,15 +988,13 @@ input[type="range"]::-webkit-slider-thumb {
   justify-content: center;
   background: linear-gradient(135deg, var(--tv-accent), var(--tv-accent-2));
   box-shadow:
-    0 4px 20px rgb(var(--tv-accent-rgb) / 0.4),
+    0 4px 22px rgb(var(--tv-accent-rgb) / 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
   border: 1px solid rgb(var(--tv-highlight-rgb) / 0.35);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  animation: fabBreathe 3.2s ease-in-out infinite;
+  transition: transform var(--tv-dur-2) var(--tv-ease);
 }
 .fab-button:active {
   transform: scale(0.88) rotate(90deg);
-  animation-play-state: paused;
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
