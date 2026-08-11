@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./AuthContext";
 import {
   type Account,
@@ -21,6 +22,7 @@ import {
   setActiveAccountId,
 } from "../store";
 import { factorFor } from "../utils/accountCalibration";
+import { clearTradesCache } from "../hooks/useTrades";
 
 interface Ctx {
   accounts: Account[];
@@ -40,8 +42,6 @@ interface Ctx {
     patch: Partial<{ name: string; type: AccountType; icon: string; startingBalance: number }>,
   ) => Promise<void>;
   removeAccount: (id: string) => Promise<void>;
-  /** Recalibre l'échelle d'un compte. N'écrit QUE la métadonnée : les trades
-   *  en base restent intacts (voir `utils/accountCalibration.ts`). */
   /** Recalibre un compte. Convertit les trades déjà encodés, une seule fois,
    *  puis rend leur nombre. */
   recalibrate: (id: string, targetBalance: number) => Promise<number>;
@@ -60,6 +60,7 @@ const lsKey = (uid: string) => `tv-active-account-${uid}`;
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -243,9 +244,22 @@ export function AccountProvider({ children }: { children: ReactNode }) {
             : a,
         ),
       );
+
+      // Le recalibrage réécrit des dizaines de lignes côté serveur : la copie
+      // que l'application tient en mémoire est devenue fausse d'un coup. Sans
+      // ces deux lignes, le Journal continue d'afficher les anciens montants
+      // jusqu'à un rechargement complet — et le trader conclut, à raison, que
+      // « le recalibrage ne fait rien ».
+      //
+      // Le miroir sessionStorage doit être purgé AVANT l'invalidation : il sert
+      // d'`initialData`, donc il repeindrait les valeurs d'avant pendant que le
+      // refetch est en vol.
+      clearTradesCache(user.id);
+      await queryClient.invalidateQueries({ queryKey: ["trades"] });
+
       return converted;
     },
-    [user, accounts],
+    [user, accounts, queryClient],
   );
 
   const refresh = useCallback(async () => {
