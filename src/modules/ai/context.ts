@@ -63,6 +63,9 @@ export interface AIUserContext {
     medianPnl: number;
     medianDrawdown: number;
     horizonTrades: number;
+    /** Le changement simule, quand la question en demandait un (« risque
+     *  divise par deux »). Absent = scenario tel qu'enregistre. */
+    scenario?: string;
   };
   /** UI language (ISO 639-1) — answers are written in this language. */
   language?: string;
@@ -164,7 +167,9 @@ export function contextBlocks(ctx: AIUserContext): string {
         "source of any probability. Never recompute, never estimate another " +
         "one. passProbability and riskOfRuin are 0..1; medianPnl and " +
         "medianDrawdown are in account currency; sampleSize is how many real " +
-        "trades were resampled — say so when it is thin):\n" +
+        "trades were resampled — say so when it is thin. When `scenario` is " +
+        "present, this simulation answers the change the trader just asked " +
+        "about, not their saved setup — say which change it reflects):\n" +
         JSON.stringify(ctx.simulation),
     );
   }

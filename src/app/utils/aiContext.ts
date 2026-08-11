@@ -117,6 +117,9 @@ export interface CoachV1Payload {
     medianPnl: number;
     medianDrawdown: number;
     horizonTrades: number;
+    /** Le changement simule, quand la question en demandait un (« risque
+     *  divise par deux »). Absent = scenario tel qu'enregistre. */
+    scenario?: string;
   };
   language?: string;
 }
