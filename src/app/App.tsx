@@ -24,6 +24,7 @@ import {
   Settings,
   Reports,
   Goals,
+  Simulator,
   TradingPlan,
   Appearance,
   Subscription,
@@ -659,6 +660,7 @@ function AppContent() {
               )}
               {page === "reports" && <Reports trades={trades} />}
               {page === "goals" && <Goals trades={trades} />}
+              {page === "simulator" && <Simulator trades={trades} />}
               {page === "tradingplan" && <TradingPlan setPage={setPage} />}
               {page === "appearance" && <Appearance />}
               {page === "subscription" && <Subscription />}
