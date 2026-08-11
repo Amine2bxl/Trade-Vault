@@ -6,7 +6,10 @@ import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext
 import { useAccounts } from "../../../contexts/AccountContext";
 import { loadScenarios } from "../../../store/simulations";
 import { buildDataset } from "@/modules/probability/dataset";
-import { ENGINE_VERSION, runSimulation } from "@/modules/probability/engine";
+import { ENGINE_VERSION, runSimulation, type SimulationConfig } from "@/modules/probability/engine";
+import type { SimDataset } from "@/modules/probability/dataset";
+import { detectWhatIf } from "@/modules/probability/intent";
+import { applyLever } from "@/modules/probability/sensitivity";
 import type { CoachV1Payload } from "../../../utils/aiContext";
 import { isCalibrated } from "../../../utils/accountCalibration";
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
@@ -115,6 +118,45 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // capturerait la valeur du premier rendu, et Jarvis repondrait « je n'ai pas
   // de simulation » alors qu'elle vient d'etre chargee.
   const lastSimulationRef = useRef<SimulationSummary | undefined>(undefined);
+  // La configuration de base est conservee pour pouvoir REJOUER le scenario
+  // avec le changement demande par la question. Sans elle, « et si je risquais
+  // moitie moins ? » ne pourrait recevoir que le rappel du scenario d'hier.
+  const baseConfigRef = useRef<SimulationConfig | null>(null);
+  const datasetRef = useRef<SimDataset | null>(null);
+
+  /**
+   * La simulation transmise a Jarvis pour CETTE question.
+   *
+   * Quand la question demande explicitement un changement (« et si je risquais
+   * moitie moins ? »), le moteur rejoue le scenario avec ce changement et c'est
+   * ce resultat-la qui part. Sinon, c'est le scenario enregistre tel quel.
+   *
+   * La reconnaissance d'intention est volontairement etroite : au moindre
+   * doute, `detectWhatIf` rend `null` et on retombe sur le scenario
+   * enregistre. Deviner large ferait recevoir au trader un chiffre calcule sur
+   * une intention qu'il n'a pas exprimee — et il le croirait.
+   */
+  const simulationFor = useCallback((query: string): SimulationSummary | undefined => {
+    const base = baseConfigRef.current;
+    const dataset = datasetRef.current;
+    if (!base || !dataset) return lastSimulationRef.current;
+
+    const lever = detectWhatIf(query);
+    if (!lever) return lastSimulationRef.current;
+
+    const result = runSimulation(dataset, applyLever(base, lever));
+    return {
+      engineVersion: result.engineVersion,
+      method: ENGINE_VERSION,
+      sampleSize: result.sampleSize,
+      passProbability: result.passProbability,
+      riskOfRuin: result.riskOfRuin,
+      medianPnl: result.pnl.median,
+      medianDrawdown: result.drawdown.median,
+      horizonTrades: base.tradesPerPath,
+      scenario: lever.id,
+    };
+  }, []);
   const setLastSimulation = useCallback((value: SimulationSummary | undefined) => {
     lastSimulationRef.current = value;
   }, []);
@@ -135,7 +177,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           latest.horizon.unit === "trades"
             ? latest.horizon.value
             : Math.max(1, Math.round(perDay * latest.horizon.value));
-        const result = runSimulation(dataset, {
+        const config: SimulationConfig = {
           rules: latest.rules,
           tradesPerPath: horizon,
           tradesPerDay: perDay,
@@ -143,7 +185,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           riskMultiplier: latest.riskMultiplier,
           stopAfterLosses: latest.stopAfterLosses,
           seed: latest.seed as number,
-        });
+        };
+        baseConfigRef.current = config;
+        datasetRef.current = dataset;
+        const result = runSimulation(dataset, config);
         setLastSimulation({
           engineVersion: result.engineVersion,
           method: ENGINE_VERSION,
@@ -434,7 +479,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         // source d'ou une probabilite a le droit de venir : sans ce bloc, la
         // consigne du coach est de dire qu'il n'a pas de simulation, pas d'en
         // estimer une.
-        simulation: lastSimulationRef.current,
+        simulation: simulationFor(query),
       });
       // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
       // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux
