@@ -168,12 +168,19 @@ export default function MonteCarloPage({ trades }: Props) {
   const samples = useMemo(() => extractRSamples(trades), [trades]);
   const computedStats = useMemo(() => computeStatistics(samples), [samples]);
 
-  // Manual input mode overrides
-  const [wrVal, setWrVal] = useState(computedStats.winRate > 0 ? Math.round(computedStats.winRate * 100) : 58);
-  const [awVal, setAwVal] = useState(computedStats.avgWinR > 0 ? Math.round(computedStats.avgWinR * 10) / 10 : 2.1);
-  const [alVal, setAlVal] = useState(computedStats.avgLossR > 0 ? Math.round(computedStats.avgLossR * 10) / 10 : 1);
-  const [beVal, setBeVal] = useState(samples.length > 0 ? Math.round((samples.filter(s => s.isBE).length / samples.length) * 100) : 0);
-  const [useManual, setUseManual] = useState(false);
+  // Manual input mode
+  const [wrVal, setWrVal] = useState(0);
+  const [awVal, setAwVal] = useState(0);
+  const [alVal, setAlVal] = useState(0);
+  const [beVal, setBeVal] = useState(0);
+  const [useManual, setUseManual] = useState(trades.length === 0);
+
+  const fillFromJournal = () => {
+    if (computedStats.winRate > 0) setWrVal(Math.round(computedStats.winRate * 100));
+    if (computedStats.avgWinR > 0) setAwVal(Math.round(computedStats.avgWinR * 10) / 10);
+    if (computedStats.avgLossR > 0) setAlVal(Math.round(computedStats.avgLossR * 10) / 10);
+    if (samples.length > 0) setBeVal(Math.round((samples.filter(s => s.isBE).length / samples.length) * 100));
+  };
 
   const manualParams: ManualTradeParams = useMemo(() => ({
     winRate: wrVal / 100,
@@ -234,7 +241,9 @@ export default function MonteCarloPage({ trades }: Props) {
   };
 
   const handleRun = useCallback(() => {
-    const simSamples = useManual ? generateSamples(manualParams, 500) : samples;
+    const simSamples = useManual && wrVal > 0 && awVal > 0 && alVal > 0
+      ? generateSamples(manualParams, 500)
+      : samples;
     if (simSamples.length < 5) return;
     setRunning(true);
     setTimeout(() => {
@@ -247,7 +256,7 @@ export default function MonteCarloPage({ trades }: Props) {
       setResult(output);
       setRunning(false);
     }, 30);
-  }, [useManual, manualParams, samples, startingBalance, profitTarget, maxDrawdown, maxDailyLoss, trailingDD, maxTradingDays, maxTradesPerDay, riskPerTrade, simCount]);
+  }, [useManual, manualParams, samples, startingBalance, profitTarget, maxDrawdown, maxDailyLoss, trailingDD, maxTradingDays, maxTradesPerDay, riskPerTrade, simCount, wrVal, awVal, alVal]);
 
   // Apply preset on first mount
   useMemo(() => {
@@ -357,10 +366,17 @@ export default function MonteCarloPage({ trades }: Props) {
                 <ParamRow label="Avg Win" value={awVal} onChange={setAwVal} suffix="R" />
                 <ParamRow label="Avg Loss" value={alVal} onChange={setAlVal} suffix="R" />
                 <ParamRow label="BE Rate" value={beVal} onChange={setBeVal} suffix="%" />
-                <div className="pt-2 mt-2 border-t border-white/[0.05] space-y-1">
-                  <StatRow label="Expectancy" value={`${manualExpectancy >= 0 ? "+" : ""}${manualExpectancy.toFixed(2)}R`} computed accent={manualExpectancy >= 0 ? "text-emerald-400" : "text-red-400"} />
-                  <StatRow label="Profit Factor" value={manualPF >= 99 ? "99+" : manualPF.toFixed(2)} computed />
-                </div>
+                {wrVal === 0 && trades.length > 0 && (
+                  <button onClick={fillFromJournal} className="w-full mt-2 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-[10px] text-cyan-300 font-semibold hover:bg-cyan-500/15 transition">
+                    Fill from my journal data
+                  </button>
+                )}
+                {(wrVal > 0 && awVal > 0 && alVal > 0) && (
+                  <div className="pt-2 mt-2 border-t border-white/[0.05] space-y-1">
+                    <StatRow label="Expectancy" value={`${manualExpectancy >= 0 ? "+" : ""}${manualExpectancy.toFixed(2)}R`} computed accent={manualExpectancy >= 0 ? "text-emerald-400" : "text-red-400"} />
+                    <StatRow label="Profit Factor" value={manualPF >= 99 ? "99+" : manualPF.toFixed(2)} computed />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-1.5">
@@ -370,6 +386,9 @@ export default function MonteCarloPage({ trades }: Props) {
                 <StatRow label="Expectancy" value={`${computedStats.expectancy >= 0 ? "+" : ""}${computedStats.expectancy.toFixed(2)}R`} computed accent={computedStats.expectancy >= 0 ? "text-emerald-400" : "text-red-400"} />
                 <StatRow label="Profit Factor" value={computedStats.profitFactor >= 99 ? "99+" : computedStats.profitFactor.toFixed(2)} computed />
                 <StatRow label="Samples" value={`${computedStats.totalSamples}`} computed />
+                {trades.length < 30 && (
+                  <p className="mt-2 text-[10px] text-amber-400/80">Small sample — results may vary significantly</p>
+                )}
               </div>
             )}
           </div>
