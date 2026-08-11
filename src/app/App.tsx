@@ -645,6 +645,7 @@ function AppContent() {
                   onDeleteAll={handleDeleteAll}
                   onOpenImport={() => setImportOpen(true)}
                   onOpenReports={() => setPage("reports")}
+                  setPage={setPage}
                 />
               )}
               {page === "reports" && <Reports trades={trades} />}

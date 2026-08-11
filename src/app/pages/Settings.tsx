@@ -15,7 +15,7 @@ import {
   AlertTriangle,
   FileText,
 } from "lucide-react";
-import { Trade, LANGUAGES } from "../types";
+import { Trade, LANGUAGES, type Page } from "../types";
 import { loadLanguage, saveLanguage, loadStartingBalance, saveStartingBalance } from "../store";
 import { exportTradesCSV } from "../utils/exportCsv";
 import { useAuth } from "../contexts/AuthContext";
@@ -23,6 +23,9 @@ import { useT } from "../i18n/LanguageContext";
 import { PushNotificationSettings } from "../components/PushNotificationSettings";
 import { cn } from "../utils/cn";
 import { Button, Card, FIELD_BASE, Modal, PageContainer, PageHeader } from "@/shared/ui";
+import Profile from "./Profile";
+import Appearance from "./Appearance";
+import SubscriptionPage from "./Subscription";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
@@ -32,6 +35,7 @@ interface SettingsProps {
   onDeleteAll: () => void;
   onOpenImport: () => void;
   onOpenReports: () => void;
+  setPage?: (p: Page) => void;
 }
 
 export default function Settings({
@@ -39,6 +43,7 @@ export default function Settings({
   onDeleteAll,
   onOpenImport,
   onOpenReports,
+  setPage,
 }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
   const { activeId, activeAccount } = useAccounts();
@@ -135,7 +140,13 @@ export default function Settings({
     }
   };
 
+  const [tab, setTab] = useState<"settings" | "profile" | "appearance" | "subscription">("settings");
+
   if (!user) return null;
+
+  if (tab === "profile") return <Profile trades={trades} setPage={setPage} />;
+  if (tab === "appearance") return <Appearance />;
+  if (tab === "subscription") return <SubscriptionPage />;
 
   return (
     <PageContainer className="max-w-2xl space-y-3">
@@ -148,6 +159,13 @@ export default function Settings({
         }
         title={t("settings.title")}
         subtitle={t("settings.subtitle")}
+        actions={
+          <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5">
+            {([["settings","General"],["profile","Profile"],["appearance","Theme"],["subscription","Plan"]] as const).map(([k,label]) => (
+              <button key={k} onClick={() => setTab(k)} className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all", tab===k ? "bg-cyan-500/15 text-cyan-300" : "text-slate-500 hover:text-slate-300")}>{label}</button>
+            ))}
+          </div>
+        }
       />
 
       {/* Search — the fastest route through a settings page is typing. */}
