@@ -29,6 +29,10 @@ const fr: Dict = {
   "sim.title": "Simulateur de probabilités",
   "sim.subtitle": "Si tu continues à trader comme ça, que peut-il se passer ?",
   "sim.rulesTitle": "Règles du compte",
+  "sim.save": "Enregistrer ce scénario",
+  "sim.savedTitle": "Scénarios enregistrés",
+  "sim.saved": "Scénario enregistré",
+  "sim.saveError": "Le scénario n'a pas pu être enregistré.",
   "sim.rulesHint":
     "Saisis les règles de ton propre contrat. TradeVault n'invente jamais les règles d'une prop firm.",
   "sim.balance": "Solde de départ",

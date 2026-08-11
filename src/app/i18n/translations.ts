@@ -56,6 +56,10 @@ const en = {
   "sim.title": "Probability Simulator",
   "sim.subtitle": "If you keep trading like this, what could happen?",
   "sim.rulesTitle": "Account rules",
+  "sim.save": "Save this scenario",
+  "sim.savedTitle": "Saved scenarios",
+  "sim.saved": "Scenario saved",
+  "sim.saveError": "Could not save the scenario.",
   "sim.rulesHint":
     "Enter the rules from your own contract. TradeVault never guesses a prop firm's rules.",
   "sim.balance": "Starting balance",

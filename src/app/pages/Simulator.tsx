@@ -14,11 +14,14 @@
  * vérifiés ferait acheter un compte à 500 $ sur la foi d'une invention.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dices, ShieldAlert, Target, TrendingDown, Info } from "lucide-react";
 import type { Trade } from "../types";
 import { useT } from "../i18n/LanguageContext";
 import { useAccounts } from "../contexts/AccountContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
+import { loadScenarios, saveScenario, type SavedScenario } from "../store/simulations";
 import { cn } from "../utils/cn";
 import { Button, Card, CardBody, FIELD_BASE, PageHeader, Badge } from "@/shared/ui";
 import { buildDataset } from "@/modules/probability/dataset";
@@ -42,7 +45,9 @@ function pct(x: number): string {
 export default function Simulator({ trades }: { trades: Trade[] }) {
   const { t, lang } = useT();
   const fr = lang === "fr";
-  const { activeAccount } = useAccounts();
+  const { activeAccount, activeId } = useAccounts();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const money = useMemo(
     () =>
@@ -99,6 +104,62 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
     () => (built.ok ? runSensitivity(dataset, built.config, defaultLevers(built.config)) : null),
     [built, dataset],
   );
+
+  // ── Scénarios sauvegardés ────────────────────────────────────────────────
+  // Sans eux, le trader ressaisit les règles de son contrat à chaque visite —
+  // c'est ce qui transforme une fonctionnalité en jouet qu'on essaie une fois.
+  const [saved, setSaved] = useState<SavedScenario[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    loadScenarios(activeId).then((list) => active && setSaved(list));
+    return () => {
+      active = false;
+    };
+  }, [activeId]);
+
+  const persist = useCallback(async () => {
+    if (!user || !built.ok) return;
+    setSaving(true);
+    try {
+      const created = await saveScenario(user.id, {
+        accountId: activeId,
+        name: activeAccount?.name ?? "",
+        rules,
+        horizon,
+        riskMultiplier: risk,
+        stopAfterLosses: null,
+        runs: built.config.runs,
+        seed: built.config.seed,
+        engineVersion: result?.engineVersion ?? null,
+        lastPassProbability: result?.passProbability ?? null,
+        lastRiskOfRuin: result?.riskOfRuin ?? null,
+        lastSampleSize: built.sample.size,
+      });
+      if (created) setSaved((prev) => [created, ...prev]);
+      toast(t("sim.saved"), "success");
+    } catch {
+      toast(t("sim.saveError"), "error");
+    } finally {
+      setSaving(false);
+    }
+  }, [user, built, rules, horizon, risk, result, activeId, activeAccount?.name, toast, t]);
+
+  /** Recharge un scénario dans le formulaire. Les champs vides restent vides :
+   *  une règle absente n'a jamais été saisie et ne doit pas réapparaître à 0. */
+  const restore = useCallback((s: SavedScenario) => {
+    const r = s.rules;
+    setBalance(String(r.startingBalance ?? ""));
+    setTarget(r.profitTarget != null ? String(r.profitTarget) : "");
+    setMaxDd(r.maxDrawdown != null ? String(r.maxDrawdown) : "");
+    setDdType(r.drawdownType ?? "static");
+    setDailyLoss(r.dailyLossLimit != null ? String(r.dailyLossLimit) : "");
+    setMinDays(r.minTradingDays != null ? String(r.minTradingDays) : "");
+    setMaxDays(r.maxTradingDays != null ? String(r.maxTradingDays) : "");
+    setHorizonDays(String(s.horizon.value));
+    setRisk(s.riskMultiplier);
+  }, []);
 
   const qualityLabel: Record<SampleQuality, string> = {
     low: t("sim.sample.low"),
@@ -166,6 +227,42 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                 ))}
               </div>
             </div>
+
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full"
+              disabled={!built.ok || saving || !user}
+              onClick={() => void persist()}
+            >
+              {t("sim.save")}
+            </Button>
+
+            {saved.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                  {t("sim.savedTitle")}
+                </p>
+                {saved.slice(0, 5).map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => restore(s)}
+                    className="w-full min-h-11 text-left rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-2 hover:border-cyan-500/30"
+                  >
+                    <span className="text-xs text-slate-300">
+                      {money.format(s.rules.startingBalance ?? 0)} ·{" "}
+                      {t(`sim.dd.${s.rules.drawdownType ?? "static"}` as never)}
+                    </span>
+                    {s.lastRiskOfRuin !== null && (
+                      <span className="block text-[11px] text-slate-500 tabular-nums">
+                        {t("sim.ruinShort")} {pct(s.lastRiskOfRuin)}
+                        {s.lastSampleSize !== null && ` · n=${s.lastSampleSize}`}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </CardBody>
         </Card>
 
