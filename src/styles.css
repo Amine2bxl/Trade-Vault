@@ -603,17 +603,28 @@ input[type="number"] {
   }
 }
 
-/* Entrance animations (.animate-fade-in-up / .animate-fade-in) are INTENTIONALLY
- * disabled. On a full reload (F5) every card started at opacity:0 + translateY(16px)
- * and cascaded up one by one (stagger), which read as a visible "shake" and held the
- * first paint back. Content now renders static and instantly visible on load. The
- * keyframes stay defined for any explicit future opt-in; .animate-slide-in /
- * .animate-slide-up (modal/sheet entrances) are unaffected. */
+/* Page content entrance: smooth bottom-up reveal, fast, no stagger delays.
+   Applies globally to every .animate-fade-in-up element on mount. */
 .animate-fade-in-up {
-  opacity: 1;
+  animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Simple fade-in (no movement) — used by modals, lightboxes, overlays */
 .animate-fade-in {
-  opacity: 1;
+  animation: fadeIn 0.25s ease both;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Remove all stagger delays — instant, unified entrance */
+.stagger-0, .stagger-1, .stagger-2, .stagger-3, .stagger-4, .stagger-5, .stagger-6, .stagger-7, .stagger-8 {
+  animation-delay: 0ms !important;
 }
 .animate-slide-in {
   animation: slideInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
