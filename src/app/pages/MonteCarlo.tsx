@@ -10,10 +10,14 @@ import {
   runMonteCarlo,
   computeStatistics,
   monteCarloSE,
+  generateSamples,
+  computeExpectancy,
+  computeProfitFactor,
   type MonteCarloParams,
   type MonteCarloResult,
   type RMultipleSample,
   type SampleStatistics,
+  type ManualTradeParams,
 } from "../utils/monteCarlo";
 import { findFirm, findChallenge, formatMoney, type PropChallenge } from "../utils/propFirms";
 import {
@@ -164,6 +168,23 @@ export default function MonteCarloPage({ trades }: Props) {
   const samples = useMemo(() => extractRSamples(trades), [trades]);
   const computedStats = useMemo(() => computeStatistics(samples), [samples]);
 
+  // Manual input mode overrides
+  const [wrVal, setWrVal] = useState(computedStats.winRate > 0 ? Math.round(computedStats.winRate * 100) : 58);
+  const [awVal, setAwVal] = useState(computedStats.avgWinR > 0 ? Math.round(computedStats.avgWinR * 10) / 10 : 2.1);
+  const [alVal, setAlVal] = useState(computedStats.avgLossR > 0 ? Math.round(computedStats.avgLossR * 10) / 10 : 1);
+  const [beVal, setBeVal] = useState(samples.length > 0 ? Math.round((samples.filter(s => s.isBE).length / samples.length) * 100) : 0);
+  const [useManual, setUseManual] = useState(false);
+
+  const manualParams: ManualTradeParams = useMemo(() => ({
+    winRate: wrVal / 100,
+    avgWinR: awVal,
+    avgLossR: alVal,
+    breakEvenRate: beVal / 100,
+  }), [wrVal, awVal, alVal, beVal]);
+
+  const manualExpectancy = computeExpectancy(wrVal / 100, awVal, alVal);
+  const manualPF = computeProfitFactor(wrVal / 100, awVal, alVal);
+
   // ── Challenge preset ──
   const [firmId, setFirmId] = useState("apex");
   const [challengeId, setChallengeId] = useState("apex-50k");
@@ -213,19 +234,20 @@ export default function MonteCarloPage({ trades }: Props) {
   };
 
   const handleRun = useCallback(() => {
-    if (samples.length < 5) return;
+    const simSamples = useManual ? generateSamples(manualParams, 500) : samples;
+    if (simSamples.length < 5) return;
     setRunning(true);
     setTimeout(() => {
       const params: MonteCarloParams = {
         startingBalance, profitTarget, maxDrawdown, maxDailyLoss,
         trailingDrawdown: trailingDD, maxTradingDays, maxTradesPerDay,
-        riskPerTrade, simulations: Math.min(simCount, 10000),
+        riskPerTrade, simulations: Math.min(simCount, 5000),
       };
-      const output = runMonteCarlo(params, samples);
+      const output = runMonteCarlo(params, simSamples);
       setResult(output);
       setRunning(false);
     }, 30);
-  }, [samples, startingBalance, profitTarget, maxDrawdown, maxDailyLoss, trailingDD, maxTradingDays, maxTradesPerDay, riskPerTrade, simCount]);
+  }, [useManual, manualParams, samples, startingBalance, profitTarget, maxDrawdown, maxDailyLoss, trailingDD, maxTradingDays, maxTradesPerDay, riskPerTrade, simCount]);
 
   // Apply preset on first mount
   useMemo(() => {
@@ -320,20 +342,35 @@ export default function MonteCarloPage({ trades }: Props) {
             </div>
           </div>
 
-          {/* Your Stats (read-only, computed) */}
+          {/* Your Stats — switchable: journal data or manual */}
           <div className="glass rounded-2xl p-4">
-            <SectionHeader title="Your Data" />
-            <div className="space-y-1.5">
-              <StatRow label="Win Rate" value={formatPct(computedStats.winRate)} computed />
-              <StatRow label="Avg Win R" value={`+${computedStats.avgWinR.toFixed(2)}R`} computed accent="text-emerald-400" />
-              <StatRow label="Avg Loss R" value={`-${computedStats.avgLossR.toFixed(2)}R`} computed accent="text-red-400" />
-              <StatRow label="Expectancy" value={`${computedStats.expectancy >= 0 ? "+" : ""}${computedStats.expectancy.toFixed(2)}R`} computed accent={computedStats.expectancy >= 0 ? "text-emerald-400" : "text-red-400"} />
-              <StatRow label="Profit Factor" value={computedStats.profitFactor >= 99 ? "99+" : computedStats.profitFactor.toFixed(2)} computed />
-              <StatRow label="Std Dev (R)" value={`${computedStats.stdDevR.toFixed(2)}`} computed />
-              <StatRow label="Samples" value={`${computedStats.totalSamples}`} computed />
-            </div>
-            {trades.length < 30 && (
-              <p className="mt-2 text-[10px] text-amber-400/80 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Small sample — high variance</p>
+            <SectionHeader title="Your Data">
+              <button onClick={() => setUseManual(!useManual)}
+                className={cn("text-[10px] font-bold px-2 py-0.5 rounded-lg border transition",
+                  useManual ? "bg-amber-500/10 text-amber-300 border-amber-500/25" : "bg-cyan-500/10 text-cyan-300 border-cyan-500/25")}>
+                {useManual ? "Manual" : "Journal"}
+              </button>
+            </SectionHeader>
+            {useManual ? (
+              <div className="space-y-1.5">
+                <ParamRow label="Win Rate" value={wrVal} onChange={setWrVal} suffix="%" />
+                <ParamRow label="Avg Win" value={awVal} onChange={setAwVal} suffix="R" />
+                <ParamRow label="Avg Loss" value={alVal} onChange={setAlVal} suffix="R" />
+                <ParamRow label="BE Rate" value={beVal} onChange={setBeVal} suffix="%" />
+                <div className="pt-2 mt-2 border-t border-white/[0.05] space-y-1">
+                  <StatRow label="Expectancy" value={`${manualExpectancy >= 0 ? "+" : ""}${manualExpectancy.toFixed(2)}R`} computed accent={manualExpectancy >= 0 ? "text-emerald-400" : "text-red-400"} />
+                  <StatRow label="Profit Factor" value={manualPF >= 99 ? "99+" : manualPF.toFixed(2)} computed />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <StatRow label="Win Rate" value={formatPct(computedStats.winRate)} computed />
+                <StatRow label="Avg Win R" value={`+${computedStats.avgWinR.toFixed(2)}R`} computed accent="text-emerald-400" />
+                <StatRow label="Avg Loss R" value={`-${computedStats.avgLossR.toFixed(2)}R`} computed accent="text-red-400" />
+                <StatRow label="Expectancy" value={`${computedStats.expectancy >= 0 ? "+" : ""}${computedStats.expectancy.toFixed(2)}R`} computed accent={computedStats.expectancy >= 0 ? "text-emerald-400" : "text-red-400"} />
+                <StatRow label="Profit Factor" value={computedStats.profitFactor >= 99 ? "99+" : computedStats.profitFactor.toFixed(2)} computed />
+                <StatRow label="Samples" value={`${computedStats.totalSamples}`} computed />
+              </div>
             )}
           </div>
 

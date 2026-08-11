@@ -356,3 +356,43 @@ function percentiles(values: number[]): { p5: number; p25: number; p50: number; 
 export function monteCarloSE(passRate: number, simulations: number): number {
   return Math.sqrt((passRate * (1 - passRate)) / simulations);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Manual input: generate synthetic R-multiples from user params
+// ═══════════════════════════════════════════════════════════════
+
+export interface ManualTradeParams {
+  winRate: number;
+  avgWinR: number;
+  avgLossR: number;
+  breakEvenRate: number;
+}
+
+export function generateSamples(params: ManualTradeParams, count: number): RMultipleSample[] {
+  const samples: RMultipleSample[] = [];
+  for (let i = 0; i < count; i++) {
+    const r = Math.random();
+    if (r < params.breakEvenRate) {
+      samples.push({ r: 0, pnl: 0, isWin: false, isLoss: false, isBE: true });
+    } else if (r < params.breakEvenRate + params.winRate * (1 - params.breakEvenRate)) {
+      const variance = Math.max(0.2, params.avgWinR * 0.2);
+      const val = Math.max(0.05, params.avgWinR + (Math.random() - 0.5) * variance * 2);
+      samples.push({ r: val, pnl: val, isWin: true, isLoss: false, isBE: false });
+    } else {
+      const variance = Math.max(0.2, params.avgLossR * 0.2);
+      const val = Math.max(0.05, params.avgLossR + (Math.random() - 0.5) * variance * 2);
+      samples.push({ r: -val, pnl: -val, isWin: false, isLoss: true, isBE: false });
+    }
+  }
+  return samples;
+}
+
+export function computeExpectancy(wr: number, aw: number, al: number): number {
+  return wr * aw - (1 - wr) * al;
+}
+
+export function computeProfitFactor(wr: number, aw: number, al: number): number {
+  const gp = wr * aw;
+  const gl = (1 - wr) * al;
+  return gl > 0 ? gp / gl : (gp > 0 ? 99 : 0);
+}
