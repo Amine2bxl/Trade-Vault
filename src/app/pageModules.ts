@@ -43,6 +43,7 @@ const loadTradingPlan = () => import("./pages/TradingPlan");
 const loadAppearance = () => import("./pages/Appearance");
 const loadSubscription = () => import("./pages/Subscription");
 const loadInbox = () => import("./pages/Inbox");
+const loadMonteCarlo = () => import("./pages/MonteCarlo");
 
 export const Journal = lazy(loadJournal);
 export const Checklist = lazy(loadChecklist);
@@ -63,6 +64,7 @@ export const TradingPlan = lazy(loadTradingPlan);
 export const Appearance = lazy(loadAppearance);
 export const Subscription = lazy(loadSubscription);
 export const Inbox = lazy(loadInbox);
+export const MonteCarlo = lazy(loadMonteCarlo);
 
 /** `dashboard` est absent : il vit dans le chunk principal, jamais différé. */
 const LOADERS: Partial<Record<Page, () => Promise<unknown>>> = {
@@ -85,6 +87,7 @@ const LOADERS: Partial<Record<Page, () => Promise<unknown>>> = {
   appearance: loadAppearance,
   subscription: loadSubscription,
   inbox: loadInbox,
+  montecarlo: loadMonteCarlo,
 };
 
 const started = new Set<Page>();

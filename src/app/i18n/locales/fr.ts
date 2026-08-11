@@ -89,6 +89,7 @@ const fr: Dict = {
   "nav.reports": "Rapports mensuels",
   "nav.appearance": "Apparence",
   "nav.subscription": "Abonnement",
+  "nav.montecarlo": "Monte Carlo",
   "common.save": "Enregistrer",
   "common.rename": "Renommer",
   "common.cancel": "Annuler",

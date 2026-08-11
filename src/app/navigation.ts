@@ -4,16 +4,13 @@ import {
   Bell,
   BookOpen,
   Bot,
-  Calculator,
-  Calendar,
   CalendarRange,
   ClipboardCheck,
-  CreditCard,
   FileText,
   LayoutDashboard,
   Map,
   Newspaper,
-  Palette,
+  Calculator,
   Settings as SettingsIcon,
   Target,
   User,
@@ -63,9 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: "nav.groupJournal",
     items: [
-      { id: "calendar", labelKey: "nav.calendar", icon: Calendar },
       { id: "journal", labelKey: "nav.journal", icon: BookOpen },
-      { id: "missed", labelKey: "nav.missed", icon: Target },
     ],
   },
   {
@@ -79,16 +74,16 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     labelKey: "nav.groupJarvis",
-    items: [{ id: "insights", labelKey: "nav.jarvis", icon: Bot }],
+    items: [
+      { id: "insights", labelKey: "nav.jarvis", icon: Bot },
+      { id: "montecarlo", labelKey: "nav.montecarlo", icon: BarChart3 },
+    ],
   },
   {
     labelKey: "nav.groupAccount",
     items: [
       { id: "settings", labelKey: "nav.settings", icon: SettingsIcon },
       { id: "inbox", labelKey: "nav.inbox", icon: Bell },
-      { id: "profile", labelKey: "nav.profile", icon: User },
-      { id: "appearance", labelKey: "nav.appearance", icon: Palette },
-      { id: "subscription", labelKey: "nav.subscription", icon: CreditCard },
     ],
   },
 ];

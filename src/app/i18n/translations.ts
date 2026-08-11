@@ -116,6 +116,7 @@ const en = {
   "nav.appearance": "Appearance",
   "nav.inbox": "Inbox",
   "nav.subscription": "Subscription",
+  "nav.montecarlo": "Monte Carlo",
   "nav.ai": "AI",
   "nav.more": "More",
 

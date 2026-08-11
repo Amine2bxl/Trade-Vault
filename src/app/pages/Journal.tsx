@@ -29,6 +29,8 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
 import { PageHeader, PageContainer, Button, EmptyState, Card } from "@/shared/ui";
+import CalendarPage from "./CalendarPage";
+import MissedOpportunities from "./MissedOpportunities";
 
 interface JournalProps {
   trades: Trade[];
@@ -245,6 +247,11 @@ export default function Journal({
     (resultFilter !== "all" ? 1 : 0) +
     (searchQuery.trim() ? 1 : 0);
 
+  const [tab, setTab] = useState<"list" | "calendar" | "missed">("list");
+
+  if (tab === "calendar") return <CalendarPage trades={trades} onDelete={onDelete} />;
+  if (tab === "missed") return <MissedOpportunities />;
+
   return (
     <PageContainer>
       <PageHeader
@@ -257,7 +264,12 @@ export default function Journal({
           </span>
         }
         actions={
-          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5 mr-1">
+              {([["list","List"],["calendar","Calendar"],["missed","Missed"]] as const).map(([k,label]) => (
+                <button key={k} onClick={() => setTab(k)} className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all", tab===k ? "bg-cyan-500/15 text-cyan-300" : "text-slate-500 hover:text-slate-300")}>{label}</button>
+              ))}
+            </div>
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
               <Download className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t("common.exportCsv")}</span>
