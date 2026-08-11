@@ -1,17 +1,14 @@
 import { describe, it, expect } from "bun:test";
 import {
-  IDENTITY_SCALE,
-  calibrateTrade,
-  calibrateTrades,
-  calibratedBalance,
+  IDENTITY_FACTOR,
+  convertMoney,
+  convertTrade,
+  factorFor,
   isCalibrated,
   normalizedReturns,
   pickPreviewTrade,
   previewCalibration,
-  scaleFor,
-  scaleMoney,
-  uncalibrateTrade,
-  withPnlFromRiskAndR,
+  roundMoney,
 } from "../accountCalibration";
 import type { Trade } from "../../types";
 
@@ -41,107 +38,143 @@ function trade(over: Partial<Trade> = {}): Trade {
   };
 }
 
-const ORIGINAL = 25_000;
+/**
+ * Simule la chaîne réelle : la conversion SQL écrit dans les lignes, donc le
+ * « stocké » d'après est le résultat de la conversion précédente. C'est
+ * exactement ce que fait `recalibrate_account_trades`.
+ */
+function recalibrate(stored: Trade, currentBalance: number, targetBalance: number): Trade {
+  return convertTrade(stored, factorFor(currentBalance, targetBalance));
+}
 
-describe("scaleFor — le facteur vient TOUJOURS du capital d'origine", () => {
-  it("Test 1 — 25k → 50k donne 2×", () => {
-    expect(scaleFor(ORIGINAL, 50_000)).toBe(2);
+describe("factorFor — relatif à la représentation COURANTE", () => {
+  it("Test 1 — 25k → 50k applique 2×", () => {
+    expect(factorFor(25_000, 50_000)).toBe(2);
   });
 
-  it("Test 2 — 25k → 100k donne 4×", () => {
-    expect(scaleFor(ORIGINAL, 100_000)).toBe(4);
+  it("Test 2 — 25k → 100k applique 4×", () => {
+    expect(factorFor(25_000, 100_000)).toBe(4);
   });
 
-  it("Test 3 — réduction d'échelle : 50k → 25k donne 0,5×", () => {
-    expect(scaleFor(50_000, 25_000)).toBe(0.5);
+  it("Test 3 — réduction : 50k → 25k applique 0,5×", () => {
+    expect(factorFor(50_000, 25_000)).toBe(0.5);
   });
 
-  it("Test 4 — 25k → 50k → 100k vaut EXACTEMENT 25k → 100k", () => {
-    // Le piège central : appliquer 2× puis 2× sur des données déjà
-    // recalibrées donnerait 4× sur du 50k, soit 8× depuis l'origine.
-    const enDeuxEtapes = scaleFor(ORIGINAL, 100_000); // recalculé depuis l'origine
-    const enUneEtape = scaleFor(ORIGINAL, 100_000);
-    expect(enDeuxEtapes).toBe(enUneEtape);
-    expect(enDeuxEtapes).toBe(4);
-  });
-
-  it("Test 5 — revenir à l'original rend le facteur neutre", () => {
-    expect(scaleFor(ORIGINAL, ORIGINAL)).toBe(IDENTITY_SCALE);
-    expect(isCalibrated(scaleFor(ORIGINAL, ORIGINAL))).toBe(false);
+  it("Test 5 — cible égale au courant : facteur neutre, donc aucune écriture", () => {
+    expect(factorFor(50_000, 50_000)).toBe(IDENTITY_FACTOR);
+    expect(isCalibrated(factorFor(50_000, 50_000))).toBe(false);
   });
 
   it("refuse les capitaux absurdes plutôt que de produire l'infini", () => {
-    expect(scaleFor(0, 50_000)).toBe(IDENTITY_SCALE);
-    expect(scaleFor(25_000, 0)).toBe(IDENTITY_SCALE);
-    expect(scaleFor(Number.NaN, 50_000)).toBe(IDENTITY_SCALE);
+    expect(factorFor(0, 50_000)).toBe(IDENTITY_FACTOR);
+    expect(factorFor(25_000, 0)).toBe(IDENTITY_FACTOR);
+    expect(factorFor(Number.NaN, 50_000)).toBe(IDENTITY_FACTOR);
   });
 });
 
-describe("Test 15 — aucune double multiplication", () => {
-  it("recalibrer deux fois de suite depuis l'origine ne compose pas les facteurs", () => {
-    const t = trade();
-    // L'application recalcule le facteur depuis l'origine à chaque fois, et
-    // convertit TOUJOURS depuis le trade brut — jamais depuis un trade déjà
-    // converti.
-    const vers50k = calibrateTrade(t, scaleFor(ORIGINAL, 50_000));
-    const vers100k = calibrateTrade(t, scaleFor(ORIGINAL, 100_000));
-    expect(vers50k.pnl).toBe(-500);
-    expect(vers100k.pnl).toBe(-1000); // et non -2000
+describe("Test 4 et 15 — recalibrages successifs, sans double multiplication", () => {
+  it("25k → 50k → 100k aboutit au MÊME montant que 25k → 100k en un saut", () => {
+    // Le facteur du second saut porte sur des lignes DÉJÀ converties à 50k :
+    // 2× puis 2× est donc correct ici, contrairement au modèle « lentille »
+    // où cela aurait donné 8× depuis l'origine.
+    const stocke = trade({ pnl: -250, riskAmount: 250 });
+    const apres50k = recalibrate(stocke, 25_000, 50_000);
+    const apres100k = recalibrate(apres50k, 50_000, 100_000);
+
+    const enUnSaut = recalibrate(stocke, 25_000, 100_000);
+    expect(apres100k.pnl).toBe(enUnSaut.pnl);
+    expect(apres100k.pnl).toBe(-1000);
+    expect(apres100k.riskAmount).toBe(1000);
   });
 
-  it("le trade d'origine n'est JAMAIS muté", () => {
+  it("Test 5 — revenir au capital d'origine restitue les montants d'origine", () => {
+    const stocke = trade({ pnl: -250, riskAmount: 250, mae: -300, mfe: 120, slippage: -12.5 });
+    const monte = recalibrate(stocke, 25_000, 100_000);
+    const retour = recalibrate(monte, 100_000, 25_000);
+    expect(retour.pnl).toBe(stocke.pnl);
+    expect(retour.riskAmount).toBe(stocke.riskAmount);
+    expect(retour.mae).toBe(stocke.mae);
+    expect(retour.mfe).toBe(stocke.mfe);
+    expect(retour.slippage).toBe(stocke.slippage);
+  });
+
+  it("le trade fourni n'est jamais muté — la conversion rend un nouvel objet", () => {
     const t = trade();
-    calibrateTrade(t, 4);
+    convertTrade(t, 4);
     expect(t.pnl).toBe(-250);
     expect(t.riskAmount).toBe(250);
   });
 });
 
-describe("Tests 6 à 8 — les ratios sont invariants", () => {
-  const scaled = calibrateTrade(trade({ pnl: 500, rMultiple: 2 }), 2);
+describe("LE point du modèle — un trade encodé APRÈS ne bouge pas", () => {
+  it("seuls les trades antérieurs sont convertis ; les suivants sont intacts", () => {
+    // C'est la différence entre l'événement ponctuel et la lentille
+    // permanente : un trade saisi après le recalibrage a été tradé sur le
+    // nouveau capital, le convertir le fausserait.
+    const ancien = trade({ id: "avant", pnl: -250, riskAmount: 250 });
+    const nouveau = trade({ id: "apres", pnl: -500, riskAmount: 500 });
 
-  it("Test 6/7 — le R multiple ne change pas", () => {
-    // Risquer 250 pour gagner 500, ou 500 pour gagner 1000 : le même trade.
-    expect(scaled.rMultiple).toBe(2);
+    // Le filtre `created_at < cutoff` est appliqué en SQL ; ici on modélise
+    // son effet : le nouveau ne passe simplement pas par la conversion.
+    const converti = recalibrate(ancien, 25_000, 50_000);
+
+    expect(converti.pnl).toBe(-500); // l'ancien rejoint la nouvelle échelle
+    expect(nouveau.pnl).toBe(-500); // le nouveau était déjà à la bonne échelle
+    expect(nouveau.riskAmount).toBe(500);
   });
 
-  it("Test 8 — le risque en % du capital ne change pas", () => {
-    const before = (250 / 25_000) * 100;
-    const after = (scaled.riskAmount / 50_000) * 100;
-    expect(after).toBeCloseTo(before, 10);
-    expect(after).toBeCloseTo(1, 10);
+  it("après conversion, les deux trades expriment le même risque relatif", () => {
+    const ancien = recalibrate(trade({ riskAmount: 250 }), 25_000, 50_000);
+    const nouveau = trade({ riskAmount: 500 });
+    expect(ancien.riskAmount / 50_000).toBeCloseTo(nouveau.riskAmount / 50_000, 12);
+    expect((ancien.riskAmount / 50_000) * 100).toBeCloseTo(1, 10);
   });
 });
 
-describe("Tests 9 et 10 — les montants sont recalibrés", () => {
-  const scaled = calibrateTrade(trade(), 2);
+describe("Tests 6 à 8 — les ratios sont invariants", () => {
+  const converti = convertTrade(trade({ pnl: 500, rMultiple: 2 }), 2);
+
+  it("Test 6/7 — le R multiple ne change pas", () => {
+    // Risquer 250 pour gagner 500, ou 500 pour gagner 1 000 : le même trade.
+    expect(converti.rMultiple).toBe(2);
+  });
+
+  it("Test 8 — le risque en % du capital ne change pas", () => {
+    const avant = (250 / 25_000) * 100;
+    const apres = (converti.riskAmount / 50_000) * 100;
+    expect(apres).toBeCloseTo(avant, 10);
+    expect(apres).toBeCloseTo(1, 10);
+  });
+});
+
+describe("Tests 9 et 10 — les montants sont convertis", () => {
+  const converti = convertTrade(trade(), 2);
 
   it("Test 9 — le P&L suit l'échelle", () => {
-    expect(scaled.pnl).toBe(-500);
+    expect(converti.pnl).toBe(-500);
   });
 
   it("Test 10 — risque, MAE, MFE et slippage suivent aussi", () => {
-    // MAE/MFE sont des excursions EN DOLLARS (cf. types.ts) : elles suivent.
-    expect(scaled.riskAmount).toBe(500);
-    expect(scaled.mae).toBe(-600);
-    expect(scaled.mfe).toBe(240);
-    expect(scaled.slippage).toBe(-25);
+    // MAE/MFE sont des excursions EN DOLLARS (cf. types.ts).
+    expect(converti.riskAmount).toBe(500);
+    expect(converti.mae).toBe(-600);
+    expect(converti.mfe).toBe(240);
+    expect(converti.slippage).toBe(-25);
   });
 
   it("« non renseigné » reste non renseigné — un MAE absent n'est pas un MAE nul", () => {
-    const s = calibrateTrade(trade({ mae: null, mfe: undefined, slippage: null }), 2);
-    expect(s.mae).toBeNull();
-    expect(s.mfe).toBeUndefined();
-    expect(s.slippage).toBeNull();
+    const c = convertTrade(trade({ mae: null, mfe: undefined, slippage: null }), 2);
+    expect(c.mae).toBeNull();
+    expect(c.mfe).toBeUndefined();
+    expect(c.slippage).toBeNull();
   });
 });
 
 describe("Test 11 — aucun prix de marché n'est touché", () => {
   it("le modèle Trade ne contient AUCUN champ de prix, tick ou point", () => {
-    // Garde-fou de non-régression : si un jour un SL en prix (17 950) est
-    // ajouté au modèle, ce test échoue et force à décider explicitement qu'il
-    // reste hors du recalibrage. Un stop à 17 950 doublé donnerait 35 900,
-    // un prix qui n'existe sur aucun marché.
+    // Garde-fou : si un SL en prix (17 950) est un jour ajouté au modèle, ce
+    // test échoue et force à décider explicitement qu'il reste hors
+    // conversion. Doublé, il donnerait 35 900 — un prix qui n'existe pas.
     const champs = Object.keys(trade());
     for (const interdit of [
       "entryPrice",
@@ -156,101 +189,70 @@ describe("Test 11 — aucun prix de marché n'est touché", () => {
   });
 });
 
-describe("Test 12 — le drawdown suit l'échelle en montant, pas en pourcentage", () => {
+describe("Test 12 — le drawdown suit en montant, pas en pourcentage", () => {
   it("le drawdown monétaire double, sa part du capital reste identique", () => {
-    // Le drawdown est dérivé des P&L par `quantStats`. Recalibrer les P&L ET
-    // le capital du même facteur laisse le pourcentage inchangé — c'est le
-    // mécanisme qui rend inutile toute modification des moteurs existants.
-    const serie = [
-      trade({ pnl: -250 }),
-      trade({ id: "t2", pnl: -500 }),
-      trade({ id: "t3", pnl: 300 }),
-    ];
-    const scaled = calibrateTrades(serie, 2);
-    const ddBrut = Math.min(...serie.map((t) => t.pnl));
-    const ddScaled = Math.min(...scaled.map((t) => t.pnl));
-    expect(ddScaled).toBe(ddBrut * 2);
-    expect(ddScaled / 50_000).toBeCloseTo(ddBrut / 25_000, 12);
+    const serie = [trade({ pnl: -250 }), trade({ id: "t2", pnl: -500 })];
+    const convertis = serie.map((t) => convertTrade(t, 2));
+    const ddAvant = Math.min(...serie.map((t) => t.pnl));
+    const ddApres = Math.min(...convertis.map((t) => t.pnl));
+    expect(ddApres).toBe(ddAvant * 2);
+    expect(ddApres / 50_000).toBeCloseTo(ddAvant / 25_000, 12);
   });
 });
 
-describe("Test 13 — le comportement n'est JAMAIS recalibré", () => {
+describe("Test 13 — le comportement n'est JAMAIS converti", () => {
   it("erreurs, qualité de setup, confiance, confluences et notes sont intacts", () => {
     // « Tu as revenge-tradé 4 fois » reste 4 fois. Changer d'échelle
-    // financière ne réécrit pas l'histoire de ce que le trader a fait.
+    // financière ne réécrit pas ce que le trader a fait.
     const t = trade();
-    const s = calibrateTrade(t, 4);
-    expect(s.mistakes).toEqual(t.mistakes);
-    expect(s.setupQuality).toBe(t.setupQuality);
-    expect(s.confidence).toBe(t.confidence);
-    expect(s.confluences).toEqual(t.confluences);
-    expect(s.notes).toBe(t.notes);
-    expect(s.strategy).toBe(t.strategy);
-    expect(s.entryTime).toBe(t.entryTime);
-    expect(s.direction).toBe(t.direction);
+    const c = convertTrade(t, 4);
+    expect(c.mistakes).toEqual(t.mistakes);
+    expect(c.setupQuality).toBe(t.setupQuality);
+    expect(c.confidence).toBe(t.confidence);
+    expect(c.confluences).toEqual(t.confluences);
+    expect(c.notes).toBe(t.notes);
+    expect(c.strategy).toBe(t.strategy);
+    expect(c.entryTime).toBe(t.entryTime);
+    expect(c.direction).toBe(t.direction);
   });
 
   it("le taux de respect des règles est un pourcentage : invariant", () => {
     const serie = [trade(), trade({ id: "t2", mistakes: [] }), trade({ id: "t3", mistakes: [] })];
     const propre = (ts: Trade[]) => ts.filter((t) => t.mistakes.length === 0).length / ts.length;
-    expect(propre(calibrateTrades(serie, 4))).toBe(propre(serie));
+    expect(propre(serie.map((t) => convertTrade(t, 4)))).toBe(propre(serie));
   });
 });
 
 describe("Test 14 — deux comptes ne se contaminent pas", () => {
-  it("calibrer un historique n'affecte pas l'autre", () => {
-    // La calibration est portée par le COMPTE et appliquée à la lecture des
-    // trades de ce compte uniquement ; deux appels distincts ne partagent
-    // aucun état.
+  it("la conversion SQL est bornée par account_id ET user_id", () => {
+    // Modélisé ici : convertir la série d'un compte ne touche pas l'autre.
+    // Côté base, le filtre `account_id = … and user_id = auth.uid()` et les
+    // politiques RLS owner-only l'imposent.
     const compteA = [trade({ id: "a1", pnl: -250 })];
     const compteB = [trade({ id: "b1", pnl: -250 })];
-    const aCalibre = calibrateTrades(compteA, 2);
-    const bNonCalibre = calibrateTrades(compteB, IDENTITY_SCALE);
-    expect(aCalibre[0].pnl).toBe(-500);
-    expect(bNonCalibre[0].pnl).toBe(-250);
-    expect(compteA[0].pnl).toBe(-250);
-  });
-
-  it("sans calibration, le TABLEAU d'origine est rendu par référence", () => {
-    // Les consommateurs sont mémoïsés sur l'identité du tableau : en recréer
-    // un ferait recalculer toutes les statistiques à chaque rendu.
-    const serie = [trade()];
-    expect(calibrateTrades(serie, IDENTITY_SCALE)).toBe(serie);
-    expect(calibrateTrades(serie, 1)).toBe(serie);
+    const aConverti = compteA.map((t) => convertTrade(t, 2));
+    expect(aConverti[0].pnl).toBe(-500);
+    expect(compteB[0].pnl).toBe(-250);
+    expect(compteA[0].pnl).toBe(-250); // l'entrée d'origine n'est pas mutée
   });
 });
 
 describe("Test 16 — stabilité numérique", () => {
   it("un facteur non décimal ne laisse pas traîner de flottants", () => {
-    // 25k → 30k = 1,2. Sans arrondi au cent, 250 × 1,2 vaut
-    // 299.99999999999994 et l'erreur se propage dans toutes les sommes.
-    const s = calibrateTrade(trade({ pnl: 250, riskAmount: 250 }), scaleFor(25_000, 30_000));
-    expect(s.pnl).toBe(300);
-    expect(s.riskAmount).toBe(300);
+    // 25k → 30k = 1,2. Sans arrondi, 250 × 1,2 vaut 299.99999999999994.
+    const c = convertTrade(trade({ pnl: 250, riskAmount: 250 }), factorFor(25_000, 30_000));
+    expect(c.pnl).toBe(300);
+    expect(c.riskAmount).toBe(300);
   });
 
   it("l'arrondi se fait au cent, montant par montant", () => {
-    expect(scaleMoney(33.33, 3)).toBe(99.99);
-    expect(scaleMoney(0.005, 1)).toBe(0.01);
+    expect(convertMoney(33.33, 3)).toBe(99.99);
+    expect(roundMoney(0.005)).toBe(0.01);
   });
 
-  it("aller-retour 25k → 100k → 25k retrouve la valeur d'origine au cent près", () => {
-    const t = trade({ pnl: -250, riskAmount: 250 });
-    const monte = calibrateTrade(t, scaleFor(25_000, 100_000));
-    // Le retour se fait depuis le trade BRUT, pas depuis le trade converti —
-    // c'est la garantie qu'aucune erreur ne s'accumule.
-    const retour = calibrateTrade(t, scaleFor(25_000, 25_000));
-    expect(monte.pnl).toBe(-1000);
-    expect(retour.pnl).toBe(-250);
-    expect(retour).toBe(t); // facteur neutre : objet rendu tel quel
-  });
-});
-
-describe("calibratedBalance", () => {
-  it("dit à quelle échelle l'historique est représenté", () => {
-    expect(calibratedBalance({ scale: 2, originalBalance: 25_000 })).toBe(50_000);
-    expect(calibratedBalance({ scale: 1, originalBalance: 25_000 })).toBe(25_000);
-    expect(calibratedBalance({ scale: 4, originalBalance: 25_000 })).toBe(100_000);
+  it("un facteur neutre rend le trade tel quel, sans allocation", () => {
+    const t = trade();
+    expect(convertTrade(t, IDENTITY_FACTOR)).toBe(t);
   });
 });
 
@@ -272,9 +274,9 @@ describe("previewCalibration", () => {
   });
 
   it("reste utilisable sur un journal vide", () => {
-    const empty = previewCalibration(null, 25_000, 50_000, 2);
-    expect(empty).toHaveLength(1);
-    expect(empty[0].key).toBe("recal.rowBalance");
+    const vide = previewCalibration(null, 25_000, 50_000, 2);
+    expect(vide).toHaveLength(1);
+    expect(vide[0].key).toBe("recal.rowBalance");
   });
 });
 
@@ -293,130 +295,25 @@ describe("pickPreviewTrade", () => {
 });
 
 describe("normalizedReturns — compatibilité Monte Carlo", () => {
-  it("les séries normalisées sont INVARIANTES au recalibrage", () => {
-    // Propriété indispensable : une probabilité de ruine calculée sur le même
-    // comportement de trading ne doit pas changer parce que le trader a
-    // changé de taille de compte.
+  it("les séries normalisées sont INVARIANTES à la conversion", () => {
+    // Une probabilité de ruine calculée sur le même comportement ne doit pas
+    // changer parce que le trader a changé de taille de compte.
     const serie = [
       trade({ pnl: -250, rMultiple: -1 }),
       trade({ id: "t2", pnl: 500, rMultiple: 2 }),
     ];
-    const brut = normalizedReturns(serie, 25_000);
-    const calibre = normalizedReturns(calibrateTrades(serie, 2), 50_000);
-    expect(calibre.r).toEqual(brut.r);
-    calibre.pctOfBalance.forEach((v, i) => expect(v).toBeCloseTo(brut.pctOfBalance[i], 12));
+    const avant = normalizedReturns(serie, 25_000);
+    const apres = normalizedReturns(
+      serie.map((t) => convertTrade(t, 2)),
+      50_000,
+    );
+    expect(apres.r).toEqual(avant.r);
+    apres.pctOfBalance.forEach((v, i) => expect(v).toBeCloseTo(avant.pctOfBalance[i], 12));
   });
 
   it("sans capital, seule la série en R est produite", () => {
     const { r, pctOfBalance } = normalizedReturns([trade()], 0);
     expect(r).toHaveLength(1);
     expect(pctOfBalance).toHaveLength(0);
-  });
-});
-
-describe("uncalibrateTrade — l'écriture repasse à l'échelle d'origine", () => {
-  it("aller-retour : ce qui est affiché puis réécrit retrouve la valeur stockée", () => {
-    // LE défaut que cette fonction empêche : le formulaire est alimenté par le
-    // trade AFFICHÉ (déjà converti) ; le réécrire tel quel doublerait les
-    // montants stockés, et les redoublerait à chaque édition suivante.
-    const brut = trade({ pnl: -250, riskAmount: 250, mae: -300, mfe: 120, slippage: -12.5 });
-    const affiche = calibrateTrade(brut, 2);
-    expect(affiche.pnl).toBe(-500);
-
-    const aStocker = uncalibrateTrade(affiche, 2);
-    expect(aStocker.pnl).toBe(brut.pnl);
-    expect(aStocker.riskAmount).toBe(brut.riskAmount);
-    expect(aStocker.mae).toBe(brut.mae);
-    expect(aStocker.mfe).toBe(brut.mfe);
-    expect(aStocker.slippage).toBe(brut.slippage);
-  });
-
-  it("l'aller-retour tient sur un facteur non décimal", () => {
-    const brut = trade({ pnl: 300, riskAmount: 250 });
-    const scale = scaleFor(25_000, 30_000); // 1,2
-    expect(uncalibrateTrade(calibrateTrade(brut, scale), scale).pnl).toBe(300);
-  });
-
-  it("sans calibration, le trade est rendu tel quel", () => {
-    const t = trade();
-    expect(uncalibrateTrade(t, IDENTITY_SCALE)).toBe(t);
-  });
-
-  it("le comportement traverse l'aller-retour intact", () => {
-    const t = trade();
-    const r = uncalibrateTrade(calibrateTrade(t, 4), 4);
-    expect(r.mistakes).toEqual(t.mistakes);
-    expect(r.rMultiple).toBe(t.rMultiple);
-    expect(r.notes).toBe(t.notes);
-  });
-});
-
-describe("withPnlFromRiskAndR — une seule définition du lien P&L / risque / R", () => {
-  it("changer le R recalcule le P&L", () => {
-    const r = withPnlFromRiskAndR(trade({ riskAmount: 250, rMultiple: -1, pnl: -250 }), {
-      rMultiple: 2,
-    });
-    expect(r.pnl).toBe(500);
-    expect(r.riskAmount).toBe(250);
-  });
-
-  it("changer le risque recalcule le P&L, à R constant", () => {
-    const r = withPnlFromRiskAndR(trade({ riskAmount: 250, rMultiple: 2, pnl: 500 }), {
-      riskAmount: 500,
-    });
-    expect(r.pnl).toBe(1000);
-    expect(r.rMultiple).toBe(2);
-  });
-
-  it("un break-even reste à zéro — son P&L ne se déduit pas d'un risque", () => {
-    const r = withPnlFromRiskAndR(trade({ direction: "be" }), { riskAmount: 500 });
-    expect(r.pnl).toBe(0);
-    expect(r.rMultiple).toBe(0);
-  });
-
-  it("arrondit au cent, sans laisser de flottant", () => {
-    const r = withPnlFromRiskAndR(trade(), { riskAmount: 333.33, rMultiple: 3 });
-    expect(r.pnl).toBe(999.99);
-  });
-});
-
-describe("édition rapide sur un compte recalibré — le scénario complet", () => {
-  it("saisir 500 $ de risque sur un compte 2× stocke 250 et réaffiche 500", () => {
-    // La chaîne réelle : le trader voit un trade calibré, corrige une valeur
-    // à l'échelle qu'il a sous les yeux, et l'écriture repasse à l'origine.
-    // Sans ce retour, le stockage vaudrait 500 et l'affichage 1 000.
-    const stocke = trade({ pnl: -250, riskAmount: 250, rMultiple: -1 });
-    const affiche = calibrateTrade(stocke, 2);
-
-    const corrige = withPnlFromRiskAndR(affiche, { riskAmount: 500 });
-    const aStocker = uncalibrateTrade(corrige, 2);
-
-    expect(aStocker.riskAmount).toBe(250); // ce qui part en base
-    expect(calibrateTrade(aStocker, 2).riskAmount).toBe(500); // ce qui revient à l'écran
-  });
-
-  it("corriger le R met le P&L d'accord avec lui, aux deux échelles", () => {
-    const stocke = trade({ pnl: -250, riskAmount: 250, rMultiple: -1 });
-    const affiche = calibrateTrade(stocke, 2); // risque 500, P&L -500
-
-    const corrige = withPnlFromRiskAndR(affiche, { rMultiple: 2 });
-    expect(corrige.pnl).toBe(1000); // 500 × 2, cohérent avec ce qui est affiché
-
-    const aStocker = uncalibrateTrade(corrige, 2);
-    expect(aStocker.pnl).toBe(500); // 250 × 2 à l'échelle d'origine
-    expect(aStocker.rMultiple).toBe(2); // le R est un ratio : identique partout
-  });
-
-  it("éditer DEUX fois de suite ne fait pas dériver la valeur stockée", () => {
-    // Le piège d'une correction sans retour à l'échelle : chaque édition
-    // multiplierait de nouveau. Ici, dix éditions successives laissent le
-    // risque exactement où le trader l'a mis.
-    let stocke = trade({ riskAmount: 250, rMultiple: 1, pnl: 250 });
-    for (let i = 0; i < 10; i++) {
-      const affiche = calibrateTrade(stocke, 2);
-      stocke = uncalibrateTrade(withPnlFromRiskAndR(affiche, { riskAmount: 600 }), 2);
-    }
-    expect(stocke.riskAmount).toBe(300);
-    expect(calibrateTrade(stocke, 2).riskAmount).toBe(600);
   });
 });

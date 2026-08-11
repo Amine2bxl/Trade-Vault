@@ -1370,14 +1370,14 @@ const en = {
   "recal.rowRiskPct": "Risk %",
   "recal.safeTitle": "Your original data is preserved",
   "recal.safeBody":
-    "Nothing is written to your trades. TradeVault stores the scale and converts amounts as it reads them — you can go back to your original values at any time.",
+    "Only the trades encoded BEFORE this moment are converted, once. Everything you add or edit afterwards is untouched — the journal works exactly as before. Each converted trade keeps the factor applied, so going back is exact.",
   "recal.safeBehaviour":
-    "Ratios (R multiple, risk %) and behaviour (mistakes, rule adherence, checklists) are never altered: only the financial scale changes.",
+    "Ratios (R multiple, risk %) and behaviour (mistakes, rule adherence, checklists) are never altered: only the monetary amounts change.",
   "recal.goalsNote":
     "Goals expressed in $ (capital target) are not converted — they belong to your plan, not to one account. Check yours after recalibrating.",
   "recal.confirm": "Recalibrate",
   "recal.reset": "Back to original",
-  "recal.done": "History recalibrated.",
+  "recal.done": "{n} trades converted to the new scale.",
   "recal.failed": "Could not recalibrate. Try again.",
   "recal.action": "Recalibrate account scale",
   "recal.actionSub": "Changed account size? Represent your history on the new capital",

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { loadUserTrades, migrateLegacyTradeScreenshots } from "../store";
-import { calibrateTrades } from "../utils/accountCalibration";
 import type { Trade } from "../types";
 
 // React Query data layer for the trade list. Replaces the ad-hoc
@@ -43,9 +42,6 @@ export function useTrades(
   userId: string | undefined,
   accountId: string | null,
   enabled: boolean,
-  /** Facteur de recalibrage du compte actif (1 = aucun). Voir
-   *  `utils/accountCalibration.ts` pour l'architecture complète. */
-  calibrationScale = 1,
 ): { trades: Trade[]; tradesLoading: boolean } {
   const queryClient = useQueryClient();
   const isOn = !!userId && enabled;
@@ -110,17 +106,8 @@ export function useTrades(
       .catch(() => {});
   }, [isOn, userId, accountId, query.data, queryClient]);
 
-  // ── LE point de passage unique du recalibrage ──────────────────────────
-  // Toutes les pages, tous les moteurs et Jarvis lisent les trades par ce
-  // hook. Convertir ICI donne une échelle cohérente partout, sans dupliquer
-  // un seul calcul — et le cache React Query, lui, garde les montants BRUTS :
-  // la vérité d'origine reste intacte et les écritures optimistes continuent
-  // de porter sur les vraies valeurs.
-  const raw = query.data ?? EMPTY;
-  const trades = useMemo(() => calibrateTrades(raw, calibrationScale), [raw, calibrationScale]);
-
   return {
-    trades,
+    trades: query.data ?? EMPTY,
     // Only a first load (no cached data yet) shows the skeleton, exactly like
     // the previous behaviour; a cached account switch is instant.
     tradesLoading: isOn && query.isPending,

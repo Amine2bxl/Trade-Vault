@@ -141,32 +141,51 @@ export async function updateAccount(
 }
 
 /**
- * Recalibre l'échelle d'un compte — écrit UNIQUEMENT la métadonnée.
+ * Recalibre un compte : convertit les trades DÉJÀ ENCODÉS, une seule fois.
  *
- * Aucune ligne `trades` n'est touchée : la conversion se fait à la lecture.
- * `original_balance` est figé au premier recalibrage sur le capital réellement
- * tradé, puis ne bouge plus — c'est de lui, et de lui seul, que tout facteur
- * ultérieur est recalculé (25k → 50k → 100k donne 4×, jamais 2× puis 2×).
+ * Deux écritures, dans cet ordre imposé :
+ *   1. la conversion des lignes `trades`, en une instruction SQL atomique ;
+ *   2. la mise à jour du compte (nouveau solde, facteur cumulé, horodatage).
  *
- * Le `.eq("user_id", userId)` double la protection RLS : même avec un id de
- * compte deviné, l'écriture ne peut pas sortir des comptes de l'appelant.
+ * L'ordre compte : si la conversion échoue, le compte n'est pas marqué comme
+ * recalibré et l'opération peut être relancée telle quelle. L'inverse
+ * laisserait un compte prétendant une échelle que ses trades n'ont pas.
+ *
+ * `p_cutoff` est l'instant de la demande : seuls les trades encodés AVANT sont
+ * convertis. Ceux saisis après ont été tradés sur le nouveau capital.
+ *
+ * Le `.eq("user_id", userId)` double la protection RLS, et la fonction SQL
+ * s'exécute en `security invoker` — un identifiant de compte deviné ne donne
+ * accès à rien.
  */
 export async function recalibrateAccount(
   userId: string,
   id: string,
-  input: { originalBalance: number; targetBalance: number; scale: number },
-): Promise<void> {
-  const { error } = await supabase
+  input: { originalBalance: number; targetBalance: number; factor: number; cumulative: number },
+): Promise<number> {
+  const cutoff = new Date().toISOString();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc("recalibrate_account_trades", {
+    p_account_id: id,
+    p_factor: input.factor,
+    p_cutoff: cutoff,
+  });
+  if (error) throw error;
+
+  const { error: accErr } = await supabase
     .from("accounts")
     .update({
       starting_balance: input.targetBalance,
-      calibration_scale: input.scale,
+      calibration_scale: input.cumulative,
       original_balance: input.originalBalance,
-      calibrated_at: new Date().toISOString(),
+      calibrated_at: cutoff,
     } as never)
     .eq("id", id)
     .eq("user_id", userId);
-  if (error) throw error;
+  if (accErr) throw accErr;
+
+  return Number(data) || 0;
 }
 
 // Deletes an account and (via FK cascade) all its trades/missed opportunities.

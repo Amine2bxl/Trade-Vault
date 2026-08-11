@@ -7,11 +7,10 @@ import { useToast } from "../contexts/ToastContext";
 import { cn } from "../utils/cn";
 import type { Trade } from "../types";
 import {
-  calibratedBalance,
+  factorFor,
   isCalibrated,
   pickPreviewTrade,
   previewCalibration,
-  scaleFor,
   type CalibrationPreviewRow,
 } from "../utils/accountCalibration";
 
@@ -45,13 +44,15 @@ export default function RecalibrateAccountModal({
   const [saving, setSaving] = useState(false);
 
   const targetValue = Number(target) || 0;
-  const scale = scaleFor(original, targetValue);
+  // Le facteur porte sur la représentation COURANTE : c'est elle qui est
+  // stockée, puisqu'un recalibrage précédent a réellement converti les lignes.
+  const factor = factorFor(current, targetValue);
   const valid = targetValue > 0 && Number.isFinite(targetValue);
 
   const sample = useMemo(() => pickPreviewTrade(trades), [trades]);
   const rows = useMemo(
-    () => (valid ? previewCalibration(sample, current, targetValue, scale) : []),
-    [sample, current, targetValue, scale, valid],
+    () => (valid ? previewCalibration(sample, current, targetValue, factor) : []),
+    [sample, current, targetValue, factor, valid],
   );
 
   const alreadyCalibrated = isCalibrated(account?.calibrationScale);
@@ -61,8 +62,10 @@ export default function RecalibrateAccountModal({
     if (saving || to <= 0) return;
     setSaving(true);
     try {
-      await recalibrate(accountId, to);
-      toast(t("recal.done"), "success");
+      const converted = await recalibrate(accountId, to);
+      // Le nombre réellement converti : c'est la preuve que seuls les trades
+      // déjà encodés ont bougé.
+      toast(t("recal.done").replace("{n}", String(converted)), "success");
       onClose();
     } catch (e) {
       console.error("Recalibration failed", e);
@@ -97,7 +100,7 @@ export default function RecalibrateAccountModal({
             label={t("recal.currentScale")}
             value={
               alreadyCalibrated
-                ? `${money(calibratedBalance({ scale: account.calibrationScale, originalBalance: original }))} · ${fmtScale(account.calibrationScale)}`
+                ? `${money(current)} · ${fmtScale(account.calibrationScale)}`
                 : t("recal.none")
             }
           />
@@ -118,7 +121,7 @@ export default function RecalibrateAccountModal({
           />
           {valid && !noChange && (
             <p className="mt-2 text-[11px] text-cyan-400 font-semibold tabular-nums">
-              {t("recal.scaleIs").replace("{scale}", fmtScale(scale))}
+              {t("recal.scaleIs").replace("{scale}", fmtScale(factor))}
             </p>
           )}
         </div>

@@ -141,6 +141,22 @@ export function computeStats(trades: Trade[]): TradeStats {
   };
 }
 
+/**
+ * Applique la relation canonique du produit : **`pnl = riskAmount × rMultiple`**.
+ *
+ * Cette définition vivait en ligne dans le formulaire de trade ; elle est ici
+ * pour que l'édition rapide du journal la partage au lieu d'en écrire une
+ * seconde. Deux formules pour un même lien finiraient par diverger, et le P&L
+ * cesserait de concorder avec le R affiché juste à côté.
+ *
+ * Un break-even reste à zéro : son P&L ne se déduit pas d'un risque.
+ */
+export function withPnlFromRiskAndR(trade: Trade, patch: Partial<Trade>): Trade {
+  const next = { ...trade, ...patch };
+  if (next.direction === "be") return { ...next, pnl: 0, rMultiple: 0 };
+  return { ...next, pnl: Math.round(next.riskAmount * next.rMultiple * 100) / 100 };
+}
+
 export function formatPnl(value: number): string {
   if (Math.abs(value) < 0.005) return "$0.00";
   const prefix = value >= 0 ? "+$" : "-$";

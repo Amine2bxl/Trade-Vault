@@ -20,7 +20,7 @@ import {
   saveActiveAccountId,
   setActiveAccountId,
 } from "../store";
-import { scaleFor } from "../utils/accountCalibration";
+import { factorFor } from "../utils/accountCalibration";
 
 interface Ctx {
   accounts: Account[];
@@ -42,7 +42,9 @@ interface Ctx {
   removeAccount: (id: string) => Promise<void>;
   /** Recalibre l'échelle d'un compte. N'écrit QUE la métadonnée : les trades
    *  en base restent intacts (voir `utils/accountCalibration.ts`). */
-  recalibrate: (id: string, targetBalance: number) => Promise<void>;
+  /** Recalibre un compte. Convertit les trades déjà encodés, une seule fois,
+   *  puis rend leur nombre. */
+  recalibrate: (id: string, targetBalance: number) => Promise<number>;
   refresh: () => Promise<void>;
 }
 
@@ -206,32 +208,42 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const recalibrate = useCallback(
     async (id: string, targetBalance: number) => {
-      if (!user) return;
+      if (!user) return 0;
       const account = accounts.find((a) => a.id === id);
-      // Un compte introuvable dans la liste de CET utilisateur n'est pas
-      // recalibrable : première barrière, avant même le filtre user_id de la
+      // Un compte absent de la liste de CET utilisateur n'est pas
+      // recalibrable : première barrière, avant le filtre `user_id` de la
       // requête et les politiques RLS.
       if (!account) throw new Error("Unknown account");
+
+      // Le facteur porte sur la représentation COURANTE, puisque c'est elle
+      // qui est stockée : le recalibrage précédent a réellement converti les
+      // lignes. Le facteur cumulé, lui, se mesure depuis le capital d'origine
+      // et sert à l'affichage et au retour en arrière.
       const original = account.originalBalance || account.startingBalance;
-      const scale = scaleFor(original, targetBalance);
-      await recalibrateAccount(user.id, id, {
+      const factor = factorFor(account.startingBalance, targetBalance);
+      const cumulative = factorFor(original, targetBalance);
+
+      const converted = await recalibrateAccount(user.id, id, {
         originalBalance: original,
         targetBalance,
-        scale,
+        factor,
+        cumulative,
       });
+
       setAccounts((prev) =>
         prev.map((a) =>
           a.id === id
             ? {
                 ...a,
                 startingBalance: targetBalance,
-                calibrationScale: scale,
+                calibrationScale: cumulative,
                 originalBalance: original,
                 calibratedAt: new Date().toISOString(),
               }
             : a,
         ),
       );
+      return converted;
     },
     [user, accounts],
   );

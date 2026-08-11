@@ -1307,14 +1307,14 @@ const fr: Dict = {
   "recal.rowRiskPct": "Risque %",
   "recal.safeTitle": "Tes données d'origine sont préservées",
   "recal.safeBody":
-    "Rien n'est écrit dans tes trades. TradeVault mémorise l'échelle et convertit les montants à la lecture — tu peux revenir à tes valeurs d'origine à tout moment.",
+    "Seuls les trades encodés AVANT cet instant sont convertis, une seule fois. Tout ce que tu ajoutes ou modifies ensuite reste intact — le journal fonctionne exactement comme avant. Chaque trade converti garde le facteur appliqué, le retour en arrière est donc exact.",
   "recal.safeBehaviour":
-    "Les ratios (R multiple, risque %) et le comportement (erreurs, respect des règles, checklists) ne sont jamais modifiés : seule l'échelle financière change.",
+    "Les ratios (R multiple, risque %) et le comportement (erreurs, respect des règles, checklists) ne sont jamais modifiés : seuls les montants changent.",
   "recal.goalsNote":
     "Les objectifs exprimés en $ (cible de capital) ne sont pas convertis — ils appartiennent à ton plan, pas à un compte. Vérifie le tien après recalibrage.",
   "recal.confirm": "Recalibrer",
   "recal.reset": "Revenir à l'origine",
-  "recal.done": "Historique recalibré.",
+  "recal.done": "{n} trades convertis à la nouvelle échelle.",
   "recal.failed": "Impossible de recalibrer. Réessaie.",
   "recal.action": "Recalibrer l'échelle du compte",
   "recal.actionSub":
