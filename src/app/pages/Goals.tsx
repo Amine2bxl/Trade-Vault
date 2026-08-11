@@ -9,6 +9,8 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import type { Trade } from "../types";
 import { computeStats } from "../utils/tradeCalcs";
 import { useGoalProgress } from "../hooks/useGoalProgress";
+import { buildDataset } from "@/modules/probability/dataset";
+import { forecastCapitalGoal } from "@/modules/probability/goals";
 import { loadStartingBalance } from "../store";
 import { sendPushToSelf } from "@/backend/push.functions";
 import {
@@ -68,6 +70,23 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   // formule — le trader aurait alors lu deux chiffres différents pour le même
   // objectif selon la page ouverte.
   const { ctx } = useGoalProgress(trades, user?.id, activeId);
+
+  // Projection de l'objectif de capital. La barre de progression dit ou le
+  // trader en est ; elle ne dit pas si ca va se faire. `null` quand la
+  // question n'a pas de reponse honnete (historique trop court, echeance
+  // depassee, objectif deja atteint) — l'interface n'affiche alors rien.
+  const capitalForecast = useMemo(() => {
+    const goal = plan?.goals.find((g) => g.kind === "capital");
+    if (!goal) return null;
+    const current = ctx.startingBalance + ctx.stats.totalPnl;
+    // Jours de bourse restants sur l'horizon du plan, ~21 par mois.
+    const monthsLeft = Math.max(0, (plan?.horizonMonths ?? HORIZON) - currentMonthIndex(plan!));
+    return forecastCapitalGoal(buildDataset(trades), {
+      currentBalance: current,
+      targetBalance: goal.targetValue,
+      daysRemaining: Math.round(monthsLeft * 21),
+    });
+  }, [plan, ctx, trades]);
 
   const generate = useCallback(
     async (goals: GoalDef[]) => {
@@ -230,6 +249,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
           onDelete={removePlan}
           onToggleTask={toggleTask}
           onManualValue={updateManualValue}
+          forecast={capitalForecast}
         />
       )}
     </div>
