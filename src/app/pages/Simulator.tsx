@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Dices, ShieldAlert, Target, TrendingDown, Info } from "lucide-react";
+import { Dices, ShieldAlert, Target, TrendingDown, Info, Scale } from "lucide-react";
 import type { Trade } from "../types";
 import { useT } from "../i18n/LanguageContext";
 import { useAccounts } from "../contexts/AccountContext";
@@ -29,6 +29,7 @@ import { buildDataset } from "@/modules/probability/dataset";
 import { buildScenario, type Horizon } from "@/modules/probability/scenario";
 import { runSimulation } from "@/modules/probability/engine";
 import { defaultLevers, runSensitivity } from "@/modules/probability/sensitivity";
+import { bestBy, compareScenarios } from "@/modules/probability/compare";
 import { wilsonInterval, type SampleQuality } from "@/modules/probability/sample";
 import type { AccountRules, DrawdownType } from "@/modules/probability/rules";
 
@@ -166,6 +167,51 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
     setRisk(s.riskMultiplier);
   }, []);
 
+  // ── Comparaison ──────────────────────────────────────────────────────────
+  // « Firme A ou firme B ? » ne se répond pas en rejouant deux fois la même
+  // page de mémoire : les deux chiffres doivent être côte à côte, calculés sur
+  // le même historique.
+  const [compared, setCompared] = useState<string[]>([]);
+
+  const toggleCompare = useCallback((id: string) => {
+    setCompared((prev) =>
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : // Au-delà de trois colonnes le tableau devient illisible sur mobile,
+          // et la décision ne s'éclaircit pas pour autant.
+          prev.length >= 3
+          ? prev
+          : [...prev, id],
+    );
+  }, []);
+
+  const comparison = useMemo(() => {
+    const entries = compared
+      .map((id) => saved.find((s) => s.id === id))
+      .filter((s): s is SavedScenario => !!s)
+      // Un scénario sauvegardé sans graine n'a jamais été simulé : le rejouer
+      // avec une graine inventée donnerait un chiffre différent de celui que le
+      // trader a vu au moment où il l'a enregistré.
+      .filter((s) => s.seed !== null)
+      .map((s) => ({
+        id: s.id,
+        label: s.name || money.format(s.rules.startingBalance ?? 0),
+        config: {
+          rules: s.rules,
+          tradesPerPath:
+            s.horizon.unit === "trades"
+              ? s.horizon.value
+              : Math.max(1, Math.round((dataset.tradesPerDay ?? 1) * s.horizon.value)),
+          tradesPerDay: Math.max(1, Math.round(dataset.tradesPerDay ?? 1)),
+          runs: s.runs,
+          riskMultiplier: s.riskMultiplier,
+          stopAfterLosses: s.stopAfterLosses,
+          seed: s.seed as number,
+        },
+      }));
+    return entries.length >= 2 ? compareScenarios(dataset, entries) : null;
+  }, [compared, saved, dataset, money]);
+
   const qualityLabel: Record<SampleQuality, string> = {
     low: t("sim.sample.low"),
     limited: t("sim.sample.limited"),
@@ -249,22 +295,45 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                   {t("sim.savedTitle")}
                 </p>
                 {saved.slice(0, 5).map((s) => (
-                  <button
+                  <div
                     key={s.id}
-                    onClick={() => restore(s)}
-                    className="w-full min-h-11 text-left rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-2 hover:border-cyan-500/30"
-                  >
-                    <span className="text-xs text-slate-300">
-                      {money.format(s.rules.startingBalance ?? 0)} ·{" "}
-                      {t(`sim.dd.${s.rules.drawdownType ?? "static"}` as never)}
-                    </span>
-                    {s.lastRiskOfRuin !== null && (
-                      <span className="block text-[11px] text-slate-500 tabular-nums">
-                        {t("sim.ruinShort")} {pct(s.lastRiskOfRuin)}
-                        {s.lastSampleSize !== null && ` · n=${s.lastSampleSize}`}
-                      </span>
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg border px-2.5 py-2",
+                      compared.includes(s.id)
+                        ? "border-cyan-500/40 bg-cyan-500/[0.06]"
+                        : "border-white/5 bg-white/[0.02]",
                     )}
-                  </button>
+                  >
+                    <button
+                      onClick={() => restore(s)}
+                      className="flex-1 min-h-11 text-left min-w-0"
+                    >
+                      <span className="text-xs text-slate-300 block truncate">
+                        {money.format(s.rules.startingBalance ?? 0)} ·{" "}
+                        {t(`sim.dd.${s.rules.drawdownType ?? "static"}` as never)}
+                      </span>
+                      {s.lastRiskOfRuin !== null && (
+                        <span className="block text-[11px] text-slate-500 tabular-nums">
+                          {t("sim.ruinShort")} {pct(s.lastRiskOfRuin)}
+                          {s.lastSampleSize !== null && ` · n=${s.lastSampleSize}`}
+                        </span>
+                      )}
+                    </button>
+                    {/* Un scénario jamais simulé n'a pas de graine : le rejouer
+                        donnerait un autre chiffre que celui qu'il affiche. */}
+                    <button
+                      onClick={() => toggleCompare(s.id)}
+                      disabled={s.seed === null}
+                      title={t("sim.compareToggle")}
+                      className={cn(
+                        "shrink-0 min-h-11 min-w-11 grid place-items-center rounded-lg text-[11px]",
+                        compared.includes(s.id) ? "text-cyan-400" : "text-slate-600",
+                        s.seed === null && "opacity-30",
+                      )}
+                    >
+                      <Scale className="w-4 h-4" />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -369,6 +438,66 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                   </div>
                 </CardBody>
               </Card>
+
+              {comparison && (
+                <Card>
+                  <CardBody className="space-y-2">
+                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                      {t("sim.compareTitle")}
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm tabular-nums">
+                        <thead>
+                          <tr className="text-[11px] text-slate-500 text-left">
+                            <th className="font-normal pb-1 pr-3">{t("sim.compareScenario")}</th>
+                            <th className="font-normal pb-1 pr-3">{t("sim.passProb")}</th>
+                            <th className="font-normal pb-1 pr-3">{t("sim.ruin")}</th>
+                            <th className="font-normal pb-1">{t("sim.median")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {comparison.map((row, i) => (
+                            <tr key={row.id} className="border-t border-white/5">
+                              <td className="py-1.5 pr-3 text-slate-300 max-w-[140px] truncate">
+                                {row.label}
+                              </td>
+                              {/* Le meilleur est souligné par critère, jamais
+                                  par un classement global : « le meilleur »
+                                  dépend de ce que le trader cherche. En cas
+                                  d'égalité, personne n'est mis en avant. */}
+                              <td
+                                className={cn(
+                                  "py-1.5 pr-3",
+                                  bestBy(comparison, "pass") === i && "text-emerald-400",
+                                )}
+                              >
+                                {pct(row.result.passProbability)}
+                              </td>
+                              <td
+                                className={cn(
+                                  "py-1.5 pr-3",
+                                  bestBy(comparison, "ruin") === i && "text-emerald-400",
+                                )}
+                              >
+                                {pct(row.result.riskOfRuin)}
+                              </td>
+                              <td
+                                className={cn(
+                                  "py-1.5",
+                                  bestBy(comparison, "pnl") === i && "text-emerald-400",
+                                )}
+                              >
+                                {money.format(row.result.pnl.median)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{t("sim.compareHint")}</p>
+                  </CardBody>
+                </Card>
+              )}
 
               {sensitivity && (
                 <Card>

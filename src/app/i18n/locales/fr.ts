@@ -29,6 +29,11 @@ const fr: Dict = {
   "sim.title": "Simulateur de probabilités",
   "sim.subtitle": "Si tu continues à trader comme ça, que peut-il se passer ?",
   "sim.rulesTitle": "Règles du compte",
+  "sim.compareTitle": "Côte à côte",
+  "sim.compareScenario": "Scénario",
+  "sim.compareToggle": "Ajouter à la comparaison",
+  "sim.compareHint":
+    "Meilleure valeur par colonne, sur ton propre historique. Pas de gagnant global — ça dépend de ce que tu cherches.",
   "sim.quality": "Journal complété à {score}/100 — certaines analyses restent limitées.",
   "sim.gap.risk":
     "{pct} % de tes trades n'ont pas de risque saisi : les scénarios en R sont approximatifs.",
