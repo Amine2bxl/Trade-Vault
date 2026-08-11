@@ -56,6 +56,11 @@ const en = {
   "sim.title": "Probability Simulator",
   "sim.subtitle": "If you keep trading like this, what could happen?",
   "sim.rulesTitle": "Account rules",
+  "sim.compareTitle": "Side by side",
+  "sim.compareScenario": "Scenario",
+  "sim.compareToggle": "Add to the comparison",
+  "sim.compareHint":
+    "Best value per column, on your own history. No overall winner — it depends on what you're after.",
   "sim.quality": "Journal complété à {score}/100 — certaines analyses restent limitées.",
   "sim.gap.risk":
     "{pct}% de tes trades n'ont pas de risque saisi : les scénarios en R sont approximatifs.",
