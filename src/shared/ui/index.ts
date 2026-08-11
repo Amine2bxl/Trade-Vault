@@ -15,7 +15,26 @@ export { cn } from "./cn";
 
 // Design tokens — the centralized landing theme (typography, color, surface,
 // motion). The single reference every primitive and future screen builds on.
-export { tokens, font, color, accentVar, surface, radius, motion, density, type } from "./tokens";
+export {
+  tokens,
+  font,
+  color,
+  accentVar,
+  surface,
+  radius,
+  motion,
+  density,
+  type,
+  // Semantic layer — the seven levels of depth, plus the text/border/elevation,
+  // duration, z-index and interaction contracts derived from them.
+  level,
+  text,
+  border,
+  elevation,
+  duration,
+  zIndex,
+  behavior,
+} from "./tokens";
 
 export { Display, Heading, Text, Label } from "./Typography";
 

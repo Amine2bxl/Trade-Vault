@@ -110,6 +110,83 @@
   --tv-accent-rgb: 6 182 212;
   --tv-accent-2-rgb: 20 184 166;
   --tv-highlight-rgb: 34 211 238;
+
+  /* ══════════════════════════════════════════════════════════════════
+   * SEMANTIC LAYER — the TradeVault visual language.
+   *
+   * Everything above is *identity* (which hue is the accent, how dark is
+   * the page). Everything below is *meaning*: what a surface is FOR, not
+   * what colour it happens to be. Themes override the identity block only;
+   * the semantic block is derived, so every theme is a variant of the same
+   * product rather than a different-looking app.
+   *
+   * Seven levels of depth, one job each:
+   *   L1 background · L2 primary surface · L3 secondary surface
+   *   L4 interactive · L5 data emphasis · L6 risk · L7 discipline
+   * ══════════════════════════════════════════════════════════════════ */
+
+  /* L2/L3/L4 — surfaces, expressed as white veils over --tv-bg so a theme
+     that changes the background keeps the exact same depth relationships. */
+  --tv-surface-1: rgb(255 255 255 / 0.022);
+  --tv-surface-2: rgb(255 255 255 / 0.04);
+  --tv-surface-3: rgb(255 255 255 / 0.065);
+  --tv-surface-hover: rgb(255 255 255 / 0.08);
+  /* The navigation rail — opaque on purpose (see Sidebar: no backdrop-filter). */
+  --tv-rail: #08111e;
+
+  /* Borders — a hairline is structure, not decoration. Three weights only. */
+  --tv-border: rgb(255 255 255 / 0.06);
+  --tv-border-strong: rgb(255 255 255 / 0.11);
+  --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.3);
+
+  /* Text — three steps. Anything below `muted` is not readable content. */
+  --tv-text-primary: #f1f5f9;
+  --tv-text-secondary: #94a3b8;
+  --tv-text-muted: #64748b;
+
+  /* L5 data emphasis / L6 risk / L7 discipline */
+  --tv-success: #10b981;
+  --tv-warning: #f59e0b;
+  --tv-danger: #ef4444;
+  --tv-success-rgb: 16 185 129;
+  --tv-warning-rgb: 245 158 11;
+  --tv-danger-rgb: 239 68 68;
+
+  /* Elevation — three steps. A surface that lifts casts a real shadow;
+     it does not glow. Glow is reserved for the accent, as an accent. */
+  --tv-elev-1: 0 1px 2px rgb(0 0 0 / 0.3);
+  --tv-elev-2: 0 8px 24px -12px rgb(0 0 0 / 0.55);
+  --tv-elev-3: 0 18px 48px -24px rgb(0 0 0 / 0.6);
+  --tv-glow-accent: 0 0 24px -6px rgb(var(--tv-accent-rgb) / 0.35);
+
+  /* Motion — four durations, two curves. Every transition in the product
+     picks from this list; nothing invents its own timing.
+     1 = pointer feedback · 2 = state/page change · 3 = entrance · 4 = deliberate */
+  --tv-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --tv-ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --tv-dur-1: 120ms;
+  --tv-dur-2: 180ms;
+  --tv-dur-3: 260ms;
+  --tv-dur-4: 400ms;
+
+  /* Stacking order — declared once so no component has to guess a number. */
+  --tv-z-rail: 30;
+  --tv-z-float: 40;
+  --tv-z-nav: 50;
+  --tv-z-modal: 70;
+  --tv-z-toast: 80;
+  --tv-z-palette: 90;
+
+  /* Type scale — the ladder the `type` tokens in shared/ui/tokens.ts express
+     as classes. 10px is the floor; there is no step below it. */
+  --tv-t-display: 34px;
+  --tv-t-h1: 26px;
+  --tv-t-h2: 18px;
+  --tv-t-h3: 14px;
+  --tv-t-body: 14px;
+  --tv-t-body-sm: 13px;
+  --tv-t-caption: 12px;
+  --tv-t-micro: 10px;
 }
 
 html {
@@ -437,6 +514,11 @@ body {
 .app-main {
   min-height: 100vh;
   min-height: 100dvh;
+  /* LAYOUT STABILITY: reserve the scrollbar gutter permanently. Without this,
+     navigating from a long page (Journal) to a short one (Calculator) removes
+     the scrollbar and every centered container jumps ~8px sideways — the single
+     most visible layout shift in the product, on every navigation. */
+  scrollbar-gutter: stable;
 }
 @media (max-width: 767px) {
   .app-main {
@@ -1100,6 +1182,142 @@ svg.lucide {
  * the ambient glow without the repaint cost. */
 .shell-bg-orbs .auth-orb {
   animation: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * SEMANTIC SURFACE & INTERACTION UTILITIES
+ *
+ * These are the classes new surfaces should reach for instead of re-deriving
+ * `bg-white/[0.02] border border-white/[0.06]` by hand. They consume the
+ * semantic tokens above, so retinting a theme retints every one of them.
+ * ══════════════════════════════════════════════════════════════════════ */
+
+/* L2 — primary surface. The default panel: a card, a section, a list. */
+.tv-l2 {
+  background: var(--tv-surface-1);
+  border: 1px solid var(--tv-border);
+}
+/* L3 — secondary surface. A panel INSIDE a panel: a row, a nested tile. */
+.tv-l3 {
+  background: var(--tv-surface-2);
+  border: 1px solid var(--tv-border);
+}
+/* L4 — interactive rest state. Buttons, chips, toggles at rest. */
+.tv-l4 {
+  background: var(--tv-surface-3);
+  border: 1px solid var(--tv-border-strong);
+}
+/* A structural hairline: separators, table rules, section splits. */
+.tv-hairline {
+  border-color: var(--tv-border);
+}
+
+/* Interactive feedback contract — one press/hover language for everything
+   that responds to a pointer. Transform + colour only: never layout. */
+.tv-interactive {
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    border-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-interactive:hover {
+    background: var(--tv-surface-hover);
+  }
+}
+.tv-interactive:active {
+  transform: scale(0.97);
+}
+
+/* Focus — visible, themed, and identical on every focusable surface. It is an
+   accessibility contract, not a style choice, so it is defined once. */
+.tv-interactive:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgb(var(--tv-highlight-rgb) / 0.65);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+/* Numeric role — prices, R, P&L. Tabular so digits never jitter as values
+   change, slightly tightened so long figures stay compact. */
+.tv-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * PAGE TRANSITION
+ *
+ * Deliberately almost nothing: 180ms, opacity 0.55→1 plus a 4px rise. It is
+ * enough to signal "the view changed" and short enough that it never sits
+ * between the trader and the data. It starts at 0.55 rather than 0 so the
+ * page is legible for the whole animation — a from-zero fade reads as a
+ * flash of blank screen, which is exactly what made navigation feel slow.
+ *
+ * Applied by toggling `.page-in` on a wrapper that is NEVER remounted, so
+ * scroll position, filters and expanded rows survive the transition.
+ * ══════════════════════════════════════════════════════════════════════ */
+@keyframes pageIn {
+  from {
+    opacity: 0.55;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.page-in {
+  animation: pageIn var(--tv-dur-2) var(--tv-ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-in {
+    animation: none;
+  }
+}
+
+/* Value change — a number that just updated pulses its own colour for a beat.
+   No layout, no movement: the eye is drawn to WHAT changed, not to motion. */
+@keyframes valueTick {
+  from {
+    color: var(--tv-highlight);
+  }
+  to {
+    color: inherit;
+  }
+}
+.tv-tick {
+  animation: valueTick var(--tv-dur-4) var(--tv-ease-out);
+}
+
+/* Confirmation — the micro-acknowledgement for a completed checklist item,
+   a saved trade, a reached goal. One spring, 320ms, then gone. */
+@keyframes confirmPop {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.4;
+  }
+  55% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.tv-confirm {
+  animation: confirmPop 0.32s var(--tv-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-tick,
+  .tv-confirm {
+    animation: none;
+  }
 }
 
 /* Landing styles: split to src/app/pages/landing.css (lazy-loaded) */

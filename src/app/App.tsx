@@ -78,6 +78,7 @@ import AccountSwitcher from "./components/AccountSwitcher";
 import NotificationDetailModal from "./components/NotificationDetailModal";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
+import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
@@ -612,11 +613,24 @@ function AppContent() {
             au lieu d'un simple échange. La remise à zéro voulue est portée
             par `resetKey` sur la frontière d'erreur, qui, elle, doit bien
             repartir de zéro quand la page change. */}
-        <div>
-          {/* Contextual skeleton: the loading frame mimics the destination
-              page's real layout (chart grid, trade list, calendar…). */}
+        {/* PageTransition ne remonte JAMAIS son enfant (voir le composant) : la
+            navigation gagne une transition de 180 ms sans perdre le défilement,
+            les filtres ni les lignes dépliées de la page quittée. */}
+        <PageTransition page={page}>
+          {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
+              destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
+              En dessous, le chunk est déjà en mémoire (préchargement au survol
+              + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
+              gris de deux frames : le signal « ça charge » sans le chargement.
+              L'espace, lui, reste réservé, donc rien ne bouge. */}
           <PageErrorBoundary resetKey={page}>
-            <Suspense fallback={<SkeletonForPage page={page} />}>
+            <Suspense
+              fallback={
+                <DeferredFallback key={page}>
+                  <SkeletonForPage page={page} />
+                </DeferredFallback>
+              }
+            >
               {page === "dashboard" && (
                 <Dashboard
                   trades={trades}
@@ -668,7 +682,7 @@ function AppContent() {
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
             </Suspense>
           </PageErrorBoundary>
-        </div>
+        </PageTransition>
       </main>
       {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
       <AccountSwitcher
