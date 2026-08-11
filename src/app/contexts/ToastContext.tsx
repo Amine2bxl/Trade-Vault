@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { CheckCircle2, XCircle, Info, X } from "lucide-react";
 import { cn } from "../utils/cn";
 
@@ -42,8 +50,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [remove],
   );
 
+  // `toast` is stable, but `{ toast }` was not: a fresh object every render.
+  // ToastProvider re-renders on every toast shown AND on every auto-dismiss,
+  // so each notification invalidated the context twice and forced a re-render
+  // of every `useToast()` consumer in the app — pages, modals, the shell. The
+  // memo makes the value identity as stable as the function inside it.
+  const value = useMemo(() => ({ toast }), [toast]);
+
   return (
-    <ToastCtx.Provider value={{ toast }}>
+    <ToastCtx.Provider value={value}>
       {children}
       <div className="fixed z-[100] bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 flex flex-col gap-2 items-center md:items-end pointer-events-none px-4 md:px-0 w-full md:w-auto">
         {items.map((t) => (

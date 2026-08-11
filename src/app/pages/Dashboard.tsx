@@ -301,8 +301,7 @@ export default function Dashboard({
             <Plus className="w-4 h-4" /> {t("common.addTrade")}
             {hasDraft && (
               <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />{" "}
-                {t("trade.draftBadge")}
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
               </span>
             )}
           </Button>

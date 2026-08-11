@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  type ReactNode,
+} from "react";
 import { loadTradingRules, type TradingRule } from "../utils/tradingRules";
 
 interface TradingRulesContextValue {
@@ -26,11 +34,12 @@ export function TradingRulesProvider({
     refresh();
   }, [refresh]);
 
-  return (
-    <TradingRulesContext.Provider value={{ rules, refresh }}>
-      {children}
-    </TradingRulesContext.Provider>
-  );
+  // Même raison que ToastContext : sans mémo, l'objet de contexte change à
+  // chaque rendu du fournisseur et tous les consommateurs re-rendent, même
+  // quand ni les règles ni `refresh` n'ont bougé.
+  const value = useMemo(() => ({ rules, refresh }), [rules, refresh]);
+
+  return <TradingRulesContext.Provider value={value}>{children}</TradingRulesContext.Provider>;
 }
 
 export function useTradingRulesContext(): TradingRulesContextValue {

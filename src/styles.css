@@ -735,10 +735,25 @@ input[type="number"] {
 .glass {
   /* Deep-navy glass — same blue family as the landing cards (#0a1625/#0b1727).
    * The hairline border stays deliberately faint: surfaces should be read by
-   * their fill, not outlined like a wireframe. */
-  background: linear-gradient(135deg, rgba(13, 24, 40, 0.72) 0%, rgba(10, 19, 32, 0.44) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+   * their fill, not outlined like a wireframe.
+   *
+   * NO `backdrop-filter` HERE — and this is the single biggest rendering win in
+   * the product. `.glass` is the page-level card: a dashboard carries a dozen of
+   * them, Analytics more. Every one of those forced the compositor to snapshot
+   * the area behind it and run a 24px blur each time it repainted — on scroll,
+   * on hover, on every data update, on the device least able to afford it.
+   *
+   * What was actually behind them? A static gradient and two static orbs. The
+   * blur of a static gradient is… the same gradient. So the effect cost a great
+   * deal and showed almost nothing. The fill is raised slightly to land on the
+   * same rendered colour, and the panel stays translucent so a theme change
+   * still reads through it.
+   *
+   * Blur is KEPT where it means something: `.glass-strong` (modals and menus,
+   * which sit over real content), and the floating docks, which overlay the
+   * page as it scrolls under them. Those are a handful of surfaces at a time,
+   * not dozens. */
+  background: linear-gradient(135deg, rgba(13, 24, 40, 0.86) 0%, rgba(10, 19, 32, 0.66) 100%);
   border: 1px solid rgba(56, 84, 116, 0.18);
 }
 .glass-strong {
@@ -1032,7 +1047,8 @@ input[type="range"]::-webkit-slider-thumb {
   to {
     background-position: -200% 0;
   }
-}.skeleton {
+}
+.skeleton {
   background: linear-gradient(
     100deg,
     rgba(30, 41, 59, 0.45) 40%,
@@ -1096,7 +1112,6 @@ svg.lucide {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 
 /* ── shared button system ── */
 /* These classes are used by <Button variant="primary|ghost"> across the
