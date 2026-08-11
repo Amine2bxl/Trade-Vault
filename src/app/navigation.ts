@@ -13,6 +13,8 @@ import {
   Calculator,
   Settings as SettingsIcon,
   Target,
+  User,
+  Dices,
 } from "lucide-react";
 import type { Page } from "./types";
 import type { TKey } from "./i18n/translations";
@@ -49,6 +51,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "tradingplan", labelKey: "nav.tradingPlan", icon: Map },
       { id: "goals", labelKey: "nav.goals", icon: Target },
+      { id: "simulator", labelKey: "nav.simulator", icon: Dices },
       { id: "news", labelKey: "nav.news", icon: Newspaper },
       { id: "calculator", labelKey: "nav.calculator", icon: Calculator },
       { id: "checklist", labelKey: "nav.checklist", icon: ClipboardCheck },

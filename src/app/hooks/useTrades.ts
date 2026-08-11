@@ -38,6 +38,33 @@ export function tradesQueryKey(userId: string | null | undefined, accountId: str
   return ["trades", userId ?? null, accountId] as const;
 }
 
+/**
+ * Purge le miroir sessionStorage des trades d'un utilisateur.
+ *
+ * INDISPENSABLE APRÈS UNE ÉCRITURE EN MASSE côté serveur — un recalibrage, par
+ * exemple. Invalider la requête React Query ne suffit pas : `initialData` relit
+ * sessionStorage et repeint les ANCIENNES valeurs pendant que le refetch part.
+ * L'utilisateur voit alors ses montants d'avant et conclut que l'opération n'a
+ * rien fait, alors qu'elle a bien eu lieu en base.
+ *
+ * La construction des clés reste ici, où elle est déjà définie : la dupliquer
+ * ailleurs garantirait qu'un des deux endroits finisse par diverger.
+ */
+export function clearTradesCache(userId: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    const prefix = `tv:trades:${userId}:`;
+    const doomed: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith(prefix)) doomed.push(key);
+    }
+    for (const key of doomed) sessionStorage.removeItem(key);
+  } catch {
+    /* stockage indisponible — le refetch corrigera l'affichage */
+  }
+}
+
 export function useTrades(
   userId: string | undefined,
   accountId: string | null,

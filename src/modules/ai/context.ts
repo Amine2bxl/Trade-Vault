@@ -50,6 +50,23 @@ export interface AIUserContext {
    * Absente = échelle d'origine. Voir `app/utils/accountCalibration.ts`.
    */
   calibration?: { originalBalance: number; currentBalance: number; scale: number };
+  /**
+   * Resultat DEJA calcule par le moteur probabiliste. Voir
+   * `modules/probability` : le coach le lit, il ne simule jamais.
+   */
+  simulation?: {
+    engineVersion: string;
+    method: string;
+    sampleSize: number;
+    passProbability: number;
+    riskOfRuin: number;
+    medianPnl: number;
+    medianDrawdown: number;
+    horizonTrades: number;
+    /** Le changement simule, quand la question en demandait un (« risque
+     *  divise par deux »). Absent = scenario tel qu'enregistre. */
+    scenario?: string;
+  };
   /** UI language (ISO 639-1) — answers are written in this language. */
   language?: string;
 }
@@ -138,6 +155,22 @@ export function contextBlocks(ctx: AIUserContext): string {
         "numbers and cite them; they are the evidence behind every diagnosis. " +
         "P&L values are in account currency, winRatePct and driftPct are " +
         `percentages):\n${JSON.stringify(ctx.signals)}`,
+    );
+  }
+  if (ctx.simulation) {
+    // Le seul endroit d'ou une probabilite a le droit de venir. Le bloc porte
+    // sa methode et sa taille d'echantillon pour que la reponse puisse dire
+    // d'ou sort le chiffre — « 62 % simule sur tes 140 trades », jamais
+    // « 62 % de chances ».
+    blocks.push(
+      "SIMULATION (produced by the deterministic Monte-Carlo engine — the ONLY " +
+        "source of any probability. Never recompute, never estimate another " +
+        "one. passProbability and riskOfRuin are 0..1; medianPnl and " +
+        "medianDrawdown are in account currency; sampleSize is how many real " +
+        "trades were resampled — say so when it is thin. When `scenario` is " +
+        "present, this simulation answers the change the trader just asked " +
+        "about, not their saved setup — say which change it reflects):\n" +
+        JSON.stringify(ctx.simulation),
     );
   }
   if (ctx.trades?.length) {

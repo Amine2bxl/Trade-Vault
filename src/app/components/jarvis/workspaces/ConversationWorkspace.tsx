@@ -4,6 +4,13 @@ import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
 import { useAccounts } from "../../../contexts/AccountContext";
+import { loadScenarios } from "../../../store/simulations";
+import { buildDataset } from "@/modules/probability/dataset";
+import { ENGINE_VERSION, runSimulation, type SimulationConfig } from "@/modules/probability/engine";
+import type { SimDataset } from "@/modules/probability/dataset";
+import { detectWhatIf } from "@/modules/probability/intent";
+import { applyLever } from "@/modules/probability/sensitivity";
+import type { CoachV1Payload } from "../../../utils/aiContext";
 import { isCalibrated } from "../../../utils/accountCalibration";
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
@@ -82,6 +89,9 @@ function isTransient(err: unknown): boolean {
 
 const seededUsers = new Set<string>();
 
+/** Ce que Jarvis recoit d'une simulation — un resume, jamais le moteur. */
+type SimulationSummary = NonNullable<CoachV1Payload["simulation"]>;
+
 export default function ConversationWorkspace({ context, initialPrompt }: JarvisWorkspaceProps) {
   const { t, lang } = useT();
   const { activeAccount } = useAccounts();
@@ -97,6 +107,104 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   }, [activeAccount]);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Derniere simulation enregistree pour ce compte, rejouee a l'identique
+  // depuis sa graine. Jarvis LIT ce resultat ; il ne simule jamais lui-meme —
+  // un pourcentage produit par un modele de langage est invente, avec l'aplomb
+  // d'un vrai. Reste `undefined` tant qu'aucun scenario n'a ete enregistre, et
+  // la consigne du coach est alors de le dire.
+  // Une ref, et non un etat : l'envoi de la question est un `useCallback` dont
+  // la liste de dependances est volontairement partielle. Passer par l'etat
+  // capturerait la valeur du premier rendu, et Jarvis repondrait « je n'ai pas
+  // de simulation » alors qu'elle vient d'etre chargee.
+  const lastSimulationRef = useRef<SimulationSummary | undefined>(undefined);
+  // La configuration de base est conservee pour pouvoir REJOUER le scenario
+  // avec le changement demande par la question. Sans elle, « et si je risquais
+  // moitie moins ? » ne pourrait recevoir que le rappel du scenario d'hier.
+  const baseConfigRef = useRef<SimulationConfig | null>(null);
+  const datasetRef = useRef<SimDataset | null>(null);
+
+  /**
+   * La simulation transmise a Jarvis pour CETTE question.
+   *
+   * Quand la question demande explicitement un changement (« et si je risquais
+   * moitie moins ? »), le moteur rejoue le scenario avec ce changement et c'est
+   * ce resultat-la qui part. Sinon, c'est le scenario enregistre tel quel.
+   *
+   * La reconnaissance d'intention est volontairement etroite : au moindre
+   * doute, `detectWhatIf` rend `null` et on retombe sur le scenario
+   * enregistre. Deviner large ferait recevoir au trader un chiffre calcule sur
+   * une intention qu'il n'a pas exprimee — et il le croirait.
+   */
+  const simulationFor = useCallback((query: string): SimulationSummary | undefined => {
+    const base = baseConfigRef.current;
+    const dataset = datasetRef.current;
+    if (!base || !dataset) return lastSimulationRef.current;
+
+    const lever = detectWhatIf(query);
+    if (!lever) return lastSimulationRef.current;
+
+    const result = runSimulation(dataset, applyLever(base, lever));
+    return {
+      engineVersion: result.engineVersion,
+      method: ENGINE_VERSION,
+      sampleSize: result.sampleSize,
+      passProbability: result.passProbability,
+      riskOfRuin: result.riskOfRuin,
+      medianPnl: result.pnl.median,
+      medianDrawdown: result.drawdown.median,
+      horizonTrades: base.tradesPerPath,
+      scenario: lever.id,
+    };
+  }, []);
+  const setLastSimulation = useCallback((value: SimulationSummary | undefined) => {
+    lastSimulationRef.current = value;
+  }, []);
+  useEffect(() => {
+    let alive = true;
+    loadScenarios(activeAccount?.id ?? null)
+      .then((list) => {
+        if (!alive) return;
+        const latest = list.find((s) => s.seed !== null && s.lastRunAt !== null);
+        if (!latest) {
+          setLastSimulation(undefined);
+          return;
+        }
+        const dataset = buildDataset(context.trades);
+        if (dataset.trades.length === 0) return;
+        const perDay = Math.max(1, Math.round(dataset.tradesPerDay ?? 1));
+        const horizon =
+          latest.horizon.unit === "trades"
+            ? latest.horizon.value
+            : Math.max(1, Math.round(perDay * latest.horizon.value));
+        const config: SimulationConfig = {
+          rules: latest.rules,
+          tradesPerPath: horizon,
+          tradesPerDay: perDay,
+          runs: latest.runs,
+          riskMultiplier: latest.riskMultiplier,
+          stopAfterLosses: latest.stopAfterLosses,
+          seed: latest.seed as number,
+        };
+        baseConfigRef.current = config;
+        datasetRef.current = dataset;
+        const result = runSimulation(dataset, config);
+        setLastSimulation({
+          engineVersion: result.engineVersion,
+          method: ENGINE_VERSION,
+          sampleSize: result.sampleSize,
+          passProbability: result.passProbability,
+          riskOfRuin: result.riskOfRuin,
+          medianPnl: result.pnl.median,
+          medianDrawdown: result.drawdown.median,
+          horizonTrades: horizon,
+        });
+      })
+      .catch(() => setLastSimulation(undefined));
+    return () => {
+      alive = false;
+    };
+  }, [activeAccount?.id, context.trades, setLastSimulation]);
   const rules = useTradingRules();
   // Signaux comportementaux — recalculés à partir des trades du contexte, pour
   // adosser la preuve chiffrée (📊) des réponses à de vraies données.
@@ -367,6 +475,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         // avaient été tradés tels quels et conclurait « tu as doublé ton
         // risque » alors que le trader risque toujours 1 %.
         calibration,
+        // La derniere simulation enregistree pour ce compte. C'est la SEULE
+        // source d'ou une probabilite a le droit de venir : sans ce bloc, la
+        // consigne du coach est de dire qu'il n'a pas de simulation, pas d'en
+        // estimer une.
+        simulation: simulationFor(query),
       });
       // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
       // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux

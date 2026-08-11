@@ -41,7 +41,7 @@ export function useScreenshotUrls(paths: string[]): Record<string, string> {
         const snapshot: Record<string, string> = {};
         for (const p of paths) {
           const entry = urlCache.get(p);
-          snapshot[p] = entry ? entry.url : (p.startsWith("data:") ? p : "");
+          snapshot[p] = entry ? entry.url : p.startsWith("data:") ? p : "";
         }
         urlsRef.current = snapshot;
         forceRender((n) => n + 1);
@@ -58,7 +58,7 @@ export function useScreenshotUrls(paths: string[]): Record<string, string> {
   const snapshot: Record<string, string> = {};
   for (const p of paths) {
     const entry = urlCache.get(p);
-    snapshot[p] = entry ? entry.url : (p.startsWith("data:") ? p : urlsRef.current[p] ?? "");
+    snapshot[p] = entry ? entry.url : p.startsWith("data:") ? p : (urlsRef.current[p] ?? "");
   }
 
   return snapshot;

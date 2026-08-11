@@ -38,6 +38,7 @@ const loadCalculator = () => import("./pages/LotSizeCalculator");
 const loadSettings = () => import("./pages/Settings");
 const loadReports = () => import("./pages/Reports");
 const loadGoals = () => import("./pages/Goals");
+const loadSimulator = () => import("./pages/Simulator");
 const loadTradingPlan = () => import("./pages/TradingPlan");
 const loadAppearance = () => import("./pages/Appearance");
 const loadSubscription = () => import("./pages/Subscription");
@@ -58,6 +59,7 @@ export const LotSizeCalculator = lazy(loadCalculator);
 export const Settings = lazy(loadSettings);
 export const Reports = lazy(loadReports);
 export const Goals = lazy(loadGoals);
+export const Simulator = lazy(loadSimulator);
 export const TradingPlan = lazy(loadTradingPlan);
 export const Appearance = lazy(loadAppearance);
 export const Subscription = lazy(loadSubscription);
@@ -80,6 +82,7 @@ const LOADERS: Partial<Record<Page, () => Promise<unknown>>> = {
   settings: loadSettings,
   reports: loadReports,
   goals: loadGoals,
+  simulator: loadSimulator,
   tradingplan: loadTradingPlan,
   appearance: loadAppearance,
   subscription: loadSubscription,

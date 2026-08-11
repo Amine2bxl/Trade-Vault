@@ -143,47 +143,42 @@ export async function updateAccount(
 /**
  * Recalibre un compte : convertit les trades DÉJÀ ENCODÉS, une seule fois.
  *
- * Deux écritures, dans cet ordre imposé :
- *   1. la conversion des lignes `trades`, en une instruction SQL atomique ;
- *   2. la mise à jour du compte (nouveau solde, facteur cumulé, horodatage).
+ * UN SEUL APPEL, UNE SEULE TRANSACTION. La conversion des trades et la mise à
+ * jour du compte se font désormais dans la même fonction SQL. La version
+ * précédente les séparait en deux écritures indépendantes, et cette séparation
+ * a réellement produit l'incident qu'elle rendait possible : des comptes
+ * marqués « recalibré ×2 » dont aucun trade n'avait été converti, affichant
+ * des risques de 174 $ sur un capital de 500 000 $.
  *
- * L'ordre compte : si la conversion échoue, le compte n'est pas marqué comme
- * recalibré et l'opération peut être relancée telle quelle. L'inverse
- * laisserait un compte prétendant une échelle que ses trades n'ont pas.
+ * L'état était même définitif : au second essai, le facteur se calcule depuis
+ * le solde courant — déjà passé à la nouvelle valeur — donc 1, et la fonction
+ * sortait sans rien faire. Aucune manipulation dans l'interface ne pouvait
+ * rattraper ça.
  *
  * `p_cutoff` est l'instant de la demande : seuls les trades encodés AVANT sont
  * convertis. Ceux saisis après ont été tradés sur le nouveau capital.
  *
- * Le `.eq("user_id", userId)` double la protection RLS, et la fonction SQL
- * s'exécute en `security invoker` — un identifiant de compte deviné ne donne
- * accès à rien.
+ * La fonction s'exécute en `security invoker` : les politiques RLS de `trades`
+ * et `accounts` s'appliquent à l'appelant, et le `user_id = auth.uid()`
+ * explicite double la garde.
  */
 export async function recalibrateAccount(
-  userId: string,
+  _userId: string,
   id: string,
   input: { originalBalance: number; targetBalance: number; factor: number; cumulative: number },
 ): Promise<number> {
   const cutoff = new Date().toISOString();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("recalibrate_account_trades", {
+  const { data, error } = await (supabase as any).rpc("recalibrate_account", {
     p_account_id: id,
     p_factor: input.factor,
     p_cutoff: cutoff,
+    p_target_balance: input.targetBalance,
+    p_original_balance: input.originalBalance,
+    p_cumulative: input.cumulative,
   });
   if (error) throw error;
-
-  const { error: accErr } = await supabase
-    .from("accounts")
-    .update({
-      starting_balance: input.targetBalance,
-      calibration_scale: input.cumulative,
-      original_balance: input.originalBalance,
-      calibrated_at: cutoff,
-    } as never)
-    .eq("id", id)
-    .eq("user_id", userId);
-  if (accErr) throw accErr;
 
   return Number(data) || 0;
 }

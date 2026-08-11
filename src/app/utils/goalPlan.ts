@@ -42,13 +42,23 @@ export interface GoalPlan {
 
 export const HORIZON = 6;
 
-// ── Storage (goal_plans, one active plan per user) ───────────────────────────
+// ── Storage (goal_plans, un plan actif par COMPTE) ───────────────────────────
+//
+// Les objectifs etaient globaux alors que tout le reste — trades, statistiques,
+// simulateur — est scope par sous-compte. Un trader avec un compte perso et un
+// compte finance voyait le meme objectif de capital sur les deux, mesure contre
+// le P&L du compte affiche : la barre sautait au changement de compte.
+//
+// `accountId` est donc requis partout ici. Le laisser optionnel aurait garanti
+// qu'un appelant l'oublie et retrouve le bug d'origine sans que rien ne le
+// signale.
 
-export async function loadGoalPlan(userId: string): Promise<GoalPlan | null> {
+export async function loadGoalPlan(userId: string, accountId: string): Promise<GoalPlan | null> {
   const { data, error } = await supabase
     .from("goal_plans")
     .select("goals, started_at, horizon_months, tasks_done")
     .eq("user_id", userId)
+    .eq("account_id", accountId)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -60,9 +70,16 @@ export async function loadGoalPlan(userId: string): Promise<GoalPlan | null> {
   };
 }
 
-export async function saveGoalPlan(userId: string, plan: GoalPlan): Promise<void> {
+export async function saveGoalPlan(
+  userId: string,
+  accountId: string,
+  plan: GoalPlan,
+): Promise<void> {
+  // La cle primaire est (user_id, account_id) : l'`upsert` doit porter les
+  // deux, sinon il ecraserait le plan d'un autre compte.
   const { error } = await supabase.from("goal_plans").upsert({
     user_id: userId,
+    account_id: accountId,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     goals: plan.goals as any,
     started_at: plan.startedAt,
@@ -74,13 +91,18 @@ export async function saveGoalPlan(userId: string, plan: GoalPlan): Promise<void
   if (error) throw error;
 }
 
-export async function deleteGoalPlan(userId: string): Promise<void> {
-  const { error } = await supabase.from("goal_plans").delete().eq("user_id", userId);
+export async function deleteGoalPlan(userId: string, accountId: string): Promise<void> {
+  const { error } = await supabase
+    .from("goal_plans")
+    .delete()
+    .eq("user_id", userId)
+    .eq("account_id", accountId);
   if (error) throw error;
 }
 
 export async function setTaskDone(
   userId: string,
+  accountId: string,
   plan: GoalPlan,
   key: string,
   done: boolean,
@@ -93,7 +115,8 @@ export async function setTaskDone(
     .from("goal_plans")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update({ tasks_done: tasksDone as any, updated_at: new Date().toISOString() })
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .eq("account_id", accountId);
   if (error) throw error;
   return next;
 }

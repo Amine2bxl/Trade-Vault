@@ -34,6 +34,7 @@ import {
   monthTaskCompletion,
   tasksForMonth,
 } from "../../utils/goalPlan";
+import type { GoalForecast } from "@/modules/probability/goals";
 
 const KIND_META: Record<
   GoalKind,
@@ -370,6 +371,7 @@ export function PlanView({
   onDelete,
   onToggleTask,
   onManualValue,
+  forecast,
 }: {
   plan: GoalPlan;
   ctx: MeasureCtx;
@@ -379,6 +381,10 @@ export function PlanView({
   onDelete: () => void;
   onToggleTask: (key: string, done: boolean) => void;
   onManualValue: (goalId: string, value: number) => void;
+  /** Projection de l'objectif de capital. `null` quand elle n'a pas de
+   *  reponse honnete : historique trop court, echeance depassee, objectif
+   *  deja atteint. L'interface n'affiche alors rien. */
+  forecast?: GoalForecast | null;
 }) {
   const tr = (f: string, e: string) => (fr ? f : e);
   const cur = currentMonthIndex(plan);
@@ -484,6 +490,28 @@ export function PlanView({
                     }}
                   />
                 </div>
+                {/* La barre dit OÙ il en est ; elle ne dit pas si ça va se
+                    faire. Seul un objectif de capital est projetable : le
+                    moteur rééchantillonne des P&L, il ne sait rien dire d'un
+                    objectif de win rate ou de discipline, et en fabriquer un
+                    pourcentage serait inventer un chiffre. */}
+                {g.kind === "capital" && !finalReached && forecast && (
+                  <p className="mt-2 text-[11px] text-slate-400 tabular-nums">
+                    {tr(
+                      `${Math.round(forecast.probability * 100)} % de chances d'y arriver au rythme actuel`,
+                      `${Math.round(forecast.probability * 100)}% chance at your current pace`,
+                    )}
+                    {forecast.medianDaysToTarget !== null && (
+                      <span className="text-slate-500">
+                        {" · "}
+                        {tr(
+                          `~${Math.round(forecast.medianDaysToTarget)} j si ça passe`,
+                          `~${Math.round(forecast.medianDaysToTarget)}d if it lands`,
+                        )}
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             );
           })}

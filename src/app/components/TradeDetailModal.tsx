@@ -463,7 +463,9 @@ export default function TradeDetailModal({
                               loading="lazy"
                               decoding="async"
                               className="w-full max-h-[420px] object-contain"
-                              onError={() => { invalidateScreenshot(shot); }}
+                              onError={() => {
+                                invalidateScreenshot(shot);
+                              }}
                             />
                           ) : (
                             <div className="w-full h-32 flex items-center justify-center">

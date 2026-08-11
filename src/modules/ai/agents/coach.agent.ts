@@ -62,6 +62,27 @@ export interface CoachInput {
    * à chaque session et un coach qui se souvient de ce qu'il lui a dit.
    */
   memory?: { kind: string; content: string }[];
+  /**
+   * Résultat DÉJÀ CALCULÉ par le moteur probabiliste (`modules/probability`).
+   *
+   * Le coach le LIT et l'explique. Il ne simule jamais : un modèle de langage
+   * ne rééchantillonne pas 2 000 trajectoires, et un pourcentage qu'il produit
+   * de lui-même est inventé — avec l'aplomb d'un vrai. Absent quand aucune
+   * simulation n'a tourné : la consigne est alors de le DIRE.
+   */
+  simulation?: {
+    engineVersion: string;
+    method: string;
+    sampleSize: number;
+    passProbability: number;
+    riskOfRuin: number;
+    medianPnl: number;
+    medianDrawdown: number;
+    horizonTrades: number;
+    /** Le changement simule, quand la question en demandait un (« risque
+     *  divise par deux »). Absent = scenario tel qu'enregistre. */
+    scenario?: string;
+  };
 }
 
 /**
@@ -116,7 +137,14 @@ export const ANTI_HALLUCINATION =
   "invent or estimate a number, name or date that is not present there. If the " +
   "data needed to answer is missing or too thin, say so explicitly instead of " +
   "guessing. You analyze the trader's past data only — you never predict the " +
-  "market or give financial advice.";
+  "market or give financial advice.\n" +
+  "SIMULATION RULE: probabilities (chance of passing, risk of ruin, where the " +
+  "P&L could land) come ONLY from the SIMULATION block. You never run, " +
+  "approximate or reason your way to one. If the trader asks a what-if and no " +
+  "SIMULATION block is present, answer that you have no simulation for that " +
+  "yet and point them to the Simulator — do not produce a number. When you do " +
+  "quote one, call it a simulated probability based on their own history, " +
+  "never a prediction, and mention the sample size when it is thin.";
 
 /**
  * Answer shape. Deliberately conversational: the previous format forced a

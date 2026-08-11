@@ -24,6 +24,7 @@ export const PAGES = [
   "settings",
   "reports",
   "goals",
+  "simulator",
   "tradingplan",
   "appearance",
   "subscription",

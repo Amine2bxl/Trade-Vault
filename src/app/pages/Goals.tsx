@@ -9,6 +9,8 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import type { Trade } from "../types";
 import { computeStats } from "../utils/tradeCalcs";
 import { useGoalProgress } from "../hooks/useGoalProgress";
+import { buildDataset } from "@/modules/probability/dataset";
+import { forecastCapitalGoal } from "@/modules/probability/goals";
 import { loadStartingBalance } from "../store";
 import { sendPushToSelf } from "@/backend/push.functions";
 import {
@@ -47,10 +49,10 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !activeId) return;
     let active = true;
     setLoading(true);
-    Promise.all([loadGoalPlan(user.id), loadStartingBalance(user.id)])
+    Promise.all([loadGoalPlan(user.id, activeId), loadStartingBalance(user.id)])
       .then(([p, b]) => {
         if (!active) return;
         setPlan(p);
@@ -69,9 +71,26 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   // objectif selon la page ouverte.
   const { ctx } = useGoalProgress(trades, user?.id, activeId);
 
+  // Projection de l'objectif de capital. La barre de progression dit ou le
+  // trader en est ; elle ne dit pas si ca va se faire. `null` quand la
+  // question n'a pas de reponse honnete (historique trop court, echeance
+  // depassee, objectif deja atteint) — l'interface n'affiche alors rien.
+  const capitalForecast = useMemo(() => {
+    const goal = plan?.goals.find((g) => g.kind === "capital");
+    if (!goal) return null;
+    const current = ctx.startingBalance + ctx.stats.totalPnl;
+    // Jours de bourse restants sur l'horizon du plan, ~21 par mois.
+    const monthsLeft = Math.max(0, (plan?.horizonMonths ?? HORIZON) - currentMonthIndex(plan!));
+    return forecastCapitalGoal(buildDataset(trades), {
+      currentBalance: current,
+      targetBalance: goal.targetValue,
+      daysRemaining: Math.round(monthsLeft * 21),
+    });
+  }, [plan, ctx, trades]);
+
   const generate = useCallback(
     async (goals: GoalDef[]) => {
-      if (!user || busy || goals.length === 0) return;
+      if (!user || !activeId || busy || goals.length === 0) return;
       setBusy(true);
       const p: GoalPlan = {
         goals,
@@ -80,7 +99,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
         tasksDone: {},
       };
       try {
-        await saveGoalPlan(user.id, p);
+        await saveGoalPlan(user.id, activeId, p);
         setPlan(p);
         toast(
           tr(
@@ -107,11 +126,11 @@ export default function Goals({ trades }: { trades: Trade[] }) {
         setBusy(false);
       }
     },
-    [user, busy, toast, tr, t, sendPush],
+    [user, activeId, busy, toast, tr, t, sendPush],
   );
 
   const removePlan = useCallback(async () => {
-    if (!user || busy || !plan) return;
+    if (!user || !activeId || busy || !plan) return;
     if (
       !(await confirm(
         tr(
@@ -124,18 +143,18 @@ export default function Goals({ trades }: { trades: Trade[] }) {
       return;
     setBusy(true);
     try {
-      await deleteGoalPlan(user.id);
+      await deleteGoalPlan(user.id, activeId);
       setPlan(null);
     } catch (e) {
       console.error("Failed to delete goal plan", e);
     } finally {
       setBusy(false);
     }
-  }, [user, busy, plan, confirm, tr]);
+  }, [user, activeId, busy, plan, confirm, tr]);
 
   const toggleTask = useCallback(
     async (key: string, done: boolean) => {
-      if (!user || !plan) return;
+      if (!user || !activeId || !plan) return;
       // Optimistic — revert on failure.
       const prev = plan;
       const optimistic = {
@@ -146,7 +165,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
       };
       setPlan(optimistic);
       try {
-        await setTaskDone(user.id, prev, key, done);
+        await setTaskDone(user.id, activeId, prev, key, done);
         // All tasks of the current month just completed → celebrate + push.
         const i = currentMonthIndex(optimistic);
         if (done && monthTaskCompletion(optimistic, i) === 1) {
@@ -173,24 +192,24 @@ export default function Goals({ trades }: { trades: Trade[] }) {
         setPlan(prev);
       }
     },
-    [user, plan, toast, tr, sendPush],
+    [user, activeId, plan, toast, tr, sendPush],
   );
 
   const updateManualValue = useCallback(
     async (goalId: string, value: number) => {
-      if (!user || !plan) return;
+      if (!user || !activeId || !plan) return;
       const next: GoalPlan = {
         ...plan,
         goals: plan.goals.map((g) => (g.id === goalId ? { ...g, manualValue: value } : g)),
       };
       setPlan(next);
       try {
-        await saveGoalPlan(user.id, next);
+        await saveGoalPlan(user.id, activeId, next);
       } catch (e) {
         console.error("Failed to update goal value", e);
       }
     },
-    [user, plan],
+    [user, activeId, plan],
   );
 
   if (loading) {
@@ -230,6 +249,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
           onDelete={removePlan}
           onToggleTask={toggleTask}
           onManualValue={updateManualValue}
+          forecast={capitalForecast}
         />
       )}
     </div>
