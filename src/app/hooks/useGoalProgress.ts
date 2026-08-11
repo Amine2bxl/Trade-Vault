@@ -50,13 +50,16 @@ export function useGoalProgress(
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
+    // Sans compte actif, il n'y a pas d'objectif a charger : les plans sont
+    // desormais rattaches a un compte, comme le reste des donnees.
+    if (!userId || !accountId) {
+      setPlan(null);
       setLoading(false);
       return;
     }
     let active = true;
     setLoading(true);
-    Promise.all([loadGoalPlan(userId), loadStartingBalance(userId)])
+    Promise.all([loadGoalPlan(userId, accountId), loadStartingBalance(userId)])
       .then(([p, b]) => {
         if (!active) return;
         setPlan(p);
