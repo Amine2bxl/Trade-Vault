@@ -1276,8 +1276,8 @@ a:focus-visible,
  * ══════════════════════════════════════════════════════════════════════ */
 @keyframes pageIn {
   from {
-    opacity: 0.55;
-    transform: translate3d(0, 4px, 0);
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
@@ -1285,7 +1285,11 @@ a:focus-visible,
   }
 }
 .page-in {
-  animation: pageIn var(--tv-dur-2) var(--tv-ease-out) both;
+  /* 260 ms, pas 180 : en dessous de ~220 ms une transition n'est pas perçue
+     comme un mouvement, seulement comme un scintillement — elle coûtait donc
+     son prix sans rien rendre. Assez longue pour être lue, assez courte pour
+     ne jamais se mettre entre le trader et sa donnée. */
+  animation: pageIn var(--tv-dur-3) var(--tv-ease-out) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .page-in {

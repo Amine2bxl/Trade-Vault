@@ -613,24 +613,29 @@ function AppContent() {
             au lieu d'un simple échange. La remise à zéro voulue est portée
             par `resetKey` sur la frontière d'erreur, qui, elle, doit bien
             repartir de zéro quand la page change. */}
-        {/* PageTransition ne remonte JAMAIS son enfant (voir le composant) : la
-            navigation gagne une transition de 180 ms sans perdre le défilement,
-            les filtres ni les lignes dépliées de la page quittée. */}
-        <PageTransition page={page}>
-          {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
-              destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
-              En dessous, le chunk est déjà en mémoire (préchargement au survol
-              + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
-              gris de deux frames : le signal « ça charge » sans le chargement.
-              L'espace, lui, reste réservé, donc rien ne bouge. */}
-          <PageErrorBoundary resetKey={page}>
-            <Suspense
-              fallback={
-                <DeferredFallback key={page}>
-                  <SkeletonForPage page={page} />
-                </DeferredFallback>
-              }
-            >
+        {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
+            destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
+            En dessous, le chunk est déjà en mémoire (préchargement au survol
+            + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
+            gris de deux frames : le signal « ça charge » sans le chargement.
+            L'espace, lui, reste réservé, donc rien ne bouge. */}
+        <PageErrorBoundary resetKey={page}>
+          <Suspense
+            fallback={
+              <DeferredFallback key={page}>
+                <SkeletonForPage page={page} />
+              </DeferredFallback>
+            }
+          >
+            {/* PageTransition est DANS le Suspense, pas autour.
+                Autour, il jouait sa transition sur la boîte vide réservée
+                pendant l'attente, puis le contenu réel arrivait après coup,
+                sans aucune animation : on ne voyait donc jamais la transition
+                sur ce qui compte. Ici, l'animation se déclenche au moment où
+                la page est réellement peinte. Il ne remonte JAMAIS son enfant
+                (voir le composant) : défilement, filtres et lignes dépliées
+                survivent au changement de page. */}
+            <PageTransition page={page}>
               {page === "dashboard" && (
                 <Dashboard
                   trades={trades}
@@ -680,9 +685,9 @@ function AppContent() {
               {page === "subscription" && <Subscription />}
               {page === "inbox" && <Inbox />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-            </Suspense>
-          </PageErrorBoundary>
-        </PageTransition>
+            </PageTransition>
+          </Suspense>
+        </PageErrorBoundary>
       </main>
       {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
       <AccountSwitcher
