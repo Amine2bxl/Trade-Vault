@@ -17,9 +17,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import SessionPanel from "../components/SessionPanel";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import type { Page } from "../types";
+import type { Page, Trade } from "../types";
 import {
   loadOnboarding,
   loadChecklistConfig,
@@ -165,6 +166,8 @@ const QA_ICONS: Record<string, React.ReactNode> = {
 interface ChecklistProps {
   setPage: (p: Page) => void;
   onAddTrade: () => void;
+  /** Trades du compte actif — le panneau de séance montre ceux du jour. */
+  trades: Trade[];
 }
 
 /* ══════════════════════════════ COMPONENT ══════════════════════════════ */
@@ -206,7 +209,7 @@ async function syncWizardRules(
   }
 }
 
-export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
+export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProps) {
   const { user } = useAuth();
   const { t, lang } = useT();
   const uid = user?.id ?? "anon";
@@ -1336,6 +1339,15 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       />
 
       <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
+        {/* La séance du jour. Elle est ICI parce que c'est le moment où le
+            trader prépare sa journée : lui demander d'aller ailleurs pour
+            déclarer qu'il commence garantirait que personne ne le fasse. */}
+        <SessionPanel
+          checklistDone={nChecked}
+          checklistTotal={nActive}
+          checklistSnapshot={{ items: config.items.map((it) => it.text), checked }}
+          trades={trades}
+        />
         {day.locked && (
           <div className="flex items-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 animate-fade-in-up">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
