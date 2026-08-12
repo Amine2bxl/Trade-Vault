@@ -148,11 +148,27 @@ good. Audit every one for **exact height match** with its loaded content. A
 skeleton that resizes on arrival creates layout shift, which cancels the benefit
 it was meant to provide.
 
-### C3. Query cache
+### C3. Query cache — already satisfied, with one deliberate exception
 
 TanStack Query is already a dependency. Set a `staleTime` per query type (trades
 30 s, static config 5 min) and persist the cache so a returning user sees their
 last state immediately instead of a skeleton.
+
+**État au 2026-08-12, vérifié dans le code.** C'est déjà fait : `useTrades`
+porte `staleTime: 30_000`, le défaut global est 60 s avec `gcTime` 5 min et
+`refetchOnWindowFocus: false`, et le calendrier économique a le sien. Il n'y a
+que trois `useQuery` dans le produit ; la configuration statique ne passe pas
+par React Query.
+
+**La persistance reste dans `sessionStorage`, et c'est un choix, pas un oubli.**
+`localStorage` ferait gagner un clignotement de squelette au retour sur le
+produit. Il ferait aussi rester l'historique complet de P&L d'un trader sur le
+disque, indéfiniment, en survivant à la déconnexion, lisible sur une machine
+partagée ou empruntée. Pour un produit dont tout le contenu est la performance
+financière de quelqu'un, l'échange ne vaut pas la peine par défaut.
+
+Si cela devient un jour une option, elle est **opt-in**, avec effacement
+explicite à la déconnexion — décision produit, pas refactorisation.
 
 ## Acceptance criteria — measured, not asserted
 
