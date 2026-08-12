@@ -1143,3 +1143,114 @@ svg.lucide {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Barre d'onglets de section ──
+ *
+ * Le soulignement actif est un élément d'un pixel de large, positionné en
+ * absolu, déplacé et étiré par `transform` uniquement (translateX + scaleX).
+ * Animer `left`/`width` aurait fait recalculer la disposition à chaque frame ;
+ * `transform` compose sur le GPU et ne touche à rien d'autre.
+ */
+.section-tabs {
+  position: relative;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.section-tabs-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap; /* jamais deux rangées, même à 380px */
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.section-tabs-row::-webkit-scrollbar {
+  display: none;
+}
+.section-tab {
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.6rem 0.6rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  transition-property: color, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+.section-tab-idle {
+  color: rgb(100 116 139);
+}
+.section-tab-idle:hover {
+  color: rgb(203 213 225);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+.section-tab-active {
+  color: rgb(var(--tv-accent-rgb));
+}
+.section-tab:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: -2px;
+}
+.section-tab-underline {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 1px; /* la largeur réelle vient de scaleX */
+  height: 2px;
+  border-radius: 2px;
+  transform-origin: left center;
+  background: rgb(var(--tv-accent-rgb));
+  transition-property: transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+/* Mouvement réduit : le soulignement SAUTE à sa position, il ne glisse pas.
+   L'information (quel onglet est actif) est conservée, l'animation non. */
+@media (prefers-reduced-motion: reduce) {
+  .section-tab-underline {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ── En-tête mobile ──
+ * Le produit n'avait aucune barre supérieure sur mobile : la cloche vivait sur
+ * le bouton « Plus », qui disparaît avec le passage à six sections. */
+.mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: calc(env(safe-area-inset-top, 0px) + 0.5rem) 0.85rem 0.5rem;
+  background: rgba(8, 17, 30, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.mobile-header-action {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  color: rgb(148 163 184);
+  transition-property: color, background-color;
+  transition-duration: 150ms;
+}
+.mobile-header-action:active {
+  background-color: rgba(255, 255, 255, 0.06);
+}
