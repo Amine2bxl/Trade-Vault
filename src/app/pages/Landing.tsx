@@ -286,22 +286,6 @@ export default function Landing() {
   const [menu, setMenu] = useState(false);
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
-  // Le bas de page se monte dès que le navigateur est libre. Pas au
-  // défilement : quelqu'un qui fait défiler tout de suite ne doit pas attendre
-  // un aller-retour réseau. Pas au premier rendu non plus, sinon rien n'aurait
-  // été retiré du chemin critique.
-  const [showBelow, setShowBelow] = useState(false);
-  useEffect(() => {
-    const run = () => setShowBelow(true);
-    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
-      .requestIdleCallback;
-    if (ric) {
-      ric(run);
-      return;
-    }
-    const id = window.setTimeout(run, 200);
-    return () => window.clearTimeout(id);
-  }, []);
   const { y, pct } = useScroll();
   const cd = useCountdown();
   const spot = useSpot();
@@ -585,14 +569,21 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Les sections suivantes arrivent dans leur propre chunk. Le
-            réservoir garde une hauteur minimale pendant le chargement : sans
-            lui, la page grandirait d'un coup et le défilement sauterait sous
-            le doigt du visiteur. */}
+        {/* Les sections suivantes vivent dans leur propre chunk.
+            
+            ELLES SONT RENDUES SANS CONDITION. Une première version les montait
+            sur `requestIdleCallback` : côté serveur, l'état initial restait
+            `false` et les effets ne tournent pas — le HTML SSR n'aurait plus
+            contenu que le héros. Or c'est précisément ce HTML que lisent les
+            crawlers et les moteurs de réponse (voir le commentaire de
+            `routes/index.tsx`). On échange donc un gain d'octets contre le
+            référencement, ce qui n'est pas un échange acceptable ici.
+            
+            Ce qui reste acquis : le héros est peint depuis le HTML sans
+            attendre ce module, et le module voyage dans un fichier séparé —
+            donc en parallèle, sans retarder la première image. */}
         <Suspense fallback={<div className="min-h-[80vh]" aria-hidden />}>
-          {showBelow && (
-            <BelowFold go={go} open={open} spot={spot} faq={faq} setFaq={setFaq} cd={cd} />
-          )}
+          <BelowFold go={go} open={open} spot={spot} faq={faq} setFaq={setFaq} cd={cd} />
         </Suspense>
       </main>
 
