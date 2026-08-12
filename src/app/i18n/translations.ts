@@ -1460,6 +1460,10 @@ const en = {
   "journal.exampleBadge": "Example",
   "journal.exampleNote":
     "Example trade inserted by the demo — edit or delete it whenever you like.",
+  "cluster.fomo": "Impatience",
+  "cluster.planViolation": "Plan not followed",
+  "cluster.risk": "Risk management",
+  "cluster.exit": "Exits",
   "session.title": "Today's session",
   "session.open": "Session open",
   "session.closed": "Session closed",
