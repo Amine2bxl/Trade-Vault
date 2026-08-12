@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Eraser, Send, Loader2, Mic, MicOff, Zap } from "lucide-react";
+import { Bot, Eraser, Mic, MicOff, Zap } from "lucide-react";
+import MorphingInput from "../MorphingInput";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
@@ -849,25 +850,14 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
           )}
-          <input
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") ask(question);
-            }}
-            placeholder={t("assistant.placeholder")}
-            disabled={loading}
-            className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition disabled:opacity-50"
-          />
-          <button
-            onClick={() => ask(question)}
-            disabled={loading || !question.trim()}
-            aria-label={t("common.send")}
-            className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white shrink-0 transition"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
+          <div className="flex-1 min-w-0">
+            <MorphingInput
+              value={question}
+              onChange={setQuestion}
+              onSubmit={() => ask(question)}
+              disabled={loading}
+            />
+          </div>
         </div>
       </div>
     </div>
