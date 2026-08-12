@@ -6,3 +6,10 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+
+# Docs and specs are hand-wrapped: the line breaks in GO-LIVE.md, the specs and
+# the architecture notes carry meaning (tables, aligned columns, deliberate
+# paragraph rhythm). Reflowing them destroys that and floods feature PRs with
+# noise eslint never checks anyway.
+*.md
+*.html
