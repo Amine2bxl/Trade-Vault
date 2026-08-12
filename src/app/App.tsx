@@ -666,7 +666,9 @@ function AppContent() {
                 onOpenMissed={() => setPage("missed")}
               />
             )}
-            {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
+            {page === "checklist" && (
+              <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+            )}
             {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
             {page === "analytics" && <Analytics trades={trades} />}
             {page === "mistakes" && <Mistakes trades={trades} />}
