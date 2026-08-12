@@ -60,6 +60,7 @@ import {
   loadOnboarding,
   loadStartingBalance,
   loadMonthlyReports,
+  attachTradeToSession,
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
@@ -409,6 +410,12 @@ function AppContent() {
         toast(t("app.saveTradeFailed"), "error");
         return;
       }
+
+      // Rattachement à la séance du jour — AU MIEUX, et surtout après coup.
+      // Le trade est déjà enregistré à ce stade : s'il n'y a pas de séance
+      // ouverte, ou si l'écriture échoue, il reste un trade parfaitement
+      // valide. Le journal ne dépend jamais de la mécanique qui l'observe.
+      void attachTradeToSession(user.id, trade.id, trade.date).catch(() => {});
 
       // All post-save side effects (analysis, discipline, notifications, AI
       // hooks) run through the Automation Engine — no business logic here.
