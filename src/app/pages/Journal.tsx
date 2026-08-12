@@ -266,8 +266,25 @@ export default function Journal({
         actions={
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5 mr-1">
-              {([["list","List"],["calendar","Calendar"],["missed","Missed"]] as const).map(([k,label]) => (
-                <button key={k} onClick={() => setTab(k)} className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all", tab===k ? "bg-cyan-500/15 text-cyan-300" : "text-slate-500 hover:text-slate-300")}>{label}</button>
+              {(
+                [
+                  ["list", "List"],
+                  ["calendar", "Calendar"],
+                  ["missed", "Missed"],
+                ] as const
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => setTab(k)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all",
+                    tab === k
+                      ? "bg-cyan-500/15 text-cyan-300"
+                      : "text-slate-500 hover:text-slate-300",
+                  )}
+                >
+                  {label}
+                </button>
               ))}
             </div>
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
