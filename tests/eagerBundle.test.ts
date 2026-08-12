@@ -70,7 +70,7 @@ function staticImports(source: string): string[] {
   return out;
 }
 
-function eagerGraph(entry: string): Set<string> {
+function walk(entry: string): { files: Set<string>; packages: Set<string> } {
   const seen = new Set<string>();
   const packages = new Set<string>();
   const queue = [resolve(ROOT, entry)];
@@ -91,14 +91,32 @@ function eagerGraph(entry: string): Set<string> {
       else packages.add(resolved.split("/")[0].startsWith("@") ? resolved : resolved.split("/")[0]);
     }
   }
-  return packages;
+  return { files: seen, packages };
 }
+
+const eagerGraph = (entry: string) => walk(entry).packages;
+const eagerFiles = (entry: string) => walk(entry).files;
 
 test.each(ENTRIES)("%s reaches no heavy chart or markdown library statically", (entry) => {
   const packages = eagerGraph(entry);
   for (const heavy of MUST_BE_LAZY) {
     expect([...packages]).not.toContain(heavy);
   }
+});
+
+/**
+ * Le shell authentifié ne doit pas tirer la page de vente.
+ *
+ * `$page.tsx` importait `Landing.tsx` en statique pour son repli SSR : le
+ * build le signalait (« dynamically imported by App.tsx but also statically
+ * imported by $page.tsx ») et les 279 Ko de la landing partaient dans le
+ * chargement initial de chaque trader connecté. `index.tsx` (la route `/`),
+ * elle, DOIT l'importer : c'est la page de vente, sa surface SEO et son SSR.
+ */
+test("the authenticated route does not statically reach the landing page", () => {
+  const files = eagerFiles("src/routes/$page.tsx");
+  const landing = resolve(ROOT, "src/app/pages/Landing.tsx");
+  expect([...files]).not.toContain(landing);
 });
 
 test("the eager graph is actually being walked (guard against a silently empty test)", () => {
