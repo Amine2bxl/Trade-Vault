@@ -1,38 +1,8 @@
 import { Sparkles, Bot, Send, TrendingUp, Zap, MessageSquare, Shield } from "lucide-react";
 
-function ParticleField() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <style>{`
-        @keyframes jarvis-float {
-          0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0;}
-          20% { opacity: 0.6; }
-          80% { opacity: 0.6; }
-        }
-        .j-particle { position: absolute; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #22d3ee, #06b6d4); box-shadow: 0 0 4px 0.5px rgba(34,211,238,0.5); }
-      `}</style>
-      {Array.from({ length: 30 }).map((_, i) => {
-        const left = (i * 37 + 11) % 100;
-        const duration = 8 + (i % 5) * 2;
-        const delay = (i * 0.7) % duration;
-        const size = 1 + (i % 3) * 0.5;
-        return (
-          <div
-            key={i}
-            className="j-particle"
-            style={{
-              width: size,
-              height: size,
-              left: `${left}%`,
-              top: `${-5 + ((i * 17 + 7) % 100)}%`,
-              animation: `jarvis-float ${duration}s ${delay}s linear infinite`,
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
+// Le champ de particules (30 éléments animés en boucle) et ses keyframes
+// inlines ont été retirés : décor pur, coût de peinture permanent, et une
+// 38e animation dans une application qui n'en garde que huit.
 
 const PRIORITIES = [
   {
@@ -60,7 +30,6 @@ export default function Jarvis() {
             "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(6,182,212,.06), transparent 60%), radial-gradient(ellipse 50% 50% at 80% 80%, rgba(16,185,129,.04), transparent 60%)",
         }}
       />
-      <ParticleField />
 
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
         {/* Core visual */}
@@ -86,24 +55,19 @@ export default function Jarvis() {
               className="absolute inset-0 rounded-full"
               style={{
                 border: "1px solid rgba(6,182,212,0.12)",
-                animation: "jarvis-ring 14s linear infinite",
+                animation: "spin 14s linear infinite",
               }}
             />
             <div
               className="absolute inset-2 rounded-full"
               style={{
                 border: "1px dashed rgba(16,185,129,0.15)",
-                animation: "jarvis-ring-rev 10s linear infinite",
+                animation: "spin 10s linear infinite reverse",
               }}
             />
             <Bot className="w-14 h-14 text-cyan-400 drop-shadow-[0_0_24px_rgba(6,182,212,0.4)]" />
           </div>
         </div>
-
-        <style>{`
-          @keyframes jarvis-ring { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-          @keyframes jarvis-ring-rev { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
-        `}</style>
 
         <h1
           className="text-[2.7rem] sm:text-6xl font-extrabold tracking-tight"
@@ -119,7 +83,6 @@ export default function Jarvis() {
         >
           J.A.R.V.I.S.
         </h1>
-        <style>{`@keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }`}</style>
 
         <p className="mt-3 text-base text-slate-400 max-w-md tracking-wide">
           Ton assistant de trading personnel — analyses, discipline, mémoire.
@@ -142,7 +105,7 @@ export default function Jarvis() {
         {/* CTA */}
         <button
           onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
-          className="mt-8 inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-semibold text-white transition-all hover:scale-[1.03] active:scale-[0.98]"
+          className="mt-8 inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-semibold text-white transition hover:scale-[1.03] active:scale-[0.98]"
           style={{
             background: "linear-gradient(135deg, #06b6d4, #10b981)",
             boxShadow: "0 0 40px 6px rgba(6,182,212,0.2)",

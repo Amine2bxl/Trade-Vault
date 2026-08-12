@@ -351,7 +351,7 @@ export default function Journal({
                 key={opt.v}
                 onClick={() => setResultFilter(opt.v)}
                 className={cn(
-                  "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
+                  "flex-1 md:flex-none md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition flex items-center justify-center gap-1.5",
                   resultFilter === opt.v
                     ? opt.v === "win"
                       ? "bg-emerald-500/15 text-emerald-400"
@@ -722,7 +722,7 @@ export default function Journal({
         <div className="mt-3 text-center">
           <button
             onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-            className="px-5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 transition-all"
+            className="px-5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 transition"
           >
             {t("journal.loadMore")} ({filtered.length - visibleCount})
           </button>

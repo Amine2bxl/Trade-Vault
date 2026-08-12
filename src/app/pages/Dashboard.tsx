@@ -464,7 +464,7 @@ export default function Dashboard({
                         key={p}
                         onClick={() => changePeriod(p)}
                         className={cn(
-                          "px-2.5 md:px-3.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition-all",
+                          "px-2.5 md:px-3.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition",
                           period === p
                             ? "bg-cyan-500/15 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
                             : "text-slate-500 hover:text-slate-300",

@@ -110,7 +110,7 @@ export default function ThemeSettings() {
     return (
       <div
         className={cn(
-          "group relative rounded-2xl p-3 border transition-all cursor-pointer overflow-hidden",
+          "group relative rounded-2xl p-3 border transition cursor-pointer overflow-hidden",
           isActive
             ? "bg-white/[0.05] border-transparent shadow-lg"
             : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]",
@@ -206,7 +206,7 @@ export default function ThemeSettings() {
           ))}
           <button
             onClick={startNew}
-            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-cyan-500/40 hover:bg-cyan-500/[0.03] transition-all flex flex-col items-center justify-center gap-1.5 min-h-[136px] text-slate-500 hover:text-cyan-300"
+            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-cyan-500/40 hover:bg-cyan-500/[0.03] transition flex flex-col items-center justify-center gap-1.5 min-h-[136px] text-slate-500 hover:text-cyan-300"
           >
             <Plus className="w-5 h-5" />
             <span className="text-[11px] font-semibold">{t("appearance.new")}</span>
@@ -260,7 +260,7 @@ function Section({
       </button>
       <div
         className={cn(
-          "grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "grid transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
           open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
       >
@@ -292,7 +292,7 @@ function IconBtn({
       title={title}
       onClick={onClick}
       className={cn(
-        "w-7 h-7 rounded-lg flex items-center justify-center transition-all",
+        "w-7 h-7 rounded-lg flex items-center justify-center transition",
         active
           ? "text-amber-400"
           : danger

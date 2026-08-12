@@ -242,7 +242,7 @@ function CopilotBlock({
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-700"
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition duration-250"
                   style={{ width: `${cleanPct}%` }}
                 />
               </div>
@@ -296,7 +296,7 @@ function CopilotBlock({
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250"
                         style={{ width: `${Math.round((objPct ?? 0) * 100)}%` }}
                       />
                     </div>
@@ -316,7 +316,7 @@ function CopilotBlock({
             <button
               onClick={onOpenChecklist}
               className={cn(
-                "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border text-left transition-all hover:-translate-y-0.5",
+                "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border text-left transition hover:-translate-y-0.5",
                 checklist.locked
                   ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/10"
                   : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]",

@@ -462,7 +462,7 @@ export default function ChecklistWizard({
                         key={opt.id}
                         onClick={() => (q.multi ? toggleMulti(q, opt.id) : pickSingle(q, opt.id))}
                         className={cn(
-                          "flex items-center gap-3.5 rounded-2xl p-3.5 border text-left transition-all",
+                          "flex items-center gap-3.5 rounded-2xl p-3.5 border text-left transition",
                           on
                             ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
                             : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
@@ -529,7 +529,7 @@ export default function ChecklistWizard({
                     key={p.id}
                     onClick={() => setTime({ startTime: p.start, timeZone: p.tz })}
                     className={cn(
-                      "flex items-center justify-between rounded-2xl p-3.5 border transition-all",
+                      "flex items-center justify-between rounded-2xl p-3.5 border transition",
                       active
                         ? "bg-cyan-500/15 border-cyan-400/50"
                         : "bg-white/[0.04] border-white/[0.08] hover:border-white/20",

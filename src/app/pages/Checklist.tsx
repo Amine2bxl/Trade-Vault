@@ -1325,7 +1325,6 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
       {/* Light holographic identity: a faint drifting grid, a slow scanline and
           ambient particles — a discreet nod to the original Pre-Trade OS. */}
       <div className="tvchk-grid" />
-      <div className="tvchk-scanline" />
       <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 -z-10 opacity-[0.12]" />
       {/* Subtle validation pulse — reuses the global fade, no HUD flash. */}
       <div
@@ -1366,7 +1365,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             <button
               onClick={() => askCoach(coach.checklistReview)}
               title="Jarvis"
-              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition-all"
+              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition"
             >
               <Bot className="w-4 h-4" />
               <span className="hidden sm:inline">{t("chk.askJarvis")}</span>
@@ -1410,7 +1409,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 onClick={toggleAudio}
                 title={`${t("chk.voice")} · ${audioOn ? "on" : "off"}`}
                 className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  "w-9 h-9 rounded-xl flex items-center justify-center border transition",
                   audioOn
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                     : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
@@ -1422,7 +1421,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 onClick={toggleEdit}
                 title={t("chk.editor")}
                 className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  "w-9 h-9 rounded-xl flex items-center justify-center border transition",
                   editMode
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                     : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
@@ -1434,7 +1433,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 onClick={() => setShowConfig((v) => !v)}
                 title={t("chk.customize")}
                 className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                  "w-9 h-9 rounded-xl flex items-center justify-center border transition",
                   showConfig
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                     : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
@@ -1461,7 +1460,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
 
             <button
               onClick={() => setShowWizard(true)}
-              className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-cyan-300 border border-cyan-500/25 bg-cyan-500/10 hover:bg-cyan-500/15 transition-all"
+              className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-cyan-300 border border-cyan-500/25 bg-cyan-500/10 hover:bg-cyan-500/15 transition"
             >
               <Wand2 className="w-4 h-4" /> {t("chk.guidedSetup")}
             </button>
@@ -1480,7 +1479,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                   key={id}
                   onClick={() => setCfgTab(id)}
                   className={cn(
-                    "flex-1 rounded-lg px-2 py-1.5 text-[11px] md:text-xs font-semibold transition-all",
+                    "flex-1 rounded-lg px-2 py-1.5 text-[11px] md:text-xs font-semibold transition",
                     cfgTab === id
                       ? "bg-cyan-500/15 text-cyan-300 shadow-sm shadow-cyan-500/10"
                       : "text-slate-400 hover:text-white",
@@ -1547,7 +1546,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                     <button
                       key={tp.id}
                       onClick={() => applyTemplate(tp.id)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500/30 hover:text-white transition-all"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500/30 hover:text-white transition"
                     >
                       <span className="font-semibold">{tp.name}</span>
                       <span className="text-[10px] text-cyan-400">{tp.items.length} ✓</span>
@@ -1594,7 +1593,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                         }));
                         void syncWizardRules(user?.id, generated.items);
                       }}
-                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 shadow-lg shadow-cyan-500/15 transition-all"
+                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 shadow-lg shadow-cyan-500/15 transition"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> {t("chk.applyRecommended")}
                     </button>
@@ -1785,7 +1784,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             {/* ══ STEP 1 · PRÉPARATION — the setup checks ══ */}
             <div className="space-y-2.5 animate-fade-in-up">
               <div className="flex items-center gap-2.5">
-                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   1
                 </span>
                 <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1804,7 +1803,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                         onClick={() => toggleItem(i)}
                         style={{ animationDelay: `${0.03 * (i + 1)}s` }}
                         className={cn(
-                          "tvchk-item inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] cursor-pointer transition-all animate-fade-in-up",
+                          "tvchk-item inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] cursor-pointer transition animate-fade-in-up",
                           checked[i] && "done",
                           checked[i]
                             ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-100"
@@ -1813,7 +1812,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                       >
                         <span
                           className={cn(
-                            "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all",
+                            "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition",
                             checked[i]
                               ? "border-cyan-400 bg-cyan-400 text-[#04141b]"
                               : "border-white/25",
@@ -1836,7 +1835,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             {/* ══ STEP 2 · VALIDATION — preparation progress + session window ══ */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   2
                 </span>
                 <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1854,7 +1853,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                   </div>
                   <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250"
                       style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
                     />
                   </div>
@@ -1875,7 +1874,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             {/* ══ STEP 3 · MENTAL — motivation + emotional state ══ */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   3
                 </span>
                 <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -1897,7 +1896,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                       key={i}
                       onClick={() => setMotiv(i)}
                       className={cn(
-                        "cursor-pointer rounded-xl border px-3 py-2 text-xs transition-all",
+                        "cursor-pointer rounded-xl border px-3 py-2 text-xs transition",
                         day.motiv === i
                           ? m.ok
                             ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-200"
@@ -1945,7 +1944,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                       key={i}
                       onClick={() => setFomo(i)}
                       className={cn(
-                        "cursor-pointer rounded-xl border px-2 py-2.5 text-center transition-all",
+                        "cursor-pointer rounded-xl border px-2 py-2.5 text-center transition",
                         day.fomo === i
                           ? FOMO_TONE[i]
                           : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:border-white/[0.16]",
@@ -1986,7 +1985,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             {/* ══ STEP 4 · VERROUILLAGE — gates + responsibility ══ */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   4
                 </span>
                 <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -2008,7 +2007,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 <button
                   onClick={toggleAssume}
                   className={cn(
-                    "w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all",
+                    "w-full flex items-center gap-3 rounded-xl border p-3 text-left transition",
                     day.assume
                       ? "border-cyan-500/40 bg-cyan-500/10"
                       : "border-white/[0.08] bg-white/[0.03] hover:border-white/[0.16]",
@@ -2037,7 +2036,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
             {/* ══ STEP 5 · TRADE — the go / no-go ══ */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="tvchk-pulse w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   5
                 </span>
                 <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
@@ -2049,7 +2048,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                 onClick={initiate}
                 disabled={!allGates || day.locked}
                 className={cn(
-                  "w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wide transition-all",
+                  "w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wide transition",
                   !allGates || day.locked
                     ? "bg-white/[0.04] border border-white/[0.08] text-slate-600 cursor-not-allowed"
                     : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.01] active:scale-95",
@@ -2063,7 +2062,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
                     <button
                       key={a.id}
                       onClick={a.run}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500/30 hover:text-white transition-all [&_svg]:w-4 [&_svg]:h-4 [&_svg]:fill-none [&_svg]:stroke-current [&_svg]:[stroke-width:2] [&_svg]:[stroke-linecap:round] [&_svg]:[stroke-linejoin:round]"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-500/30 hover:text-white transition [&_svg]:w-4 [&_svg]:h-4 [&_svg]:fill-none [&_svg]:stroke-current [&_svg]:[stroke-width:2] [&_svg]:[stroke-linecap:round] [&_svg]:[stroke-linejoin:round]"
                     >
                       {QA_ICONS[a.icon]} {a.label}
                     </button>
@@ -2080,7 +2079,7 @@ export default function Checklist({ setPage, onAddTrade }: ChecklistProps) {
           nav and the FAB; a floating pill, never hidden. */}
       {voice.show && (
         <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
-          <div className="tvchk-sheen relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3 shadow-2xl shadow-cyan-500/10">
+          <div className="relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3 shadow-2xl shadow-cyan-500/10">
             <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
             <span className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
               {voice.speaking && (

@@ -714,7 +714,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                       key={s.id}
                       type="button"
                       onClick={() => void ask(s.prompt)}
-                      className="min-h-11 text-left rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-[13px] text-slate-200 hover:border-cyan-500/30 hover:bg-cyan-500/[0.06] active:scale-[0.99] transition-all"
+                      className="min-h-11 text-left rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-[13px] text-slate-200 hover:border-cyan-500/30 hover:bg-cyan-500/[0.06] active:scale-[0.99] transition"
                     >
                       {s.label}
                     </button>
@@ -768,7 +768,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 key={s.id}
                 type="button"
                 onClick={() => void ask(s.prompt)}
-                className="min-h-9 rounded-full border border-white/[0.08] bg-white/[0.02] px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:border-cyan-500/30 hover:text-white active:scale-[0.98] transition-all"
+                className="min-h-9 rounded-full border border-white/[0.08] bg-white/[0.02] px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:border-cyan-500/30 hover:text-white active:scale-[0.98] transition"
               >
                 {s.label}
               </button>
@@ -821,7 +821,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                   new CustomEvent("tv:navigate", { detail: { page: "subscription" } }),
                 )
               }
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 hover:brightness-110 transition"
             >
               {t("credits.upgrade")}
             </button>
@@ -858,13 +858,13 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             }}
             placeholder={t("assistant.placeholder")}
             disabled={loading}
-            className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all disabled:opacity-50"
+            className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition disabled:opacity-50"
           />
           <button
             onClick={() => ask(question)}
             disabled={loading || !question.trim()}
             aria-label={t("common.send")}
-            className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white shrink-0 transition-all"
+            className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white shrink-0 transition"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>

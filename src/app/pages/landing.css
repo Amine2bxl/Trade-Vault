@@ -507,18 +507,7 @@
 
 /* ── glow pulse on hero card ── */
 .glow-pulse {
-  animation: glowPulse 4s ease-in-out infinite;
 }
-@keyframes glowPulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
 /* ── logo-matched gradient text ── */
 .logo-text {
   background: linear-gradient(120deg, #38bdf8 0%, #2563eb 48%, #a855f7 100%);
@@ -620,27 +609,8 @@
   height: 1.5px;
   background: linear-gradient(to right, transparent, rgba(34, 211, 238, 0.85), transparent);
   box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
-  animation: scan-move 3.2s ease-in-out infinite;
   pointer-events: none;
 }
-@keyframes scan-move {
-  0%,
-  100% {
-    top: 8%;
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  50% {
-    top: 92%;
-    opacity: 1;
-  }
-  58% {
-    opacity: 0;
-  }
-}
-
 .check-item {
   transition:
     background-color 0.3s ease,
@@ -669,10 +639,30 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: shine 6s linear infinite;
 }
-@keyframes shine {
+
+/* ── Démo de la landing (LandingDemo) ──
+ * Ces deux animations vivaient dans la feuille GLOBALE alors qu'elles ne
+ * servent qu'à la page marketing : elles voyageaient donc dans le CSS de
+ * chaque écran de l'application. Elles rejoignent ici la feuille chargée à
+ * la demande avec la landing. `demoProgress` anime `width` — toléré parce que
+ * la barre de démo n'a aucun voisin dont la disposition dépende d'elle, et
+ * que la landing garde ses propres règles. */
+@keyframes demoBar {
+  from {
+    opacity: 0;
+    transform: scaleY(0.4);
+  }
   to {
-    background-position: 200% center;
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+@keyframes demoProgress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
   }
 }

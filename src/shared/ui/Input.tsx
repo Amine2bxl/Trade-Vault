@@ -17,7 +17,7 @@ import { Label } from "./Typography";
 export const FIELD_BASE =
   "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white " +
   "placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 " +
-  "focus:ring-cyan-500/20 transition-all";
+  "focus:ring-cyan-500/20 transition";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, ...rest }, ref) {

@@ -150,7 +150,7 @@ export default function Subscription() {
             </div>
             <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700"
+                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250"
                 style={{ width: `${trialPct}%` }}
               />
             </div>

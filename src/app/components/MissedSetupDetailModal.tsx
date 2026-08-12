@@ -85,7 +85,7 @@ function Section({
   return (
     <div
       className={cn(
-        "relative rounded-2xl border overflow-hidden transition-all",
+        "relative rounded-2xl border overflow-hidden transition",
         s.border,
         s.bg,
         big && !empty && "shadow-[0_4px_24px_-4px_rgba(6,182,212,0.18)]",

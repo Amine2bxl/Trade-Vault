@@ -216,7 +216,7 @@ export function GoalPicker({
             <div
               key={k}
               className={cn(
-                "rounded-2xl border transition-all overflow-hidden",
+                "rounded-2xl border transition overflow-hidden",
                 d.selected
                   ? "bg-cyan-500/[0.08] border-cyan-400/40 shadow-lg shadow-cyan-500/10"
                   : "bg-white/[0.03] border-white/[0.07] hover:border-white/[0.16]",
@@ -252,7 +252,7 @@ export function GoalPicker({
                 </div>
                 <span
                   className={cn(
-                    "w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all",
+                    "w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition",
                     d.selected
                       ? "bg-cyan-500 border-cyan-400 text-white"
                       : "border-white/[0.15] text-transparent",
@@ -333,7 +333,7 @@ export function GoalPicker({
         onClick={() => goals && onGenerate(goals)}
         disabled={busy || !goals}
         className={cn(
-          "w-full h-12 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+          "w-full h-12 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2",
           goals && !busy
             ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:brightness-110"
             : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
@@ -423,7 +423,7 @@ export function PlanView({
             onClick={onDelete}
             disabled={busy}
             aria-label={tr("Supprimer le plan", "Delete plan")}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition shrink-0"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -480,7 +480,7 @@ export function PlanView({
                 <div className="mt-2.5 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                   <div
                     className={cn(
-                      "h-full rounded-full transition-all duration-700",
+                      "h-full rounded-full transition duration-250",
                       finalReached
                         ? "bg-emerald-400/80"
                         : "bg-gradient-to-r from-cyan-500 to-teal-400",
@@ -530,7 +530,7 @@ export function PlanView({
             <div
               key={i}
               className={cn(
-                "glass rounded-2xl border transition-all overflow-hidden",
+                "glass rounded-2xl border transition overflow-hidden",
                 i === cur
                   ? "border-cyan-400/40 bg-cyan-500/[0.04]"
                   : past
@@ -642,7 +642,7 @@ export function PlanView({
                             <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                               <div
                                 className={cn(
-                                  "h-full rounded-full transition-all duration-700",
+                                  "h-full rounded-full transition duration-250",
                                   reached
                                     ? "bg-emerald-400/80"
                                     : "bg-gradient-to-r from-cyan-500 to-teal-400",
@@ -680,7 +680,7 @@ export function PlanView({
                             key={task.key}
                             onClick={() => onToggleTask(task.key, !done)}
                             className={cn(
-                              "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all",
+                              "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition",
                               done
                                 ? "bg-emerald-500/[0.06] border-emerald-500/25"
                                 : "bg-white/[0.03] border-white/[0.05] hover:border-white/[0.14]",
@@ -688,7 +688,7 @@ export function PlanView({
                           >
                             <span
                               className={cn(
-                                "mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all",
+                                "mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition",
                                 done
                                   ? "bg-emerald-500 border-emerald-400 text-white"
                                   : "border-white/[0.2] text-transparent",

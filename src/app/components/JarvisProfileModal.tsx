@@ -172,7 +172,7 @@ export default function JarvisProfileModal({
             onClick={handleSave}
             disabled={!canSave || saving}
             className={cn(
-              "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+              "px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2",
               canSave && !saving
                 ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
                 : "bg-slate-800 text-slate-500 cursor-not-allowed",

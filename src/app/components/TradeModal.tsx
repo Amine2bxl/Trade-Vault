@@ -432,7 +432,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <button
                 onClick={discardDraft}
                 title={t("trade.discardDraft")}
-                className="group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold uppercase tracking-wide transition-all hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+                className="group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold uppercase tracking-wide transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse group-hover:bg-red-400" />
                 {t("trade.draftBadge")}
@@ -490,7 +490,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         }))
                       }
                       className={cn(
-                        "w-full h-9 sm:h-11 flex items-center justify-center rounded-xl text-xs sm:text-sm font-semibold transition-all border",
+                        "w-full h-9 sm:h-11 flex items-center justify-center rounded-xl text-xs sm:text-sm font-semibold transition border",
                         form.direction === dir
                           ? activeClass
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
@@ -545,7 +545,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       riskType: f.riskType === "dollar" ? "percent" : "dollar",
                     }))
                   }
-                  className="px-3 rounded-xl border border-white/[0.08] text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all shrink-0"
+                  className="px-3 rounded-xl border border-white/[0.08] text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition shrink-0"
                 >
                   {form.riskType === "dollar" ? "$" : "%"}
                 </button>
@@ -626,7 +626,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       type="button"
                       onClick={() => setPointValue(String(p.value))}
                       className={cn(
-                        "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border",
+                        "px-2.5 py-1 rounded-lg text-[10px] font-bold transition border",
                         pointValue === String(p.value)
                           ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
@@ -737,7 +737,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 key={p.t}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, entryTime: p.t, exitTime: p.v }))}
-                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition-all bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-cyan-500/30"
+                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-cyan-500/30"
               >
                 {p.t} → {p.v}
               </button>
@@ -779,7 +779,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     onClick={() => setForm((f) => ({ ...f, setupQuality: n }))}
                     aria-label={`${n} / 5`}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-1 rounded-full border px-2 py-1.5 transition-all active:scale-95",
+                      "flex-1 flex items-center justify-center gap-1 rounded-full border px-2 py-1.5 transition active:scale-95",
                       on
                         ? "bg-amber-500/15 border-amber-500/30"
                         : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]",
@@ -787,7 +787,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   >
                     <Star
                       className={cn(
-                        "w-4 h-4 transition-all duration-200",
+                        "w-4 h-4 transition duration-200",
                         on
                           ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]"
                           : "text-slate-600",
@@ -846,7 +846,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
                     opacity="0.25"
                     filter="url(#confGlow)"
-                    className="transition-[stroke-dashoffset] duration-500"
+                    className="transition-[stroke-dashoffset] duration-250"
                   />
                   <circle
                     cx="34"
@@ -858,7 +858,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 27}
                     strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
-                    className="transition-[stroke-dashoffset] duration-500"
+                    className="transition-[stroke-dashoffset] duration-250"
                   />
                   <defs>
                     <linearGradient id="confGrad" x1="0" y1="0" x2="1" y2="1">
@@ -923,7 +923,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <button
                 onClick={addConfluence}
                 aria-label={t("common.add")}
-                className="px-3 rounded-xl border border-white/[0.08] text-cyan-400 hover:bg-cyan-500/10 transition-all"
+                className="px-3 rounded-xl border border-white/[0.08] text-cyan-400 hover:bg-cyan-500/10 transition"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -1009,7 +1009,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </div>
               ))}
               {form.screenshots.length < 3 && (
-                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-cyan-500/30 hover:bg-cyan-500/[0.03] transition-all">
+                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-cyan-500/30 hover:bg-cyan-500/[0.03] transition">
                   {uploading ? (
                     <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
                   ) : (
@@ -1150,7 +1150,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             onClick={handleSave}
             disabled={!isValid}
             className={cn(
-              "px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
+              "px-6 py-2.5 rounded-xl text-sm font-bold transition",
               isValid
                 ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
                 : "bg-slate-800 text-slate-500 cursor-not-allowed",

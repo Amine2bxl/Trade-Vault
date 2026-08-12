@@ -338,7 +338,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           <button
             onClick={prevMonth}
             aria-label={t("common.previous")}
-            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"
+            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition active:scale-90"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -348,7 +348,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             </h3>
             <button
               onClick={goToday}
-              className="text-[10px] md:text-xs text-cyan-400 hover:text-cyan-300 font-semibold px-2 md:px-3 py-1 rounded-lg hover:bg-cyan-500/10 transition-all active:scale-95"
+              className="text-[10px] md:text-xs text-cyan-400 hover:text-cyan-300 font-semibold px-2 md:px-3 py-1 rounded-lg hover:bg-cyan-500/10 transition active:scale-95"
             >
               {t("calendar.today")}
             </button>
@@ -356,7 +356,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           <button
             onClick={nextMonth}
             aria-label={t("common.next")}
-            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90"
+            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition active:scale-90"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -429,7 +429,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       disabled={!data && missedCount === 0}
                       style={cellStyle}
                       className={cn(
-                        "h-14 md:min-h-[104px] md:p-2.5 p-0.5 rounded-lg md:rounded-xl text-left transition-all duration-200 relative overflow-hidden border flex flex-col",
+                        "h-14 md:min-h-[104px] md:p-2.5 p-0.5 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
                         !cellStyle && !missedCount && "border-white/[0.05]",
                         !cellStyle && isWeekend && "bg-white/[0.01]",
                         !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
@@ -606,7 +606,7 @@ function MissedMobileCard({ missedCount }: { missedCount: number }) {
   return (
     <button
       onClick={navigate}
-      className="w-full glass rounded-2xl p-4 flex items-center gap-3.5 active:scale-[0.98] transition-all text-left"
+      className="w-full glass rounded-2xl p-4 flex items-center gap-3.5 active:scale-[0.98] transition text-left"
     >
       <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-300 shrink-0">
         <Target className="w-5 h-5" />

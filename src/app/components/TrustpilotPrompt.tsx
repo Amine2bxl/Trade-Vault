@@ -121,13 +121,13 @@ export default function TrustpilotPrompt({
       <div className="flex items-center gap-2 mt-3">
         <button
           onClick={rate}
-          className="flex-1 h-11 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/20 transition-all"
+          className="flex-1 h-11 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/20 transition"
         >
           {t("trustpilot.cta")}
         </button>
         <button
           onClick={() => close("dismissed")}
-          className="h-11 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all"
+          className="h-11 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/[0.05] transition"
         >
           {t("trustpilot.never")}
         </button>
