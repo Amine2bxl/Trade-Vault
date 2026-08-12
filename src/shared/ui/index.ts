@@ -2,8 +2,14 @@
  * `shared/ui` — the centralized TradeVault design system.
  *
  * One home for the visual primitives: Typography, Button, form controls, Card,
- * Table, Modal, Badge and Charts. Every primitive wraps the styles/tokens the
- * product already uses, so adopting them is drop-in and regression-free.
+ * Table, Modal and Badge. Every primitive wraps the styles/tokens the product
+ * already uses, so adopting them is drop-in and regression-free.
+ *
+ * PAS de graphiques ici. `Chart.tsx` réexportait recharts depuis ce baril :
+ * comme presque tous les écrans importent `@/shared/ui`, recharts (370 Ko)
+ * entrait par un import STATIQUE dans le chunk principal — y compris pour un
+ * utilisateur qui n'ouvre jamais une page de graphiques. Les pages qui en ont
+ * besoin importent recharts directement, dans leur propre chunk différé.
  *
  * Rule: `shared/ui` never imports from `app/` — these are leaf primitives, so
  * the dependency direction (app → shared) is preserved. Import them as:
@@ -44,5 +50,3 @@ export { PageHeader, SectionHeader } from "./PageHeader";
 export { EmptyState } from "./EmptyState";
 export { Metric } from "./Metric";
 export type { MetricProps } from "./Metric";
-
-export { ChartContainer } from "./Chart";
