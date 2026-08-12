@@ -33,6 +33,38 @@ export const PAGES = [
 
 export type Page = (typeof PAGES)[number];
 
+/**
+ * Les SECTIONS — regroupement de présentation, au-dessus de `PAGES`.
+ *
+ * Vingt-et-une entrées de navigation à plat ne tiennent ni dans une barre
+ * latérale lisible ni dans une barre mobile ; six sections, oui. Le
+ * regroupement est PUREMENT une affaire d'affichage : chaque page garde son
+ * URL, le routage ne bouge pas, les liens profonds continuent de fonctionner.
+ *
+ * La page par défaut d'une section est `pages[0]` — délibérément pas un champ
+ * `default` séparé, qui ferait deux sources pour un même fait (`PRODUCT.md`
+ * §2).
+ *
+ * `inbox` n'appartient à aucune section : c'est une surface de notification
+ * (cloche dans l'en-tête), pas une destination de navigation.
+ */
+export const SECTIONS = [
+  { id: "dashboard", pages: ["dashboard"] },
+  {
+    id: "preparation",
+    pages: ["tradingplan", "checklist", "calculator", "news", "goals", "simulator"],
+  },
+  { id: "journal", pages: ["journal", "calendar", "mistakes", "missed"] },
+  { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo"] },
+  { id: "coach", pages: ["insights"] },
+  { id: "settings", pages: ["settings", "profile", "appearance", "subscription"] },
+] as const satisfies readonly { id: string; pages: readonly Page[] }[];
+
+export type SectionId = (typeof SECTIONS)[number]["id"];
+
+/** Pages qui ne vivent dans aucune section (surfaces, pas destinations). */
+export const UNSECTIONED_PAGES: readonly Page[] = ["inbox"];
+
 /** Garde d'exécution — la seule façon sûre de valider une valeur stockée. */
 export function isPage(value: unknown): value is Page {
   return typeof value === "string" && (PAGES as readonly string[]).includes(value);

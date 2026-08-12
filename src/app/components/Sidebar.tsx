@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { LogOut } from "lucide-react";
-import { Page } from "../types";
-import { NAV_GROUPS } from "../navigation";
+import { Bell, LogOut } from "lucide-react";
+import { Page, SECTIONS } from "../types";
+import { SECTION_META, defaultPageOfSection, sectionForPage } from "../navigation";
 import { preloadPage } from "../pageModules";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useAuth } from "../contexts/AuthContext";
@@ -74,56 +74,73 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
         <AccountSwitcher variant="card" />
       </div>
 
-      {/* Navigation — scrolls internally, never moves the rail */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.labelKey}>
-            <div className="px-3 pb-1 text-[9px] uppercase tracking-[0.18em] text-slate-600 font-bold">
-              {t(group.labelKey)}
-            </div>
-            <div className="space-y-px">
-              {group.items.map(({ id, labelKey, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setPage(id)}
-                  // Le chunk de la page part au survol ou au focus clavier,
-                  // soit 100 à 300 ms avant le clic : au moment du clic il est
-                  // déjà là et le squelette n'a plus lieu d'apparaître.
-                  onPointerEnter={() => preloadPage(id)}
-                  onFocus={() => preloadPage(id)}
-                  className={cn(
-                    "relative w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200",
-                    page === id
-                      ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10"
-                      : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
-                  )}
-                >
-                  {page === id && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
-                  )}
-                  <div className="relative shrink-0">
-                    <Icon
-                      className={cn("w-4 h-4", page === id ? "text-cyan-400" : "text-slate-600")}
-                    />
-                    {id === "inbox" && unread > 0 && (
-                      <span
-                        className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]"
-                        role="status"
-                        aria-label={`${unread} ${unread > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
-                      >
-                        {unread > 99 ? "99+" : unread}
-                      </span>
-                    )}
-                  </div>
-                  <span className="truncate">{t(labelKey)}</span>
-                  {page === id && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
+      {/* Navigation — SIX sections. Les pages d'une section vivent dans sa
+          barre d'onglets, sous le titre : vingt-et-une entrées à plat ne se
+          lisent pas d'un coup d'œil, six oui. Chaque page garde son URL. */}
+      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-px min-h-0">
+        {SECTIONS.map((section) => {
+          const { labelKey, icon: Icon } = SECTION_META[section.id];
+          const active = sectionForPage(page) === section.id;
+          const target = defaultPageOfSection(section.id);
+          return (
+            <button
+              key={section.id}
+              onClick={() => setPage(target)}
+              // Le chunk de la page part au survol ou au focus clavier, soit
+              // 100 à 300 ms avant le clic : au moment du clic il est déjà là
+              // et le squelette n'a plus lieu d'apparaître.
+              onPointerEnter={() => preloadPage(target)}
+              onFocus={() => preloadPage(target)}
+              className={cn(
+                "relative w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200",
+                active
+                  ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10"
+                  : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
+              )}
+            >
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
+              )}
+              <Icon
+                className={cn("w-4 h-4 shrink-0", active ? "text-cyan-400" : "text-slate-600")}
+              />
+              <span className="truncate">{t(labelKey)}</span>
+              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />}
+            </button>
+          );
+        })}
+
+        {/* L'inbox n'est pas une destination de parcours : c'est une surface de
+            notification. Elle sort de la liste des sections et devient une
+            cloche, ici comme dans l'en-tête mobile. */}
+        <button
+          onClick={() => setPage("inbox")}
+          onPointerEnter={() => preloadPage("inbox")}
+          onFocus={() => preloadPage("inbox")}
+          aria-label={t("nav.inbox")}
+          className={cn(
+            "relative mt-2 w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200",
+            page === "inbox"
+              ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400"
+              : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
+          )}
+        >
+          <div className="relative shrink-0">
+            <Bell
+              className={cn("w-4 h-4", page === "inbox" ? "text-cyan-400" : "text-slate-600")}
+            />
+            {unread > 0 && (
+              <span
+                className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]"
+                role="status"
+                aria-label={`${unread} ${unread > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
+              >
+                {unread > 99 ? "99+" : unread}
+              </span>
+            )}
           </div>
-        ))}
+          <span className="truncate">{t("nav.inbox")}</span>
+        </button>
       </nav>
 
       {/* Performance */}

@@ -3,6 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
+import MobileHeader from "./components/MobileHeader";
+import SectionTabs from "./components/SectionTabs";
+import { pagesOfSection, sectionForPage } from "./navigation";
 import TradeModal from "./components/TradeModal";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
@@ -281,6 +284,10 @@ function AppContent() {
   // Stats are derived from the trade list — memoized so they recompute only
   // when trades actually change, not on every render of the shell.
   const stats = useTradeStats(trades);
+
+  // La section courante est celle qui contient la page courante — dérivée, pas
+  // stockée : un second état aurait divergé au premier retour arrière.
+  const currentSection = sectionForPage(page);
 
   // Optimistic writes: the UI updates instantly and rolls back to the previous
   // snapshot if the request fails, so saving never blocks the workflow.
@@ -603,6 +610,16 @@ function AppContent() {
       </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
       <main className="app-main relative flex-1 overflow-y-auto">
+        {/* Mobile : le produit n'avait aucune barre supérieure. Cloche, Jarvis
+            et avatar y vivent depuis la disparition du menu « Plus ». */}
+        <MobileHeader page={page} setPage={setPage} />
+        {/* Onglets de la section courante — rendus seulement si la section en
+            compte plus d'un. `inbox` n'appartient à aucune section. */}
+        {currentSection && pagesOfSection(currentSection).length > 1 && (
+          <div className="px-4 md:px-6 pt-3">
+            <SectionTabs section={currentSection} page={page} setPage={setPage} />
+          </div>
+        )}
         <PageErrorBoundary resetKey={page}>
           {/* No skeleton: pages are preloaded, so navigation is instant.
               Previous page stays visible during the (near-zero) chunk load. */}
@@ -646,7 +663,6 @@ function AppContent() {
                 onDeleteAll={handleDeleteAll}
                 onOpenImport={() => setImportOpen(true)}
                 onOpenReports={() => setPage("reports")}
-                setPage={setPage}
               />
             )}
             {page === "reports" && <Reports trades={trades} />}
