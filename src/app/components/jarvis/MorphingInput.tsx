@@ -62,7 +62,9 @@ export default function MorphingInput({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSubmit();
+          }}
           disabled={disabled}
           className="w-full bg-transparent border-0 outline-none px-1.5 py-2 text-sm text-white placeholder-transparent focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
         />
