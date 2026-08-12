@@ -128,7 +128,7 @@ function AssetSeasonality() {
             key={c}
             onClick={() => setCategory(c)}
             className={cn(
-              "h-8 px-3 rounded-lg border text-[11px] font-semibold transition-all",
+              "h-8 px-3 rounded-lg border text-[11px] font-semibold transition",
               category === c
                 ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
                 : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12]",
@@ -146,7 +146,7 @@ function AssetSeasonality() {
             key={a.symbol}
             onClick={() => setSymbol(a.symbol)}
             className={cn(
-              "h-9 px-3.5 rounded-xl border text-xs font-bold transition-all",
+              "h-9 px-3.5 rounded-xl border text-xs font-bold transition",
               a.symbol === asset.symbol
                 ? "bg-white/[0.06] border-cyan-500/30 text-white shadow-sm"
                 : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300",

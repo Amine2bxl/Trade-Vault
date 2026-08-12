@@ -468,7 +468,7 @@ function ReportCard({
                       <div className="flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">
                         <div
                           className={cn(
-                            "h-full rounded-full transition-all",
+                            "h-full rounded-full transition",
                             win
                               ? "bg-gradient-to-r from-emerald-600/70 to-emerald-400"
                               : "bg-gradient-to-r from-red-600/70 to-red-400",

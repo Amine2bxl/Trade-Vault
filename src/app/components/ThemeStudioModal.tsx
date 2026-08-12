@@ -223,7 +223,7 @@ export default function ThemeStudioModal({
           onClick={onClose}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold",
-            "bg-[var(--tv-accent)] text-[#04121a] hover:brightness-110 transition-all",
+            "bg-[var(--tv-accent)] text-[#04121a] hover:brightness-110 transition",
           )}
         >
           <Check className="w-3.5 h-3.5" />

@@ -244,7 +244,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
               }}
               onClick={() => fileRef.current?.click()}
               className={cn(
-                "rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all",
+                "rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition",
                 dragOver
                   ? "border-cyan-500/50 bg-cyan-500/[0.05]"
                   : "border-white/[0.08] hover:border-cyan-500/30 hover:bg-cyan-500/[0.02]",
@@ -423,7 +423,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 onClick={() => setConfirming(true)}
                 disabled={!canImport}
                 className={cn(
-                  "w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                  "w-full py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2",
                   canImport
                     ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
                     : "bg-slate-800 text-slate-500 cursor-not-allowed",

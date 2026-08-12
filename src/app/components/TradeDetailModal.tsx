@@ -203,7 +203,7 @@ export default function TradeDetailModal({
                 <button
                   key={m.id}
                   onClick={() => onOpenMissed?.(m)}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition-all"
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition"
                 >
                   <Target className="w-3.5 h-3.5" />
                   {t("tradeDetail.missedSetup")}
@@ -388,7 +388,7 @@ export default function TradeDetailModal({
                   <div className="w-full bg-white/[0.05] rounded-full h-2 overflow-hidden">
                     <div
                       className={cn(
-                        "h-full rounded-full transition-all duration-700",
+                        "h-full rounded-full transition duration-250",
                         trade.confidence >= 75
                           ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
                           : trade.confidence >= 50
@@ -454,7 +454,7 @@ export default function TradeDetailModal({
                               index: i,
                             })
                           }
-                          className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-cyan-500/30 transition-all group bg-black/40"
+                          className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-cyan-500/30 transition group bg-black/40"
                         >
                           {screenshotUrls[shot] ? (
                             <img

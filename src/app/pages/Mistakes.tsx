@@ -410,7 +410,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   <div className="w-20 md:w-28 h-1.5 bg-white/[0.06] rounded-full overflow-hidden shrink-0">
                     <div
                       className={cn(
-                        "h-full rounded-full transition-[width] duration-700",
+                        "h-full rounded-full transition-[width] duration-250",
                         a.ratePct >= 80
                           ? "bg-emerald-400"
                           : a.ratePct >= 50

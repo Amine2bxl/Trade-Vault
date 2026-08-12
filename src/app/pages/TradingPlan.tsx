@@ -302,7 +302,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
                   ],
                 }))
               }
-              className="w-full h-11 rounded-xl border border-dashed border-cyan-500/30 text-cyan-300 text-sm font-semibold hover:bg-cyan-500/[0.06] transition-all flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl border border-dashed border-cyan-500/30 text-cyan-300 text-sm font-semibold hover:bg-cyan-500/[0.06] transition flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" /> {tr("Ajouter un setup", "Add a setup")}
             </button>
@@ -548,7 +548,7 @@ function Toggle({
       role="switch"
       aria-checked={checked}
       className={cn(
-        "flex items-center gap-3 rounded-xl px-3.5 py-3 border text-left transition-all",
+        "flex items-center gap-3 rounded-xl px-3.5 py-3 border text-left transition",
         checked
           ? "bg-cyan-500/10 border-cyan-500/30"
           : "bg-white/[0.03] border-white/[0.07] hover:border-white/[0.14]",
@@ -562,7 +562,7 @@ function Toggle({
       >
         <span
           className={cn(
-            "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all",
+            "absolute top-0.5 w-4 h-4 rounded-full bg-white transition",
             checked ? "left-[18px]" : "left-0.5",
           )}
         />
@@ -654,7 +654,7 @@ function SetupCard({
         <button
           onClick={onDelete}
           aria-label={tr("Supprimer le setup", "Delete setup")}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition shrink-0"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -700,7 +700,7 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - value)}
-          className="transition-all duration-700"
+          className="transition duration-250"
         />
         <defs>
           <linearGradient id="tpGrad" x1="0" y1="0" x2="1" y2="1">

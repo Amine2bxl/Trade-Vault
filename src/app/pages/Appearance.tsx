@@ -50,7 +50,7 @@ export default function Appearance() {
         actions={
           <button
             onClick={handleCreateTheme}
-            className="inline-flex items-center gap-1.5 shrink-0 h-9 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition-all hover:brightness-110 active:scale-[0.99]"
+            className="inline-flex items-center gap-1.5 shrink-0 h-9 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition hover:brightness-110 active:scale-[0.99]"
           >
             <Palette className="w-3.5 h-3.5" />
             {tr("Créer un thème", "Create theme")}

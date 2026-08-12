@@ -130,7 +130,7 @@ export default function TradingRulesSection() {
         {!adding && (
           <button
             onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-cyan-500/10 border border-cyan-500/25 text-xs font-bold text-cyan-300 hover:bg-cyan-500/15 transition-all"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-cyan-500/10 border border-cyan-500/25 text-xs font-bold text-cyan-300 hover:bg-cyan-500/15 transition"
           >
             <Plus className="w-3.5 h-3.5" /> {t("rules.add")}
           </button>
@@ -151,7 +151,7 @@ export default function TradingRulesSection() {
             <div
               key={r.id}
               className={cn(
-                "flex items-center gap-3 px-3.5 py-2.5 rounded-xl border transition-all",
+                "flex items-center gap-3 px-3.5 py-2.5 rounded-xl border transition",
                 r.enabled
                   ? "bg-white/[0.03] border-white/[0.07]"
                   : "bg-white/[0.015] border-white/[0.04] opacity-55",
@@ -221,7 +221,7 @@ export default function TradingRulesSection() {
                     setText("");
                   }}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl px-3 py-2 border text-left text-xs font-semibold transition-all",
+                    "flex items-center gap-2 rounded-xl px-3 py-2 border text-left text-xs font-semibold transition",
                     kind === k
                       ? "bg-cyan-500/15 border-cyan-400/50 text-white"
                       : "bg-white/[0.04] border-white/[0.08] text-slate-400 hover:border-white/20",

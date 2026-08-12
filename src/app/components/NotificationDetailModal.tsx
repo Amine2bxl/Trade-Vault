@@ -171,7 +171,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
       <div className="flex items-center gap-2 px-5 py-4 border-t border-white/[0.06]">
         <button
           onClick={go}
-          className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition-all inline-flex items-center justify-center gap-1.5"
+          className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition inline-flex items-center justify-center gap-1.5"
         >
           {ctaLabel}
           <ArrowRight className="w-4 h-4" />

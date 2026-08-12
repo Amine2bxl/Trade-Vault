@@ -414,7 +414,7 @@ export function ScreenshotsView({
           <div
             key={p}
             className={cn(
-              "relative group aspect-video overflow-hidden bg-white/[0.04] border border-white/[0.08] hover:border-cyan-500/30 transition-all",
+              "relative group aspect-video overflow-hidden bg-white/[0.04] border border-white/[0.08] hover:border-cyan-500/30 transition",
               size === "lg" ? "rounded-2xl shadow-lg shadow-black/20" : "rounded-xl",
             )}
           >
@@ -688,7 +688,7 @@ function MissedEditor({
         <button
           onClick={() => onSave(m)}
           disabled={uploading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 transition-all"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 transition"
         >
           <Save className="w-4 h-4" /> {t("common.save")}
         </button>
@@ -791,7 +791,7 @@ function DateBubbles({
             type="button"
             onClick={() => onChange(p.value)}
             className={cn(
-              "h-9 px-3 rounded-full border text-xs font-semibold transition-all",
+              "h-9 px-3 rounded-full border text-xs font-semibold transition",
               value === p.value
                 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
                 : "bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20",

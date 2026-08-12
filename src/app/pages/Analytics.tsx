@@ -350,7 +350,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             key={p}
             onClick={() => setAnalyticsPeriod(p)}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition",
               analyticsPeriod === p
                 ? "bg-cyan-500/15 text-cyan-400"
                 : "text-slate-500 hover:text-slate-300",

@@ -197,7 +197,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           // Desktop : pill glass ORIGINAL (inchangé).
           "md:h-auto md:w-auto md:rounded-2xl md:border md:p-1.5 md:pr-4 md:glass-strong",
           "md:shadow-xl md:shadow-black/40",
-          "transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
+          "transition duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
           open && "md:border-cyan-400/40 md:bg-cyan-500/[0.08]",
           !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
         )}

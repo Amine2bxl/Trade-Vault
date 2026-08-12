@@ -29,7 +29,7 @@ const IDLE =
 
 /** The one chip geometry. Shared by `Chip` and by chips that wrap extra controls. */
 export const CHIP_BASE =
-  "inline-flex items-center gap-1.5 rounded-xl border text-xs font-medium transition-all";
+  "inline-flex items-center gap-1.5 rounded-xl border text-xs font-medium transition";
 
 /** Standard container for a group of chips. */
 export const CHIP_ROW = "flex flex-wrap gap-2";

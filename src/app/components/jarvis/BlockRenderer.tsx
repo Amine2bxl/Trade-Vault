@@ -162,7 +162,7 @@ function ToolView({ block, onTool }: { block: JarvisToolBlock; onTool?: BlockToo
       disabled={disabled}
       aria-label={block.label}
       className={
-        "w-full h-11 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all " +
+        "w-full h-11 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition " +
         (state === "done"
           ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
           : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 disabled:opacity-60 active:scale-[0.99]")

@@ -124,7 +124,7 @@ function OptionCard({
     <button
       onClick={onClick}
       className={cn(
-        "onb-card relative rounded-2xl p-4 border text-left w-full transition-all",
+        "onb-card relative rounded-2xl p-4 border text-left w-full transition",
         selected
           ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
           : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
@@ -133,7 +133,7 @@ function OptionCard({
       {multi && (
         <span
           className={cn(
-            "absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full border transition-all",
+            "absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full border transition",
             selected
               ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent"
               : "border-white/15",
@@ -168,7 +168,7 @@ function Chip({
     <button
       onClick={onClick}
       className={cn(
-        "onb-card rounded-xl px-3.5 py-2.5 border text-[13px] font-semibold inline-flex items-center gap-1.5 transition-all",
+        "onb-card rounded-xl px-3.5 py-2.5 border text-[13px] font-semibold inline-flex items-center gap-1.5 transition",
         selected
           ? "bg-cyan-500/15 border-cyan-400/50 text-white"
           : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
@@ -309,7 +309,7 @@ export default function Onboarding({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
+      className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
     >
       {children}
     </button>
@@ -354,7 +354,7 @@ export default function Onboarding({
 
         <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
           <div
-            className="relative h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-700 ease-out"
+            className="relative h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250 ease-out"
             style={{ width: `${Math.round(progress * 100)}%` }}
           >
             <div className="onb-progress-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
@@ -402,7 +402,7 @@ export default function Onboarding({
                 onKeyDown={(e) => e.key === "Enter" && next()}
                 placeholder={t("onb.namePlaceholder")}
                 maxLength={40}
-                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-base font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-base font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition"
               />
 
               <div className="mt-6 mb-1">
@@ -586,7 +586,7 @@ export default function Onboarding({
                       value={target}
                       onChange={(e) => setTarget(e.target.value)}
                       placeholder="3"
-                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
                       %
@@ -609,7 +609,7 @@ export default function Onboarding({
                       value={accountSize}
                       onChange={(e) => setAccountSize(e.target.value)}
                       placeholder="25000"
-                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition-all focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
                     />
                   </div>
                 </div>
@@ -636,14 +636,14 @@ export default function Onboarding({
                     highlight: "#22d3ee",
                   })
                 }
-                className="w-full h-11 rounded-xl text-sm font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 hover:text-cyan-200 transition-all flex items-center justify-center gap-2 mb-7"
+                className="w-full h-11 rounded-xl text-sm font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 hover:text-cyan-200 transition flex items-center justify-center gap-2 mb-7"
               >
                 <Plus className="w-4 h-4" /> + Personnaliser mon thème
               </button>
 
               <button
                 onClick={next}
-                className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition-all"
+                className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition"
               >
                 {c.cont}
               </button>
@@ -678,7 +678,7 @@ export default function Onboarding({
                 <button
                   onClick={enableNotify}
                   disabled={notifBusy}
-                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-3 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60 text-xs font-bold text-white"
+                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-3 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition disabled:opacity-60 text-xs font-bold text-white"
                 >
                   {notifBusy ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -734,7 +734,7 @@ export default function Onboarding({
                 <button
                   onClick={() => finish("import")}
                   disabled={!!saving}
-                  className="onb-card relative flex items-start gap-3.5 rounded-2xl p-4 border text-left bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition-all disabled:opacity-60"
+                  className="onb-card relative flex items-start gap-3.5 rounded-2xl p-4 border text-left bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition disabled:opacity-60"
                 >
                   <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/25">
                     {saving === "import" ? (
@@ -757,7 +757,7 @@ export default function Onboarding({
                 <button
                   onClick={() => finish("demo")}
                   disabled={!!saving}
-                  className="onb-card flex items-start gap-3.5 rounded-2xl p-4 border text-left bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06] transition-all disabled:opacity-60"
+                  className="onb-card flex items-start gap-3.5 rounded-2xl p-4 border text-left bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06] transition disabled:opacity-60"
                 >
                   <div className="w-11 h-11 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
                     {saving === "demo" ? (

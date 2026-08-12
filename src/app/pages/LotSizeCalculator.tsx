@@ -173,7 +173,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                 key={m}
                 onClick={() => setMode(m)}
                 className={cn(
-                  "h-9 px-5 rounded-xl text-xs font-bold transition-all",
+                  "h-9 px-5 rounded-xl text-xs font-bold transition",
                   mode === m
                     ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20"
                     : "text-slate-500 hover:text-slate-300",
@@ -259,7 +259,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                   type="button"
                   onClick={() => setRiskPct(p)}
                   className={cn(
-                    "h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
+                    "h-8 px-3 rounded-lg text-[11px] font-bold border transition",
                     riskPct === p
                       ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
                       : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12]",
@@ -291,7 +291,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
               <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all duration-500",
+                    "h-full rounded-full transition duration-250",
                     riskTooHigh
                       ? "bg-gradient-to-r from-amber-500 to-red-500"
                       : "bg-gradient-to-r from-cyan-500 to-teal-400",
@@ -375,7 +375,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                       type="button"
                       onClick={() => setPointValue(String(p.value))}
                       className={cn(
-                        "h-8 px-2.5 rounded-lg text-[10px] font-bold transition-all border",
+                        "h-8 px-2.5 rounded-lg text-[10px] font-bold transition border",
                         pointValue === String(p.value)
                           ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
@@ -512,7 +512,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={copyResult}
-                  className="flex-1 h-10 rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all flex items-center justify-center gap-1.5"
+                  className="flex-1 h-10 rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition flex items-center justify-center gap-1.5"
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-emerald-400" />

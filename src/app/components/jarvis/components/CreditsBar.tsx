@@ -48,7 +48,7 @@ export default function CreditsBar() {
               strokeLinecap="round"
               strokeDasharray={CIRC}
               strokeDashoffset={CIRC * (1 - pct / 100)}
-              className="transition-[stroke-dashoffset] duration-700"
+              className="transition-[stroke-dashoffset] duration-250"
             />
             <defs>
               <linearGradient id="creditsGrad" x1="0" y1="0" x2="1" y2="1">

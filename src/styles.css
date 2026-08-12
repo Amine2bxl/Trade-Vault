@@ -87,6 +87,121 @@
   --color-teal-800: oklch(0.45 calc(0.09 * var(--tv-secondary-c)) var(--tv-secondary-h));
   --color-teal-900: oklch(0.4 calc(0.075 * var(--tv-secondary-c)) var(--tv-secondary-h));
   --color-teal-950: oklch(0.3 calc(0.055 * var(--tv-secondary-c)) var(--tv-secondary-h));
+
+  /* ----------------------------------------------------------------
+   * Échelle de mouvement — UNE seule.
+   *
+   * Le raffinement perçu vient d'un petit nombre d'animations répétées,
+   * pas d'un grand nombre d'animations différentes. Toute durée de
+   * l'application sort d'ici, et la plus longue vaut 250 ms : au-delà,
+   * l'utilisateur ATTEND l'animation au lieu de l'ignorer. Seule
+   * `Landing.tsx` (page marketing, autres règles) fait exception.
+   * ---------------------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --duration-micro: 100ms; /* survol, appui */
+  --duration-base: 150ms; /* défaut — tout, sauf mention contraire */
+  --duration-panel: 250ms; /* modales, tiroirs */
+}
+
+/* ══ Les HUIT animations de l'application ══
+ *
+ * Il y en avait 37, dont cinq fondus identiques et sept purement
+ * décoratifs. Chaque nom ci-dessous a un rôle unique ; ajouter une
+ * neuvième animation demande d'abord de prouver qu'aucune de ces huit
+ * ne fait le travail.
+ *
+ * Toutes ne bougent que `transform` et `opacity` : ces deux propriétés
+ * se composent sur le GPU, sans recalcul de disposition ni repeinture.
+ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* Panneaux mobiles et tiroirs : ils montent depuis le bas, jamais depuis la
+   droite — l'application n'a aucun tiroir latéral, elle a des feuilles. */
+@keyframes slide-in-panel {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+/* Tracé : révèle une courbe de gauche à droite (courbe d'equity, trait SVG
+   de l'écran d'erreur). */
+@keyframes draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Mouvement réduit : plus aucun déplacement, les fondus restent — ils
+   portent l'information « ceci vient d'arriver » sans rien faire bouger. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-fade-in,
+  .animate-fade-in-up {
+    animation-duration: var(--duration-base) !important;
+    animation-name: fade-in !important;
+  }
 }
 
 /* Theme tokens — default = "Jarvis" (cyan/teal). The ThemeProvider (and the
@@ -136,56 +251,46 @@ body {
 }
 
 /* ══ Onboarding premium motion ══ */
-@keyframes onbInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 /* Staggered entrance for a group of cards/chips. */
 .onb-in > * {
   opacity: 0;
-  animation: onbInUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fade-in-up var(--duration-panel) var(--ease-out) forwards;
 }
 .onb-in > *:nth-child(1) {
-  animation-delay: 0.05s;
+  animation-delay: 25ms;
 }
 .onb-in > *:nth-child(2) {
-  animation-delay: 0.11s;
+  animation-delay: 50ms;
 }
 .onb-in > *:nth-child(3) {
-  animation-delay: 0.17s;
+  animation-delay: 75ms;
 }
 .onb-in > *:nth-child(4) {
-  animation-delay: 0.23s;
+  animation-delay: 100ms;
 }
 .onb-in > *:nth-child(5) {
-  animation-delay: 0.29s;
+  animation-delay: 125ms;
 }
 .onb-in > *:nth-child(6) {
-  animation-delay: 0.35s;
+  animation-delay: 150ms;
 }
 .onb-in > *:nth-child(7) {
-  animation-delay: 0.41s;
+  animation-delay: 175ms;
 }
 .onb-in > *:nth-child(8) {
-  animation-delay: 0.47s;
+  animation-delay: 200ms;
 }
 .onb-in > *:nth-child(9) {
-  animation-delay: 0.53s;
+  animation-delay: 225ms;
 }
 .onb-in > *:nth-child(10) {
-  animation-delay: 0.59s;
+  animation-delay: 250ms;
 }
 .onb-in > *:nth-child(11) {
-  animation-delay: 0.65s;
+  animation-delay: 275ms;
 }
 .onb-in > *:nth-child(12) {
-  animation-delay: 0.71s;
+  animation-delay: 300ms;
 }
 /* Tactile press feedback on selectable cards. */
 .onb-card {
@@ -203,31 +308,12 @@ body {
   transform: scale(0.975);
 }
 /* Soft shimmer travelling along the progress bar. */
-@keyframes onbShimmer {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(300%);
-  }
-}
 .onb-progress-shimmer {
-  animation: onbShimmer 2.2s ease-in-out infinite;
+  opacity: 0.35;
 }
 /* Reveal: logo halo pulse + sequential lines handled inline. */
-@keyframes onbHalo {
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.08);
-  }
-}
 .onb-halo {
-  animation: onbHalo 2.4s ease-in-out infinite;
+  opacity: 0.7;
 }
 @media (prefers-reduced-motion: reduce) {
   .onb-in > *,
@@ -239,25 +325,6 @@ body {
 }
 
 /* ── Démo landing (LandingDemo) ── */
-@keyframes demoBar {
-  from {
-    opacity: 0;
-    transform: scaleY(0.4);
-  }
-  to {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-}
-@keyframes demoProgress {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-
 /* ══ Branded error identity (404 / 500) ══ */
 .err-code {
   position: relative;
@@ -271,54 +338,6 @@ body {
   background-clip: text;
   color: transparent;
 }
-.err-code::before,
-.err-code::after {
-  content: attr(data-code);
-  position: absolute;
-  inset: 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  mix-blend-mode: screen;
-}
-.err-code::before {
-  background: linear-gradient(180deg, #22d3ee, #0891b2);
-  animation: errG1 3s steps(2) infinite;
-}
-.err-code::after {
-  background: linear-gradient(180deg, #f43f5e, #be123c);
-  animation: errG2 3.4s steps(2) infinite;
-}
-@keyframes errG1 {
-  0%,
-  92%,
-  100% {
-    opacity: 0;
-    transform: translate(0);
-  }
-  94% {
-    opacity: 0.5;
-    transform: translate(-3px, 1px);
-  }
-  96% {
-    transform: translate(2px, -1px);
-  }
-}
-@keyframes errG2 {
-  0%,
-  90%,
-  100% {
-    opacity: 0;
-    transform: translate(0);
-  }
-  93% {
-    opacity: 0.4;
-    transform: translate(3px, -1px);
-  }
-  97% {
-    transform: translate(-2px, 1px);
-  }
-}
 .err-spark {
   width: 200px;
   max-width: 60%;
@@ -328,23 +347,11 @@ body {
   opacity: 0.9;
 }
 .err-spark path {
-  stroke-dasharray: 400;
-  stroke-dashoffset: 400;
-  animation: errDraw 2.2s ease forwards 0.3s;
-}
-@keyframes errDraw {
-  to {
-    stroke-dashoffset: 0;
-  }
+  animation: draw var(--duration-panel) var(--ease-out) forwards;
 }
 @media (prefers-reduced-motion: reduce) {
-  .err-code::before,
-  .err-code::after {
-    animation: none;
-  }
   .err-spark path {
     animation: none;
-    stroke-dashoffset: 0;
   }
 }
 
@@ -379,7 +386,7 @@ select,
   pointer-events: none;
   opacity: 0;
   will-change: transform, opacity;
-  transition: opacity 0.35s ease;
+  transition: opacity var(--duration-panel) var(--ease-standard);
   background: radial-gradient(
     circle,
     rgb(var(--tv-highlight-rgb) / 0.045) 0%,
@@ -540,98 +547,15 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes slideInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes glow {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgb(var(--tv-accent-rgb) / 0.08);
-  }
-  50% {
-    box-shadow: 0 0 40px rgb(var(--tv-accent-rgb) / 0.18);
-  }
-}
-@keyframes orb-float {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(30px, -20px);
-  }
-  50% {
-    transform: translate(-10px, 20px);
-  }
-  75% {
-    transform: translate(-30px, -10px);
-  }
-}
-
 /* Page content entrance: smooth bottom-up reveal, fast, no stagger delays.
    Applies globally to every .animate-fade-in-up element on mount. */
 .animate-fade-in-up {
-  animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-in-up var(--duration-base) var(--ease-out) both;
 }
-@keyframes fadeSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* Simple fade-in (no movement) — used by modals, lightboxes, overlays */
 .animate-fade-in {
-  animation: fadeIn 0.25s ease both;
+  animation: fade-in var(--duration-base) var(--ease-out) both;
 }
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 /* Remove all stagger delays — instant, unified entrance */
 .stagger-0,
 .stagger-1,
@@ -645,13 +569,13 @@ input[type="number"] {
   animation-delay: 0ms !important;
 }
 .animate-slide-in {
-  animation: slideInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: scale-in var(--duration-panel) var(--ease-out) forwards;
 }
 .animate-slide-up {
-  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slide-in-panel var(--duration-panel) var(--ease-out) forwards;
 }
 .animate-glow {
-  animation: glow 3s ease-in-out infinite;
+  box-shadow: 0 0 24px rgb(var(--tv-accent-rgb) / 0.14);
 }
 
 .stagger-0 {
@@ -699,10 +623,9 @@ input[type="number"] {
  * hairline accent ring + a faint white top-edge highlight give the subtle glow
  * of a physical, backlit surface. */
 .card-premium {
-  transition:
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: transform, box-shadow, border-color;
+  transition-duration: var(--duration-panel);
+  transition-timing-function: var(--ease-standard);
   /* No permanent `will-change: transform`: it forces every card onto its own
    * GPU layer, and Chrome on Windows then rasterises the text to a texture that
    * lands on a fractional device pixel → blurry copy. On Retina/macOS it's
@@ -761,30 +684,9 @@ input[type="number"] {
  * data change, on top of recharts' own line growth, for a hand-drawn feel. A
  * paired fade softens the leading edge so the curve appears to be *drawn* rather
  * than uncovered. Scoped to the area/line layers so axes/grid don't wipe. */
-@keyframes drawReveal {
-  from {
-    clip-path: inset(0 100% 0 0);
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-@keyframes drawFadeIn {
-  from {
-    opacity: 0;
-  }
-  40% {
-    opacity: 1;
-  }
-  to {
-    opacity: 1;
-  }
-}
 .chart-draw .recharts-area,
 .chart-draw .recharts-line {
-  animation:
-    drawReveal 0.9s cubic-bezier(0.33, 1, 0.68, 1) both,
-    drawFadeIn 0.45s ease-out both;
+  animation: draw var(--duration-panel) var(--ease-out) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .chart-draw .recharts-area,
@@ -817,7 +719,7 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   filter: blur(80px);
   opacity: 0.15;
-  animation: orb-float 15s ease-in-out infinite;
+  animation: none;
 }
 /* Continuously animating 80px blurs are a GPU drain on phones — freeze them
  * on small screens and for users who prefer reduced motion. */
@@ -917,15 +819,6 @@ input[type="range"]::-webkit-slider-thumb {
   transform: translateY(-1px);
 }
 
-@keyframes fabBreathe {
-  0%,
-  100% {
-    box-shadow: 0 4px 20px rgb(var(--tv-accent-rgb) / 0.4);
-  }
-  50% {
-    box-shadow: 0 4px 30px rgb(var(--tv-accent-rgb) / 0.7);
-  }
-}
 .fab-button {
   width: 54px;
   height: 54px;
@@ -939,7 +832,6 @@ input[type="range"]::-webkit-slider-thumb {
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
   border: 1px solid rgb(var(--tv-highlight-rgb) / 0.35);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  animation: fabBreathe 3.2s ease-in-out infinite;
 }
 .fab-button:active {
   transform: scale(0.88) rotate(90deg);
@@ -947,17 +839,6 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
-@keyframes starPop {
-  0% {
-    transform: scale(0.7);
-  }
-  55% {
-    transform: scale(1.18);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
 .star-btn {
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -965,7 +846,7 @@ input[type="range"]::-webkit-slider-thumb {
   transform: scale(0.85);
 }
 .star-on {
-  animation: starPop 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scale-in var(--duration-micro) var(--ease-out);
   filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.55));
 }
 
@@ -977,11 +858,6 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* Skeleton loaders — shimmer sweep while data loads */
-@keyframes skeletonShimmer {
-  to {
-    background-position: -200% 0;
-  }
-}
 .skeleton {
   background: linear-gradient(
     100deg,
@@ -990,7 +866,7 @@ input[type="range"]::-webkit-slider-thumb {
     rgba(30, 41, 59, 0.45) 60%
   );
   background-size: 200% 100%;
-  animation: skeletonShimmer 1.6s linear infinite;
+  animation: shimmer 1.6s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
@@ -999,24 +875,12 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* Jarvis "thinking" — trois points qui ondulent pendant que l'IA réfléchit. */
-@keyframes thinkingWave {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  30% {
-    transform: translateY(-4px);
-    opacity: 1;
-  }
-}
 .thinking-dot {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
   background: linear-gradient(90deg, var(--tv-accent, #22d3ee), var(--tv-accent-2, #14b8a6));
-  animation: thinkingWave 1.2s ease-in-out infinite;
+  animation: pulse 1.2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .thinking-dot {

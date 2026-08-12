@@ -201,7 +201,7 @@ export default function Inbox() {
               key={k}
               onClick={() => setFilter(k)}
               className={cn(
-                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border",
+                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition border",
                 filter === k
                   ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-300"
                   : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
@@ -226,7 +226,7 @@ export default function Inbox() {
         {hasUnreadFiltered && (
           <button
             onClick={markAllRead}
-            className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all"
+            className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition"
           >
             <CheckCheck className="w-3.5 h-3.5" />
             Tout lu
@@ -289,7 +289,7 @@ export default function Inbox() {
                       onClick={() => openNotification(n)}
                       onKeyDown={(e) => e.key === "Enter" && openNotification(n)}
                       className={cn(
-                        "group relative w-full text-left rounded-xl border transition-all cursor-pointer flex items-start gap-3 px-3 py-2.5",
+                        "group relative w-full text-left rounded-xl border transition cursor-pointer flex items-start gap-3 px-3 py-2.5",
                         unread
                           ? "border-cyan-500/10 bg-cyan-500/[0.03] hover:border-cyan-500/25"
                           : "border-white/[0.04] bg-transparent hover:bg-white/[0.02]",

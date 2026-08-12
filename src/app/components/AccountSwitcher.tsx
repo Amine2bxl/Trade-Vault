@@ -167,7 +167,7 @@ export default function AccountSwitcher({
                     onClose();
                   }}
                   aria-label={t("account.delete")}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -207,7 +207,7 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-11 pl-1.5 pr-3 rounded-full flex items-center gap-2 float-shell active:scale-95 transition-all"
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-11 pl-1.5 pr-3 rounded-full flex items-center gap-2 float-shell active:scale-95 transition"
         >
           <span
             className="relative grid h-7 w-7 shrink-0 place-items-center rounded-2xl border shadow-sm"
@@ -262,7 +262,7 @@ export default function AccountSwitcher({
                     <div
                       key={a.id}
                       className={cn(
-                        "relative flex flex-col gap-2 rounded-2xl p-3.5 border transition-all",
+                        "relative flex flex-col gap-2 rounded-2xl p-3.5 border transition",
                         active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06]",
                       )}
                       style={
@@ -334,7 +334,7 @@ export default function AccountSwitcher({
                     setCreateOpen(true);
                     setOpen(false);
                   }}
-                  className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition-all active:scale-[0.97] min-h-[92px]"
+                  className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition active:scale-[0.97] min-h-[92px]"
                 >
                   <Plus className="w-5 h-5" />
                   <span className="text-xs font-semibold text-center">{t("account.newShort")}</span>
@@ -380,7 +380,7 @@ export default function AccountSwitcher({
           onClick={() => setOpen((v) => !v)}
           title={t("account.switch")}
           className={cn(
-            "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all overflow-hidden",
+            "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition overflow-hidden",
             "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
             "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5 group/acc",
           )}
@@ -414,7 +414,7 @@ export default function AccountSwitcher({
                   setEditingModalAccount(activeAccount);
                 }}
                 aria-label={t("account.edit")}
-                className="w-5 h-5 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
+                className="w-5 h-5 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white hover:bg-white/[0.08] transition shrink-0"
               >
                 <Pencil className="w-2.5 h-2.5" />
               </button>
@@ -482,7 +482,7 @@ export default function AccountSwitcher({
           onClick={() => setOpen((v) => !v)}
           title={t("account.switch")}
           className={cn(
-            "flex-1 flex items-center gap-2.5 rounded-2xl border transition-all",
+            "flex-1 flex items-center gap-2.5 rounded-2xl border transition",
             compact ? "px-2.5 py-1.5" : "px-3 py-2.5",
             "bg-white/[0.04] border-white/[0.08] hover:border-cyan-500/30 hover:bg-white/[0.06]",
           )}
@@ -505,7 +505,7 @@ export default function AccountSwitcher({
                   setEditingModalAccount(activeAccount);
                 }}
                 aria-label={t("account.edit")}
-                className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition-all shrink-0"
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 opacity-0 hover:opacity-100 hover:text-white hover:bg-white/[0.08] transition shrink-0"
               >
                 <Pencil className="w-3 h-3" />
               </button>
@@ -524,7 +524,7 @@ export default function AccountSwitcher({
             e.stopPropagation();
             setEditingModalAccount(activeAccount);
           }}
-          className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-white/[0.08] bg-white/[0.03] border border-white/[0.07] transition-all shrink-0"
+          className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-white/[0.08] bg-white/[0.03] border border-white/[0.07] transition shrink-0"
         >
           <Pencil className="w-3 h-3" />
           <span>{t("account.editShort")}</span>
@@ -610,7 +610,7 @@ function DeleteAccountModal({
           {step === 1 ? (
             <button
               onClick={() => setStep(2)}
-              className="w-full h-11 rounded-xl text-sm font-bold bg-white/[0.06] border border-white/[0.1] text-slate-200 hover:bg-white/[0.1] transition-all"
+              className="w-full h-11 rounded-xl text-sm font-bold bg-white/[0.06] border border-white/[0.1] text-slate-200 hover:bg-white/[0.1] transition"
             >
               {t("account.deleteStep1Cta")}
             </button>
@@ -622,14 +622,14 @@ function DeleteAccountModal({
                 await onConfirm();
               }}
               disabled={busy}
-              className="w-full h-11 rounded-xl text-sm font-bold bg-red-500/90 hover:bg-red-500 text-white shadow-lg shadow-red-500/25 transition-all disabled:opacity-60"
+              className="w-full h-11 rounded-xl text-sm font-bold bg-red-500/90 hover:bg-red-500 text-white shadow-lg shadow-red-500/25 transition disabled:opacity-60"
             >
               {busy ? t("common.loading") : t("account.deleteStep2Cta")}
             </button>
           )}
           <button
             onClick={onClose}
-            className="w-full h-11 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all"
+            className="w-full h-11 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/[0.04] transition"
           >
             {t("common.cancel")}
           </button>
@@ -764,7 +764,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
                   type="button"
                   onClick={() => setSelectedIcon(selected ? null : iconName)}
                   className={cn(
-                    "h-10 rounded-lg flex items-center justify-center transition-all",
+                    "h-10 rounded-lg flex items-center justify-center transition",
                     selected
                       ? "bg-cyan-500/15 border border-cyan-400/60 text-cyan-300"
                       : "bg-white/[0.04] border border-white/[0.06] text-slate-400 hover:border-white/15 hover:text-white hover:bg-white/[0.06]",
@@ -806,7 +806,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
           onClick={submit}
           disabled={!name.trim() || busy}
           className={cn(
-            "px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap",
+            "px-5 py-2.5 rounded-xl text-sm font-bold transition whitespace-nowrap",
             name.trim() && !busy
               ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:brightness-110"
               : "bg-white/[0.04] text-slate-600 cursor-not-allowed",

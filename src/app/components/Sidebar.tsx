@@ -92,7 +92,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
               onPointerEnter={() => preloadPage(target)}
               onFocus={() => preloadPage(target)}
               className={cn(
-                "relative w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200",
+                "relative w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition duration-200",
                 active
                   ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10"
                   : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
@@ -119,7 +119,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           onFocus={() => preloadPage("inbox")}
           aria-label={t("nav.inbox")}
           className={cn(
-            "relative mt-2 w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200",
+            "relative mt-2 w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition duration-200",
             page === "inbox"
               ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400"
               : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
@@ -167,7 +167,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
             <div
               className={cn(
                 "h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400",
-                mounted && "transition-all duration-700",
+                mounted && "transition duration-250",
               )}
               style={{ width: `${winRate * 100}%` }}
             />
@@ -188,7 +188,7 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
             </div>
             <button
               onClick={logout}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition"
               title={t("common.signOut")}
             >
               <LogOut className="w-3.5 h-3.5" />

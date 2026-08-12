@@ -78,7 +78,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       </span>
       <span
         className={cn(
-          "text-[10px] leading-none transition-all",
+          "text-[10px] leading-none transition",
           active ? "font-bold" : "font-semibold",
         )}
       >

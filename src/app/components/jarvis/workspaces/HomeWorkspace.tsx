@@ -276,7 +276,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 className={cn(
                   "mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white",
                   "bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110",
-                  "shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-60",
+                  "shadow-lg shadow-cyan-500/20 transition disabled:opacity-60",
                 )}
               >
                 {ruleSaving ? (
@@ -316,7 +316,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 className={cn(
                   "group px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08]",
                   "text-xs text-slate-300 hover:bg-white/[0.07] hover:border-cyan-500/30 hover:text-white",
-                  "transition-all text-left",
+                  "transition text-left",
                 )}
               >
                 {s.label}
