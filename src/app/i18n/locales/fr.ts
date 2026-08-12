@@ -1398,6 +1398,10 @@ const fr: Dict = {
   "journal.exampleBadge": "Exemple",
   "journal.exampleNote":
     "Trade d'exemple inséré par la démo — modifie-le ou supprime-le quand tu veux.",
+  "cluster.fomo": "Impatience",
+  "cluster.planViolation": "Plan non suivi",
+  "cluster.risk": "Gestion du risque",
+  "cluster.exit": "Sorties",
   "session.title": "Séance du jour",
   "session.open": "Séance ouverte",
   "session.closed": "Séance clôturée",
