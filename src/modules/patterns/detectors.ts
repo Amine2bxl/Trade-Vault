@@ -1,5 +1,13 @@
-import { clusterOf, type MistakeClusterId } from "@/app/utils/mistakeClusters";
-import { MIN_GROUP, MIN_SESSIONS, MIN_TRADES, notEnough, type NotEnough } from "./thresholds";
+import { MISTAKE_CLUSTERS, clusterOf, type MistakeClusterId } from "@/app/utils/mistakeClusters";
+import {
+  MIN_GROUP,
+  MIN_R_DELTA,
+  MIN_SESSIONS,
+  MIN_SHARE_DELTA,
+  MIN_TRADES,
+  notEnough,
+  type NotEnough,
+} from "./thresholds";
 
 /**
  * Détecteurs de motifs — DÉTERMINISTES, purs, sans IA.
@@ -15,7 +23,19 @@ import { MIN_GROUP, MIN_SESSIONS, MIN_TRADES, notEnough, type NotEnough } from "
  * sorte qu'un affichage ne puisse pas montrer une part sans sa base, même par
  * distraction.
  *
- * Troisième règle : le vocabulaire. Un détecteur observe une ASSOCIATION. Les
+ * Troisième règle : `n` ne suffit pas. Balayer beaucoup de tranches finit
+ * toujours par en produire une qui paraît extrême — c'est le problème des
+ * comparaisons multiples, et aucun seuil de taille ne le règle. Deux gardes en
+ * réponse : un PLANCHER D'EFFET par détecteur (`thresholds.ts`) sous lequel on
+ * se tait, et `Evidence.comparisons`, le nombre de tranches examinées, qui
+ * voyage avec le résultat. Un écart trouvé en regardant vingt tranches ne se
+ * lit pas comme le même écart trouvé en en regardant une.
+ *
+ * Quatrième règle, d'architecture : UNE dimension par détecteur. « Jeudi,
+ * après une perte, entre 14 h et 16 h, setup X » empile quatre filtres — c'est
+ * la forme qui fabrique des faux positifs, et aucun plancher ne la rattrape.
+ *
+ * Cinquième règle : le vocabulaire. Un détecteur observe une ASSOCIATION. Les
  * champs s'appellent `value` et `baseline`, pas `cause` ni `effect`, et aucune
  * chaîne produite ici ne contient « parce que ». Le produit observe une
  * corrélation sur une variable en partie déclarative ; il ne peut pas établir
@@ -33,6 +53,13 @@ export interface Evidence {
   value: number;
   /** La référence à laquelle on la compare, si comparaison il y a. */
   baseline: number | null;
+  /**
+   * Nombre de tranches examinées pour aboutir à ce résultat.
+   *
+   * Obligatoire, au même titre que `n` : un affichage qui ne peut pas dire
+   * « la plus forte de 4 » ne devrait pas afficher « la plus forte ».
+   */
+  comparisons: number;
 }
 
 export interface DetectedPattern {
@@ -95,6 +122,21 @@ export function clusterConcentration(trades: TradeLike[]): DetectorResult {
   }
   if (!top) return null;
 
+  // Référence : la part qu'aurait cette famille si les erreurs se
+  // répartissaient uniformément entre les QUATRE familles définies — une
+  // constante, pas une valeur tirée des données.
+  //
+  // Prendre la moyenne sur les familles OBSERVÉES serait dégénéré : un trader
+  // qui n'étiquette qu'une seule famille aurait une référence de 100 %, donc un
+  // écart nul, donc un silence permanent — alors que « toutes mes pertes
+  // étiquetées relèvent du risque » est précisément une observation.
+  const baseline = 1 / MISTAKE_CLUSTERS.length;
+  const value = top[1].count / losses.length;
+  // Plancher d'effet : sous +15 points au-dessus de la référence, on se tait.
+  // Sans lui, une famille à 26 % contre 25 % franchirait toutes les gardes de
+  // taille et ne dirait rien.
+  if (value - baseline < MIN_SHARE_DELTA) return null;
+
   return {
     status: "found",
     kind: "cluster_concentration",
@@ -103,8 +145,9 @@ export function clusterConcentration(trades: TradeLike[]): DetectorResult {
       n: losses.length,
       comparisonN: null,
       metric: "loss_share",
-      value: top[1].count / losses.length,
-      baseline: null,
+      value: Number(value.toFixed(3)),
+      baseline: Number(baseline.toFixed(3)),
+      comparisons: byCluster.size,
     },
     // La somme des R des trades perdants portant cette famille. C'est une
     // somme observée, pas une projection de ce qui serait arrivé sans elle —
@@ -134,6 +177,9 @@ export function afterLoss(trades: TradeLike[]): DetectorResult {
 
   const value = mean(after);
   const baseline = mean(rest);
+  // Une comparaison unique, mais le plancher s'applique quand même : un écart
+  // de 0,05 R entre deux groupes d'un journal ordinaire est du bruit.
+  if (Math.abs(value - baseline) < MIN_R_DELTA) return null;
   return {
     status: "found",
     kind: "after_loss",
@@ -144,6 +190,8 @@ export function afterLoss(trades: TradeLike[]): DetectorResult {
       metric: "avg_r",
       value: Number(value.toFixed(3)),
       baseline: Number(baseline.toFixed(3)),
+      // Une seule tranche examinée : « après une perte » contre « le reste ».
+      comparisons: 1,
     },
     impactR: Number(((value - baseline) * after.length).toFixed(2)),
   };
@@ -190,6 +238,11 @@ export function timeOfDay(trades: TradeLike[]): DetectorResult {
   if (!worst) return null;
 
   const value = mean(worst[1]);
+  // C'est ICI que les comparaisons multiples mordent le plus : on rend le
+  // minimum de plusieurs tranches, donc la valeur la plus extrême d'un
+  // ensemble bruité. Le plancher d'effet est la seule chose qui empêche de
+  // publier « ta pire heure » sur un écart de 0,1 R.
+  if (Math.abs(value - baseline) < MIN_R_DELTA) return null;
   return {
     status: "found",
     kind: "time_of_day",
@@ -200,6 +253,7 @@ export function timeOfDay(trades: TradeLike[]): DetectorResult {
       metric: "avg_r",
       value: Number(value.toFixed(3)),
       baseline: Number(baseline.toFixed(3)),
+      comparisons: usable.length,
     },
     impactR: Number(((value - baseline) * worst[1].length).toFixed(2)),
   };
@@ -237,6 +291,10 @@ export function readinessAssociation(sessions: SessionLike[], trades: TradeLike[
   if (highR.length < MIN_GROUP) return notEnough("trades", highR.length, MIN_GROUP);
   if (lowR.length < MIN_GROUP) return notEnough("trades", lowR.length, MIN_GROUP);
 
+  const value = mean(highR);
+  const baseline = mean(lowR);
+  if (Math.abs(value - baseline) < MIN_R_DELTA) return null;
+
   return {
     status: "found",
     kind: "readiness_correlation",
@@ -245,8 +303,12 @@ export function readinessAssociation(sessions: SessionLike[], trades: TradeLike[
       n: highR.length,
       comparisonN: lowR.length,
       metric: "avg_r",
-      value: Number(mean(highR).toFixed(3)),
-      baseline: Number(mean(lowR).toFixed(3)),
+      value: Number(value.toFixed(3)),
+      baseline: Number(baseline.toFixed(3)),
+      // Une coupe unique, à la médiane. Pas de balayage de seuils : chercher
+      // « le seuil qui sépare le mieux » serait exactement la recherche libre
+      // que ce module refuse.
+      comparisons: 1,
     },
     // Pas d'impact en R : l'écart entre deux groupes auto-sélectionnés n'est pas
     // un gain qu'on peut promettre. `null` est ici la réponse honnête.
