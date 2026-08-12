@@ -607,59 +607,59 @@ function AppContent() {
           {/* No skeleton: pages are preloaded, so navigation is instant.
               Previous page stays visible during the (near-zero) chunk load. */}
           <Suspense fallback={null}>
-              {page === "dashboard" && (
-                <Dashboard
-                  trades={trades}
-                  onAddTrade={handleAdd}
-                  tradesLoading={tradesLoading}
-                  onOpenChecklist={() => setPage("checklist")}
-                  onOpenImport={() => setImportOpen(true)}
-                  onEditTrade={handleEdit}
-                  onOpenJournal={() => setPage("journal")}
-                />
-              )}
-              {page === "journal" && (
-                <Journal
-                  trades={trades}
-                  onEdit={handleEdit}
-                  onQuickEdit={handleQuickEdit}
-                  onDelete={handleDelete}
-                  onDeleteAll={handleDeleteAll}
-                  onAdd={handleAdd}
-                  onOpenMissed={() => setPage("missed")}
-                />
-              )}
-              {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
-              {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-              {page === "analytics" && <Analytics trades={trades} />}
-              {page === "mistakes" && <Mistakes trades={trades} />}
-              {page === "missed" && <MissedOpportunities />}
-              {page === "insights" && <Jarvis />}
-              {page === "news" && <EconomicNews />}
-              {page === "seasonality" && (
-                <Seasonality trades={trades} tradesLoading={tradesLoading} />
-              )}
-              {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
-              {page === "settings" && (
-                <Settings
-                  trades={trades}
-                  onDeleteAll={handleDeleteAll}
-                  onOpenImport={() => setImportOpen(true)}
-                  onOpenReports={() => setPage("reports")}
-                  setPage={setPage}
-                />
-              )}
-              {page === "reports" && <Reports trades={trades} />}
-              {page === "goals" && <Goals trades={trades} />}
-              {page === "simulator" && <Simulator trades={trades} />}
-              {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-              {page === "appearance" && <Appearance />}
-              {page === "subscription" && <Subscription />}
-              {page === "montecarlo" && <MonteCarlo trades={trades} />}
-              {page === "inbox" && <Inbox />}
-              {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-            </Suspense>
-          </PageErrorBoundary>
+            {page === "dashboard" && (
+              <Dashboard
+                trades={trades}
+                onAddTrade={handleAdd}
+                tradesLoading={tradesLoading}
+                onOpenChecklist={() => setPage("checklist")}
+                onOpenImport={() => setImportOpen(true)}
+                onEditTrade={handleEdit}
+                onOpenJournal={() => setPage("journal")}
+              />
+            )}
+            {page === "journal" && (
+              <Journal
+                trades={trades}
+                onEdit={handleEdit}
+                onQuickEdit={handleQuickEdit}
+                onDelete={handleDelete}
+                onDeleteAll={handleDeleteAll}
+                onAdd={handleAdd}
+                onOpenMissed={() => setPage("missed")}
+              />
+            )}
+            {page === "checklist" && <Checklist setPage={setPage} onAddTrade={handleAdd} />}
+            {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
+            {page === "analytics" && <Analytics trades={trades} />}
+            {page === "mistakes" && <Mistakes trades={trades} />}
+            {page === "missed" && <MissedOpportunities />}
+            {page === "insights" && <Jarvis />}
+            {page === "news" && <EconomicNews />}
+            {page === "seasonality" && (
+              <Seasonality trades={trades} tradesLoading={tradesLoading} />
+            )}
+            {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
+            {page === "settings" && (
+              <Settings
+                trades={trades}
+                onDeleteAll={handleDeleteAll}
+                onOpenImport={() => setImportOpen(true)}
+                onOpenReports={() => setPage("reports")}
+                setPage={setPage}
+              />
+            )}
+            {page === "reports" && <Reports trades={trades} />}
+            {page === "goals" && <Goals trades={trades} />}
+            {page === "simulator" && <Simulator trades={trades} />}
+            {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+            {page === "appearance" && <Appearance />}
+            {page === "subscription" && <Subscription />}
+            {page === "montecarlo" && <MonteCarlo trades={trades} />}
+            {page === "inbox" && <Inbox />}
+            {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+          </Suspense>
+        </PageErrorBoundary>
       </main>
       {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
       <AccountSwitcher

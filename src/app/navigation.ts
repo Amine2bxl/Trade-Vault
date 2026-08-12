@@ -59,9 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     labelKey: "nav.groupJournal",
-    items: [
-      { id: "journal", labelKey: "nav.journal", icon: BookOpen },
-    ],
+    items: [{ id: "journal", labelKey: "nav.journal", icon: BookOpen }],
   },
   {
     labelKey: "nav.groupAnalysis",

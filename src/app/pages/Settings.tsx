@@ -140,7 +140,9 @@ export default function Settings({
     }
   };
 
-  const [tab, setTab] = useState<"settings" | "profile" | "appearance" | "subscription">("settings");
+  const [tab, setTab] = useState<"settings" | "profile" | "appearance" | "subscription">(
+    "settings",
+  );
 
   if (!user) return null;
 
@@ -161,8 +163,26 @@ export default function Settings({
         subtitle={t("settings.subtitle")}
         actions={
           <div className="flex items-center bg-white/[0.03] border border-white/[0.06] rounded-xl p-0.5">
-            {([["settings","General"],["profile","Profile"],["appearance","Theme"],["subscription","Plan"]] as const).map(([k,label]) => (
-              <button key={k} onClick={() => setTab(k)} className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all", tab===k ? "bg-cyan-500/15 text-cyan-300" : "text-slate-500 hover:text-slate-300")}>{label}</button>
+            {(
+              [
+                ["settings", "General"],
+                ["profile", "Profile"],
+                ["appearance", "Theme"],
+                ["subscription", "Plan"],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setTab(k)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all",
+                  tab === k
+                    ? "bg-cyan-500/15 text-cyan-300"
+                    : "text-slate-500 hover:text-slate-300",
+                )}
+              >
+                {label}
+              </button>
             ))}
           </div>
         }

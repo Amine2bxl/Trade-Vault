@@ -609,8 +609,14 @@ input[type="number"] {
   animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Simple fade-in (no movement) — used by modals, lightboxes, overlays */
@@ -618,12 +624,24 @@ input[type="number"] {
   animation: fadeIn 0.25s ease both;
 }
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Remove all stagger delays — instant, unified entrance */
-.stagger-0, .stagger-1, .stagger-2, .stagger-3, .stagger-4, .stagger-5, .stagger-6, .stagger-7, .stagger-8 {
+.stagger-0,
+.stagger-1,
+.stagger-2,
+.stagger-3,
+.stagger-4,
+.stagger-5,
+.stagger-6,
+.stagger-7,
+.stagger-8 {
   animation-delay: 0ms !important;
 }
 .animate-slide-in {
@@ -963,7 +981,8 @@ input[type="range"]::-webkit-slider-thumb {
   to {
     background-position: -200% 0;
   }
-}.skeleton {
+}
+.skeleton {
   background: linear-gradient(
     100deg,
     rgba(30, 41, 59, 0.45) 40%,
@@ -1027,7 +1046,6 @@ svg.lucide {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 
 /* ── shared button system ── */
 /* These classes are used by <Button variant="primary|ghost"> across the
