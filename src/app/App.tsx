@@ -6,7 +6,6 @@ import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
 import SectionTabs from "./components/SectionTabs";
 import { pagesOfSection, sectionForPage } from "./navigation";
-import TradeModal from "./components/TradeModal";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
 import Dashboard from "./pages/Dashboard";
@@ -41,7 +40,15 @@ const AiAssistant = lazy(() => import("./components/AiAssistant"));
 const Onboarding = lazy(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazy(() => import("./components/CommandPalette"));
 const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
-import TradeDetailModal from "./components/TradeDetailModal";
+// Les modales ne sont montées que sur action : formulaire de trade (47 Ko de
+// source à elle seule), détail d'un trade, détail d'une notification. Elles
+// étaient importées en STATIQUE, donc payées au premier octet par un trader
+// qui ouvre son tableau de bord et ne clique sur rien. Elles sont préchargées
+// dès que le navigateur est libre (voir `preloadModals` plus bas) : au clic,
+// le chunk est déjà là.
+const TradeModal = lazy(() => import("./components/TradeModal"));
+const TradeDetailModal = lazy(() => import("./components/TradeDetailModal"));
+const NotificationDetailModal = lazy(() => import("./components/NotificationDetailModal"));
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, isPage, type Page } from "./types";
 import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
@@ -79,7 +86,6 @@ import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 const Landing = lazy(() => import("./pages/Landing"));
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
-import NotificationDetailModal from "./components/NotificationDetailModal";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -177,7 +183,14 @@ function AppContent() {
   // premier rendu du tableau de bord.
   useEffect(() => {
     if (!isAuthenticated) return;
-    const run = () => LIKELY_NEXT_PAGES.forEach(preloadPage);
+    const run = () => {
+      LIKELY_NEXT_PAGES.forEach(preloadPage);
+      // Même raisonnement que pour les pages : le coût est retiré du démarrage,
+      // pas déplacé sur le clic. Silencieux — un préchargement qui échoue ne
+      // doit jamais remonter d'erreur, le chargement au clic réessaiera.
+      void import("./components/TradeModal").catch(() => {});
+      void import("./components/TradeDetailModal").catch(() => {});
+    };
     const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
       .requestIdleCallback;
     if (ric) {
@@ -688,9 +701,11 @@ function AppContent() {
       <Suspense fallback={null}>
         <AiAssistant trades={trades} page={page} />
       </Suspense>
-      {modalOpen && (
-        <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
-      )}
+      <Suspense fallback={null}>
+        {modalOpen && (
+          <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
+        )}
+      </Suspense>
       <Suspense fallback={null}>
         {paletteOpen && (
           <CommandPalette
@@ -711,24 +726,30 @@ function AppContent() {
           />
         )}
       </Suspense>
-      {viewingTrade && (
-        <TradeDetailModal
-          trades={[viewingTrade]}
-          date={viewingTrade.date}
-          onClose={() => setViewingTrade(null)}
-          onDelete={(id) => {
-            handleDelete(id);
-            setViewingTrade(null);
-          }}
-        />
-      )}
-      {detailNotification && (
-        <NotificationDetailModal
-          notification={detailNotification}
-          onClose={() => setDetailNotification(null)}
-          onMarkRead={markNotifRead}
-        />
-      )}
+      {/* Repli `null` : la modale s'affiche dès que son chunk est là. Il l'est
+          déjà dans le cas normal (préchargé au repos), et sur une connexion
+          lente un écran inchangé pendant 100 ms vaut mieux qu'un squelette de
+          modale qui clignote. */}
+      <Suspense fallback={null}>
+        {viewingTrade && (
+          <TradeDetailModal
+            trades={[viewingTrade]}
+            date={viewingTrade.date}
+            onClose={() => setViewingTrade(null)}
+            onDelete={(id) => {
+              handleDelete(id);
+              setViewingTrade(null);
+            }}
+          />
+        )}
+        {detailNotification && (
+          <NotificationDetailModal
+            notification={detailNotification}
+            onClose={() => setDetailNotification(null)}
+            onMarkRead={markNotifRead}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }
