@@ -1484,6 +1484,15 @@ const en = {
   "session.reviewPlaceholder": "A word on how it went (optional)",
   "session.closeCta": "Close the session",
   "session.review": "Review",
+  "proposal.title": "Jarvis suggests",
+  "proposal.basis": "Observed on {n} data points, across {c} slices compared",
+  "proposal.association": "An observed association, not a cause.",
+  "proposal.accept": "Accept",
+  "proposal.dismiss": "Not now",
+  "proposal.accepted": "Added to your setup",
+  "proposal.dismissed": "Set aside — Jarvis won't bring it back for 30 days",
+  "proposal.failed": "Nothing was changed",
+  "proposal.expires": "Expires on {date}",
   "journal.demoInserted": "Demo trades added — explore your Dashboard and Analytics!",
 };
 

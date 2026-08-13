@@ -1422,6 +1422,15 @@ const fr: Dict = {
   "session.reviewPlaceholder": "Un mot sur la journée (facultatif)",
   "session.closeCta": "Clôturer la séance",
   "session.review": "Revue",
+  "proposal.title": "Jarvis propose",
+  "proposal.basis": "Observé sur {n} données, parmi {c} tranches comparées",
+  "proposal.association": "Une association observée, pas une cause.",
+  "proposal.accept": "Accepter",
+  "proposal.dismiss": "Pas maintenant",
+  "proposal.accepted": "Ajouté à ton dispositif",
+  "proposal.dismissed": "Écarté — Jarvis n'y revient pas avant 30 jours",
+  "proposal.failed": "Rien n'a été modifié",
+  "proposal.expires": "Expire le {date}",
   "journal.demoInserted": "Trades démo ajoutés — explore ton Dashboard et tes Analytics !",
 };
 
