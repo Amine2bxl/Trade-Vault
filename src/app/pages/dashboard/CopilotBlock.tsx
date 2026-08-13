@@ -65,7 +65,6 @@ function EdgeDial({ score }: { score: number }) {
           strokeDasharray={C}
           strokeDashoffset={C * (1 - pct)}
           style={{
-            filter: `drop-shadow(0 0 6px ${tone.glow})`,
             transition: "stroke-dashoffset 900ms cubic-bezier(0.16,1,0.3,1)",
           }}
         />

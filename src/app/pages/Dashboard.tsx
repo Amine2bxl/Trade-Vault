@@ -357,20 +357,13 @@ export default function Dashboard({
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ filter: "drop-shadow(0 0 6px rgb(var(--tv-highlight-rgb) / 0.5))" }}
                 />
                 <path
                   d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
                   fill="url(#emptyGrad)"
                   stroke="none"
                 />
-                <circle
-                  cx="162"
-                  cy="14"
-                  r="3.5"
-                  fill="var(--tv-highlight)"
-                  style={{ filter: "drop-shadow(0 0 5px rgb(var(--tv-highlight-rgb) / 0.9))" }}
-                />
+                <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" />
               </svg>
               <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
               <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
@@ -429,11 +422,6 @@ export default function Dashboard({
                           "font-display text-3xl md:text-4xl font-extrabold tabular-nums tracking-tight",
                           gain ? "text-emerald-400" : "text-red-400",
                         )}
-                        style={{
-                          textShadow: gain
-                            ? "0 0 24px rgba(16,185,129,0.25)"
-                            : "0 0 24px rgba(239,68,68,0.25)",
-                        }}
                       >
                         {formatPnl(stats.totalPnl)}
                       </span>
@@ -464,7 +452,7 @@ export default function Dashboard({
                         className={cn(
                           "px-2.5 md:px-3.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition",
                           period === p
-                            ? "bg-cyan-500/15 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+                            ? "bg-cyan-500/15 text-cyan-300"
                             : "text-slate-500 hover:text-slate-300",
                         )}
                       >
