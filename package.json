@@ -35,6 +35,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.6.4",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/router-plugin": "^1.167.28",
     "@types/node": "^22.16.5",
