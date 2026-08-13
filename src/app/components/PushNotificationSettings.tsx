@@ -123,7 +123,7 @@ export function PushNotificationSettings() {
       <div className="flex items-center gap-2.5">
         <span className="relative shrink-0">
           <span className="absolute -inset-1 rounded-lg bg-cyan-500/30 blur-md" />
-          <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+          <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
             <Bell className="w-4 h-4 text-white" />
           </span>
         </span>

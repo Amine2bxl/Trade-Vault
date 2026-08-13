@@ -382,7 +382,7 @@ export default function AccountSwitcher({
           className={cn(
             "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition overflow-hidden",
             "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
-            "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5 group/acc",
+            "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] group/acc",
           )}
         >
           <span
@@ -423,7 +423,7 @@ export default function AccountSwitcher({
             <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
               {fmtBalance}
             </span>
-            <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm shadow-cyan-500/25">
+            <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
               {t("account.switchShort")}
               <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
             </span>
@@ -806,7 +806,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
           className={cn(
             "px-5 py-2.5 rounded-xl text-sm font-bold transition whitespace-nowrap",
             name.trim() && !busy
-              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:brightness-110"
+              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:brightness-110"
               : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
           )}
         >

@@ -425,7 +425,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 className={cn(
                   "w-full py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2",
                   canImport
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/20"
+                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white"
                     : "bg-slate-800 text-slate-500 cursor-not-allowed",
                 )}
               >

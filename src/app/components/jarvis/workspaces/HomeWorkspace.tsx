@@ -200,7 +200,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           {/* Avatar Jarvis — la voix clonée, la même identité partout */}
           <div className="relative shrink-0">
             <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-md" />
-            <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+            <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
               <Bot className="w-7 h-7 text-white" />
             </div>
           </div>
@@ -256,7 +256,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           <div className="flex items-start gap-3">
             <span className="relative shrink-0">
               <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
                 <Sparkles className="w-4.5 h-4.5 text-white" />
               </span>
             </span>
@@ -284,7 +284,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 className={cn(
                   "mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white",
                   "bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110",
-                  "shadow-lg shadow-cyan-500/20 transition disabled:opacity-60",
+                  "transition disabled:opacity-60",
                 )}
               >
                 {ruleSaving ? (

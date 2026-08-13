@@ -38,7 +38,7 @@ export function CookieConsent() {
           <div className="flex items-center gap-2.5 mb-1.5">
             <span className="relative shrink-0">
               <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/30 blur-sm" />
-              <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+              <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
                 <ShieldCheck className="w-4 h-4 text-white" />
               </span>
             </span>
@@ -63,7 +63,7 @@ export function CookieConsent() {
           </a>
           <button
             onClick={accept}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:brightness-110"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
           >
             J'accepte
           </button>

@@ -82,7 +82,7 @@ export default function JarvisShell({
         {/* Avatar Jarvis */}
         <div className="relative shrink-0">
           <span className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md" />
-          <div className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+          <div className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
             <Bot className="w-4.5 h-4.5 md:w-5 md:h-5 text-white" />
           </div>
         </div>

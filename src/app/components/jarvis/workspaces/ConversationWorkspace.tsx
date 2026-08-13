@@ -688,7 +688,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               <div className="relative flex items-center gap-3">
                 <span className="relative shrink-0">
                   <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/35 blur-md" />
-                  <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+                  <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
                     <Bot className="w-5 h-5 text-white" />
                   </span>
                 </span>
@@ -822,7 +822,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                   new CustomEvent("tv:navigate", { detail: { page: "subscription" } }),
                 )
               }
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 hover:brightness-110 transition"
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white hover:brightness-110 transition"
             >
               {t("credits.upgrade")}
             </button>

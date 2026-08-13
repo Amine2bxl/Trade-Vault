@@ -1377,7 +1377,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             <button
               onClick={() => askCoach(coach.checklistReview)}
               title="Jarvis"
-              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition"
+              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition"
             >
               <Bot className="w-4 h-4" />
               <span className="hidden sm:inline">{t("chk.askJarvis")}</span>
@@ -1493,7 +1493,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   className={cn(
                     "flex-1 rounded-lg px-2 py-1.5 text-[11px] md:text-xs font-semibold transition",
                     cfgTab === id
-                      ? "bg-cyan-500/15 text-cyan-300 shadow-sm shadow-cyan-500/10"
+                      ? "bg-cyan-500/15 text-cyan-300"
                       : "text-slate-400 hover:text-white",
                   )}
                 >
@@ -1605,7 +1605,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                         }));
                         void syncWizardRules(user?.id, generated.items);
                       }}
-                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 shadow-lg shadow-cyan-500/15 transition"
+                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 transition"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> {t("chk.applyRecommended")}
                     </button>
@@ -2063,7 +2063,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   "w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wide transition",
                   !allGates || day.locked
                     ? "bg-white/[0.04] border border-white/[0.08] text-slate-600 cursor-not-allowed"
-                    : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.01] active:scale-95",
+                    : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.01] active:scale-95",
                 )}
               >
                 {day.locked ? t("chk.lockedBtn") : t("chk.initiate")}
@@ -2091,7 +2091,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
           nav and the FAB; a floating pill, never hidden. */}
       {voice.show && (
         <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
-          <div className="relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3 shadow-2xl shadow-cyan-500/10">
+          <div className="relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3">
             <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
             <span className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
               {voice.speaking && (

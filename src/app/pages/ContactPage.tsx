@@ -71,7 +71,7 @@ export default function ContactPage() {
         <div className="glass-strong rounded-2xl p-5 md:p-6 mb-4">
           <a
             href={mailto()}
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 transition"
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition"
           >
             <Mail className="w-4 h-4" /> {doc.emailLabel}
           </a>

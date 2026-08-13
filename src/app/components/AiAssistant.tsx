@@ -213,7 +213,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
             className={cn(
               "relative grid place-items-center bg-gradient-to-br from-cyan-500 to-teal-600",
               "h-7 w-7 rounded-2xl",
-              "md:h-10 md:w-10 md:rounded-xl md:shadow-lg md:shadow-cyan-500/25",
+              "md:h-10 md:w-10 md:rounded-xl md:shadow-lg",
             )}
           >
             {open ? (

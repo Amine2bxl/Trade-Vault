@@ -196,7 +196,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
               </button>
               <button
                 onClick={idx === total - 1 ? onClose : next}
-                className="h-10 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 shadow-lg shadow-cyan-500/20 transition-all inline-flex items-center gap-1.5"
+                className="h-10 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 transition-all inline-flex items-center gap-1.5"
               >
                 {idx === total - 1 ? "Terminer" : "Suivant"}
                 <ArrowRight className="w-4 h-4" />
@@ -205,7 +205,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
           ) : (
             <button
               onClick={onClose}
-              className="h-10 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 shadow-lg shadow-cyan-500/20 transition-all"
+              className="h-10 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 transition-all"
             >
               Essayer TradeVault
             </button>
