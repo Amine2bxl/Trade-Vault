@@ -1015,16 +1015,24 @@ svg.lucide {
  * Animer `left`/`width` aurait fait recalculer la disposition à chaque frame ;
  * `transform` compose sur le GPU et ne touche à rien d'autre.
  */
+/* ── Onglets de section — CONTRÔLE SEGMENTÉ ──
+ * Un cadre unique, des pastilles dedans, celle qui est active posée sur une
+ * surface pleine. L'ancienne version était une rangée soulignée : à côté de la
+ * barre latérale, qui pose déjà des lignes actives, ça faisait deux grammaires
+ * d'« actif » sur le même écran. Un segment se lit d'un coup d'œil et dit
+ * clairement qu'on choisit UNE vue parmi N. */
 .section-tabs {
-  position: relative;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.25rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .section-tabs-row {
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
   overflow-x: auto;
   overflow-y: hidden;
   flex-wrap: nowrap; /* jamais deux rangées, même à 380px */
@@ -1039,51 +1047,61 @@ svg.lucide {
   scroll-snap-align: start;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 0.6rem 0.6rem 0 0;
-  font-size: 0.78rem;
+  gap: 0.45rem;
+  height: 2.1rem;
+  padding: 0 0.75rem;
+  border-radius: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
   transition-property: color, background-color;
-  transition-duration: 150ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 .section-tab-idle {
-  color: rgb(100 116 139);
+  color: rgb(148 163 184);
 }
 .section-tab-idle:hover {
-  color: rgb(203 213 225);
-  background-color: rgba(255, 255, 255, 0.03);
+  color: rgb(226 232 240);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 .section-tab-active {
-  color: rgb(var(--tv-accent-rgb));
+  color: #fff;
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.25);
 }
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
-.section-tab-underline {
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 1px; /* la largeur réelle vient de scaleX */
-  height: 2px;
-  border-radius: 2px;
-  transform-origin: left center;
-  background: rgb(var(--tv-accent-rgb));
-  transition-property: transform;
-  transition-duration: 150ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-}
 
-/* Mouvement réduit : le soulignement SAUTE à sa position, il ne glisse pas.
-   L'information (quel onglet est actif) est conservée, l'animation non. */
-@media (prefers-reduced-motion: reduce) {
-  .section-tab-underline {
-    transition-duration: 0.01ms;
-  }
+/* ── Infobulle de la barre repliée ──
+ * `title` natif attend une seconde avant de s'afficher : dans une colonne
+ * d'icônes, cette seconde est exactement le moment où l'on renonce et où l'on
+ * déplie la barre. L'infobulle apparaît au survol, sans délai, et ne coûte
+ * qu'une opacité. */
+.rail-tip {
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.5rem;
+  background: #0d1a2b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgb(226 232 240);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.group:hover > .rail-tip,
+.group:focus-visible > .rail-tip {
+  opacity: 1;
 }

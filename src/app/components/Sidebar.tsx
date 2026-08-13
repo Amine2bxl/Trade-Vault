@@ -94,7 +94,6 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
       // 100 à 300 ms avant le clic : au moment du clic il est déjà là.
       onPointerEnter={target ? () => preloadPage(target) : undefined}
       onFocus={target ? () => preloadPage(target) : undefined}
-      title={collapsed ? label : undefined}
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
@@ -114,6 +113,8 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
         {badge}
       </span>
       {!collapsed && <span className="truncate">{label}</span>}
+      {/* Le libellé au survol, sans le délai d'une seconde du `title` natif. */}
+      {collapsed && <span className="rail-tip">{label}</span>}
     </button>
   );
 
@@ -229,7 +230,15 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           SIX sections. Les pages d'une section vivent dans sa barre d'onglets,
           sous le titre : vingt-et-une entrées à plat ne se lisent pas d'un coup
           d'œil, six oui. Chaque page garde son URL. */}
-      <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
+      <nav
+        className={cn(
+          "min-h-0 flex-1 px-3 pb-2",
+          // En mode réduit, l'infobulle sort de la colonne : un défilement
+          // masquerait exactement ce qu'elle sert à montrer. Huit lignes de
+          // 40 px tiennent sans défilement dans toutes les hauteurs d'écran.
+          collapsed ? "overflow-visible" : "overflow-y-auto",
+        )}
+      >
         {groupLabel(t("nav.groupNavigate"))}
         <div className="space-y-1">
           {SECTIONS.filter((section) => section.id !== "settings").map((section) => {

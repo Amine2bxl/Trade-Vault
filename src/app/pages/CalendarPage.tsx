@@ -235,7 +235,6 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       <PageHeader
         className="mb-3 md:mb-6 stagger-0"
         title={t("calendar.title")}
-        subtitle={t("calendar.subtitle")}
         icon={
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
             <CalendarDays className="w-4 h-4 text-white" />

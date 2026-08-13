@@ -38,10 +38,6 @@ export default function Appearance() {
       <PageHeader
         className="mb-2 md:mb-2"
         title={tr("Apparence", "Appearance")}
-        subtitle={tr(
-          "Personnalise l'identité visuelle de ton terminal.",
-          "Customize your trading terminal look and feel.",
-        )}
         icon={
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
             <Palette className="w-4 h-4 text-white" />

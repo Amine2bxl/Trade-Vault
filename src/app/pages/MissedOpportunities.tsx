@@ -181,7 +181,6 @@ export default function MissedOpportunities() {
       <PageHeader
         className="items-center"
         title={t("missed.title")}
-        subtitle={t("missed.subtitle")}
         icon={
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
             <Target className="w-4 h-4 text-white" />

@@ -147,7 +147,6 @@ export default function Reports({ trades }: { trades: Trade[] }) {
           </span>
         }
         title={t("reports.title")}
-        subtitle={t("reports.subtitle")}
         actions={
           missing.length > 0 &&
           !loading && (

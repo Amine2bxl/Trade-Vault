@@ -302,7 +302,6 @@ export default function EconomicNews() {
           </span>
         }
         title={t("news.title")}
-        subtitle={t("news.subtitle")}
         actions={
           <span
             className={cn(

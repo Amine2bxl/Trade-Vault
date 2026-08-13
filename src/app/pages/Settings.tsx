@@ -211,7 +211,6 @@ export default function Settings({
           </span>
         }
         title={t("settings.title")}
-        subtitle={t("settings.subtitle")}
       />
 
       {/* UNE SEULE FENÊTRE. Le rail et le contenu vivent dans le même panneau,
@@ -297,7 +296,6 @@ export default function Settings({
               <SectionHeading
                 icon={<Wallet className="w-4 h-4" />}
                 title={t("settings.paneAccount")}
-                sub={t("settings.paneAccountSub")}
               />
               <AccountSwitcher variant="card" />
             </div>
@@ -366,23 +364,17 @@ export default function Settings({
           {/* Data */}
           {pane === "data" && sections.data && (
             <div className="space-y-2.5">
-              <SectionHeading
-                icon={<Database className="w-4 h-4" />}
-                title={t("settings.data")}
-                sub={t("settings.dataSub")}
-              />
+              <SectionHeading icon={<Database className="w-4 h-4" />} title={t("settings.data")} />
 
               <ActionRow
                 icon={<Download className="w-4 h-4" />}
                 label={t("settings.exportCsv")}
-                sub={`${t("settings.exportCsvSub")} · ${trades.length} ${t("common.trades")}`}
                 onClick={() => exportTradesCSV(trades)}
                 disabled={trades.length === 0}
               />
               <ActionRow
                 icon={<Upload className="w-4 h-4" />}
                 label={t("settings.importCsv")}
-                sub={t("settings.importCsvSub")}
                 onClick={onOpenImport}
               />
               {/* Recalibrage d'échelle : dans la section Données, à côté de
@@ -392,21 +384,12 @@ export default function Settings({
                 <ActionRow
                   icon={<Scale className="w-4 h-4" />}
                   label={t("recal.action")}
-                  sub={
-                    isCalibrated(activeAccount?.calibrationScale)
-                      ? t("recal.badge").replace(
-                          "{scale}",
-                          `${Number((activeAccount?.calibrationScale ?? 1).toFixed(4))}×`,
-                        )
-                      : t("recal.actionSub")
-                  }
                   onClick={() => setRecalOpen(true)}
                 />
               )}
               <ActionRow
                 icon={<FileText className="w-4 h-4" />}
                 label={t("settings.reports")}
-                sub={t("settings.reportsSub")}
                 onClick={onOpenReports}
               />
             </div>
@@ -543,24 +526,13 @@ function DeleteAccountModal({
   );
 }
 
-function SectionHeading({
-  icon,
-  title,
-  sub,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  sub?: string;
-}) {
+function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-start gap-2.5">
       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
         <span className="text-white">{icon}</span>
       </span>
-      <div>
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
-        {sub && <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>}
-      </div>
+      <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
     </div>
   );
 }

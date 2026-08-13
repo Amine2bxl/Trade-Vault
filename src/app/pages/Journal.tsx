@@ -257,7 +257,6 @@ export default function Journal({
       <PageHeader
         className="mb-3 md:mb-4 items-center"
         title={t("journal.title")}
-        subtitle={`${filtered.length} ${t("common.trades")}`}
         icon={
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
             <BookOpen className="w-4 h-4 text-white" />

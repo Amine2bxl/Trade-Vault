@@ -3,21 +3,23 @@ import { cn } from "./cn";
 import { density, type } from "./tokens";
 
 /**
- * PageHeader — the single page-title pattern of the app. Encodes the exact
- * gradient headline + muted subtitle markup that was previously duplicated at
- * the top of ~15 pages, so every screen shares one hierarchy and future
- * evolutions (density, type scale) happen in one place.
+ * PageHeader — le seul motif de titre de page.
+ *
+ * PAS DE SOUS-TITRE. Il y en avait un sur presque toutes les pages, et il
+ * répétait ce que le titre disait déjà (« Journal » / « Tous tes trades »).
+ * Une ligne grise sous chaque titre, sur vingt-et-un écrans, c'est vingt-et-une
+ * phrases à lire avant d'arriver au contenu — et personne ne les lit deux fois.
+ * Ce qui a besoin d'être expliqué se met à côté de ce qui a besoin d'être
+ * expliqué, pas en haut de page.
  */
 export function PageHeader({
   title,
-  subtitle,
   eyebrow,
   icon,
   actions,
   className,
 }: {
   title: ReactNode;
-  subtitle?: ReactNode;
   /** Optional small accent line above the title (greeting, breadcrumb). */
   eyebrow?: ReactNode;
   /** Optional icon rendered inline, just before the title text. */
@@ -47,7 +49,6 @@ export function PageHeader({
             {title}
           </h1>
         </div>
-        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
       </div>
       {actions}
     </div>

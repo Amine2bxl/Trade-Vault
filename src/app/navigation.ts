@@ -19,6 +19,7 @@ import {
   Target,
   User,
   Dices,
+  Shuffle,
 } from "lucide-react";
 import { PAGES, SECTIONS, type Page, type SectionId } from "./types";
 import type { TKey } from "./i18n/translations";
@@ -71,7 +72,10 @@ export const PAGE_META: Record<Page, { labelKey: TKey; icon: typeof LayoutDashbo
   tradingplan: { labelKey: "nav.tradingPlan", icon: Map },
   appearance: { labelKey: "nav.appearance", icon: Palette },
   subscription: { labelKey: "nav.subscription", icon: CreditCard },
-  montecarlo: { labelKey: "nav.montecarlo", icon: BarChart3 },
+  // Monte-Carlo portait `BarChart3`, la MÊME icône que « Analyse » et que la
+  // section entière : trois entrées identiques dans une rangée de quatre. Le
+  // tirage aléatoire de trajectoires se lit mieux en brassage.
+  montecarlo: { labelKey: "nav.montecarlo", icon: Shuffle },
 };
 
 /** Libellé + icône de chaque section. */
