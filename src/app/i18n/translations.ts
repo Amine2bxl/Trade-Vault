@@ -920,6 +920,7 @@ const en = {
   "nav.calculator": "Lot Size Calculator",
   "nav.checklist": "Pre-Market Checklist",
   "nav.settings": "Settings",
+  "nav.myAccount": "My account",
 
   // Economic news
   "news.title": "Economic News",

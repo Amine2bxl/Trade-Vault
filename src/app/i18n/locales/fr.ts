@@ -851,6 +851,7 @@ const fr: Dict = {
   "nav.seasonality": "Saisonnalité",
   "nav.calculator": "Calculateur de lots",
   "nav.settings": "Réglages",
+  "nav.myAccount": "Mon compte",
   "nav.checklist": "Checklist pré-market",
   "nav.inbox": "Boîte de réception",
 
