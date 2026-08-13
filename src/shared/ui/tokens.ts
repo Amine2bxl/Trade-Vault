@@ -92,11 +92,11 @@ export const density = {
   /** Roomier variant, reserved for hero/feature surfaces. */
   cardPadLoose: "p-5 md:p-6",
   /** Page gutters — mobile stays a touch tighter so more fits on screen. */
-  pagePad: "p-4 md:p-5",
+  pagePad: "p-5 md:p-8",
   /** Vertical rhythm between page sections. */
-  sectionGap: "mb-3 md:mb-4",
+  sectionGap: "mb-5 md:mb-6",
   /** Grid gap between sibling cards. */
-  gridGap: "gap-3.5",
+  gridGap: "gap-4",
 } as const;
 
 /**
