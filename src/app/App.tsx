@@ -84,7 +84,6 @@ import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 const Landing = lazy(() => import("./pages/Landing"));
-import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import PageErrorBoundary from "./components/PageErrorBoundary";
@@ -613,20 +612,8 @@ function AppContent() {
   return (
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
     // scrolls inside <main>, so the sidebar rail never moves on any page.
-    <div className="relative flex h-dvh text-white overflow-hidden">
+    <div className="relative flex h-dvh text-primary overflow-hidden">
       <FirstSessionWelcome />
-      <CursorGlow />
-      {/* Ambient background glow */}
-      <div className="shell-bg-orbs pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          className="auth-orb w-[600px] h-[600px] bg-cyan-600 -top-64 -right-64"
-          style={{ animationDelay: "0s" }}
-        />
-        <div
-          className="auth-orb w-[500px] h-[500px] bg-teal-600 top-1/2 -left-64"
-          style={{ animationDelay: "-7s" }}
-        />
-      </div>
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} />
       <main className="app-main relative flex-1 overflow-y-auto">
         {/* Onglets de la section courante à gauche, actions mobiles à droite —

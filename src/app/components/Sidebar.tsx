@@ -36,7 +36,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
 
   const groupLabel = (label: string) =>
     !collapsed && (
-      <p className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
+      <p className="px-3 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-tertiary">
         {label}
       </p>
     );
@@ -66,16 +66,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex h-10 w-full items-center rounded-xl text-[13.5px] font-medium",
+        "group relative flex h-10 w-full items-center rounded-md text-[13.5px] font-medium",
         "transition-colors duration-200",
         collapsed ? "justify-center px-0" : "gap-3 px-3",
         active
-          ? "bg-cyan-500/10 text-white"
-          : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100",
+          ? "bg-accent-subtle text-primary"
+          : "text-secondary hover:bg-hover hover:text-primary",
       )}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-cyan-400" />
+        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent" />
       )}
       <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
         {icon}
@@ -92,7 +92,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
+        "hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-base border-r border-border",
         collapsed ? "w-[76px]" : "w-[248px]",
       )}
     >
@@ -121,8 +121,8 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           title={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
           className={cn(
             "grid h-6 w-6 place-items-center rounded-full",
-            "border border-white/10 bg-[#0d1a2b] text-slate-400",
-            "transition-colors duration-200 hover:border-cyan-400/40 hover:text-cyan-300",
+            "border border-border bg-surface text-secondary",
+            "transition-colors duration-200 hover:border-border-strong hover:text-primary",
             collapsed ? "absolute -right-3 top-6" : "relative",
           )}
         >
@@ -155,8 +155,8 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
               onActivate: () => setPage(target),
               icon: (
                 <Icon
-                  className={cn("h-[18px] w-[18px]", active ? "text-cyan-400" : "text-slate-500")}
-                  strokeWidth={1.9}
+                  className={cn("h-[18px] w-[18px]", active ? "text-accent" : "text-tertiary")}
+                  strokeWidth={1.75}
                 />
               ),
             });
@@ -175,15 +175,15 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
               <Bell
                 className={cn(
                   "h-[18px] w-[18px]",
-                  page === "inbox" ? "text-cyan-400" : "text-slate-500",
+                  page === "inbox" ? "text-accent" : "text-tertiary",
                 )}
-                strokeWidth={1.9}
+                strokeWidth={1.75}
               />
             ),
             badge:
               unread > 0 ? (
                 <span
-                  className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-cyan-500 px-[3px] text-[8px] font-bold leading-none text-white"
+                  className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-accent px-[3px] text-[8px] font-bold leading-none text-contrast"
                   role="status"
                 >
                   {unread > 99 ? "99+" : unread}
@@ -200,18 +200,18 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
               <settingsSection.icon
                 className={cn(
                   "h-[18px] w-[18px]",
-                  sectionForPage(page) === "settings" ? "text-cyan-400" : "text-slate-500",
+                  sectionForPage(page) === "settings" ? "text-accent" : "text-tertiary",
                 )}
-                strokeWidth={1.9}
+                strokeWidth={1.75}
               />
             ),
           })}
         </div>
       </nav>
 
-      {/* ── COMPTE ACTIF (même carte premium que Jarvis / sous-comptes) ── */}
+      {/* ── COMPTE ACTIF ── */}
       {user && !collapsed && (
-        <div className="shrink-0 border-t border-white/[0.05] px-3 py-3">
+        <div className="shrink-0 border-t border-border px-3 py-3">
           <AccountSwitcher
             variant="card"
             balance={(activeAccount?.startingBalance ?? 0) + totalPnl}
@@ -219,7 +219,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={() => setPage(settingsTarget)}
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-white hover:bg-white/[0.06] transition"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-md text-[11px] font-semibold text-secondary bg-raised border border-border hover:text-primary hover:bg-hover transition"
             >
               <SettingsIcon className="w-3.5 h-3.5" />
               {t("nav.settings")}
@@ -228,7 +228,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
               onClick={() => setMenuOpen(true)}
               aria-label={t("common.signOut")}
               title={t("common.signOut")}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-red-400 hover:bg-red-500/10 transition"
+              className="h-8 w-8 rounded-md flex items-center justify-center text-secondary bg-raised border border-border hover:text-red-500 hover:bg-red-500/10 transition"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
@@ -236,12 +236,12 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         </div>
       )}
       {user && collapsed && (
-        <div className="shrink-0 border-t border-white/[0.05] px-3 py-3 flex justify-center">
+        <div className="shrink-0 border-t border-border px-3 py-3 flex justify-center">
           <button
             onClick={() => setMenuOpen(true)}
             aria-label={t("nav.myAccount")}
             title={t("nav.myAccount")}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] transition"
+            className="grid h-9 w-9 place-items-center rounded-md border border-border bg-surface text-secondary hover:text-primary hover:bg-hover transition"
           >
             <User className="h-4 w-4" />
           </button>
@@ -256,13 +256,13 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           wrapperClassName="z-[80] md:items-center md:justify-center"
           className="md:max-w-xs"
         >
-          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl border border-cyan-500/15 bg-cyan-500/10 text-[15px] font-bold text-cyan-300">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-md border border-accent/15 bg-accent-subtle text-[15px] font-semibold text-accent">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <div className="truncate text-sm font-bold text-white">{user.name}</div>
-              <div className="truncate text-[11px] text-slate-500">{user.email}</div>
+              <div className="truncate text-sm font-semibold text-primary">{user.name}</div>
+              <div className="truncate text-[11px] text-tertiary">{user.email}</div>
             </div>
           </div>
           <div className="p-3 space-y-1">
@@ -271,10 +271,10 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
                 setMenuOpen(false);
                 setPage(settingsTarget);
               }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-slate-300 hover:bg-white/[0.06] transition-colors"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-secondary hover:bg-hover transition-colors"
             >
-              <span className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0">
-                <SettingsIcon className="w-3.5 h-3.5 text-slate-400" />
+              <span className="w-7 h-7 rounded-md bg-raised flex items-center justify-center shrink-0">
+                <SettingsIcon className="w-3.5 h-3.5 text-tertiary" />
               </span>
               <span className="text-[13px] font-medium">{t("nav.settings")}</span>
             </button>
@@ -283,9 +283,9 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
                 setMenuOpen(false);
                 logout();
               }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-red-500 hover:bg-red-500/10 transition-colors"
             >
-              <span className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+              <span className="w-7 h-7 rounded-md bg-red-500/10 flex items-center justify-center shrink-0">
                 <LogOut className="w-3.5 h-3.5" />
               </span>
               <span className="text-[13px] font-medium">{t("common.signOut")}</span>

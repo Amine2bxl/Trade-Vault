@@ -35,7 +35,7 @@ export interface MetricProps {
 }
 
 function trendClass(trend: MetricProps["trend"]) {
-  return trend === "up" ? "text-emerald-400" : trend === "down" ? "text-red-400" : "text-white";
+  return trend === "up" ? "text-emerald-500" : trend === "down" ? "text-red-500" : "text-primary";
 }
 
 /** Radial progress dial (0..1). Pure SVG — no chart lib. */
@@ -46,7 +46,7 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
   return (
     <div className="relative w-16 h-16 shrink-0">
       <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-        <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
+        <circle cx="32" cy="32" r={R} fill="none" stroke="var(--border)" strokeWidth="6" />
         <circle
           cx="32"
           cy="32"
@@ -57,12 +57,12 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={C * (1 - p)}
-          style={{ transition: "stroke-dashoffset 800ms cubic-bezier(0.16,1,0.3,1)" }}
+          style={{ transition: "stroke-dashoffset var(--duration-panel) var(--ease-out)" }}
         />
       </svg>
       {center && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[11px] font-bold tabular-nums text-slate-300">{center}</span>
+          <span className="text-[11px] font-semibold tabular-nums text-secondary">{center}</span>
         </div>
       )}
     </div>
@@ -137,22 +137,22 @@ export function Metric({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-1.5">
             {icon && (
-              <span className={cn("shrink-0", trend ? trendClass(trend) : "text-cyan-400/70")}>
+              <span className={cn("shrink-0", trend ? trendClass(trend) : "text-accent/70")}>
                 {icon}
               </span>
             )}
-            <span className={cn(type.label, "text-slate-500 truncate")}>{title}</span>
+            <span className={cn(type.label, "text-tertiary truncate")}>{title}</span>
           </div>
           <div
             className={cn(
-              "font-display text-xl md:text-[26px] font-extrabold tracking-tight tabular-nums leading-none",
+              "text-xl md:text-[26px] font-semibold tracking-tight tabular-nums leading-none",
               valueClass ?? trendClass(trend),
             )}
           >
             {value}
           </div>
           {subtitle && (
-            <p className={cn(type.caption, "text-slate-500 mt-1 truncate")}>{subtitle}</p>
+            <p className={cn(type.caption, "text-tertiary mt-1 truncate")}>{subtitle}</p>
           )}
         </div>
         {visual?.kind === "radial" && (
@@ -162,10 +162,10 @@ export function Metric({
         {visual?.kind === "bar" && <ProgressBar pct={visual.pct} color={visual.color} />}
       </div>
       {footer && (
-        <div className="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between">
-          <span className={cn(type.label, "text-slate-500")}>{footer.label}</span>
+        <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
+          <span className={cn(type.label, "text-tertiary")}>{footer.label}</span>
           <span
-            className={cn("text-xs font-bold tabular-nums", footer.className ?? "text-slate-300")}
+            className={cn("text-xs font-semibold tabular-nums", footer.className ?? "text-secondary")}
           >
             {footer.value}
           </span>

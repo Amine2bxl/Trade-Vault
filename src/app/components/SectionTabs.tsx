@@ -108,8 +108,8 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
               className={cn("section-tab", active ? "section-tab-active" : "section-tab-idle")}
             >
               <Icon
-                className={cn("h-4 w-4 shrink-0", active ? "text-cyan-300" : "text-slate-500")}
-                strokeWidth={active ? 2.2 : 1.9}
+                className={cn("h-4 w-4 shrink-0", active ? "text-contrast" : "text-tertiary")}
+                strokeWidth={active ? 1.75 : 1.75}
               />
               <span className="whitespace-nowrap">{t(labelKey)}</span>
             </a>

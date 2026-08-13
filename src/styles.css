@@ -14,24 +14,20 @@
  */
 
 @theme inline {
-  /* Dense "performance terminal" radius scale (Linear/TradingView direction).
-     rounded-xl/2xl/3xl dominate the app and resolve here, so tightening these
-     three retints every card/hero/button in one place — no component edits.
-     Kept monotonic; sm/md nearly unchanged (small controls stay crisp). */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 9px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
-  --radius-3xl: 16px;
-  --radius-4xl: 20px;
+  /* Sober institutional radius: 4–6 px. Cards and panels share one radius. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 6px;
 }
 
 @layer base {
   * {
-    /* Neutral default border (was the scaffold's light-gray token); real
-       surfaces always set their own border-white/10-style colour on top. */
-    border-color: oklch(0.929 0.013 255.508);
+    /* Default border follows the theme token. */
+    border-color: var(--border);
   }
 
   body {
@@ -46,62 +42,71 @@
  * TradeVault front-end design tokens & styles
  * ============================================================ */
 @theme {
-  --color-brand: var(--tv-accent);
-  --color-brand-light: var(--tv-highlight);
-  --color-brand-dark: var(--tv-accent);
-  --color-surface: #0c1222;
-  --color-surface-light: #111827;
-  --color-surface-lighter: #1e293b;
-  --color-profit: #10b981;
-  --color-loss: #ef4444;
-
   /* ----------------------------------------------------------------
-   * Themeable accent ramps.
-   *
-   * The whole app styles its accents with Tailwind's `cyan-*` (primary)
-   * and `teal-*` (secondary) utilities. Here we regenerate both ramps in
-   * oklch from a single hue + chroma pair per family, so changing
-   * --tv-primary-h / --tv-secondary-h at runtime retints every accent
-   * surface in one paint — no component edits, no rebuild.
+   * New institutional design system — dark reference, derive light after.
    * ---------------------------------------------------------------- */
-  --color-cyan-50: oklch(0.971 calc(0.022 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-100: oklch(0.941 calc(0.05 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-200: oklch(0.902 calc(0.09 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-300: oklch(0.85 calc(0.12 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-400: oklch(0.78 calc(0.15 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-500: oklch(0.71 calc(0.152 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-600: oklch(0.62 calc(0.14 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-700: oklch(0.53 calc(0.115 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-800: oklch(0.45 calc(0.09 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-900: oklch(0.4 calc(0.075 * var(--tv-primary-c)) var(--tv-primary-h));
-  --color-cyan-950: oklch(0.3 calc(0.055 * var(--tv-primary-c)) var(--tv-primary-h));
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-hover: var(--bg-hover);
 
-  --color-teal-50: oklch(0.971 calc(0.022 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-100: oklch(0.941 calc(0.05 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-200: oklch(0.902 calc(0.09 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-300: oklch(0.85 calc(0.12 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-400: oklch(0.78 calc(0.15 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-500: oklch(0.71 calc(0.152 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-600: oklch(0.62 calc(0.14 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-700: oklch(0.53 calc(0.115 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-800: oklch(0.45 calc(0.09 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-900: oklch(0.4 calc(0.075 * var(--tv-secondary-c)) var(--tv-secondary-h));
-  --color-teal-950: oklch(0.3 calc(0.055 * var(--tv-secondary-c)) var(--tv-secondary-h));
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+
+  /* Legacy semantic aliases kept for a graceful migration. */
+  --color-profit: var(--positive);
+  --color-loss: var(--negative);
 
   /* ----------------------------------------------------------------
-   * Échelle de mouvement — UNE seule.
-   *
-   * Le raffinement perçu vient d'un petit nombre d'animations répétées,
-   * pas d'un grand nombre d'animations différentes. Toute durée de
-   * l'application sort d'ici, et la plus longue vaut 250 ms : au-delà,
-   * l'utilisateur ATTEND l'animation au lieu de l'ignorer. Seule
-   * `Landing.tsx` (page marketing, autres règles) fait exception.
+   * The app currently uses Tailwind's `cyan-*` utilities for accent.
+   * Regenerate that ramp as the new blue accent so existing component
+   * classes flip colour without touching every file in step 1.
+   * ---------------------------------------------------------------- */
+  --color-cyan-50: #EDF3FF;
+  --color-cyan-100: #DBE7FF;
+  --color-cyan-200: #B7D0FF;
+  --color-cyan-300: #93B8FF;
+  --color-cyan-400: #6BA0FF;
+  --color-cyan-500: #4D8DFF;
+  --color-cyan-600: #3B72D9;
+  --color-cyan-700: #2E5AB3;
+  --color-cyan-800: #22448A;
+  --color-cyan-900: #173063;
+  --color-cyan-950: #0D1D3D;
+
+  /* Teal is deprecated; map it to the same blue-grey family so old
+   * `teal-*` classes do not produce a competing hue in the app. */
+  --color-teal-50: #EDF3FF;
+  --color-teal-100: #DBE7FF;
+  --color-teal-200: #B7D0FF;
+  --color-teal-300: #93B8FF;
+  --color-teal-400: #6BA0FF;
+  --color-teal-500: #4D8DFF;
+  --color-teal-600: #3B72D9;
+  --color-teal-700: #2E5AB3;
+  --color-teal-800: #22448A;
+  --color-teal-900: #173063;
+  --color-teal-950: #0D1D3D;
+
+  /* ----------------------------------------------------------------
+   * Motion — from MOTION_AND_PERF.md. 300 ms hard cap in the app.
    * ---------------------------------------------------------------- */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --duration-micro: 100ms; /* survol, appui */
-  --duration-base: 150ms; /* défaut — tout, sauf mention contraire */
-  --duration-panel: 250ms; /* modales, tiroirs */
+  --duration-micro: 100ms;
+  --duration-base: 150ms;
+  --duration-panel: 250ms;
 }
 
 /* ══ Les HUIT animations de l'application ══
@@ -204,27 +209,78 @@
   }
 }
 
-/* Theme tokens — default = "Jarvis" (cyan/teal). The ThemeProvider (and the
- * pre-paint bootstrap in __root) override these on :root at runtime. Defining
- * them here means SSR / no-JS still renders the default identity with no flash. */
+/* Theme tokens — dark reference per DESIGN_SYSTEM.md.
+ * The landing page keeps its own louder register in landing.css. */
 :root {
-  /* Default identity = "Jarvis" cyan/teal — matches the public landing page so
-     the signed-in app and the marketing site share one visual identity. */
-  /* Surfaces et textes — extraits en variables pour que le studio de thème
-     puisse les piloter. Les valeurs par défaut sont EXACTEMENT celles qui
-     étaient codées en dur : sans thème personnalisé, le rendu est inchangé. */
-  --tv-bg: #060d16;
-  --tv-text: #e2e8f0;
-  --tv-primary-h: 215.2;
-  --tv-primary-c: 0.898;
-  --tv-secondary-h: 182.5;
-  --tv-secondary-c: 0.879;
-  --tv-accent: #06b6d4;
-  --tv-accent-2: #14b8a6;
-  --tv-highlight: #22d3ee;
-  --tv-accent-rgb: 6 182 212;
-  --tv-accent-2-rgb: 20 184 166;
-  --tv-highlight-rgb: 34 211 238;
+  /* surfaces */
+  --bg-base: #0A0B0D;
+  --bg-surface: #121418;
+  --bg-raised: #171A1F;
+  --bg-hover: #1C2026;
+
+  /* borders */
+  --border: #23272E;
+  --border-strong: #2E333B;
+
+  /* text */
+  --text-primary: #E6E8EB;
+  --text-secondary: #9BA1A9;
+  --text-tertiary: #6B717A;
+  --text-contrast: #FFFFFF;
+
+  /* accent — blue only */
+  --accent: #4D8DFF;
+  --accent-hover: #6BA0FF;
+  --accent-subtle: rgba(77, 141, 255, 0.12);
+
+  /* semantic */
+  --positive: #22C55E;
+  --negative: #EF4444;
+
+  /* Legacy aliases — clean up as components migrate. */
+  --tv-bg: var(--bg-base);
+  --tv-text: var(--text-primary);
+  --tv-accent: var(--accent);
+  --tv-accent-2: var(--accent);
+  --tv-highlight: var(--accent-hover);
+  --tv-accent-rgb: 77 141 255;
+  --tv-accent-2-rgb: 77 141 255;
+  --tv-highlight-rgb: 107 160 255;
+}
+
+/* Light theme — manual toggle via <html class="light"> or OS preference. */
+.light,
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-base: #F8F9FA;
+    --bg-surface: #FFFFFF;
+    --bg-raised: #F1F3F5;
+    --bg-hover: #E9ECEF;
+
+    --border: #DEE2E6;
+    --border-strong: #CED4DA;
+
+    --text-primary: #111214;
+    --text-secondary: #495057;
+    --text-tertiary: #868E96;
+    --text-contrast: #FFFFFF;
+
+    --accent: #2563EB;
+    --accent-hover: #1D4ED8;
+    --accent-subtle: rgba(37, 99, 235, 0.12);
+
+    --positive: #16A34A;
+    --negative: #DC2626;
+
+    --tv-bg: var(--bg-base);
+    --tv-text: var(--text-primary);
+    --tv-accent: var(--accent);
+    --tv-accent-2: var(--accent);
+    --tv-highlight: var(--accent-hover);
+    --tv-accent-rgb: 37 99 235;
+    --tv-accent-2-rgb: 37 99 235;
+    --tv-highlight-rgb: 29 78 216;
+  }
 }
 
 html {
@@ -295,11 +351,9 @@ body {
 /* Tactile press feedback on selectable cards. */
 .onb-card {
   transition:
-    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-  /* No permanent will-change — see .card-premium: it blurred text on Windows. */
+    transform var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-standard),
+    background-color var(--duration-base) var(--ease-standard);
 }
 .onb-card:hover {
   transform: translateY(-2px);
@@ -371,41 +425,10 @@ select,
   user-select: text;
 }
 
-/* Ambient cursor glow — blurred radial that trails the pointer, retinted by
-   the active theme. Fixed, behind all content, never intercepts input. */
-.cursor-glow {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9998;
-  /* SAME glow as the landing page (.landing-cursor-glow): a wide, whisper-soft
-     halo — not a bright spotlight — retinted live by the active theme. */
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  will-change: transform, opacity;
-  transition: opacity var(--duration-panel) var(--ease-standard);
-  background: radial-gradient(
-    circle,
-    rgb(var(--tv-highlight-rgb) / 0.045) 0%,
-    rgba(99, 102, 241, 0.02) 45%,
-    transparent 72%
-  );
-  filter: blur(6px);
-}
-@media (pointer: coarse), (prefers-reduced-motion: reduce) {
-  .cursor-glow {
-    display: none;
-  }
-}
 
 body {
-  /* Landing kit fonts everywhere: Manrope body (+ Sora display below) — one
-     typographic identity across marketing site and product. */
+  /* Inter, single family, no secondary face. */
   font-family:
-    "Manrope",
     "Inter",
     -apple-system,
     BlinkMacSystemFont,
@@ -415,27 +438,17 @@ body {
     Arial,
     sans-serif;
   font-weight: 400;
-  font-size: 15px;
-  line-height: 1.55;
-  /* Same deep-navy mesh as the landing hero (hero-mesh): soft cyan/sky
-     ellipses over #060d16 — no more near-black backdrop. */
-  background:
-    radial-gradient(
-      ellipse 70% 50% at 70% -8%,
-      rgb(var(--tv-accent-rgb) / 0.075) 0%,
-      transparent 70%
-    ),
-    radial-gradient(ellipse 50% 60% at 0% 85%, rgba(14, 165, 233, 0.055) 0%, transparent 60%),
-    var(--tv-bg);
-  background-attachment: fixed;
-  color: var(--tv-text);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--bg-base);
+  color: var(--text-primary);
   min-height: 100vh;
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.01em;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  /* Tabular figures globally, plus a clean alternate g. */
+  font-feature-settings: "tnum" 1, "cv05" 1;
 }
 
 /* Full-height app shell that respects the notch/status bar and the home
@@ -481,8 +494,7 @@ body {
   }
 }
 
-/* Display family — Sora, exactly like the landing page headings, so titles
- * carry the same voice on both sides of the sign-in wall. */
+/* Headings — Inter only, 600 weight. 800 is landing-only. */
 h1,
 h2,
 h3,
@@ -490,37 +502,26 @@ h4,
 h5,
 h6 {
   font-family:
-    "Sora",
-    "Manrope",
     "Inter",
     -apple-system,
     BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
-  letter-spacing: -0.02em;
-  font-weight: 700;
-  line-height: 1.18;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-primary);
 }
 
 .font-display {
   font-family:
-    "Sora",
-    "Manrope",
     "Inter",
     -apple-system,
     BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
-  letter-spacing: -0.025em;
-  font-weight: 700;
-}
-
-/* Tabular figures everywhere numbers carry meaning (prices, R, stats) so digits
- * align in columns and don't jitter as values change. */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-.font-display,
-.tabular-nums {
-  font-feature-settings: "tnum", "cv02", "cv03", "cv04";
+  letter-spacing: -0.02em;
+  font-weight: 600;
 }
 
 ::-webkit-scrollbar {
@@ -604,91 +605,56 @@ input[type="number"] {
 }
 
 .glass {
-  /* Deep-navy glass — same blue family as the landing cards (#0a1625/#0b1727).
-   * The hairline border stays deliberately faint: surfaces should be read by
-   * their fill, not outlined like a wireframe. */
-  background: linear-gradient(135deg, rgba(13, 24, 40, 0.72) 0%, rgba(10, 19, 32, 0.44) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(56, 84, 116, 0.18);
+  /* App panels: solid surface + 1px border. No shadows, no translucent gradient. */
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 .glass-strong {
-  background: linear-gradient(135deg, rgba(10, 20, 34, 0.99) 0%, rgba(8, 15, 26, 0.98) 100%);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(56, 84, 116, 0.5);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
 }
-/* Premium card hover — transition only the properties that change (never `all`,
- * which would also animate layout). A layered shadow lifts the card while a
- * hairline accent ring + a faint white top-edge highlight give the subtle glow
- * of a physical, backlit surface. */
+/* Card hover: only border and a slight surface shift. No shadows. */
 .card-premium {
-  transition-property: transform, box-shadow, border-color;
-  transition-duration: var(--duration-panel);
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-duration: var(--duration-base);
   transition-timing-function: var(--ease-standard);
-  /* No permanent `will-change: transform`: it forces every card onto its own
-   * GPU layer, and Chrome on Windows then rasterises the text to a texture that
-   * lands on a fractional device pixel → blurry copy. On Retina/macOS it's
-   * invisible; on Windows it made the whole app look soft. The hover lift stays
-   * perfectly smooth without it. */
 }
 @media (hover: hover) {
   .card-premium:hover {
-    /* Restrained lift: a tool's surfaces acknowledge the pointer, they don't
-     * perform. Shorter travel + a tighter, dimmer shadow than a marketing card. */
     transform: translateY(-1px);
-    box-shadow:
-      0 12px 30px -14px rgba(0, 0, 0, 0.5),
-      0 3px 14px -8px rgb(var(--tv-accent-rgb) / 0.16);
-    border-color: rgb(var(--tv-accent-rgb) / 0.18);
+    border-color: var(--border-strong);
   }
 }
 
-/* Premium sheen: a faint theme-tinted top edge on glass panels for depth. Pure
-   box-shadow (no layout impact), so it layers safely over any card. */
-.glass,
-.glass-strong {
-  box-shadow:
-    inset 0 1px 0 rgb(var(--tv-highlight-rgb) / 0.05),
-    0 18px 48px -24px rgba(0, 0, 0, 0.6);
-}
-
-/* ── Dense dashboard stat cards (TradeTanto / top-row KPI direction) ──
- * Solid, slightly elevated surfaces with a faint top highlight. Used for the
- * four headline metrics on Dashboard and the monthly summary on Calendar.
- * They intentionally do NOT use glass so numbers read first. */
+/* ── Dense dashboard stat cards ── */
 .stat-card {
-  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-2xl);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 30px -16px rgba(0, 0, 0, 0.55);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 .stat-card-elevated {
-  background: linear-gradient(180deg, rgba(20, 32, 50, 0.98) 0%, rgba(12, 20, 34, 0.99) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-2xl);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 14px 40px -18px rgba(0, 0, 0, 0.6);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
 }
 
-/* Horizontal progress / R:R bar used in headline metric tiles. */
+/* Horizontal progress / R:R bar. */
 .metric-bar {
   height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  background: var(--border);
   overflow: hidden;
 }
 .metric-bar-fill {
   height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--tv-accent), var(--tv-accent-2));
-  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  transition: width var(--duration-panel) var(--ease-out);
 }
 
-/* Sidebar brand mark — larger, more grounded presence. */
+/* Sidebar brand mark. */
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -698,16 +664,8 @@ input[type="number"] {
   position: relative;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 0 20px rgb(var(--tv-accent-rgb) / 0.25);
-}
-.sidebar-brand-logo::before {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  background: radial-gradient(circle, rgb(var(--tv-accent-rgb) / 0.45) 0%, transparent 70%);
-  filter: blur(8px);
 }
 .sidebar-brand-logo img {
   position: relative;
@@ -721,18 +679,18 @@ input[type="number"] {
   line-height: 1.05;
 }
 .sidebar-brand-name {
-  font-family: "Sora", "Manrope", sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
 }
 .sidebar-brand-tagline {
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgb(100 116 139);
+  color: var(--text-tertiary);
   margin-top: 0.15rem;
 }
 
@@ -797,52 +755,22 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: 0 0 10px rgb(var(--tv-accent-rgb) / 0.4);
 }
 
-.auth-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.06;
-  animation: none;
-}
-/* Continuously animating 80px blurs are a GPU drain on phones — freeze them
- * on small screens and for users who prefer reduced motion. */
-@media (max-width: 767px), (prefers-reduced-motion: reduce) {
-  .auth-orb {
-    animation: none;
-  }
-}
+/* Ambient orbs removed — no decorative blur/glow in the app per DESIGN_SYSTEM.md. */
 
-/* Floating premium dock — detached rounded pill (Lucid-style) instead of a
- * full-width edge bar. Horizontal margin + big radius + layered shadow. */
+/* Mobile bottom navigation. */
 .bottom-nav {
   padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
   background: transparent;
 }
 .bottom-nav-shell {
-  border-radius: 26px;
-  background: linear-gradient(180deg, rgba(12, 22, 37, 0.96) 0%, rgba(7, 13, 22, 0.98) 100%);
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.1);
-  box-shadow:
-    0 10px 34px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 rgba(255, 255, 255, 0.05) inset;
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
   overflow: hidden;
 }
-/* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
-   la barre de navigation — même dégradé (opacité renforcée), même liseré
-   accent, mêmes ombres internes, même blur. La forme est posée sur l'élément
-   (rounded-full = pilule, comme la nav). */
 .float-shell {
-  background: linear-gradient(180deg, rgba(12, 22, 37, 0.96) 0%, rgba(7, 13, 22, 0.98) 100%);
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.12);
-  box-shadow:
-    0 10px 34px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 rgba(255, 255, 255, 0.05) inset;
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
 }
 .bottom-nav-item {
   position: relative;
@@ -854,10 +782,10 @@ input[type="range"]::-webkit-slider-thumb {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 16px;
+  border-radius: var(--radius-sm);
   transition:
-    color 0.2s,
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    color var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 .bottom-nav-item:active {
@@ -872,13 +800,12 @@ input[type="range"]::-webkit-slider-thumb {
   transform: translateX(-50%) scaleX(0);
   width: 26px;
   height: 2px;
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(90deg, var(--tv-accent), var(--tv-highlight));
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: var(--accent);
+  transition: transform var(--duration-base) var(--ease-out);
 }
 .bottom-nav-bar-active {
   transform: translateX(-50%) scaleX(1);
-  box-shadow: 0 0 10px rgb(var(--tv-highlight-rgb) / 0.7);
 }
 
 /* Icon sits on a pill that fills with a soft accent glow when active */
@@ -888,65 +815,56 @@ input[type="range"]::-webkit-slider-thumb {
   justify-content: center;
   width: 42px;
   height: 28px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   transition:
-    background 0.22s ease,
-    box-shadow 0.22s ease,
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    background var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-out);
 }
 .bottom-nav-icon-active {
-  background: rgb(var(--tv-accent-rgb) / 0.14);
-  box-shadow:
-    inset 0 0 0 1px rgb(var(--tv-highlight-rgb) / 0.18),
-    0 0 14px rgb(var(--tv-accent-rgb) / 0.18);
+  background: var(--accent-subtle);
   transform: translateY(-1px);
 }
 
 .fab-button {
   width: 54px;
   height: 54px;
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--tv-accent), var(--tv-accent-2));
-  box-shadow:
-    0 4px 20px rgb(var(--tv-accent-rgb) / 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  border: 1px solid rgb(var(--tv-highlight-rgb) / 0.35);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--accent);
+  border: 1px solid var(--accent-hover);
+  transition: transform var(--duration-base) var(--ease-out);
 }
 .fab-button:active {
   transform: scale(0.88) rotate(90deg);
-  animation-play-state: paused;
 }
 
-/* Setup-quality stars — soft amber glow + spring pop on select */
+/* Setup-quality stars */
 .star-btn {
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--duration-micro) var(--ease-out);
 }
 .star-btn:active {
   transform: scale(0.85);
 }
 .star-on {
   animation: scale-in var(--duration-micro) var(--ease-out);
-  filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.55));
 }
 
 .trade-card {
-  transition: transform 0.15s;
+  transition: transform var(--duration-micro) var(--ease-standard);
 }
 .trade-card:active {
   transform: scale(0.98);
 }
 
-/* Skeleton loaders — shimmer sweep while data loads */
+/* Skeleton loaders */
 .skeleton {
   background: linear-gradient(
     100deg,
-    rgba(30, 41, 59, 0.45) 40%,
-    rgba(56, 72, 100, 0.55) 50%,
-    rgba(30, 41, 59, 0.45) 60%
+    var(--bg-hover) 40%,
+    var(--border) 50%,
+    var(--bg-hover) 60%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
@@ -957,12 +875,12 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
-/* Jarvis "thinking" — trois points qui ondulent pendant que l'IA réfléchit. */
+/* Jarvis "thinking" dots. */
 .thinking-dot {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, var(--tv-accent, #22d3ee), var(--tv-accent-2, #14b8a6));
+  background: var(--accent);
   animation: pulse 1.2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1007,13 +925,13 @@ svg.lucide {
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
-  font-weight: 700;
-  border-radius: 0.75rem;
-  /* Signature TradeVault — même gradient et rayon que les boutons de l'app. */
-  background: linear-gradient(90deg, #06b6d4, #14b8a6);
-  color: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--text-contrast);
+  transition:
+    filter var(--duration-micro) var(--ease-standard),
+    transform var(--duration-micro) var(--ease-standard);
 }
 .btn-primary:hover {
   filter: brightness(1.06);
@@ -1024,7 +942,6 @@ svg.lucide {
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  box-shadow: none;
 }
 .btn-sm {
   padding: 0.5rem 0.85rem;
@@ -1038,21 +955,21 @@ svg.lucide {
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: #cbd5e1;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
   transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+    border-color var(--duration-base) var(--ease-standard),
+    background-color var(--duration-base) var(--ease-standard),
+    color var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
 }
 .btn-ghost:hover {
-  border-color: rgba(34, 211, 238, 0.45);
-  background: rgba(34, 211, 238, 0.08);
-  color: var(--tv-text);
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 .btn-ghost:active {
   transform: translateY(0);
@@ -1063,13 +980,7 @@ svg.lucide {
   white-space: nowrap;
 }
 
-/* App-shell ambient orbs: static — the animated orb-float behind a
- * backdrop-blur sidebar forces a GPU repaint every frame, which is the
- * cause of the navbar "saccadé" on F5. Keeping them static preserves
- * the ambient glow without the repaint cost. */
-.shell-bg-orbs .auth-orb {
-  animation: none;
-}
+/* App-shell ambient orbs removed — no decorative glow in the app. */
 
 /* Landing styles: split to src/app/pages/landing.css (lazy-loaded) */
 
@@ -1101,10 +1012,9 @@ svg.lucide {
   display: inline-flex;
   max-width: 100%;
   padding: 0.35rem;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
 }
 .section-tabs-row {
   display: flex;
@@ -1127,39 +1037,32 @@ svg.lucide {
   gap: 0.5rem;
   height: 2.25rem;
   padding: 0 0.9rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
-  transition-property: color, background-color, box-shadow;
-  transition-duration: 200ms;
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--duration-base);
 }
 .section-tab-idle {
-  color: rgb(148 163 184);
+  color: var(--text-tertiary);
 }
 .section-tab-idle:hover {
-  color: rgb(226 232 240);
-  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
 }
 .section-tab-active {
-  color: #fff;
-  background: rgb(var(--tv-accent-rgb) / 0.16);
-  box-shadow:
-    inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.25),
-    0 2px 8px rgb(var(--tv-accent-rgb) / 0.12);
+  color: var(--text-contrast);
+  background: var(--accent);
 }
 .section-tab:focus-visible {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
-/* ── Infobulle de la barre repliée ──
- * `title` natif attend une seconde avant de s'afficher : dans une colonne
- * d'icônes, cette seconde est exactement le moment où l'on renonce et où l'on
- * déplie la barre. L'infobulle apparaît au survol, sans délai, et ne coûte
- * qu'une opacité. */
+/* ── Infobulle de la barre repliée ── */
 .rail-tip {
   position: absolute;
   left: calc(100% + 0.5rem);
@@ -1167,18 +1070,17 @@ svg.lucide {
   transform: translateY(-50%);
   z-index: 50;
   padding: 0.3rem 0.55rem;
-  border-radius: 0.5rem;
-  background: #0d1a2b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgb(226 232 240);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 150ms ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: opacity var(--duration-base) var(--ease-standard);
 }
 .group:hover > .rail-tip,
 .group:focus-visible > .rail-tip {

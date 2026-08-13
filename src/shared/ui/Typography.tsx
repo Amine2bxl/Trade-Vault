@@ -3,11 +3,11 @@ import { cn } from "./cn";
 
 /**
  * Typography — a role-based type scale so hierarchy is named, not expressed as
- * arbitrary pixel sizes scattered across the app. Each role maps to the sizes
- * already used in the product, so adopting these renders identically.
+ * arbitrary pixel sizes scattered across the app. Uses Inter only in the app,
+ * with a sober weight range (400–600) per DESIGN_SYSTEM.md.
  *
- *   Display  → hero (landing)          font-display, fluid clamp
- *   Heading level 1..3 → page/section  font-display
+ *   Display  → hero (landing)          font-semibold, fluid clamp
+ *   Heading level 1..3 → page/section  font-semibold
  *   Text     → body / caption          system font
  *   Label    → compact uppercase label (the canonical field label used everywhere)
  *
@@ -23,8 +23,8 @@ export function Display({ as, className, children, ...rest }: WithAs<HTMLAttribu
   return (
     <Comp
       className={cn(
-        "font-display font-extrabold tracking-[-0.045em] leading-[1.02]",
-        "text-[clamp(2.6rem,5.4vw,4.5rem)] text-white",
+        "font-semibold tracking-[-0.02em] leading-[1.1]",
+        "text-[clamp(2.6rem,5.4vw,4.5rem)] text-primary",
         className,
       )}
       {...rest}
@@ -35,9 +35,9 @@ export function Display({ as, className, children, ...rest }: WithAs<HTMLAttribu
 }
 
 const HEADING_ROLE: Record<1 | 2 | 3, string> = {
-  1: "text-2xl font-extrabold tracking-[-0.03em]",
-  2: "text-lg font-bold tracking-[-0.02em]",
-  3: "text-sm font-bold",
+  1: "text-2xl font-semibold tracking-[-0.02em]",
+  2: "text-lg font-semibold tracking-[-0.01em]",
+  3: "text-sm font-semibold",
 };
 
 /** Section/page heading. `level` sets the visual role; `as` sets the tag. */
@@ -50,16 +50,16 @@ export function Heading({
 }: WithAs<HTMLAttributes<HTMLHeadingElement>> & { level?: 1 | 2 | 3 }) {
   const Comp = as ?? (`h${level}` as ElementType);
   return (
-    <Comp className={cn("font-display text-white", HEADING_ROLE[level], className)} {...rest}>
+    <Comp className={cn("text-primary", HEADING_ROLE[level], className)} {...rest}>
       {children}
     </Comp>
   );
 }
 
 const TEXT_TONE = {
-  default: "text-slate-200",
-  muted: "text-slate-400",
-  subtle: "text-slate-500",
+  default: "text-primary",
+  muted: "text-secondary",
+  subtle: "text-tertiary",
 } as const;
 
 const TEXT_SIZE = {
@@ -89,7 +89,7 @@ export function Text({
 
 /**
  * Compact uppercase label — the exact skin used for every form/field label in
- * the product (`text-[10px] font-semibold uppercase tracking-wider`). Kept as a
+ * the product (`text-[10px] font-medium uppercase tracking-wider`). Kept as a
  * single role so the ~hundreds of ad-hoc copies can converge here over time.
  */
 export function Label({
@@ -102,7 +102,7 @@ export function Label({
   return (
     <Comp
       className={cn(
-        "block text-[10px] font-semibold uppercase tracking-wider text-slate-400",
+        "block text-[10px] font-medium uppercase tracking-wider text-secondary",
         className,
       )}
       {...rest}

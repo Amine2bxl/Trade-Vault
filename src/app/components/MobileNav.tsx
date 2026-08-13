@@ -68,18 +68,18 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       // part dès ce premier contact, ce qui suffit souvent à le rendre prêt.
       onTouchStart={() => preloadPage(target)}
       aria-current={active ? "page" : undefined}
-      className={cn("bottom-nav-item", active ? "text-cyan-300" : "text-slate-500")}
+      className={cn("bottom-nav-item", active ? "text-primary" : "text-tertiary")}
     >
       {/* Active top bar indicator */}
       <span className={cn("bottom-nav-bar", active && "bottom-nav-bar-active")} />
-      {/* Icon on an active pill that lights up cyan */}
+      {/* Icon on an active pill */}
       <span className={cn("bottom-nav-icon", active && "bottom-nav-icon-active")}>
-        <Icon className="w-[21px] h-[21px]" strokeWidth={active ? 2.4 : 2} />
+        <Icon className="w-[21px] h-[21px]" strokeWidth={1.75} />
       </span>
       <span
         className={cn(
           "text-[10px] leading-none transition",
-          active ? "font-bold" : "font-semibold",
+          active ? "font-semibold" : "font-medium",
         )}
       >
         {label}
@@ -97,11 +97,11 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
             <button
               onClick={onAddTrade}
               aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
-              className="fab-button relative text-white -mt-7"
+              className="fab-button relative text-contrast -mt-7"
             >
-              <Plus className="w-6 h-6" strokeWidth={2.5} />
+              <Plus className="w-6 h-6" strokeWidth={2} />
               {hasDraft && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#060d16] shadow-[0_0_8px_rgba(251,191,36,0.7)] animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-base animate-pulse" />
               )}
             </button>
           </div>

@@ -1,11 +1,10 @@
 /**
  * Design tokens — the TradeVault visual identity, centralized.
  *
- * These tokens codify the **landing page theme** (Manrope/Sora type, cyan/teal
- * accents, deep-navy glass surfaces, the shared motion language) which
- * `styles.css` already applies across the whole product. This file is the
- * single, typed, documented reference every primitive and every future screen
- * builds on — the "soul & skeleton" of the UI.
+ * These tokens codify the **app design system** per `DESIGN_SYSTEM.md`: Inter
+ * type, blue accent (#4D8DFF), dark default, no shadows, dense data, and the
+ * shared motion language. This file is the single typed reference every
+ * primitive and future screen builds on.
  *
  * IMPORTANT: this does not restyle anything. The visual source of truth is the
  * CSS in `src/styles.css` (custom properties + utility classes); these tokens
@@ -13,14 +12,14 @@
  * the rendered theme instead of hardcoding divergent values.
  */
 
-/** Typography — one identity across marketing site and product. */
+/** Typography — Inter only inside the app. */
 export const font = {
-  /** Manrope body stack (applied to `body` in styles.css). */
-  body: '"Manrope","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
-  /** Sora display stack — use via the `font-display` utility class. */
-  display: '"Sora","Manrope","Inter",-apple-system,BlinkMacSystemFont,sans-serif',
-  /** Utility class for display/headings (Sora). */
-  displayClass: "font-display",
+  /** Inter body stack (applied to `body` in styles.css). */
+  body: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
+  /** Display stack — same as body; landing keeps Sora in landing.css. */
+  display: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
+  /** Utility class for display/headings. */
+  displayClass: "font-semibold",
   /** Tabular figures for prices / R / stats. */
   tabularClass: "tabular-nums",
 } as const;
@@ -28,11 +27,11 @@ export const font = {
 /**
  * Color — semantic roles as Tailwind color *stems* (compose with a utility
  * prefix, e.g. `text-${color.profit}`, `bg-${color.brand}/15`). Brand accents
- * are runtime-themeable via the `--tv-*` variables (default = landing cyan/teal).
+ * are runtime-themeable via the `--accent*` variables.
  */
 export const color = {
-  brand: "cyan", // primary accent ramp (regenerated from --tv-primary-*)
-  brandAlt: "teal", // secondary accent ramp (--tv-secondary-*)
+  brand: "cyan", // primary accent ramp (regenerated as blue #4D8DFF)
+  brandAlt: "teal", // deprecated, mapped to the same blue ramp
   profit: "emerald-500",
   loss: "red-500",
   warning: "amber-500",
@@ -40,45 +39,42 @@ export const color = {
 
 /** Brand accent CSS variables (themeable at runtime by the ThemeProvider). */
 export const accentVar = {
-  accent: "var(--tv-accent)", // #06b6d4 default
-  accentAlt: "var(--tv-accent-2)", // #14b8a6 default
-  highlight: "var(--tv-highlight)", // #22d3ee default
+  accent: "var(--accent)",
+  accentHover: "var(--accent-hover)",
+  accentSubtle: "var(--accent-subtle)",
 } as const;
 
-/** Surfaces — the deep-navy glass system shared by landing and app. */
+/** Surfaces — the institutional grey-blue system shared by the app. */
 export const surface = {
-  /** Base page background (html), the landing's deep navy. */
-  base: "#060d16",
+  /** Base page background. */
+  base: "var(--bg-base)",
   /** Translucent glass panel. */
   glassClass: "glass",
   /** Opaque glass (modals, menus). */
   glassStrongClass: "glass-strong",
   /** Hover-lift premium card. */
   cardPremiumClass: "card-premium",
-  /** Solid, slightly elevated panel for dense dashboards (TradeTanto direction). */
-  panelClass: "bg-[#0b1220] border border-white/[0.06] rounded-2xl",
+  /** Solid panel for dense dashboards. */
+  panelClass: "bg-surface border rounded-md",
   /** Subtle inset surface for nested sections. */
-  insetClass: "bg-white/[0.02] border border-white/[0.05] rounded-xl",
+  insetClass: "bg-raised border rounded-md",
 } as const;
 
-/** Radius scale (Tailwind `rounded-*`). `2xl`/`3xl` dominate the app. */
-export const radius = ["sm", "md", "lg", "xl", "2xl", "3xl", "full"] as const;
+/** Radius scale (Tailwind `rounded-*`). Cards and panels use md (6px). */
+export const radius = ["sm", "md", "lg", "xl"] as const;
 
 /**
  * Motion — the shared animation language. All signature transitions use the
- * same ease-out-with-late-settle curve, so new components feel like one motion
- * system. Use the class names for entrances; use `easing` for JS/inline styles.
+ * same standard ease, so new components feel like one motion system. 300ms hard
+ * cap per MOTION_AND_PERF.md.
  */
 export const motion = {
-  /** Signature easing used across onboarding, cards, charts and modals. */
-  easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+  easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+  easeOut: "cubic-bezier(0, 0, 0.2, 1)",
   fadeInUp: "animate-fade-in-up",
   fadeIn: "animate-fade-in",
-  /** Modal / menu entrance (scale-in). */
   slideIn: "animate-slide-in",
-  /** Bottom-sheet entrance (used by the Modal primitive on mobile). */
   slideUp: "animate-slide-up",
-  glow: "animate-glow",
 } as const;
 
 /**
@@ -104,25 +100,15 @@ export const density = {
 } as const;
 
 /**
- * Typography roles — sept étapes nommées remplaçant les `text-[Npx]` ad hoc.
+ * Typography roles — named steps replacing ad hoc pixel classes.
  *
- * PLANCHER RÉEL : 10px (`micro`), et rien en dessous dans l'UI produit.
- *
- * Ce fichier annonçait auparavant un plancher de 11px que ~200 appels en 10px
- * contredisaient : deux sources de vérité, donc aucune. Le 10px est le palier
- * de chrome dense réellement utilisé (badges, unités, méta de cellule) et il
- * reste lisible ; le supprimer aurait été une réécriture visuelle massive et
- * invérifiable, pas une amélioration. Le palier 8px, lui, a été éliminé de
- * l'UI produit — il ne subsiste que dans la maquette miniature décorative de
- * la landing, où le texte est un motif et non une information à lire.
- *
- * Toute nouvelle surface utilise ces rôles, jamais une classe en pixels.
+ * Real floor: 10px (`micro`), nothing below in the product UI.
  */
 export const type = {
-  /** Page title — larger, more imposing (matches the reference dashboards). */
-  h1: "text-[26px] md:text-[32px] font-extrabold tracking-[-0.03em]",
+  /** Page title. */
+  h1: "text-[26px] md:text-[32px] font-semibold tracking-[-0.02em]",
   /** Section title. */
-  h2: "text-base md:text-lg font-bold tracking-[-0.02em]",
+  h2: "text-base md:text-lg font-semibold tracking-[-0.01em]",
   /** Card title. */
   h3: "text-sm md:text-[15px] font-semibold",
   /** Body copy. */
@@ -130,7 +116,7 @@ export const type = {
   /** Secondary/meta copy. */
   caption: "text-xs",
   /** Compact uppercase label (11px). */
-  label: "text-[11px] uppercase tracking-[0.08em] font-semibold",
+  label: "text-[11px] uppercase tracking-[0.08em] font-medium",
   /** Chrome dense : badges, unités, méta de cellule. Le plancher — rien en dessous. */
   micro: "text-[10px]",
 } as const;

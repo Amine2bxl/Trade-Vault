@@ -4,9 +4,9 @@ import { density, type } from "./tokens";
 
 /**
  * PageHeader — the single page-title pattern of the app. Encodes the exact
- * gradient headline + muted subtitle markup that was previously duplicated at
- * the top of ~15 pages, so every screen shares one hierarchy and future
- * evolutions (density, type scale) happen in one place.
+ * headline + muted subtitle markup that was previously duplicated at the top of
+ * ~15 pages, so every screen shares one hierarchy and future evolutions
+ * (density, type scale) happen in one place.
  */
 export function PageHeader({
   title,
@@ -40,10 +40,10 @@ export function PageHeader({
         {title && (
           <div className="flex items-center gap-2.5">
             {icon}
-            <h1 className={cn(type.h1, "text-white")}>{title}</h1>
+            <h1 className={cn(type.h1, "text-primary")}>{title}</h1>
           </div>
         )}
-        {subtitle && <p className={cn(type.caption, "text-slate-500 mt-1")}>{subtitle}</p>}
+        {subtitle && <p className={cn(type.caption, "text-tertiary mt-1")}>{subtitle}</p>}
       </div>
       {actions}
     </div>
@@ -67,7 +67,7 @@ export function SectionHeader({
 }) {
   return (
     <div className={cn("mb-2.5 flex items-center justify-between gap-2", className)}>
-      <h2 className={cn("flex items-center gap-2 text-white", type.h2)}>
+      <h2 className={cn("flex items-center gap-2 text-primary", type.h2)}>
         {icon}
         {title}
       </h2>

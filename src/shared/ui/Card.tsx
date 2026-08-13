@@ -4,12 +4,13 @@ import { Heading } from "./Typography";
 import { density } from "./tokens";
 
 /**
- * Card — the surface primitive. Variants map to the existing glass classes so
- * output matches today's cards:
+ * Card — the surface primitive. Variants map to the design-system surfaces:
  *
- *   glass        → `.glass` (deep-navy translucent panel)
- *   glass-strong → `.glass-strong` (opaque, for modals/menus)
- *   plain        → the recurring `rounded-2xl border border-white/[.06] bg-white/[.015]`
+ *   glass        → `.glass` (panel surface)
+ *   glass-strong → `.glass-strong` (raised surface, for modals/menus)
+ *   plain        → bare surfaced panel
+ *   solid        → `.stat-card` (dense dashboard tile)
+ *   inset        → nested inset surface
  *
  * `hover` adds the `.card-premium` lift (transition-safe, no layout impact).
  */
@@ -17,11 +18,11 @@ import { density } from "./tokens";
 export type CardVariant = "glass" | "glass-strong" | "plain" | "solid" | "inset";
 
 const VARIANT: Record<CardVariant, string> = {
-  glass: "glass rounded-2xl",
-  "glass-strong": "glass-strong rounded-2xl",
-  plain: "rounded-2xl border border-white/[0.06] bg-white/[0.015]",
+  glass: "glass",
+  "glass-strong": "glass-strong",
+  plain: "bg-surface border border-border rounded-md",
   solid: "stat-card",
-  inset: "bg-white/[0.02] border border-white/[0.05] rounded-xl",
+  inset: "bg-raised border border-border rounded-md",
 };
 
 /** Inner padding steps, straight from the density scale. */

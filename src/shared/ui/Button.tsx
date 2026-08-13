@@ -3,9 +3,9 @@ import { cn } from "./cn";
 
 /**
  * Button — the single button contract. `primary` and `ghost` map to the
- * existing `.btn-primary` / `.btn-ghost` CSS (defined in styles.css) so they
- * render pixel-identically to today's buttons; `subtle` and `danger` compose
- * the ad-hoc Tailwind patterns already used across the app into named variants.
+ * existing `.btn-primary` / `.btn-ghost` CSS (defined in styles.css). `subtle`,
+ * `danger` and `accent` compose the recurring Tailwind patterns using the
+ * design-system tokens so they stay consistent across themes.
  *
  * `className` is merged last (twMerge), so any caller override wins.
  */
@@ -14,21 +14,19 @@ export type ButtonVariant = "primary" | "ghost" | "subtle" | "danger" | "accent"
 export type ButtonSize = "md" | "sm";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  // Reuse the existing global classes verbatim — identical output.
+  // Reuse the existing global classes verbatim.
   primary: "btn-primary",
   ghost: "btn-ghost",
-  // Named versions of the recurring inline styles.
+  // Named versions of the recurring inline styles, using design-system tokens.
   subtle:
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] " +
-    "bg-white/[0.03] font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white",
+    "inline-flex items-center justify-center gap-2 rounded-md border border-border " +
+    "bg-transparent font-medium text-secondary transition hover:bg-hover hover:text-primary",
   danger:
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 " +
-    "bg-red-500/10 font-semibold text-red-400 transition hover:bg-red-500/15 hover:text-red-300",
-  // Same toolbar shape as `subtle` (Export CSV / Delete all) but tinted with the
-  // product accent so the primary action stands out while staying in the family.
+    "inline-flex items-center justify-center gap-2 rounded-md border border-red-500/25 " +
+    "bg-red-500/10 font-medium text-red-500 transition hover:bg-red-500/15 hover:text-red-400",
   accent:
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/30 " +
-    "bg-cyan-500/10 font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:text-cyan-200",
+    "inline-flex items-center justify-center gap-2 rounded-md border border-accent/30 " +
+    "bg-accent-subtle font-medium text-accent transition hover:bg-accent/15 hover:text-accent-hover",
 };
 
 // Composed variants get Tailwind sizing; the CSS-class variants (`.btn-*`)

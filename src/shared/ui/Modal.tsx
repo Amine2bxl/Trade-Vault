@@ -107,8 +107,8 @@ export function Modal({
         aria-labelledby={labelledBy}
         tabIndex={-1}
         className={cn(
-          "glass-strong relative w-full rounded-t-3xl outline-none shadow-2xl shadow-black/50",
-          "animate-slide-up md:rounded-3xl md:animate-slide-in",
+          "glass-strong relative w-full outline-none",
+          "animate-slide-up md:animate-slide-in",
           size && SIZE[size],
           className,
         )}
