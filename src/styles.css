@@ -718,7 +718,7 @@ input[type="range"]::-webkit-slider-thumb {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.15;
+  opacity: 0.06;
   animation: none;
 }
 /* Continuously animating 80px blurs are a GPU drain on phones — freeze them
