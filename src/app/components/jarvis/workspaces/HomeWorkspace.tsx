@@ -19,6 +19,7 @@ import { buildSuggestions } from "../insights/suggestions";
 import type { CopyContext } from "../insights/copy/templates";
 import type { JarvisHomeData, JarvisMemory } from "../insights/types";
 import { BlockList } from "../BlockRenderer";
+import ProposalsPanel from "../components/ProposalsPanel";
 import type { JarvisBlock } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
 import { cn } from "../../../utils/cn";
@@ -228,6 +229,14 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           </p>
         )}
       </div>
+
+      {/* Les propositions passent AVANT les insights : elles attendent une
+          décision, le reste s'observe. Le panneau ne rend rien tant qu'il n'y a
+          rien en attente, donc l'accueil garde exactement sa forme actuelle
+          pour un trader sans proposition. */}
+      {(user?.id ?? context.userId) && (
+        <ProposalsPanel userId={(user?.id ?? context.userId) as string} />
+      )}
 
       {blocks === null ? (
         <div className="space-y-3">
