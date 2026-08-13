@@ -134,6 +134,28 @@ languages.
 (15 KB) and `checklist.css` loaded globally rather than per-route, plus the dead
 keyframes removed in Part A. Verify with a coverage report before and after.
 
+**Measured on production, 2026-08-13 — the hypothesis above was wrong, and the
+apparent regression is not one.** Route stylesheets are already split per route;
+`landing.css` and `checklist.css` are *not* loaded globally.
+
+| asset | bytes | loaded on |
+| --- | --- | --- |
+| `styles-*.css` (Tailwind output) | 207 101 | every route |
+| `landing-*.css` | 9 427 | `/` only |
+
+- `/journal`: **1 file, 202 KiB** — the Tailwind bundle alone.
+- `/`: **2 files, 211 KiB** — the same bundle plus `landing.css`.
+
+The two numbers were taken on two different routes. 207 101 B = 202.2 KiB (read
+as "201 KB"); + 9 427 B = 211.5 KiB. Nothing was added and nothing grew: the
+second stylesheet is `landing.css`, which only `/` pulls, because only
+`routes/index.tsx` reaches `pages/Landing.tsx`.
+
+So the single remaining question for B4 is the 202 KiB Tailwind output itself —
+utility CSS emitted once for the whole app. That needs a browser coverage report
+to attribute, and splitting Tailwind's emission per route is a build change, not
+a cleanup.
+
 ## Part C — Perceived speed
 
 ### C1. Preload on hover
