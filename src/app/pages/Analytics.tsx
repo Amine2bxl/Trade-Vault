@@ -776,7 +776,6 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Equity + Pie */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <h3 className="text-sm font-semibold text-white mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-draw">
               <EquityChart data={stats.equityCurve} />

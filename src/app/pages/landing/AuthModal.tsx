@@ -101,7 +101,6 @@ export function AuthModal({
       onMouseDown={(e) => e.currentTarget === e.target && onClose()}
     >
       <div className="modal-in relative my-auto w-full max-w-[880px] overflow-hidden rounded-2xl border border-white/[.09] bg-[#0a1220] shadow-[0_40px_110px_rgba(0,0,0,.7)]">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
         <button
           onClick={onClose}
           aria-label="Fermer"

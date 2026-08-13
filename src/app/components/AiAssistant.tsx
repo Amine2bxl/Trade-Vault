@@ -202,7 +202,6 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
         )}
       >
-        <span className="pointer-events-none hidden md:block absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
         <span className="relative shrink-0">
           <span
             className={cn(

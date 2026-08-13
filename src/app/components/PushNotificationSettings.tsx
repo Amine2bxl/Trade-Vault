@@ -120,9 +120,6 @@ export function PushNotificationSettings() {
     // 4 px d'écart, et c'est exactement ce qui fait « collé » plutôt que
     // « intégré ».
     <div className="relative space-y-4">
-      {/* Hairline + glow, comme les autres surfaces premium */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
-
       <div className="flex items-center gap-2.5">
         <span className="relative shrink-0">
           <span className="absolute -inset-1 rounded-lg bg-cyan-500/30 blur-md" />

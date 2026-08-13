@@ -209,7 +209,6 @@ function CopilotBlock({
 
   return (
     <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden mb-4 md:mb-6">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-cyan-400/80 font-semibold mb-4">
         <Sparkles className="w-3.5 h-3.5" />
         <span>{t("copilot.title")}</span>
@@ -255,7 +254,6 @@ function CopilotBlock({
           {/* Jarvis coaching line */}
           {/* Jarvis coaching line — signée Jarvis */}
           <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 px-3.5 py-3 overflow-hidden">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
             <div className="flex gap-2.5 items-start">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
                 <Bot className="w-3 h-3 text-white" />

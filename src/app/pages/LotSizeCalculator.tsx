@@ -427,8 +427,6 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
             hasResult ? "border-cyan-500/25" : "border-transparent",
           )}
         >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
-
           <div className="flex items-center gap-2 mb-3">
             <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
               <Gauge className="w-3 h-3 text-white" />

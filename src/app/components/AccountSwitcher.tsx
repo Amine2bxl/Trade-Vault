@@ -385,7 +385,6 @@ export default function AccountSwitcher({
             "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] shadow-lg shadow-cyan-500/5 group/acc",
           )}
         >
-          <span className="pointer-events-none absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
           <span
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
             style={{
@@ -705,7 +704,6 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
       labelledBy="create-account-title"
       wrapperClassName="z-[100]"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
         <h2
           id="create-account-title"

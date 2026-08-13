@@ -96,8 +96,6 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
 
   return (
     <Modal open onClose={onClose} wrapperClassName="z-[90]" className="md:max-w-md">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
-
       {/* En-tête Jarvis — la notification est signée, comme chaque message. */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
         <div className="relative shrink-0">

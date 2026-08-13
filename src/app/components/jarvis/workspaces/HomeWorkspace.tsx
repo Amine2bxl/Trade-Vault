@@ -253,7 +253,6 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           à ta checklist. » Un clic → la règle entre dans sa discipline. */}
       {worstMistake && !ruleAdded && (
         <div className="relative mt-5 overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-r from-cyan-500/[0.08] to-teal-500/[0.04] p-4">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
           <div className="flex items-start gap-3">
             <span className="relative shrink-0">
               <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />

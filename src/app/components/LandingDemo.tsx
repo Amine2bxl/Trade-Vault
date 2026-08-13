@@ -108,8 +108,6 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
 
       {/* Panneau */}
       <div className="relative w-full max-w-3xl max-h-[92dvh] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0a0f1e] shadow-[0_30px_80px_rgba(0,0,0,0.6)] animate-slide-in flex flex-col">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
-
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">

@@ -162,7 +162,6 @@ function HeroDashboard() {
     <div className="relative">
       <div className="pointer-events-none absolute -inset-8 rounded-[2.5rem] bg-cyan-500/[.07] blur-3xl glow-pulse" />
       <div className="relative rounded-2xl border border-white/10 bg-[#0a1625]/95 p-5 shadow-[0_30px_80px_rgba(0,0,0,.5)] backdrop-blur-xl">
-        <div className="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[.14em] text-slate-500">
@@ -266,7 +265,6 @@ function HeroDashboard() {
 function AIConversation() {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/[.1] bg-[#0b1727]/90 shadow-[0_24px_64px_rgba(0,0,0,.45)] backdrop-blur-xl">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
       <div className="flex items-center justify-between border-b border-white/[.07] px-5 py-4">
         <div className="flex items-center gap-2.5">
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500">

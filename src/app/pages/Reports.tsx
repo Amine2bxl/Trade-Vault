@@ -436,7 +436,6 @@ function ReportCard({
               lecture experte du mois, ce qu'un vrai rapport met en synthèse. */}
           {r.aiSummary && (
             <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 p-4 overflow-hidden">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
                   <Bot className="w-3.5 h-3.5 text-white" />
