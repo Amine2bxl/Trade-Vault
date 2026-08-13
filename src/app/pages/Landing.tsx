@@ -1,9 +1,10 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { Compass, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
+import { PlayCircle, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
 import { FeaturesBento } from "./landing/FeaturesBento";
+import { FeatureRow, PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
 import MegaNav from "./landing/MegaNav";
 import {
   eur,
@@ -377,7 +378,6 @@ const AIS = [
   },
 ];
 
-
 const FAQS: [string, string][] = [
   [
     "En quoi c'est mieux qu'un simple journal ?",
@@ -581,22 +581,25 @@ export default function Landing() {
                 </span>{" "}
                 que tu veux devenir.
               </h1>
+              {/* Sous-titre court, comme la maquette : quatre briques nommées,
+                  puis ce que ça produit. La version précédente disait la même
+                  chose en deux fois plus de mots, et le premier écran est
+                  l'endroit où l'on paie chaque mot en plus. */}
               <p className="fade-up d2 mt-6 text-base leading-7 text-slate-400 sm:text-lg max-w-[540px] mx-auto lg:mx-0">
-                <strong className="text-slate-200">TradeVault</strong> n'est pas un simple journal.
-                C'est un <strong className="text-slate-200">coach IA disponible 24h/24</strong> qui
-                réunit journal de trading, analytics quantitatives, calendrier économique et
-                checklist pré-market pour analyser tes trades, détecter tes erreurs et t'accompagner
-                vers une progression réelle.
+                <strong className="text-slate-200">TradeVault</strong> réunit journal de trading,
+                analytics avancées, calendrier économique et{" "}
+                <strong className="text-slate-200">Coach IA</strong> pour analyser tes trades,
+                détecter tes erreurs et t'accompagner vers une progression réelle.
               </p>
               <div className="fade-up d3 mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
                 <button
                   onClick={() => open("signup", "Essai Premium 14 jours")}
                   className="btn-primary px-6 py-3.5 text-[.95rem]"
                 >
-                  Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
+                  Essai gratuit 14 jours <Icon n="arrow" cls="h-4 w-4" />
                 </button>
                 <a href="/demo-site" className="btn-ghost px-5 py-3.5 text-[.95rem]">
-                  <Compass className="w-4 h-4" /> Voir le site
+                  <PlayCircle className="w-4 h-4" /> Voir la démo
                 </a>
               </div>
               <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
@@ -645,19 +648,14 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="mx-auto mt-20 max-w-[900px] px-5 lg:mt-24">
-            <div className="reveal grid grid-cols-2 gap-4 rounded-2xl border border-white/[.07] bg-white/[.02] p-6 backdrop-blur-md sm:grid-cols-4">
-              {[
-                ["<10s", "pour importer ton historique"],
-                ["20+", "métriques calculées"],
-                ["100%", "de tes données t'appartiennent"],
-                ["24h/24", "assistant IA disponible"],
-              ].map(([v, l]) => (
-                <div key={l} className="text-center">
-                  <p className="font-display text-2xl font-extrabold text-white">{v}</p>
-                  <p className="mt-1 text-xs text-slate-500">{l}</p>
-                </div>
-              ))}
+          {/* Bande plateformes + rangée de capacités, comme la maquette.
+              Elle remplace l'ancienne grille de quatre chiffres : ces chiffres
+              vivent maintenant dans `TraderProof`, plus bas, où ils portent un
+              propos. Les répéter deux fois sur la même page les affaiblissait. */}
+          <div className="mx-auto mt-16 max-w-[1200px] px-5 lg:mt-20 lg:px-8">
+            <PlatformsStrip />
+            <div className="mt-5">
+              <FeatureRow />
             </div>
             <button
               onClick={() => go("ai")}
@@ -807,6 +805,16 @@ export default function Landing() {
                 Tout débloquer gratuitement <Icon n="arrow" cls="h-4 w-4" />
               </button>
               <p className="mt-3 text-xs text-slate-600">14 jours Premium · sans carte bancaire</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── QUI FAIT ÇA, ET POURQUOI S'Y FIER ── */}
+        <section className="relative border-t border-white/[.06] py-20 lg:py-24">
+          <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
+            <TraderProof onStart={() => open("signup", "Essai Premium 14 jours")} />
+            <div className="mt-10">
+              <TrustStrip />
             </div>
           </div>
         </section>
