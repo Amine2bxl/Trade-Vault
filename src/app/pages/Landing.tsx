@@ -1,9 +1,10 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { Play, Compass, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
+import { Compass, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
 import { FeaturesBento } from "./landing/FeaturesBento";
+import MegaNav from "./landing/MegaNav";
 import {
   eur,
   MONTHLY_EUR,
@@ -541,93 +542,7 @@ export default function Landing() {
       />
 
       {/* ── NAV ── */}
-      <header
-        className={`fixed inset-x-0 top-0 z-50 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 10 ? "bg-[#060d16]/85 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/40"}`}
-        style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
-      >
-        <div
-          className="scroll-bar absolute inset-x-0 top-0 h-[2px]"
-          style={{ transform: `scaleX(${pct})` }}
-        />
-        <div className="relative mx-auto flex h-[60px] md:h-[66px] max-w-[1600px] items-center justify-between gap-3 px-4 md:px-5 lg:px-8">
-          {/* Left zone — logo, natural width. */}
-          <div className="flex items-center">
-            <Logo />
-          </div>
-          {/* Center — every section, dead-centered on the header via absolute
-              positioning (immune to the left/right zone widths). */}
-          <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-white/[.03] p-1 backdrop-blur-md xl:flex">
-            {NAV.map(([l, id]) => {
-              const on = activeSec === id;
-              const isTp = id === "trustpilot";
-              return (
-                <button
-                  key={id}
-                  onClick={() => go(id)}
-                  className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-semibold whitespace-nowrap transition-all duration-200 ${
-                    on
-                      ? "bg-cyan-400/[.14] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(34,211,238,.28)]"
-                      : isTp
-                        ? "text-emerald-300 hover:bg-emerald-400/[.1]"
-                        : "text-slate-400 hover:bg-cyan-400/[.07] hover:text-cyan-100"
-                  }`}
-                >
-                  {isTp && (
-                    <span className="grid h-3.5 w-3.5 place-items-center rounded-[2px] bg-[#00b67a]">
-                      <Icon n="star" cls="h-2.5 w-2.5 text-white fill-white" />
-                    </span>
-                  )}
-                  {l}
-                </button>
-              );
-            })}
-          </nav>
-          {/* Right zone — actions. Deux CTA (Démo + Essai gratuit), visibles sur
-              tous les écrans (compact sur mobile) ; hamburger en dessous de xl. */}
-          <div className="flex items-center justify-end gap-2">
-            <a href="/demo" className="btn-ghost hidden px-4 sm:inline-flex">
-              <Play className="w-3.5 h-3.5" /> Démo
-            </a>
-            <button
-              onClick={() => open("signup", "Essai Premium 14 jours")}
-              className="btn-primary px-3.5 sm:px-4"
-            >
-              Essai gratuit <Icon n="arrow" cls="h-4 w-4 hidden sm:inline" />
-            </button>
-            <button
-              onClick={() => setMenu(!menu)}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] bg-white/[.03] text-slate-200 xl:hidden"
-              aria-label="Menu"
-            >
-              <Icon n={menu ? "close" : "menu"} cls="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-        {menu && (
-          <div className="xl:hidden border-t border-white/[.07] bg-[#070f1a]/98 backdrop-blur-xl px-5 py-4">
-            <div className="flex flex-col">
-              {NAV.map(([l, id]) => (
-                <button
-                  key={id}
-                  onClick={() => go(id)}
-                  className={`mobile-nav-link ${activeSec === id ? "text-cyan-300" : ""}`}
-                >
-                  {l}
-                </button>
-              ))}
-              <button
-                onClick={() => open("signup", "Essai Premium 14 jours")}
-                className="btn-primary mt-4 w-full"
-              >
-                Essai gratuit <Icon n="arrow" cls="h-4 w-4" />
-              </button>
-              <a href="/demo" className="btn-ghost mt-2.5 w-full">
-                <Play className="w-3.5 h-3.5" /> Démo
-              </a>
-            </div>
-          </div>
-        )}
-      </header>
+      <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
 
       <main className="relative z-10">
         {/* ── HERO ── */}
