@@ -16,6 +16,8 @@ import {
   UserX,
   AlertTriangle,
   FileText,
+  Palette,
+  CreditCard,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
@@ -31,6 +33,8 @@ import AccountSwitcher from "../components/AccountSwitcher";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
+import ThemeSettings from "../components/ThemeSettings";
+import SubscriptionSection from "../components/SubscriptionSection";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -51,12 +55,14 @@ import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
  * contenu : la même structure, sans imposer une colonne de 240 px à un écran
  * qui en fait 390.
  */
-type PaneId = "general" | "account" | "notifications" | "data" | "danger";
+type PaneId = "general" | "account" | "appearance" | "subscription" | "notifications" | "data" | "danger";
 
 /** Rubrique du rail : son icône, sa clé de libellé, sa clé de recherche. */
 const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: LucideIcon }[] = [
   { id: "general", section: "prefs", labelKey: "settings.preferences", icon: SlidersHorizontal },
   { id: "account", section: "account", labelKey: "settings.paneAccount", icon: Wallet },
+  { id: "appearance", section: "appearance", labelKey: "nav.appearance", icon: Palette },
+  { id: "subscription", section: "subscription", labelKey: "nav.subscription", icon: CreditCard },
   { id: "notifications", section: "notifs", labelKey: "push.title", icon: Bell },
   { id: "data", section: "data", labelKey: "settings.data", icon: Database },
   { id: "danger", section: "danger", labelKey: "settings.dangerZone", icon: AlertTriangle },
@@ -65,6 +71,8 @@ const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: 
 interface SearchSections {
   prefs: boolean;
   account: boolean;
+  appearance: boolean;
+  subscription: boolean;
   notifs: boolean;
   data: boolean;
   danger: boolean;
@@ -109,6 +117,8 @@ export default function Settings({
         "langue",
         "equity",
       ),
+      appearance: match(t("nav.appearance"), "theme", "thème", "couleur", "color", "palette"),
+      subscription: match(t("nav.subscription"), "plan", "paiement", "billing", "stripe", "abonnement"),
       notifs: match(t("push.title"), t("push.enable"), "push", "notification"),
       data: match(
         t("settings.data"),
@@ -298,6 +308,22 @@ export default function Settings({
                 title={t("settings.paneAccount")}
               />
               <AccountSwitcher variant="card" />
+            </div>
+          )}
+
+          {/* Appearance — theme settings, same page */}
+          {pane === "appearance" && sections.appearance && (
+            <div className="space-y-4">
+              <SectionHeading icon={<Palette className="w-4 h-4" />} title={t("nav.appearance")} />
+              <ThemeSettings />
+            </div>
+          )}
+
+          {/* Subscription — billing, same page */}
+          {pane === "subscription" && sections.subscription && (
+            <div className="space-y-4">
+              <SectionHeading icon={<CreditCard className="w-4 h-4" />} title={t("nav.subscription")} />
+              <SubscriptionSection />
             </div>
           )}
 
