@@ -19,7 +19,6 @@ import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { useT } from "../i18n/LanguageContext";
-import AccountSwitcher from "./AccountSwitcher";
 import { useUnreadCount } from "../hooks/useUnreadCount";
 import { Modal } from "@/shared/ui";
 
@@ -127,13 +126,6 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
       </div>
-
-      {/* ── COMPTE ACTIF ── */}
-      {!collapsed && (
-        <div className="shrink-0 px-3 pb-1">
-          <AccountSwitcher variant="card" />
-        </div>
-      )}
 
       {/* ── NAVIGATION ── */}
       <nav className={cn("min-h-0 flex-1 px-3 pb-2", collapsed ? "overflow-visible" : "overflow-y-auto")}>
