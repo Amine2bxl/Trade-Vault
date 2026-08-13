@@ -11,6 +11,7 @@ const fr: Dict = {
   "nav.groupAnalysis": "Analyse",
   "nav.groupJarvis": "Jarvis",
   "nav.groupAccount": "Compte",
+  "nav.groupNavigate": "Naviguer",
   "nav.journal": "Journal",
   "nav.missed": "Setups manqués",
   "nav.calendar": "Calendrier",

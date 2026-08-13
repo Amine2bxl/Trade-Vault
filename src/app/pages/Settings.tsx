@@ -214,25 +214,31 @@ export default function Settings({
         subtitle={t("settings.subtitle")}
       />
 
-      <div className="grid items-start gap-3 lg:grid-cols-[236px_1fr]">
+      {/* UNE SEULE FENÊTRE. Le rail et le contenu vivent dans le même panneau,
+          séparés par une simple cloison — pas deux cartes flottantes séparées
+          par un vide. C'est ce qui fait la différence entre une page de
+          réglages et une pile de widgets. */}
+      <Card
+        variant="glass-strong"
+        className="animate-fade-in-up stagger-1 overflow-hidden lg:grid lg:grid-cols-[244px_1fr]"
+      >
         {/* ── RAIL DES RUBRIQUES ── */}
-        <div className="space-y-2 animate-fade-in-up stagger-1">
+        <div className="border-b border-white/[0.06] p-3 lg:border-b-0 lg:border-r">
           {/* Search — the fastest route through a settings page is typing. */}
-          <div className="relative">
+          <div className="relative mb-3">
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("settings.search")}
-              className={cn(FIELD_BASE, "h-11 pl-10")}
+              className={cn(FIELD_BASE, "h-10 pl-10 text-[13px]")}
             />
           </div>
 
           {anyVisible && (
-            <Card
-              variant="glass-strong"
-              className="p-1.5 flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
+            <div
+              className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
               role="tablist"
               aria-orientation="vertical"
             >
@@ -247,20 +253,21 @@ export default function Settings({
                     aria-selected={active}
                     onClick={() => setPane(id)}
                     className={cn(
-                      "group flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium",
+                      "group flex h-11 shrink-0 items-center gap-3 rounded-xl px-3 text-[13.5px] font-medium",
                       "transition-colors duration-200 lg:w-full",
                       active
                         ? danger
                           ? "bg-red-500/10 text-red-300"
-                          : "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-300"
-                        : "text-slate-400 hover:bg-white/[0.03] hover:text-slate-200",
+                          : "bg-cyan-500/10 text-white"
+                        : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100",
                     )}
                   >
                     <Ico
                       className={cn(
-                        "h-4 w-4 shrink-0",
-                        active ? (danger ? "text-red-400" : "text-cyan-400") : "text-slate-600",
+                        "h-[18px] w-[18px] shrink-0",
+                        active ? (danger ? "text-red-400" : "text-cyan-400") : "text-slate-500",
                       )}
+                      strokeWidth={1.9}
                     />
                     <span className="truncate">{t(labelKey)}</span>
                     <ChevronRight
@@ -272,12 +279,12 @@ export default function Settings({
                   </button>
                 );
               })}
-            </Card>
+            </div>
           )}
         </div>
 
         {/* ── VOLET ACTIF ── */}
-        <div className="space-y-3 animate-fade-in-up stagger-2">
+        <div className="space-y-4 p-5 md:p-6">
           {!anyVisible && (
             <p className="text-sm text-slate-500 text-center py-6">{t("settings.noResults")}</p>
           )}
@@ -286,23 +293,19 @@ export default function Settings({
               n'existe plus. Il a maintenant sa rubrique, sur toutes les
               tailles d'écran : la barre latérale peut être repliée. */}
           {pane === "account" && sections.account && (
-            <Card variant="glass-strong" pad="default" className="space-y-4">
+            <div className="space-y-4">
               <SectionHeading
                 icon={<Wallet className="w-4 h-4" />}
                 title={t("settings.paneAccount")}
                 sub={t("settings.paneAccountSub")}
               />
               <AccountSwitcher variant="card" />
-            </Card>
+            </div>
           )}
 
           {/* Preferences */}
           {pane === "general" && sections.prefs && (
-            <Card
-              variant="glass-strong"
-              pad="default"
-              className="space-y-4 animate-fade-in-up stagger-1"
-            >
+            <div className="space-y-5">
               <SectionHeading
                 icon={<SlidersHorizontal className="w-4 h-4" />}
                 title={t("settings.preferences")}
@@ -354,7 +357,7 @@ export default function Settings({
                   {t("profile.startingEquityHint")}
                 </p>
               </label>
-            </Card>
+            </div>
           )}
 
           {/* Notifications */}
@@ -362,11 +365,7 @@ export default function Settings({
 
           {/* Data */}
           {pane === "data" && sections.data && (
-            <Card
-              variant="glass-strong"
-              pad="default"
-              className="space-y-2.5 animate-fade-in-up stagger-3"
-            >
+            <div className="space-y-2.5">
               <SectionHeading
                 icon={<Database className="w-4 h-4" />}
                 title={t("settings.data")}
@@ -410,18 +409,14 @@ export default function Settings({
                 sub={t("settings.reportsSub")}
                 onClick={onOpenReports}
               />
-            </Card>
+            </div>
           )}
 
           {/* Danger zone — sa propre rubrique dans le rail, pas une carte de
               plus au bas d'une colonne. On n'atteint « Supprimer mon compte »
               qu'en le demandant. */}
           {pane === "danger" && sections.danger && (
-            <Card
-              variant="glass-strong"
-              pad="default"
-              className="space-y-2.5 border border-red-500/15 animate-fade-in-up stagger-4"
-            >
+            <div className="space-y-2.5 rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-4">
               <h2 className="text-xs font-bold uppercase tracking-wider text-red-400/90">
                 {t("settings.dangerZone")}
               </h2>
@@ -453,10 +448,10 @@ export default function Settings({
                 </span>
                 <UserX className="w-4 h-4 shrink-0" />
               </Button>
-            </Card>
+            </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {deleteOpen && (
         <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />

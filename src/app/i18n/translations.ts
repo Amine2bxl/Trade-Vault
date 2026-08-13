@@ -40,6 +40,7 @@ const en = {
   "nav.groupAnalysis": "Analysis",
   "nav.groupJarvis": "Jarvis",
   "nav.groupAccount": "Account",
+  "nav.groupNavigate": "Navigate",
   "nav.journal": "Journal",
   "nav.missed": "Missed Setups",
   "nav.calendar": "Calendar",

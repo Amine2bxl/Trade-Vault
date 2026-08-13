@@ -1087,34 +1087,3 @@ svg.lucide {
     transition-duration: 0.01ms;
   }
 }
-
-/* ── En-tête mobile ──
- * Le produit n'avait aucune barre supérieure sur mobile : la cloche vivait sur
- * le bouton « Plus », qui disparaît avec le passage à six sections. */
-.mobile-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: calc(env(safe-area-inset-top, 0px) + 0.5rem) 0.85rem 0.5rem;
-  background: rgba(8, 17, 30, 0.92);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.mobile-header-action {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.75rem;
-  color: rgb(148 163 184);
-  transition-property: color, background-color;
-  transition-duration: 150ms;
-}
-.mobile-header-action:active {
-  background-color: rgba(255, 255, 255, 0.06);
-}
