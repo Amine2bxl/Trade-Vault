@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Calculator,
   Copy,
   Check,
   Wallet,
@@ -148,45 +147,29 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
 
   return (
     <div className="p-4 md:p-5 max-w-[920px] mx-auto">
-      {/* ── Barre de commande : identité + mode ── */}
-      <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.5),rgba(7,14,24,.9)_60%)] px-5 py-4 md:px-6 animate-fade-in-up stagger-0">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-        <div className="pointer-events-none absolute -top-24 -right-16 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl" />
-
-        <div className="relative flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-              <Calculator className="w-4.5 h-4.5 text-white" />
-            </span>
-            <div className="min-w-0">
-              <h1 className="font-display text-lg md:text-xl font-extrabold tracking-tight text-white">
-                {t("calc.title")}
-              </h1>
-              <p className="text-xs text-slate-400 truncate">{t("calc.subtitle")}</p>
-            </div>
-          </div>
-
-          {/* Mode — segmenté dans la barre de commande */}
-          <div className="inline-flex p-1 rounded-2xl bg-black/30 border border-white/[0.08] backdrop-blur-sm">
-            {(["forex", "futures"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={cn(
-                  "h-9 px-5 rounded-xl text-xs font-bold transition",
-                  mode === m
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
-                    : "text-slate-500 hover:text-slate-300",
-                )}
-              >
-                {t(m === "forex" ? "calc.forex" : "calc.futures")}
-              </button>
-            ))}
-          </div>
+      {/* ── Mode (forex / futures) — le seul contrôle de tête, aligné à droite
+          comme les CTA des autres pages (titre + icône retirés : la barre
+          d'onglets nomme déjà la page). ── */}
+      <div className="flex items-center justify-end mb-4 animate-fade-in-up stagger-0">
+        <div className="inline-flex p-1 rounded-2xl bg-black/30 border border-white/[0.08]">
+          {(["forex", "futures"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={cn(
+                "h-9 px-5 rounded-xl text-xs font-bold transition",
+                mode === m
+                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
+                  : "text-slate-500 hover:text-slate-300",
+              )}
+            >
+              {t(m === "forex" ? "calc.forex" : "calc.futures")}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid md:grid-cols-[1fr_320px] gap-4 md:gap-5 items-start mt-4">
+      <div className="grid md:grid-cols-[1fr_320px] gap-4 md:gap-5 items-start">
         {/* ══ Colonne gauche : les deux étapes ══ */}
         <div className="space-y-4">
           {/* ── ÉTAPE 1 · Ton risque ── */}

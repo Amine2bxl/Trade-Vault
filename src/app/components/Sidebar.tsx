@@ -93,6 +93,10 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
     <aside
       className={cn(
         "hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
+        // La largeur s'anime sur 200 ms (plafond 300 ms de MOTION_AND_PERF.md).
+        // `overflow-hidden` est évité ici : il clipperait l'infobulle `.rail-tip`
+        // qui déborde à droite de la barre repliée.
+        "transition-[width] duration-200 ease-out",
         collapsed ? "w-[76px]" : "w-[248px]",
       )}
     >

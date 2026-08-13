@@ -11,7 +11,6 @@ import {
   Clock,
   ChevronDown,
   Check,
-  TrendingUp,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
@@ -296,12 +295,6 @@ export default function EconomicNews() {
     <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
       <PageHeader
         className="mb-5"
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <TrendingUp className="w-4 h-4 text-white" />
-          </span>
-        }
-        title={t("news.title")}
         actions={
           <span
             className={cn(
