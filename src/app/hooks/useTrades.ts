@@ -20,7 +20,16 @@ const EMPTY: Trade[] = [];
  * and the dashboard waits ~3s for a cold Supabase round-trip. Persisting the
  * last successful fetch and feeding it back as `initialData` makes the page
  * paint instantly with the previous data while a background refetch silently
- * updates it. */
+ * updates it.
+ *
+ * `sessionStorage` ET PAS `localStorage` — c'est délibéré, ne pas « corriger ».
+ * `localStorage` ferait gagner un clignotement de squelette au retour sur le
+ * produit ; il laisserait aussi l'historique complet de P&L du trader sur le
+ * disque, indéfiniment, en survivant à la déconnexion et lisible sur une
+ * machine partagée ou empruntée. Tout le contenu de ce produit est la
+ * performance financière de quelqu'un : l'échange ne vaut pas ce qu'il coûte.
+ * Si cela devient une option un jour, elle est opt-in et s'efface à la
+ * déconnexion — décision produit, pas refactorisation. */
 function tradesStorageKey(userId: string, accountId: string | null) {
   return `tv:trades:${userId}:${accountId ?? ""}`;
 }
