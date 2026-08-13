@@ -145,8 +145,28 @@ export default {
           } catch (e) {
             console.error("[telemetry] purge cron failed", e);
           }
+          // Propositions échues. Greffé sur le même tick quotidien : une
+          // proposition de plus de quatorze jours s'appuie sur des données que
+          // le trader a dépassées, et tant qu'elle reste `pending` elle occupe
+          // une place du budget d'intervention sans rien proposer.
+          // Best-effort, comme les deux au-dessus.
+          try {
+            const { serviceClient } = await import("./backend/billing.server");
+            const { expireStaleProposals } = await import("./backend/proposals.functions");
+            const sb = serviceClient();
+            if (sb) {
+              const expired = await expireStaleProposals(sb);
+              if (expired > 0) console.log("[proposals] expired", expired);
+            }
+          } catch (e) {
+            console.error("[proposals] expiry sweep failed", e);
+          }
         }
         return response;
+      }
+      if (pathname === "/api/cron/pattern-scan" && request.method === "POST") {
+        const { handlePatternScanCron } = await import("./backend/pattern-scan.server");
+        return await handlePatternScanCron(request);
       }
       if (pathname === "/api/cron/economic-calendar" && request.method === "POST") {
         const { handleEconomicCalendarCron } = await import("./backend/economic-calendar.server");
