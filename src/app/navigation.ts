@@ -18,7 +18,6 @@ import {
   Settings as SettingsIcon,
   Target,
   User,
-  Dices,
   Shuffle,
 } from "lucide-react";
 import { PAGES, SECTIONS, type Page, type SectionId } from "./types";
@@ -68,7 +67,6 @@ export const PAGE_META: Record<Page, { labelKey: TKey; icon: typeof LayoutDashbo
   settings: { labelKey: "nav.settings", icon: SettingsIcon },
   reports: { labelKey: "nav.reports", icon: FileText },
   goals: { labelKey: "nav.goals", icon: Target },
-  simulator: { labelKey: "nav.simulator", icon: Dices },
   tradingplan: { labelKey: "nav.tradingPlan", icon: Map },
   appearance: { labelKey: "nav.appearance", icon: Palette },
   subscription: { labelKey: "nav.subscription", icon: CreditCard },
@@ -85,6 +83,7 @@ export const SECTION_META: Record<SectionId, { labelKey: TKey; icon: typeof Layo
   journal: { labelKey: "nav.groupJournal", icon: BookOpen },
   analysis: { labelKey: "nav.groupAnalysis", icon: BarChart3 },
   coach: { labelKey: "nav.jarvis", icon: Bot },
+  strategy: { labelKey: "nav.groupStrategy", icon: Map },
   settings: { labelKey: "nav.settings", icon: SettingsIcon },
 };
 

@@ -24,7 +24,6 @@ export const PAGES = [
   "settings",
   "reports",
   "goals",
-  "simulator",
   "tradingplan",
   "appearance",
   "subscription",
@@ -52,11 +51,12 @@ export const SECTIONS = [
   { id: "dashboard", pages: ["dashboard"] },
   {
     id: "preparation",
-    pages: ["tradingplan", "checklist", "calculator", "news", "goals", "simulator"],
+    pages: ["checklist", "calculator", "news"],
   },
   { id: "journal", pages: ["journal", "calendar", "mistakes", "missed"] },
   { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo"] },
   { id: "coach", pages: ["insights"] },
+  { id: "strategy", pages: ["tradingplan", "goals"] },
   { id: "settings", pages: ["settings", "profile", "appearance", "subscription"] },
 ] as const satisfies readonly { id: string; pages: readonly Page[] }[];
 

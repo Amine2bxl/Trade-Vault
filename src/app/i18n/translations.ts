@@ -38,6 +38,7 @@ const en = {
   "nav.groupPreparation": "Preparation",
   "nav.groupJournal": "Journal",
   "nav.groupAnalysis": "Analysis",
+  "nav.groupStrategy": "Strategy",
   "nav.groupJarvis": "Jarvis",
   "nav.groupAccount": "Account",
   "nav.groupNavigate": "Navigate",

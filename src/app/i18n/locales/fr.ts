@@ -9,6 +9,7 @@ const fr: Dict = {
   "nav.groupPreparation": "Préparation",
   "nav.groupJournal": "Journal",
   "nav.groupAnalysis": "Analyse",
+  "nav.groupStrategy": "Stratégie",
   "nav.groupJarvis": "Jarvis",
   "nav.groupAccount": "Compte",
   "nav.groupNavigate": "Naviguer",
