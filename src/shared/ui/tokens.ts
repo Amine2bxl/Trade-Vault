@@ -55,6 +55,10 @@ export const surface = {
   glassStrongClass: "glass-strong",
   /** Hover-lift premium card. */
   cardPremiumClass: "card-premium",
+  /** Solid, slightly elevated panel for dense dashboards (TradeTanto direction). */
+  panelClass: "bg-[#0b1220] border border-white/[0.06] rounded-2xl",
+  /** Subtle inset surface for nested sections. */
+  insetClass: "bg-white/[0.02] border border-white/[0.05] rounded-xl",
 } as const;
 
 /** Radius scale (Tailwind `rounded-*`). `2xl`/`3xl` dominate the app. */
@@ -92,11 +96,11 @@ export const density = {
   /** Roomier variant, reserved for hero/feature surfaces. */
   cardPadLoose: "p-5 md:p-6",
   /** Page gutters — mobile stays a touch tighter so more fits on screen. */
-  pagePad: "p-5 md:p-8",
+  pagePad: "p-4 md:p-7",
   /** Vertical rhythm between page sections. */
-  sectionGap: "mb-5 md:mb-6",
+  sectionGap: "mb-4 md:mb-5",
   /** Grid gap between sibling cards. */
-  gridGap: "gap-4",
+  gridGap: "gap-3 md:gap-4",
 } as const;
 
 /**
@@ -115,18 +119,18 @@ export const density = {
  * Toute nouvelle surface utilise ces rôles, jamais une classe en pixels.
  */
 export const type = {
-  /** Page title. */
-  h1: "text-2xl md:text-[28px] font-bold",
+  /** Page title — larger, more imposing (matches the reference dashboards). */
+  h1: "text-[26px] md:text-[32px] font-extrabold tracking-[-0.03em]",
   /** Section title. */
-  h2: "text-sm md:text-base font-bold",
+  h2: "text-base md:text-lg font-bold tracking-[-0.02em]",
   /** Card title. */
-  h3: "text-sm font-semibold",
+  h3: "text-sm md:text-[15px] font-semibold",
   /** Body copy. */
-  body: "text-sm",
+  body: "text-[15px] leading-relaxed",
   /** Secondary/meta copy. */
   caption: "text-xs",
   /** Compact uppercase label (11px). */
-  label: "text-[11px] uppercase tracking-wider font-semibold",
+  label: "text-[11px] uppercase tracking-[0.08em] font-semibold",
   /** Chrome dense : badges, unités, méta de cellule. Le plancher — rien en dessous. */
   micro: "text-[10px]",
 } as const;

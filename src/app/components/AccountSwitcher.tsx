@@ -207,27 +207,28 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-11 pl-1.5 pr-3 rounded-full flex items-center gap-2 float-shell active:scale-95 transition"
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 pl-1.5 pr-3.5 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
         >
           <span
-            className="relative grid h-7 w-7 shrink-0 place-items-center rounded-2xl border shadow-sm"
+            className="relative grid h-8 w-8 shrink-0 place-items-center rounded-[14px] border shadow-sm"
             style={{
-              background: `${activeAccount.color}22`,
+              background: `${activeAccount.color}20`,
               color: activeAccount.color,
-              borderColor: `${activeAccount.color}44`,
+              borderColor: `${activeAccount.color}45`,
+              boxShadow: `0 0 14px -3px ${activeAccount.color}55`,
             }}
           >
-            <ActiveIcon className="w-3.5 h-3.5" />
+            <ActiveIcon className="w-4 h-4" />
           </span>
-          <span className="min-w-0 max-w-[88px] text-left">
-            <span className="block text-[11px] uppercase tracking-[0.14em] font-bold text-slate-500 leading-none mb-0.5">
+          <span className="min-w-0 max-w-[96px] text-left">
+            <span className="block text-[10px] uppercase tracking-[0.12em] font-bold text-slate-500 leading-none mb-0.5">
               {t("account.fabLabel")}
             </span>
-            <span className="block text-xs font-bold text-white truncate leading-tight">
+            <span className="block text-[13px] font-bold text-white truncate leading-tight">
               {activeAccount.name}
             </span>
           </span>
-          <ChevronDown className="w-3 h-3 text-slate-500 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
         </button>
 
         {open && (
@@ -369,8 +370,9 @@ export default function AccountSwitcher({
     );
   }
 
-  // Trading Account — carte premium (footer/sidebar Jarvis), style CTA : liseré
-  // gradient cyan + glow, comme les boutons d'action du produit.
+  // Trading Account — carte premium (footer/sidebar Jarvis).
+  // Même langue visuelle que le coach : surface élevée, liseré accent,
+  // icône teintée compte, solde en chiffres tabulaires.
   if (variant === "card") {
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
@@ -380,52 +382,53 @@ export default function AccountSwitcher({
           onClick={() => setOpen((v) => !v)}
           title={t("account.switch")}
           className={cn(
-            "relative w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition overflow-hidden",
-            "border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.03] to-transparent",
-            "hover:border-cyan-500/45 hover:from-cyan-500/[0.16] group/acc",
+            "relative w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 transition overflow-hidden text-left",
+            "bg-gradient-to-br from-[#0f1c2f] to-[#0a1525]",
+            "border border-white/[0.08] hover:border-cyan-500/30 hover:from-[#122038] hover:to-[#0c182a]",
+            "shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.04)]",
+            "group/acc",
           )}
         >
+          {/* Teinte compte */}
           <span
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-sm"
             style={{
-              background: `${activeAccount.color}22`,
+              background: `${activeAccount.color}18`,
               color: activeAccount.color,
-              borderColor: `${activeAccount.color}44`,
+              borderColor: `${activeAccount.color}40`,
+              boxShadow: `0 0 16px -4px ${activeAccount.color}40`,
             }}
           >
-            <ActiveIcon className="w-4 h-4" />
+            <ActiveIcon className="w-[18px] h-[18px]" />
           </span>
-          <span className="flex-1 min-w-0 text-left">
-            <span className="block text-[10px] uppercase tracking-[0.14em] text-slate-500 font-bold">
+
+          <span className="flex-1 min-w-0">
+            <span className="block text-[10px] uppercase tracking-[0.12em] text-slate-500 font-bold">
               {t("account.active")}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="block text-[13px] font-bold text-white truncate leading-tight">
+            <span className="flex items-center gap-1.5 mt-0.5">
+              <span className="block text-[14px] font-bold text-white truncate leading-tight">
                 {activeAccount.name}
               </span>
-              {/* Le crayon ouvre le formulaire COMPLET, comme dans la barre
-                  de comptes et le menu déroulant. Il déclenchait auparavant
-                  un renommage en ligne : le même geste, au même endroit,
-                  donnait accès à un seul champ ici et à quatre ailleurs. */}
-              <button
+              <Pencil
+                className="w-3 h-3 text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white transition shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditingModalAccount(activeAccount);
                 }}
-                aria-label={t("account.edit")}
-                className="w-5 h-5 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white hover:bg-white/[0.08] transition shrink-0"
-              >
-                <Pencil className="w-2.5 h-2.5" />
-              </button>
+              />
             </span>
           </span>
+
           <span className="text-right shrink-0">
-            <span className="block font-display text-[13px] font-extrabold text-white tabular-nums leading-tight">
+            <span className="block font-display text-[15px] font-extrabold text-white tabular-nums leading-tight">
               {fmtBalance}
             </span>
-            <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-500/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-300 border border-cyan-500/20">
               {t("account.switchShort")}
-              <ChevronDown className={cn("w-2 h-2 transition-transform", open && "rotate-180")} />
+              <ChevronDown
+                className={cn("w-2.5 h-2.5 transition-transform", open && "rotate-180")}
+              />
             </span>
           </span>
         </button>

@@ -13,7 +13,6 @@ import {
   Minus,
   Download,
   Target,
-  BookOpen,
 } from "lucide-react";
 import { Trade, isBreakEven, STRATEGIES } from "../types";
 import {
@@ -255,13 +254,7 @@ export default function Journal({
   return (
     <PageContainer>
       <PageHeader
-        className="mb-3 md:mb-4 items-center"
-        title={t("journal.title")}
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <BookOpen className="w-4 h-4 text-white" />
-          </span>
-        }
+        className="mb-2 md:mb-3 items-center"
         actions={
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
@@ -764,9 +757,9 @@ function SummaryTile({
   tone?: "up" | "down" | "neutral";
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+    <div className="stat-card px-3 py-2.5">
       <div className="flex items-center gap-1.5">
-        <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
           {label}
         </span>
         {hint && (
@@ -777,7 +770,7 @@ function SummaryTile({
       </div>
       <div
         className={cn(
-          "mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight",
+          "mt-1 font-display text-base md:text-lg font-extrabold tabular-nums tracking-tight",
           tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white",
         )}
       >

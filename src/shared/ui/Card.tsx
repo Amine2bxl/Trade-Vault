@@ -14,12 +14,14 @@ import { density } from "./tokens";
  * `hover` adds the `.card-premium` lift (transition-safe, no layout impact).
  */
 
-export type CardVariant = "glass" | "glass-strong" | "plain";
+export type CardVariant = "glass" | "glass-strong" | "plain" | "solid" | "inset";
 
 const VARIANT: Record<CardVariant, string> = {
   glass: "glass rounded-2xl",
   "glass-strong": "glass-strong rounded-2xl",
   plain: "rounded-2xl border border-white/[0.06] bg-white/[0.015]",
+  solid: "stat-card",
+  inset: "bg-white/[0.02] border border-white/[0.05] rounded-xl",
 };
 
 /** Inner padding steps, straight from the density scale. */

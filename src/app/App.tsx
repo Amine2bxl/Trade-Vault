@@ -627,7 +627,7 @@ function AppContent() {
           style={{ animationDelay: "-7s" }}
         />
       </div>
-      <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
+      <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} />
       <main className="app-main relative flex-1 overflow-y-auto">
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe

@@ -1,13 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import {
-  Info,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  CalendarDays,
-  Clock,
-  Sparkles,
-} from "lucide-react";
+import { Info, TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
 import {
@@ -325,22 +317,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
   if (trades.length === 0)
     return (
       <div className="p-4 md:p-5">
-        <PageHeader className="mb-2 md:mb-2" title={t("analytics.title")} />
         <EmptyState title={t("analytics.noTrades")} />
       </div>
     );
 
   return (
     <PageContainer>
-      <PageHeader
-        className="stagger-0"
-        title={t("analytics.title")}
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </span>
-        }
-      />
+      <PageHeader className="stagger-0" />
 
       {/* Period filter */}
       <div className="flex items-center gap-1.5 mb-4">
