@@ -1,13 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import {
-  Info,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  CalendarDays,
-  Clock,
-  Sparkles,
-} from "lucide-react";
+import { Info, TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
 import {
@@ -325,23 +317,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
   if (trades.length === 0)
     return (
       <div className="p-4 md:p-5">
-        <PageHeader className="mb-2 md:mb-2" title={t("analytics.title")} />
         <EmptyState title={t("analytics.noTrades")} />
       </div>
     );
 
   return (
     <PageContainer>
-      <PageHeader
-        className="stagger-0"
-        title={t("analytics.title")}
-        subtitle={t("analytics.subtitle")}
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </span>
-        }
-      />
+      <PageHeader className="stagger-0" />
 
       {/* Period filter */}
       <div className="flex items-center gap-1.5 mb-4">
@@ -777,7 +759,6 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Equity + Pie */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
             <h3 className="text-sm font-semibold text-white mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-draw">
               <EquityChart data={stats.equityCurve} />

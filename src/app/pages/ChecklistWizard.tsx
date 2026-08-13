@@ -464,7 +464,7 @@ export default function ChecklistWizard({
                         className={cn(
                           "flex items-center gap-3.5 rounded-2xl p-3.5 border text-left transition",
                           on
-                            ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
+                            ? "bg-cyan-500/15 border-cyan-400/50"
                             : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
                         )}
                       >

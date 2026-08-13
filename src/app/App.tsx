@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
-import MobileHeader from "./components/MobileHeader";
+import MobileActions from "./components/MobileActions";
 import SectionTabs from "./components/SectionTabs";
 import { pagesOfSection, sectionForPage } from "./navigation";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
@@ -26,7 +26,6 @@ import {
   Settings,
   Reports,
   Goals,
-  Simulator,
   TradingPlan,
   Appearance,
   Subscription,
@@ -628,18 +627,20 @@ function AppContent() {
           style={{ animationDelay: "-7s" }}
         />
       </div>
-      <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} winRate={stats.winRate} />
+      <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} />
       <main className="app-main relative flex-1 overflow-y-auto">
-        {/* Mobile : le produit n'avait aucune barre supérieure. Cloche, Jarvis
-            et avatar y vivent depuis la disparition du menu « Plus ». */}
-        <MobileHeader page={page} setPage={setPage} />
-        {/* Onglets de la section courante — rendus seulement si la section en
-            compte plus d'un. `inbox` n'appartient à aucune section. */}
-        {currentSection && pagesOfSection(currentSection).length > 1 && (
-          <div className="px-4 md:px-6 pt-3">
-            <SectionTabs section={currentSection} page={page} setPage={setPage} />
+        {/* Onglets de la section courante à gauche, actions mobiles à droite —
+            une seule ligne, dans le flux de la page. L'ancienne barre fixe
+            répétait le titre que chaque page affiche déjà juste en dessous :
+            un bandeau collé par-dessus le produit. Voir `MobileActions`. */}
+        <div className="flex items-center gap-3 px-4 pt-3 md:px-6">
+          <div className="min-w-0 flex-1">
+            {currentSection && pagesOfSection(currentSection).length > 1 && (
+              <SectionTabs section={currentSection} page={page} setPage={setPage} />
+            )}
           </div>
-        )}
+          <MobileActions page={page} setPage={setPage} />
+        </div>
         <PageErrorBoundary resetKey={page}>
           {/* No skeleton: pages are preloaded, so navigation is instant.
               Previous page stays visible during the (near-zero) chunk load. */}
@@ -689,7 +690,6 @@ function AppContent() {
             )}
             {page === "reports" && <Reports trades={trades} />}
             {page === "goals" && <Goals trades={trades} />}
-            {page === "simulator" && <Simulator trades={trades} />}
             {page === "tradingplan" && <TradingPlan setPage={setPage} />}
             {page === "appearance" && <Appearance />}
             {page === "subscription" && <Subscription />}

@@ -15,7 +15,8 @@ import { density, type } from "./tokens";
 
 export type MetricVisual =
   | { kind: "radial"; pct: number; color: string; center?: string }
-  | { kind: "spark"; data: number[]; color: string };
+  | { kind: "spark"; data: number[]; color: string }
+  | { kind: "bar"; pct: number; color?: string };
 
 export interface MetricProps {
   title: string;
@@ -64,6 +65,18 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
           <span className="text-[11px] font-bold tabular-nums text-slate-300">{center}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Horizontal progress bar (0..1). */
+function ProgressBar({ pct, color }: { pct: number; color?: string }) {
+  const p = Math.max(0, Math.min(1, pct));
+  return (
+    <div className="w-16 shrink-0 self-center">
+      <div className="metric-bar">
+        <div className="metric-bar-fill" style={{ width: `${p * 100}%`, background: color }} />
+      </div>
     </div>
   );
 }
@@ -117,11 +130,11 @@ export function Metric({
 }: MetricProps) {
   return (
     <div
-      className={cn("glass rounded-2xl card-premium animate-fade-in-up", density.cardPad)}
+      className={cn("stat-card card-premium animate-fade-in-up", density.cardPad)}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between gap-2.5">
-        <div className="min-w-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-1.5">
             {icon && (
               <span className={cn("shrink-0", trend ? trendClass(trend) : "text-cyan-400/70")}>
@@ -132,18 +145,21 @@ export function Metric({
           </div>
           <div
             className={cn(
-              "font-display text-xl md:text-2xl font-extrabold tracking-tight tabular-nums leading-none",
+              "font-display text-xl md:text-[26px] font-extrabold tracking-tight tabular-nums leading-none",
               valueClass ?? trendClass(trend),
             )}
           >
             {value}
           </div>
-          {subtitle && <p className="text-xs text-slate-500 mt-1 truncate">{subtitle}</p>}
+          {subtitle && (
+            <p className={cn(type.caption, "text-slate-500 mt-1 truncate")}>{subtitle}</p>
+          )}
         </div>
         {visual?.kind === "radial" && (
           <Radial pct={visual.pct} color={visual.color} center={visual.center} />
         )}
         {visual?.kind === "spark" && <Sparkline data={visual.data} color={visual.color} />}
+        {visual?.kind === "bar" && <ProgressBar pct={visual.pct} color={visual.color} />}
       </div>
       {footer && (
         <div className="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between">

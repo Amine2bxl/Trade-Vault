@@ -38,8 +38,10 @@ const en = {
   "nav.groupPreparation": "Preparation",
   "nav.groupJournal": "Journal",
   "nav.groupAnalysis": "Analysis",
+  "nav.groupStrategy": "Strategy",
   "nav.groupJarvis": "Jarvis",
   "nav.groupAccount": "Account",
+  "nav.groupNavigate": "Navigate",
   "nav.journal": "Journal",
   "nav.missed": "Missed Setups",
   "nav.calendar": "Calendar",
@@ -918,6 +920,7 @@ const en = {
   "nav.calculator": "Lot Size Calculator",
   "nav.checklist": "Pre-Market Checklist",
   "nav.settings": "Settings",
+  "nav.myAccount": "My account",
 
   // Economic news
   "news.title": "Economic News",
@@ -1493,6 +1496,10 @@ const en = {
   "proposal.dismissed": "Set aside — Jarvis won't bring it back for 30 days",
   "proposal.failed": "Nothing was changed",
   "proposal.expires": "Expires on {date}",
+  "settings.paneAccount": "Accounts",
+  "settings.paneAccountSub": "Switch between your trading accounts.",
+  "nav.collapseSidebar": "Collapse the sidebar",
+  "nav.expandSidebar": "Expand the sidebar",
   "journal.demoInserted": "Demo trades added — explore your Dashboard and Analytics!",
 };
 

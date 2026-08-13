@@ -53,7 +53,6 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
       <PageHeader
         className="mb-4 md:mb-5 stagger-0"
         title={t("seasonality.title")}
-        subtitle={t("seasonality.subtitle")}
         icon={
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
             <CalendarRange className="w-4 h-4 text-white" />

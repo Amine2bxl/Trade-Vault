@@ -226,10 +226,6 @@ export default function Goals({ trades }: { trades: Trade[] }) {
     <div className="p-4 md:p-5 max-w-3xl mx-auto">
       <PageHeader
         title={tr("Objectifs", "Goals")}
-        subtitle={tr(
-          "Définis tes objectifs et TradeVault crée ton plan.",
-          "Set your goals and get your action plan.",
-        )}
         icon={
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
             <Target className="w-4 h-4 text-white" />

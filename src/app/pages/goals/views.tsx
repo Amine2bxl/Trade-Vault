@@ -218,7 +218,7 @@ export function GoalPicker({
               className={cn(
                 "rounded-2xl border transition overflow-hidden",
                 d.selected
-                  ? "bg-cyan-500/[0.08] border-cyan-400/40 shadow-lg shadow-cyan-500/10"
+                  ? "bg-cyan-500/[0.08] border-cyan-400/40"
                   : "bg-white/[0.03] border-white/[0.07] hover:border-white/[0.16]",
               )}
             >
@@ -335,7 +335,7 @@ export function GoalPicker({
         className={cn(
           "w-full h-12 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2",
           goals && !busy
-            ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20 hover:brightness-110"
+            ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:brightness-110"
             : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
         )}
       >

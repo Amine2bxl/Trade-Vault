@@ -75,7 +75,7 @@ function IconBadge({ icon: Icon }: { icon: typeof Target }) {
   return (
     <div className="relative mb-5">
       <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
-      <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+      <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
         <Icon className="w-7 h-7 text-white" />
       </div>
     </div>
@@ -126,7 +126,7 @@ function OptionCard({
       className={cn(
         "onb-card relative rounded-2xl p-4 border text-left w-full transition",
         selected
-          ? "bg-cyan-500/15 border-cyan-400/50 shadow-lg shadow-cyan-500/10"
+          ? "bg-cyan-500/15 border-cyan-400/50"
           : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
       )}
     >
@@ -309,7 +309,7 @@ export default function Onboarding({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
+      className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
     >
       {children}
     </button>
@@ -643,7 +643,7 @@ export default function Onboarding({
 
               <button
                 onClick={next}
-                className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 transition"
+                className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition"
               >
                 {c.cont}
               </button>
@@ -662,7 +662,7 @@ export default function Onboarding({
               <div className="flex justify-center">
                 <div className="relative mb-4">
                   <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-md" />
-                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-xl shadow-cyan-500/30">
+                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
                     <Bell className="w-6 h-6 text-white" />
                   </div>
                 </div>
@@ -678,7 +678,7 @@ export default function Onboarding({
                 <button
                   onClick={enableNotify}
                   disabled={notifBusy}
-                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-3 border bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition disabled:opacity-60 text-xs font-bold text-white"
+                  className="onb-card w-full flex items-center justify-center gap-2 rounded-2xl p-3 border bg-cyan-500/[0.1] border-cyan-400/40 hover:bg-cyan-500/[0.15] transition disabled:opacity-60 text-xs font-bold text-white"
                 >
                   {notifBusy ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -734,9 +734,9 @@ export default function Onboarding({
                 <button
                   onClick={() => finish("import")}
                   disabled={!!saving}
-                  className="onb-card relative flex items-start gap-3.5 rounded-2xl p-4 border text-left bg-cyan-500/[0.1] border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:bg-cyan-500/[0.15] transition disabled:opacity-60"
+                  className="onb-card relative flex items-start gap-3.5 rounded-2xl p-4 border text-left bg-cyan-500/[0.1] border-cyan-400/40 hover:bg-cyan-500/[0.15] transition disabled:opacity-60"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/25">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shrink-0">
                     {saving === "import" ? (
                       <Loader2 className="w-5 h-5 text-white animate-spin" />
                     ) : (

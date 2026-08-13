@@ -91,10 +91,6 @@ export default function Subscription() {
           </span>
         }
         title={tr("Abonnement", "Subscription")}
-        subtitle={tr(
-          "Ta formule, ton statut et tes échéances — tout au même endroit.",
-          "Your plan, your status and your dates — all in one place.",
-        )}
       />
 
       {/* ── Status hero, landing-page language ── */}

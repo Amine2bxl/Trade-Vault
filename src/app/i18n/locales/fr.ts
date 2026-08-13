@@ -9,8 +9,10 @@ const fr: Dict = {
   "nav.groupPreparation": "Préparation",
   "nav.groupJournal": "Journal",
   "nav.groupAnalysis": "Analyse",
+  "nav.groupStrategy": "Stratégie",
   "nav.groupJarvis": "Jarvis",
   "nav.groupAccount": "Compte",
+  "nav.groupNavigate": "Naviguer",
   "nav.journal": "Journal",
   "nav.missed": "Setups manqués",
   "nav.calendar": "Calendrier",
@@ -849,6 +851,7 @@ const fr: Dict = {
   "nav.seasonality": "Saisonnalité",
   "nav.calculator": "Calculateur de lots",
   "nav.settings": "Réglages",
+  "nav.myAccount": "Mon compte",
   "nav.checklist": "Checklist pré-market",
   "nav.inbox": "Boîte de réception",
 
@@ -1431,6 +1434,10 @@ const fr: Dict = {
   "proposal.dismissed": "Écarté — Jarvis n'y revient pas avant 30 jours",
   "proposal.failed": "Rien n'a été modifié",
   "proposal.expires": "Expire le {date}",
+  "settings.paneAccount": "Comptes",
+  "settings.paneAccountSub": "Bascule entre tes comptes de trading.",
+  "nav.collapseSidebar": "Replier la barre latérale",
+  "nav.expandSidebar": "Déplier la barre latérale",
   "journal.demoInserted": "Trades démo ajoutés — explore ton Dashboard et tes Analytics !",
 };
 

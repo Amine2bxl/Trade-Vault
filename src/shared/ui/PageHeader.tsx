@@ -16,7 +16,8 @@ export function PageHeader({
   actions,
   className,
 }: {
-  title: ReactNode;
+  /** Page title. Omit when the active tab / bubble already names the screen. */
+  title?: ReactNode;
   subtitle?: ReactNode;
   /** Optional small accent line above the title (greeting, breadcrumb). */
   eyebrow?: ReactNode;
@@ -36,18 +37,13 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {eyebrow}
-        <div className="flex items-center gap-2.5">
-          {icon}
-          <h1
-            className={cn(
-              type.h1,
-              "bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent",
-            )}
-          >
-            {title}
-          </h1>
-        </div>
-        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+        {title && (
+          <div className="flex items-center gap-2.5">
+            {icon}
+            <h1 className={cn(type.h1, "text-white")}>{title}</h1>
+          </div>
+        )}
+        {subtitle && <p className={cn(type.caption, "text-slate-500 mt-1")}>{subtitle}</p>}
       </div>
       {actions}
     </div>

@@ -202,7 +202,6 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
         )}
       >
-        <span className="pointer-events-none hidden md:block absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
         <span className="relative shrink-0">
           <span
             className={cn(
@@ -214,7 +213,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
             className={cn(
               "relative grid place-items-center bg-gradient-to-br from-cyan-500 to-teal-600",
               "h-7 w-7 rounded-2xl",
-              "md:h-10 md:w-10 md:rounded-xl md:shadow-lg md:shadow-cyan-500/25",
+              "md:h-10 md:w-10 md:rounded-xl md:shadow-lg",
             )}
           >
             {open ? (

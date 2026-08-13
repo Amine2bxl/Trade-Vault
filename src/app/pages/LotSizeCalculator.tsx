@@ -175,7 +175,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                 className={cn(
                   "h-9 px-5 rounded-xl text-xs font-bold transition",
                   mode === m
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20"
+                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
                     : "text-slate-500 hover:text-slate-300",
                 )}
               >
@@ -427,8 +427,6 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
             hasResult ? "border-cyan-500/25" : "border-transparent",
           )}
         >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
-
           <div className="flex items-center gap-2 mb-3">
             <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
               <Gauge className="w-3 h-3 text-white" />

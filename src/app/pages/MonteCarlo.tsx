@@ -402,7 +402,6 @@ export default function MonteCarloPage({ trades }: Props) {
       <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
         <PageHeader
           title="Monte Carlo Lab"
-          subtitle="Simule des milliers de scénarios à partir de tes performances réelles"
         />
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BarChart3 className="w-12 h-12 text-cyan-400/30 mb-5" />
@@ -421,12 +420,11 @@ export default function MonteCarloPage({ trades }: Props) {
     <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
       <PageHeader
         title="Monte Carlo Lab"
-        subtitle={`${trades.length} trades · ${computedStats.wins}W / ${computedStats.losses}L / ${computedStats.breakEven}BE`}
         actions={
           <button
             onClick={handleRun}
             disabled={running || trades.length < 5}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold shadow-lg shadow-cyan-500/20 hover:brightness-110 transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold hover:brightness-110 transition disabled:opacity-50"
           >
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             {running ? "Running..." : `Run ${simCount.toLocaleString()} simulations`}

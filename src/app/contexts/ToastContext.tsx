@@ -22,7 +22,7 @@ const ICONS: Record<ToastType, ReactNode> = {
 const ACCENT: Record<ToastType, string> = {
   success: "border-emerald-500/20 shadow-emerald-500/10",
   error: "border-red-500/20 shadow-red-500/10",
-  info: "border-cyan-500/20 shadow-cyan-500/10",
+  info: "border-cyan-500/20",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {

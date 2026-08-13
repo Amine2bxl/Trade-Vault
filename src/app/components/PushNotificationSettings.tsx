@@ -115,14 +115,15 @@ export function PushNotificationSettings() {
   };
 
   return (
-    <div className="relative overflow-hidden glass-strong rounded-3xl p-4 md:p-5 space-y-4">
-      {/* Hairline + glow, comme les autres surfaces premium */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
-
+    // Surface NUE : ce bloc vit maintenant dans le panneau des Réglages, qui
+    // porte déjà sa vitre. Une carte dans une carte creuse un double cadre à
+    // 4 px d'écart, et c'est exactement ce qui fait « collé » plutôt que
+    // « intégré ».
+    <div className="relative space-y-4">
       <div className="flex items-center gap-2.5">
         <span className="relative shrink-0">
           <span className="absolute -inset-1 rounded-lg bg-cyan-500/30 blur-md" />
-          <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg shadow-cyan-500/25">
+          <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
             <Bell className="w-4 h-4 text-white" />
           </span>
         </span>

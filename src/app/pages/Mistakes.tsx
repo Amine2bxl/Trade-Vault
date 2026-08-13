@@ -142,7 +142,6 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
     if (embedded) return null;
     return (
       <div className="p-4 md:p-5">
-        <PageHeader className="mb-2 md:mb-2" title={t("mistakes.title")} />
         <EmptyState title={t("mistakes.noTrades")} />
       </div>
     );
@@ -165,16 +164,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
   return (
     <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
-      <PageHeader
-        className="stagger-0"
-        title={t("mistakes.title")}
-        subtitle={t("mistakes.subtitle")}
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <AlertTriangle className="w-4 h-4 text-white" />
-          </span>
-        }
-      />
+      <PageHeader className="stagger-0" />
 
       <div className="space-y-4 md:space-y-6">
         {/* ── Discipline score + summary KPIs ── */}

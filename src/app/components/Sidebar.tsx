@@ -1,200 +1,297 @@
-import { useEffect, useRef, useState } from "react";
-import { Bell, LogOut } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import {
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Settings as SettingsIcon,
+  User,
+} from "lucide-react";
 import { Page, SECTIONS } from "../types";
 import { SECTION_META, defaultPageOfSection, sectionForPage } from "../navigation";
 import { preloadPage } from "../pageModules";
-import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useAuth } from "../contexts/AuthContext";
+import { useAccounts } from "../contexts/AccountContext";
+import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { useT } from "../i18n/LanguageContext";
-import AccountSwitcher from "./AccountSwitcher";
 import { useUnreadCount } from "../hooks/useUnreadCount";
+import { Modal } from "@/shared/ui";
+import AccountSwitcher from "./AccountSwitcher";
 
 interface SidebarProps {
   page: Page;
   setPage: (p: Page) => void;
   totalPnl: number;
-  winRate: number;
 }
 
-export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarProps) {
+export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t } = useT();
+  const { activeAccount } = useAccounts();
   const unread = useUnreadCount(user?.id);
-  // Only transition the win-rate bar once it changes AFTER mount — on a fresh
-  // load (F5) the bar must render at its final width instantly, otherwise the
-  // 0→X transition is what made the navbar "shake" on every refresh.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const groupLabel = (label: string) =>
+    !collapsed && (
+      <p className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
+        {label}
+      </p>
+    );
+
+  const row = ({
+    key,
+    label,
+    icon,
+    active,
+    target,
+    onActivate,
+    badge,
+  }: {
+    key: string;
+    label: string;
+    icon: ReactNode;
+    active: boolean;
+    target?: Page;
+    onActivate: () => void;
+    badge?: ReactNode;
+  }) => (
+    <button
+      key={key}
+      onClick={onActivate}
+      onPointerEnter={target ? () => preloadPage(target) : undefined}
+      onFocus={target ? () => preloadPage(target) : undefined}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative flex h-10 w-full items-center rounded-xl text-[13.5px] font-medium",
+        "transition-colors duration-200",
+        collapsed ? "justify-center px-0" : "gap-3 px-3",
+        active
+          ? "bg-cyan-500/10 text-white"
+          : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100",
+      )}
+    >
+      {active && (
+        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-cyan-400" />
+      )}
+      <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+        {icon}
+        {badge}
+      </span>
+      {!collapsed && <span className="truncate">{label}</span>}
+      {collapsed && <span className="rail-tip">{label}</span>}
+    </button>
+  );
+
+  const settingsSection = SECTION_META.settings;
+  const settingsTarget = defaultPageOfSection("settings");
 
   return (
-    // h-dvh + sticky top-0: the rail is always exactly viewport-height and never
-    // moves with page scroll — content scrolls in <main>, nav scrolls internally
-    // if it ever overflows. Identical position and alignment on every page.
-    // z-30 keeps the rail above any page's full-viewport background layers
-    // (e.g. the Checklist's fixed particle/grid canvas), so the navbar keeps
-    // the exact same solid style on every page and never looks tinted or
-    // transparent — while staying below modals, the palette and the AI FAB.
-    //
-    // SOLID background (no `backdrop-blur`): the ambient orbs behind the shell
-    // animate continuously (orb-float, blur(80px)). A translucent rail with
-    // backdrop-filter re-blurs that moving content every frame — expensive on
-    // a cold start (the F5 stutter). Solid #08111e keeps the rail pixel-stable
-    // on refresh and on every page, with zero per-frame repaint.
-    <aside className="hidden md:flex w-[260px] h-dvh sticky top-0 z-30 bg-[#08111e] border-r border-white/[0.05] flex-col shrink-0">
-      {/* Brand */}
-      <div className="px-5 py-5 border-b border-white/[0.05] flex items-center gap-3 shrink-0">
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-xl bg-cyan-500/40 blur-xl opacity-70" />
-          <img
-            src={logoSrc}
-            alt="TradeVault"
-            width={36}
-            height={36}
-            className="relative w-9 h-9 rounded-xl drop-shadow-[0_0_12px_rgba(6,182,212,0.55)]"
-          />
+    <aside
+      className={cn(
+        "hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
+        collapsed ? "w-[76px]" : "w-[248px]",
+      )}
+    >
+      {/* ── MARQUE ── */}
+      <div
+        className={cn(
+          "relative flex h-[72px] shrink-0 items-center px-3",
+          collapsed ? "justify-center" : "justify-between",
+        )}
+      >
+        <div className={cn("sidebar-brand", collapsed && "justify-center")}>
+          <div className="sidebar-brand-logo">
+            <img src={logoSrc} alt="TradeVault" width={40} height={40} />
+          </div>
+          {!collapsed && (
+            <div className="sidebar-brand-text">
+              <span className="sidebar-brand-name">TradeVault</span>
+              <span className="sidebar-brand-tagline">Trading Coach</span>
+            </div>
+          )}
         </div>
-        <div className="min-w-0">
-          <h1 className="text-base font-bold text-white tracking-tight leading-tight">
-            TradeVault
-          </h1>
-          <p className="text-[9px] text-slate-600 uppercase tracking-[0.2em] mt-0.5">
-            {t("nav.journal")}
-          </p>
-        </div>
-      </div>
-
-      {/* Active account switcher — available on every page. Carte CTA premium
-          (même design que le cockpit Jarvis) */}
-      <div className="px-3 pt-3 shrink-0">
-        <AccountSwitcher variant="card" />
-      </div>
-
-      {/* Navigation — SIX sections. Les pages d'une section vivent dans sa
-          barre d'onglets, sous le titre : vingt-et-une entrées à plat ne se
-          lisent pas d'un coup d'œil, six oui. Chaque page garde son URL. */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-px min-h-0">
-        {SECTIONS.map((section) => {
-          const { labelKey, icon: Icon } = SECTION_META[section.id];
-          const active = sectionForPage(page) === section.id;
-          const target = defaultPageOfSection(section.id);
-          return (
-            <button
-              key={section.id}
-              onClick={() => setPage(target)}
-              // Le chunk de la page part au survol ou au focus clavier, soit
-              // 100 à 300 ms avant le clic : au moment du clic il est déjà là
-              // et le squelette n'a plus lieu d'apparaître.
-              onPointerEnter={() => preloadPage(target)}
-              onFocus={() => preloadPage(target)}
-              className={cn(
-                "relative w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition duration-200",
-                active
-                  ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400 shadow-sm shadow-cyan-500/10"
-                  : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
-              )}
-            >
-              {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-gradient-to-b from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
-              )}
-              <Icon
-                className={cn("w-4 h-4 shrink-0", active ? "text-cyan-400" : "text-slate-600")}
-              />
-              <span className="truncate">{t(labelKey)}</span>
-              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />}
-            </button>
-          );
-        })}
-
-        {/* L'inbox n'est pas une destination de parcours : c'est une surface de
-            notification. Elle sort de la liste des sections et devient une
-            cloche, ici comme dans l'en-tête mobile. */}
         <button
-          onClick={() => setPage("inbox")}
-          onPointerEnter={() => preloadPage("inbox")}
-          onFocus={() => preloadPage("inbox")}
-          aria-label={t("nav.inbox")}
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+          title={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
           className={cn(
-            "relative mt-2 w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition duration-200",
-            page === "inbox"
-              ? "bg-gradient-to-r from-cyan-500/15 to-teal-500/5 text-cyan-400"
-              : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
+            "grid h-6 w-6 place-items-center rounded-full",
+            "border border-white/10 bg-[#0d1a2b] text-slate-400",
+            "transition-colors duration-200 hover:border-cyan-400/40 hover:text-cyan-300",
+            collapsed ? "absolute -right-3 top-6" : "relative",
           )}
         >
-          <div className="relative shrink-0">
-            <Bell
-              className={cn("w-4 h-4", page === "inbox" ? "text-cyan-400" : "text-slate-600")}
-            />
-            {unread > 0 && (
-              <span
-                className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]"
-                role="status"
-                aria-label={`${unread} ${unread > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
-              >
-                {unread > 99 ? "99+" : unread}
-              </span>
-            )}
-          </div>
-          <span className="truncate">{t("nav.inbox")}</span>
+          {collapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5" />
+          )}
         </button>
-      </nav>
-
-      {/* Performance */}
-      <div className="px-4 pt-3 pb-3 space-y-2 border-t border-white/[0.04] shrink-0">
-        <div className="glass rounded-2xl p-3.5 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-500">{t("stats.totalPnl")}</span>
-            <span
-              className={cn(
-                "font-display text-sm font-extrabold tabular-nums",
-                totalPnl >= 0 ? "text-emerald-400" : "text-red-400",
-              )}
-            >
-              {formatPnl(totalPnl)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-500">{t("stats.winRate")}</span>
-            <span className="font-display text-sm font-extrabold text-white tabular-nums">
-              {formatPct(winRate)}
-            </span>
-          </div>
-          <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400",
-                mounted && "transition duration-250",
-              )}
-              style={{ width: `${winRate * 100}%` }}
-            />
-          </div>
-        </div>
       </div>
 
-      {/* User Section */}
-      {user && (
-        <div className="px-4 pb-4 shrink-0">
-          <div className="glass rounded-2xl p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20 flex items-center justify-center text-sm font-bold text-cyan-400 border border-cyan-500/10">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-white truncate">{user.name}</div>
-              <div className="text-[10px] text-slate-600 truncate">{user.email}</div>
-            </div>
+      {/* ── NAVIGATION ── */}
+      <nav
+        className={cn(
+          "min-h-0 flex-1 px-3 py-2",
+          collapsed ? "overflow-visible" : "overflow-y-auto",
+        )}
+      >
+        {groupLabel(t("nav.groupNavigate"))}
+        <div className="space-y-1">
+          {SECTIONS.filter((section) => section.id !== "settings").map((section) => {
+            const { labelKey, icon: Icon } = SECTION_META[section.id];
+            const active = sectionForPage(page) === section.id;
+            const target = defaultPageOfSection(section.id);
+            return row({
+              key: section.id,
+              label: t(labelKey),
+              active,
+              target,
+              onActivate: () => setPage(target),
+              icon: (
+                <Icon
+                  className={cn("h-[18px] w-[18px]", active ? "text-cyan-400" : "text-slate-500")}
+                  strokeWidth={1.9}
+                />
+              ),
+            });
+          })}
+        </div>
+
+        {groupLabel(t("nav.groupAccount"))}
+        <div className="space-y-1">
+          {row({
+            key: "inbox",
+            label: t("nav.inbox"),
+            active: page === "inbox",
+            target: "inbox",
+            onActivate: () => setPage("inbox"),
+            icon: (
+              <Bell
+                className={cn(
+                  "h-[18px] w-[18px]",
+                  page === "inbox" ? "text-cyan-400" : "text-slate-500",
+                )}
+                strokeWidth={1.9}
+              />
+            ),
+            badge:
+              unread > 0 ? (
+                <span
+                  className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-cyan-500 px-[3px] text-[8px] font-bold leading-none text-white"
+                  role="status"
+                >
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              ) : undefined,
+          })}
+          {row({
+            key: "settings",
+            label: t(settingsSection.labelKey),
+            active: sectionForPage(page) === "settings",
+            target: settingsTarget,
+            onActivate: () => setPage(settingsTarget),
+            icon: (
+              <settingsSection.icon
+                className={cn(
+                  "h-[18px] w-[18px]",
+                  sectionForPage(page) === "settings" ? "text-cyan-400" : "text-slate-500",
+                )}
+                strokeWidth={1.9}
+              />
+            ),
+          })}
+        </div>
+      </nav>
+
+      {/* ── COMPTE ACTIF (même carte premium que Jarvis / sous-comptes) ── */}
+      {user && !collapsed && (
+        <div className="shrink-0 border-t border-white/[0.05] px-3 py-3">
+          <AccountSwitcher
+            variant="card"
+            balance={(activeAccount?.startingBalance ?? 0) + totalPnl}
+          />
+          <div className="mt-2 flex items-center gap-2">
             <button
-              onClick={logout}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition"
+              onClick={() => setPage(settingsTarget)}
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-white hover:bg-white/[0.06] transition"
+            >
+              <SettingsIcon className="w-3.5 h-3.5" />
+              {t("nav.settings")}
+            </button>
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label={t("common.signOut")}
               title={t("common.signOut")}
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-red-400 hover:bg-red-500/10 transition"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
+      )}
+      {user && collapsed && (
+        <div className="shrink-0 border-t border-white/[0.05] px-3 py-3 flex justify-center">
+          <button
+            onClick={() => setMenuOpen(true)}
+            aria-label={t("nav.myAccount")}
+            title={t("nav.myAccount")}
+            className="grid h-9 w-9 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] transition"
+          >
+            <User className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Menu compact (sidebar repliée) : compte + déconnexion ── */}
+      {user && (
+        <Modal
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          wrapperClassName="z-[80] md:items-center md:justify-center"
+          className="md:max-w-xs"
+        >
+          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl border border-cyan-500/15 bg-cyan-500/10 text-[15px] font-bold text-cyan-300">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-bold text-white">{user.name}</div>
+              <div className="truncate text-[11px] text-slate-500">{user.email}</div>
+            </div>
+          </div>
+          <div className="p-3 space-y-1">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                setPage(settingsTarget);
+              }}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-slate-300 hover:bg-white/[0.06] transition-colors"
+            >
+              <span className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0">
+                <SettingsIcon className="w-3.5 h-3.5 text-slate-400" />
+              </span>
+              <span className="text-[13px] font-medium">{t("nav.settings")}</span>
+            </button>
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                logout();
+              }}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <span className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                <LogOut className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-[13px] font-medium">{t("common.signOut")}</span>
+            </button>
+          </div>
+        </Modal>
       )}
     </aside>
   );

@@ -112,10 +112,6 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           </span>
         }
         title={tr("Plan de trading", "Trading Plan")}
-        subtitle={tr(
-          "Ta constitution de trader — écrite une fois, relue chaque jour.",
-          "Your trader's constitution — written once, re-read every day.",
-        )}
         actions={<CompletionRing value={completion} label={tr("complet", "complete")} />}
       />
 

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Bell,
+  Wallet,
   Globe,
   DollarSign,
   Check,
@@ -14,12 +16,16 @@ import {
   UserX,
   AlertTriangle,
   FileText,
+  Palette,
+  CreditCard,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
 import { loadLanguage, saveLanguage, loadStartingBalance, saveStartingBalance } from "../store";
 import { exportTradesCSV } from "../utils/exportCsv";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
+import type { TKey } from "../i18n/translations";
 import { PushNotificationSettings } from "../components/PushNotificationSettings";
 import { cn } from "../utils/cn";
 import { Button, Card, FIELD_BASE, Modal, PageContainer, PageHeader } from "@/shared/ui";
@@ -27,6 +33,50 @@ import AccountSwitcher from "../components/AccountSwitcher";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
+import ThemeSettings from "../components/ThemeSettings";
+import SubscriptionSection from "../components/SubscriptionSection";
+
+/**
+ * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
+ *
+ * L'ancienne page empilait quatre cartes dans une colonne. Ça marche à quatre ;
+ * ça se dégrade à chaque ajout, et la zone de danger finissait par se trouver à
+ * un coup de molette d'un menu déroulant de langue. Le rail impose une
+ * séparation nette : on ne tombe pas sur « Supprimer mon compte » en cherchant
+ * autre chose.
+ *
+ * ── LA RECHERCHE PILOTE LE RAIL ────────────────────────────────────────────
+ * Taper filtre les rubriques ET bascule sur la première qui correspond. Une
+ * recherche qui laisse le panneau de droite vide pendant que le résultat existe
+ * à gauche est une recherche qui ment.
+ *
+ * ── MOBILE ─────────────────────────────────────────────────────────────────
+ * Sous `lg`, le rail devient une rangée de puces défilante au-dessus du
+ * contenu : la même structure, sans imposer une colonne de 240 px à un écran
+ * qui en fait 390.
+ */
+type PaneId = "general" | "account" | "appearance" | "subscription" | "notifications" | "data" | "danger";
+
+/** Rubrique du rail : son icône, sa clé de libellé, sa clé de recherche. */
+const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: LucideIcon }[] = [
+  { id: "general", section: "prefs", labelKey: "settings.preferences", icon: SlidersHorizontal },
+  { id: "account", section: "account", labelKey: "settings.paneAccount", icon: Wallet },
+  { id: "appearance", section: "appearance", labelKey: "nav.appearance", icon: Palette },
+  { id: "subscription", section: "subscription", labelKey: "nav.subscription", icon: CreditCard },
+  { id: "notifications", section: "notifs", labelKey: "push.title", icon: Bell },
+  { id: "data", section: "data", labelKey: "settings.data", icon: Database },
+  { id: "danger", section: "danger", labelKey: "settings.dangerZone", icon: AlertTriangle },
+];
+
+interface SearchSections {
+  prefs: boolean;
+  account: boolean;
+  appearance: boolean;
+  subscription: boolean;
+  notifs: boolean;
+  data: boolean;
+  danger: boolean;
+}
 
 interface SettingsProps {
   trades: Trade[];
@@ -51,11 +101,14 @@ export default function Settings({
   const [query, setQuery] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const [pane, setPane] = useState<PaneId>("general");
+
   // Search: each section declares its searchable text; non-matching sections hide.
-  const sections = useMemo(() => {
+  const sections = useMemo<SearchSections>(() => {
     const q = query.trim().toLowerCase();
     const match = (...texts: string[]) => !q || texts.some((s) => s.toLowerCase().includes(q));
     return {
+      account: match(t("settings.paneAccount"), "compte", "account", "sous-compte", "solde"),
       prefs: match(
         t("settings.preferences"),
         t("profile.language"),
@@ -64,6 +117,8 @@ export default function Settings({
         "langue",
         "equity",
       ),
+      appearance: match(t("nav.appearance"), "theme", "thème", "couleur", "color", "palette"),
+      subscription: match(t("nav.subscription"), "plan", "paiement", "billing", "stripe", "abonnement"),
       notifs: match(t("push.title"), t("push.enable"), "push", "notification"),
       data: match(
         t("settings.data"),
@@ -87,7 +142,20 @@ export default function Settings({
       ),
     };
   }, [query, t]);
-  const anyVisible = sections.prefs || sections.notifs || sections.data || sections.danger;
+  /** Les volets visibles après recherche, dans l'ordre du rail. */
+  const visiblePanes = useMemo(
+    () => PANES.filter((p) => sections[p.section]).map((p) => p.id),
+    [sections],
+  );
+  const anyVisible = visiblePanes.length > 0;
+
+  // La recherche ne cache pas seulement des lignes : si le volet ouvert ne
+  // correspond plus, elle bascule sur le premier qui correspond. Sans ça, taper
+  // « export » depuis l'onglet Général laissait un panneau vide à droite alors
+  // que le résultat existait à gauche.
+  useEffect(() => {
+    if (visiblePanes.length > 0 && !visiblePanes.includes(pane)) setPane(visiblePanes[0]);
+  }, [visiblePanes, pane]);
 
   useEffect(() => {
     if (!user) return;
@@ -144,7 +212,7 @@ export default function Settings({
   if (!user) return null;
 
   return (
-    <PageContainer className="max-w-2xl space-y-3">
+    <PageContainer className="max-w-5xl space-y-3">
       <PageHeader
         className="mb-0 md:mb-0 stagger-0"
         icon={
@@ -153,191 +221,246 @@ export default function Settings({
           </span>
         }
         title={t("settings.title")}
-        subtitle={t("settings.subtitle")}
       />
 
-      {/* Compte actif — il vivait dans le pied du menu « Plus », qui n'existe
-          plus. Sur desktop la barre latérale le porte déjà, d'où `md:hidden`. */}
-      <div className="md:hidden">
-        <AccountSwitcher variant="card" />
-      </div>
+      {/* UNE SEULE FENÊTRE. Le rail et le contenu vivent dans le même panneau,
+          séparés par une simple cloison — pas deux cartes flottantes séparées
+          par un vide. C'est ce qui fait la différence entre une page de
+          réglages et une pile de widgets. */}
+      <Card
+        variant="glass-strong"
+        className="animate-fade-in-up stagger-1 overflow-hidden lg:grid lg:grid-cols-[244px_1fr]"
+      >
+        {/* ── RAIL DES RUBRIQUES ── */}
+        <div className="border-b border-white/[0.06] p-3 lg:border-b-0 lg:border-r">
+          {/* Search — the fastest route through a settings page is typing. */}
+          <div className="relative mb-3">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("settings.search")}
+              className={cn(FIELD_BASE, "h-10 pl-10 text-[13px]")}
+            />
+          </div>
 
-      {/* Search — the fastest route through a settings page is typing. */}
-      <div className="relative animate-fade-in-up stagger-1">
-        <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t("settings.search")}
-          className={cn(FIELD_BASE, "h-11 pl-10")}
-        />
-      </div>
-
-      {!anyVisible && (
-        <p className="text-sm text-slate-500 text-center py-6">{t("settings.noResults")}</p>
-      )}
-
-      {/* Preferences */}
-      {sections.prefs && (
-        <Card
-          variant="glass-strong"
-          pad="default"
-          className="space-y-4 animate-fade-in-up stagger-1"
-        >
-          <SectionHeading
-            icon={<SlidersHorizontal className="w-4 h-4" />}
-            title={t("settings.preferences")}
-          />
-
-          <label className="block">
-            <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-              <span className="flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
-              </span>
-              {savedFlash === "lang" && <SavedBadge label={t("common.saved")} />}
-            </span>
-            <select
-              value={language}
-              onChange={(e) => handleLanguage(e.target.value)}
-              className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
+          {anyVisible && (
+            <div
+              className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
+              role="tablist"
+              aria-orientation="vertical"
             >
-              {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code} className="bg-[#0a0f1e]">
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-              <span className="flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
-              </span>
-              {savedFlash === "eq" && <SavedBadge label={t("common.saved")} />}
-            </span>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                $
-              </span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={startingEquity}
-                onChange={(e) => setStartingEquity(e.target.value)}
-                onBlur={handleEquityBlur}
-                min={0}
-                step={100}
-                className={cn(FIELD_BASE, "h-11 pl-7")}
-              />
+              {PANES.filter((p) => sections[p.section]).map(({ id, labelKey, icon: Ico }) => {
+                const active = pane === id;
+                const danger = id === "danger";
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setPane(id)}
+                    className={cn(
+                      "group flex h-11 shrink-0 items-center gap-3 rounded-xl px-3 text-[13.5px] font-medium",
+                      "transition-colors duration-200 lg:w-full",
+                      active
+                        ? danger
+                          ? "bg-red-500/10 text-red-300"
+                          : "bg-cyan-500/10 text-white"
+                        : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100",
+                    )}
+                  >
+                    <Ico
+                      className={cn(
+                        "h-[18px] w-[18px] shrink-0",
+                        active ? (danger ? "text-red-400" : "text-cyan-400") : "text-slate-500",
+                      )}
+                      strokeWidth={1.9}
+                    />
+                    <span className="truncate">{t(labelKey)}</span>
+                    <ChevronRight
+                      className={cn(
+                        "ml-auto hidden h-4 w-4 shrink-0 lg:block",
+                        active ? "text-slate-500" : "text-slate-700",
+                      )}
+                    />
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-[10px] text-slate-600 mt-1.5">{t("profile.startingEquityHint")}</p>
-          </label>
-        </Card>
-      )}
-
-      {/* Notifications */}
-      {sections.notifs && (
-        <div className="animate-fade-in-up stagger-2">
-          <PushNotificationSettings />
+          )}
         </div>
-      )}
 
-      {/* Data */}
-      {sections.data && (
-        <Card
-          variant="glass-strong"
-          pad="default"
-          className="space-y-2.5 animate-fade-in-up stagger-3"
-        >
-          <SectionHeading
-            icon={<Database className="w-4 h-4" />}
-            title={t("settings.data")}
-            sub={t("settings.dataSub")}
-          />
+        {/* ── VOLET ACTIF ── */}
+        <div className="space-y-4 p-5 md:p-6">
+          {!anyVisible && (
+            <p className="text-sm text-slate-500 text-center py-6">{t("settings.noResults")}</p>
+          )}
 
-          <ActionRow
-            icon={<Download className="w-4 h-4" />}
-            label={t("settings.exportCsv")}
-            sub={`${t("settings.exportCsvSub")} · ${trades.length} ${t("common.trades")}`}
-            onClick={() => exportTradesCSV(trades)}
-            disabled={trades.length === 0}
-          />
-          <ActionRow
-            icon={<Upload className="w-4 h-4" />}
-            label={t("settings.importCsv")}
-            sub={t("settings.importCsvSub")}
-            onClick={onOpenImport}
-          />
-          {/* Recalibrage d'échelle : dans la section Données, à côté de
+          {/* Compte actif — il vivait dans le pied du menu « Plus », qui
+              n'existe plus. Il a maintenant sa rubrique, sur toutes les
+              tailles d'écran : la barre latérale peut être repliée. */}
+          {pane === "account" && sections.account && (
+            <div className="space-y-4">
+              <SectionHeading
+                icon={<Wallet className="w-4 h-4" />}
+                title={t("settings.paneAccount")}
+              />
+              <AccountSwitcher variant="card" />
+            </div>
+          )}
+
+          {/* Appearance — theme settings, same page */}
+          {pane === "appearance" && sections.appearance && (
+            <div className="space-y-4">
+              <SectionHeading icon={<Palette className="w-4 h-4" />} title={t("nav.appearance")} />
+              <ThemeSettings />
+            </div>
+          )}
+
+          {/* Subscription — billing, same page */}
+          {pane === "subscription" && sections.subscription && (
+            <div className="space-y-4">
+              <SectionHeading icon={<CreditCard className="w-4 h-4" />} title={t("nav.subscription")} />
+              <SubscriptionSection />
+            </div>
+          )}
+
+          {/* Preferences */}
+          {pane === "general" && sections.prefs && (
+            <div className="space-y-5">
+              <SectionHeading
+                icon={<SlidersHorizontal className="w-4 h-4" />}
+                title={t("settings.preferences")}
+              />
+
+              <label className="block">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
+                  </span>
+                  {savedFlash === "lang" && <SavedBadge label={t("common.saved")} />}
+                </span>
+                <select
+                  value={language}
+                  onChange={(e) => handleLanguage(e.target.value)}
+                  className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code} className="bg-[#0a0f1e]">
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
+                  </span>
+                  {savedFlash === "eq" && <SavedBadge label={t("common.saved")} />}
+                </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={startingEquity}
+                    onChange={(e) => setStartingEquity(e.target.value)}
+                    onBlur={handleEquityBlur}
+                    min={0}
+                    step={100}
+                    className={cn(FIELD_BASE, "h-11 pl-7")}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-600 mt-1.5">
+                  {t("profile.startingEquityHint")}
+                </p>
+              </label>
+            </div>
+          )}
+
+          {/* Notifications */}
+          {pane === "notifications" && sections.notifs && <PushNotificationSettings />}
+
+          {/* Data */}
+          {pane === "data" && sections.data && (
+            <div className="space-y-2.5">
+              <SectionHeading icon={<Database className="w-4 h-4" />} title={t("settings.data")} />
+
+              <ActionRow
+                icon={<Download className="w-4 h-4" />}
+                label={t("settings.exportCsv")}
+                onClick={() => exportTradesCSV(trades)}
+                disabled={trades.length === 0}
+              />
+              <ActionRow
+                icon={<Upload className="w-4 h-4" />}
+                label={t("settings.importCsv")}
+                onClick={onOpenImport}
+              />
+              {/* Recalibrage d'échelle : dans la section Données, à côté de
               l'import et de l'export — c'est bien une opération sur
               l'historique, pas un réglage d'apparence. */}
-          {activeId && (
-            <ActionRow
-              icon={<Scale className="w-4 h-4" />}
-              label={t("recal.action")}
-              sub={
-                isCalibrated(activeAccount?.calibrationScale)
-                  ? t("recal.badge").replace(
-                      "{scale}",
-                      `${Number((activeAccount?.calibrationScale ?? 1).toFixed(4))}×`,
-                    )
-                  : t("recal.actionSub")
-              }
-              onClick={() => setRecalOpen(true)}
-            />
+              {activeId && (
+                <ActionRow
+                  icon={<Scale className="w-4 h-4" />}
+                  label={t("recal.action")}
+                  onClick={() => setRecalOpen(true)}
+                />
+              )}
+              <ActionRow
+                icon={<FileText className="w-4 h-4" />}
+                label={t("settings.reports")}
+                onClick={onOpenReports}
+              />
+            </div>
           )}
-          <ActionRow
-            icon={<FileText className="w-4 h-4" />}
-            label={t("settings.reports")}
-            sub={t("settings.reportsSub")}
-            onClick={onOpenReports}
-          />
-        </Card>
-      )}
 
-      {/* Danger zone — set apart by a red hairline and its own heading, so a
-          destructive action can never be mistaken for a setting. */}
-      {sections.danger && (
-        <Card
-          variant="glass-strong"
-          pad="default"
-          className="space-y-2.5 border border-red-500/15 animate-fade-in-up stagger-4"
-        >
-          <h2 className="text-xs font-bold uppercase tracking-wider text-red-400/90">
-            {t("settings.dangerZone")}
-          </h2>
-          <Button
-            variant="danger"
-            onClick={onDeleteAll}
-            disabled={trades.length === 0}
-            className="w-full justify-between h-auto py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="text-left">
-              <span className="block text-sm font-medium">{t("profile.deleteAllTrades")}</span>
-              <span className="block text-[10px] opacity-70 mt-0.5">
-                {t("settings.deleteAllSub")}
-              </span>
-            </span>
-            <Trash2 className="w-4 h-4 shrink-0" />
-          </Button>
+          {/* Danger zone — sa propre rubrique dans le rail, pas une carte de
+              plus au bas d'une colonne. On n'atteint « Supprimer mon compte »
+              qu'en le demandant. */}
+          {pane === "danger" && sections.danger && (
+            <div className="space-y-2.5 rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-4">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-red-400/90">
+                {t("settings.dangerZone")}
+              </h2>
+              <Button
+                variant="danger"
+                onClick={onDeleteAll}
+                disabled={trades.length === 0}
+                className="w-full justify-between h-auto py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-left">
+                  <span className="block text-sm font-medium">{t("profile.deleteAllTrades")}</span>
+                  <span className="block text-[10px] opacity-70 mt-0.5">
+                    {t("settings.deleteAllSub")}
+                  </span>
+                </span>
+                <Trash2 className="w-4 h-4 shrink-0" />
+              </Button>
 
-          <Button
-            variant="danger"
-            onClick={() => setDeleteOpen(true)}
-            className="w-full justify-between h-auto py-3"
-          >
-            <span className="text-left">
-              <span className="block text-sm font-medium">{t("settings.deleteAccount")}</span>
-              <span className="block text-[10px] opacity-70 mt-0.5">
-                {t("settings.deleteAccountSub")}
-              </span>
-            </span>
-            <UserX className="w-4 h-4 shrink-0" />
-          </Button>
-        </Card>
-      )}
+              <Button
+                variant="danger"
+                onClick={() => setDeleteOpen(true)}
+                className="w-full justify-between h-auto py-3"
+              >
+                <span className="text-left">
+                  <span className="block text-sm font-medium">{t("settings.deleteAccount")}</span>
+                  <span className="block text-[10px] opacity-70 mt-0.5">
+                    {t("settings.deleteAccountSub")}
+                  </span>
+                </span>
+                <UserX className="w-4 h-4 shrink-0" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
 
       {deleteOpen && (
         <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />
@@ -429,24 +552,13 @@ function DeleteAccountModal({
   );
 }
 
-function SectionHeading({
-  icon,
-  title,
-  sub,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  sub?: string;
-}) {
+function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-start gap-2.5">
       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
         <span className="text-white">{icon}</span>
       </span>
-      <div>
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
-        {sub && <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>}
-      </div>
+      <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
     </div>
   );
 }
