@@ -49,8 +49,12 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           />
         </div>
         <div className="min-w-0">
-          <h1 className="text-base font-bold text-white tracking-tight leading-tight">TradeVault</h1>
-          <p className="text-[9px] text-slate-600 uppercase tracking-[0.2em] mt-0.5">{t("nav.journal")}</p>
+          <h1 className="text-base font-bold text-white tracking-tight leading-tight">
+            TradeVault
+          </h1>
+          <p className="text-[9px] text-slate-600 uppercase tracking-[0.2em] mt-0.5">
+            {t("nav.journal")}
+          </p>
         </div>
       </div>
 
@@ -85,7 +89,9 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
                 )}
               />
               <span className="truncate">{t(labelKey)}</span>
-              {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(6,182,212,0.7)]" />}
+              {active && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(6,182,212,0.7)]" />
+              )}
             </button>
           );
         })}
@@ -98,11 +104,18 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
           aria-label={t("nav.inbox")}
           className={cn(
             "relative mt-1.5 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200",
-            page === "inbox" ? "bg-white/[0.05] text-white" : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
+            page === "inbox"
+              ? "bg-white/[0.05] text-white"
+              : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.03]",
           )}
         >
           <div className="relative shrink-0">
-            <Bell className={cn("w-[18px] h-[18px]", page === "inbox" ? "text-cyan-400" : "text-slate-600")} />
+            <Bell
+              className={cn(
+                "w-[18px] h-[18px]",
+                page === "inbox" ? "text-cyan-400" : "text-slate-600",
+              )}
+            />
             {unread > 0 && (
               <span className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-[3px] rounded-full bg-cyan-500 text-[8px] font-bold text-white flex items-center justify-center leading-none shadow-[0_0_6px_rgba(6,182,212,0.6)]">
                 {unread > 99 ? "99+" : unread}
@@ -119,17 +132,27 @@ export default function Sidebar({ page, setPage, totalPnl, winRate }: SidebarPro
         <div className="px-3 py-2.5 rounded-xl bg-white/[0.02]">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] text-slate-500">{t("stats.totalPnl")}</span>
-            <span className={cn("font-display text-sm font-extrabold tabular-nums", totalPnl >= 0 ? "text-emerald-400" : "text-red-400")}>
+            <span
+              className={cn(
+                "font-display text-sm font-extrabold tabular-nums",
+                totalPnl >= 0 ? "text-emerald-400" : "text-red-400",
+              )}
+            >
               {formatPnl(totalPnl)}
             </span>
           </div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] text-slate-500">{t("stats.winRate")}</span>
-            <span className="font-display text-sm font-extrabold text-white tabular-nums">{formatPct(winRate)}</span>
+            <span className="font-display text-sm font-extrabold text-white tabular-nums">
+              {formatPct(winRate)}
+            </span>
           </div>
           <div className="w-full bg-white/[0.05] rounded-full h-1 overflow-hidden">
             <div
-              className={cn("h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400", mounted && "transition-all duration-500")}
+              className={cn(
+                "h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400",
+                mounted && "transition-all duration-500",
+              )}
               style={{ width: `${winRate * 100}%` }}
             />
           </div>
