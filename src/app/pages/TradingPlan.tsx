@@ -105,7 +105,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
     <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
       {/* Header + completion */}
       <PageHeader
-        className="mb-2 items-center"
+        className="items-center"
         actions={<CompletionRing value={completion} label={tr("complet", "complete")} />}
       />
 

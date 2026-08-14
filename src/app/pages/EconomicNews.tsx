@@ -294,7 +294,7 @@ export default function EconomicNews() {
   return (
     <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
       <PageHeader
-        className="mb-5"
+        className="stagger-0"
         actions={
           <span
             className={cn(

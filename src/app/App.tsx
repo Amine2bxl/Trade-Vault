@@ -610,6 +610,12 @@ function AppContent() {
     );
   }
 
+  // La carte de compte (capital, sous-comptes) doit être PRÊTE avant le shell :
+  // sans cette attente, elle afficherait un squelette puis se remplirait un
+  // battement plus tard (le « chargement en deux temps »). Les comptes se
+  // chargent en parallèle de l'auth, l'attente ajoutée est imperceptible.
+  if (!accountsReady) return <LoadingScreen message="Chargement de tes comptes…" />;
+
   return (
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
     // scrolls inside <main>, so the sidebar rail never moves on any page.
@@ -632,8 +638,10 @@ function AppContent() {
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :
-            un bandeau collé par-dessus le produit. Voir `MobileActions`. */}
-        <div className="flex items-center gap-3 px-4 pt-3 md:px-6">
+            un bandeau collé par-dessus le produit. Voir `MobileActions`.
+            `pb-3` : un écart vertical unique et identique entre la barre
+            d'onglets et le contenu, sur toutes les pages. */}
+        <div className="flex items-center gap-3 px-4 pt-3 pb-3 md:px-6">
           <div className="min-w-0 flex-1">
             {currentSection && pagesOfSection(currentSection).length > 1 && (
               <SectionTabs section={currentSection} page={page} setPage={setPage} />

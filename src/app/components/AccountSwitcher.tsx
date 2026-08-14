@@ -374,25 +374,10 @@ export default function AccountSwitcher({
   // Même langue visuelle que le coach : surface élevée, liseré accent,
   // icône teintée compte, solde en chiffres tabulaires.
   if (variant === "card") {
-    // Avant la résolution des comptes la carte doit RÉSERVER son emplacement
-    // exact (même hauteur) : sinon elle « pop » après le mount et décale toute
-    // la colonne compte/perf/user au F5 — la navbar semblait alors se charger
-    // en deux temps. Même principe que la variante `bar` plus bas.
-    if (!activeAccount) {
-      return (
-        <div
-          aria-hidden="true"
-          className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-white/[0.08] bg-gradient-to-br from-[#0f1c2f] to-[#0a1525]"
-        >
-          <div className="w-10 h-10 rounded-xl bg-white/[0.08] animate-pulse shrink-0" />
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="h-2 w-1/3 rounded bg-white/[0.08] animate-pulse" />
-            <div className="h-3 w-2/3 rounded bg-white/[0.08] animate-pulse" />
-          </div>
-          <div className="w-12 h-3 rounded bg-white/[0.08] animate-pulse shrink-0" />
-        </div>
-      );
-    }
+    // Le shell n'est rendu qu'une fois les comptes résolus (gate `accountsReady`
+    // dans App.tsx) : ici `activeAccount` est donc prêt, sans squelette ni
+    // « pop » — le compte s'affiche dès la première frame, même au F5.
+    if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
     return (
       <div className="relative w-full">
