@@ -62,17 +62,26 @@ type Period = "7d" | "30d" | "ytd" | "all";
 const PERIODS: Period[] = ["7d", "30d", "ytd", "all"];
 const PERIOD_STORAGE_KEY = "tv.dashboard.period";
 
+/** Date locale `YYYY-MM-DD` — jamais `toISOString()` (UTC), qui décale le filtre
+ *  d'un jour selon le fuseau et fait disparaître la journée la plus récente. */
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function periodCutoff(period: Period): string | null {
   const now = new Date();
   if (period === "7d") {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
   }
   if (period === "30d") {
     const d = new Date(now);
     d.setDate(d.getDate() - 30);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
   }
   if (period === "ytd") return `${now.getFullYear()}-01-01`;
   return null;
@@ -178,7 +187,7 @@ export default function Dashboard({
   const chkStatus = useMemo(() => {
     if (!user) return null;
     try {
-      const key = `tv-chk-${user.id}-${new Date().toISOString().slice(0, 10)}`;
+      const key = `tv-chk-${user.id}-${localDateStr(new Date())}`;
       const raw = localStorage.getItem(key);
       if (!raw) return { locked: false, n: 0, total: 0 };
       const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
@@ -202,7 +211,7 @@ export default function Dashboard({
   // veille : le delta jour/jour dit « tu as monté depuis hier », il ne dit pas
   // « tu progresses ». La logique vit dans un module pur et testé
   // (`utils/edgeHistory.ts`), ici on ne fait que la brancher.
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr(new Date());
   const [edgeHistory, setEdgeHistory] = useState<EdgePoint[]>([]);
 
   useEffect(() => {

@@ -1,129 +1,134 @@
-import { Sparkles, Bot, Send, TrendingUp, Zap, MessageSquare, Shield } from "lucide-react";
+import { Bot, Send, TrendingUp, Shield, Zap, MessageSquare } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { useAccounts } from "../contexts/AccountContext";
+import { useTrades } from "../hooks/useTrades";
+import { useTradeStats } from "../hooks/useTradeStats";
+import { useEdgeScore } from "../hooks/useEdgeScore";
+import { PageContainer } from "@/shared/ui";
+import { formatPnl, formatPct } from "../utils/tradeCalcs";
+import { cn } from "../utils/cn";
 
-// Le champ de particules (30 éléments animés en boucle) et ses keyframes
-// inlines ont été retirés : décor pur, coût de peinture permanent, et une
-// 38e animation dans une application qui n'en garde que huit.
-
-const PRIORITIES = [
-  {
-    icon: Shield,
-    label: "Discipline",
-    desc: "Aucune alerte aujourd'hui",
-    color: "text-emerald-400",
-  },
-  {
-    icon: TrendingUp,
-    label: "Performance",
-    desc: "Win rate : 64% ce mois",
-    color: "text-cyan-400",
-  },
-  { icon: Zap, label: "Edge", desc: "FVG London : +4.2R ce mois", color: "text-amber-400" },
-];
+// Jarvis est la page de synthèse du coach : PAS un décor. Chaque chiffre vient
+// des trades réels du compte actif — zéro valeur codée en dur. Le vrai dialogue
+// s'ouvre via le CTA (AiAssistant), cette page donne le contexte que le coach
+// a déjà en tête avant même qu'on lui parle.
 
 export default function Jarvis() {
+  const { user } = useAuth();
+  const { activeId, ready: accountsReady } = useAccounts();
+  const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  const stats = useTradeStats(trades);
+  const edge = useEdgeScore(trades, user?.id);
+
+  const cards = [
+    {
+      icon: TrendingUp,
+      label: "P&L total",
+      value: formatPnl(stats.totalPnl),
+      tone: stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400",
+      sub: `${stats.totalTrades} trades`,
+    },
+    {
+      icon: Zap,
+      label: "Win rate",
+      value: stats.totalTrades > 0 ? formatPct(stats.winRate) : "—",
+      tone: "text-cyan-300",
+      sub: `${stats.wins}W · ${stats.losses}L`,
+    },
+    {
+      icon: Shield,
+      label: "Profit factor",
+      value: stats.profitFactor > 0 ? stats.profitFactor.toFixed(2) : "—",
+      tone: stats.profitFactor >= 1 ? "text-emerald-400" : "text-amber-400",
+      sub: "≥ 1.0 = rentable",
+    },
+    {
+      icon: Bot,
+      label: "Edge score",
+      value: edge.score !== null ? `${edge.score}/100` : "—",
+      tone: "text-cyan-300",
+      sub: "discipline + risque",
+    },
+  ];
+
   return (
-    <div className="relative h-full flex flex-col bg-[#060d16] overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(6,182,212,.06), transparent 60%), radial-gradient(ellipse 50% 50% at 80% 80%, rgba(16,185,129,.04), transparent 60%)",
-        }}
-      />
-
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
-        {/* Core visual */}
-        <div className="mb-10 relative">
-          <div
-            className="absolute inset-0 rounded-full blur-3xl opacity-20"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(6,182,212,0.5) 0%, rgba(16,185,129,0.3) 40%, transparent 70%)",
-            }}
-          />
-          <div
-            className="relative w-36 h-36 rounded-full flex items-center justify-center"
-            style={{
-              background:
-                "radial-gradient(circle at 30% 30%, rgba(6,182,212,0.12), transparent 70%)",
-              boxShadow:
-                "0 0 50px 12px rgba(6,182,212,0.1), 0 0 120px 24px rgba(16,185,129,0.06), inset 0 0 30px 4px rgba(6,182,212,0.06)",
-            }}
-          >
-            {/* Rotating ring */}
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                border: "1px solid rgba(6,182,212,0.12)",
-                animation: "spin 14s linear infinite",
-              }}
-            />
-            <div
-              className="absolute inset-2 rounded-full"
-              style={{
-                border: "1px dashed rgba(16,185,129,0.15)",
-                animation: "spin 10s linear infinite reverse",
-              }}
-            />
-            <Bot className="w-14 h-14 text-cyan-400 drop-shadow-[0_0_24px_rgba(6,182,212,0.4)]" />
-          </div>
+    <PageContainer>
+      {/* ── En-tête : Jarvis, avec son état dérivé des données ── */}
+      <div className="flex items-center gap-3 mb-4 md:mb-5">
+        <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
+          <Bot className="h-5 w-5 text-white" />
+        </span>
+        <div className="min-w-0">
+          <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">Jarvis</h1>
+          <p className="text-[11px] text-slate-500">
+            Ton coach lit les mêmes données que toi — et il te les résume ici.
+          </p>
         </div>
-
-        <h1
-          className="text-[2.7rem] sm:text-6xl font-extrabold tracking-tight"
-          style={{
-            background:
-              "linear-gradient(135deg, #22d3ee 0%, #14b8a6 40%, #67e8f9 70%, #06b6d4 100%)",
-            backgroundSize: "200% auto",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            animation: "shimmer 3s linear infinite",
-          }}
-        >
-          J.A.R.V.I.S.
-        </h1>
-
-        <p className="mt-3 text-base text-slate-400 max-w-md tracking-wide">
-          Ton assistant de trading personnel — analyses, discipline, mémoire.
-        </p>
-
-        {/* Priorities row */}
-        <div className="mt-8 grid grid-cols-3 gap-3 w-full max-w-md">
-          {PRIORITIES.map(({ icon: Icon, label, desc, color }) => (
-            <div
-              key={label}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-white/[0.05] bg-white/[0.01] px-3 py-3"
-            >
-              <Icon className={`w-5 h-5 ${color}`} />
-              <span className="text-[11px] font-bold text-white">{label}</span>
-              <span className="text-[9px] text-slate-500 leading-tight text-center">{desc}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
-          className="mt-8 inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-semibold text-white transition hover:scale-[1.03] active:scale-[0.98]"
-          style={{
-            background: "linear-gradient(135deg, #06b6d4, #10b981)",
-            boxShadow: "0 0 40px 6px rgba(6,182,212,0.2)",
-          }}
-        >
-          <Send className="w-5 h-5" />
-          Ouvrir le coach
-          <MessageSquare className="w-5 h-5" />
-        </button>
-
-        <p className="mt-5 text-[11px] text-slate-600 flex items-center gap-1.5">
+        <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
           </span>
-          SYSTEM ONLINE
-        </p>
+          ONLINE
+        </span>
       </div>
-    </div>
+
+      {/* ── Les quatre chiffres que Jarvis surveille ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-5">
+        {cards.map(({ icon: Icon, label, value, tone, sub }) => (
+          <div key={label} className="stat-card card-premium p-3.5 md:p-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Icon className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                {label}
+              </span>
+            </div>
+            <div
+              className={cn("font-display text-lg md:text-xl font-extrabold tabular-nums", tone)}
+            >
+              {value}
+            </div>
+            <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Verdict du coach, en une phrase honnête ── */}
+      <div className="glass-strong rounded-3xl p-5 md:p-6 mb-4 md:mb-5">
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+            <Shield className="w-4 h-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-white mb-1">Ce que Jarvis voit</h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              {tradesLoading
+                ? "Lecture de ton journal…"
+                : stats.totalTrades === 0
+                  ? "Aucun trade pour l'instant — ajoute ton premier trade et Jarvis pourra te coacher."
+                  : stats.profitFactor >= 1.2 && edge.score !== null && edge.score >= 60
+                    ? "Ta discipline et ton edge tiennent la route. Jarvis peut maintenant t'aider à passer à l'échelle sans casser ce qui marche."
+                    : stats.totalPnl >= 0
+                      ? "Tu es en positif, mais la marge est fine. Parle à Jarvis pour solidifier ton process avant que la variance ne parle."
+                      : "Le compte recule. C'est exactement le moment d'ouvrir le coach : un œil extérieur sur ton journal vaut mieux qu'un trade de plus pour « se refaire »."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CTA : ouvrir le vrai coach ── */}
+      <button
+        onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
+        className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl text-sm font-bold text-white transition hover:brightness-110 active:scale-[0.99]"
+        style={{
+          background: "linear-gradient(135deg, #06b6d4, #10b981)",
+          boxShadow: "0 0 32px 4px rgba(6,182,212,0.18)",
+        }}
+      >
+        <MessageSquare className="w-4 h-4" />
+        Ouvrir le coach
+        <Send className="w-4 h-4" />
+      </button>
+    </PageContainer>
   );
 }

@@ -105,7 +105,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         // étiquettes et la carte de compte se révèlent au lieu de déborder ; au
         // repli, la barre rétrécit sans texte orphelin. 300 ms, easing fluide
         // (jamais agressif).
-        "transition-[width] duration-300 ease-[var(--tv-ease)]",
+        "transition-[width] duration-500 ease-[var(--tv-ease-out)]",
         collapsed ? "w-[72px]" : "w-[248px]",
       )}
     >
@@ -125,7 +125,6 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
             {!collapsed && (
               <div className="sidebar-brand-text">
                 <span className="sidebar-brand-name">TradeVault</span>
-                <span className="sidebar-brand-tagline">Trading Coach</span>
               </div>
             )}
           </div>
@@ -154,8 +153,8 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
             })}
           </div>
 
-          {/* Séparateur discret entre les sections et le compte (déplié seulement). */}
-          {!collapsed && <div className="my-2 h-px bg-white/[0.06]" />}
+          {/* Séparateur discret entre les sections et le compte — visible plié et déplié. */}
+          <div className="my-2 h-px bg-white/[0.06]" />
 
           <div className="space-y-1">
             {row({

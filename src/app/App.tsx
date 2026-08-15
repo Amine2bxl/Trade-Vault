@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransition } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -154,7 +154,11 @@ function AppContent() {
    * quitte l'application sur Android.
    */
   const setPage = useCallback((next: Page) => {
-    setPageState(next);
+    // Transition React : l'ancienne page reste affichée pendant que le chunk de
+    // la suivante charge, au lieu de laisser le Suspense remplacer le contenu
+    // par un squelette à chaque navigation (le « chargement comme la première
+    // fois »).
+    startTransition(() => setPageState(next));
     if (typeof window === "undefined") return;
     const url = buildPageUrl(next, window.location.search);
     if (url === `${window.location.pathname}${window.location.search}`) return;

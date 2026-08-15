@@ -146,8 +146,9 @@ export default function EconomicNews() {
   const [search, setSearch] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState<Set<string>>(new Set());
   const [impactFilter, setImpactFilter] = useState<Set<EventImpact>>(new Set());
-  // Default to "today" preset — user lands directly on today's events
-  const [dayPreset, setDayPreset] = useState<DayNavPreset>("today");
+  // Default to "week" — the calendar is a weekly view; "today" alone reads as
+  // empty on low-event days (and on weekends), which looked like an outage.
+  const [dayPreset, setDayPreset] = useState<DayNavPreset>("week");
   const [customDayFilter, setCustomDayFilter] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
