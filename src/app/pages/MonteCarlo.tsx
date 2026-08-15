@@ -428,7 +428,7 @@ export default function MonteCarloPage({ trades }: Props) {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
         {/* LEFT: Configuration */}
         <div className="space-y-3">
           {/* Preset */}

@@ -695,7 +695,9 @@ function AppContent() {
               {page === "seasonality" && (
                 <Seasonality trades={trades} tradesLoading={tradesLoading} />
               )}
-              {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
+              {page === "calculator" && (
+                <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+              )}
               {page === "settings" && (
                 <Settings
                   trades={trades}

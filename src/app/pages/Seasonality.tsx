@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -43,22 +43,10 @@ interface SeasonalityProps {
   tradesLoading?: boolean;
 }
 
-type Tab = "assets" | "journal";
-
-export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
-  const { t } = useT();
-
+export default function Seasonality(_props: SeasonalityProps) {
   return (
     <PageContainer>
-      <PageHeader
-        className="mb-4 md:mb-5 stagger-0"
-        title={t("seasonality.title")}
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <CalendarRange className="w-4 h-4 text-white" />
-          </span>
-        }
-      />
+      <PageHeader className="stagger-0" />
       <AssetSeasonality />
     </PageContainer>
   );
@@ -112,14 +100,6 @@ function AssetSeasonality() {
 
   return (
     <div className="animate-fade-in">
-      {/* Disclaimer */}
-      <Card className="px-4 py-3 mb-4 flex items-start gap-2.5 border border-cyan-500/10">
-        <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
-        <p className="text-[11px] leading-relaxed text-slate-400">
-          {t("seasonality.assetDisclaimer")}
-        </p>
-      </Card>
-
       {/* Category filter */}
       <div className="flex flex-wrap gap-1.5 mb-3">
         {(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => (
@@ -310,6 +290,14 @@ function AssetSeasonality() {
           </div>
         </div>
       </div>
+
+      {/* Disclaimer — moved to the bottom, out of the way of the data. */}
+      <Card className="px-4 py-3 mt-4 flex items-start gap-2.5 border border-cyan-500/10">
+        <Info className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5" />
+        <p className="text-[11px] leading-relaxed text-slate-400">
+          {t("seasonality.assetDisclaimer")}
+        </p>
+      </Card>
     </div>
   );
 }

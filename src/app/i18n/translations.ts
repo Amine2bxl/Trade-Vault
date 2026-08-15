@@ -993,6 +993,9 @@ const en = {
   "calc.riskGauge": "of the recommended budget (2%)",
   "calc.riskOfAccount": "of account",
   "calc.riskSuggestion": "The recommended budget: 2% of the account, never more.",
+  "calc.capital": "Capital",
+  "calc.capitalLocked": "Locked · syncs with your selected account",
+  "calc.economicCalendar": "Economic calendar",
 
   // Settings
   "settings.title": "Settings",

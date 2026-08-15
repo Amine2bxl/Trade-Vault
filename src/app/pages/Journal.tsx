@@ -254,7 +254,7 @@ export default function Journal({
   return (
     <PageContainer>
       <PageHeader
-        className="mb-2 md:mb-3 items-center"
+        className="items-center"
         actions={
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
