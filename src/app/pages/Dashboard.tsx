@@ -18,7 +18,6 @@ import {
   directionBadgeClass,
 } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
-import { loadStartingBalance } from "../store";
 import { loadOnboarding } from "../store/profile";
 import { deriveDailyRule } from "../utils/edgeScore";
 import { useEdgeScore } from "../hooks/useEdgeScore";
@@ -94,7 +93,7 @@ export default function Dashboard({
   const { t } = useT();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { activeId } = useAccounts();
+  const { activeAccount } = useAccounts();
   const [period, setPeriod] = useState<Period>(() => {
     try {
       const saved = localStorage.getItem(PERIOD_STORAGE_KEY);
@@ -103,33 +102,29 @@ export default function Dashboard({
       return "all";
     }
   });
-  const [startingBalance, setStartingBalance] = useState(0);
+  // Le solde de départ vient DU COMPTE ACTIF déjà chargé (AccountContext), pas
+  // d'un `loadStartingBalance` séparé : cet aller-retour Supabase redondant se
+  // résolvait APRÈS le premier rendu et re-peignait les chiffres (expectancy,
+  // % de période, objectif) une seconde plus tard — le « chargement en deux
+  // temps » du tableau de bord. La valeur est la même (même colonne `starting_balance`).
+  const startingBalance = activeAccount?.startingBalance ?? 0;
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
   const hasDraft = useHasTradeDraft(user?.id);
 
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
-    Promise.allSettled([
-      loadStartingBalance(user.id)
-        .then((b) => {
-          if (active) setStartingBalance(b);
-        })
-        .catch(() => {
-          if (active) toast(t("dashboard.loadError"), "error");
-        }),
-      loadOnboarding(user.id)
-        .then((o) => {
-          if (active) setMonthlyTarget(o.monthlyTarget ?? null);
-        })
-        .catch(() => {
-          if (active) toast(t("dashboard.loadError"), "error");
-        }),
-    ]);
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setMonthlyTarget(o.monthlyTarget ?? null);
+      })
+      .catch(() => {
+        if (active) toast(t("dashboard.loadError"), "error");
+      });
     return () => {
       active = false;
     };
-  }, [user?.id, activeId]);
+  }, [user?.id, toast, t]);
 
   const changePeriod = (p: Period) => {
     setPeriod(p);

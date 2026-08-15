@@ -374,6 +374,9 @@ export default function AccountSwitcher({
   // Même langue visuelle que le coach : surface élevée, liseré accent,
   // icône teintée compte, solde en chiffres tabulaires.
   if (variant === "card") {
+    // Le shell n'est rendu qu'une fois les comptes résolus (gate `accountsReady`
+    // dans App.tsx) : ici `activeAccount` est donc prêt, sans squelette ni
+    // « pop » — le compte s'affiche dès la première frame, même au F5.
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
     return (

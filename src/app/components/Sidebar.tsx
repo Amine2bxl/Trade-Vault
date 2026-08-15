@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   Bell,
   ChevronLeft,
@@ -34,6 +35,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Infobulle de la barre repliée, rendue en PORTAL (position fixe) : la barre
+  // repliée est `overflow-hidden` pour un repli/dépli animé sans débordement de
+  // texte, ce qui clipperait une infobulle absolue posée à droite de l'icône.
+  const [tip, setTip] = useState<{ text: string; top: number; left: number } | null>(null);
+  const showTip = (e: React.MouseEvent<HTMLElement>, text: string) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ text, top: r.top + r.height / 2, left: r.right + 10 });
+  };
+  const hideTip = () => setTip(null);
+
   const groupLabel = (label: string) =>
     !collapsed && (
       <p className="px-3 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-tertiary">
@@ -63,12 +74,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
       onClick={onActivate}
       onPointerEnter={target ? () => preloadPage(target) : undefined}
       onFocus={target ? () => preloadPage(target) : undefined}
+      onMouseEnter={collapsed ? (e) => showTip(e, label) : undefined}
+      onMouseLeave={collapsed ? hideTip : undefined}
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group relative flex h-10 w-full items-center rounded-md text-[13.5px] font-medium",
         "transition-colors duration-200",
-        collapsed ? "justify-center px-0" : "gap-3 px-3",
+        // Repliée : mêmes px-3 que dépliée, pour que l'icône ne bouge pas —
+        // seule la largeur de la barre et l'étiquette (masquée) changent.
+        collapsed ? "px-3" : "gap-3 px-3",
         active
           ? "bg-accent-subtle text-primary"
           : "text-secondary hover:bg-hover hover:text-primary",
@@ -82,7 +97,6 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         {badge}
       </span>
       {!collapsed && <span className="truncate">{label}</span>}
-      {collapsed && <span className="rail-tip">{label}</span>}
     </button>
   );
 
@@ -93,14 +107,20 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
     <aside
       className={cn(
         "hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-base border-r border-border",
+        // Largeur animée, contenu clippé : au dépli, les étiquettes et la carte
+        // de compte se révèlent au lieu de déborder sur la page ; au repli, la
+        // barre rétrécit sans laisser de texte orphelin. 250 ms, easing symétrique.
+        "transition-[width] duration-250 ease-in-out overflow-hidden",
         collapsed ? "w-[76px]" : "w-[248px]",
       )}
     >
       {/* ── MARQUE ── */}
       <div
         className={cn(
-          "relative flex h-[72px] shrink-0 items-center px-3",
-          collapsed ? "justify-center" : "justify-between",
+          "flex shrink-0 items-center",
+          // Repliée : logo + chevron empilés (le chevron ne déborde plus, la
+          // barre est `overflow-hidden` pour l'animation de largeur).
+          collapsed ? "flex-col justify-center gap-2 py-3 px-0" : "h-[72px] justify-between px-3",
         )}
       >
         <div className={cn("sidebar-brand", collapsed && "justify-center")}>
@@ -120,10 +140,9 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           aria-label={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
           title={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
           className={cn(
-            "grid h-6 w-6 place-items-center rounded-full",
+            "grid h-6 w-6 shrink-0 place-items-center rounded-full",
             "border border-border bg-surface text-secondary",
             "transition-colors duration-200 hover:border-border-strong hover:text-primary",
-            collapsed ? "absolute -right-3 top-6" : "relative",
           )}
         >
           {collapsed ? (
@@ -236,12 +255,12 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         </div>
       )}
       {user && collapsed && (
-        <div className="shrink-0 border-t border-border px-3 py-3 flex justify-center">
+        <div className="shrink-0 border-t border-border px-3 py-3">
           <button
             onClick={() => setMenuOpen(true)}
             aria-label={t("nav.myAccount")}
             title={t("nav.myAccount")}
-            className="grid h-9 w-9 place-items-center rounded-md border border-border bg-surface text-secondary hover:text-primary hover:bg-hover transition"
+            className="w-full h-10 flex items-center justify-center rounded-md border border-border bg-surface text-secondary hover:text-primary hover:bg-hover transition"
           >
             <User className="h-4 w-4" />
           </button>
@@ -293,6 +312,25 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           </div>
         </Modal>
       )}
+
+      {typeof document !== "undefined" &&
+        tip &&
+        createPortal(
+          <div
+            className="rail-tip"
+            style={{
+              position: "fixed",
+              top: tip.top,
+              left: tip.left,
+              transform: "translateY(-50%)",
+              opacity: 1,
+              zIndex: 100,
+            }}
+          >
+            {tip.text}
+          </div>,
+          document.body,
+        )}
     </aside>
   );
 }
