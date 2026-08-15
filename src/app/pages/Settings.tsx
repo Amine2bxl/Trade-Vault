@@ -28,7 +28,7 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { PushNotificationSettings } from "../components/PushNotificationSettings";
 import { cn } from "../utils/cn";
-import { Button, Card, FIELD_BASE, Modal, PageContainer, PageHeader } from "@/shared/ui";
+import { Button, Card, FIELD_BASE, Modal, PageContainer } from "@/shared/ui";
 import AccountSwitcher from "../components/AccountSwitcher";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
@@ -213,23 +213,13 @@ export default function Settings({
 
   return (
     <PageContainer className="max-w-5xl space-y-3">
-      <PageHeader
-        className="mb-0 md:mb-0 stagger-0"
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <SlidersHorizontal className="w-4 h-4 text-white" />
-          </span>
-        }
-        title={t("settings.title")}
-      />
-
       {/* UNE SEULE FENÊTRE. Le rail et le contenu vivent dans le même panneau,
           séparés par une simple cloison — pas deux cartes flottantes séparées
           par un vide. C'est ce qui fait la différence entre une page de
           réglages et une pile de widgets. */}
       <Card
         variant="glass-strong"
-        className="animate-fade-in-up stagger-1 overflow-hidden lg:grid lg:grid-cols-[244px_1fr]"
+        className="animate-fade-in-up stagger-0 overflow-hidden lg:grid lg:grid-cols-[244px_1fr]"
       >
         {/* ── RAIL DES RUBRIQUES ── */}
         <div className="border-b border-white/[0.06] p-3 lg:border-b-0 lg:border-r">

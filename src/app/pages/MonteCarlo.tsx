@@ -400,9 +400,6 @@ export default function MonteCarloPage({ trades }: Props) {
   if (trades.length === 0) {
     return (
       <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
-        <PageHeader
-          title="Monte Carlo Lab"
-        />
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BarChart3 className="w-12 h-12 text-cyan-400/30 mb-5" />
           <h3 className="text-base font-bold text-white mb-1.5">
@@ -419,7 +416,6 @@ export default function MonteCarloPage({ trades }: Props) {
   return (
     <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
       <PageHeader
-        title="Monte Carlo Lab"
         actions={
           <button
             onClick={handleRun}

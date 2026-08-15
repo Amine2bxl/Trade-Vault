@@ -141,12 +141,6 @@ export default function Reports({ trades }: { trades: Trade[] }) {
     <div className="p-4 md:p-5 max-w-[900px] mx-auto">
       <PageHeader
         className="stagger-0"
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <FileText className="w-4 h-4 text-white" />
-          </span>
-        }
-        title={t("reports.title")}
         actions={
           missing.length > 0 &&
           !loading && (

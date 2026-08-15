@@ -180,12 +180,6 @@ export default function MissedOpportunities() {
     <PageContainer className="max-w-[1100px]">
       <PageHeader
         className="items-center"
-        title={t("missed.title")}
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Target className="w-4 h-4 text-white" />
-          </span>
-        }
         actions={
           <div className="flex items-center gap-2 shrink-0">
             {items.length > 0 && (
