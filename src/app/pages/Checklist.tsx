@@ -1351,18 +1351,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         )}
         {/* ══ HEADER ══ */}
         <div className="flex flex-col gap-3 animate-fade-in-up">
-          <div className="flex items-center justify-end gap-3">
-            {/* Ask Jarvis — the single AI entry point of the app. */}
-            <button
-              onClick={() => askCoach(coach.checklistReview)}
-              title="Jarvis"
-              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition"
-            >
-              <Bot className="w-4 h-4" />
-              <span className="hidden sm:inline">{t("chk.askJarvis")}</span>
-            </button>
-          </div>
-
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-slate-400 tabular-nums">
               {dateStr} · {clockStr}

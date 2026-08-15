@@ -708,7 +708,9 @@ function AppContent() {
               {page === "seasonality" && (
                 <Seasonality trades={trades} tradesLoading={tradesLoading} />
               )}
-              {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
+              {page === "calculator" && (
+                <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+              )}
               {page === "settings" && (
                 <Settings
                   trades={trades}
@@ -726,8 +728,6 @@ function AppContent() {
               {page === "inbox" && <Inbox />}
               {page === "profile" && <Profile trades={trades} setPage={setPage} />}
             </PageTransition>
-          </Suspense>
-        </PageErrorBoundary>
           </Suspense>
         </PageErrorBoundary>
       </main>

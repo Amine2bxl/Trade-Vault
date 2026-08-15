@@ -95,8 +95,10 @@ export const density = {
   cardPadTight: "p-3",
   /** Roomier variant, reserved for hero/feature surfaces. */
   cardPadLoose: "p-5 md:p-6",
-  /** Page gutters — mobile stays a touch tighter so more fits on screen. */
-  pagePad: "p-4 md:p-7",
+  /** Page gutters — mobile stays a touch tighter so more fits on screen.
+   *  `md:p-5` matches the Mistakes page (the spacing reference for the app):
+   *  one gutter size across every screen. */
+  pagePad: "p-4 md:p-5",
   /** Vertical rhythm between page sections. */
   sectionGap: "mb-4 md:mb-5",
   /** Grid gap between sibling cards. */
