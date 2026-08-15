@@ -141,6 +141,29 @@ function RootShell({ children }: { children: ReactNode }) {
         {/* schema.org identity for the brand + application. Rendered here rather
             than through head() so the JSON body is emitted verbatim. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData() }} />
+        {/* Bascule des polices AU PLUS TÔT.
+         *
+         * Le lien Google Fonts est un `preload as=style` : il se télécharge sans
+         * bloquer le rendu, mais il ne s'applique que le jour où quelqu'un le
+         * transforme en feuille de style. C'était fait dans un `useEffect`,
+         * donc APRÈS l'hydratation — plusieurs centaines de millisecondes de
+         * page entièrement composée dans la pile de repli (Arial/Helvetica),
+         * puis un basculement vers Sora/Manrope qui remesure chaque titre et
+         * chaque ligne de texte : un reflow de la page complète, à chaque
+         * premier chargement. C'est la source de décalage la plus visible du
+         * produit, et elle n'a rien à voir avec React.
+         *
+         * Ce script s'exécute à l'analyse du document et bascule le lien dès
+         * que le CSS arrive, typiquement bien avant l'hydratation. L'effet
+         * React reste en place comme filet : la bascule est idempotente. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){var l=document.querySelector(\'link[rel="preload"][as="style"][href*="fonts.googleapis.com"]\');' +
+              'if(!l)return;var s=function(){l.rel="stylesheet"};' +
+              'if(l.sheet){s();return}l.addEventListener("load",s,{once:true})})()',
+          }}
+        />
       </head>
       <body>
         {children}

@@ -434,7 +434,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 title={t("trade.discardDraft")}
                 className="group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold uppercase tracking-wide transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse group-hover:bg-red-400" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 group-hover:bg-red-400" />
                 {t("trade.draftBadge")}
                 <X className="w-3 h-3" />
               </button>

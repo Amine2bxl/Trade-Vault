@@ -183,7 +183,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
             badge:
               unread > 0 ? (
                 <span
-                  className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-accent px-[3px] text-[8px] font-bold leading-none text-contrast"
+                  className="absolute -right-1.5 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent px-[3px] text-[10px] font-bold leading-none text-contrast"
                   role="status"
                 >
                   {unread > 99 ? "99+" : unread}

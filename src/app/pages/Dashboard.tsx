@@ -36,6 +36,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
 import CopilotBlock from "./dashboard/CopilotBlock";
+import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 
@@ -286,25 +287,32 @@ export default function Dashboard({
             <Plus className="w-4 h-4" /> {t("common.addTrade")}
             {hasDraft && (
               <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />{" "}
-                {t("trade.draftBadge")}
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
               </span>
             )}
           </Button>
         }
       />
 
-      {/* Frame paints instantly; data sections show a skeleton only while the
-          first trades load. No full-page blocker. */}
+      {/* Le cadre est peint immédiatement ; seules les sections de données
+          attendent. Et elles attendent EN SILENCE : la liste des trades vient
+          du cache React Query, donc au retour sur le tableau de bord elle est
+          déjà là. Faire pulser deux grandes cartes pendant les 50 ms où le
+          cache se relit, c'était annoncer un chargement qui n'existe pas.
+          `DeferredFallback` réserve la place et ne montre l'attente que si
+          elle dure vraiment (>320 ms, c'est-à-dire un vrai aller-retour
+          réseau au tout premier chargement). */}
       {tradesLoading ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="stat-card p-4 animate-pulse h-24" />
-            ))}
+        <DeferredFallback reserve="min-h-[420px]">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="stat-card p-4 h-24 skeleton" />
+              ))}
+            </div>
+            <div className="stat-card rounded-3xl p-5 h-64 skeleton" />
           </div>
-          <div className="stat-card rounded-3xl p-5 animate-pulse h-64" />
-        </div>
+        </DeferredFallback>
       ) : (
         <>
           {/* ── Headline KPIs ── */}

@@ -24,6 +24,16 @@ export default function CursorGlow() {
     let raf = 0;
     let visible = false;
 
+    // The loop used to run forever — one callback per frame, for the entire
+    // session, whether or not the pointer had moved. It kept the main thread
+    // from ever going idle, which is exactly the budget an app wants back for
+    // chart rendering and route transitions. Now the loop only exists while
+    // the halo is actually catching up to the pointer, and parks itself the
+    // moment it arrives (sub-pixel distance).
+    const start = () => {
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+
     const onMove = (e: PointerEvent) => {
       tx = e.clientX;
       ty = e.clientY;
@@ -31,6 +41,7 @@ export default function CursorGlow() {
         visible = true;
         el.style.opacity = "1";
       }
+      start();
     };
     const onLeave = () => {
       visible = false;
@@ -43,14 +54,18 @@ export default function CursorGlow() {
       cx += (tx - cx) * 0.16;
       cy += (ty - cy) * 0.16;
       el.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+      // Settled: nothing left to animate until the pointer moves again.
+      if (Math.abs(tx - cx) < 0.5 && Math.abs(ty - cy) < 0.5) {
+        raf = 0;
+        return;
+      }
       raf = requestAnimationFrame(tick);
     };
 
     window.addEventListener("pointermove", onMove, { passive: true });
     document.addEventListener("pointerleave", onLeave);
-    raf = requestAnimationFrame(tick);
     return () => {
-      cancelAnimationFrame(raf);
+      if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerleave", onLeave);
     };

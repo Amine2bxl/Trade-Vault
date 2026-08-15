@@ -86,6 +86,8 @@ import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 const Landing = lazy(() => import("./pages/Landing"));
 import AccountSwitcher from "./components/AccountSwitcher";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
+import { SkeletonForPage } from "./components/Skeleton";
+import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
@@ -629,60 +631,80 @@ function AppContent() {
           <MobileActions page={page} setPage={setPage} />
         </div>
         <PageErrorBoundary resetKey={page}>
-          {/* No skeleton: pages are preloaded, so navigation is instant.
-              Previous page stays visible during the (near-zero) chunk load. */}
-          <Suspense fallback={null}>
-            {page === "dashboard" && (
-              <Dashboard
-                trades={trades}
-                onAddTrade={handleAdd}
-                tradesLoading={tradesLoading}
-                onOpenChecklist={() => setPage("checklist")}
-                onOpenImport={() => setImportOpen(true)}
-                onEditTrade={handleEdit}
-                onOpenJournal={() => setPage("journal")}
-              />
-            )}
-            {page === "journal" && (
-              <Journal
-                trades={trades}
-                onEdit={handleEdit}
-                onQuickEdit={handleQuickEdit}
-                onDelete={handleDelete}
-                onDeleteAll={handleDeleteAll}
-                onAdd={handleAdd}
-                onOpenMissed={() => setPage("missed")}
-              />
-            )}
-            {page === "checklist" && (
-              <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
-            )}
-            {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-            {page === "analytics" && <Analytics trades={trades} />}
-            {page === "mistakes" && <Mistakes trades={trades} />}
-            {page === "missed" && <MissedOpportunities />}
-            {page === "insights" && <Jarvis />}
-            {page === "news" && <EconomicNews />}
-            {page === "seasonality" && (
-              <Seasonality trades={trades} tradesLoading={tradesLoading} />
-            )}
-            {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
-            {page === "settings" && (
-              <Settings
-                trades={trades}
-                onDeleteAll={handleDeleteAll}
-                onOpenImport={() => setImportOpen(true)}
-                onOpenReports={() => setPage("reports")}
-              />
-            )}
-            {page === "reports" && <Reports trades={trades} />}
-            {page === "goals" && <Goals trades={trades} />}
-            {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-            {page === "appearance" && <Appearance />}
-            {page === "subscription" && <Subscription />}
-            {page === "montecarlo" && <MonteCarlo trades={trades} />}
-            {page === "inbox" && <Inbox />}
-            {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+          {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
+              destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
+              En dessous, le chunk est déjà en mémoire (préchargement au survol
+              + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
+              gris de deux frames : le signal « ça charge » sans le chargement.
+              L'espace, lui, reste réservé, donc rien ne bouge. */}
+          <Suspense
+            fallback={
+              <DeferredFallback key={page}>
+                <SkeletonForPage page={page} />
+              </DeferredFallback>
+            }
+          >
+            {/* PageTransition est DANS le Suspense, pas autour.
+                Autour, il jouait sa transition sur la boîte vide réservée
+                pendant l'attente, puis le contenu réel arrivait après coup,
+                sans aucune animation : on ne voyait donc jamais la transition
+                sur ce qui compte. Ici, l'animation se déclenche au moment où
+                la page est réellement peinte. Il ne remonte JAMAIS son enfant
+                (voir le composant) : défilement, filtres et lignes dépliées
+                survivent au changement de page. */}
+            <PageTransition page={page}>
+              {page === "dashboard" && (
+                <Dashboard
+                  trades={trades}
+                  onAddTrade={handleAdd}
+                  tradesLoading={tradesLoading}
+                  onOpenChecklist={() => setPage("checklist")}
+                  onOpenImport={() => setImportOpen(true)}
+                  onEditTrade={handleEdit}
+                  onOpenJournal={() => setPage("journal")}
+                />
+              )}
+              {page === "journal" && (
+                <Journal
+                  trades={trades}
+                  onEdit={handleEdit}
+                  onQuickEdit={handleQuickEdit}
+                  onDelete={handleDelete}
+                  onDeleteAll={handleDeleteAll}
+                  onAdd={handleAdd}
+                  onOpenMissed={() => setPage("missed")}
+                />
+              )}
+              {page === "checklist" && (
+                <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+              )}
+              {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
+              {page === "analytics" && <Analytics trades={trades} />}
+              {page === "mistakes" && <Mistakes trades={trades} />}
+              {page === "missed" && <MissedOpportunities />}
+              {page === "insights" && <Jarvis />}
+              {page === "news" && <EconomicNews />}
+              {page === "seasonality" && (
+                <Seasonality trades={trades} tradesLoading={tradesLoading} />
+              )}
+              {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
+              {page === "settings" && (
+                <Settings
+                  trades={trades}
+                  onDeleteAll={handleDeleteAll}
+                  onOpenImport={() => setImportOpen(true)}
+                  onOpenReports={() => setPage("reports")}
+                />
+              )}
+              {page === "reports" && <Reports trades={trades} />}
+              {page === "goals" && <Goals trades={trades} />}
+              {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+              {page === "appearance" && <Appearance />}
+              {page === "subscription" && <Subscription />}
+              {page === "montecarlo" && <MonteCarlo trades={trades} />}
+              {page === "inbox" && <Inbox />}
+              {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+            </PageTransition>
           </Suspense>
         </PageErrorBoundary>
       </main>

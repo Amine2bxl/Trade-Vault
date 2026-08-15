@@ -101,7 +101,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
             >
               <Plus className="w-6 h-6" strokeWidth={2} />
               {hasDraft && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-base animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-base" />
               )}
             </button>
           </div>

@@ -121,5 +121,104 @@ export const type = {
   micro: "text-[10px]",
 } as const;
 
+/**
+ * Semantic layer — the seven levels of the TradeVault visual language.
+ *
+ * `color` above answers "which Tailwind ramp"; this answers "what is this
+ * surface FOR". Every entry points at a CSS variable defined in `styles.css`,
+ * so a theme swap retints all of them at once and no theme can drift into
+ * looking like a different product.
+ */
+export const level = {
+  /** L1 — the page itself. */
+  background: "var(--tv-bg)",
+  /** L2 — primary surface: a card, a section, a list. Class: `tv-l2`. */
+  surface: "var(--tv-surface-1)",
+  /** L3 — secondary surface: a panel inside a panel. Class: `tv-l3`. */
+  surfaceElevated: "var(--tv-surface-2)",
+  /** L4 — interactive at rest: buttons, chips, toggles. Class: `tv-l4`. */
+  interactive: "var(--tv-surface-3)",
+  /** L5 — data emphasis: the accent, used on what the trader must read first. */
+  emphasis: "var(--tv-accent)",
+  /** L6 — risk. */
+  warning: "var(--tv-warning)",
+  danger: "var(--tv-danger)",
+  /** L7 — discipline kept. */
+  success: "var(--tv-success)",
+} as const;
+
+/** Text roles — three steps. Nothing readable lives below `muted`. */
+export const text = {
+  primary: "var(--tv-text-primary)",
+  secondary: "var(--tv-text-secondary)",
+  muted: "var(--tv-text-muted)",
+} as const;
+
+/** Borders — three weights, no more. */
+export const border = {
+  hairline: "var(--tv-border)",
+  strong: "var(--tv-border-strong)",
+  accent: "var(--tv-border-accent)",
+} as const;
+
+/** Elevation — shadows lift a surface; glow is reserved for the accent. */
+export const elevation = {
+  low: "var(--tv-elev-1)",
+  medium: "var(--tv-elev-2)",
+  high: "var(--tv-elev-3)",
+  glow: "var(--tv-glow-accent)",
+} as const;
+
+/**
+ * Durations — four steps, and every transition in the product picks one.
+ * 1 = pointer feedback · 2 = state/page change · 3 = entrance · 4 = deliberate.
+ */
+export const duration = {
+  feedback: "var(--tv-dur-1)",
+  transition: "var(--tv-dur-2)",
+  entrance: "var(--tv-dur-3)",
+  deliberate: "var(--tv-dur-4)",
+} as const;
+
+/** Stacking order — declared once so no component guesses a z-index. */
+export const zIndex = {
+  rail: 30,
+  float: 40,
+  nav: 50,
+  modal: 70,
+  toast: 80,
+  palette: 90,
+} as const;
+
+/** Signature interaction/animation classes from `styles.css`. */
+export const behavior = {
+  /** Shared hover/press/focus contract for anything clickable. */
+  interactive: "tv-interactive",
+  /** Page-change reveal (applied by `PageTransition`). */
+  pageIn: "page-in",
+  /** A value that just changed. */
+  tick: "tv-tick",
+  /** A completed action acknowledged. */
+  confirm: "tv-confirm",
+  /** Numbers that carry meaning. */
+  numeric: "tv-num",
+} as const;
+
 /** The full token set, for ergonomic single-import access. */
-export const tokens = { font, color, accentVar, surface, radius, motion, density, type } as const;
+export const tokens = {
+  font,
+  color,
+  accentVar,
+  surface,
+  radius,
+  motion,
+  density,
+  type,
+  level,
+  text,
+  border,
+  elevation,
+  duration,
+  zIndex,
+  behavior,
+} as const;
