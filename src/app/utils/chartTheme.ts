@@ -46,8 +46,10 @@ export const EQUITY_GRID = {
   vertical: false,
 } as const;
 
-// Axis ticks — one muted slate, one size, everywhere.
-export const AXIS_TICK = { fill: "#64748b", fontSize: 11 } as const;
+// Axis ticks — one muted slate, one size, everywhere. `--tv-text-muted` is the
+// same token the rest of the UI uses for de-emphasised text, so an axis label
+// and a caption are the same grey by construction rather than by coincidence.
+export const AXIS_TICK = { fill: "var(--tv-text-muted)", fontSize: 11 } as const;
 
 // Compact money labels ($1.2k) so the Y axis stays narrow and readable at any
 // account size instead of wrapping five-digit numbers.
@@ -74,20 +76,24 @@ export const crosshairCursor = {
 // halo: the numbers should be the only thing that stands out.
 export const tooltipStyle = {
   contentStyle: {
-    background: "rgba(10,15,30,0.97)",
-    border: "1px solid rgba(148,163,184,0.16)",
+    // Design-system surface, not a one-off colour: the tooltip is the densest
+    // data card in the product, so it must be built from the same border,
+    // elevation and text tokens as every other card. Hardcoding its navy meant
+    // a theme could retint the whole app and leave every tooltip behind.
+    background: "var(--tv-bg)",
+    border: "1px solid var(--tv-border-strong)",
     borderRadius: "10px",
     fontSize: 11,
-    boxShadow: "0 10px 30px -10px rgba(0,0,0,0.65)",
+    boxShadow: "var(--tv-elev-2)",
     padding: "8px 11px",
   },
-  labelStyle: { color: "#94a3b8", marginBottom: 3, fontSize: 10 },
-  itemStyle: { color: "#e2e8f0", fontWeight: 600 },
+  labelStyle: { color: "var(--tv-text-secondary)", marginBottom: 3, fontSize: 10 },
+  itemStyle: { color: "var(--tv-text-primary)", fontWeight: 600 },
   cursor: crosshairCursor,
 };
 
 export function glowDot(color: string) {
-  return { r: 4, strokeWidth: 2, stroke: "#0a0f1e", fill: color };
+  return { r: 4, strokeWidth: 2, stroke: "var(--tv-bg)", fill: color };
 }
 
 // Hover marker — a small filled dot with a dark ring so it reads crisply on top
@@ -97,7 +103,8 @@ export function glowActiveDot(color: string) {
   return {
     r: 3.5,
     strokeWidth: 2,
-    stroke: "#0a0f1e",
+    // The ring is a hole punched in the curve, so it must BE the page colour.
+    stroke: "var(--tv-bg)",
     fill: color,
   };
 }

@@ -49,14 +49,14 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PageRoute = PageRouteImport.update({
   id: '/$page',
   path: '/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevAiRoute = DevAiRouteImport.update({
@@ -67,8 +67,8 @@ const DevAiRoute = DevAiRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/contact': typeof ContactRoute
   '/$page': typeof PageRoute
+  '/contact': typeof ContactRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
   '/privacy': typeof PrivacyRoute
@@ -78,8 +78,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/contact': typeof ContactRoute
   '/$page': typeof PageRoute
+  '/contact': typeof ContactRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
   '/privacy': typeof PrivacyRoute
@@ -90,8 +90,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/contact': typeof ContactRoute
   '/$page': typeof PageRoute
+  '/contact': typeof ContactRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
   '/privacy': typeof PrivacyRoute
@@ -103,8 +103,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/contact'
     | '/$page'
+    | '/contact'
     | '/demo'
     | '/demo-site'
     | '/privacy'
@@ -114,8 +114,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/contact'
     | '/$page'
+    | '/contact'
     | '/demo'
     | '/demo-site'
     | '/privacy'
@@ -125,8 +125,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/contact'
     | '/$page'
+    | '/contact'
     | '/demo'
     | '/demo-site'
     | '/privacy'
@@ -137,6 +137,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PageRoute: typeof PageRoute
   ContactRoute: typeof ContactRoute
   DemoRoute: typeof DemoRoute
   DemoSiteRoute: typeof DemoSiteRoute
@@ -216,8 +217,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ContactRoute: ContactRoute,
   PageRoute: PageRoute,
+  ContactRoute: ContactRoute,
   DemoRoute: DemoRoute,
   DemoSiteRoute: DemoSiteRoute,
   PrivacyRoute: PrivacyRoute,

@@ -36,6 +36,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
 import CopilotBlock from "./dashboard/CopilotBlock";
+import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 
@@ -286,7 +287,7 @@ export default function Dashboard({
             <Plus className="w-4 h-4" /> {t("common.addTrade")}
             {hasDraft && (
               <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />{" "}
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />{" "}
                 {t("trade.draftBadge")}
               </span>
             )}
@@ -295,16 +296,19 @@ export default function Dashboard({
       />
 
       {/* Frame paints instantly; data sections show a skeleton only while the
-          first trades load. No full-page blocker. */}
+          first trades load. The skeleton is deferred (>320 ms) so it never
+          flashes for the 50 ms it takes the React Query cache to re-read. */}
       {tradesLoading ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="stat-card p-4 animate-pulse h-24" />
-            ))}
+        <DeferredFallback reserve="min-h-[420px]">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="stat-card p-4 h-24 skeleton" />
+              ))}
+            </div>
+            <div className="stat-card rounded-3xl p-5 h-64 skeleton" />
           </div>
-          <div className="stat-card rounded-3xl p-5 animate-pulse h-64" />
-        </div>
+        </DeferredFallback>
       ) : (
         <>
           {/* ── Headline KPIs ── */}
