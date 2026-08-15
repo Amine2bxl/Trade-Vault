@@ -27,7 +27,8 @@ import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageHeader, PageContainer, Button, EmptyState, Card } from "@/shared/ui";
+import { PageContainer, Button, EmptyState, Card } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 
 interface JournalProps {
   trades: Trade[];
@@ -251,32 +252,34 @@ export default function Journal({
   // ceux de la section Journal (`SectionTabs`), rendus par le shell, et ce
   // sont de vrais liens.
 
+  const headerActions = useMemo(
+    () => (
+      <div className="flex items-center gap-2 shrink-0">
+        <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
+          <Download className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">{t("common.exportCsv")}</span>
+        </Button>
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={onDeleteAll}
+          className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
+        >
+          <Trash className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">{t("common.deleteAll")}</span>
+        </Button>
+        <Button variant="accent" size="sm" onClick={onAdd} className="hidden md:inline-flex">
+          <Plus className="w-4 h-4" /> {t("common.addTrade")}
+        </Button>
+      </div>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [trades, onDeleteAll, onAdd, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <PageContainer>
-      <PageHeader
-        className="items-center"
-        actions={
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{t("common.exportCsv")}</span>
-            </Button>
-            <Button
-              variant="subtle"
-              size="sm"
-              onClick={onDeleteAll}
-              className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
-            >
-              <Trash className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{t("common.deleteAll")}</span>
-            </Button>
-            <Button variant="accent" size="sm" onClick={onAdd} className="hidden md:inline-flex">
-              <Plus className="w-4 h-4" /> {t("common.addTrade")}
-            </Button>
-          </div>
-        }
-      />
-
       {filtered.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
           <SummaryTile

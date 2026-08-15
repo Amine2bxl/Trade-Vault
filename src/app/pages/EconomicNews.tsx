@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { PageHeader, Card } from "@/shared/ui";
+import { Card } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 import { useEconomicCalendar } from "../hooks/useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
 import type { TKey } from "../i18n/translations";
@@ -291,30 +292,31 @@ export default function EconomicNews() {
     setCustomDayFilter(null);
   };
 
+  const headerActions = useMemo(
+    () => (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[11px] font-semibold shrink-0",
+          liveActive
+            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
+            : "bg-white/[0.04] border-white/[0.08] text-slate-400",
+        )}
+      >
+        {liveActive && (
+          <span className="relative flex w-1.5 h-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+          </span>
+        )}
+        {t("news.live")}
+      </span>
+    ),
+    [liveActive, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
-      <PageHeader
-        className="stagger-0"
-        actions={
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[11px] font-semibold shrink-0",
-              liveActive
-                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
-                : "bg-white/[0.04] border-white/[0.08] text-slate-400",
-            )}
-          >
-            {liveActive && (
-              <span className="relative flex w-1.5 h-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-              </span>
-            )}
-            {t("news.live")}
-          </span>
-        }
-      />
-
       {(isFallback || stale) && !loading && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />

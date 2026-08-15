@@ -14,7 +14,8 @@ import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "../util
 import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { FIELD_BASE, Button, PageHeader } from "@/shared/ui";
+import { FIELD_BASE, Button } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 import type { Page } from "../types";
 
 interface LotSizeCalculatorProps {
@@ -148,43 +149,43 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
   const fiveLossDrawdown = `${Math.min(100, riskPctNum * 5).toFixed(0)}%`;
   const gaugePct = Math.max(0, Math.min(100, (riskPctNum / RECOMMENDED_RISK_PCT) * 100));
 
+  const headerActions = useMemo(
+    () => (
+      <div className="flex items-center gap-2 shrink-0">
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={() => setPage("news")}
+          title={t("calc.economicCalendar")}
+        >
+          <CalendarDays className="w-4 h-4" />
+          <span className="hidden sm:inline">{t("calc.economicCalendar")}</span>
+        </Button>
+        <div className="inline-flex p-1 rounded-xl bg-black/30 border border-white/[0.08]">
+          {(["forex", "futures"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setModePersisted(m)}
+              className={cn(
+                "h-8 px-4 rounded-lg text-xs font-bold transition",
+                mode === m
+                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
+                  : "text-slate-500 hover:text-slate-300",
+              )}
+            >
+              {t(m === "forex" ? "calc.forex" : "calc.futures")}
+            </button>
+          ))}
+        </div>
+      </div>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode, setPage, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <div className="p-4 md:p-5 max-w-[920px] mx-auto">
-      {/* ── En-tête : accès calendrier + mode (forex/futures), alignés à droite
-          comme les CTA des autres pages. La barre d'onglets nomme déjà la page. ── */}
-      <PageHeader
-        className="stagger-0"
-        actions={
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="subtle"
-              size="sm"
-              onClick={() => setPage("news")}
-              title={t("calc.economicCalendar")}
-            >
-              <CalendarDays className="w-4 h-4" />
-              <span className="hidden sm:inline">{t("calc.economicCalendar")}</span>
-            </Button>
-            <div className="inline-flex p-1 rounded-xl bg-black/30 border border-white/[0.08]">
-              {(["forex", "futures"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setModePersisted(m)}
-                  className={cn(
-                    "h-8 px-4 rounded-lg text-xs font-bold transition",
-                    mode === m
-                      ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
-                      : "text-slate-500 hover:text-slate-300",
-                  )}
-                >
-                  {t(m === "forex" ? "calc.forex" : "calc.futures")}
-                </button>
-              ))}
-            </div>
-          </div>
-        }
-      />
-
       <div className="grid md:grid-cols-[1fr_320px] gap-4 md:gap-5 items-start">
         {/* ══ Colonne gauche : capital → risque → instrument ══ */}
         <div className="space-y-4">

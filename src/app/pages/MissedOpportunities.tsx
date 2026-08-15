@@ -32,15 +32,8 @@ import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import Lightbox from "../components/Lightbox";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import {
-  PageHeader,
-  Card,
-  PageContainer,
-  Button,
-  EmptyState,
-  Modal,
-  FIELD_BASE,
-} from "@/shared/ui";
+import { Card, PageContainer, Button, EmptyState, Modal, FIELD_BASE } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -176,27 +169,29 @@ export default function MissedOpportunities() {
     return { totalR, count: items.length, avgR: items.length ? totalR / items.length : 0 };
   }, [items]);
 
+  const headerActions = useMemo(
+    () => (
+      <div className="flex items-center gap-2 shrink-0">
+        {items.length > 0 && (
+          <Button variant="subtle" size="sm" onClick={exportCsv} title={t("missed.exportCsv")}>
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">{t("missed.exportCsv")}</span>
+          </Button>
+        )}
+        <Button size="sm" onClick={() => setEditing(emptyMissed())}>
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">{t("missed.log")}</span>
+          <span className="sm:hidden">{t("missed.logShort")}</span>
+        </Button>
+      </div>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items.length, exportCsv, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <PageContainer className="max-w-[1100px]">
-      <PageHeader
-        className="items-center"
-        actions={
-          <div className="flex items-center gap-2 shrink-0">
-            {items.length > 0 && (
-              <Button variant="subtle" size="sm" onClick={exportCsv} title={t("missed.exportCsv")}>
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">{t("missed.exportCsv")}</span>
-              </Button>
-            )}
-            <Button size="sm" onClick={() => setEditing(emptyMissed())}>
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">{t("missed.log")}</span>
-              <span className="sm:hidden">{t("missed.logShort")}</span>
-            </Button>
-          </div>
-        }
-      />
-
       {/* Cost of hesitation, up front. Seeing "+18.4 R left on the table" is
           what turns this page from a notebook into an argument. */}
       {!loading && items.length > 0 && (

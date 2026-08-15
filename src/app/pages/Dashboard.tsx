@@ -33,7 +33,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
+import { PageContainer, Metric, Card, Button } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 import CopilotBlock from "./dashboard/CopilotBlock";
 import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
@@ -267,27 +268,28 @@ export default function Dashboard({
         ? "text-red-400"
         : "text-slate-300";
 
+  const headerActions = useMemo(
+    () => (
+      <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
+        <Plus className="w-4 h-4" /> {t("common.addTrade")}
+        {hasDraft && (
+          <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
+          </span>
+        )}
+      </Button>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onAddTrade, hasDraft, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <PageContainer>
-      <PageHeader
-        className="items-center"
-        eyebrow={
-          <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{getGreeting()}</span>
-          </div>
-        }
-        actions={
-          <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
-            <Plus className="w-4 h-4" /> {t("common.addTrade")}
-            {hasDraft && (
-              <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
-              </span>
-            )}
-          </Button>
-        }
-      />
+      <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-4 md:mb-5">
+        <Sparkles className="w-3.5 h-3.5" />
+        <span>{getGreeting()}</span>
+      </div>
 
       {/* Frame paints instantly; data sections show a skeleton only while the
           first trades load. The skeleton is deferred (>320 ms) so it never

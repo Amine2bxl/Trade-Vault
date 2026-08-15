@@ -30,7 +30,7 @@ import {
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
 import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from "../utils/chartTheme";
-import { EmptyState, PageHeader, Card } from "@/shared/ui";
+import { EmptyState, Card } from "@/shared/ui";
 
 interface MistakesProps {
   trades: Trade[];
@@ -164,8 +164,6 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
   return (
     <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
-      <PageHeader className="stagger-0" />
-
       <div className="space-y-4 md:space-y-6">
         {/* ── Discipline score + summary KPIs ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

@@ -36,7 +36,7 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import { PageHeader, PageContainer, Card } from "@/shared/ui";
+import { PageContainer, Card } from "@/shared/ui";
 
 interface SeasonalityProps {
   trades: Trade[];
@@ -46,7 +46,6 @@ interface SeasonalityProps {
 export default function Seasonality(_props: SeasonalityProps) {
   return (
     <PageContainer>
-      <PageHeader className="stagger-0" />
       <AssetSeasonality />
     </PageContainer>
   );

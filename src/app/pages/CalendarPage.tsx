@@ -419,8 +419,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       style={cellStyle}
                       className={cn(
                         "h-16 md:min-h-[112px] md:p-2.5 p-1 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
-                        !cellStyle && !missedCount && "border-white/[0.05]",
-                        !cellStyle && isWeekend && "bg-white/[0.01]",
+                        !cellStyle && !missedCount && "border-white/[0.04] bg-white/[0.02]",
+                        !cellStyle && isWeekend && "bg-white/[0.03]",
                         !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
                         isToday && "ring-1 ring-inset ring-cyan-400/60",
                         (data || missedCount > 0) &&
@@ -437,8 +437,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                               : data
                                 ? "text-slate-300"
                                 : isWeekend
-                                  ? "text-slate-700"
-                                  : "text-slate-600",
+                                  ? "text-slate-600"
+                                  : "text-slate-500",
                           )}
                         >
                           {day}

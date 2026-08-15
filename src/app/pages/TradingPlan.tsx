@@ -28,7 +28,7 @@ import {
   type TradingPlanData,
 } from "../utils/tradingPlan";
 import TradingRulesSection from "../components/TradingRulesSection";
-import { PageHeader } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 
 // Trading Plan — the trader's written constitution. Every field autosaves
 // (debounced) to profiles.trading_plan; the completion ring fills as the
@@ -91,6 +91,14 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   const completion = useMemo(() => planCompletion(plan), [plan]);
 
+  usePageActions(
+    useMemo(
+      () => <CompletionRing value={completion} label={tr("complet", "complete")} />,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [completion, tr],
+    ),
+  );
+
   if (loading) {
     return (
       <div className="p-4 md:p-5 max-w-3xl mx-auto">
@@ -103,12 +111,6 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   return (
     <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
-      {/* Header + completion */}
-      <PageHeader
-        className="items-center"
-        actions={<CompletionRing value={completion} label={tr("complet", "complete")} />}
-      />
-
       {/* Autosave indicator */}
       <div className="h-4 -mt-2 text-right text-[10px] font-semibold uppercase tracking-wider">
         {saveState === "saving" && (
