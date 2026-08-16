@@ -1,5 +1,5 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { PlayCircle, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
@@ -18,7 +18,7 @@ import { SUPPORT_EMAIL } from "../types";
 import { CookieConsent } from "../components/CookieConsent";
 import "./landing.css";
 
-/* ─────────────────────────── LOGO ─────────────────────────── */
+/* ─────────────────────────── LOGO ────────────────────────── */
 function Logo({ compact = false }: { compact?: boolean }) {
   const s = compact ? 28 : 34;
   return (
@@ -104,6 +104,7 @@ function useScroll() {
   }, []);
   return { y, pct };
 }
+
 function useReveal() {
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -120,6 +121,7 @@ function useReveal() {
     return () => io.disconnect();
   }, []);
 }
+
 function useCountdown() {
   const calc = () => {
     const n = new Date();
@@ -250,7 +252,7 @@ function HeroProductVisual() {
   );
 }
 
-/* ─────────────────────────── AI CONVERSATION ────────────────────────── */
+/* ─────────────────────────── AI CONVERSATION ─────────────────────────── */
 function AIConversation() {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/[.1] bg-[#0b1727]/90 shadow-[0_24px_64px_rgba(0,0,0,.5)] backdrop-blur-xl">
@@ -418,12 +420,12 @@ function SectionHead({
   center?: boolean;
 }) {
   return (
-    <div className={`reveal ${center ? "text-center mx-auto" : ""} max-w-2xl mb-14`}>
-      <div className="tag-label inline-flex mb-5">{tag}</div>
-      <h2 className="font-display text-[clamp(2rem,4vw,3.2rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.08]">
+    <div className={`reveal ${center ? "text-center mx-auto" : ""} max-w-3xl mb-16`}>
+      <div className="tag-label inline-flex mb-6">{tag}</div>
+      <h2 className="font-display text-[clamp(2.2rem,4.5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-white leading-[1.08]">
         {title}
       </h2>
-      {sub && <p className="mt-5 text-slate-400 leading-7 text-lg">{sub}</p>}
+      {sub && <p className="mt-6 text-slate-400 leading-7 text-lg">{sub}</p>}
     </div>
   );
 }
@@ -436,37 +438,88 @@ const NAV: [string, string][] = [
   ["FAQ", "faq"],
 ];
 
+/* ─────────────────────────── NUMBERED CARDS SECTION ─────────────────────────── */
+function NumberedCardsSection() {
+  const cards = [
+    {
+      num: "01",
+      title: "Journal intelligent",
+      desc: "Enregistre chaque trade en 45 secondes. Symbole, direction, risque, setup, erreurs — tout est structuré automatiquement.",
+      featured: false,
+    },
+    {
+      num: "02",
+      title: "Analytics avancées",
+      desc: "Win rate, R-multiple, profit factor, drawdown, edge par setup. 20+ métriques calculées en temps réel pour comprendre ta performance.",
+      featured: true,
+    },
+    {
+      num: "03",
+      title: "Coach IA intégré",
+      desc: "Une intelligence qui lit ton historique, détecte tes patterns et te dit exactement quoi corriger. Pas de généralités, que du concret.",
+      featured: false,
+    },
+  ];
+
+  return (
+    <section className="relative py-20 lg:py-28">
+      <div className="grid-bg" />
+      <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {cards.map((card, i) => (
+            <div
+              key={card.num}
+              className={`reveal numbered-card ${card.featured ? "featured" : ""}`}
+              style={{ transitionDelay: `${i * 100}ms` }}
+            >
+              <p className="card-number">{card.num}.</p>
+              <h3 className="font-display text-xl font-bold mb-3">{card.title}</h3>
+              <p className="text-sm leading-6 text-slate-400">{card.desc}</p>
+              {card.featured && (
+                <button className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#050505] hover:opacity-80 transition">
+                  En savoir plus <Icon n="arrow" cls="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─────────────────────────── STATS SECTION ─────────────────────────── */
 function StatsSection() {
   const stats = [
-    { value: "+27%", label: "Amélioration du R:R moyen", sub: "Après 3 mois d'utilisation" },
-    { value: "-34%", label: "Erreurs répétées", sub: "Détection et correction" },
+    { value: "+27%", label: "Amélioration du R:R", sub: "Après 3 mois" },
+    { value: "-34%", label: "Erreurs répétées", sub: "Détection IA" },
     { value: "68%", label: "Win rate meilleur setup", sub: "Pattern detection" },
     { value: "2.3x", label: "Profit factor moyen", sub: "Users Premium" },
   ];
+
   return (
-    <section className="relative border-t border-white/[.06] py-20 lg:py-24">
+    <section className="relative py-20 lg:py-28">
       <div className="grid-bg" />
-      <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+      <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
         <SectionHead
           tag="Résultats"
           title={
             <>
-              Ce que les traders <span className="text-gradient">comprennent</span> avec TradeVault
+              Ce que les traders <span className="text-accent">comprennent</span> avec TradeVault
             </>
           }
           sub="Exemples UI — les chiffres varient selon l'historique de chaque trader."
         />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s, i) => (
             <div
               key={s.label}
-              className="reveal stats-card p-6 text-center"
+              className="reveal card-premium p-8 text-center"
               style={{ transitionDelay: `${i * 80}ms` }}
             >
-              <p className="font-display text-4xl font-extrabold text-gradient">{s.value}</p>
-              <p className="mt-3 text-sm font-semibold text-white">{s.label}</p>
-              <p className="mt-1.5 text-xs text-slate-500">{s.sub}</p>
+              <p className="stat-big text-gradient">{s.value}</p>
+              <p className="stat-label">{s.label}</p>
+              <p className="stat-sublabel">{s.sub}</p>
             </div>
           ))}
         </div>
@@ -497,32 +550,33 @@ function ProcessSection() {
       featured: false,
     },
   ];
+
   return (
-    <section className="relative border-t border-white/[.06] py-20 lg:py-24">
+    <section className="relative py-20 lg:py-28">
       <div className="grid-bg" />
-      <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+      <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
         <SectionHead
           tag="Comment ça marche"
           title={
             <>
-              Ton trading, <span className="text-gradient">compris.</span>
+              Ton trading, <span className="text-accent">compris.</span>
             </>
           }
           sub="TradeVault transforme tes trades bruts en intelligence actionnable."
         />
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           {steps.map((s, i) => (
             <div
               key={s.num}
-              className={`reveal process-card p-8 ${s.featured ? "featured" : ""}`}
+              className={`reveal process-step ${s.featured ? "featured" : ""}`}
               style={{ transitionDelay: `${i * 100}ms` }}
             >
-              <p className="font-display text-5xl font-extrabold text-gradient mb-4">{s.num}</p>
-              <h3 className="font-display text-xl font-bold text-white mb-3">{s.title}</h3>
-              <p className="text-sm leading-6 text-slate-400">{s.desc}</p>
+              <p className="step-number">{s.num}</p>
+              <h3 className="font-display text-2xl font-bold text-white mb-4">{s.title}</h3>
+              <p className="text-base leading-7 text-slate-400">{s.desc}</p>
               {s.featured && (
-                <button className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200 transition">
-                  En savoir plus <Icon n="arrow" cls="h-4 w-4" />
+                <button className="mt-8 inline-flex items-center gap-2 text-base font-bold text-cyan-300 hover:text-cyan-200 transition">
+                  En savoir plus <Icon n="arrow" cls="h-5 w-5" />
                 </button>
               )}
             </div>
@@ -533,7 +587,7 @@ function ProcessSection() {
   );
 }
 
-/* ─────────────────────────── LANDING ────────────────────────── */
+/* ─────────────────────────── LANDING ─────────────────────────── */
 export default function Landing() {
   const [auth, setAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
@@ -573,6 +627,7 @@ export default function Landing() {
     setAuthPlan(plan);
     setAuth(true);
   };
+
   const go = (id: string) => {
     setMenu(false);
     setActiveSec(id);
@@ -583,6 +638,7 @@ export default function Landing() {
       scrollLockRef.current = false;
     }, 1000);
   };
+
   const onHeroMove = (e: RPointerEvent<HTMLElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
@@ -590,15 +646,8 @@ export default function Landing() {
   };
 
   return (
-    <div className="landing-root min-h-screen overflow-x-clip bg-[#030712] text-slate-100 selection:bg-cyan-400 selection:text-slate-950">
+    <div className="landing-root min-h-screen overflow-x-clip bg-[#050505] text-white selection:bg-cyan-400 selection:text-[#050505]">
       <CursorGlow />
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 55% at 60% -10%,rgba(34,211,238,.1),transparent 60%),radial-gradient(ellipse 55% 45% at 95% 55%,rgba(99,102,241,.08),transparent 55%)",
-        }}
-      />
 
       {/* ── NAV ── */}
       <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
@@ -606,19 +655,28 @@ export default function Landing() {
       <main className="relative z-10">
         {/* ── HERO ── */}
         <section
-          className="hero-mesh relative overflow-hidden pt-[92px] pb-20 lg:pt-[120px] lg:pb-28"
+          className="hero-mesh relative overflow-hidden pt-[100px] pb-20 lg:pt-[130px] lg:pb-32"
           onPointerMove={onHeroMove}
         >
           <div className="grid-bg" />
-          <div className="relative mx-auto grid max-w-[1280px] items-center gap-16 px-5 lg:grid-cols-[1.05fr_.95fr] lg:gap-14 lg:px-8">
+          <div
+            className="glow-orb glow-orb-cyan"
+            style={{ top: "-10%", right: "-5%", width: "600px", height: "600px" }}
+          />
+          <div
+            className="glow-orb glow-orb-indigo"
+            style={{ bottom: "-10%", left: "-5%", width: "500px", height: "500px" }}
+          />
+
+          <div className="relative mx-auto grid max-w-[1320px] items-center gap-16 px-5 lg:grid-cols-[1.05fr_1fr] lg:gap-20 lg:px-8">
             <div className="text-center lg:text-left">
-              <div className="fade-up inline-flex items-center gap-2.5 rounded-full border border-cyan-400/22 bg-cyan-400/[.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[.13em] text-cyan-300">
+              <div className="fade-up inline-flex items-center gap-2.5 rounded-full border border-cyan-400/30 bg-cyan-400/[.08] px-5 py-2 text-[11px] font-bold uppercase tracking-[.13em] text-cyan-300">
                 <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />{" "}
-                TradeVault · Ton coach IA de trading personnel
+                TradeVault · Ton coach IA de trading
               </div>
-              <h1 className="fade-up d1 font-display mt-7 text-[clamp(2.8rem,5.8vw,4.8rem)] font-extrabold leading-[1.02] tracking-[-0.045em] text-white">
+              <h1 className="fade-up d1 font-display mt-8 text-[clamp(3rem,6vw,5.5rem)] font-extrabold leading-[1.02] tracking-[-0.045em] text-white">
                 Trade better.{" "}
-                <span className="text-gradient relative inline-block">
+                <span className="text-accent relative inline-block">
                   Understand why.
                   <svg
                     className="scribble"
@@ -636,33 +694,32 @@ export default function Landing() {
                   </svg>
                 </span>
               </h1>
-              <p className="fade-up d2 mt-7 text-lg leading-7 text-slate-400 sm:text-xl max-w-[560px] mx-auto lg:mx-0">
-                <strong className="text-slate-200">TradeVault</strong> réunit journal de trading,
-                analytics avancées et <strong className="text-slate-200">Coach IA</strong> pour
-                analyser tes trades, détecter tes erreurs et t'accompagner vers une progression
-                réelle.
+              <p className="fade-up d2 mt-8 text-xl leading-8 text-slate-400 max-w-[600px] mx-auto lg:mx-0">
+                <strong className="text-white">TradeVault</strong> réunit journal de trading,
+                analytics avancées et <strong className="text-white">Coach IA</strong> pour analyser
+                tes trades, détecter tes erreurs et t'accompagner vers une progression réelle.
               </p>
-              <div className="fade-up d3 mt-9 flex flex-col gap-3.5 sm:flex-row sm:justify-center lg:justify-start">
+              <div className="fade-up d3 mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start">
                 <button
                   onClick={() => open("signup", "Essai Premium 14 jours")}
-                  className="btn-primary px-7 py-4 text-[1rem] font-semibold"
+                  className="btn-accent px-8 py-4 text-[1.1rem]"
                 >
-                  Commencer gratuitement <Icon n="arrow" cls="h-4 w-4" />
+                  Commencer gratuitement <Icon n="arrow" cls="h-5 w-5" />
                 </button>
-                <a href="/demo-site" className="btn-ghost px-6 py-4 text-[1rem] font-semibold">
-                  <PlayCircle className="w-4 h-4" /> Voir la démo
+                <a href="/demo-site" className="btn-ghost px-7 py-4 text-[1.1rem] font-semibold">
+                  <PlayCircle className="w-5 h-5" /> Voir la démo
                 </a>
               </div>
-              <div className="fade-up d4 mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 lg:justify-start">
+              <div className="fade-up d4 mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 lg:justify-start">
                 {["Sans carte bancaire", "Annulation en 1 clic", "Setup en 2 min"].map((t) => (
-                  <span key={t} className="flex items-center gap-2 text-sm text-slate-500">
-                    <Icon n="check" cls="h-4 w-4 text-emerald-400" />
+                  <span key={t} className="flex items-center gap-2.5 text-base text-slate-500">
+                    <Icon n="check" cls="h-5 w-5 text-emerald-400" />
                     {t}
                   </span>
                 ))}
               </div>
-              <p className="fade-up d4 mt-5 flex items-start gap-2.5 text-sm leading-5 text-slate-500 max-w-[540px] mx-auto lg:mx-0">
-                <Icon n="lock" cls="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
+              <p className="fade-up d4 mt-6 flex items-start gap-3 text-base leading-6 text-slate-500 max-w-[560px] mx-auto lg:mx-0">
+                <Icon n="lock" cls="h-5 w-5 shrink-0 mt-0.5 text-slate-400" />
                 <span>
                   La connexion Google sert uniquement à créer ton compte TradeVault en toute
                   sécurité et à synchroniser tes données sur tous tes appareils.
@@ -672,48 +729,51 @@ export default function Landing() {
                 href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
                 target="_blank"
                 rel="noreferrer"
-                className="fade-up d4 mt-5 inline-flex items-center gap-3 rounded-full border border-white/[.08] bg-white/[.03] py-2 pl-2.5 pr-4 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]"
+                className="fade-up d4 mt-6 inline-flex items-center gap-3 rounded-full border border-white/[.1] bg-white/[.03] py-2.5 pl-3 pr-5 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]"
               >
-                <span className="flex gap-0.5">
+                <span className="flex gap-1">
                   {[0, 1, 2, 3, 4].map((i) => (
                     <span
                       key={i}
-                      className="grid h-4.5 w-4.5 place-items-center rounded-[2px] bg-[#00b67a]"
+                      className="grid h-5 w-5 place-items-center rounded-[2px] bg-[#00b67a]"
                     >
-                      <Icon n="star" cls="h-3 w-3 text-white fill-white" />
+                      <Icon n="star" cls="h-3.5 w-3.5 text-white fill-white" />
                     </span>
                   ))}
                 </span>
-                <span className="text-sm font-semibold text-slate-300">
+                <span className="text-base font-semibold text-slate-300">
                   Avis vérifiés sur <span className="text-white font-bold">Trustpilot</span>
                 </span>
-                <Icon n="arrow" cls="h-3.5 w-3.5 text-slate-500" />
+                <Icon n="arrow" cls="h-4 w-4 text-slate-500" />
               </a>
             </div>
-            <div className="fade-up d2 w-full max-w-[460px] mx-auto lg:mx-0 lg:ml-auto lg:mt-0 mt-8">
+            <div className="fade-up d2 w-full max-w-[500px] mx-auto lg:mx-0 lg:ml-auto lg:mt-0 mt-10">
               <HeroProductVisual />
             </div>
           </div>
 
-          <div className="relative mx-auto mt-20 max-w-[1280px] px-5 lg:mt-24 lg:px-8">
+          <div className="relative mx-auto mt-24 max-w-[1320px] px-5 lg:mt-28 lg:px-8">
             <PlatformsStrip />
-            <div className="mt-6">
+            <div className="mt-8">
               <FeatureRow />
             </div>
             <button
               onClick={() => go("ai")}
-              className="reveal mx-auto mt-6 flex items-center gap-2.5 text-sm font-semibold text-slate-500 hover:text-cyan-300 transition"
+              className="reveal mx-auto mt-8 flex items-center gap-3 text-base font-semibold text-slate-500 hover:text-cyan-300 transition"
             >
-              <Icon n="brain" cls="h-4.5 w-4.5 text-cyan-300" />
-              Vois comment le Coach IA analyse tes trades <Icon n="arrow" cls="h-4 w-4" />
+              <Icon n="brain" cls="h-5 w-5 text-cyan-300" />
+              Vois comment le Coach IA analyse tes trades <Icon n="arrow" cls="h-5 w-5" />
             </button>
           </div>
         </section>
 
+        {/* ── NUMBERED CARDS ─ */}
+        <NumberedCardsSection />
+
         {/* ── PROBLÈME ── */}
-        <section id="problem" className="relative border-t border-white/[.06] py-20 lg:py-24">
+        <section id="problem" className="relative section-divider py-20 lg:py-28">
           <div className="grid-bg" />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
             <SectionHead
               tag="Le vrai problème"
               title={
@@ -725,74 +785,73 @@ export default function Landing() {
               }
               sub="Le vrai tueur de comptes, c'est l'absence de système, de mémoire et de feedback. Trois symptômes que tu connais sûrement :"
             />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {PROBLEMS.map((p, i) => (
                 <article
                   key={p.t}
                   onPointerMove={spot}
-                  className="reveal spot rounded-2xl border border-red-400/12 bg-red-400/[.03] p-7 transition-colors hover:border-red-400/25"
+                  className="reveal spot card-premium p-8"
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
-                  <div className="grid h-12 w-12 place-items-center rounded-xl border border-red-400/20 bg-red-400/[.07] text-red-400 mb-6">
+                  <div className="feature-icon mb-6">
                     <Icon n={p.n} cls="h-6 w-6" />
                   </div>
-                  <h3 className="font-display text-lg font-bold text-white">{p.t}</h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">{p.d}</p>
+                  <h3 className="font-display text-xl font-bold text-white mb-3">{p.t}</h3>
+                  <p className="text-base leading-7 text-slate-400">{p.d}</p>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── PROCESS ── */}
+        {/* ── PROCESS ─ */}
         <ProcessSection />
 
+        {/* ── STATS ── */}
+        <StatsSection />
+
         {/* ── SECTION IA ── */}
-        <section
-          id="ai"
-          className="relative border-t border-white/[.06] overflow-hidden py-20 lg:py-28"
-        >
+        <section id="ai" className="relative section-divider overflow-hidden py-20 lg:py-32">
           <div className="grid-bg" />
           <div
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse 55% 45% at 50% 30%,rgba(34,211,238,.1),transparent 60%)",
+                "radial-gradient(ellipse 55% 45% at 50% 30%,rgba(34,211,238,.12),transparent 60%)",
             }}
           />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
             <SectionHead
               tag="La solution"
               title={
                 <>
-                  Un coach IA qui connaît{" "}
-                  <span className="text-gradient">chacun de tes trades.</span>
+                  Un coach IA qui connaît <span className="text-accent">chacun de tes trades.</span>
                 </>
               }
               sub="TradeVault lit ton historique réel — pas des généralités de marché. Il détecte ce qui te coûte de l'argent et te dit exactement quoi corriger."
             />
 
-            <div className="reveal grid items-center gap-12 lg:grid-cols-2 lg:gap-16 mb-18">
+            <div className="reveal grid items-center gap-14 lg:grid-cols-2 lg:gap-20 mb-20">
               <AIConversation />
               <div>
-                <h3 className="font-display text-3xl font-bold text-white leading-tight">
+                <h3 className="font-display text-4xl font-bold text-white leading-tight mb-6">
                   Un mentor qui connaît
                   <br />
-                  <span className="text-gradient">chacun de tes trades.</span>
+                  <span className="text-accent">chacun de tes trades.</span>
                 </h3>
-                <p className="mt-5 text-slate-400 leading-7 text-lg">
+                <p className="text-xl text-slate-400 leading-8 mb-8">
                   Pose une question en langage naturel. Le Coach IA puise dans ton historique réel
                   pour te répondre — pas de généralités, uniquement des insights sur TON trading.
                 </p>
-                <div className="mt-7 space-y-3.5">
+                <div className="space-y-4">
                   {[
                     "Réponses basées sur tes vraies données",
                     "Diagnostic précis en quelques secondes",
                     "Plans d'action concrets, pas de théorie",
                   ].map((t) => (
-                    <div key={t} className="flex items-center gap-3.5 text-base text-slate-300">
-                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-cyan-400/12 text-cyan-300">
-                        <Icon n="check" cls="h-3.5 w-3.5" />
+                    <div key={t} className="flex items-center gap-4 text-lg text-slate-300">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-cyan-400/12 text-cyan-300">
+                        <Icon n="check" cls="h-4 w-4" />
                       </span>
                       {t}
                     </div>
@@ -801,44 +860,36 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {AIS.map((a, i) => (
                 <article
                   key={a.t}
                   onPointerMove={spot}
-                  className="ai-card spot reveal p-7"
+                  className="ai-card spot reveal p-8"
                   style={{ transitionDelay: `${i * 70}ms` }}
                 >
                   <div
-                    className={`grid h-12 w-12 place-items-center rounded-xl border border-white/[.1] bg-white/[.04] ${a.c} mb-6`}
+                    className={`grid h-14 w-14 place-items-center rounded-xl border border-white/[.1] bg-white/[.04] ${a.c} mb-6`}
                   >
-                    <Icon n={a.n} cls="h-6 w-6" />
+                    <Icon n={a.n} cls="h-7 w-7" />
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <h3 className="font-display text-lg font-bold text-white">{a.t}</h3>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">{a.d}</p>
+                  <h3 className="font-display text-xl font-bold text-white mb-3">{a.t}</h3>
+                  <p className="text-base leading-7 text-slate-400">{a.d}</p>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── STATS ── */}
-        <StatsSection />
-
-        {/* ── FEATURES ── */}
-        <section
-          id="features"
-          className="section-mesh relative border-t border-white/[.06] py-20 lg:py-24"
-        >
+        {/* ─ FEATURES ── */}
+        <section id="features" className="section-mesh relative section-divider py-20 lg:py-28">
           <div className="grid-bg" />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
             <SectionHead
               tag="Fonctionnalités"
               title={
                 <>
-                  Tout ce qu'il faut pour <span className="text-gradient">progresser</span>. Rien
+                  Tout ce qu'il faut pour <span className="text-accent">progresser</span>. Rien
                   d'inutile.
                 </>
               }
@@ -849,43 +900,45 @@ export default function Landing() {
               <FeaturesBento />
             </div>
 
-            <div className="reveal mt-12 text-center">
+            <div className="reveal mt-14 text-center">
               <button
                 onClick={() => open("signup", "Essai Premium 14 jours")}
-                className="btn-primary px-8 py-4 text-[1.05rem] font-semibold"
+                className="btn-accent px-9 py-4 text-[1.1rem]"
               >
-                Tout débloquer gratuitement <Icon n="arrow" cls="h-4 w-4" />
+                Tout débloquer gratuitement <Icon n="arrow" cls="h-5 w-5" />
               </button>
-              <p className="mt-4 text-sm text-slate-600">14 jours Premium · sans carte bancaire</p>
+              <p className="mt-5 text-base text-slate-600">
+                14 jours Premium · sans carte bancaire
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ─ QUI FAIT ÇA ── */}
-        <section className="relative border-t border-white/[.06] py-20 lg:py-24">
+        {/* ── QUI FAIT ÇA ── */}
+        <section className="relative section-divider py-20 lg:py-28">
           <div className="grid-bg" />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
             <TraderProof onStart={() => open("signup", "Essai Premium 14 jours")} />
-            <div className="mt-12">
+            <div className="mt-14">
               <TrustStrip />
             </div>
           </div>
         </section>
 
         {/* ── MÉTHODE ── */}
-        <section className="relative border-t border-white/[.06] py-20 lg:py-24">
+        <section className="relative section-divider py-20 lg:py-28">
           <div className="grid-bg" />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
             <SectionHead
               tag="Méthode"
               title={
                 <>
-                  Comment <span className="text-gradient">Jarvis</span> analyse ton trading
+                  Comment <span className="text-accent">Jarvis</span> analyse ton trading
                 </>
               }
               sub="Aucune généralité : chaque analyse part de TES données, avec une méthode déterministe et transparente."
             />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {(
                 [
                   {
@@ -902,17 +955,14 @@ export default function Landing() {
                   },
                 ] as const
               ).map((c) => (
-                <article
-                  key={c.t}
-                  className="reveal rounded-2xl border border-white/[.06] bg-white/[.015] p-7"
-                >
-                  <h3 className="text-base font-bold text-white">{c.t}</h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">{c.d}</p>
+                <article key={c.t} className="reveal card-premium p-8">
+                  <h3 className="text-xl font-bold text-white mb-4">{c.t}</h3>
+                  <p className="text-base leading-7 text-slate-400">{c.d}</p>
                 </article>
               ))}
             </div>
-            <div className="reveal mt-8 rounded-2xl border border-cyan-500/15 bg-cyan-500/[.05] p-6">
-              <p className="text-sm leading-6 text-slate-300">
+            <div className="reveal mt-10 rounded-2xl border border-cyan-500/20 bg-cyan-500/[.06] p-8">
+              <p className="text-base leading-7 text-slate-300">
                 <strong className="text-white">Le calcul des métriques, en clair.</strong> Win rate
                 = trades gagnants ÷ trades décidés · R-multiple = profit ÷ risque du trade · Profit
                 factor = somme des gains ÷ somme des pertes. Jarvis ne prédit jamais le marché : il
@@ -923,66 +973,61 @@ export default function Landing() {
         </section>
 
         {/* ── PRICING ── */}
-        <section
-          id="pricing"
-          className="section-mesh relative border-t border-white/[.06] py-20 lg:py-24"
-        >
+        <section id="pricing" className="section-mesh relative section-divider py-20 lg:py-28">
           <div className="grid-bg" />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="relative mx-auto max-w-[1280px] px-5 lg:px-8">
             <SectionHead
               tag="Tarifs"
               title="Un investissement qui se rembourse en un trade"
               sub="Commence gratuitement. Passe en Premium quand tu es prêt. Sans risque, sans engagement."
             />
 
-            <div className="reveal mb-12 flex justify-center">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-emerald-400/25 bg-emerald-400/[.08] px-5 py-2 text-sm font-bold text-emerald-300">
-                <Icon n="sparkle" cls="h-4 w-4" /> En passant à l'année : 2 mois offerts, soit 40 €
+            <div className="reveal mb-14 flex justify-center">
+              <div className="inline-flex items-center gap-3 rounded-full border border-emerald-400/30 bg-emerald-400/[.1] px-6 py-2.5 text-base font-bold text-emerald-300">
+                <Icon n="sparkle" cls="h-5 w-5" /> En passant à l'année : 2 mois offerts, soit 40 €
                 d'économie
               </div>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-3 lg:items-stretch">
-              <div
-                onPointerMove={spot}
-                className="reveal spot flex flex-col rounded-2xl border border-white/[.06] bg-white/[.015] p-8"
-              >
-                <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400">
+            <div className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
+              {/* FREE */}
+              <div onPointerMove={spot} className="reveal spot card-premium p-9">
+                <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400 mb-6">
                   Free
                 </p>
-                <div className="mt-5 flex items-end gap-1.5">
-                  <span className="font-display text-5xl font-extrabold text-white">0 €</span>
-                  <span className="mb-2 text-base text-slate-500">/ toujours</span>
+                <div className="flex items-end gap-2 mb-4">
+                  <span className="font-display text-6xl font-extrabold text-white">0 €</span>
+                  <span className="mb-2 text-lg text-slate-500">/ toujours</span>
                 </div>
-                <p className="mt-3 text-base text-slate-500">
+                <p className="text-lg text-slate-500 mb-8">
                   Pour <span className="text-slate-300">noter</span> tes trades et poser les bases
                   de ta discipline.
                 </p>
                 <button
                   onClick={() => open("signup", "Plan Gratuit")}
-                  className="btn-ghost w-full mt-7 py-3.5"
+                  className="btn-ghost w-full py-4 text-lg"
                 >
                   Commencer gratuitement
                 </button>
-                <div className="mt-8 space-y-3 text-base">
+                <div className="mt-10 space-y-4 text-lg">
                   {FREE_INCLUDED.map((f) => (
                     <p key={f} className="flex items-start gap-3 text-slate-300">
-                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-400">
-                        <Icon n="check" cls="h-3.5 w-3.5" />
+                      <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-400">
+                        <Icon n="check" cls="h-4 w-4" />
                       </span>
                       {f}
                     </p>
                   ))}
                 </div>
-                <div className="mt-6 rounded-xl border border-white/[.06] bg-white/[.02] p-5">
-                  <p className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-500">
+                <div className="mt-8 rounded-xl border border-white/[.08] bg-white/[.02] p-6">
+                  <p className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-500 mb-4">
                     Pas inclus
                   </p>
-                  <div className="mt-3 space-y-2.5 text-[14px]">
+                  <div className="space-y-3 text-[15px]">
                     {FREE_MISSING.map((f) => (
                       <p key={f} className="flex items-start gap-3 text-slate-600">
-                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[.03]">
-                          <Icon n="x" cls="h-3.5 w-3.5" />
+                        <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/[.03]">
+                          <Icon n="x" cls="h-4 w-4" />
                         </span>
                         {f}
                       </p>
@@ -991,57 +1036,60 @@ export default function Landing() {
                 </div>
               </div>
 
+              {/* PRO ANNUEL */}
               <div
                 onPointerMove={spot}
-                className="reveal spot flex flex-col rounded-2xl plan-popular bg-[linear-gradient(160deg,rgba(14,58,82,.6),rgba(7,14,24,.94)_60%)] p-8 lg:-my-5 lg:py-12"
+                className="reveal spot card-featured p-9 lg:-my-6 lg:py-14"
                 style={{ transitionDelay: "80ms" }}
               >
                 <div className="relative flex flex-col h-full">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-6">
                     <p className="text-[11px] font-bold uppercase tracking-[.15em] text-cyan-300">
                       Pro · Annuel
                     </p>
-                    <span className="rounded-full bg-emerald-400 px-3 py-1.5 text-[11px] font-extrabold uppercase text-[#03131b] flex items-center gap-1.5">
-                      <Icon n="flame" cls="h-3.5 w-3.5 fill-current" />2 mois offerts
+                    <span className="rounded-full bg-emerald-400 px-4 py-2 text-[12px] font-extrabold uppercase text-[#050505] flex items-center gap-2">
+                      <Icon n="flame" cls="h-4 w-4 fill-current" />2 mois offerts
                     </span>
                   </div>
-                  <div className="mt-5 flex items-end gap-2">
-                    <span className="font-display text-6xl font-extrabold text-white">
+                  <div className="flex items-end gap-2 mb-4">
+                    <span className="font-display text-7xl font-extrabold text-white">
                       {eur(Math.round(YEARLY_PER_MONTH * 100) / 100)}
                     </span>
-                    <span className="mb-2.5 text-base text-slate-400">/ mois</span>
+                    <span className="mb-3 text-lg text-slate-400">/ mois</span>
                   </div>
-                  <p className="mt-3 text-base text-slate-300">
+                  <p className="text-lg text-slate-300 mb-2">
                     <span className="font-semibold text-white">{eur(YEARLY_EUR)}</span> facturés une
                     fois par an
-                    <span className="ml-2 text-slate-500 line-through">
+                    <span className="ml-3 text-slate-500 line-through">
                       {eur(YEARLY_FULL_PRICE)}
                     </span>
                   </p>
-                  <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-[13px] font-bold text-emerald-300">
-                    <Icon n="check" cls="h-4 w-4" /> Tu économises {eur(YEARLY_SAVING)} / an
+                  <div className="inline-flex w-fit items-center gap-2 rounded-lg bg-emerald-400/15 px-4 py-2 text-[14px] font-bold text-emerald-300 mb-8">
+                    <Icon n="check" cls="h-5 w-5" /> Tu économises {eur(YEARLY_SAVING)} / an
                   </div>
                   <button
                     onClick={() => open("signup", "Pro Annuel — 14 jours d'essai")}
-                    className="btn-primary w-full h-13! mt-7 py-4 text-[1.05rem] font-semibold"
+                    className="btn-accent w-full py-5 text-[1.15rem] mb-4"
                   >
-                    Démarrer — 14 jours gratuits <Icon n="arrow" cls="h-4 w-4" />
+                    Démarrer — 14 jours gratuits <Icon n="arrow" cls="h-5 w-5" />
                   </button>
-                  <p className="mt-3 text-center text-[12px] text-slate-500">
+                  <p className="text-center text-[13px] text-slate-500 mb-10">
                     Sans engagement · Sans carte requise
                   </p>
-                  <p className="mt-8 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/80">
+                  <p className="text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/80 mb-6">
                     Tout le plan Free, sans limite — et&nbsp;:
                   </p>
-                  <div className="mt-4 space-y-3.5 text-base">
+                  <div className="space-y-4 text-lg">
                     {PREMIUM_FEATURES.map(([f, why]) => (
                       <div key={f} className="flex items-start gap-3">
-                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-300">
-                          <Icon n="check" cls="h-3.5 w-3.5" />
+                        <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-cyan-400/20 text-cyan-300">
+                          <Icon n="check" cls="h-4 w-4" />
                         </span>
                         <span>
-                          <span className="block text-slate-100">{f}</span>
-                          <span className="block text-[13px] leading-5 text-slate-500">{why}</span>
+                          <span className="block text-white font-semibold">{f}</span>
+                          <span className="block text-[14px] leading-6 text-slate-400 mt-1">
+                            {why}
+                          </span>
                         </span>
                       </div>
                     ))}
@@ -1049,21 +1097,22 @@ export default function Landing() {
                 </div>
               </div>
 
+              {/* PRO MENSUEL */}
               <div
                 onPointerMove={spot}
-                className="reveal spot flex flex-col rounded-2xl border border-white/[.06] bg-white/[.015] p-8 opacity-[.92]"
+                className="reveal spot card-premium p-9 opacity-[.92]"
                 style={{ transitionDelay: "160ms" }}
               >
-                <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400">
+                <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400 mb-6">
                   Pro · Mensuel
                 </p>
-                <div className="mt-5 flex items-end gap-1.5">
-                  <span className="font-display text-5xl font-extrabold text-slate-200">
+                <div className="flex items-end gap-2 mb-4">
+                  <span className="font-display text-6xl font-extrabold text-slate-200">
                     {eur(MONTHLY_EUR)}
                   </span>
-                  <span className="mb-2 text-base text-slate-500">/ mois</span>
+                  <span className="mb-2 text-lg text-slate-500">/ mois</span>
                 </div>
-                <p className="mt-3 text-base text-slate-500">
+                <p className="text-lg text-slate-500 mb-8">
                   Soit{" "}
                   <span className="font-semibold text-slate-400">
                     {eur(YEARLY_FULL_PRICE)} / an
@@ -1072,18 +1121,18 @@ export default function Landing() {
                 </p>
                 <button
                   onClick={() => open("signup", "Pro Mensuel — 14 jours d'essai")}
-                  className="btn-ghost w-full mt-7 py-3.5"
+                  className="btn-ghost w-full py-4 text-lg"
                 >
                   Prendre au mois
                 </button>
-                <div className="mt-8 space-y-3 text-base">
-                  <p className="text-[14px] leading-6 text-slate-500">
+                <div className="mt-10 space-y-4 text-lg">
+                  <p className="text-[15px] leading-7 text-slate-500 mb-6">
                     Exactement les mêmes fonctionnalités que l'annuel — seule la facturation change.
                   </p>
                   {PREMIUM_FEATURES.map(([f]) => (
                     <p key={f} className="flex items-start gap-3 text-slate-400">
-                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-500">
-                        <Icon n="check" cls="h-3.5 w-3.5" />
+                      <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-500">
+                        <Icon n="check" cls="h-4 w-4" />
                       </span>
                       {f}
                     </p>
@@ -1092,7 +1141,7 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="reveal mt-12 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+            <div className="reveal mt-14 flex flex-wrap items-center justify-center gap-x-12 gap-y-5">
               {[
                 ["shield", "14 jours gratuits sans risque"],
                 ["lock", "Paiement sécurisé Stripe"],
@@ -1101,9 +1150,9 @@ export default function Landing() {
               ].map(([ic, t]) => (
                 <span
                   key={t}
-                  className="flex items-center gap-2.5 text-sm font-medium text-slate-500"
+                  className="flex items-center gap-3 text-lg font-medium text-slate-500"
                 >
-                  <Icon n={ic as IName} cls="h-5 w-5 text-emerald-400" />
+                  <Icon n={ic as IName} cls="h-6 w-6 text-emerald-400" />
                   {t}
                 </span>
               ))}
@@ -1112,9 +1161,9 @@ export default function Landing() {
         </section>
 
         {/* ── FAQ ── */}
-        <section id="faq" className="relative border-t border-white/[.06] py-20 lg:py-24">
+        <section id="faq" className="relative section-divider py-20 lg:py-28">
           <div className="grid-bg" />
-          <div className="relative mx-auto max-w-[780px] px-5 lg:px-8">
+          <div className="relative mx-auto max-w-[820px] px-5 lg:px-8">
             <SectionHead
               tag="FAQ"
               title="Tout ce que tu dois savoir"
@@ -1128,22 +1177,22 @@ export default function Landing() {
                     <button
                       onClick={() => setFaq(o ? null : i)}
                       aria-expanded={o}
-                      className="flex w-full items-center justify-between gap-5 py-6 text-left"
+                      className="flex w-full items-center justify-between gap-5 py-7 text-left"
                     >
                       <span
-                        className={`text-base font-semibold transition-colors sm:text-lg ${o ? "text-white" : "text-slate-300"}`}
+                        className={`text-lg font-semibold transition-colors sm:text-xl ${o ? "text-white" : "text-slate-300"}`}
                       >
                         {q}
                       </span>
                       <span
-                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/[.12] text-slate-500"}`}
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/[.12] text-slate-500"}`}
                       >
-                        <Icon n="chevron" cls="h-4.5 w-4.5" />
+                        <Icon n="chevron" cls="h-5 w-5" />
                       </span>
                     </button>
                     <div className={`faq-body ${o ? "faq-open" : ""}`}>
                       <div>
-                        <p className="pb-6 pr-8 text-base leading-7 text-slate-400">{a}</p>
+                        <p className="pb-7 pr-8 text-lg leading-8 text-slate-400">{a}</p>
                       </div>
                     </div>
                   </div>
@@ -1154,64 +1203,74 @@ export default function Landing() {
         </section>
 
         {/* ── CTA FINAL ── */}
-        <section className="relative overflow-hidden border-t border-white/[.06] py-24 lg:py-32">
+        <section className="relative overflow-hidden section-divider py-28 lg:py-36">
           <div className="grid-bg" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_110%,rgba(34,211,238,.14),transparent_60%)]" />
-          <div className="reveal relative mx-auto max-w-[760px] px-5 text-center">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_110%,rgba(34,211,238,.16),transparent_60%)]" />
+          <div
+            className="glow-orb glow-orb-cyan"
+            style={{
+              bottom: "-20%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "800px",
+              height: "400px",
+            }}
+          />
+          <div className="reveal relative mx-auto max-w-[800px] px-5 text-center">
             {cd && (
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/25 bg-amber-400/[.07] px-5 py-2 text-[12px] font-bold text-amber-300 mb-8">
-                <span className="ping-dot relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" />
+              <div className="inline-flex items-center gap-3 rounded-full border border-amber-400/30 bg-amber-400/[.1] px-6 py-2.5 text-[13px] font-bold text-amber-300 mb-10">
+                <span className="ping-dot relative inline-flex h-3 w-3 rounded-full bg-amber-400" />
                 Ouverture des marchés dans {cd} — ton coach est-il prêt ?
               </div>
             )}
-            <h2 className="font-display text-[clamp(2.2rem,5vw,3.8rem)] font-extrabold tracking-[-0.045em] text-white leading-[1.05]">
+            <h2 className="font-display text-[clamp(2.5rem,5.5vw,4.2rem)] font-extrabold tracking-[-0.045em] text-white leading-[1.05] mb-8">
               Ton prochain trade mérite
               <br />
               <span className="h-shine">un vrai coach.</span>
             </h2>
-            <p className="mt-6 text-lg text-slate-400 leading-7 max-w-[560px] mx-auto">
+            <p className="text-xl text-slate-400 leading-8 max-w-[600px] mx-auto mb-12">
               TradeVault ne se contente pas d'enregistrer tes trades. Il les comprend, détecte tes
               schémas et te dit quoi corriger.
             </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <div className="flex flex-col gap-5 sm:flex-row sm:justify-center">
               <button
                 onClick={() => open("signup", "Essai Premium 14 jours")}
-                className="btn-primary px-8 py-4 text-[1.1rem] font-semibold"
+                className="btn-accent px-10 py-5 text-[1.2rem]"
               >
-                Commencer gratuitement <Icon n="arrow" cls="h-5 w-5" />
+                Commencer gratuitement <Icon n="arrow" cls="h-6 w-6" />
               </button>
             </div>
-            <p className="mt-5 text-sm text-slate-500">
+            <p className="mt-8 text-lg text-slate-500">
               14 jours Premium · Sans carte bancaire · Annulation en 1 clic
             </p>
           </div>
         </section>
 
         {/* ── FOOTER ── */}
-        <footer className="relative border-t border-white/[.06] py-12 lg:py-16">
-          <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
-            <div className="grid gap-8 lg:grid-cols-4">
+        <footer className="relative section-divider py-16 lg:py-20">
+          <div className="mx-auto max-w-[1280px] px-5 lg:px-8">
+            <div className="grid gap-10 lg:grid-cols-4">
               <div className="lg:col-span-2">
                 <Logo />
-                <p className="mt-4 text-sm leading-6 text-slate-500 max-w-[320px]">
+                <p className="mt-6 text-base leading-7 text-slate-500 max-w-[360px]">
                   TradeVault est le cockpit intelligent du trader. Journal, analytics, Coach IA —
                   tout ce qu'il faut pour progresser.
                 </p>
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-8 flex items-center gap-4">
                   {[Twitter, Linkedin, Instagram, Facebook, Youtube].map((Icon, i) => (
                     <a
                       key={i}
                       href="#"
-                      className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] bg-white/[.02] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-300"
+                      className="grid h-11 w-11 place-items-center rounded-lg border border-white/[.08] bg-white/[.02] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-300"
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-5 w-5" />
                     </a>
                   ))}
                 </div>
               </div>
               <div>
-                <p className="text-sm font-bold text-white mb-4">Produit</p>
-                <ul className="space-y-2.5 text-sm">
+                <p className="text-base font-bold text-white mb-6">Produit</p>
+                <ul className="space-y-3 text-base">
                   {["Fonctionnalités", "Tarifs", "Intégrations", "Changelog"].map((l) => (
                     <li key={l}>
                       <a href="#" className="text-slate-500 hover:text-cyan-300 transition">
@@ -1222,8 +1281,8 @@ export default function Landing() {
                 </ul>
               </div>
               <div>
-                <p className="text-sm font-bold text-white mb-4">Ressources</p>
-                <ul className="space-y-2.5 text-sm">
+                <p className="text-base font-bold text-white mb-6">Ressources</p>
+                <ul className="space-y-3 text-base">
                   {["Documentation", "Blog", "Support", "Contact"].map((l) => (
                     <li key={l}>
                       <a href="#" className="text-slate-500 hover:text-cyan-300 transition">
@@ -1234,9 +1293,9 @@ export default function Landing() {
                 </ul>
               </div>
             </div>
-            <div className="mt-12 pt-8 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-slate-600">© 2026 TradeVault. Tous droits réservés.</p>
-              <div className="flex items-center gap-6 text-sm">
+            <div className="mt-16 pt-10 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-6">
+              <p className="text-base text-slate-600">© 2026 TradeVault. Tous droits réservés.</p>
+              <div className="flex items-center gap-8 text-base">
                 <a href="#" className="text-slate-600 hover:text-slate-400 transition">
                   Confidentialité
                 </a>
