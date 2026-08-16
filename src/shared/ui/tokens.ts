@@ -121,10 +121,10 @@ export const density = {
  * Toute nouvelle surface utilise ces rôles, jamais une classe en pixels.
  */
 export const type = {
-  /** Page title — larger, more imposing (matches the reference dashboards). */
-  h1: "text-[26px] md:text-[32px] font-extrabold tracking-[-0.03em]",
+  /** Page title — calm, not massive. */
+  h1: "text-[26px] md:text-[30px] font-bold tracking-[-0.02em]",
   /** Section title. */
-  h2: "text-base md:text-lg font-bold tracking-[-0.02em]",
+  h2: "text-base md:text-lg font-semibold tracking-[-0.01em]",
   /** Card title. */
   h3: "text-sm md:text-[15px] font-semibold",
   /** Body copy. */
@@ -132,7 +132,7 @@ export const type = {
   /** Secondary/meta copy. */
   caption: "text-xs",
   /** Compact uppercase label (11px). */
-  label: "text-[11px] uppercase tracking-[0.08em] font-semibold",
+  label: "text-[11px] uppercase tracking-[0.08em] font-medium",
   /** Chrome dense : badges, unités, méta de cellule. Le plancher — rien en dessous. */
   micro: "text-[10px]",
 } as const;

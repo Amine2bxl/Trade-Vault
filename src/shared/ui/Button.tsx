@@ -17,26 +17,26 @@ const VARIANT: Record<ButtonVariant, string> = {
   // Reuse the existing global classes verbatim — identical output.
   primary: "btn-primary",
   ghost: "btn-ghost",
-  // Named versions of the recurring inline styles.
+  // Named versions of the recurring inline styles — calm, hairline-bordered.
   subtle:
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] " +
-    "bg-white/[0.03] font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white",
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-white/[0.07] " +
+    "bg-transparent font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-white",
   danger:
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 " +
-    "bg-red-500/10 font-semibold text-red-400 transition hover:bg-red-500/15 hover:text-red-300",
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 " +
+    "bg-transparent font-medium text-red-400/90 transition hover:bg-red-500/10 hover:text-red-300",
   // Same toolbar shape as `subtle` (Export CSV / Delete all) but tinted with the
   // product accent so the primary action stands out while staying in the family.
   accent:
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/30 " +
-    "bg-cyan-500/10 font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:text-cyan-200",
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-500/25 " +
+    "bg-transparent font-medium text-cyan-300 transition hover:bg-cyan-500/10 hover:text-cyan-200",
 };
 
 // Composed variants get Tailwind sizing; the CSS-class variants (`.btn-*`)
 // carry their own padding, so `sm` swaps in the shared `.btn-sm` modifier
 // instead of fighting the cascade with utilities.
 const SIZE: Record<ButtonSize, string> = {
-  md: "h-11 px-4 text-sm",
-  sm: "h-9 px-3 text-xs",
+  md: "h-10 px-4 text-sm",
+  sm: "h-8 px-3 text-xs",
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

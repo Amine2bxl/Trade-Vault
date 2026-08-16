@@ -112,7 +112,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
             alt="TradeVault"
             width={30}
             height={30}
-            className="h-8 w-8 object-contain drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]"
+            className="h-8 w-8 object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.22)]"
           />
           <span className="font-display font-extrabold tracking-[-0.04em] text-white leading-none hidden sm:block text-[1.2rem]">
             TradeVault

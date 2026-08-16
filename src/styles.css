@@ -272,7 +272,7 @@
   --tv-elev-1: 0 1px 2px rgb(0 0 0 / 0.3);
   --tv-elev-2: 0 8px 24px -12px rgb(0 0 0 / 0.55);
   --tv-elev-3: 0 18px 48px -24px rgb(0 0 0 / 0.6);
-  --tv-glow-accent: 0 0 24px -6px rgb(var(--tv-accent-rgb) / 0.35);
+  --tv-glow-accent: 0 0 18px -6px rgb(var(--tv-accent-rgb) / 0.22);
 
   /* Motion — four durations, two curves. Every transition in the product
      picks from this list; nothing invents its own timing.
@@ -797,7 +797,7 @@ input[type="number"] {
   height: 40px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 0 20px rgb(var(--tv-accent-rgb) / 0.25);
+  box-shadow: 0 0 12px rgb(var(--tv-accent-rgb) / 0.14);
 }
 .sidebar-brand-logo::before {
   content: "";
@@ -1110,26 +1110,25 @@ svg.lucide {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   font-size: 0.875rem;
-  font-weight: 700;
-  border-radius: 0.75rem;
-  /* Signature TradeVault — même gradient et rayon que les boutons de l'app. */
-  background: linear-gradient(90deg, #06b6d4, #14b8a6);
-  color: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  font-weight: 600;
+  letter-spacing: 0;
+  border-radius: 0.625rem;
+  /* Calme : accent plein, texte sombre — l'action se lit sans crier. */
+  background: var(--tv-accent);
+  color: #041018;
+  transition: background-color 0.16s ease, opacity 0.16s ease;
 }
 .btn-primary:hover {
-  filter: brightness(1.06);
+  background: var(--tv-highlight);
 }
 .btn-primary:active {
-  filter: brightness(0.96);
+  opacity: 0.88;
 }
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
-  box-shadow: none;
 }
 .btn-sm {
   padding: 0.5rem 0.85rem;
@@ -1141,30 +1140,26 @@ svg.lucide {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  font-weight: 500;
+  border-radius: 0.625rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
   color: #cbd5e1;
   transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    color 0.16s ease;
 }
 .btn-ghost:hover {
-  border-color: rgba(34, 211, 238, 0.45);
-  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--tv-text);
-}
-.btn-ghost:active {
-  transform: translateY(0);
 }
 .btn-primary,
 .btn-ghost {
-  height: 2.6rem;
+  height: 2.375rem;
   white-space: nowrap;
 }
 
