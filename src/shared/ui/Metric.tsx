@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "./cn";
 import { density, type } from "./tokens";
 
@@ -75,7 +75,10 @@ function ProgressBar({ pct, color }: { pct: number; color?: string }) {
   return (
     <div className="w-16 shrink-0 self-center">
       <div className="metric-bar">
-        <div className="metric-bar-fill" style={{ width: `${p * 100}%`, background: color }} />
+        <div
+          className="metric-bar-fill"
+          style={{ "--metric-fill": p, background: color } as CSSProperties}
+        />
       </div>
     </div>
   );

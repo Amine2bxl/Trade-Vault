@@ -46,6 +46,27 @@
  * TradeVault front-end design tokens & styles
  * ============================================================ */
 @theme {
+  /* ----------------------------------------------------------------
+   * Plancher de lisibilité de la rampe slate.
+   *
+   * ~560 appels à `text-slate-500` / `text-slate-600` court-circuitent
+   * `--tv-text-muted` et atterrissaient à 3.94:1 et 2.47:1 sur le fond produit
+   * — sous le minimum de 4.5:1, pour du texte réel : mentions légales,
+   * placeholders, méta de cellule, libellés de séparateur.
+   *
+   * Réécrire 560 appels aurait été une migration invérifiable ; on remonte donc
+   * les deux crans à la source, en conservant leur ORDRE (600 reste plus sourd
+   * que 500) pour que la hiérarchie existante tienne toujours :
+   *   slate-400 #94a3b8  7.3:1   secondaire
+   *   slate-500 #8296ad  6.2:1   sourd
+   *   slate-600 #7c8ba1  5.4:1   le plus sourd — et lisible
+   *
+   * Les 19 usages non-textuels (`bg-slate-500`, `border-slate-*`) ne perdent
+   * rien : un slate un cran plus clair y est neutre ou meilleur.
+   * ---------------------------------------------------------------- */
+  --color-slate-500: #8296ad;
+  --color-slate-600: #7c8ba1;
+
   --color-brand: var(--tv-accent);
   --color-brand-light: var(--tv-highlight);
   --color-brand-dark: var(--tv-accent);
@@ -254,10 +275,21 @@
   --tv-border-strong: rgb(255 255 255 / 0.11);
   --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.3);
 
-  /* Text — three steps. Anything below `muted` is not readable content. */
+  /* Text — three steps. Anything below `muted` is not readable content.
+   *
+   * Les trois paliers passent 4.5:1 sur le fond le plus sombre du produit
+   * (`--tv-bg` #060d16) ET sur les surfaces de modale (#0a1220) :
+   *   primary   #f1f5f9  ~17:1
+   *   secondary #94a3b8  ~7.3:1
+   *   muted     #8296ad  ~6.2:1
+   *
+   * `muted` valait #64748b (slate-500), mesuré à 3.94:1 : le fichier annonçait
+   * un plancher de lisibilité que sa propre valeur ne tenait pas. Le palier est
+   * remonté au lieu d'être documenté comme illisible — c'est le dernier cran de
+   * texte réel, pas de la décoration. */
   --tv-text-primary: #f1f5f9;
   --tv-text-secondary: #94a3b8;
-  --tv-text-muted: #64748b;
+  --tv-text-muted: #8296ad;
 
   /* L5 data emphasis / L6 risk / L7 discipline */
   --tv-success: #10b981;
@@ -392,12 +424,53 @@ body {
 .onb-halo {
   opacity: 0.7;
 }
+/* ── Transition d'étape de l'onboarding ──
+ *
+ * L'étape entre depuis le côté vers lequel on se déplace : en avant elle vient
+ * de la droite, en arrière de la gauche. C'est la seule information que le
+ * mouvement doit porter ici — d'où un déplacement court (14px) et une durée
+ * brève (0.26s) : un assistant se traverse, il ne se contemple pas.
+ * Sortie non animée : React démonte l'étape précédente immédiatement.
+ */
+@keyframes onb-step-fwd {
+  from {
+    opacity: 0;
+    transform: translate3d(14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes onb-step-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.onb-step-fwd {
+  animation: onb-step-fwd 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.onb-step-back {
+  animation: onb-step-back 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .onb-in > *,
   .onb-progress-shimmer,
   .onb-halo {
     animation: none;
     opacity: 1;
+  }
+  /* Le changement d'étape reste signalé — par un fondu seul, sans déplacement :
+   * supprimer tout retour ferait croire que rien ne s'est passé. */
+  .onb-step-fwd,
+  .onb-step-back {
+    animation: fade-in 0.2s ease-out both;
   }
 }
 
@@ -410,10 +483,10 @@ body {
   line-height: 1;
   letter-spacing: -0.04em;
   margin-bottom: 0.5rem;
-  background: linear-gradient(180deg, #fff, #64748b);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* Un chiffre de 9rem n'a pas besoin d'un dégradé pour peser : la taille et la
+   * graisse font le travail. L'ancien fondu vers #64748b éteignait le bas du
+   * glyphe sans rien ajouter. */
+  color: var(--tv-text-primary);
 }
 .err-spark {
   width: 200px;
@@ -778,11 +851,26 @@ input[type="number"] {
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
+/* Le remplissage occupe toute la piste et se réduit par `scaleX` : le compositeur
+ * suffit, là où animer la largeur relançait un calcul de layout à chaque image.
+ *
+ * Le `border-radius` a été retiré d'ici volontairement — c'est `.metric-bar` qui
+ * arrondit, via son propre rayon et `overflow: hidden`. Sans rayon propre, il n'y
+ * a plus de galbe à déformer sous l'échelle, et le dégradé se comprime exactement
+ * comme il le faisait avec une largeur variable. */
 .metric-bar-fill {
   height: 100%;
-  border-radius: 3px;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(var(--metric-fill, 0));
   background: linear-gradient(90deg, var(--tv-accent), var(--tv-accent-2));
-  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* La barre porte une donnée : on garde le mouvement, on le raccourcit. */
+  .metric-bar-fill {
+    transition-duration: 120ms;
+  }
 }
 
 /* Sidebar brand mark — larger, more grounded presence. */

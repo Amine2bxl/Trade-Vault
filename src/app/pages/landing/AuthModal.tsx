@@ -136,10 +136,13 @@ export function AuthModal({
                 discipliné que tu veux être.
               </p>
 
+              {/* Deux promesses DISTINCTES. L'absence de carte et l'annulation
+               * vivent dans le sous-titre du formulaire, à droite — là où la
+               * décision se prend ; les répéter ici ne rassurait pas deux fois,
+               * ça diluait les deux arguments que cette colonne porte seule. */}
               <div className="mt-7 space-y-2.5">
                 {[
                   "Analyse de tes trades dès le premier jour",
-                  "Aucune carte demandée, rien à annuler",
                   "Tes données restent exportables à tout moment",
                 ].map((line) => (
                   <p
@@ -177,21 +180,6 @@ export function AuthModal({
                   Avis vérifiés sur <span className="text-white font-bold">Trustpilot</span>
                 </span>
               </a>
-              <div className="mt-4 flex items-center gap-x-4 gap-y-1.5 flex-wrap">
-                {[
-                  ["shield", "Sans engagement"],
-                  ["lock", "Données chiffrées"],
-                  ["check", "Annulation en 1 clic"],
-                ].map(([ic, label]) => (
-                  <span
-                    key={label}
-                    className="flex items-center gap-1.5 text-[11px] text-slate-500"
-                  >
-                    <Icon n={ic as "shield"} cls="h-3.5 w-3.5 text-emerald-400/80" />
-                    {label}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
 

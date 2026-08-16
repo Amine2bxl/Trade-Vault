@@ -261,21 +261,6 @@ const M: Record<string, Msg> = {
   },
 
   /* stats */
-  "stats.tag": { en: "Results", fr: "Résultats" },
-  "stats.title.a": { en: "What you finally", fr: "Ce que tu" },
-  "stats.title.b": { en: "understand.", fr: "comprends enfin." },
-  "stats.sub": {
-    en: "UI examples — figures vary with each trader's history.",
-    fr: "Exemples UI — les chiffres varient selon l'historique de chaque trader.",
-  },
-  "stats.s1.v": { en: "+27%", fr: "+27%" },
-  "stats.s1.l": { en: "R:R improvement", fr: "Amélioration du R:R" },
-  "stats.s2.v": { en: "-34%", fr: "-34%" },
-  "stats.s2.l": { en: "Repeated mistakes", fr: "Erreurs répétées" },
-  "stats.s3.v": { en: "68%", fr: "68%" },
-  "stats.s3.l": { en: "Best setup win rate", fr: "Win rate meilleur setup" },
-  "stats.s4.v": { en: "2.3x", fr: "2.3x" },
-  "stats.s4.l": { en: "Average profit factor", fr: "Profit factor moyen" },
 
   /* features */
   "features.tag": { en: "Features", fr: "Fonctionnalités" },

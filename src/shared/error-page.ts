@@ -37,20 +37,16 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
       @keyframes drift { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,30px)} }
       .card { position:relative; z-index:1; text-align:center; max-width:32rem; width:100%; animation:rise .6s cubic-bezier(.16,1,.3,1) both; }
       @keyframes rise { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+      /* Chiffre plein : à 9rem, la taille et la graisse portent l'emphase. Le
+         dégradé s'éteignait vers #64748b en bas, et l'aberration chromatique en
+         boucle (deux pseudo-éléments clignotant sans fin) animait la seule page
+         que l'on atteint quand quelque chose vient déjà d'échouer. */
       .code {
         font-family:var(--font-display);
         font-weight:800; font-size:clamp(5rem,22vw,9rem); line-height:1; letter-spacing:-.04em;
-        background:linear-gradient(180deg,#fff,#64748b); -webkit-background-clip:text; background-clip:text; color:transparent;
+        color:#f1f5f9;
         position:relative; margin-bottom:.5rem;
       }
-      .code::before, .code::after {
-        content:"${code}"; position:absolute; inset:0; -webkit-background-clip:text; background-clip:text; color:transparent;
-        mix-blend-mode:screen;
-      }
-      .code::before { background:linear-gradient(180deg,#22d3ee,#0891b2); animation:g1 3s steps(2) infinite; }
-      .code::after { background:linear-gradient(180deg,#f43f5e,#be123c); animation:g2 3.4s steps(2) infinite; }
-      @keyframes g1 { 0%,92%,100%{opacity:0;transform:translate(0)} 94%{opacity:.5;transform:translate(-3px,1px)} 96%{transform:translate(2px,-1px)} }
-      @keyframes g2 { 0%,90%,100%{opacity:0;transform:translate(0)} 93%{opacity:.4;transform:translate(3px,-1px)} 97%{transform:translate(-2px,1px)} }
       svg.spark { width:200px; max-width:60%; height:44px; margin:0 auto 1.5rem; display:block; opacity:.9; }
       svg.spark path { stroke-dasharray:400; stroke-dashoffset:400; animation:draw 2.2s ease forwards .3s; }
       @keyframes draw { to { stroke-dashoffset:0; } }
@@ -65,6 +61,19 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
       .brand { display:flex; align-items:center; justify-content:center; gap:.5rem; margin-bottom:2rem; opacity:.85; }
       .brand .dot { width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 0 12px rgba(34,211,238,.6); }
       .brand span { font-family:var(--font-display); font-weight:700; letter-spacing:-.01em; color:#fff; font-size:.95rem; }
+
+      /* Cette page n'avait aucun garde de mouvement, alors qu'elle fait dériver
+         deux orbes en boucle infinie. On coupe les boucles et le déplacement,
+         en gardant le tracé de la courbe et l'apparition en fondu : le retour
+         visuel reste, l'agitation part. */
+      @media (prefers-reduced-motion: reduce) {
+        .orb { animation:none; }
+        .card { animation:fade-in-safe .2s ease-out both; }
+        svg.spark path { animation:none; stroke-dashoffset:0; }
+        a,button { transition:none; }
+        .primary:hover { transform:none; }
+      }
+      @keyframes fade-in-safe { from{opacity:0} to{opacity:1} }
     </style>
   </head>
   <body>

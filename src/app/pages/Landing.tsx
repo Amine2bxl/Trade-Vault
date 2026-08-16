@@ -106,6 +106,13 @@ function useScroll() {
 }
 function useReveal() {
   useEffect(() => {
+    // Sous « réduire les animations », on ne masque rien et on n'observe rien :
+    // le contenu reste tel qu'il est rendu.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Signale au CSS que le script est vivant : lui seul autorise l'état masqué,
+    // donc un échec de chargement ne peut pas laisser la page vide.
+    const root = document.documentElement;
+    root.classList.add("js-reveal");
     const io = new IntersectionObserver(
       (es) =>
         es.forEach((e) => {
@@ -328,10 +335,15 @@ function useSpot() {
 }
 
 /* ─────────────────────────── SECTION TITLE ─────────────────────────── */
+/**
+ * `tag` reste dans la signature : il nomme la section pour la navigation et les
+ * lecteurs d'écran (`aria-label`), mais il ne s'affiche plus au-dessus du titre.
+ * Un kicker n'ajoute aucune information que le titre ne porte pas déjà — il ne
+ * fait que retarder la lecture de la seule ligne qui compte.
+ */
 function SectionHead({ tag, title, sub }: { tag: string; title: React.ReactNode; sub?: string }) {
   return (
-    <div className="reveal text-center mx-auto max-w-2xl mb-10">
-      <div className="tag-label inline-flex mb-4">{tag}</div>
+    <div className="reveal text-center mx-auto max-w-2xl mb-10" aria-label={tag}>
       <h2 className="font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-bold tracking-[-0.03em] text-white leading-[1.12]">
         {title}
       </h2>
@@ -380,63 +392,6 @@ function JourneySection() {
               <div>
                 <p className="font-display text-[15px] font-bold text-white">{s.title}</p>
                 <p className="mt-1 text-[12px] leading-5 text-slate-500">{s.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────── STATS SECTION ─────────────────────────── */
-function StatsSection() {
-  const { t } = useLandingT();
-  const stats = [
-    {
-      value: t("stats.s1.v"),
-      label: t("stats.s1.l"),
-      spark: "0,26 16,22 32,24 48,16 64,18 80,8 96,6",
-    },
-    {
-      value: t("stats.s2.v"),
-      label: t("stats.s2.l"),
-      spark: "0,6 16,10 32,8 48,16 64,14 80,20 96,22",
-    },
-    {
-      value: t("stats.s3.v"),
-      label: t("stats.s3.l"),
-      spark: "0,22 16,20 32,24 48,14 64,16 80,8 96,4",
-    },
-    {
-      value: t("stats.s4.v"),
-      label: t("stats.s4.l"),
-      spark: "0,20 16,18 32,22 48,12 64,14 80,6 96,4",
-    },
-  ];
-  return (
-    <section className="relative section-divider py-14 lg:py-20">
-      <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
-        <SectionHead
-          tag={t("stats.tag")}
-          title={
-            <>
-              {t("stats.title.a")} <span className="text-accent">{t("stats.title.b")}</span>
-            </>
-          }
-          sub={t("stats.sub")}
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((s, i) => (
-            <div
-              key={s.label}
-              className="reveal card-premium p-5"
-              style={{ transitionDelay: `${i * 70}ms` }}
-            >
-              <p className="font-display text-3xl font-bold text-gradient">{s.value}</p>
-              <p className="mt-1.5 text-[13px] font-medium text-white">{s.label}</p>
-              <div className="mt-3">
-                <Sparkline points={s.spark} up />
               </div>
             </div>
           ))}
@@ -558,7 +513,6 @@ function LandingPage() {
           className="relative overflow-hidden pt-[88px] pb-14 lg:pt-[112px] lg:pb-20"
           onPointerMove={onHeroMove}
         >
-          <div className="grid-bg" />
           <div
             className="glow-orb glow-orb-cyan"
             style={{ top: "-10%", right: "-5%", width: "520px", height: "520px" }}
@@ -729,9 +683,6 @@ function LandingPage() {
             </div>
           </div>
         </section>
-
-        {/* ── STATS ── */}
-        <StatsSection />
 
         {/* ── FEATURES ── */}
         <section id="features" className="relative section-divider py-14 lg:py-20">
@@ -977,7 +928,6 @@ function LandingPage() {
 
         {/* ── CTA FINAL ── */}
         <section className="relative overflow-hidden section-divider py-20 lg:py-28">
-          <div className="grid-bg" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_110%,rgba(34,211,238,.14),transparent_60%)]" />
           <div className="reveal relative mx-auto max-w-[720px] px-5 text-center">
             {cd && (
@@ -989,7 +939,7 @@ function LandingPage() {
             <h2 className="font-display text-[clamp(2rem,4.4vw,3.2rem)] font-bold tracking-[-0.03em] text-white leading-[1.08] mb-6">
               {t("cta.title.a")}
               <br />
-              <span className="h-shine">{t("cta.title.b")}</span>
+              <span className="text-accent">{t("cta.title.b")}</span>
             </h2>
             <p className="text-lg text-slate-400 leading-7 max-w-[540px] mx-auto mb-9">
               {t("cta.sub")}
