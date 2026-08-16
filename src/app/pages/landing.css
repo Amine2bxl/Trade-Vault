@@ -12,7 +12,7 @@
     -apple-system,
     sans-serif;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: #050505;
+  background: #060d16;
   color: #ffffff;
 }
 
@@ -615,21 +615,19 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.7rem 1.5rem;
   border-radius: 0.625rem;
-  background: #22d3ee;
-  color: #041018;
+  background: linear-gradient(90deg, #06b6d4, #14b8a6);
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.95rem;
-  transition:
-    background-color 0.16s ease,
-    opacity 0.16s ease;
+  transition: filter 0.16s ease, opacity 0.16s ease;
 }
 .btn-accent:hover {
-  background: #67e8f9;
+  filter: brightness(1.05);
 }
 .btn-accent:active {
-  opacity: 0.88;
+  filter: brightness(0.97);
 }
 
 .section-divider {

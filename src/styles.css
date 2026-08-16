@@ -1115,16 +1115,16 @@ svg.lucide {
   font-weight: 600;
   letter-spacing: 0;
   border-radius: 0.625rem;
-  /* Calme : accent plein, texte sombre — l'action se lit sans crier. */
-  background: var(--tv-accent);
-  color: #041018;
-  transition: background-color 0.16s ease, opacity 0.16s ease;
+  /* Signature TradeVault — cyan→teal, texte clair, sans glow. */
+  background: linear-gradient(90deg, #06b6d4, #14b8a6);
+  color: #ffffff;
+  transition: filter 0.16s ease, opacity 0.16s ease;
 }
 .btn-primary:hover {
-  background: var(--tv-highlight);
+  filter: brightness(1.05);
 }
 .btn-primary:active {
-  opacity: 0.88;
+  filter: brightness(0.97);
 }
 .btn-primary:disabled {
   opacity: 0.45;
