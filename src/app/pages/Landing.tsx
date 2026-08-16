@@ -1,5 +1,5 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { PlayCircle } from "lucide-react";
+import { PlayCircle, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
@@ -1313,10 +1313,9 @@ export default function Landing() {
 
       {auth && (
         <AuthModal
-          mode={authMode}
+          initialMode={authMode}
           plan={authPlan}
           onClose={() => setAuth(false)}
-          onSwitch={(m) => setAuthMode(m)}
         />
       )}
       <CookieConsent />
