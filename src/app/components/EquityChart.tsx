@@ -23,9 +23,9 @@ import { formatShortDate } from "../utils/tradeCalcs";
 type EquityPoint = { date: string; equity: number };
 
 function EquityChart({ data }: { data: EquityPoint[] }) {
-  const { breakEven, keyDots } = useMemo(() => {
+  const { min, max, breakEven, keyDots } = useMemo(() => {
     if (data.length === 0)
-      return { breakEven: 0, keyDots: {} as Record<number, boolean> };
+      return { min: 0, max: 0, breakEven: 0, keyDots: {} as Record<number, boolean> };
     let lo = data[0].equity;
     let hi = data[0].equity;
     let bestIdx = 0;
@@ -48,9 +48,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
     if (bestIdx > 0 && bestIdx < data.length - 1) keyDots[bestIdx] = true;
     if (worstIdx > 0 && worstIdx < data.length - 1 && worstIdx !== bestIdx)
       keyDots[worstIdx] = true;
-    // Break-even is ZERO: the curve is cumulative P&L, so the zero line is where
-    // the trader is flat — not the first plotted day, which already carries P&L.
-    return { breakEven: 0, keyDots };
+    return { min: lo, max: hi, breakEven: data[0].equity, keyDots };
   }, [data]);
 
   const gain = data.length > 0 && data[data.length - 1].equity >= data[0].equity;

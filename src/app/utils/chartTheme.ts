@@ -109,16 +109,12 @@ export function glowActiveDot(color: string) {
   };
 }
 
-// Pads the Y domain so the curve's peaks/troughs never touch the chart edges,
-// while ANCHORING it at zero: the zero line (break-even) is always inside the
-// plot, so a +$2k gain and a -$460 loss are drawn at their true relative
-// amplitude instead of both stretched to the chart edges. Not symmetric — a
-// profitable curve must not waste half the chart on an empty negative range.
+// Pads the Y domain so the curve's peaks/troughs never touch the chart edges —
+// without this, recharts fits the axis exactly to data min/max and the line
+// looks visually "cut off" at the top/bottom of the plot area.
 export function equityYDomain([dataMin, dataMax]: [number, number]): [number, number] {
-  const lo = Math.min(dataMin, 0);
-  const hi = Math.max(dataMax, 0);
-  const pad = Math.max((hi - lo) * 0.12, 20);
-  return [Math.floor(lo - pad), Math.ceil(hi + pad)];
+  const pad = Math.max((dataMax - dataMin) * 0.12, 20);
+  return [Math.floor(dataMin - pad), Math.ceil(dataMax + pad)];
 }
 
 export const EQUITY_X_PADDING = { left: 16, right: 16 };
