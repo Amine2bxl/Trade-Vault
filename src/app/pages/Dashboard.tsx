@@ -33,12 +33,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageContainer, Metric, Card, Button } from "@/shared/ui";
+import { PageContainer, Metric, Card, Button, StreakCard } from "@/shared/ui";
+import type { StreakPeriod } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 import CopilotBlock from "./dashboard/CopilotBlock";
 import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { computeChecklistStreakStats, recentChecklistPeriods } from "../utils/checklistStreak";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
@@ -195,6 +197,28 @@ export default function Dashboard({
       return { locked: !!p.locked, n: arr.filter(Boolean).length, total: arr.length };
     } catch {
       return null;
+    }
+  }, [user?.id]);
+
+  // ── Série de checklist (la mécanique de rétention du rituel) ──
+  // Lecture seule de l'historique `tv-chk-*` déjà écrit par la page Checklist :
+  // aucune nouvelle donnée stockée, aucune migration. La série suit la routine
+  // pré-market — la seule surface du produit qui intervient avant le trade.
+  const streak = useMemo(() => {
+    if (!user?.id) return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
+    try {
+      return computeChecklistStreakStats(window.localStorage, user.id);
+    } catch {
+      return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
+    }
+  }, [user?.id]);
+
+  const streakPeriods = useMemo<StreakPeriod[]>(() => {
+    if (!user?.id) return [];
+    try {
+      return recentChecklistPeriods(window.localStorage, user.id, 7);
+    } catch {
+      return [];
     }
   }, [user?.id]);
 
@@ -368,18 +392,40 @@ export default function Dashboard({
             </div>
           )}
 
-          {/* Copilot block — the day's focus (Edge Score, rule, checklist, objective) */}
+          {/* Copilot block + série de checklist — le focus du jour + la discipline
+              dans la durée, côte à côte. */}
           {trades.length > 0 && (
-            <CopilotBlock
-              edge={edge}
-              edgeDelta={edgeDelta}
-              edgeTrend={edgeTrend}
-              edgeScores={edgeHistory.map((p) => p.score)}
-              rule={dailyRule}
-              checklist={chkStatus}
-              objective={objective}
-              onOpenChecklist={onOpenChecklist}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr] gap-4 md:gap-5 mb-4 md:mb-6">
+              <CopilotBlock
+                edge={edge}
+                edgeDelta={edgeDelta}
+                edgeTrend={edgeTrend}
+                edgeScores={edgeHistory.map((p) => p.score)}
+                rule={dailyRule}
+                checklist={chkStatus}
+                objective={objective}
+                onOpenChecklist={onOpenChecklist}
+              />
+              <StreakCard
+                streak={streakPeriods}
+                currentStreak={streak.current}
+                longestStreak={streak.longest}
+                total={streak.total}
+                title={t("streak.title")}
+                daysLabel={t("streak.days")}
+                longestLabel={t("streak.longest")}
+                totalLabel={t("streak.total")}
+                actionLabel={t("streak.viewChecklist")}
+                onActionClick={onOpenChecklist}
+                howItWorksTitle={t("streak.howItWorks")}
+                howItWorksItems={[
+                  t("streak.howItWorks.i1"),
+                  t("streak.howItWorks.i2"),
+                  t("streak.howItWorks.i3"),
+                ]}
+                className="animate-fade-in-up stagger-1"
+              />
+            </div>
           )}
 
           {trades.length === 0 ? (

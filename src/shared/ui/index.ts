@@ -69,3 +69,7 @@ export { PageHeader, SectionHeader } from "./PageHeader";
 export { EmptyState } from "./EmptyState";
 export { Metric } from "./Metric";
 export type { MetricProps } from "./Metric";
+export { StreakCard } from "./StreakCard";
+export type { StreakCardProps } from "./StreakCard";
+export { StreakCalendar } from "./StreakCalendar";
+export type { StreakPeriod } from "./StreakCalendar";

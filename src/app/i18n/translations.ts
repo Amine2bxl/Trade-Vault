@@ -1143,6 +1143,17 @@ const en = {
   "chk.streakHint":
     "Consecutive weekdays with a locked pre-market checklist. Weekends never break the chain.",
 
+  // Streak card (dashboard)
+  "streak.title": "Checklist streak",
+  "streak.days": "days",
+  "streak.longest": "Longest streak",
+  "streak.total": "Days completed",
+  "streak.viewChecklist": "Open checklist",
+  "streak.howItWorks": "How do streaks work?",
+  "streak.howItWorks.i1": "Complete and lock your pre-market checklist on each trading day.",
+  "streak.howItWorks.i2": "Each locked day grows your streak.",
+  "streak.howItWorks.i3": "Weekends never break the chain — markets are closed.",
+
   // Generic a11y / actions
   "common.remove": "Remove",
   "common.send": "Send",

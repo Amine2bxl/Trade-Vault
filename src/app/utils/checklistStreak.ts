@@ -66,6 +66,20 @@ export interface StreakResult {
   atRisk: boolean;
 }
 
+/** Statistiques complètes de la série, pour la carte de streak du dashboard. */
+export interface StreakStats extends StreakResult {
+  /** La plus longue série jamais atteinte dans la fenêtre observée. */
+  longest: number;
+  /** Nombre total de jours de bourse complétés dans la fenêtre. */
+  total: number;
+}
+
+/** Une période complétée, au format du composant StreakCalendar. */
+export interface StreakPeriod {
+  periodStart: string;
+  periodEnd: string;
+}
+
 /**
  * Calcule la série en remontant le temps depuis `today`.
  *
@@ -106,4 +120,61 @@ export function computeChecklistStreak(
   }
 
   return { current: count, doneToday, atRisk: count > 0 && !doneToday };
+}
+
+/**
+ * Statistiques complètes (série courante, record, total) en une seule lecture.
+ * Même règles que `computeChecklistStreak` : week-ends ignorés, jour courant en
+ * sursis.
+ */
+export function computeChecklistStreakStats(
+  store: ChecklistStore,
+  userId: string,
+  today: Date = new Date(),
+): StreakStats {
+  const { current, doneToday, atRisk } = computeChecklistStreak(store, userId, today);
+
+  let longest = 0;
+  let running = 0;
+  let total = 0;
+
+  const cursor = new Date(today);
+  for (let i = 0; i < MAX_LOOKBACK_DAYS; i++) {
+    if (isWeekend(cursor)) {
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+    if (wasCompleted(store, userId, isoOf(cursor))) {
+      running++;
+      total++;
+      if (running > longest) longest = running;
+    } else {
+      running = 0;
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return { current, longest, total, doneToday, atRisk };
+}
+
+/**
+ * Les jours complétés (au format période) sur les `days` derniers jours
+ * calendaires, prêts à être passés au composant de calendrier de streak.
+ */
+export function recentChecklistPeriods(
+  store: ChecklistStore,
+  userId: string,
+  days = 7,
+  today: Date = new Date(),
+): StreakPeriod[] {
+  const periods: StreakPeriod[] = [];
+  const cursor = new Date(today);
+  for (let i = 0; i < days; i++) {
+    const iso = isoOf(cursor);
+    if (wasCompleted(store, userId, iso)) {
+      periods.push({ periodStart: iso, periodEnd: iso });
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return periods;
 }
