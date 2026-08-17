@@ -187,7 +187,7 @@ function HeroProductVisual() {
       <div className="relative rounded-2xl border border-white/10 bg-[#0a1625]/95 p-5 shadow-[0_30px_80px_rgba(0,0,0,.6)] backdrop-blur-xl">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[.14em] text-slate-500">
+            <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-slate-500">
               {t("hero.eq")}
             </p>
             <p className="mt-1 font-display text-2xl font-bold text-emerald-400 tracking-tight">
@@ -245,7 +245,7 @@ function HeroProductVisual() {
             [t("hero.sharpe"), "1.84"],
           ].map(([l, v]) => (
             <div key={l} className="text-center">
-              <p className="text-[9px] font-medium uppercase tracking-[.08em] text-slate-500">
+              <p className="text-[11px] font-medium uppercase tracking-[.08em] text-slate-500">
                 {l}
               </p>
               <p className="mt-1 font-display text-base font-bold text-cyan-300">{v}</p>
@@ -259,12 +259,12 @@ function HeroProductVisual() {
           <div className="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-blue-500">
             <Icon n="brain" cls="h-3.5 w-3.5 text-[#03131b]" />
           </div>
-          <p className="text-[10px] font-bold text-white">{t("hero.coach")}</p>
+          <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
           <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-emerald-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live
           </span>
         </div>
-        <p className="text-[10px] leading-4 text-slate-300">
+        <p className="text-[11px] leading-4 text-slate-300">
           {t("hero.coach.tip")}{" "}
           <span className="text-cyan-300 font-semibold">{t("hero.coach.action")}</span>
         </p>
@@ -273,9 +273,9 @@ function HeroProductVisual() {
       <div className="float-b absolute -top-8 -right-5 z-10 w-[190px] rounded-xl border border-violet-400/25 bg-[#0b1a2b]/95 p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden md:block">
         <div className="flex items-center gap-2 mb-1.5">
           <Icon n="radar" cls="h-3.5 w-3.5 text-violet-300" />
-          <p className="text-[10px] font-bold text-white">{t("hero.pattern")}</p>
+          <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
         </div>
-        <p className="text-[10px] leading-4 text-slate-300">
+        <p className="text-[11px] leading-4 text-slate-300">
           <span className="text-violet-300 font-semibold">{t("hero.pattern.tip")}</span>
         </p>
       </div>
@@ -295,10 +295,10 @@ function AIConversation() {
           </div>
           <div>
             <p className="text-xs font-bold text-white">{t("ai.c.title")}</p>
-            <p className="text-[10px] text-emerald-400">{t("ai.c.sub")}</p>
+            <p className="text-[11px] text-emerald-400">{t("ai.c.sub")}</p>
           </div>
         </div>
-        <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-400">
+        <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold text-emerald-400">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
         </span>
       </div>
@@ -314,7 +314,7 @@ function AIConversation() {
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-3.5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
               {t("ai.c.plan")}
             </span>
           </div>
@@ -551,15 +551,19 @@ function LandingPage() {
               <p className="fade-up d2 mt-5 text-lg leading-7 text-slate-400 max-w-[560px] mx-auto lg:mx-0">
                 {t("hero.sub")}
               </p>
-              <div className="fade-up d3 mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+              <div className="fade-up d3 mt-7 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
                 <button
                   onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="btn-primary px-6 py-2.5 text-base"
+                  className="btn-primary px-7 py-3 text-base"
                 >
                   {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
                 </button>
-                <a href="/demo-site" className="btn-ghost px-5 py-2.5 text-base">
-                  <PlayCircle className="w-4 h-4" /> {t("hero.demo")}
+                <a
+                  href="/demo-site"
+                  className="group inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-cyan-300 transition-colors"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  {t("hero.demo")}
                 </a>
               </div>
               <div className="fade-up d4 mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 lg:justify-start">
@@ -761,7 +765,7 @@ function LandingPage() {
                   ))}
                 </div>
                 <div className="mt-5 rounded-xl border border-white/[.06] bg-white/[.02] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500 mb-2.5">
+                  <p className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-500 mb-2.5">
                     {t("pricing.notincluded")}
                   </p>
                   <div className="space-y-2 text-[13px]">
@@ -787,7 +791,7 @@ function LandingPage() {
                   <p className="text-[11px] font-bold uppercase tracking-[.15em] text-cyan-300">
                     {t("pricing.pro.year")}
                   </p>
-                  <span className="rounded-full bg-emerald-400 px-2.5 py-1 text-[10px] font-bold uppercase text-[#041018] flex items-center gap-1">
+                  <span className="rounded-full bg-emerald-400 px-2.5 py-1 text-[11px] font-bold uppercase text-[#041018] flex items-center gap-1">
                     <Icon n="flame" cls="h-3 w-3 fill-current" />
                     {t("pricing.pro.badge")}
                   </span>

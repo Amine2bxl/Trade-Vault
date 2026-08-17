@@ -129,17 +129,17 @@ const M: Record<string, Msg> = {
 
   /* hero */
   "hero.eyebrow": {
-    en: "TradeVault · Your personal AI trading coach",
-    fr: "TradeVault · Ton coach IA de trading personnel",
+    en: "TradeVault · The AI coach for traders",
+    fr: "TradeVault · Le coach IA des traders",
   },
   "hero.h1a": { en: "Trade better.", fr: "Trade better." },
   "hero.h1b": { en: "Understand why.", fr: "Understand why." },
   "hero.sub": {
-    en: "TradeVault analyzes your trades, spots your mistakes and tells you what to fix — like a coach who knows every one of your trades.",
-    fr: "TradeVault analyse tes trades, détecte tes erreurs et te dit quoi corriger — comme un coach qui connaît chacun de tes trades.",
+    en: "TradeVault reads your trades, spots the mistakes you keep repeating, and tells you exactly what to fix. Built for intraday and futures traders.",
+    fr: "TradeVault lit tes trades, détecte les erreurs que tu répètes et te dit exactement quoi corriger. Conçu pour les traders intraday et futures.",
   },
-  "hero.cta": { en: "Get started free", fr: "Commencer gratuitement" },
-  "hero.demo": { en: "Watch the demo", fr: "Voir la démo" },
+  "hero.cta": { en: "Start free", fr: "Commencer gratuitement" },
+  "hero.demo": { en: "or watch a 2-min demo", fr: "ou regarde une démo de 2 min" },
   "hero.t1": { en: "No credit card", fr: "Sans carte bancaire" },
   "hero.t2": { en: "Cancel in 1 click", fr: "Annulation en 1 clic" },
   "hero.t3": { en: "Set up in 2 min", fr: "Setup en 2 min" },
