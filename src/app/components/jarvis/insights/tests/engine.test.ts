@@ -144,6 +144,7 @@ describe("Priority — tri isolé", () => {
         evidence: { driftPct: 25 },
         impact: { label: "x", amount: 1100, unit: "$" },
         mission: ["a", "b"],
+        affectedTrades: [],
       },
       {
         moment: "brief",
@@ -154,6 +155,7 @@ describe("Priority — tri isolé", () => {
         evidence: { currentStreak: 5 },
         impact: null,
         mission: ["a", "b"],
+        affectedTrades: [],
       },
     ];
     const ranked = pickPriority(raw, EMPTY_MEMORY);

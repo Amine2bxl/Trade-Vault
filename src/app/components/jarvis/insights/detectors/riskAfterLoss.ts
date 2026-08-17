@@ -37,5 +37,6 @@ export const riskAfterLossDetector: Detector = (data) => {
         ? { label: "Coût estimé après perte", amount: Math.abs(ral.pnlAfterLoss), unit: "$" }
         : null,
     mission: ["pause_after_loss", "keep_size_after_loss"],
+    affectedTrades: ral.afterLossTradeIds,
   };
 };

@@ -29,6 +29,8 @@ export interface SignalBucket {
   winRatePct: number | null;
   pnl: number;
   avgPnl: number;
+  /** Les ids des trades de ce groupe — pour le deep-link « voir les N trades ». */
+  tradeIds: string[];
 }
 
 export interface BehaviorSignals {
@@ -50,6 +52,8 @@ export interface BehaviorSignals {
     driftPct: number;
     tradesAfterLoss: number;
     pnlAfterLoss: number;
+    /** Les trades pris immédiatement après une perte — pour le deep-link. */
+    afterLossTradeIds: string[];
   };
   /** What a busy day costs versus a selective one. */
   overtrading?: {
@@ -82,6 +86,7 @@ function bucketOf(key: string, trades: Trade[]): SignalBucket {
     winRatePct: decisive.length ? pct(wins / decisive.length) : null,
     pnl: round(pnl),
     avgPnl: trades.length ? round(pnl / trades.length) : 0,
+    tradeIds: trades.map((t) => t.id),
   };
 }
 
@@ -93,6 +98,7 @@ function fromBucketStat(key: string, b: BucketStat): SignalBucket {
     winRatePct: wr === null ? null : pct(wr),
     pnl: round(b.pnl),
     avgPnl: b.count ? round(b.pnl / b.count) : 0,
+    tradeIds: [],
   };
 }
 
@@ -173,6 +179,7 @@ export function computeBehaviorSignals(trades: Trade[]): BehaviorSignals {
         driftPct: pct(revenge / normal - 1),
         tradesAfterLoss: afterLoss.length,
         pnlAfterLoss: round(afterLoss.reduce((s, t) => s + t.pnl, 0)),
+        afterLossTradeIds: afterLoss.map((t) => t.id),
       };
     }
   }

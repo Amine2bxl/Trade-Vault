@@ -11,6 +11,7 @@ const insight: JarvisInsight = {
   evidence: { driftPct: 25, avgRiskNormal: 100, avgRiskAfterLoss: 125, pnlAfterLoss: -1100 },
   impact: { label: "Coût estimé après perte", amount: 1100, unit: "$" },
   mission: ["pause_after_loss", "keep_size_after_loss"],
+  affectedTrades: [],
 };
 
 describe("toBlocks — insight → blocs", () => {

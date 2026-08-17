@@ -35,5 +35,6 @@ export const overtradingDetector: Detector = (data) => {
     },
     impact: { label: "Coût des journées chargées", amount: Math.abs(ot.pnlOnBusyDays), unit: "$" },
     mission: ["day_trade_cap", "only_verified_setups"],
+    affectedTrades: [],
   };
 };

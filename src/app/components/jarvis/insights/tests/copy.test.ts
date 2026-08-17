@@ -7,6 +7,7 @@ const baseInsight: Omit<JarvisInsight, "pattern" | "evidence" | "impact" | "miss
   priority: 1,
   confidence: 0.69,
   sampleSize: 22,
+  affectedTrades: [],
 };
 
 const riskAfterLoss: JarvisInsight = {

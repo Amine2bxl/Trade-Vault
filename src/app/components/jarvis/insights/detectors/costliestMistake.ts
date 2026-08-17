@@ -29,5 +29,6 @@ export const costliestMistakeDetector: Detector = (data) => {
     evidence: { mistake: worst.name, count: worst.count, totalPnl: worst.totalPnl },
     impact: { label: "Coût de cette erreur", amount: Math.abs(worst.totalPnl), unit: "$" },
     mission: ["eliminate_mistake", "log_mistake"],
+    affectedTrades: [],
   };
 };

@@ -55,5 +55,6 @@ export const disciplineStreakDetector: Detector = (data) => {
     evidence,
     impact: null,
     mission: ["protect_streak", "no_overconfidence"],
+    affectedTrades: [],
   };
 };
