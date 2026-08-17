@@ -104,6 +104,12 @@ export interface JarvisInsightBlock {
   patternLabel: string;
   metrics: { label: string; value: string; tone?: "up" | "down" | "neutral" }[];
   impact?: string;
+  /**
+   * Les trades qui ont servi à conclure + le deep-link vers la page filtrée.
+   * Quand `affectedTrades` n'est pas vide, l'UI affiche « voir les N trades ».
+   */
+  affectedTrades?: string[];
+  deepLink?: string;
 }
 
 /** La mission du jour : actions immédiates, éventuellement exécutables (ToolBlock futur). */
