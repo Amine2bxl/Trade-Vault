@@ -110,6 +110,8 @@ export interface JarvisInsightBlock {
    */
   affectedTrades?: string[];
   deepLink?: string;
+  /** Libellé localisé du bouton « voir les N trades » (pré-rempli par toBlocks). */
+  viewTradesLabel?: string;
 }
 
 /** La mission du jour : actions immédiates, éventuellement exécutables (ToolBlock futur). */

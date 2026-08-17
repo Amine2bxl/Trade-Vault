@@ -92,6 +92,13 @@ export function insightToBlocks(insight: JarvisInsight, ctx: CopyContext): Jarvi
       deepLink: insight.affectedTrades.length
         ? insightDeepLink(insight.affectedTrades, "journal")
         : undefined,
+      viewTradesLabel: insight.affectedTrades.length
+        ? uiLabel(
+            ctx.lang,
+            `Voir les ${insight.affectedTrades.length} trades`,
+            `View the ${insight.affectedTrades.length} trades`,
+          )
+        : undefined,
     });
   }
 

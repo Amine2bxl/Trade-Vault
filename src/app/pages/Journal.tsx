@@ -26,6 +26,7 @@ import {
 import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { useTradeFilter } from "../hooks/useTradeFilter";
 import TradeDetailModal from "../components/TradeDetailModal";
 import { PageContainer, Button, EmptyState, Card } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
@@ -96,6 +97,12 @@ export default function Journal({
 }: JournalProps) {
   const { t } = useT();
   const stored = useMemo(loadStoredFilters, []);
+  // Deep-link : le filtre unifié (`?f=`) s'applique AVANT les filtres locaux.
+  const {
+    filtered: deepLinked,
+    filter: deepFilter,
+    setFilter: setDeepFilter,
+  } = useTradeFilter(trades);
   const [searchQuery, setSearchQuery] = useState("");
   const [periodFilter, setPeriodFilter] = useState<string>("all");
   const [strategyFilter, setStrategyFilter] = useState(stored.strategyFilter ?? "all");
@@ -132,7 +139,7 @@ export default function Journal({
   }, [strategyFilter, resultFilter, dayFilter, durationFilter]);
 
   const filtered = useMemo(() => {
-    let list = [...trades];
+    let list = [...deepLinked];
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -194,6 +201,7 @@ export default function Journal({
     return list;
   }, [
     trades,
+    deepLinked,
     searchQuery,
     periodFilter,
     strategyFilter,
@@ -295,6 +303,21 @@ export default function Journal({
             value={formatPnl(summary.bestTrade?.pnl ?? 0)}
             tone="up"
           />
+        </div>
+      )}
+
+      {/* Deep-link filter actif — un chip qui permet de revenir à la vue complète */}
+      {deepFilter.trades && deepFilter.trades.length > 0 && (
+        <div className="mb-2.5 md:mb-3 flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] px-3 py-2 text-xs">
+          <span className="text-cyan-300 font-semibold">
+            {deepFilter.trades.length} {t("common.trades")} · {t("journal.fromJarvis")}
+          </span>
+          <button
+            onClick={() => setDeepFilter({})}
+            className="ml-auto font-semibold text-slate-400 hover:text-white transition-colors"
+          >
+            {t("common.clear")} ✕
+          </button>
         </div>
       )}
 

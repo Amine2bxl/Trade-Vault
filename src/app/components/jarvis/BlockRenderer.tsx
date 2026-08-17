@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Check, Plus, Loader2 } from "lucide-react";
+import { Check, Plus, Loader2, ArrowRight } from "lucide-react";
 import MarkdownAnswer from "../MarkdownAnswer";
+import { encodeFilter } from "../../utils/tradeFilter";
 import type {
   JarvisBlock,
   JarvisHeroBlock,
@@ -92,6 +93,26 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
       </div>
       {block.impact && (
         <p className="text-xs text-slate-300 font-semibold leading-relaxed">{block.impact}</p>
+      )}
+      {/* Claim → evidence : le lien vers les trades qui ont servi à conclure. */}
+      {block.affectedTrades && block.affectedTrades.length > 0 && (
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(
+              new CustomEvent("tv:navigate", {
+                detail: {
+                  page: "journal",
+                  filter: encodeFilter({ trades: block.affectedTrades }),
+                },
+              }),
+            )
+          }
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+        >
+          {block.viewTradesLabel ?? block.affectedTrades.length}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
       )}
     </div>
   );

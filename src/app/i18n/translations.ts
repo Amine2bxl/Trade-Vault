@@ -128,6 +128,7 @@ const en = {
   "common.cancel": "Cancel",
   "common.delete": "Delete",
   "common.viewAll": "View all",
+  "common.clear": "Clear",
   "common.edit": "Edit",
   // Onboarding (3-moment redesign)
   "onb.nameTitle": "What should we call you?",
@@ -1472,6 +1473,7 @@ const en = {
   // Journal
   "journal.searchPlaceholder": "Symbol, strategy, notes…",
   "journal.searchResultsNone": "No trades match your search.",
+  "journal.fromJarvis": "from Jarvis",
 
   // Demo / example trades
   "journal.exampleBadge": "Example",

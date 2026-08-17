@@ -257,10 +257,20 @@ function AppContent() {
   // vers une page sans coupler les modales au composant racine.
   useEffect(() => {
     const onNavigate = (e: Event) => {
-      const detail = (e as CustomEvent<{ page?: string }>).detail;
+      const detail = (e as CustomEvent<{ page?: string; filter?: string }>).detail;
       // Même garde que la restauration de session : la cible vient d'un
       // événement externe, elle doit être validée avant d'être appliquée.
-      if (isPage(detail?.page)) setPage(detail.page);
+      if (!isPage(detail?.page)) return;
+      setPage(detail.page);
+      // Deep-link : le filtre (`?f=`) accompagne la navigation. On le pose dans
+      // l'URL puis on notifie les pages déjà montées (`tv:filter`) — le hook
+      // `useTradeFilter` s'y synchronise.
+      if (detail.filter) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("f", detail.filter);
+        window.history.replaceState(window.history.state, "", url.pathname + url.search);
+        window.dispatchEvent(new CustomEvent("tv:filter"));
+      }
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);
