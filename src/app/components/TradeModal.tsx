@@ -49,6 +49,8 @@ import {
   type TradeIntentInput,
   type TradeReflectionInput,
   type TradeJournalMeta,
+  loadTradeIntent,
+  loadTradeReflection,
 } from "../store/tradeIntel";
 import { EMOTIONAL_STATES, type EmotionalState } from "../utils/readiness";
 
@@ -187,6 +189,38 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const [showReflection, setShowReflection] = useState(false);
   const [stopPoints, setStopPoints] = useState("");
   const [pointValue, setPointValue] = useState("20");
+
+  // ÉDITION : recharge l'intention et la réflexion DÉJÀ capturées pour ce trade.
+  // Sans ça, les sections « Avant/après trade » s'ouvraient vides même quand le
+  // trader avait rempli ces champs au moment du log — la donnée existait mais
+  // devenait INVISIBLE dès qu'on réouvrait le formulaire. On les rouvre aussi
+  // quand elles existent, pour que le trader les VOIE.
+  useEffect(() => {
+    if (!userId || !trade) return;
+    let active = true;
+    void Promise.all([
+      loadTradeIntent(userId, trade.id).catch(() => null),
+      loadTradeReflection(userId, trade.id).catch(() => null),
+    ]).then(([intent, reflection]) => {
+      if (!active) return;
+      if (!intent && !reflection) return;
+      setForm((f) => ({
+        ...f,
+        intentEmotion: intent?.emotion ?? f.intentEmotion,
+        intentReasoning: intent?.reasoning ?? f.intentReasoning,
+        intentPlan: intent?.plan ?? f.intentPlan,
+        reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
+        reflectionReason: reflection?.reason ?? f.reflectionReason,
+        reflectionNote: reflection?.note ?? f.reflectionNote,
+      }));
+      if (intent) setShowIntent(true);
+      if (reflection) setShowReflection(true);
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, trade?.id]);
 
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);

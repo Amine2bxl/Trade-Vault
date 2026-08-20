@@ -4,6 +4,7 @@ import { Modal } from "@/shared/ui";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { AppNotification } from "@/modules/notifications/types";
+import { encodeFilter, type UnifiedFilter } from "../utils/tradeFilter";
 
 /**
  * NotificationDetailModal — le popup centré (fond flouté) qui s'ouvre quand on
@@ -90,7 +91,17 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
   const rows = essentials(n);
 
   const go = () => {
-    window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: pageFrom(n) } }));
+    // Le deep-link porte un FILTRE (ex. « voir CE trade ») : on réutilise le
+    // canal `tv:navigate` existant, qui pose `?f=` et prévient les pages.
+    const filter = (n.data?.filter as UnifiedFilter | undefined) ?? undefined;
+    window.dispatchEvent(
+      new CustomEvent("tv:navigate", {
+        detail: {
+          page: pageFrom(n),
+          ...(filter ? { filter: encodeFilter(filter) } : {}),
+        },
+      }),
+    );
     onClose();
   };
 

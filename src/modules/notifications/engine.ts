@@ -193,17 +193,27 @@ export function initNotificationListeners(): void {
   events.on("AfterTradeInsight", async ({ userId, observation }) => {
     if (observation.priority !== "high" && observation.priority !== "medium") return;
     const fr = isFr();
-    const { title, body } = afterTradeCopy(observation, fr);
+    const { title, body, plan } = afterTradeCopy(observation, fr);
     const high = observation.priority === "high";
+    const tradeIds = observation.affectedTradeIds.slice(0, 50);
     await NotificationEngine.notify(userId, {
       kind: "after_trade_insight",
       title,
       body,
       severity: high ? "warning" : "info",
       channels: high ? ["dashboard", "toast", "push"] : ["dashboard", "toast"],
-      url: "/journal",
+      // Deep-link ACTIONNABLE : ouvre le journal filtré sur CE trade, et le
+      // détail du popup propose le même filtre via `ctaPage` + `filter`.
+      url: `/journal?f=${encodeURIComponent("trades=" + encodeURIComponent(tradeIds.join(",")))}`,
       dedupKey: `after_trade_insight:${observation.kind}`,
-      data: { tradeIds: observation.affectedTradeIds, priority: observation.priority },
+      data: {
+        plan,
+        ctaLabel: fr ? "Voir ce trade" : "View this trade",
+        ctaPage: "journal",
+        filter: { trades: tradeIds },
+        tradeIds,
+        priority: observation.priority,
+      },
     });
   });
 }
