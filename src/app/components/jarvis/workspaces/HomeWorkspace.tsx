@@ -7,10 +7,19 @@ import { useJarvisVoice } from "../../../utils/jarvisVoice";
 import { computeStats } from "../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { deriveDailyRule } from "../../../utils/edgeScore";
+import { useEdgeScore } from "../../../hooks/useEdgeScore";
+import { EDGE_WINDOW_DAYS } from "../../../utils/edgeScore";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { useGoalProgress } from "../../../hooks/useGoalProgress";
 import { computeRuleAdherence } from "../../../utils/ruleAdherence";
-import { loadOnboarding, type OnboardingData } from "../../../store";
+import { loadOnboarding, loadMissedOpportunities, type OnboardingData } from "../../../store";
+import {
+  loadTradeIntents,
+  loadTradeReflections,
+  type TradeIntent,
+  type TradeReflection,
+} from "../../../store/tradeIntel";
+import type { MissedOpportunity } from "../../../types";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { effectiveCopyLang } from "../prefs";
 import { sessionJarvisMemory } from "../insights/memory";
@@ -20,6 +29,8 @@ import { buildDailyBrief } from "../insights/coaching/brief";
 import { briefToBlocks } from "../insights/coaching/toBriefBlocks";
 import { buildDailyReview } from "../insights/coaching/review";
 import { reviewToBlocks } from "../insights/coaching/toReviewBlocks";
+import { buildWeeklyEvolution } from "../insights/weekly/build";
+import { weeklyToBlocks } from "../insights/weekly/toBlocks";
 import type { CopyContext } from "../insights/copy/templates";
 import type { JarvisHomeData, JarvisMemory } from "../insights/types";
 import { BlockList } from "../BlockRenderer";
@@ -186,6 +197,58 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     return reviewToBlocks(review, copyLang);
   }, [data, copyLang]);
 
+  // ── Weekly Evolution (Step 7) ───────────────────────────────────────────
+  // Edge Score via le hook PARTAGÉ avec le Dashboard — jamais recalculé ici.
+  const edge = useEdgeScore(context.trades, user?.id ?? context.userId);
+  const [missed, setMissed] = useState<MissedOpportunity[]>([]);
+  const [weeklyIntents, setWeeklyIntents] = useState<Record<string, TradeIntent>>({});
+  const [weeklyReflections, setWeeklyReflections] = useState<Record<string, TradeReflection>>({});
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    let active = true;
+    const ids = context.trades.slice(-25).map((t) => t.id);
+    void Promise.all([
+      loadMissedOpportunities(uid).catch(() => [] as MissedOpportunity[]),
+      loadTradeIntents(uid, ids),
+      loadTradeReflections(uid, ids),
+    ]).then(([m, i, r]) => {
+      if (!active) return;
+      setMissed(m);
+      setWeeklyIntents(i);
+      setWeeklyReflections(r);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user?.id, context.trades]);
+
+  const weeklyBlocks = useMemo(() => {
+    const ev = buildWeeklyEvolution({
+      trades: data.trades,
+      stats: data.stats,
+      signals: data.signals,
+      adherence: data.adherence ?? [],
+      edge: {
+        score: edge.score,
+        weakest: edge.weakest,
+        windowDays: EDGE_WINDOW_DAYS,
+        subs: Object.entries(edge.subs ?? {}).reduce<
+          Record<string, { value: number | null; detail?: string }>
+        >((acc, [k, v]) => {
+          acc[k] = v;
+          return acc;
+        }, {}),
+      },
+      goals: measured,
+      intents: weeklyIntents,
+      reflections: weeklyReflections,
+      missed,
+    });
+    if (ev.status === "empty") return null;
+    return weeklyToBlocks(ev, copyLang);
+  }, [data, edge, measured, weeklyIntents, weeklyReflections, missed, copyLang]);
+
   // ── Jarvis propose une ACTION intégrée à l'app ──
   // La fuite la plus coûteuse → proposition d'ajouter une règle « custom » à la
   // checklist du trader. C'est le premier ToolBlock réel : Jarvis agit, l'user
@@ -290,6 +353,21 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
         </div>
       ) : (
         <BlockList blocks={blocks} />
+      )}
+
+      {/* ── Weekly Evolution (Step 7) : score global puis forces/faiblesses/
+          fuites/intention→exécution/objectifs/missions. Placé juste après le
+          Hero : c'est le « comment s'est passée ma semaine » le plus attendu. */}
+      {weeklyBlocks && (
+        <div className="mt-7">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
+              {t("jarvisWeekly.title")}
+            </span>
+            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
+          </div>
+          <BlockList blocks={weeklyBlocks} />
+        </div>
       )}
 
       {/* ── Daily Brief : objectif, discipline, historique, contexte temporel ──

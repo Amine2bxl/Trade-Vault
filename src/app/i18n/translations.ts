@@ -483,6 +483,7 @@ const en = {
   "jarvisHome.ruleAdded": "Rule added to your checklist. It will be applied to every trade.",
   "jarvisBrief.title": "Your daily brief",
   "jarvisReview.title": "Your latest review",
+  "jarvisWeekly.title": "Your weekly evolution",
 
   // Jarvis sidebar (cockpit navigation)
   "jarvisSide.principal": "Main",

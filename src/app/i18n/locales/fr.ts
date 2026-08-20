@@ -438,6 +438,7 @@ const fr: Dict = {
   "jarvisHome.ruleAdded": "Règle ajoutée à ta checklist. Elle sera appliquée à chaque trade.",
   "jarvisBrief.title": "Ton briefing du jour",
   "jarvisReview.title": "Ton dernier bilan",
+  "jarvisWeekly.title": "Ton évolution hebdomadaire",
 
   // Sidebar Jarvis (navigation cockpit)
   "jarvisSide.principal": "Principal",

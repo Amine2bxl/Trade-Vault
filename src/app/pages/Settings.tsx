@@ -55,7 +55,14 @@ import SubscriptionSection from "../components/SubscriptionSection";
  * contenu : la même structure, sans imposer une colonne de 240 px à un écran
  * qui en fait 390.
  */
-type PaneId = "general" | "account" | "appearance" | "subscription" | "notifications" | "data" | "danger";
+type PaneId =
+  | "general"
+  | "account"
+  | "appearance"
+  | "subscription"
+  | "notifications"
+  | "data"
+  | "danger";
 
 /** Rubrique du rail : son icône, sa clé de libellé, sa clé de recherche. */
 const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: LucideIcon }[] = [
@@ -118,7 +125,14 @@ export default function Settings({
         "equity",
       ),
       appearance: match(t("nav.appearance"), "theme", "thème", "couleur", "color", "palette"),
-      subscription: match(t("nav.subscription"), "plan", "paiement", "billing", "stripe", "abonnement"),
+      subscription: match(
+        t("nav.subscription"),
+        "plan",
+        "paiement",
+        "billing",
+        "stripe",
+        "abonnement",
+      ),
       notifs: match(t("push.title"), t("push.enable"), "push", "notification"),
       data: match(
         t("settings.data"),
@@ -312,7 +326,10 @@ export default function Settings({
           {/* Subscription — billing, same page */}
           {pane === "subscription" && sections.subscription && (
             <div className="space-y-4">
-              <SectionHeading icon={<CreditCard className="w-4 h-4" />} title={t("nav.subscription")} />
+              <SectionHeading
+                icon={<CreditCard className="w-4 h-4" />}
+                title={t("nav.subscription")}
+              />
               <SubscriptionSection />
             </div>
           )}

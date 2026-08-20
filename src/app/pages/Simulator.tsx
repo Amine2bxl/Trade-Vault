@@ -221,10 +221,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        icon={<Dices className="w-5 h-5 text-cyan-400" />}
-        title={t("sim.title")}
-      />
+      <PageHeader icon={<Dices className="w-5 h-5 text-cyan-400" />} title={t("sim.title")} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
         {/* ── Colonne des paramètres ─────────────────────────────────────── */}
