@@ -60,6 +60,9 @@ import {
   loadStartingBalance,
   loadMonthlyReports,
   attachTradeToSession,
+  saveTradeIntent,
+  saveTradeReflection,
+  type TradeJournalMeta,
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
@@ -410,7 +413,7 @@ function AppContent() {
   }, [user?.id, accountsReady, tradesLoading, trades, stats]);
 
   const handleSave = useCallback(
-    async (trade: Trade) => {
+    async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
       setModalOpen(false);
       setEditingTrade(null);
@@ -427,6 +430,16 @@ function AppContent() {
         setTrades(snapshot);
         toast(t("app.saveTradeFailed"), "error");
         return;
+      }
+
+      // Intention & réflexion (Phase 0b) — écriture AU MIEUX, jamais bloquante.
+      // Le trade est déjà enregistré : une capture qui échoue laisse un trade
+      // parfaitement valide. On ne reécrit que ce que le trader a rempli.
+      if (meta?.intent) {
+        void saveTradeIntent(user.id, trade, meta.intent).catch(() => {});
+      }
+      if (meta?.reflection) {
+        void saveTradeReflection(user.id, trade.id, meta.reflection).catch(() => {});
       }
 
       // Rattachement à la séance du jour — AU MIEUX, et surtout après coup.
@@ -449,6 +462,9 @@ function AppContent() {
           isNew,
           accountBalance: balance,
           rules: rulesRef.current,
+          // Intention + réflexion capturées au moment de l'enregistrement :
+          // l'étape d'observation (Step 6B) les lit pour produire son signal.
+          extras: { intent: meta?.intent ?? null, reflection: meta?.reflection ?? null },
         });
       })();
     },

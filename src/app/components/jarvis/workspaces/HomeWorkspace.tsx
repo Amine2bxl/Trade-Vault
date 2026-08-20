@@ -16,6 +16,10 @@ import { effectiveCopyLang } from "../prefs";
 import { sessionJarvisMemory } from "../insights/memory";
 import { buildHomeBlocks } from "../insights/buildHome";
 import { buildSuggestions } from "../insights/suggestions";
+import { buildDailyBrief } from "../insights/coaching/brief";
+import { briefToBlocks } from "../insights/coaching/toBriefBlocks";
+import { buildDailyReview } from "../insights/coaching/review";
+import { reviewToBlocks } from "../insights/coaching/toReviewBlocks";
 import type { CopyContext } from "../insights/copy/templates";
 import type { JarvisHomeData, JarvisMemory } from "../insights/types";
 import { BlockList } from "../BlockRenderer";
@@ -55,7 +59,11 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   // pour la mesure. C'est ce qui permet au détecteur `rule_kept` de dire
   // « tu l'as tenue 11 fois sur 12 » sans que le trader ait à le demander.
   const rules = useTradingRules();
-  const { ctx: goalCtx } = useGoalProgress(context.trades, user?.id ?? context.userId);
+  const { ctx: goalCtx, measured } = useGoalProgress(
+    context.trades,
+    user?.id ?? context.userId,
+    context.activeAccount?.id ?? null,
+  );
   const adherence = useMemo(
     () =>
       computeRuleAdherence(context.trades, rules, goalCtx.startingBalance + goalCtx.stats.totalPnl),
@@ -141,6 +149,42 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     () => buildSuggestions(data, context.page, copyLang),
     [data, context.page, copyLang],
   );
+
+  // ── Daily Brief (Step 6A) ─────────────────────────────────────────────
+  // Relie les calculs déjà faits (stats, signaux, règle, adhérence, objectifs)
+  // en sections structurées, chacune adossée à sa preuve + deep-link.
+  const briefBlocks = useMemo(() => {
+    const brief = buildDailyBrief({
+      trades: data.trades,
+      stats: data.stats,
+      signals: data.signals,
+      rule: data.rule,
+      adherence: data.adherence ?? [],
+      goals: measured,
+    });
+    if (brief.status === "learning") return [];
+    return briefToBlocks(brief, copyLang);
+  }, [data, measured, copyLang]);
+
+  // ── Daily Review (Step 6C) ─────────────────────────────────────────────
+  // Bilan de la dernière journée TRADÉE, affiché seulement quand elle est
+  // terminée (pas un résumé à chaud d'une journée encore en cours).
+  const reviewBlocks = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const latest = data.trades.reduce(
+      (a, t) => (t.date > a ? t.date : a),
+      data.trades[0]?.date ?? "",
+    );
+    if (!latest || latest >= today) return [];
+    const review = buildDailyReview({
+      trades: data.trades,
+      stats: data.stats,
+      signals: data.signals,
+      adherence: data.adherence ?? [],
+    });
+    if (review.status === "empty") return [];
+    return reviewToBlocks(review, copyLang);
+  }, [data, copyLang]);
 
   // ── Jarvis propose une ACTION intégrée à l'app ──
   // La fuite la plus coûteuse → proposition d'ajouter une règle « custom » à la
@@ -246,6 +290,33 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
         </div>
       ) : (
         <BlockList blocks={blocks} />
+      )}
+
+      {/* ── Daily Brief : objectif, discipline, historique, contexte temporel ──
+          Chaque section porte sa preuve et son deep-link ; l'« attention
+          particulière » reste le Hero ci-dessus (le claim prioritaire). */}
+      {briefBlocks.length > 0 && (
+        <div className="mt-7">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              {t("jarvisBrief.title")}
+            </span>
+            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
+          </div>
+          <BlockList blocks={briefBlocks} />
+        </div>
+      )}
+
+      {reviewBlocks.length > 0 && (
+        <div className="mt-7">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              {t("jarvisReview.title")}
+            </span>
+            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
+          </div>
+          <BlockList blocks={reviewBlocks} />
+        </div>
       )}
 
       {/* ── ToolBlock : Jarvis propose une action, l'user l'intègre ──

@@ -2,6 +2,7 @@ import type { Trade } from "@/domain";
 import type { TradeAnalysis } from "@/modules/trading/analysis/types";
 import type { DisciplineViolation, DisciplineSummary } from "@/modules/discipline/types";
 import type { AppNotification } from "@/modules/notifications/types";
+import type { AfterTradeObservation } from "@/modules/coaching";
 
 /**
  * Domain events — the single vocabulary every engine speaks.
@@ -30,6 +31,9 @@ export interface DomainEvents {
   DailyBriefReady: { userId: string; briefId: string };
   WeeklyReviewReady: { userId: string; reviewId: string };
   NewPatternDetected: { userId: string; pattern: string };
+
+  // ── Coaching (Phase 0b, Step 6B) ────────────────────────────────────
+  AfterTradeInsight: { userId: string; observation: AfterTradeObservation };
 
   // ── Notifications ──────────────────────────────────────────────────
   NotificationCreated: { userId: string; notification: AppNotification };

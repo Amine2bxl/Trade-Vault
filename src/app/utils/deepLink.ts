@@ -33,3 +33,13 @@ export function insightDeepLink(affectedTrades: string[], page: Page): string {
   const f = affectedTrades.length ? filterParam({ trades: affectedTrades }) : "";
   return f ? `${pathForPage(page)}?${f}` : pathForPage(page);
 }
+
+/**
+ * Deep-link générique vers une page, filtrée sur une dimension quelconque du
+ * filtre unifié (jour de semaine, setup, erreur, session…). C'est ce qui permet
+ * à Jarvis d'envoyer « voir tes trades du jeudi » ou « voir tes setups SMT ».
+ */
+export function filterDeepLink(page: Page, filter: UnifiedFilter): string {
+  const f = filterParam(filter);
+  return f ? `${pathForPage(page)}?${f}` : pathForPage(page);
+}

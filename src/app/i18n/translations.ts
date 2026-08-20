@@ -481,6 +481,8 @@ const en = {
   "jarvisHome.speaking": "speaking",
   "jarvisHome.addRule": "Add to my checklist",
   "jarvisHome.ruleAdded": "Rule added to your checklist. It will be applied to every trade.",
+  "jarvisBrief.title": "Your daily brief",
+  "jarvisReview.title": "Your latest review",
 
   // Jarvis sidebar (cockpit navigation)
   "jarvisSide.principal": "Main",
@@ -843,6 +845,30 @@ const en = {
   "trade.fillRequired": "Fill symbol, risk and R to save",
   "trade.draftBadge": "Draft",
   "trade.discardDraft": "Discard draft",
+
+  // Trade intent & reflection (Phase 0b)
+  "trade.intent": "Before the trade (optional)",
+  "trade.intentEmotion": "How I felt",
+  "trade.intentReasoning": "Why am I taking this trade?",
+  "trade.intentReasoningPh": "The setup, the draw on liquidity…",
+  "trade.intentPlan": "My plan",
+  "trade.intentPlanPh": "Stop, target, invalidation…",
+  "trade.reflection": "After the trade (optional)",
+  "trade.reflectionPlanRespected": "Did I follow the plan?",
+  "trade.reflectionYes": "Yes",
+  "trade.reflectionPartial": "Partial",
+  "trade.reflectionNo": "No",
+  "trade.reflectionReason": "Why?",
+  "trade.reflectionNote": "Note",
+  "trade.reflectionNotePh": "One line on what happened…",
+  "trade.reason.fomo": "FOMO",
+  "trade.reason.revenge": "Revenge",
+  "trade.reason.early_entry": "Entered too early",
+  "trade.reason.late_entry": "Entered too late",
+  "trade.reason.wrong_setup": "Wrong setup",
+  "trade.reason.wrong_timing": "Wrong timing",
+  "trade.reason.wrong_risk": "Wrong risk",
+  "trade.reason.other": "Other",
 
   // Trade detail v2
   "tradeDetail.macroHint": "High-impact macro event that day",

@@ -11,6 +11,9 @@
  * phases, mais présent dans le type de données dès aujourd'hui.
  */
 
+import type { UnifiedFilter } from "../../utils/tradeFilter";
+import type { Page } from "../../types";
+
 export type JarvisBlockKind =
   | "markdown"
   | "table"
@@ -112,6 +115,12 @@ export interface JarvisInsightBlock {
   deepLink?: string;
   /** Libellé localisé du bouton « voir les N trades » (pré-rempli par toBlocks). */
   viewTradesLabel?: string;
+  /** Lignes narratives (Daily Brief / Review) — rendues au-dessus des métriques. */
+  lines?: string[];
+  /** Deep-link filtré générique (setup, jour, erreur…) — remplace le lien id-only. */
+  filter?: UnifiedFilter;
+  /** Page cible du deep-link (défaut : journal). */
+  page?: Page;
 }
 
 /** La mission du jour : actions immédiates, éventuellement exécutables (ToolBlock futur). */

@@ -67,50 +67,69 @@ function HeroView({ block }: { block: JarvisHeroBlock }) {
 
 /* ── Insight : la preuve chiffrée du pattern ── */
 function InsightView({ block }: { block: JarvisInsightBlock }) {
+  const goToEvidence = () => {
+    // Deep-link générique (setup, jour, erreur…) prioritaire ; sinon les ids.
+    const filter =
+      block.filter ?? (block.affectedTrades?.length ? { trades: block.affectedTrades } : undefined);
+    if (!filter) return;
+    window.dispatchEvent(
+      new CustomEvent("tv:navigate", {
+        detail: { page: block.page ?? "journal", filter: encodeFilter(filter) },
+      }),
+    );
+  };
+
+  const showButton = !!block.filter || (block.affectedTrades?.length ?? 0) > 0;
+
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-3">
       <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
         {block.patternLabel}
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        {block.metrics.map((m, i) => (
-          <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2">
-            <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
+      {block.lines && block.lines.length > 0 && (
+        <ul className="space-y-1.5">
+          {block.lines.map((line, i) => (
+            <li key={i} className="text-sm text-slate-300 leading-relaxed">
+              {line}
+            </li>
+          ))}
+        </ul>
+      )}
+      {block.metrics.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {block.metrics.map((m, i) => (
             <div
-              className={
-                "text-sm font-bold tabular-nums " +
-                (m.tone === "up"
-                  ? "text-emerald-400"
-                  : m.tone === "down"
-                    ? "text-red-400"
-                    : "text-white")
-              }
+              key={i}
+              className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2"
             >
-              {m.value}
+              <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
+              <div
+                className={
+                  "text-sm font-bold tabular-nums " +
+                  (m.tone === "up"
+                    ? "text-emerald-400"
+                    : m.tone === "down"
+                      ? "text-red-400"
+                      : "text-white")
+                }
+              >
+                {m.value}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       {block.impact && (
         <p className="text-xs text-slate-300 font-semibold leading-relaxed">{block.impact}</p>
       )}
-      {/* Claim → evidence : le lien vers les trades qui ont servi à conclure. */}
-      {block.affectedTrades && block.affectedTrades.length > 0 && (
+      {/* Claim → evidence : le lien vers les données qui ont servi à conclure. */}
+      {showButton && (
         <button
           type="button"
-          onClick={() =>
-            window.dispatchEvent(
-              new CustomEvent("tv:navigate", {
-                detail: {
-                  page: "journal",
-                  filter: encodeFilter({ trades: block.affectedTrades }),
-                },
-              }),
-            )
-          }
+          onClick={goToEvidence}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
         >
-          {block.viewTradesLabel ?? block.affectedTrades.length}
+          {block.viewTradesLabel ?? block.affectedTrades?.length ?? "Voir"}
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
       )}

@@ -67,6 +67,19 @@ export interface JarvisInsight {
    * précis (agrégats par session/stratégie non encore enrichis).
    */
   affectedTrades: string[];
+  /**
+   * Claim → evidence (Step 6D) : la comparaison structurée (observé vs
+   * référence) qui répond à « pourquoi tu me dis ça ? ». Additif — les
+   * détecteurs existants restent valides sans le renseigner.
+   */
+  comparison?: {
+    metric: string;
+    observed: number;
+    baseline: number | null;
+    deltaPct: number | null;
+  };
+  /** Période sur laquelle porte l'insight (ex: "30d"). */
+  dateRange?: string;
 }
 
 /**

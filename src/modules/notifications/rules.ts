@@ -199,6 +199,44 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
     });
   }
 
+  // ── JARVIS — bilan de la dernière journée TRADÉE (une fois / jour) ──────
+  // La revue de fin de journée (Step 6C). Ne se déclenche que pour une journée
+  // TERMINÉE (≥1 jour) : on ne commente pas une journée encore en cours. Une
+  // seule priorité citée — jamais une liste de conseils.
+  if (last && daysAgo(last) >= 1) {
+    const dayTrades = ctx.trades.filter((t) => t.date === last);
+    const dayPnl = dayTrades.reduce((s, t) => s + t.pnl, 0);
+    const counts = new Map<string, number>();
+    for (const t of dayTrades) for (const m of t.mistakes) counts.set(m, (counts.get(m) ?? 0) + 1);
+    const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const sign = dayPnl >= 0 ? "+" : "";
+    const body = fr
+      ? `${dayTrades.length} trade(s), ${sign}${Math.round(dayPnl)} $.${top ? ` Point à corriger : « ${top[0]} » (${top[1]}×).` : ""}`
+      : `${dayTrades.length} trade(s), ${sign}$${Math.round(dayPnl)}.${top ? ` Fix this: "${top[0]}" (${top[1]}×).` : ""}`;
+    rules.push({
+      key: `daily_review:${last}`,
+      input: jarvis({
+        kind: "daily_review",
+        title: fr ? "Ton bilan de la veille" : "Yesterday's review",
+        body,
+        severity: dayPnl < 0 ? "warning" : "info",
+        url: "/journal",
+        category: "jarvis",
+        data: {
+          plan: top
+            ? fr
+              ? `Une seule priorité demain : éliminer « ${top[0]} ».`
+              : `One priority tomorrow: eliminate "${top[0]}".`
+            : fr
+              ? "Garde le même process demain."
+              : "Keep the same process tomorrow.",
+          ctaLabel: fr ? "Voir le journal" : "Open journal",
+          ctaPage: "journal",
+        },
+      }),
+    });
+  }
+
   // ── PROGRÈS — une erreur RECULE nettement ──────────────────────────────
   // Le produit dit déjà les choses dures. Il doit aussi reconnaître un progrès
   // réel : c'est ce qui donne envie de continuer, et c'est chiffré, donc

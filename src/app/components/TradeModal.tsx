@@ -10,6 +10,8 @@ import {
   Calculator,
   SlidersHorizontal,
   CandlestickChart,
+  Brain,
+  ClipboardCheck,
 } from "lucide-react";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "../types";
 import { getSession } from "../utils/quantStats";
@@ -38,11 +40,22 @@ import {
   removeKey,
   type TradeDraft,
 } from "../utils/persistence";
+import {
+  REFLECTION_REASONS,
+  isIntentEmpty,
+  isReflectionEmpty,
+  type PlanRespected,
+  type ReflectionReason,
+  type TradeIntentInput,
+  type TradeReflectionInput,
+  type TradeJournalMeta,
+} from "../store/tradeIntel";
+import { EMOTIONAL_STATES, type EmotionalState } from "../utils/readiness";
 
 interface TradeModalProps {
   trade: Trade | null;
   onClose: () => void;
-  onSave: (trade: Trade) => void;
+  onSave: (trade: Trade, meta: TradeJournalMeta) => void;
 }
 
 const defaultForm = {
@@ -65,6 +78,33 @@ const defaultForm = {
   mae: "",
   mfe: "",
   slippage: "",
+  intentEmotion: null as EmotionalState | null,
+  intentReasoning: "",
+  intentPlan: "",
+  reflectionPlan: null as PlanRespected | null,
+  reflectionReason: null as ReflectionReason | null,
+  reflectionNote: "",
+};
+
+// L'émotion reprend `EMOTIONAL_STATES` de readiness.ts — un seul vocabulaire.
+const EMOTION_LABELS: Record<EmotionalState, string> = {
+  calm: "session.stateCalm",
+  focused: "session.stateFocused",
+  tired: "session.stateTired",
+  anxious: "session.stateAnxious",
+  frustrated: "session.stateFrustrated",
+  overconfident: "session.stateOverconfident",
+};
+
+const REASON_LABELS: Record<ReflectionReason, string> = {
+  fomo: "trade.reason.fomo",
+  revenge: "trade.reason.revenge",
+  early_entry: "trade.reason.early_entry",
+  late_entry: "trade.reason.late_entry",
+  wrong_setup: "trade.reason.wrong_setup",
+  wrong_timing: "trade.reason.wrong_timing",
+  wrong_risk: "trade.reason.wrong_risk",
+  other: "trade.reason.other",
 };
 
 export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) {
@@ -143,6 +183,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   const [showCalc, setShowCalc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showIntent, setShowIntent] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
   const [stopPoints, setStopPoints] = useState("");
   const [pointValue, setPointValue] = useState("20");
 
@@ -310,29 +352,45 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         }
       }
     }
-    onSave({
-      id: trade?.id || generateId(),
-      date: form.date,
-      symbol: form.symbol.toUpperCase(),
-      direction: form.direction,
-      pnl: isBE ? 0 : Math.round(risk * rm * 100) / 100,
-      riskAmount: Math.round(risk * 100) / 100,
-      rMultiple: rm,
-      strategy: form.strategy,
-      mistakes: form.mistakes,
-      setupQuality: form.setupQuality,
-      notes: form.notes,
-      screenshots: form.screenshots,
-      entryTime: form.entryTime,
-      exitTime: form.exitTime,
-      confluences: form.confluences,
-      confidence: form.confidence,
-      mae: form.mae === "" ? null : parseFloat(form.mae) || 0,
-      mfe: form.mfe === "" ? null : parseFloat(form.mfe) || 0,
-      slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
-      // Any save through the form makes the trade "real" — demo badge drops.
-      isExample: false,
-    });
+    const intent: TradeIntentInput = {
+      emotion: form.intentEmotion,
+      reasoning: form.intentReasoning.trim() ? form.intentReasoning : null,
+      plan: form.intentPlan.trim() ? form.intentPlan : null,
+    };
+    const reflection: TradeReflectionInput = {
+      planRespected: form.reflectionPlan,
+      reason: form.reflectionReason,
+      note: form.reflectionNote.trim() ? form.reflectionNote : null,
+    };
+    onSave(
+      {
+        id: trade?.id || generateId(),
+        date: form.date,
+        symbol: form.symbol.toUpperCase(),
+        direction: form.direction,
+        pnl: isBE ? 0 : Math.round(risk * rm * 100) / 100,
+        riskAmount: Math.round(risk * 100) / 100,
+        rMultiple: rm,
+        strategy: form.strategy,
+        mistakes: form.mistakes,
+        setupQuality: form.setupQuality,
+        notes: form.notes,
+        screenshots: form.screenshots,
+        entryTime: form.entryTime,
+        exitTime: form.exitTime,
+        confluences: form.confluences,
+        confidence: form.confidence,
+        mae: form.mae === "" ? null : parseFloat(form.mae) || 0,
+        mfe: form.mfe === "" ? null : parseFloat(form.mfe) || 0,
+        slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
+        // Any save through the form makes the trade "real" — demo badge drops.
+        isExample: false,
+      },
+      {
+        intent: isIntentEmpty(intent) ? null : intent,
+        reflection: isReflectionEmpty(reflection) ? null : reflection,
+      },
+    );
   };
 
   const timeError =
@@ -893,6 +951,66 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
           </div>
 
+          {/* Intention — avant le trade (optionnel, ~5 s) */}
+          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
+            <button
+              type="button"
+              onClick={() => setShowIntent((v) => !v)}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+            >
+              <Brain className="w-3.5 h-3.5 text-cyan-400/70" />
+              {t("trade.intent")}
+              {showIntent ? (
+                <ChevronUp className="w-3 h-3 ml-auto" />
+              ) : (
+                <ChevronDown className="w-3 h-3 ml-auto" />
+              )}
+            </button>
+            {showIntent && (
+              <div className="px-3 pb-3 space-y-2.5">
+                <div>
+                  <label className={labelClass}>{t("trade.intentEmotion")}</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {EMOTIONAL_STATES.map((s) => (
+                      <Chip
+                        key={s}
+                        selected={form.intentEmotion === s}
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            intentEmotion: f.intentEmotion === s ? null : s,
+                          }))
+                        }
+                      >
+                        {t(EMOTION_LABELS[s] as never)}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>{t("trade.intentReasoning")}</label>
+                  <input
+                    type="text"
+                    value={form.intentReasoning}
+                    onChange={(e) => setForm((f) => ({ ...f, intentReasoning: e.target.value }))}
+                    placeholder={t("trade.intentReasoningPh")}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("trade.intentPlan")}</label>
+                  <input
+                    type="text"
+                    value={form.intentPlan}
+                    onChange={(e) => setForm((f) => ({ ...f, intentPlan: e.target.value }))}
+                    placeholder={t("trade.intentPlanPh")}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Confluences (customizable) and Mistakes below both render the one
               shared `Chip` from the design system — same size, shape, spacing
               and states, here and in the Missed Setup modal. */}
@@ -963,6 +1081,93 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 )}
               </button>
             </div>
+          </div>
+
+          {/* Réflexion — après le trade (optionnel, 2 clics) */}
+          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
+            <button
+              type="button"
+              onClick={() => setShowReflection((v) => !v)}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+            >
+              <ClipboardCheck className="w-3.5 h-3.5 text-cyan-400/70" />
+              {t("trade.reflection")}
+              {showReflection ? (
+                <ChevronUp className="w-3 h-3 ml-auto" />
+              ) : (
+                <ChevronDown className="w-3 h-3 ml-auto" />
+              )}
+            </button>
+            {showReflection && (
+              <div className="px-3 pb-3 space-y-2.5">
+                <div>
+                  <label className={labelClass}>{t("trade.reflectionPlanRespected")}</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["yes", "partial", "no"] as const).map((p) => {
+                      const label =
+                        p === "yes"
+                          ? t("trade.reflectionYes")
+                          : p === "partial"
+                            ? t("trade.reflectionPartial")
+                            : t("trade.reflectionNo");
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() =>
+                            setForm((f) => ({
+                              ...f,
+                              reflectionPlan: f.reflectionPlan === p ? null : p,
+                            }))
+                          }
+                          className={cn(
+                            "h-9 sm:h-10 rounded-xl text-xs font-semibold border transition",
+                            form.reflectionPlan === p
+                              ? p === "yes"
+                                ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400"
+                                : p === "partial"
+                                  ? "bg-amber-500/15 border-amber-500/25 text-amber-400"
+                                  : "bg-red-500/15 border-red-500/25 text-red-400"
+                              : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>{t("trade.reflectionReason")}</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {REFLECTION_REASONS.map((r) => (
+                      <Chip
+                        key={r}
+                        selected={form.reflectionReason === r}
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            reflectionReason: f.reflectionReason === r ? null : r,
+                          }))
+                        }
+                      >
+                        {t(REASON_LABELS[r] as never)}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>{t("trade.reflectionNote")}</label>
+                  <input
+                    type="text"
+                    value={form.reflectionNote}
+                    onChange={(e) => setForm((f) => ({ ...f, reflectionNote: e.target.value }))}
+                    placeholder={t("trade.reflectionNotePh")}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Screenshots */}

@@ -436,6 +436,8 @@ const fr: Dict = {
   "jarvisHome.speaking": "parle",
   "jarvisHome.addRule": "Ajouter à ma checklist",
   "jarvisHome.ruleAdded": "Règle ajoutée à ta checklist. Elle sera appliquée à chaque trade.",
+  "jarvisBrief.title": "Ton briefing du jour",
+  "jarvisReview.title": "Ton dernier bilan",
 
   // Sidebar Jarvis (navigation cockpit)
   "jarvisSide.principal": "Principal",
@@ -780,6 +782,29 @@ const fr: Dict = {
   "trade.fillRequired": "Renseignez symbole, risque et R pour sauvegarder",
   "trade.draftBadge": "Brouillon",
   "trade.discardDraft": "Supprimer le brouillon",
+
+  "trade.intent": "Avant le trade (optionnel)",
+  "trade.intentEmotion": "Mon état d'esprit",
+  "trade.intentReasoning": "Pourquoi je prends ce trade ?",
+  "trade.intentReasoningPh": "Le setup, la draw sur liquidité…",
+  "trade.intentPlan": "Mon plan",
+  "trade.intentPlanPh": "Stop, cible, invalidation…",
+  "trade.reflection": "Après le trade (optionnel)",
+  "trade.reflectionPlanRespected": "Ai-je respecté le plan ?",
+  "trade.reflectionYes": "Oui",
+  "trade.reflectionPartial": "Partiel",
+  "trade.reflectionNo": "Non",
+  "trade.reflectionReason": "Pourquoi ?",
+  "trade.reflectionNote": "Note",
+  "trade.reflectionNotePh": "Une ligne sur ce qui s'est passé…",
+  "trade.reason.fomo": "FOMO",
+  "trade.reason.revenge": "Revenge",
+  "trade.reason.early_entry": "Entrée trop tôt",
+  "trade.reason.late_entry": "Entrée trop tard",
+  "trade.reason.wrong_setup": "Mauvais setup",
+  "trade.reason.wrong_timing": "Mauvais timing",
+  "trade.reason.wrong_risk": "Mauvais risque",
+  "trade.reason.other": "Autre",
 
   "tradeDetail.macroHint": "Événement macro à fort impact ce jour-là",
 
