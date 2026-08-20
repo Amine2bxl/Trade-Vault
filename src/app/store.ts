@@ -37,6 +37,8 @@ export {
   saveTradeReflection,
   loadTradeIntent,
   loadTradeReflection,
+  loadTradeIntents,
+  loadTradeReflections,
   type PlanRespected,
   type ReflectionReason,
   type TradeIntent,

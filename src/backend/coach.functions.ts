@@ -59,6 +59,59 @@ const CoachAsk = z.object({
     )
     .max(5)
     .optional(),
+  /** Intentions AVANT trades récents — bornées : 25, champs courts. */
+  intent: z
+    .array(
+      z.object({
+        tradeId: z.string().max(100),
+        symbol: z.string().max(20).optional(),
+        setup: z.string().max(100).nullable().optional(),
+        reasoning: z.string().max(500).nullable().optional(),
+        confidence: z.number().nullable().optional(),
+        plannedRisk: z.number().nullable().optional(),
+        plan: z.string().max(500).nullable().optional(),
+        emotion: z.string().max(40).nullable().optional(),
+      }),
+    )
+    .max(25)
+    .optional(),
+  /** Réflexions APRÈS trades récents — même bornage. */
+  reflection: z
+    .array(
+      z.object({
+        tradeId: z.string().max(100),
+        planRespected: z.enum(["yes", "partial", "no"]).nullable().optional(),
+        reason: z.string().max(40).nullable().optional(),
+        note: z.string().max(500).nullable().optional(),
+      }),
+    )
+    .max(25)
+    .optional(),
+  /** Edge Score déjà calculé — le serveur re-borne les clés/sous-scores. */
+  edge: z
+    .object({
+      score: z.number().nullable(),
+      weakest: z.string().max(40).nullable(),
+      windowDays: z.number(),
+      subs: z
+        .record(
+          z.string(),
+          z.object({ value: z.number().nullable(), detail: z.string().max(100).optional() }),
+        )
+        .optional(),
+    })
+    .optional(),
+  /** Session courante — compacte. */
+  session: z
+    .object({
+      date: z.string().max(10),
+      emotionalState: z.string().max(40).nullable().optional(),
+      readinessScore: z.number().nullable().optional(),
+      disciplineScore: z.number().nullable().optional(),
+      tradesToday: z.number(),
+      pnlToday: z.number(),
+    })
+    .optional(),
   memory: z
     .array(z.object({ kind: z.string().max(20), content: z.string().max(300) }))
     .max(12)

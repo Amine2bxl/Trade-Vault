@@ -212,3 +212,47 @@ export async function loadTradeReflection(
   if (error || !data) return null;
   return fromReflectionRow(data as ReflectionRow);
 }
+
+/** Charge les intentions de plusieurs trades en UNE requête (`.in`). C'est la
+ *  voie BULK que le coach (6I) exige : relire 25 trades un par un ferait 50
+ *  requêtes par question — deux suffisent. Clé de retour : `trade_id`. */
+export async function loadTradeIntents(
+  userId: string,
+  tradeIds: string[],
+): Promise<Record<string, TradeIntent>> {
+  const ids = tradeIds.filter(Boolean);
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("trade_intent")
+    .select("*")
+    .eq("user_id", userId)
+    .in("trade_id", ids);
+  if (error || !data) return {};
+  const out: Record<string, TradeIntent> = {};
+  for (const row of data as IntentRow[]) {
+    const intent = fromIntentRow(row);
+    if (intent.tradeId) out[intent.tradeId] = intent;
+  }
+  return out;
+}
+
+/** Idem pour les réflexions — l'accès au « avant vs après » de plusieurs trades. */
+export async function loadTradeReflections(
+  userId: string,
+  tradeIds: string[],
+): Promise<Record<string, TradeReflection>> {
+  const ids = tradeIds.filter(Boolean);
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("trade_reflection")
+    .select("*")
+    .eq("user_id", userId)
+    .in("trade_id", ids);
+  if (error || !data) return {};
+  const out: Record<string, TradeReflection> = {};
+  for (const row of data as ReflectionRow[]) {
+    const reflection = fromReflectionRow(row);
+    out[reflection.tradeId] = reflection;
+  }
+  return out;
+}

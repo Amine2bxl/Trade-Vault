@@ -130,4 +130,86 @@ describe("buildDailyReview (6C)", () => {
     expect(review.wrong).toBeNull();
     expect(review.tomorrow!.fr).toContain("même process");
   });
+
+  it("réflexion « plan non respecté » → le problème principal est l'écart intention→exécution (6I)", () => {
+    const trades = [mk("2026-05-06", -80, [], "Scalping")];
+    const review = buildDailyReview({
+      trades,
+      stats: computeStats(trades),
+      signals: computeBehaviorSignals(trades),
+      adherence: [],
+      reflections: {
+        [trades[0].id]: {
+          tradeId: trades[0].id,
+          planRespected: "no",
+          reason: "early_entry",
+          note: null,
+        },
+      },
+    });
+    expect(review.wrong).not.toBeNull();
+    expect(review.wrong!.fr).toContain("plan");
+    expect(review.wrong!.fr).toContain("early_entry");
+    expect(review.tomorrow!.fr).toContain("suivre ton plan");
+  });
+
+  it("risque réel > risque prévu → écart de risque signalé (6I)", () => {
+    const trades = [mk("2026-05-06", -40, [], "Scalping")];
+    trades[0] = { ...trades[0], riskAmount: 180 };
+    const review = buildDailyReview({
+      trades,
+      stats: computeStats(trades),
+      signals: computeBehaviorSignals(trades),
+      adherence: [],
+      intents: {
+        [trades[0].id]: {
+          tradeId: trades[0].id,
+          plannedRisk: 100,
+          confidence: 70,
+          emotion: null,
+          reasoning: null,
+          plan: null,
+          setup: null,
+        },
+      },
+    });
+    expect(review.wrong).not.toBeNull();
+    expect(review.wrong!.fr).toContain("Risque prévu");
+    expect(review.wrong!.fr).toContain("180");
+  });
+
+  it("confiance faible avant le trade → notée dans ce qui a bien marché? non, dans l'observation", () => {
+    const trades = [mk("2026-05-06", -30, [], "Scalping")];
+    const review = buildDailyReview({
+      trades,
+      stats: computeStats(trades),
+      signals: computeBehaviorSignals(trades),
+      adherence: [],
+      intents: {
+        [trades[0].id]: {
+          tradeId: trades[0].id,
+          confidence: 40,
+          emotion: "anxious",
+          plannedRisk: null,
+          reasoning: null,
+          plan: null,
+          setup: null,
+        },
+      },
+    });
+    expect(review.well.some((l) => l.fr.includes("Confiance faible"))).toBe(true);
+  });
+
+  it("sans intent/reflection, la review reste honnête et ne plante pas (6I)", () => {
+    const trades = [mk("2026-05-06", 100, [], "Scalping")];
+    const review = buildDailyReview({
+      trades,
+      stats: computeStats(trades),
+      signals: computeBehaviorSignals(trades),
+      adherence: [],
+    });
+    expect(review.status).toBe("ready");
+    expect(review.wrong).toBeNull();
+    expect(review.tomorrow!.fr).toContain("même process");
+  });
 });

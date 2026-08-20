@@ -1,11 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { Trade } from "@/domain";
-import {
-  afterTradeCopy,
-  buildAfterTradeObservation,
-  classifyPriority,
-  type AfterTradeInput,
-} from "../afterTrade";
+import { afterTradeCopy, buildAfterTradeObservation, classifyPriority } from "../afterTrade";
+import type { AfterTradeInput } from "../types";
 
 function trade(id: string, opts: Partial<Trade> = {}): Trade {
   return {

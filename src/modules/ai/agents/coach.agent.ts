@@ -19,7 +19,7 @@ import { generate, type GenerateOptions } from "../provider-service";
 import { buildPrompt, type ConversationTurn } from "../prompt-builder";
 import { createContextBuilder } from "../context-builder";
 import { toFormatted, type FormattedResponse } from "../response-formatter";
-import { languageName, type AITradeSummary } from "../context";
+import { languageName, type AIUserContext, type AITradeSummary } from "../context";
 
 export interface CoachInput {
   /** The trader's question. */
@@ -42,6 +42,18 @@ export interface CoachInput {
   goals?: { kind: string; target: number; current: number }[];
   /** The trader's own written rules — the standard they asked to be held to. */
   rules?: { kind: string; text: string; enabled: boolean }[];
+  /**
+   * Intentions capturées AVANT les trades récents (snapshot à l'entrée).
+   * C'est ce qui permet de répondre « qu'est-ce que je pensais avant ce
+   * trade ? » et de comparer intention → exécution → résultat.
+   */
+  intent?: AIUserContext["intent"];
+  /** Réflexions capturées APRÈS les trades récents (plan respecté, raison). */
+  reflection?: AIUserContext["reflection"];
+  /** Edge Score déjà calculé. Cite-le, ne le recalcule jamais. */
+  edge?: AIUserContext["edge"];
+  /** Session de trading courante. */
+  session?: AIUserContext["session"];
   /**
    * Tenue mesurée de ces règles sur la période récente. Sans elle, le coach ne
    * peut que rappeler la règle ; avec elle, il peut mesurer le progrès — c'est
@@ -131,13 +143,18 @@ export function coachIdentity(lang: string): string {
 /** The non-negotiable "never invent" contract. */
 export const ANTI_HALLUCINATION =
   "STRICT DATA RULE: your only sources are the RECENT TRADES, RECURRING MISTAKES, " +
-  "BEHAVIOUR SIGNALS, ACTIVE GOALS, THE TRADER'S OWN RULES and PRECOMPUTED STATS " +
+  "BEHAVIOUR SIGNALS, ACTIVE GOALS, THE TRADER'S OWN RULES, RULE ADHERENCE, " +
+  "TRADE INTENT & REFLECTION, EDGE SCORE, CURRENT SESSION and PRECOMPUTED STATS " +
   "blocks below. Those numbers are computed by a deterministic engine — trust " +
   "them and quote them, never recompute or round them into something else. Never " +
   "invent or estimate a number, name or date that is not present there. If the " +
   "data needed to answer is missing or too thin, say so explicitly instead of " +
   "guessing. You analyze the trader's past data only — you never predict the " +
   "market or give financial advice.\n" +
+  "OBSERVATION RULE: an intent or reflection covers ONE trade. A single " +
+  'instance is an observation, NEVER a pattern. Only generalize ("you did this ' +
+  'on N of your last M trades") when the sample in the data supports it; ' +
+  "otherwise describe the single trade and say there is not enough data yet.\n" +
   "SIMULATION RULE: probabilities (chance of passing, risk of ruin, where the " +
   "P&L could land) come ONLY from the SIMULATION block. You never run, " +
   "approximate or reason your way to one. If the trader asks a what-if and no " +
@@ -176,6 +193,10 @@ export function buildCoachMessages(input: CoachInput) {
   if (input.goals) builder.withGoals(input.goals);
   if (input.rules) builder.withRules(input.rules);
   if (input.adherence?.length) builder.withAdherence(input.adherence);
+  if (input.edge) builder.withEdge(input.edge);
+  if (input.intent?.length) builder.withIntent(input.intent);
+  if (input.reflection?.length) builder.withReflection(input.reflection);
+  if (input.session) builder.withSession(input.session);
   // Le profil déclaré ET les souvenirs sélectionnés partagent le même bloc
   // « faits que tu connais déjà » : même sémantique, aucun tuyau supplémentaire.
   // Le profil vient EN PREMIER — c'est l'identité, elle cadre tout le reste.

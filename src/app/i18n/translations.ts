@@ -723,6 +723,23 @@ const en = {
   "tradeDetail.missedSetup": "Missed Setup",
   "tradeDetail.tradeCountSuffix": "trade",
   "tradeDetail.tradesCountSuffix": "trades",
+  // TradeDetail — intent / reflection / résultat (Phase 0b Step 6I)
+  "tradeDetail.intentFlow": "Intent → Execution → Result",
+  "tradeDetail.intent": "BEFORE",
+  "tradeDetail.reflection": "AFTER",
+  "tradeDetail.result": "RESULT",
+  "tradeDetail.intentSetup": "Setup",
+  "tradeDetail.intentReasoning": "Reasoning",
+  "tradeDetail.intentConfidence": "Confidence",
+  "tradeDetail.intentRisk": "Planned risk",
+  "tradeDetail.intentPlan": "Plan",
+  "tradeDetail.intentEmotion": "Emotion",
+  "tradeDetail.reflectionPlan": "Plan respected",
+  "tradeDetail.reflectionReason": "Reason",
+  "tradeDetail.reflectionNote": "Note",
+  "tradeDetail.planYes": "Yes",
+  "tradeDetail.planPartial": "Partial",
+  "tradeDetail.planNo": "No",
 
   // Auth / landing
   "auth.headline": "Your premium day trading journal",

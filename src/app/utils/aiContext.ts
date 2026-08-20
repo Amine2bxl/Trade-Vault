@@ -6,6 +6,7 @@ import { remember } from "@/modules/ai/memory";
 import { selectMemories, type MemoryLike } from "@/modules/ai/memory-select";
 import { slimSignals } from "./signalContext";
 import { loadOnboarding, loadJarvisProfile, type OnboardingData } from "../store";
+import type { AIUserContext } from "@/modules/ai/context";
 
 /**
  * Coach context builder — the glue that turns the coach from a stateless Q&A
@@ -76,6 +77,21 @@ export interface CoachV1Payload {
    * la différence entre un outil qui gronde et un coach qui accompagne.
    */
   adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
+  /**
+   * Intentions AVANT les trades récents (setup, raisonnement, confiance, risque
+   * prévu, plan, émotion). Permet à Jarvis de répondre « qu'est-ce que je
+   * pensais avant ce trade ? » et de comparer intention → exécution → résultat.
+   */
+  intent?: AIUserContext["intent"];
+  /** Réflexions APRÈS les trades récents (plan respecté, raison, note). */
+  reflection?: AIUserContext["reflection"];
+  /**
+   * Edge Score DÉJÀ calculé (`computeEdgeScore`). Jamais recalculé ici ni par le
+   * modèle : un seul chiffre, une seule définition.
+   */
+  edge?: AIUserContext["edge"];
+  /** Session de trading courante (état, readiness, discipline, dérivés du jour). */
+  session?: AIUserContext["session"];
   conversation?: { role: "user" | "assistant"; content: string }[];
   profile?: string;
   /**
@@ -200,7 +216,7 @@ export function buildCoachV1Payload(opts: {
   /** Souvenirs bruts déjà chargés par l'appelant (lecture Supabase asynchrone). */
   memory?: MemoryLike[];
   /**
-   * Signaux comportementaux DÉJÀ calculés par l'appelant. L'appelant les a
+   * Signal comportementaux DÉJÀ calculés par l'appelant. L'appelant les a
    * presque toujours sous la main (memo du workspace) : les recalculer ici
    * doublait un parcours complet des trades à chaque question.
    */
@@ -213,7 +229,25 @@ export function buildCoachV1Payload(opts: {
    * baisse ? » recevait la réponse d'un coach qui ne savait pas ce qu'est ce
    * score. Il n'est PAS recalculé ici (une seule définition, cf. `useEdgeScore`).
    */
-  edge?: { score: number | null; weakest: string | null };
+  edge?: {
+    score: number | null;
+    weakest: string | null;
+    windowDays: number;
+    subs?: Record<string, { value: number | null; detail?: string }>;
+  } | null;
+  /** Intentions AVANT les trades récents (bulk-loaded par l'appelant). */
+  intent?: AIUserContext["intent"] | null;
+  /** Réflexions APRÈS les trades récents (bulk-loaded par l'appelant). */
+  reflection?: AIUserContext["reflection"] | null;
+  /** Session du jour (état chargé par l'appelant ; les dérivés du jour sont
+   *  calculés ici depuis les trades qu'on a déjà — une représentation, pas un
+   *  nouveau moteur). */
+  session?: {
+    date: string;
+    emotionalState?: string | null;
+    readinessScore?: number | null;
+    disciplineScore?: number | null;
+  } | null;
   /**
    * Simulation déjà produite par `modules/probability`. L'appelant la passe
    * telle quelle : rien n'est recalculé ici, et surtout pas par le modèle.
@@ -237,6 +271,9 @@ export function buildCoachV1Payload(opts: {
     memory,
     signals: providedSignals,
     edge,
+    intent,
+    reflection,
+    session: sessionInput,
     calibration,
     simulation,
   } = opts;
@@ -251,10 +288,19 @@ export function buildCoachV1Payload(opts: {
   // The behavioural read is what turns "here are your stats" into "here is why
   // you lose on Fridays". Computed deterministically, never by the model.
   const baseSignals = providedSignals ?? computeBehaviorSignals(trades);
-  // L'Edge Score rejoint les SIGNAUX : c'est exactement leur nature — une
-  // mesure déterministe déjà calculée, que le modèle interprète sans jamais la
-  // recalculer. Aucun nouveau canal, aucun nouveau contrat.
-  const signals = edge && edge.score !== null ? { ...baseSignals, edgeScore: edge } : baseSignals;
+  // Session du jour : les DÉRIVÉS (trades/PnL du jour) sont calculés ici depuis
+  // les trades qu'on a déjà — une représentation de données existantes, pas un
+  // nouveau moteur de métrique.
+  const session = sessionInput
+    ? {
+        date: sessionInput.date,
+        emotionalState: sessionInput.emotionalState ?? null,
+        readinessScore: sessionInput.readinessScore ?? null,
+        disciplineScore: sessionInput.disciplineScore ?? null,
+        tradesToday: trades.filter((t) => t.date === sessionInput.date).length,
+        pnlToday: trades.filter((t) => t.date === sessionInput.date).reduce((s, t) => s + t.pnl, 0),
+      }
+    : undefined;
   return {
     // Les 25 derniers trades suffisent pour les exemples du coach (les stats et
     // signaux portent la vue d'ensemble). Un payload plus léger = l'IA répond
@@ -276,7 +322,12 @@ export function buildCoachV1Payload(opts: {
     // 5 règles suffisent : au-delà, le coach dilue son message au lieu de
     // pointer celle qui coûte le plus.
     adherence: adherence?.length ? adherence.slice(0, 5) : undefined,
-    signals: Object.keys(signals).length ? slimSignals(signals) : undefined,
+    signals: Object.keys(baseSignals).length ? slimSignals(baseSignals) : undefined,
+    // Edge Score : canal DÉDIÉ désormais (il n'est plus noyé dans les signals).
+    edge: edge && edge.score !== null ? edge : undefined,
+    intent: intent?.length ? intent.slice(0, 25) : undefined,
+    reflection: reflection?.length ? reflection.slice(0, 25) : undefined,
+    session,
     rules: rules?.length
       ? rules
           .slice(0, 30)

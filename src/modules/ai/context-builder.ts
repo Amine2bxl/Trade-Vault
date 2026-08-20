@@ -69,6 +69,30 @@ export class ContextBuilder {
     return this;
   }
 
+  /** Intentions des trades récents — bornées à 25. */
+  withIntent(intent: NonNullable<AIUserContext["intent"]>): this {
+    this.ctx.intent = intent.slice(0, 25);
+    return this;
+  }
+
+  /** Réflexions des trades récents — bornées à 25. */
+  withReflection(reflection: NonNullable<AIUserContext["reflection"]>): this {
+    this.ctx.reflection = reflection.slice(0, 25);
+    return this;
+  }
+
+  /** Edge Score déjà calculé — un seul objet, jamais recalculé. */
+  withEdge(edge: NonNullable<AIUserContext["edge"]>): this {
+    this.ctx.edge = edge;
+    return this;
+  }
+
+  /** Session de trading courante — un objet compact, rien de plus. */
+  withSession(session: NonNullable<AIUserContext["session"]>): this {
+    this.ctx.session = session;
+    return this;
+  }
+
   withMemory(memory: Memory[]): this {
     this.ctx.memory = memory.slice(0, CONTEXT_CAPS.memory).map((m) => ({
       kind: m.kind,

@@ -22,6 +22,14 @@ import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules"
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { computeStats } from "../../../utils/tradeCalcs";
 import { useEdgeScore } from "../../../hooks/useEdgeScore";
+import { EDGE_WINDOW_DAYS } from "../../../utils/edgeScore";
+import { loadTodaySession } from "../../../store";
+import {
+  loadTradeIntents,
+  loadTradeReflections,
+  type TradeIntent,
+  type TradeReflection,
+} from "../../../store/tradeIntel";
 import { answerToBlocks } from "../insights/answerToBlocks";
 import { buildSuggestions } from "../insights/suggestions";
 import { cn } from "../../../utils/cn";
@@ -226,9 +234,46 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     [context.trades, rules, goalCtx.startingBalance, goalCtx.stats.totalPnl],
   );
   const conversationId = context.conversationId ?? null;
+  // Intention / réflexion / session — chargées UNE FOIS par jeu de trades
+  // (bulk, 2 requêtes) et lues à chaque question. La session et les capteurs
+  /// du coach (6I) ne doivent jamais ralentir l'envoi : des refs, pas du state.
+  const intentsRef = useRef<Record<string, TradeIntent>>({});
+  const reflectionsRef = useRef<Record<string, TradeReflection>>({});
+  const sessionRef = useRef<{
+    date: string;
+    emotionalState: string | null;
+    readinessScore: number | null;
+    disciplineScore: number | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!userId || context.trades.length === 0) return;
+    let active = true;
+    const ids = context.trades.slice(-25).map((t) => t.id);
+    void Promise.all([
+      loadTradeIntents(userId, ids),
+      loadTradeReflections(userId, ids),
+      loadTodaySession(userId).catch(() => null),
+    ]).then(([intents, reflections, session]) => {
+      if (!active) return;
+      intentsRef.current = intents;
+      reflectionsRef.current = reflections;
+      sessionRef.current = session
+        ? {
+            date: session.sessionDate,
+            emotionalState: session.emotionalState ?? null,
+            readinessScore: session.readinessScore ?? null,
+            disciplineScore: session.disciplineScore ?? null,
+          }
+        : null;
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId, context.trades]);
+
   // Store STABLE par utilisateur : le recréer à chaque rendu ferait tourner
   // l'effet de sauvegarde en boucle (save → événement → re-render → nouveau
-  // store → save…), ce qui gelait le site au changement de workspace.
+  /// store → save…), ce qui gelait le site au changement de workspace.
   const store = useMemo(() => (userId ? jarvisConversationStore(userId) : null), [userId]);
 
   const [messages, setMessages] = useState<JarvisMessage[]>([]);
@@ -458,8 +503,41 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       setLoading(true);
       const payload = buildCoachV1Payload({
         trades: context.trades,
-        // Indicateur de tête du tableau de bord — Jarvis l'ignorait jusqu'ici.
-        edge: { score: edge.score, weakest: edge.weakest },
+        // Indicateur de tête du tableau de bord — canal DÉDIÉ (avec période et
+        // sous-scores pour l'interprétation), plus confondu avec les signals.
+        edge: {
+          score: edge.score,
+          weakest: edge.weakest,
+          windowDays: EDGE_WINDOW_DAYS,
+          subs: Object.entries(edge.subs ?? {}).reduce<
+            Record<string, { value: number | null; detail?: string }>
+          >((acc, [k, v]) => {
+            acc[k] = v;
+            return acc;
+          }, {}),
+        },
+        // Intentions + réflexions des 25 derniers trades — ce que le trader
+        // pensait AVANT vs ce qu'il conclut APRÈS (6I). Absents si aucune
+        // capture : le bâtiment ne fabrique jamais une intention que l'utilisateur
+        // n'a pas saisie.
+        intent: Object.values(intentsRef.current)
+          .filter((i) => i.tradeId)
+          .map((i) => ({
+            tradeId: i.tradeId as string,
+            setup: i.setup ?? null,
+            reasoning: i.reasoning ?? null,
+            confidence: i.confidence ?? null,
+            plannedRisk: i.plannedRisk ?? null,
+            plan: i.plan ?? null,
+            emotion: i.emotion ?? null,
+          })),
+        reflection: Object.values(reflectionsRef.current).map((r) => ({
+          tradeId: r.tradeId,
+          planRespected: r.planRespected ?? null,
+          reason: r.reason ?? null,
+          note: r.note ?? null,
+        })),
+        session: sessionRef.current,
         conversation: priorTurns,
         language: effectiveCopyLang(lang),
         onboarding,

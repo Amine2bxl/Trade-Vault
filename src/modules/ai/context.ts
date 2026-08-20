@@ -39,6 +39,44 @@ export interface AIUserContext {
    * rappel (« tu as violé ta règle ») en progression (« tenue 11 fois sur 12 »).
    */
   adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
+  /**
+   * Intentions capturées AVANT les trades récents (snapshot figé à l'entrée :
+   * setup, raisonnement, confiance, risque prévu, plan, émotion). C'est
+   * « ce que je pensais avant ce trade » — la moitié intention → exécution.
+   */
+  intent?: {
+    tradeId: string;
+    symbol?: string;
+    setup?: string | null;
+    reasoning?: string | null;
+    confidence?: number | null;
+    plannedRisk?: number | null;
+    plan?: string | null;
+    emotion?: string | null;
+  }[];
+  /** Réflexions capturées APRÈS les trades récents (plan respecté, raison, note). */
+  reflection?: {
+    tradeId: string;
+    planRespected?: "yes" | "partial" | "no" | null;
+    reason?: string | null;
+    note?: string | null;
+  }[];
+  /** Edge Score — indicateur de tête, déjà calculé par `computeEdgeScore`. */
+  edge?: {
+    score: number | null;
+    weakest: string | null;
+    windowDays: number;
+    subs?: Record<string, { value: number | null; detail?: string }>;
+  };
+  /** Session de trading courante (état, readiness, discipline + dérivés du jour). */
+  session?: {
+    date: string;
+    emotionalState?: string | null;
+    readinessScore?: number | null;
+    disciplineScore?: number | null;
+    tradesToday: number;
+    pnlToday: number;
+  };
   /** The trader's own written rules. */
   rules?: { kind: string; text: string; enabled: boolean }[];
   /** Long-term memory entries (profile facts, recurring lessons). */
@@ -155,6 +193,72 @@ export function contextBlocks(ctx: AIUserContext): string {
         "numbers and cite them; they are the evidence behind every diagnosis. " +
         "P&L values are in account currency, winRatePct and driftPct are " +
         `percentages):\n${JSON.stringify(ctx.signals)}`,
+    );
+  }
+  if (ctx.edge && ctx.edge.score !== null) {
+    const subs = ctx.edge.subs
+      ? Object.entries(ctx.edge.subs)
+          .filter(([, s]) => s.value !== null)
+          .map(([k, s]) => `${k}=${s.value}${s.detail ? ` (${s.detail})` : ""}`)
+          .join(", ")
+      : "";
+    blocks.push(
+      `EDGE SCORE (precomputed 0-100 discipline score over the last ` +
+        `${ctx.edge.windowDays} traded days — measures behaviour, never PnL. ` +
+        `Cite it but never recompute it. Weakest component: ` +
+        `${ctx.edge.weakest ?? "none"}${subs ? ` | sub-scores: ${subs}` : ""}): ` +
+        `${ctx.edge.score}`,
+    );
+  }
+  if (ctx.intent?.length || ctx.reflection?.length) {
+    const byId = new Map<
+      string,
+      {
+        intent?: NonNullable<AIUserContext["intent"]>[number];
+        reflection?: NonNullable<AIUserContext["reflection"]>[number];
+      }
+    >();
+    for (const i of ctx.intent ?? []) byId.set(i.tradeId, { intent: i });
+    for (const r of ctx.reflection ?? []) {
+      const cur = byId.get(r.tradeId) ?? {};
+      byId.set(r.tradeId, { ...cur, reflection: r });
+    }
+    const lines = [...byId.values()].map(({ intent, reflection }) => {
+      const tid = intent?.tradeId ?? reflection?.tradeId ?? "";
+      const id = intent?.symbol ? `${intent.symbol} (${tid.slice(0, 8)}…` : tid.slice(0, 8);
+      const before = intent
+        ? [
+            intent.setup ? `setup ${intent.setup}` : null,
+            intent.emotion ? `emotion ${intent.emotion}` : null,
+            intent.confidence != null ? `${intent.confidence}% confidence` : null,
+            intent.plannedRisk != null ? `planned risk ${intent.plannedRisk}` : null,
+            intent.plan ? `plan "${intent.plan}"` : null,
+          ]
+            .filter(Boolean)
+            .join(", ")
+        : "no intent captured";
+      const after = reflection
+        ? `plan respected=${reflection.planRespected ?? "n/a"}${
+            reflection.reason ? `, reason "${reflection.reason}"` : ""
+          }${reflection.note ? `, note "${reflection.note}"` : ""}`
+        : "no reflection captured";
+      return `- ${id}: BEFORE → ${before} | AFTER → ${after}`;
+    });
+    blocks.push(
+      "TRADE INTENT & REFLECTION (what this trader planned BEFORE each recent " +
+        "trade vs how they judged it AFTER — compare intent, execution and " +
+        "result. A single instance is an observation, NEVER a pattern; only " +
+        "generalize when the sample supports it):\n" +
+        lines.join("\n"),
+    );
+  }
+  if (ctx.session) {
+    const s = ctx.session;
+    blocks.push(
+      `CURRENT SESSION (${s.date}): emotionalState=${s.emotionalState ?? "n/a"}, ` +
+        `readiness=${s.readinessScore ?? "n/a"}, ` +
+        `discipline=${s.disciplineScore ?? "n/a"}, ` +
+        `tradesToday=${s.tradesToday}, pnlToday=${s.pnlToday}`,
     );
   }
   if (ctx.simulation) {
