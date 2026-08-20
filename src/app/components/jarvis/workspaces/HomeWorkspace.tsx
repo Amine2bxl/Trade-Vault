@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Sparkles, Check, Volume2, Bot } from "lucide-react";
+import {
+  Plus,
+  Sparkles,
+  Check,
+  Volume2,
+  Bot,
+  TrendingUp,
+  ClipboardList,
+  ClipboardCheck,
+} from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../contexts/ToastContext";
@@ -351,12 +360,27 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           Hero : c'est le « comment s'est passée ma semaine » le plus attendu. */}
       {weeklyBlocks && (
         <div className="mt-7">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
-              {t("jarvisWeekly.title")}
-            </span>
-            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
-          </div>
+          <header className="card-header mb-3">
+            <div className="card-header-left">
+              <span className="card-header-icon text-cyan-300">
+                <TrendingUp className="w-4 h-4" />
+              </span>
+              <h3 className="card-header-title text-sm md:text-[15px]">
+                {t("jarvisWeekly.title")}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("tv:navigate", { detail: { page: "reports" } }),
+                )
+              }
+              className="card-header-action hidden sm:inline"
+            >
+              {t("common.viewAll")} →
+            </button>
+          </header>
           <BlockList blocks={weeklyBlocks} />
         </div>
       )}
@@ -366,24 +390,52 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           particulière » reste le Hero ci-dessus (le claim prioritaire). */}
       {briefBlocks.length > 0 && (
         <div className="mt-7">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              {t("jarvisBrief.title")}
-            </span>
-            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
-          </div>
+          <header className="card-header mb-3">
+            <div className="card-header-left">
+              <span className="card-header-icon text-cyan-300">
+                <ClipboardList className="w-4 h-4" />
+              </span>
+              <h3 className="card-header-title text-sm md:text-[15px]">{t("jarvisBrief.title")}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("tv:navigate", { detail: { page: "checklist" } }),
+                )
+              }
+              className="card-header-action hidden sm:inline"
+            >
+              {t("nav.checklist")} →
+            </button>
+          </header>
           <BlockList blocks={briefBlocks} />
         </div>
       )}
 
       {reviewBlocks.length > 0 && (
         <div className="mt-7">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              {t("jarvisReview.title")}
-            </span>
-            <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
-          </div>
+          <header className="card-header mb-3">
+            <div className="card-header-left">
+              <span className="card-header-icon text-cyan-300">
+                <ClipboardCheck className="w-4 h-4" />
+              </span>
+              <h3 className="card-header-title text-sm md:text-[15px]">
+                {t("jarvisReview.title")}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("tv:navigate", { detail: { page: "journal" } }),
+                )
+              }
+              className="card-header-action hidden sm:inline"
+            >
+              {t("trade.notes")} →
+            </button>
+          </header>
           <BlockList blocks={reviewBlocks} />
         </div>
       )}

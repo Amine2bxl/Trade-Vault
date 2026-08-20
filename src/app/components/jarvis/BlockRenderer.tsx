@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Plus, Loader2, ArrowRight } from "lucide-react";
+import { Check, Plus, Loader2, ArrowRight, BarChart3, Info, Lightbulb } from "lucide-react";
 import MarkdownAnswer from "../MarkdownAnswer";
 import { encodeFilter } from "../../utils/tradeFilter";
 import type {
@@ -83,9 +83,19 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
 
   return (
     <div className="panel rounded-2xl p-3.5 space-y-3">
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
-        {block.patternLabel}
-      </div>
+      <header className="card-header">
+        <div className="card-header-left">
+          <span className="card-header-icon text-cyan-300">
+            <Lightbulb className="w-4 h-4" />
+          </span>
+          <h3 className="card-header-title">{block.patternLabel}</h3>
+        </div>
+        {showButton && (
+          <button type="button" onClick={goToEvidence} className="card-header-action">
+            {block.viewTradesLabel ?? block.affectedTrades?.length ?? "Voir"} →
+          </button>
+        )}
+      </header>
       {block.lines && block.lines.length > 0 && (
         <ul className="space-y-1.5">
           {block.lines.map((line, i) => (
@@ -242,9 +252,14 @@ function StatsView({ block }: { block: Extract<JarvisBlock, { type: "stats" }> }
   return (
     <div className="panel rounded-2xl p-3.5 space-y-3">
       {block.title && (
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
-          {block.title}
-        </div>
+        <header className="card-header">
+          <div className="card-header-left">
+            <span className="card-header-icon text-cyan-300">
+              <BarChart3 className="w-4 h-4" />
+            </span>
+            <h3 className="card-header-title">{block.title}</h3>
+          </div>
+        </header>
       )}
       <div className="grid grid-cols-2 gap-2">
         {block.metrics.map((m, i) => (
@@ -252,7 +267,7 @@ function StatsView({ block }: { block: Extract<JarvisBlock, { type: "stats" }> }
             <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
             <div
               className={
-                "text-sm font-bold tabular-nums " +
+                "metric-display text-sm " +
                 (m.trend === "up"
                   ? "text-emerald-400"
                   : m.trend === "down"
@@ -281,9 +296,24 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
           : block.tone === "accent"
             ? "border-cyan-500/25"
             : "border-white/[0.08]";
+  const toneText =
+    block.tone === "danger"
+      ? "text-red-300"
+      : block.tone === "warning"
+        ? "text-amber-300"
+        : block.tone === "success"
+          ? "text-emerald-300"
+          : "text-cyan-300";
   return (
-    <div className={"panel rounded-2xl p-3.5 space-y-1 " + tone}>
-      <div className="text-sm font-bold text-white">{block.title}</div>
+    <div className={"panel rounded-2xl p-3.5 space-y-1.5 " + tone}>
+      <header className="card-header">
+        <div className="card-header-left">
+          <span className={"card-header-icon " + toneText}>
+            <Info className="w-4 h-4" />
+          </span>
+          <h3 className="card-header-title">{block.title}</h3>
+        </div>
+      </header>
       <p className="text-sm text-slate-300 leading-relaxed">{block.body}</p>
     </div>
   );

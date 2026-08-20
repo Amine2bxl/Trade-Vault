@@ -856,6 +856,67 @@ input[type="number"] {
     0 10px 30px -16px rgba(0, 0, 0, 0.55);
 }
 
+/* Anatomie de carte du bloc checklist (StreakCard) — appliquée à toutes les
+ * cartes et blocs du produit : en-tête icône + titre + action, chiffres en
+ * display, labels muted, séparateurs, lignes internes au survol. */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.card-header-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(30, 46, 66, 0.6), rgba(16, 26, 42, 0.6));
+  color: var(--tv-accent);
+}
+.card-header-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-header-action {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(100 116 139);
+  transition: color 150ms ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (hover: hover) {
+  .card-header-action:hover {
+    color: var(--tv-accent);
+  }
+}
+.metric-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1;
+}
+.card-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 /* Horizontal progress / R:R bar used in headline metric tiles. */
 .metric-bar {
   height: 6px;
