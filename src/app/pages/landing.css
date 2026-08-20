@@ -1,10 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
-   LANDING PAGE (focuspips-inspired) — component styles
-   Class names are unique to the public landing tree.
+   LANDING PAGE — Premium Fintech
+   Compact, story-driven. Dark, neon accents, curves & life.
    ═══════════════════════════════════════════════════════════════ */
 
-/* Landing keeps the ORIGINAL kit fonts (Sora display + Manrope body),
-   scoped so the authenticated app stays on Space Grotesk / Inter. */
 .landing-root {
   font-family:
     "Manrope",
@@ -14,28 +12,19 @@
     -apple-system,
     sans-serif;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #060d16;
+  color: #ffffff;
 }
-/* Main content wrapper: ensures footer hugs the bottom naturally on short screens
-   and doesn't crowd on long pages. */
+
 .landing-root > main {
   min-height: calc(100vh - 200px);
 }
 
-/* Mobile section spacing — tighter, cleaner */
-@media (max-width: 767px) {
-  .landing-root section {
-    padding-top: 3rem !important;
-    padding-bottom: 3rem !important;
-  }
-}
 .landing-root .font-display {
   font-family: "Sora", "Manrope", ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: normal;
 }
-/* The app's unlayered `h1..h6 { font-weight:600 }` and `.font-display { font-weight:700 }`
-   outrank Tailwind's layered weight/tracking utilities, capping landing headings at
-   700 (too thin vs the kit's Sora ExtraBold). `revert-layer` rolls these props back to
-   the utility layer so `font-extrabold` (800) and the tight tracking utilities win. */
+
 .landing-root .font-display,
 .landing-root h1,
 .landing-root h2,
@@ -47,64 +36,47 @@
   letter-spacing: revert-layer;
   line-height: revert-layer;
 }
-/* Anchor targets clear the 66px fixed header so nav clicks land the section
-   flush at the top — never hidden behind the bar or stopped between two. */
+
 .landing-root section[id] {
-  scroll-margin-top: 82px;
-  min-height: calc(100dvh - 66px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  scroll-margin-top: 76px;
 }
-/* On mobile, sections don't need to fill the viewport — content flows naturally */
-@media (max-width: 767px) {
-  .landing-root section[id] {
-    min-height: auto;
-    scroll-margin-top: 70px;
+
+
+/* ── Reveal on scroll ──
+ *
+ * Le contenu est VISIBLE par défaut. L'état masqué n'est appliqué que si les
+ * deux conditions sont réunies :
+ *   1. `html.js-reveal` — posée par `useReveal` : si le script échoue ou n'a pas
+ *      encore tourné, la page reste lisible au lieu de disparaître.
+ *   2. `prefers-reduced-motion: no-preference` — sous « réduire les animations »,
+ *      rien ne bouge et rien ne se cache.
+ *
+ * L'entrée est courte (0.45s) et le déplacement discret (10px) : c'est un
+ * accompagnement de lecture, pas un événement. `will-change` ne vit que sur les
+ * éléments encore en attente, pas sur les 33 en permanence.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .js-reveal .reveal {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .js-reveal .reveal:not(.reveal-visible) {
+    will-change: opacity, transform;
+  }
+  .js-reveal .reveal-visible {
+    opacity: 1;
+    transform: none;
   }
 }
-/* The direct content wrapper of each section must still span the section so its
-   own `max-width` + `mx-auto` keep it horizontally centred inside the flex. */
-.landing-root section[id] > div {
-  width: 100%;
+
+.text-accent {
+  color: #22d3ee;
 }
 
-/* ── reveal on scroll ── */
-.reveal {
-  opacity: 0;
-  transform: translateY(22px);
-  transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
-}
-.reveal-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── background meshes ── */
-.hero-mesh {
-  background:
-    radial-gradient(ellipse 70% 50% at 70% 30%, rgba(0, 224, 208, 0.065) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 60% at 0% 80%, rgba(14, 165, 233, 0.06) 0%, transparent 60%),
-    #060d16;
-}
-.section-mesh {
-  background:
-    radial-gradient(ellipse 60% 50% at 15% 50%, rgba(0, 200, 190, 0.05) 0%, transparent 60%),
-    #060d16;
-}
-
-/* ── gradient text ── */
-.text-gradient {
-  background: linear-gradient(96deg, #22d3ee 0%, #06b6d4 40%, #38bdf8 70%, #818cf8 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* ── scribble underline ── */
+/* ── Scribble underline ── */
 .scribble {
   position: absolute;
   left: -2%;
@@ -124,12 +96,7 @@
   }
 }
 
-/* ── primary / ghost / sm button styles live in the GLOBAL stylesheet
- * (src/styles.css) so every signed-in page paints them on first paint.
- * They are the backing classes for `<Button>` and are used app-wide, not
- * just here. Duplicating them here would only shadow the global ones. */
-
-/* ── nav ── */
+/* ── Nav ── */
 .nav-link {
   position: relative;
   padding: 0.3rem 0;
@@ -156,7 +123,6 @@
 .nav-link:hover::after {
   transform: scaleX(1);
 }
-
 .mobile-nav-link {
   width: 100%;
   padding: 0.875rem 0;
@@ -171,81 +137,113 @@
   color: #22d3ee;
 }
 
-/* ── section labels ── */
-.tag-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.85rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  border: 1px solid rgba(34, 211, 238, 0.22);
-  background: rgba(34, 211, 238, 0.07);
-  color: #67e8f9;
-}
 
-/* ── glass cards ── */
+/* ── Cards ── */
 .glass-card {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 1.1rem;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.02);
   transition:
     border-color 0.3s ease,
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.3s ease;
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .glass-card:hover {
-  border-color: rgba(34, 211, 238, 0.28);
-  transform: translateY(-4px);
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(34, 211, 238, 0.1);
+  border-color: rgba(34, 211, 238, 0.25);
+  transform: translateY(-3px);
+}
+.card-premium {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  transition:
+    border-color 0.3s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+}
+.card-premium:hover {
+  border-color: rgba(34, 211, 238, 0.22);
+  transform: translateY(-3px);
+}
+.card-featured {
+  position: relative;
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.12) 0%, rgba(34, 211, 238, 0.04) 100%);
+  box-shadow: 0 0 50px rgba(34, 211, 238, 0.12);
+  overflow: hidden;
 }
 
-/* ── feature icon box ── */
+/* ── Feature icon ── */
 .feat-icon {
   display: grid;
   place-items: center;
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 0.7rem;
-  border: 1px solid rgba(34, 211, 238, 0.22);
-  background: rgba(34, 211, 238, 0.08);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: rgba(34, 211, 238, 0.07);
   color: #22d3ee;
   flex-shrink: 0;
 }
 
-/* ── step number ── */
-.step-num {
-  display: grid;
-  place-items: center;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #22d3ee, #06b6d4);
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: #03131b;
-  flex-shrink: 0;
-}
-
-/* ── chart draw ── */
+/* ── Chart draw animation ── */
 .chart-line {
   stroke-dasharray: 900;
   stroke-dashoffset: 900;
-  animation: chart-draw 1.4s 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: chart-draw 1.4s 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 @keyframes chart-draw {
   to {
     stroke-dashoffset: 0;
   }
 }
+/* Sparkline draw */
+.spark-line {
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: chart-draw 1.2s 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
 
-/* ── faq ── */
+/* ── Journey flow ── */
+.journey-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 1;
+}
+.journey-connector {
+  position: absolute;
+  top: 1.75rem;
+  left: calc(50% + 2.5rem);
+  right: calc(-50% + 2.5rem);
+  height: 1.5px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.4), rgba(34, 211, 238, 0.08));
+  z-index: 0;
+}
+.journey-dot {
+  position: absolute;
+  top: 1.75rem;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
+  animation: journey-pulse 2.4s ease-in-out infinite;
+}
+@keyframes journey-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.9);
+  }
+}
+
+/* ── FAQ ── */
 .faq-body {
   display: grid;
   grid-template-rows: 0fr;
@@ -262,7 +260,7 @@
   opacity: 1;
 }
 
-/* ── auth input ── */
+/* ── Auth input ── */
 .auth-input {
   width: 100%;
   border-radius: 0.6rem;
@@ -284,7 +282,7 @@
   box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
 }
 
-/* ── roi range (scoped to landing) ── */
+/* ── ROI range ── */
 .landing-root input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -313,33 +311,33 @@
   border: none;
 }
 
-/* ── scroll progress ── */
+/* ── Scroll progress ── */
 .scroll-bar {
   transform-origin: left;
   background: linear-gradient(to right, #22d3ee, #6366f1);
   box-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
 }
 
-/* ── entrances ── */
+/* ── Entrances ── */
 .fade-up {
-  animation: fade-up 0.82s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fade-up 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .fade-up.d1 {
-  animation-delay: 0.1s;
+  animation-delay: 0.08s;
 }
 .fade-up.d2 {
-  animation-delay: 0.2s;
+  animation-delay: 0.16s;
 }
 .fade-up.d3 {
-  animation-delay: 0.32s;
+  animation-delay: 0.26s;
 }
 .fade-up.d4 {
-  animation-delay: 0.46s;
+  animation-delay: 0.38s;
 }
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -375,10 +373,7 @@
   }
 }
 
-/* `@keyframes shimmer` moved to the global stylesheet — it backs the
- * shared .btn-primary sheen, which renders on every route. */
-
-/* ── ping dot ── */
+/* ── Ping dot ── */
 .ping-dot {
   position: relative;
   display: inline-flex;
@@ -400,12 +395,12 @@
   }
 }
 
-/* ── AI grid glow card ── */
+/* ── AI card ── */
 .ai-card {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.1rem;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
   overflow: hidden;
   transition:
     border-color 0.35s ease,
@@ -417,7 +412,7 @@
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(140deg, rgba(34, 211, 238, 0.35), transparent 40%);
+  background: linear-gradient(140deg, rgba(34, 211, 238, 0.3), transparent 40%);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -427,13 +422,14 @@
   transition: opacity 0.35s ease;
 }
 .ai-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
+  border-color: rgba(34, 211, 238, 0.2);
 }
 .ai-card:hover::before {
   opacity: 1;
 }
 
-/* ── typing dots ── */
+/* ── Typing dots ── */
 .typing span {
   display: inline-block;
   width: 5px;
@@ -462,24 +458,24 @@
   }
 }
 
-/* ── pricing popular glow ── */
+/* ── Pricing popular ── */
 .plan-popular {
   position: relative;
   border: 1px solid rgba(34, 211, 238, 0.4);
   box-shadow:
     0 0 0 1px rgba(34, 211, 238, 0.15),
-    0 24px 70px rgba(6, 182, 212, 0.14);
+    0 20px 60px rgba(34, 211, 238, 0.12);
 }
 .plan-popular::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34, 211, 238, 0.1), transparent 60%);
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34, 211, 238, 0.12), transparent 60%);
   pointer-events: none;
 }
 
-/* ── soft float ── */
+/* ── Soft float ── */
 .float-a {
   animation: floatA 6s ease-in-out infinite;
 }
@@ -492,7 +488,7 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-9px);
   }
 }
 @keyframes floatB {
@@ -501,28 +497,31 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(9px);
+    transform: translateY(8px);
   }
 }
 
-/* ── glow pulse on hero card ── */
+/* ── Glow pulse ── */
 .glow-pulse {
+  animation: glowPulse 4s ease-in-out infinite;
 }
-/* ── logo-matched gradient text ── */
-.logo-text {
-  background: linear-gradient(120deg, #38bdf8 0%, #2563eb 48%, #a855f7 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
-/* ── landing cursor glow (own class so it never clashes with app CursorGlow) ── */
+/* ── Landing cursor glow ── */
 .landing-cursor-glow {
   position: fixed;
   top: 0;
   left: 0;
-  width: 320px;
-  height: 320px;
+  width: 400px;
+  height: 400px;
   border-radius: 50%;
   pointer-events: none;
   z-index: 30;
@@ -530,11 +529,11 @@
   transition: opacity 0.35s ease;
   background: radial-gradient(
     circle,
-    rgba(34, 211, 238, 0.045) 0%,
-    rgba(99, 102, 241, 0.02) 45%,
+    rgba(34, 211, 238, 0.06) 0%,
+    rgba(99, 102, 241, 0.03) 45%,
     transparent 72%
   );
-  filter: blur(6px);
+  filter: blur(8px);
   will-change: transform;
 }
 @media (max-width: 900px) {
@@ -543,7 +542,7 @@
   }
 }
 
-/* ── interactive spotlight cards ── */
+/* ── Interactive spotlight ── */
 .spot {
   position: relative;
   isolation: isolate;
@@ -555,7 +554,7 @@
   border-radius: inherit;
   background: radial-gradient(
     280px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(34, 211, 238, 0.14),
+    rgba(34, 211, 238, 0.1),
     transparent 65%
   );
   opacity: 0;
@@ -567,102 +566,43 @@
   opacity: 1;
 }
 
-/* ── Jarvis-style checklist HUD ── */
-.hud-ring {
+
+/* ── Glow orb ── */
+.glow-orb {
   position: absolute;
   border-radius: 50%;
-  border: 1px dashed rgba(34, 211, 238, 0.16);
-  animation: hud-spin 34s linear infinite;
-}
-.hud-ring.reverse {
-  animation-direction: reverse;
-  border-color: rgba(129, 140, 248, 0.14);
-  animation-duration: 26s;
-}
-@keyframes hud-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.hud-panel {
-  position: relative;
-  overflow: hidden;
-}
-.hud-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
-  background-size: 22px 22px;
-  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, #000 40%, transparent 90%);
-  mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, #000 40%, transparent 90%);
+  filter: blur(70px);
   pointer-events: none;
+  z-index: 0;
+}
+.glow-orb-cyan {
+  background: rgba(34, 211, 238, 0.08);
+}
+.glow-orb-indigo {
+  background: rgba(99, 102, 241, 0.06);
 }
 
-.scan-line {
-  position: absolute;
-  left: 6%;
-  right: 6%;
-  height: 1.5px;
-  background: linear-gradient(to right, transparent, rgba(34, 211, 238, 0.85), transparent);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
-  pointer-events: none;
+/* ── CTA button accent ── */
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: 0.625rem;
+  background: linear-gradient(90deg, #06b6d4, #14b8a6);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: filter 0.16s ease, opacity 0.16s ease;
 }
-.check-item {
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
+.btn-accent:hover {
+  filter: brightness(1.05);
 }
-.check-item.done {
-  border-color: rgba(52, 211, 153, 0.3);
-  background: rgba(52, 211, 153, 0.06);
-}
-.check-box {
-  transition:
-    background-color 0.25s ease,
-    border-color 0.25s ease,
-    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.check-item.done .check-box {
-  background: #34d399;
-  border-color: #34d399;
-  transform: scale(1.05);
+.btn-accent:active {
+  filter: brightness(0.97);
 }
 
-/* ── heading gradient shine ── */
-.h-shine {
-  background: linear-gradient(120deg, #fff 30%, #a5f3fc 50%, #fff 70%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* ── Démo de la landing (LandingDemo) ──
- * Ces deux animations vivaient dans la feuille GLOBALE alors qu'elles ne
- * servent qu'à la page marketing : elles voyageaient donc dans le CSS de
- * chaque écran de l'application. Elles rejoignent ici la feuille chargée à
- * la demande avec la landing. `demoProgress` anime `width` — toléré parce que
- * la barre de démo n'a aucun voisin dont la disposition dépende d'elle, et
- * que la landing garde ses propres règles. */
-@keyframes demoBar {
-  from {
-    opacity: 0;
-    transform: scaleY(0.4);
-  }
-  to {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-}
-@keyframes demoProgress {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
+.section-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }

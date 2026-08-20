@@ -578,7 +578,11 @@ discipline. L'interface n'attend jamais le réseau.
 
 1. `buildCoachV1Payload` assemble stats, trades, erreurs, signaux, règles,
    objectifs, adhérence, Edge Score, profil et **mémoire sélectionnée**
-   (≤ 350 tokens).
+   (≤ 350 tokens). Depuis la Phase 0b, le payload transporte **aussi** les
+   intentions/réflexions des 25 derniers trades, l'Edge Score complet
+   (période + sous-scores) et la session du jour (état, readiness, discipline,
+   dérivés du jour) — le coach répond donc à « qu'est-ce que je pensais avant ce
+   trade ? » et « ai-je respecté mon plan ? » à partir de la SAME source que l'UI.
 2. `askCoach` (serveur, `requireProAccess`) → `runCoach` → routeur multi-provider
    avec circuit breaker.
 3. Échec ou absence de provider → **repli déterministe** sur les mêmes données.
@@ -586,6 +590,38 @@ discipline. L'interface n'attend jamais le réseau.
    calculés — c'est ce qui rend toute hallucination chiffrée impossible.
 5. Si le message contient un marqueur d'engagement **et** que
    `AI_MEMORY_EXTRACTION=1` : extraction en arrière-plan, après la réponse.
+
+### Boucle de coaching (Phase 0b)
+
+La boucle produit n'est plus un formulaire statique : chaque étape reçoit la
+suivante dans l'interface.
+
+1. **Avant session** — Jarvis Home : Hero (le claim prioritaire, attention) puis
+   **Daily Brief** (objectif + mission, discipline, historique, contexte
+   temporel), chaque section adossée à sa preuve + deep-link.
+2. **Au log d'un trade** — `TradeModal` capture l'**intention** (émotion,
+   raisonnement, plan, confiance, risque prévu) et la **réflexion** (plan
+   respecté, raison, note). En édition, ces champs sont **re-chargés** et
+   rouverts : la donnée capturée n'est jamais invisible.
+3. **Après le log** — étape d'automation `afterTradeInsight` compare
+   intention → exécution → résultat. Priorité **HIGH** (plan non respecté +
+   tilt, ou ≥3 pertes du jour) → notice toast + push + Inbox ; **MEDIUM** →
+   toast + Inbox ; **LOW** → jamais notifié (reste dans la revue).
+4. **Détail d'un jour** — `TradeDetailModal` : bloc **AVANT → APRÈS → RÉSULTAT**
+   (ce que je pensais → ce que j'ai fait → ce qui s'est passé).
+5. **Fin de journée terminée** — Jarvis Home : **Daily Review** (ce qui s'est
+   bien passé / le problème / la preuve / une priorité pour demain) +
+   notification `daily_review` (une fois par jour, jamais en cours de journée).
+6. **Hebdo** — la notification `weekly_review` (lundi, une fois par semaine)
+   ouvre le rapport et renvoie vers Jarvis.
+
+### Deep-links (claim → evidence)
+
+Tout insight important de Jarvis répond à « pourquoi tu me dis ça ? » :
+CLAIM → preuve chiffrée (sample, période, comparaison) → bouton **Voir les
+trades** → `tv:navigate { page, filter }` → app pose `?f=` et Journal
+l'applique via `useTradeFilter`. Les notifications après-trade portent le même
+filtre : leur CTA ouvre le journal **filtré sur CE trade**.
 
 ### Notification
 

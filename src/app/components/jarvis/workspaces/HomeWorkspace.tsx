@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Sparkles, Check, Volume2, Bot } from "lucide-react";
+import {
+  Plus,
+  Sparkles,
+  Check,
+  Volume2,
+  Bot,
+  TrendingUp,
+  ClipboardList,
+  ClipboardCheck,
+} from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../contexts/ToastContext";
@@ -7,15 +16,29 @@ import { useJarvisVoice } from "../../../utils/jarvisVoice";
 import { computeStats } from "../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { deriveDailyRule } from "../../../utils/edgeScore";
+import { useEdgeScore } from "../../../hooks/useEdgeScore";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { useGoalProgress } from "../../../hooks/useGoalProgress";
 import { computeRuleAdherence } from "../../../utils/ruleAdherence";
-import { loadOnboarding, type OnboardingData } from "../../../store";
+import { loadOnboarding, loadMissedOpportunities, type OnboardingData } from "../../../store";
+import {
+  loadTradeIntents,
+  loadTradeReflections,
+  type TradeIntent,
+  type TradeReflection,
+} from "../../../store/tradeIntel";
+import type { MissedOpportunity } from "../../../types";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { effectiveCopyLang } from "../prefs";
 import { sessionJarvisMemory } from "../insights/memory";
 import { buildHomeBlocks } from "../insights/buildHome";
 import { buildSuggestions } from "../insights/suggestions";
+import { buildDailyBrief } from "../insights/coaching/brief";
+import { briefToBlocks } from "../insights/coaching/toBriefBlocks";
+import { buildDailyReview } from "../insights/coaching/review";
+import { reviewToBlocks } from "../insights/coaching/toReviewBlocks";
+import { buildWeeklyEvolution } from "../insights/weekly/build";
+import { weeklyToBlocks } from "../insights/weekly/toBlocks";
 import type { CopyContext } from "../insights/copy/templates";
 import type { JarvisHomeData, JarvisMemory } from "../insights/types";
 import { BlockList } from "../BlockRenderer";
@@ -55,7 +78,11 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   // pour la mesure. C'est ce qui permet au détecteur `rule_kept` de dire
   // « tu l'as tenue 11 fois sur 12 » sans que le trader ait à le demander.
   const rules = useTradingRules();
-  const { ctx: goalCtx } = useGoalProgress(context.trades, user?.id ?? context.userId);
+  const { ctx: goalCtx, measured } = useGoalProgress(
+    context.trades,
+    user?.id ?? context.userId,
+    context.activeAccount?.id ?? null,
+  );
   const adherence = useMemo(
     () =>
       computeRuleAdherence(context.trades, rules, goalCtx.startingBalance + goalCtx.stats.totalPnl),
@@ -141,6 +168,86 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     () => buildSuggestions(data, context.page, copyLang),
     [data, context.page, copyLang],
   );
+
+  // ── Daily Brief (Step 6A) ─────────────────────────────────────────────
+  // Relie les calculs déjà faits (stats, signaux, règle, adhérence, objectifs)
+  // en sections structurées, chacune adossée à sa preuve + deep-link.
+  const briefBlocks = useMemo(() => {
+    const brief = buildDailyBrief({
+      trades: data.trades,
+      stats: data.stats,
+      signals: data.signals,
+      rule: data.rule,
+      adherence: data.adherence ?? [],
+      goals: measured,
+    });
+    if (brief.status === "learning") return [];
+    return briefToBlocks(brief, copyLang);
+  }, [data, measured, copyLang]);
+
+  // ── Daily Review (Step 6C) ─────────────────────────────────────────────
+  // Bilan de la dernière journée TRADÉE, affiché seulement quand elle est
+  // terminée (pas un résumé à chaud d'une journée encore en cours).
+  const reviewBlocks = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const latest = data.trades.reduce(
+      (a, t) => (t.date > a ? t.date : a),
+      data.trades[0]?.date ?? "",
+    );
+    if (!latest || latest >= today) return [];
+    const review = buildDailyReview({
+      trades: data.trades,
+      stats: data.stats,
+      signals: data.signals,
+      adherence: data.adherence ?? [],
+    });
+    if (review.status === "empty") return [];
+    return reviewToBlocks(review, copyLang);
+  }, [data, copyLang]);
+
+  // ── Weekly Evolution (Step 7) ───────────────────────────────────────────
+  // Edge Score via le hook PARTAGÉ avec le Dashboard — jamais recalculé ici.
+  const edge = useEdgeScore(context.trades, user?.id ?? context.userId);
+  const [missed, setMissed] = useState<MissedOpportunity[]>([]);
+  const [weeklyIntents, setWeeklyIntents] = useState<Record<string, TradeIntent>>({});
+  const [weeklyReflections, setWeeklyReflections] = useState<Record<string, TradeReflection>>({});
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    let active = true;
+    const ids = context.trades.slice(-25).map((t) => t.id);
+    void Promise.all([
+      loadMissedOpportunities(uid).catch(() => [] as MissedOpportunity[]),
+      loadTradeIntents(uid, ids),
+      loadTradeReflections(uid, ids),
+    ]).then(([m, i, r]) => {
+      if (!active) return;
+      setMissed(m);
+      setWeeklyIntents(i);
+      setWeeklyReflections(r);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user?.id, context.trades]);
+
+  const weeklyBlocks = useMemo(() => {
+    const ev = buildWeeklyEvolution({
+      trades: data.trades,
+      stats: data.stats,
+      signals: data.signals,
+      adherence: data.adherence ?? [],
+      // Edge déjà calculé par `useEdgeScore` (EdgeResult) — aucune réassemblage,
+      // aucune seconde définition du score.
+      edge,
+      goals: measured,
+      intents: weeklyIntents,
+      reflections: weeklyReflections,
+      missed,
+    });
+    if (ev.status === "empty") return null;
+    return weeklyToBlocks(ev, copyLang);
+  }, [data, edge, measured, weeklyIntents, weeklyReflections, missed, copyLang]);
 
   // ── Jarvis propose une ACTION intégrée à l'app ──
   // La fuite la plus coûteuse → proposition d'ajouter une règle « custom » à la
@@ -246,6 +353,91 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
         </div>
       ) : (
         <BlockList blocks={blocks} />
+      )}
+
+      {/* ── Weekly Evolution (Step 7) : score global puis forces/faiblesses/
+          fuites/intention→exécution/objectifs/missions. Placé juste après le
+          Hero : c'est le « comment s'est passée ma semaine » le plus attendu. */}
+      {weeklyBlocks && (
+        <div className="mt-7">
+          <header className="card-header mb-3">
+            <div className="card-header-left">
+              <span className="card-header-icon text-cyan-300">
+                <TrendingUp className="w-4 h-4" />
+              </span>
+              <h3 className="card-header-title text-sm md:text-[15px]">
+                {t("jarvisWeekly.title")}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("tv:navigate", { detail: { page: "reports" } }),
+                )
+              }
+              className="card-header-action hidden sm:inline"
+            >
+              {t("common.viewAll")} →
+            </button>
+          </header>
+          <BlockList blocks={weeklyBlocks} />
+        </div>
+      )}
+
+      {/* ── Daily Brief : objectif, discipline, historique, contexte temporel ──
+          Chaque section porte sa preuve et son deep-link ; l'« attention
+          particulière » reste le Hero ci-dessus (le claim prioritaire). */}
+      {briefBlocks.length > 0 && (
+        <div className="mt-7">
+          <header className="card-header mb-3">
+            <div className="card-header-left">
+              <span className="card-header-icon text-cyan-300">
+                <ClipboardList className="w-4 h-4" />
+              </span>
+              <h3 className="card-header-title text-sm md:text-[15px]">{t("jarvisBrief.title")}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("tv:navigate", { detail: { page: "checklist" } }),
+                )
+              }
+              className="card-header-action hidden sm:inline"
+            >
+              {t("nav.checklist")} →
+            </button>
+          </header>
+          <BlockList blocks={briefBlocks} />
+        </div>
+      )}
+
+      {reviewBlocks.length > 0 && (
+        <div className="mt-7">
+          <header className="card-header mb-3">
+            <div className="card-header-left">
+              <span className="card-header-icon text-cyan-300">
+                <ClipboardCheck className="w-4 h-4" />
+              </span>
+              <h3 className="card-header-title text-sm md:text-[15px]">
+                {t("jarvisReview.title")}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("tv:navigate", { detail: { page: "journal" } }),
+                )
+              }
+              className="card-header-action hidden sm:inline"
+            >
+              {t("trade.notes")} →
+            </button>
+          </header>
+          <BlockList blocks={reviewBlocks} />
+        </div>
       )}
 
       {/* ── ToolBlock : Jarvis propose une action, l'user l'intègre ──

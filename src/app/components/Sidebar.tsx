@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   Bell,
   ChevronLeft,
@@ -34,12 +35,15 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const groupLabel = (label: string) =>
-    !collapsed && (
-      <p className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
-        {label}
-      </p>
-    );
+  // Infobulle de la barre repliée, rendue en PORTAL (position fixe) : la barre
+  // repliée est `overflow-hidden` pour un repli/dépli animé sans débordement de
+  // texte, ce qui clipperait une infobulle absolue posée à droite de l'icône.
+  const [tip, setTip] = useState<{ text: string; top: number; left: number } | null>(null);
+  const showTip = (e: React.MouseEvent<HTMLElement>, text: string) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ text, top: r.top + r.height / 2, left: r.right + 10 });
+  };
+  const hideTip = () => setTip(null);
 
   const row = ({
     key,
@@ -63,11 +67,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
       onClick={onActivate}
       onPointerEnter={target ? () => preloadPage(target) : undefined}
       onFocus={target ? () => preloadPage(target) : undefined}
+      onMouseEnter={collapsed ? (e) => showTip(e, label) : undefined}
+      onMouseLeave={collapsed ? hideTip : undefined}
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group relative flex h-10 w-full items-center rounded-xl text-[13.5px] font-medium",
         "transition-colors duration-200",
+        // Repliée : icône centrée dans la largeur fixe. Dépliée : icône à gauche.
+        // La largeur de la barre est la SEULE chose qui anime ; l'icône reste
+        // quasi immobile (décalage de ~3px absorbé par l'easing fluide).
         collapsed ? "justify-center px-0" : "gap-3 px-3",
         active
           ? "bg-cyan-500/10 text-white"
@@ -82,7 +91,6 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         {badge}
       </span>
       {!collapsed && <span className="truncate">{label}</span>}
-      {collapsed && <span className="rail-tip">{label}</span>}
     </button>
   );
 
@@ -92,161 +100,162 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
-        collapsed ? "w-[76px]" : "w-[248px]",
+        "relative hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
+        // Largeur animée, contenu clippé par le wrapper interne : au dépli, les
+        // étiquettes et la carte de compte se révèlent au lieu de déborder ; au
+        // repli, la barre rétrécit sans texte orphelin. 300 ms, easing fluide
+        // (jamais agressif).
+        "transition-[width] duration-500 ease-[var(--tv-ease-out)]",
+        collapsed ? "w-[72px]" : "w-[248px]",
       )}
     >
-      {/* ── MARQUE ── */}
-      <div
-        className={cn(
-          "relative flex h-[72px] shrink-0 items-center px-3",
-          collapsed ? "justify-center" : "justify-between",
-        )}
-      >
-        <div className={cn("sidebar-brand", collapsed && "justify-center")}>
-          <div className="sidebar-brand-logo">
-            <img src={logoSrc} alt="TradeVault" width={40} height={40} />
-          </div>
-          {!collapsed && (
-            <div className="sidebar-brand-text">
-              <span className="sidebar-brand-name">TradeVault</span>
-              <span className="sidebar-brand-tagline">Trading Coach</span>
-            </div>
-          )}
-        </div>
-        <button
-          onClick={toggleCollapsed}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
-          title={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+      {/* Wrapper interne : clippe le contenu pendant l'animation de largeur. */}
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        {/* ── MARQUE — hauteur constante, le logo ne saute pas ── */}
+        <div
           className={cn(
-            "grid h-6 w-6 place-items-center rounded-full",
-            "border border-white/10 bg-[#0d1a2b] text-slate-400",
-            "transition-colors duration-200 hover:border-cyan-400/40 hover:text-cyan-300",
-            collapsed ? "absolute -right-3 top-6" : "relative",
+            "flex h-[72px] shrink-0 items-center",
+            collapsed ? "justify-center px-0" : "justify-start px-3",
           )}
         >
-          {collapsed ? (
-            <ChevronRight className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronLeft className="h-3.5 w-3.5" />
-          )}
-        </button>
-      </div>
+          <div className={cn("sidebar-brand", collapsed && "justify-center")}>
+            <div className="sidebar-brand-logo">
+              <img src={logoSrc} alt="TradeVault" width={40} height={40} />
+            </div>
+            {!collapsed && (
+              <div className="sidebar-brand-text">
+                <span className="sidebar-brand-name">TradeVault</span>
+              </div>
+            )}
+          </div>
+        </div>
 
-      {/* ── NAVIGATION ── */}
-      <nav
-        className={cn(
-          "min-h-0 flex-1 px-3 py-2",
-          collapsed ? "overflow-visible" : "overflow-y-auto",
-        )}
-      >
-        {groupLabel(t("nav.groupNavigate"))}
-        <div className="space-y-1">
-          {SECTIONS.filter((section) => section.id !== "settings").map((section) => {
-            const { labelKey, icon: Icon } = SECTION_META[section.id];
-            const active = sectionForPage(page) === section.id;
-            const target = defaultPageOfSection(section.id);
-            return row({
-              key: section.id,
-              label: t(labelKey),
-              active,
-              target,
-              onActivate: () => setPage(target),
+        {/* ── NAVIGATION ── */}
+        <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
+          <div className="space-y-1">
+            {SECTIONS.filter((section) => section.id !== "settings").map((section) => {
+              const { labelKey, icon: Icon } = SECTION_META[section.id];
+              const active = sectionForPage(page) === section.id;
+              const target = defaultPageOfSection(section.id);
+              return row({
+                key: section.id,
+                label: t(labelKey),
+                active,
+                target,
+                onActivate: () => setPage(target),
+                icon: (
+                  <Icon
+                    className={cn("h-[18px] w-[18px]", active ? "text-cyan-400" : "text-slate-500")}
+                    strokeWidth={1.9}
+                  />
+                ),
+              });
+            })}
+          </div>
+
+          {/* Séparateur discret entre les sections et le compte — visible plié et déplié. */}
+          <div className="my-2 h-px bg-white/[0.06]" />
+
+          <div className="space-y-1">
+            {row({
+              key: "inbox",
+              label: t("nav.inbox"),
+              active: page === "inbox",
+              target: "inbox",
+              onActivate: () => setPage("inbox"),
               icon: (
-                <Icon
-                  className={cn("h-[18px] w-[18px]", active ? "text-cyan-400" : "text-slate-500")}
+                <Bell
+                  className={cn(
+                    "h-[18px] w-[18px]",
+                    page === "inbox" ? "text-cyan-400" : "text-slate-500",
+                  )}
                   strokeWidth={1.9}
                 />
               ),
-            });
-          })}
-        </div>
+              badge:
+                unread > 0 ? (
+                  <span
+                    className="absolute -right-1.5 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-cyan-500 px-[3px] text-[10px] font-bold leading-none text-white"
+                    role="status"
+                  >
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : undefined,
+            })}
+            {row({
+              key: "settings",
+              label: t(settingsSection.labelKey),
+              active: sectionForPage(page) === "settings",
+              target: settingsTarget,
+              onActivate: () => setPage(settingsTarget),
+              icon: (
+                <settingsSection.icon
+                  className={cn(
+                    "h-[18px] w-[18px]",
+                    sectionForPage(page) === "settings" ? "text-cyan-400" : "text-slate-500",
+                  )}
+                  strokeWidth={1.9}
+                />
+              ),
+            })}
+          </div>
+        </nav>
 
-        {groupLabel(t("nav.groupAccount"))}
-        <div className="space-y-1">
-          {row({
-            key: "inbox",
-            label: t("nav.inbox"),
-            active: page === "inbox",
-            target: "inbox",
-            onActivate: () => setPage("inbox"),
-            icon: (
-              <Bell
-                className={cn(
-                  "h-[18px] w-[18px]",
-                  page === "inbox" ? "text-cyan-400" : "text-slate-500",
-                )}
-                strokeWidth={1.9}
-              />
-            ),
-            badge:
-              unread > 0 ? (
-                <span
-                  className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-cyan-500 px-[3px] text-[8px] font-bold leading-none text-white"
-                  role="status"
-                >
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              ) : undefined,
-          })}
-          {row({
-            key: "settings",
-            label: t(settingsSection.labelKey),
-            active: sectionForPage(page) === "settings",
-            target: settingsTarget,
-            onActivate: () => setPage(settingsTarget),
-            icon: (
-              <settingsSection.icon
-                className={cn(
-                  "h-[18px] w-[18px]",
-                  sectionForPage(page) === "settings" ? "text-cyan-400" : "text-slate-500",
-                )}
-                strokeWidth={1.9}
-              />
-            ),
-          })}
-        </div>
-      </nav>
-
-      {/* ── COMPTE ACTIF (même carte premium que Jarvis / sous-comptes) ── */}
-      {user && !collapsed && (
-        <div className="shrink-0 border-t border-white/[0.05] px-3 py-3">
-          <AccountSwitcher
-            variant="card"
-            balance={(activeAccount?.startingBalance ?? 0) + totalPnl}
-          />
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              onClick={() => setPage(settingsTarget)}
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-white hover:bg-white/[0.06] transition"
-            >
-              <SettingsIcon className="w-3.5 h-3.5" />
-              {t("nav.settings")}
-            </button>
+        {/* ── COMPTE ACTIF ── */}
+        {user && !collapsed && (
+          <div className="shrink-0 border-t border-white/[0.05] px-3 py-3">
+            <AccountSwitcher
+              variant="card"
+              balance={(activeAccount?.startingBalance ?? 0) + totalPnl}
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                onClick={() => setPage(settingsTarget)}
+                className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-white hover:bg-white/[0.06] transition"
+              >
+                <SettingsIcon className="w-3.5 h-3.5" />
+                {t("nav.settings")}
+              </button>
+              <button
+                onClick={() => setMenuOpen(true)}
+                aria-label={t("common.signOut")}
+                title={t("common.signOut")}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-red-400 hover:bg-red-500/10 transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+        {user && collapsed && (
+          <div className="shrink-0 border-t border-white/[0.05] px-3 py-3">
             <button
               onClick={() => setMenuOpen(true)}
-              aria-label={t("common.signOut")}
-              title={t("common.signOut")}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-red-400 hover:bg-red-500/10 transition"
+              aria-label={t("nav.myAccount")}
+              title={t("nav.myAccount")}
+              className="w-full h-10 flex items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] transition"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <User className="h-4 w-4" />
             </button>
           </div>
-        </div>
-      )}
-      {user && collapsed && (
-        <div className="shrink-0 border-t border-white/[0.05] px-3 py-3 flex justify-center">
-          <button
-            onClick={() => setMenuOpen(true)}
-            aria-label={t("nav.myAccount")}
-            title={t("nav.myAccount")}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] transition"
-          >
-            <User className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* ── Bouton plier/déplier — fixé sur la bordure droite, position stable,
+          il glisse avec le bord pendant l'animation au lieu de sauter. ── */}
+      <button
+        onClick={toggleCollapsed}
+        aria-expanded={!collapsed}
+        aria-label={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+        title={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+        className="absolute -right-3 top-[24px] z-20 grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-[#0d1a2b] text-slate-400 shadow-[0_2px_10px_rgba(0,0,0,0.45)] transition-colors duration-200 hover:border-cyan-400/40 hover:text-cyan-300"
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronLeft className="h-3.5 w-3.5" />
+        )}
+      </button>
 
       {/* ── Menu compact (sidebar repliée) : compte + déconnexion ── */}
       {user && (
@@ -293,6 +302,25 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           </div>
         </Modal>
       )}
+
+      {typeof document !== "undefined" &&
+        tip &&
+        createPortal(
+          <div
+            className="rail-tip"
+            style={{
+              position: "fixed",
+              top: tip.top,
+              left: tip.left,
+              transform: "translateY(-50%)",
+              opacity: 1,
+              zIndex: 100,
+            }}
+          >
+            {tip.text}
+          </div>,
+          document.body,
+        )}
     </aside>
   );
 }

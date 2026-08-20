@@ -111,8 +111,8 @@ export function AuthModal({
 
         <div className="grid md:grid-cols-2">
           {/* ── Colonne gauche : marque + confiance (masquée sur mobile) ── */}
-          <div className="relative hidden md:flex flex-col justify-between p-8 overflow-hidden bg-[linear-gradient(160deg,rgba(14,58,82,.5),rgba(7,14,24,.95)_70%)]">
-            <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-cyan-500/[.15] blur-3xl" />
+          <div className="relative hidden md:flex flex-col justify-between p-8 overflow-hidden bg-[linear-gradient(160deg,rgba(14,58,82,.4),rgba(7,14,24,.95)_70%)]">
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-cyan-500/[.08] blur-3xl" />
 
             <div className="relative">
               <div className="flex items-center gap-2.5">
@@ -121,9 +121,9 @@ export function AuthModal({
                   alt=""
                   width={32}
                   height={32}
-                  className="h-8 w-8 object-contain drop-shadow-[0_0_10px_rgba(56,189,248,.45)]"
+                  className="h-8 w-8 object-contain"
                 />
-                <span className="font-display text-[1.1rem] font-extrabold leading-none tracking-[-0.04em] text-white">
+                <span className="font-display text-[1.1rem] font-bold leading-none tracking-[-0.03em] text-white">
                   TradeVault
                 </span>
               </div>
@@ -136,10 +136,13 @@ export function AuthModal({
                 discipliné que tu veux être.
               </p>
 
+              {/* Deux promesses DISTINCTES. L'absence de carte et l'annulation
+               * vivent dans le sous-titre du formulaire, à droite — là où la
+               * décision se prend ; les répéter ici ne rassurait pas deux fois,
+               * ça diluait les deux arguments que cette colonne porte seule. */}
               <div className="mt-7 space-y-2.5">
                 {[
                   "Analyse de tes trades dès le premier jour",
-                  "Aucune carte demandée, rien à annuler",
                   "Tes données restent exportables à tout moment",
                 ].map((line) => (
                   <p
@@ -177,21 +180,6 @@ export function AuthModal({
                   Avis vérifiés sur <span className="text-white font-bold">Trustpilot</span>
                 </span>
               </a>
-              <div className="mt-4 flex items-center gap-x-4 gap-y-1.5 flex-wrap">
-                {[
-                  ["shield", "Sans engagement"],
-                  ["lock", "Données chiffrées"],
-                  ["check", "Annulation en 1 clic"],
-                ].map(([ic, label]) => (
-                  <span
-                    key={label}
-                    className="flex items-center gap-1.5 text-[11px] text-slate-500"
-                  >
-                    <Icon n={ic as "shield"} cls="h-3.5 w-3.5 text-emerald-400/80" />
-                    {label}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -199,14 +187,8 @@ export function AuthModal({
           <div className="relative p-7 sm:p-8">
             {/* Logo mobile */}
             <div className="flex items-center gap-2.5 md:hidden mb-6">
-              <img
-                src={logoSrc}
-                alt=""
-                width={28}
-                height={28}
-                className="h-7 w-7 object-contain drop-shadow-[0_0_10px_rgba(56,189,248,.45)]"
-              />
-              <span className="font-display text-[1.05rem] font-extrabold leading-none tracking-[-0.04em] text-white">
+              <img src={logoSrc} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
+              <span className="font-display text-[1.05rem] font-bold leading-none tracking-[-0.03em] text-white">
                 TradeVault
               </span>
             </div>

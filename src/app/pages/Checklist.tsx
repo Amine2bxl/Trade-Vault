@@ -17,7 +17,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import SessionPanel from "../components/SessionPanel";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Page, Trade } from "../types";
@@ -1339,15 +1338,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       />
 
       <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
-        {/* La séance du jour. Elle est ICI parce que c'est le moment où le
-            trader prépare sa journée : lui demander d'aller ailleurs pour
-            déclarer qu'il commence garantirait que personne ne le fasse. */}
-        <SessionPanel
-          checklistDone={nChecked}
-          checklistTotal={nActive}
-          checklistSnapshot={{ items: config.items.map((it) => it.text), checked }}
-          trades={trades}
-        />
         {day.locked && (
           <div className="flex items-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 animate-fade-in-up">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -1361,29 +1351,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         )}
         {/* ══ HEADER ══ */}
         <div className="flex flex-col gap-3 animate-fade-in-up">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-                <Bot className="w-4 h-4 text-white" />
-              </span>
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent leading-tight">
-                  {t("nav.checklist")}
-                </h1>
-                <p className="text-xs text-slate-500">{t("chk.tagline")}</p>
-              </div>
-            </div>
-            {/* Ask Jarvis — the single AI entry point of the app. */}
-            <button
-              onClick={() => askCoach(coach.checklistReview)}
-              title="Jarvis"
-              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.03] active:scale-95 transition"
-            >
-              <Bot className="w-4 h-4" />
-              <span className="hidden sm:inline">{t("chk.askJarvis")}</span>
-            </button>
-          </div>
-
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-slate-400 tabular-nums">
               {dateStr} · {clockStr}

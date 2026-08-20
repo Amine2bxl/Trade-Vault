@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Check, Plus, Loader2 } from "lucide-react";
+import { Check, Plus, Loader2, ArrowRight, BarChart3, Info, Lightbulb } from "lucide-react";
 import MarkdownAnswer from "../MarkdownAnswer";
+import { encodeFilter } from "../../utils/tradeFilter";
 import type {
   JarvisBlock,
   JarvisHeroBlock,
@@ -66,32 +67,81 @@ function HeroView({ block }: { block: JarvisHeroBlock }) {
 
 /* ── Insight : la preuve chiffrée du pattern ── */
 function InsightView({ block }: { block: JarvisInsightBlock }) {
+  const goToEvidence = () => {
+    // Deep-link générique (setup, jour, erreur…) prioritaire ; sinon les ids.
+    const filter =
+      block.filter ?? (block.affectedTrades?.length ? { trades: block.affectedTrades } : undefined);
+    if (!filter) return;
+    window.dispatchEvent(
+      new CustomEvent("tv:navigate", {
+        detail: { page: block.page ?? "journal", filter: encodeFilter(filter) },
+      }),
+    );
+  };
+
+  const showButton = !!block.filter || (block.affectedTrades?.length ?? 0) > 0;
+
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-3">
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
-        {block.patternLabel}
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {block.metrics.map((m, i) => (
-          <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2">
-            <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
+    <div className="panel rounded-2xl p-3.5 space-y-3">
+      <header className="card-header">
+        <div className="card-header-left">
+          <span className="card-header-icon text-cyan-300">
+            <Lightbulb className="w-4 h-4" />
+          </span>
+          <h3 className="card-header-title">{block.patternLabel}</h3>
+        </div>
+        {showButton && (
+          <button type="button" onClick={goToEvidence} className="card-header-action">
+            {block.viewTradesLabel ?? block.affectedTrades?.length ?? "Voir"} →
+          </button>
+        )}
+      </header>
+      {block.lines && block.lines.length > 0 && (
+        <ul className="space-y-1.5">
+          {block.lines.map((line, i) => (
+            <li key={i} className="text-sm text-slate-300 leading-relaxed">
+              {line}
+            </li>
+          ))}
+        </ul>
+      )}
+      {block.metrics.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {block.metrics.map((m, i) => (
             <div
-              className={
-                "text-sm font-bold tabular-nums " +
-                (m.tone === "up"
-                  ? "text-emerald-400"
-                  : m.tone === "down"
-                    ? "text-red-400"
-                    : "text-white")
-              }
+              key={i}
+              className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2"
             >
-              {m.value}
+              <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
+              <div
+                className={
+                  "text-sm font-bold tabular-nums " +
+                  (m.tone === "up"
+                    ? "text-emerald-400"
+                    : m.tone === "down"
+                      ? "text-red-400"
+                      : "text-white")
+                }
+              >
+                {m.value}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       {block.impact && (
         <p className="text-xs text-slate-300 font-semibold leading-relaxed">{block.impact}</p>
+      )}
+      {/* Claim → evidence : le lien vers les données qui ont servi à conclure. */}
+      {showButton && (
+        <button
+          type="button"
+          onClick={goToEvidence}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+        >
+          {block.viewTradesLabel ?? block.affectedTrades?.length ?? "Voir"}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
       )}
     </div>
   );
@@ -200,11 +250,16 @@ function AlertView({ block }: { block: Extract<JarvisBlock, { type: "alert" }> }
 /* ── Stats : une rangée de métriques ── */
 function StatsView({ block }: { block: Extract<JarvisBlock, { type: "stats" }> }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-3">
+    <div className="panel rounded-2xl p-3.5 space-y-3">
       {block.title && (
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
-          {block.title}
-        </div>
+        <header className="card-header">
+          <div className="card-header-left">
+            <span className="card-header-icon text-cyan-300">
+              <BarChart3 className="w-4 h-4" />
+            </span>
+            <h3 className="card-header-title">{block.title}</h3>
+          </div>
+        </header>
       )}
       <div className="grid grid-cols-2 gap-2">
         {block.metrics.map((m, i) => (
@@ -212,7 +267,7 @@ function StatsView({ block }: { block: Extract<JarvisBlock, { type: "stats" }> }
             <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
             <div
               className={
-                "text-sm font-bold tabular-nums " +
+                "metric-display text-sm " +
                 (m.trend === "up"
                   ? "text-emerald-400"
                   : m.trend === "down"
@@ -241,9 +296,24 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
           : block.tone === "accent"
             ? "border-cyan-500/25"
             : "border-white/[0.08]";
+  const toneText =
+    block.tone === "danger"
+      ? "text-red-300"
+      : block.tone === "warning"
+        ? "text-amber-300"
+        : block.tone === "success"
+          ? "text-emerald-300"
+          : "text-cyan-300";
   return (
-    <div className={"rounded-2xl border bg-white/[0.02] p-3.5 space-y-1 " + tone}>
-      <div className="text-sm font-bold text-white">{block.title}</div>
+    <div className={"panel rounded-2xl p-3.5 space-y-1.5 " + tone}>
+      <header className="card-header">
+        <div className="card-header-left">
+          <span className={"card-header-icon " + toneText}>
+            <Info className="w-4 h-4" />
+          </span>
+          <h3 className="card-header-title">{block.title}</h3>
+        </div>
+      </header>
       <p className="text-sm text-slate-300 leading-relaxed">{block.body}</p>
     </div>
   );
@@ -251,7 +321,7 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
 
 function PendingBlock({ block }: { block: JarvisBlock }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-xs text-slate-500">
+    <div className="panel rounded-2xl px-3.5 py-2.5 text-xs text-slate-500">
       {`[${block.type}]`} — bientôt disponible
     </div>
   );

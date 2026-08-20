@@ -14,7 +14,7 @@ import { Trade } from "../types";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { PageHeader } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 import {
   extractRSamples,
   runMonteCarlo,
@@ -397,12 +397,25 @@ export default function MonteCarloPage({ trades }: Props) {
 
   const se = result ? monteCarloSE(result.passRate, result.runs.length) : 0;
 
+  const headerActions = useMemo(
+    () => (
+      <button
+        onClick={handleRun}
+        disabled={running || trades.length < 5}
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold hover:brightness-110 transition disabled:opacity-50"
+      >
+        {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+        {running ? "Running..." : `Run ${simCount.toLocaleString()} simulations`}
+      </button>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [running, simCount, trades.length, handleRun],
+  );
+  usePageActions(headerActions);
+
   if (trades.length === 0) {
     return (
       <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
-        <PageHeader
-          title="Monte Carlo Lab"
-        />
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BarChart3 className="w-12 h-12 text-cyan-400/30 mb-5" />
           <h3 className="text-base font-bold text-white mb-1.5">
@@ -418,21 +431,7 @@ export default function MonteCarloPage({ trades }: Props) {
 
   return (
     <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
-      <PageHeader
-        title="Monte Carlo Lab"
-        actions={
-          <button
-            onClick={handleRun}
-            disabled={running || trades.length < 5}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold hover:brightness-110 transition disabled:opacity-50"
-          >
-            {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-            {running ? "Running..." : `Run ${simCount.toLocaleString()} simulations`}
-          </button>
-        }
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
         {/* LEFT: Configuration */}
         <div className="space-y-3">
           {/* Preset */}

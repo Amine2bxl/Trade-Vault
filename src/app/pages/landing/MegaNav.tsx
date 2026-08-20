@@ -1,21 +1,14 @@
-import { useEffect, useState } from "react";
-import {
-  Bot,
-  Shield,
-  BarChart3,
-  BookOpen,
-  Play,
-  Target,
-  HelpCircle,
-  ArrowRight,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bot, Shield, BarChart3, BookOpen, ArrowRight, ChevronDown } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
+import { useLandingT, type LandingLang } from "./i18n";
 
 /**
- * MegaNav — navbar de la landing avec menus déroulants (mega-menu).
+ * Navbar de la landing — stable, calme, traduite.
  *
- * Adapté au thème sombre TradeVault : fond #060d16, accents cyan/teal,
- * logo TradeVault, CTA "Essai gratuit". Deux menus : Produit et Ressources.
+ * Un seul menu déroulant (Produit), des liens plats, un toggle de langue et
+ * deux actions à droite. Les états sont subtils : pas de surbrillance, pas de
+ * bruit — on sait toujours où l'on est.
  */
 
 interface MegaNavProps {
@@ -26,77 +19,47 @@ interface MegaNavProps {
   pct: number;
 }
 
-interface NavItem {
-  title: string;
-  desc: string;
-  icon: typeof Bot;
-  action: () => void;
-}
-
-const PRODUCT: NavItem[] = [
-  {
-    title: "Jarvis — Coach IA",
-    desc: "Un coach qui lit chacun de tes trades.",
-    icon: Bot,
-    action: () => {},
-  },
-  {
-    title: "Discipline OS",
-    desc: "Checklist, Risk Guard, discipline avant chaque trade.",
-    icon: Shield,
-    action: () => {},
-  },
-  {
-    title: "Analytics",
-    desc: "20+ métriques sur tes données réelles.",
-    icon: BarChart3,
-    action: () => {},
-  },
-  {
-    title: "Journal",
-    desc: "Chaque trade enregistré en 45 secondes.",
-    icon: BookOpen,
-    action: () => {},
-  },
-];
-
-const RESOURCES: NavItem[] = [
-  { title: "Démo", desc: "Vois l'app en action.", icon: Play, action: () => {} },
-  { title: "Tarifs", desc: "Free ou Pro, sans engagement.", icon: Target, action: () => {} },
-  { title: "FAQ", desc: "Les réponses à tes questions.", icon: HelpCircle, action: () => {} },
+const LINKS: { key: "nav.features" | "nav.problem" | "pricing.tag" | "faq.tag"; id: string }[] = [
+  { key: "nav.features", id: "features" },
+  { key: "nav.problem", id: "problem" },
+  { key: "pricing.tag", id: "pricing" },
+  { key: "faq.tag", id: "faq" },
 ];
 
 export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const { t, lang, setLang } = useLandingT();
+  const [openMenu, setOpenMenu] = useState(false);
   const [mobile, setMobile] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (!t.closest(".mega-nav")) setOpenMenu(null);
+      if (!ref.current?.contains(e.target as HTMLElement)) setOpenMenu(false);
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, []);
 
-  const toggleMenu = (key: string) => setOpenMenu((prev) => (prev === key ? null : key));
+  const productItems = [
+    { icon: Bot, title: t("nav.p.jarvis"), desc: t("nav.p.jarvis.d"), id: "ai" },
+    { icon: Shield, title: t("nav.p.discipline"), desc: t("nav.p.discipline.d"), id: "features" },
+    { icon: BarChart3, title: t("nav.p.analytics"), desc: t("nav.p.analytics.d"), id: "features" },
+    { icon: BookOpen, title: t("nav.p.journal"), desc: t("nav.p.journal.d"), id: "features" },
+  ];
 
-  const goProduct = (i: number) => {
-    const ids = ["ai", "features", "features", "features"];
-    setOpenMenu(null);
-    go(ids[i]);
-  };
-  const goResource = (i: number) => {
-    const ids = ["demo", "pricing", "faq"];
-    setOpenMenu(null);
-    if (i === 0) window.location.href = "/demo";
-    else go(ids[i]);
+  const goTo = (id: string) => {
+    setOpenMenu(false);
+    setMobile(false);
+    go(id);
   };
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 border-b border-white/[.08] backdrop-blur-[12px] transition-all duration-300 ${y > 10 ? "bg-[#060d16]/90 shadow-[0_8px_32px_rgba(0,0,0,.28)]" : "bg-[#060d16]/40"}`}
+      className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 ${
+        y > 10
+          ? "border-white/[.07] bg-[#060d16]/90 backdrop-blur-[12px]"
+          : "border-transparent bg-transparent"
+      }`}
       style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
     >
       <div
@@ -104,7 +67,10 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
         style={{ transform: `scaleX(${pct})` }}
       />
 
-      <div className="mega-nav relative mx-auto flex h-[60px] md:h-[66px] max-w-[1400px] items-center justify-between px-4 md:px-6">
+      <div
+        ref={ref}
+        className="mx-auto flex h-[60px] max-w-[1280px] items-center justify-between px-4 md:px-6"
+      >
         {/* Logo */}
         <a href="#" className="flex items-center gap-2.5 shrink-0">
           <img
@@ -112,135 +78,94 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
             alt="TradeVault"
             width={30}
             height={30}
-            className="h-8 w-8 object-contain drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]"
+            className="h-8 w-8 object-contain"
           />
-          <span className="font-display font-extrabold tracking-[-0.04em] text-white leading-none hidden sm:block text-[1.2rem]">
+          <span className="font-display font-bold tracking-[-0.02em] text-white leading-none hidden sm:block text-[1.15rem]">
             TradeVault
           </span>
         </a>
 
         {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-0.5">
           {/* Produit dropdown */}
           <div className="relative">
             <button
-              onClick={() => toggleMenu("product")}
-              className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-400 hover:text-cyan-100 transition-colors"
+              onClick={() => setOpenMenu((v) => !v)}
+              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] font-medium text-slate-400 hover:text-white transition-colors"
             >
-              Produit
-              <svg
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className={`w-4 h-4 transition-transform ${openMenu === "product" ? "rotate-180" : ""}`}
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              {t("nav.product")}
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform ${openMenu ? "rotate-180" : ""}`}
+              />
             </button>
-            {openMenu === "product" && (
-              <div className="absolute left-1/2 top-full -translate-x-1/2 mt-2 w-[480px] rounded-2xl border border-white/[0.08] bg-[#0a1220]/98 backdrop-blur-xl shadow-[0_24px_60px_rgba(0,0,0,.5)] p-2">
-                <div className="grid grid-cols-2 gap-1">
-                  {PRODUCT.map((item, i) => (
-                    <button
-                      key={item.title}
-                      onClick={() => goProduct(i)}
-                      className="group flex gap-3 items-start rounded-xl p-3 text-left hover:bg-white/[0.04] transition-colors"
-                    >
-                      <div className="w-10 h-10 shrink-0 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition-colors">
-                        <item.icon className="w-5 h-5" />
+            {openMenu && (
+              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-white/[.08] bg-[#0a1220] p-1.5 shadow-[0_20px_50px_rgba(0,0,0,.45)]">
+                {productItems.map((item) => (
+                  <button
+                    key={item.title}
+                    onClick={() => goTo(item.id)}
+                    className="flex w-full gap-3 items-start rounded-lg p-2.5 text-left hover:bg-white/[.04] transition-colors"
+                  >
+                    <div className="h-9 w-9 shrink-0 rounded-lg border border-white/[.06] bg-white/[.03] flex items-center justify-center text-slate-400">
+                      <item.icon className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-medium text-white">{item.title}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        {item.desc}
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-semibold text-white">{item.title}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                          {item.desc}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Ressources dropdown */}
-          <div className="relative">
+          {LINKS.map((l) => (
             <button
-              onClick={() => toggleMenu("resources")}
-              className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-400 hover:text-cyan-100 transition-colors"
+              key={l.id}
+              onClick={() => go(l.id)}
+              className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                activeSec === l.id ? "text-white" : "text-slate-400 hover:text-white"
+              }`}
             >
-              Ressources
-              <svg
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className={`w-4 h-4 transition-transform ${openMenu === "resources" ? "rotate-180" : ""}`}
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              {t(l.key)}
             </button>
-            {openMenu === "resources" && (
-              <div className="absolute left-1/2 top-full -translate-x-1/2 mt-2 w-[360px] rounded-2xl border border-white/[0.08] bg-[#0a1220]/98 backdrop-blur-xl shadow-[0_24px_60px_rgba(0,0,0,.5)] p-2">
-                <div className="grid grid-cols-1 gap-1">
-                  {RESOURCES.map((item, i) => (
-                    <button
-                      key={item.title}
-                      onClick={() => goResource(i)}
-                      className="group flex gap-3 items-start rounded-xl p-3 text-left hover:bg-white/[0.04] transition-colors"
-                    >
-                      <div className="w-10 h-10 shrink-0 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white transition-colors">
-                        <item.icon className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-semibold text-white">{item.title}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                          {item.desc}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Flat links */}
-          <button
-            onClick={() => go("problem")}
-            className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${activeSec === "problem" ? "text-cyan-200" : "text-slate-400 hover:text-cyan-100"}`}
-          >
-            Problème
-          </button>
-          <button
-            onClick={() => go("features")}
-            className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${activeSec === "features" ? "text-cyan-200" : "text-slate-400 hover:text-cyan-100"}`}
-          >
-            Fonctionnalités
-          </button>
+          ))}
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {/* Language toggle */}
+          <div className="hidden sm:flex items-center rounded-lg border border-white/[.08] p-0.5">
+            {(["en", "fr"] as LandingLang[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={`rounded-md px-2 py-1 text-[11px] font-semibold uppercase transition-colors ${
+                  lang === l ? "bg-white/[.08] text-white" : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={() => open("login")}
-            className="hidden sm:block text-[13px] font-semibold text-slate-400 hover:text-white transition-colors px-3 py-1.5"
+            className="hidden sm:block text-[13px] font-medium text-slate-400 hover:text-white transition-colors px-3 py-1.5"
           >
-            Se connecter
+            {t("nav.signin")}
           </button>
           <button
-            onClick={() => open("signup", "Essai Premium 14 jours")}
+            onClick={() => open("signup", t("nav.cta.plan"))}
             className="btn-primary px-4 py-2 text-[13px]"
           >
-            Essai gratuit <ArrowRight className="w-3.5 h-3.5" />
+            {t("nav.cta")} <ArrowRight className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => setMobile(!mobile)}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-slate-200 lg:hidden"
+            onClick={() => setMobile((v) => !v)}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] text-slate-200 lg:hidden"
             aria-label="Menu"
           >
             {mobile ? (
@@ -266,67 +191,57 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
 
       {/* Mobile menu */}
       {mobile && (
-        <div className="lg:hidden border-t border-white/[0.07] bg-[#070f1a]/98 backdrop-blur-xl px-5 py-4">
+        <div className="lg:hidden border-t border-white/[.07] bg-[#070f1a] px-5 py-4">
           <div className="flex flex-col">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-2 px-1">
-              Produit
+              {t("nav.product")}
             </p>
-            {PRODUCT.map((item, i) => (
+            {productItems.map((item) => (
               <button
                 key={item.title}
-                onClick={() => {
-                  setMobile(false);
-                  goProduct(i);
-                }}
+                onClick={() => goTo(item.id)}
                 className="mobile-nav-link flex items-center gap-2.5 text-left"
               >
-                <item.icon className="w-4 h-4 text-cyan-400 shrink-0" /> {item.title}
+                <item.icon className="w-4 h-4 text-slate-400 shrink-0" /> {item.title}
               </button>
             ))}
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-2 mt-3 px-1">
-              Ressources
-            </p>
-            {RESOURCES.map((item, i) => (
-              <button
-                key={item.title}
-                onClick={() => {
-                  setMobile(false);
-                  goResource(i);
-                }}
-                className="mobile-nav-link flex items-center gap-2.5 text-left"
-              >
-                <item.icon className="w-4 h-4 text-cyan-400 shrink-0" /> {item.title}
+            {LINKS.map((l) => (
+              <button key={l.id} onClick={() => goTo(l.id)} className="mobile-nav-link">
+                {t(l.key)}
               </button>
             ))}
+            <div className="flex items-center gap-2 mt-3">
+              {(["en", "fr"] as LandingLang[]).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`flex-1 rounded-lg border py-2 text-[12px] font-semibold uppercase transition-colors ${
+                    lang === l
+                      ? "border-cyan-400/30 bg-cyan-400/[.08] text-cyan-300"
+                      : "border-white/[.08] text-slate-400"
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
             <button
               onClick={() => {
                 setMobile(false);
-                go("problem");
+                open("signup", t("nav.cta.plan"));
               }}
-              className="mobile-nav-link"
-            >
-              Problème
-            </button>
-            <button
-              onClick={() => {
-                setMobile(false);
-                go("features");
-              }}
-              className="mobile-nav-link"
-            >
-              Fonctionnalités
-            </button>
-            <button
-              onClick={() => open("signup", "Essai Premium 14 jours")}
               className="btn-primary mt-4 w-full"
             >
-              Essai gratuit <ArrowRight className="w-4 h-4" />
+              {t("nav.cta")} <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => open("login")}
+              onClick={() => {
+                setMobile(false);
+                open("login");
+              }}
               className="w-full mt-2.5 py-2 text-sm text-slate-400 hover:text-white transition-colors"
             >
-              Se connecter
+              {t("nav.signin")}
             </button>
           </div>
         </div>

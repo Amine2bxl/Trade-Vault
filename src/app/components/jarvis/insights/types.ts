@@ -61,6 +61,25 @@ export interface JarvisInsight {
   impact: { label: string; amount: number; unit?: string } | null;
   /** 2–3 actions immédiates, actionnables. */
   mission: string[];
+  /**
+   * Les ids des trades qui ont servi à conclure — le fondement du
+   * « voir les N trades ». Vide quand le détecteur ne porte pas de trades
+   * précis (agrégats par session/stratégie non encore enrichis).
+   */
+  affectedTrades: string[];
+  /**
+   * Claim → evidence (Step 6D) : la comparaison structurée (observé vs
+   * référence) qui répond à « pourquoi tu me dis ça ? ». Additif — les
+   * détecteurs existants restent valides sans le renseigner.
+   */
+  comparison?: {
+    metric: string;
+    observed: number;
+    baseline: number | null;
+    deltaPct: number | null;
+  };
+  /** Période sur laquelle porte l'insight (ex: "30d"). */
+  dateRange?: string;
 }
 
 /**

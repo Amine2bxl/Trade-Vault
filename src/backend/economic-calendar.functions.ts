@@ -97,11 +97,25 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
     // a warm serverless instance sees it settle; if the instance freezes before
     // completion the cached data is still correct (just momentarily staler),
     // and the freshness indicator surfaces that honestly. Next read → fresh.
-    if (Date.parse(data.from) <= Date.now() && Date.now() < Date.parse(data.to)) {
+    const isCurrentWeek = Date.parse(data.from) <= Date.now() && Date.now() < Date.parse(data.to);
+
+    // 1. SERVE THE CACHE FIRST — the read is a fast local DB round-trip and
+    // nothing the sync could bring back justifies blocking it. Forex Factory's
+    // this-week export never publishes `actual` anyway (verified in production),
+    // so the opportunistic sync only refreshes `previous`/`forecast`, which the
+    // daily 05:00 cron already keeps current. Making every 10-min visitor wait
+    // seconds for that is a strict UX loss.
+    //
+    // 2. KICK THE SYNC OFF IN THE BACKGROUND, DO NOT AWAIT IT HERE. A single
+    // in-flight promise is kept at module scope so the runtime can't GC it and
+    // a warm serverless instance sees it settle; if the instance freezes before
+    // completion the cached data is still correct (just momentarily staler),
+    // and the freshness indicator surfaces that honestly. Next read → fresh.
+    if (isCurrentWeek) {
       triggerBackgroundSync();
     }
 
-    const [eventsResult, syncResult] = await Promise.all([
+    const readEvents = () =>
       sb
         .from("economic_events")
         .select(
@@ -109,7 +123,10 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
         )
         .gte("starts_at", data.from)
         .lt("starts_at", data.to)
-        .order("starts_at", { ascending: true }),
+        .order("starts_at", { ascending: true });
+
+    const [eventsResult, syncResult] = await Promise.all([
+      readEvents(),
       sb
         .from("economic_calendar_sync")
         .select("last_success_at, last_error")
@@ -122,8 +139,26 @@ export const fetchEconomicCalendar = createServerFn({ method: "GET" })
       return { events: [], lastSuccessAt: null, stale: true };
     }
 
+    let events = (eventsResult.data ?? []) as EventRow[];
+
+    // La semaine courante ne doit JAMAIS rester vide : si le cache est vide
+    // (cron en panne, synchro opportuniste non aboutie), on ATTEND une tentative
+    // de synchro puis on relit — le calendrier redevient « live » au lieu de
+    // basculer indéfiniment sur le repli. La synchro est déjà throttlée (10 min)
+    // et le repli local couvre le cas d'un échec réseau.
+    if (isCurrentWeek && events.length === 0) {
+      try {
+        const { syncIfStale } = await import("./economic-calendar.server");
+        await syncIfStale();
+      } catch (e) {
+        console.error("[economic-calendar] empty-week sync failed", e);
+      }
+      const retry = await readEvents();
+      if (!retry.error) events = (retry.data ?? []) as EventRow[];
+    }
+
     return {
-      events: ((eventsResult.data ?? []) as EventRow[]).map(rowToEvent),
+      events: events.map(rowToEvent),
       lastSuccessAt: syncResult.data?.last_success_at ?? null,
       stale: !!syncResult.data?.last_error,
     };

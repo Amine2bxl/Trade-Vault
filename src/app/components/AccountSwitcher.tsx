@@ -374,6 +374,9 @@ export default function AccountSwitcher({
   // Même langue visuelle que le coach : surface élevée, liseré accent,
   // icône teintée compte, solde en chiffres tabulaires.
   if (variant === "card") {
+    // Le shell n'est rendu qu'une fois les comptes résolus (gate `accountsReady`
+    // dans App.tsx) : ici `activeAccount` est donc prêt, sans squelette ni
+    // « pop » — le compte s'affiche dès la première frame, même au F5.
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
     return (
@@ -467,10 +470,14 @@ export default function AccountSwitcher({
         aria-hidden="true"
         className="w-full flex items-center gap-2.5 rounded-2xl border border-white/[0.08] px-3 py-2.5"
       >
-        <div className="w-8 h-8 rounded-lg bg-white/[0.08] animate-pulse shrink-0" />
+        {/* Reserved, not shimmering. The account resolves in a few dozen ms from
+            cache; a pulsing placeholder in that window is a loading animation
+            that outlives the load it describes — the rail looked busy on every
+            single refresh. Flat blocks hold the exact same box, silently. */}
+        <div className="w-8 h-8 rounded-lg bg-white/[0.05] shrink-0" />
         <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="h-3 w-2/3 rounded bg-white/[0.08] animate-pulse" />
-          <div className="h-2 w-1/3 rounded bg-white/[0.08] animate-pulse" />
+          <div className="h-3 w-2/3 rounded bg-white/[0.05]" />
+          <div className="h-2 w-1/3 rounded bg-white/[0.04]" />
         </div>
       </div>
     );

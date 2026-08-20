@@ -128,6 +128,7 @@ const en = {
   "common.cancel": "Cancel",
   "common.delete": "Delete",
   "common.viewAll": "View all",
+  "common.clear": "Clear",
   "common.edit": "Edit",
   // Onboarding (3-moment redesign)
   "onb.nameTitle": "What should we call you?",
@@ -480,6 +481,9 @@ const en = {
   "jarvisHome.speaking": "speaking",
   "jarvisHome.addRule": "Add to my checklist",
   "jarvisHome.ruleAdded": "Rule added to your checklist. It will be applied to every trade.",
+  "jarvisBrief.title": "Your daily brief",
+  "jarvisReview.title": "Your latest review",
+  "jarvisWeekly.title": "Your weekly evolution",
 
   // Jarvis sidebar (cockpit navigation)
   "jarvisSide.principal": "Main",
@@ -720,6 +724,23 @@ const en = {
   "tradeDetail.missedSetup": "Missed Setup",
   "tradeDetail.tradeCountSuffix": "trade",
   "tradeDetail.tradesCountSuffix": "trades",
+  // TradeDetail — intent / reflection / résultat (Phase 0b Step 6I)
+  "tradeDetail.intentFlow": "Intent → Execution → Result",
+  "tradeDetail.intent": "BEFORE",
+  "tradeDetail.reflection": "AFTER",
+  "tradeDetail.result": "RESULT",
+  "tradeDetail.intentSetup": "Setup",
+  "tradeDetail.intentReasoning": "Reasoning",
+  "tradeDetail.intentConfidence": "Confidence",
+  "tradeDetail.intentRisk": "Planned risk",
+  "tradeDetail.intentPlan": "Plan",
+  "tradeDetail.intentEmotion": "Emotion",
+  "tradeDetail.reflectionPlan": "Plan respected",
+  "tradeDetail.reflectionReason": "Reason",
+  "tradeDetail.reflectionNote": "Note",
+  "tradeDetail.planYes": "Yes",
+  "tradeDetail.planPartial": "Partial",
+  "tradeDetail.planNo": "No",
 
   // Auth / landing
   "auth.headline": "Your premium day trading journal",
@@ -842,6 +863,30 @@ const en = {
   "trade.fillRequired": "Fill symbol, risk and R to save",
   "trade.draftBadge": "Draft",
   "trade.discardDraft": "Discard draft",
+
+  // Trade intent & reflection (Phase 0b)
+  "trade.intent": "Before the trade (optional)",
+  "trade.intentEmotion": "How I felt",
+  "trade.intentReasoning": "Why am I taking this trade?",
+  "trade.intentReasoningPh": "The setup, the draw on liquidity…",
+  "trade.intentPlan": "My plan",
+  "trade.intentPlanPh": "Stop, target, invalidation…",
+  "trade.reflection": "After the trade (optional)",
+  "trade.reflectionPlanRespected": "Did I follow the plan?",
+  "trade.reflectionYes": "Yes",
+  "trade.reflectionPartial": "Partial",
+  "trade.reflectionNo": "No",
+  "trade.reflectionReason": "Why?",
+  "trade.reflectionNote": "Note",
+  "trade.reflectionNotePh": "One line on what happened…",
+  "trade.reason.fomo": "FOMO",
+  "trade.reason.revenge": "Revenge",
+  "trade.reason.early_entry": "Entered too early",
+  "trade.reason.late_entry": "Entered too late",
+  "trade.reason.wrong_setup": "Wrong setup",
+  "trade.reason.wrong_timing": "Wrong timing",
+  "trade.reason.wrong_risk": "Wrong risk",
+  "trade.reason.other": "Other",
 
   // Trade detail v2
   "tradeDetail.macroHint": "High-impact macro event that day",
@@ -993,6 +1038,9 @@ const en = {
   "calc.riskGauge": "of the recommended budget (2%)",
   "calc.riskOfAccount": "of account",
   "calc.riskSuggestion": "The recommended budget: 2% of the account, never more.",
+  "calc.capital": "Capital",
+  "calc.capitalLocked": "Locked · syncs with your selected account",
+  "calc.economicCalendar": "Economic calendar",
 
   // Settings
   "settings.title": "Settings",
@@ -1139,6 +1187,17 @@ const en = {
   "chk.streakSuffix": "day streak",
   "chk.streakHint":
     "Consecutive weekdays with a locked pre-market checklist. Weekends never break the chain.",
+
+  // Streak card (dashboard)
+  "streak.title": "Checklist streak",
+  "streak.days": "days",
+  "streak.longest": "Longest streak",
+  "streak.total": "Days completed",
+  "streak.viewChecklist": "Open checklist",
+  "streak.howItWorks": "How do streaks work?",
+  "streak.howItWorks.i1": "Complete and lock your pre-market checklist on each trading day.",
+  "streak.howItWorks.i2": "Each locked day grows your streak.",
+  "streak.howItWorks.i3": "Weekends never break the chain — markets are closed.",
 
   // Generic a11y / actions
   "common.remove": "Remove",
@@ -1458,6 +1517,7 @@ const en = {
   // Journal
   "journal.searchPlaceholder": "Symbol, strategy, notes…",
   "journal.searchResultsNone": "No trades match your search.",
+  "journal.fromJarvis": "from Jarvis",
 
   // Demo / example trades
   "journal.exampleBadge": "Example",

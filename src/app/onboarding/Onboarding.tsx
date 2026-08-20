@@ -224,8 +224,18 @@ export default function Onboarding({
   const progress = (idx + 1) / steps.length;
   const stepNum = Math.min(idx + 1, steps.length);
 
-  const next = useCallback(() => setIdx((i) => Math.min(i + 1, steps.length - 1)), [steps.length]);
-  const back = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
+  /* Sens de la dernière navigation : la transition d'étape doit dire OÙ l'on va.
+   * Avancer et reculer produisaient la même entrée, donc le mouvement
+   * n'expliquait rien — il décorait. */
+  const [dir, setDir] = useState<1 | -1>(1);
+  const next = useCallback(() => {
+    setDir(1);
+    setIdx((i) => Math.min(i + 1, steps.length - 1));
+  }, [steps.length]);
+  const back = useCallback(() => {
+    setDir(-1);
+    setIdx((i) => Math.max(i - 1, 0));
+  }, []);
 
   const toggle = <T,>(setter: (prev: T[]) => void, arr: T[], value: T) =>
     setter(arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value]);
@@ -368,7 +378,10 @@ export default function Onboarding({
 
       {/* Body */}
       <div className="relative z-10 flex-1 flex items-center justify-center px-4 pt-6 overflow-y-auto">
-        <div key={step} className="w-full max-w-lg animate-fade-in-up pb-6">
+        <div
+          key={step}
+          className={cn("w-full max-w-lg pb-6", dir === 1 ? "onb-step-fwd" : "onb-step-back")}
+        >
           {/* ── 1 · IDENTITÉ ── */}
           {step === "identity" && (
             <div className="text-center">

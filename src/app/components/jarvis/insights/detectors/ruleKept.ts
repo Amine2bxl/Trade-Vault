@@ -64,5 +64,6 @@ export const ruleKeptDetector: Detector = (data) => {
     // l'inventer serait la même faute que les corrections de ce jour.
     impact: null,
     mission: ["keep_rule_streak"],
+    affectedTrades: [],
   };
 };

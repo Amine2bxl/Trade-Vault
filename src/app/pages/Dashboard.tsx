@@ -18,7 +18,6 @@ import {
   directionBadgeClass,
 } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
-import { loadStartingBalance } from "../store";
 import { loadOnboarding } from "../store/profile";
 import { deriveDailyRule } from "../utils/edgeScore";
 import { useEdgeScore } from "../hooks/useEdgeScore";
@@ -34,10 +33,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageHeader, PageContainer, Metric, Card, Button } from "@/shared/ui";
+import { PageContainer, Metric, Card, Button, StreakCard } from "@/shared/ui";
+import type { StreakPeriod } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 import CopilotBlock from "./dashboard/CopilotBlock";
+import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { computeChecklistStreakStats, recentChecklistPeriods } from "../utils/checklistStreak";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
@@ -61,17 +64,26 @@ type Period = "7d" | "30d" | "ytd" | "all";
 const PERIODS: Period[] = ["7d", "30d", "ytd", "all"];
 const PERIOD_STORAGE_KEY = "tv.dashboard.period";
 
+/** Date locale `YYYY-MM-DD` — jamais `toISOString()` (UTC), qui décale le filtre
+ *  d'un jour selon le fuseau et fait disparaître la journée la plus récente. */
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function periodCutoff(period: Period): string | null {
   const now = new Date();
   if (period === "7d") {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
   }
   if (period === "30d") {
     const d = new Date(now);
     d.setDate(d.getDate() - 30);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
   }
   if (period === "ytd") return `${now.getFullYear()}-01-01`;
   return null;
@@ -93,7 +105,7 @@ export default function Dashboard({
   const { t } = useT();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { activeId } = useAccounts();
+  const { activeAccount } = useAccounts();
   const [period, setPeriod] = useState<Period>(() => {
     try {
       const saved = localStorage.getItem(PERIOD_STORAGE_KEY);
@@ -102,33 +114,29 @@ export default function Dashboard({
       return "all";
     }
   });
-  const [startingBalance, setStartingBalance] = useState(0);
+  // Le solde de départ vient DU COMPTE ACTIF déjà chargé (AccountContext), pas
+  // d'un `loadStartingBalance` séparé : cet aller-retour Supabase redondant se
+  // résolvait APRÈS le premier rendu et re-peignait les chiffres (expectancy,
+  // % de période, objectif) une seconde plus tard — le « chargement en deux
+  // temps » du tableau de bord. La valeur est la même (même colonne `starting_balance`).
+  const startingBalance = activeAccount?.startingBalance ?? 0;
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
   const hasDraft = useHasTradeDraft(user?.id);
 
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
-    Promise.allSettled([
-      loadStartingBalance(user.id)
-        .then((b) => {
-          if (active) setStartingBalance(b);
-        })
-        .catch(() => {
-          if (active) toast(t("dashboard.loadError"), "error");
-        }),
-      loadOnboarding(user.id)
-        .then((o) => {
-          if (active) setMonthlyTarget(o.monthlyTarget ?? null);
-        })
-        .catch(() => {
-          if (active) toast(t("dashboard.loadError"), "error");
-        }),
-    ]);
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setMonthlyTarget(o.monthlyTarget ?? null);
+      })
+      .catch(() => {
+        if (active) toast(t("dashboard.loadError"), "error");
+      });
     return () => {
       active = false;
     };
-  }, [user?.id, activeId]);
+  }, [user?.id, toast, t]);
 
   const changePeriod = (p: Period) => {
     setPeriod(p);
@@ -181,7 +189,7 @@ export default function Dashboard({
   const chkStatus = useMemo(() => {
     if (!user) return null;
     try {
-      const key = `tv-chk-${user.id}-${new Date().toISOString().slice(0, 10)}`;
+      const key = `tv-chk-${user.id}-${localDateStr(new Date())}`;
       const raw = localStorage.getItem(key);
       if (!raw) return { locked: false, n: 0, total: 0 };
       const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
@@ -189,6 +197,28 @@ export default function Dashboard({
       return { locked: !!p.locked, n: arr.filter(Boolean).length, total: arr.length };
     } catch {
       return null;
+    }
+  }, [user?.id]);
+
+  // ── Série de checklist (la mécanique de rétention du rituel) ──
+  // Lecture seule de l'historique `tv-chk-*` déjà écrit par la page Checklist :
+  // aucune nouvelle donnée stockée, aucune migration. La série suit la routine
+  // pré-market — la seule surface du produit qui intervient avant le trade.
+  const streak = useMemo(() => {
+    if (!user?.id) return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
+    try {
+      return computeChecklistStreakStats(window.localStorage, user.id);
+    } catch {
+      return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
+    }
+  }, [user?.id]);
+
+  const streakPeriods = useMemo<StreakPeriod[]>(() => {
+    if (!user?.id) return [];
+    try {
+      return recentChecklistPeriods(window.localStorage, user.id, 7);
+    } catch {
+      return [];
     }
   }, [user?.id]);
 
@@ -205,7 +235,7 @@ export default function Dashboard({
   // veille : le delta jour/jour dit « tu as monté depuis hier », il ne dit pas
   // « tu progresses ». La logique vit dans un module pur et testé
   // (`utils/edgeHistory.ts`), ici on ne fait que la brancher.
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr(new Date());
   const [edgeHistory, setEdgeHistory] = useState<EdgePoint[]>([]);
 
   useEffect(() => {
@@ -271,40 +301,43 @@ export default function Dashboard({
         ? "text-red-400"
         : "text-slate-300";
 
+  const headerActions = useMemo(
+    () => (
+      <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
+        <Plus className="w-4 h-4" /> {t("common.addTrade")}
+        {hasDraft && (
+          <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
+          </span>
+        )}
+      </Button>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onAddTrade, hasDraft, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <PageContainer>
-      <PageHeader
-        className="items-center"
-        eyebrow={
-          <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{getGreeting()}</span>
-          </div>
-        }
-        actions={
-          <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
-            <Plus className="w-4 h-4" /> {t("common.addTrade")}
-            {hasDraft && (
-              <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />{" "}
-                {t("trade.draftBadge")}
-              </span>
-            )}
-          </Button>
-        }
-      />
+      <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-4 md:mb-5">
+        <Sparkles className="w-3.5 h-3.5" />
+        <span>{getGreeting()}</span>
+      </div>
 
       {/* Frame paints instantly; data sections show a skeleton only while the
-          first trades load. No full-page blocker. */}
+          first trades load. The skeleton is deferred (>320 ms) so it never
+          flashes for the 50 ms it takes the React Query cache to re-read. */}
       {tradesLoading ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="stat-card p-4 animate-pulse h-24" />
-            ))}
+        <DeferredFallback reserve="min-h-[420px]">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="stat-card p-4 h-24 skeleton" />
+              ))}
+            </div>
+            <div className="stat-card rounded-3xl p-5 h-64 skeleton" />
           </div>
-          <div className="stat-card rounded-3xl p-5 animate-pulse h-64" />
-        </div>
+        </DeferredFallback>
       ) : (
         <>
           {/* ── Headline KPIs ── */}
@@ -359,18 +392,40 @@ export default function Dashboard({
             </div>
           )}
 
-          {/* Copilot block — the day's focus (Edge Score, rule, checklist, objective) */}
+          {/* Copilot block + série de checklist — le focus du jour + la discipline
+              dans la durée, côte à côte. */}
           {trades.length > 0 && (
-            <CopilotBlock
-              edge={edge}
-              edgeDelta={edgeDelta}
-              edgeTrend={edgeTrend}
-              edgeScores={edgeHistory.map((p) => p.score)}
-              rule={dailyRule}
-              checklist={chkStatus}
-              objective={objective}
-              onOpenChecklist={onOpenChecklist}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr] gap-4 md:gap-5 mb-4 md:mb-6">
+              <CopilotBlock
+                edge={edge}
+                edgeDelta={edgeDelta}
+                edgeTrend={edgeTrend}
+                edgeScores={edgeHistory.map((p) => p.score)}
+                rule={dailyRule}
+                checklist={chkStatus}
+                objective={objective}
+                onOpenChecklist={onOpenChecklist}
+              />
+              <StreakCard
+                streak={streakPeriods}
+                currentStreak={streak.current}
+                longestStreak={streak.longest}
+                total={streak.total}
+                title={t("streak.title")}
+                daysLabel={t("streak.days")}
+                longestLabel={t("streak.longest")}
+                totalLabel={t("streak.total")}
+                actionLabel={t("streak.viewChecklist")}
+                onActionClick={onOpenChecklist}
+                howItWorksTitle={t("streak.howItWorks")}
+                howItWorksItems={[
+                  t("streak.howItWorks.i1"),
+                  t("streak.howItWorks.i2"),
+                  t("streak.howItWorks.i3"),
+                ]}
+                className="animate-fade-in-up stagger-1"
+              />
+            </div>
           )}
 
           {trades.length === 0 ? (

@@ -11,11 +11,11 @@ import {
   Clock,
   ChevronDown,
   Check,
-  TrendingUp,
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { PageHeader, Card } from "@/shared/ui";
+import { Card } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 import { useEconomicCalendar } from "../hooks/useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
 import type { TKey } from "../i18n/translations";
@@ -146,8 +146,9 @@ export default function EconomicNews() {
   const [search, setSearch] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState<Set<string>>(new Set());
   const [impactFilter, setImpactFilter] = useState<Set<EventImpact>>(new Set());
-  // Default to "today" preset — user lands directly on today's events
-  const [dayPreset, setDayPreset] = useState<DayNavPreset>("today");
+  // Default to "week" — the calendar is a weekly view; "today" alone reads as
+  // empty on low-event days (and on weekends), which looked like an outage.
+  const [dayPreset, setDayPreset] = useState<DayNavPreset>("week");
   const [customDayFilter, setCustomDayFilter] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -292,36 +293,31 @@ export default function EconomicNews() {
     setCustomDayFilter(null);
   };
 
+  const headerActions = useMemo(
+    () => (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[11px] font-semibold shrink-0",
+          liveActive
+            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
+            : "bg-white/[0.04] border-white/[0.08] text-slate-400",
+        )}
+      >
+        {liveActive && (
+          <span className="relative flex w-1.5 h-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+          </span>
+        )}
+        {t("news.live")}
+      </span>
+    ),
+    [liveActive, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <div className="p-4 md:p-5 max-w-[1100px] mx-auto">
-      <PageHeader
-        className="mb-5"
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <TrendingUp className="w-4 h-4 text-white" />
-          </span>
-        }
-        title={t("news.title")}
-        actions={
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[11px] font-semibold shrink-0",
-              liveActive
-                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
-                : "bg-white/[0.04] border-white/[0.08] text-slate-400",
-            )}
-          >
-            {liveActive && (
-              <span className="relative flex w-1.5 h-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-              </span>
-            )}
-            {t("news.live")}
-          </span>
-        }
-      />
-
       {(isFallback || stale) && !loading && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />

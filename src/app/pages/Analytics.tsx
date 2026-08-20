@@ -31,7 +31,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { EmptyState, PageHeader, PageContainer, Card } from "@/shared/ui";
+import { EmptyState, PageContainer, Card } from "@/shared/ui";
 import {
   AXIS_TICK,
   CHART_ANIMATION,
@@ -323,8 +323,6 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
   return (
     <PageContainer>
-      <PageHeader className="stagger-0" />
-
       {/* Period filter */}
       <div className="flex items-center gap-1.5 mb-4">
         {(["all", "7d", "30d", "90d", "1y"] as AnalyticsPeriod[]).map((p) => (

@@ -14,6 +14,8 @@ export type NotificationKind =
   | "goal_completed"
   | "goal_milestone"
   | "daily_brief"
+  | "daily_review"
+  | "after_trade_insight"
   | "weekly_review"
   | "pattern_detected"
   | "risk_loss_streak"

@@ -17,6 +17,13 @@ import { getSession, getMacroEvents } from "../utils/quantStats";
 import { cn } from "../utils/cn";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  loadTradeIntents,
+  loadTradeReflections,
+  type TradeIntent,
+  type TradeReflection,
+} from "../store/tradeIntel";
 import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
 import { Modal } from "@/shared/ui";
@@ -64,8 +71,29 @@ export default function TradeDetailModal({
   onDelete,
 }: TradeDetailModalProps) {
   const { t, lang } = useT();
+  const { user } = useAuth();
+  const userId = user?.id;
   const locale = LOCALE_MAP[lang] || "en-US";
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
+  // Intentions + réflexions des trades affichés (6I) — chargées en BULK quand le
+  // modal s'ouvre. Absentes si aucune capture : on n'invente jamais un « avant ».
+  const [intents, setIntents] = useState<Record<string, TradeIntent>>({});
+  const [reflections, setReflections] = useState<Record<string, TradeReflection>>({});
+  useEffect(() => {
+    if (!userId || trades.length === 0) return;
+    let active = true;
+    const ids = trades.map((t) => t.id);
+    void Promise.all([loadTradeIntents(userId, ids), loadTradeReflections(userId, ids)]).then(
+      ([i, r]) => {
+        if (!active) return;
+        setIntents(i);
+        setReflections(r);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [userId, trades]);
   // Screenshots are stored as storage paths (or legacy data: URLs) — resolve
   // them all in one batched signed-URL request.
   const screenshotUrls = useScreenshotUrls(trades.flatMap((tr) => tr.screenshots));
@@ -99,6 +127,17 @@ export default function TradeDetailModal({
     if (dx > 0 && hasPrev) onNavigate(-1);
     else if (dx < 0 && hasNext) onNavigate(1);
   };
+
+  // Étiquettes localisées des capteurs intent/reflection (6I).
+  const emotionKey = (e: string) => `session.state${e.charAt(0).toUpperCase() + e.slice(1)}`;
+  const planRespectedLabel = (p: TradeReflection["planRespected"]) =>
+    p === "yes"
+      ? t("tradeDetail.planYes")
+      : p === "partial"
+        ? t("tradeDetail.planPartial")
+        : p === "no"
+          ? t("tradeDetail.planNo")
+          : "—";
 
   return (
     <Modal
@@ -214,6 +253,8 @@ export default function TradeDetailModal({
           )}
           {trades.map((trade) => {
             const be = isBreakEven(trade);
+            const intent = intents[trade.id] ?? null;
+            const reflection = reflections[trade.id] ?? null;
             return (
               <div key={trade.id} className="glass rounded-2xl p-5 space-y-4 card-premium">
                 {/* Header */}
@@ -434,6 +475,124 @@ export default function TradeDetailModal({
                           {m}
                         </span>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AVANT → APRÈS → RÉSULTAT (Phase 0b Step 6I) */}
+                {(intent || reflection) && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block">
+                      {t("tradeDetail.intentFlow")}
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {intent ? (
+                        <div className="rounded-xl bg-cyan-500/[0.06] border border-cyan-500/20 p-3">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 mb-1.5">
+                            {t("tradeDetail.intent")}
+                          </div>
+                          <dl className="text-xs text-slate-300 space-y-1">
+                            {intent.setup && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">{t("tradeDetail.intentSetup")}</dt>
+                                <dd className="text-right text-white">{intent.setup}</dd>
+                              </div>
+                            )}
+                            {intent.reasoning && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">
+                                  {t("tradeDetail.intentReasoning")}
+                                </dt>
+                                <dd className="text-right text-white">{intent.reasoning}</dd>
+                              </div>
+                            )}
+                            {intent.confidence != null && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">
+                                  {t("tradeDetail.intentConfidence")}
+                                </dt>
+                                <dd className="text-right text-white">{intent.confidence}%</dd>
+                              </div>
+                            )}
+                            {intent.plannedRisk != null && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">{t("tradeDetail.intentRisk")}</dt>
+                                <dd className="text-right text-white">
+                                  ${intent.plannedRisk.toFixed(2)}
+                                </dd>
+                              </div>
+                            )}
+                            {intent.plan && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">{t("tradeDetail.intentPlan")}</dt>
+                                <dd className="text-right text-white italic">{intent.plan}</dd>
+                              </div>
+                            )}
+                            {intent.emotion && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">{t("tradeDetail.intentEmotion")}</dt>
+                                <dd className="text-right text-white">
+                                  {t(emotionKey(intent.emotion) as never)}
+                                </dd>
+                              </div>
+                            )}
+                          </dl>
+                        </div>
+                      ) : null}
+                      {reflection ? (
+                        <div className="rounded-xl bg-amber-500/[0.06] border border-amber-500/20 p-3">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300 mb-1.5">
+                            {t("tradeDetail.reflection")}
+                          </div>
+                          <dl className="text-xs text-slate-300 space-y-1">
+                            <div className="flex justify-between gap-2">
+                              <dt className="text-slate-500">{t("tradeDetail.reflectionPlan")}</dt>
+                              <dd className="text-right text-white">
+                                {planRespectedLabel(reflection.planRespected)}
+                              </dd>
+                            </div>
+                            {reflection.reason && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">
+                                  {t("tradeDetail.reflectionReason")}
+                                </dt>
+                                <dd className="text-right text-white">
+                                  {t(`trade.reason.${reflection.reason}` as never)}
+                                </dd>
+                              </div>
+                            )}
+                            {reflection.note && (
+                              <div className="flex justify-between gap-2">
+                                <dt className="text-slate-500">
+                                  {t("tradeDetail.reflectionNote")}
+                                </dt>
+                                <dd className="text-right text-white italic">{reflection.note}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="text-xs text-slate-300 border-t border-white/[0.06] pt-2 mt-1 flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        {t("tradeDetail.result")}
+                      </span>
+                      <span
+                        className={cn(
+                          "font-bold tabular-nums",
+                          be
+                            ? "text-slate-300"
+                            : trade.pnl >= 0
+                              ? "text-emerald-400"
+                              : "text-red-400",
+                        )}
+                      >
+                        {formatPnl(trade.pnl)}
+                      </span>
+                      <span className="text-slate-500">·</span>
+                      <span className="font-semibold text-white tabular-nums">
+                        {trade.rMultiple.toFixed(2)}R
+                      </span>
                     </div>
                   </div>
                 )}

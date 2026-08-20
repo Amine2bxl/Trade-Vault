@@ -21,7 +21,26 @@ export { cn } from "./cn";
 
 // Design tokens — the centralized landing theme (typography, color, surface,
 // motion). The single reference every primitive and future screen builds on.
-export { tokens, font, color, accentVar, surface, radius, motion, density, type } from "./tokens";
+export {
+  tokens,
+  font,
+  color,
+  accentVar,
+  surface,
+  radius,
+  motion,
+  density,
+  type,
+  // Semantic layer — the seven levels of depth, plus the text/border/elevation,
+  // duration, z-index and interaction contracts derived from them.
+  level,
+  text,
+  border,
+  elevation,
+  duration,
+  zIndex,
+  behavior,
+} from "./tokens";
 
 export { Display, Heading, Text, Label } from "./Typography";
 
@@ -50,3 +69,7 @@ export { PageHeader, SectionHeader } from "./PageHeader";
 export { EmptyState } from "./EmptyState";
 export { Metric } from "./Metric";
 export type { MetricProps } from "./Metric";
+export { StreakCard } from "./StreakCard";
+export type { StreakCardProps } from "./StreakCard";
+export { StreakCalendar } from "./StreakCalendar";
+export type { StreakPeriod } from "./StreakCalendar";

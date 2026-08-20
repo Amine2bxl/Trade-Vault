@@ -1,6 +1,7 @@
 import type { JarvisInsight } from "./types";
 import type { JarvisBlock } from "../blocks";
 import { jarvisHeroCopy, jarvisLearningCopy } from "./copy";
+import { insightDeepLink } from "../../../utils/deepLink";
 import {
   formatMoney,
   missionText,
@@ -86,6 +87,17 @@ export function insightToBlocks(insight: JarvisInsight, ctx: CopyContext): Jarvi
       metrics,
       impact: insight.impact
         ? `${uiLabel(ctx.lang, "Impact estimé", "Estimated impact")} : ${formatMoney(insight.impact.amount, ctx.lang)}`
+        : undefined,
+      affectedTrades: insight.affectedTrades,
+      deepLink: insight.affectedTrades.length
+        ? insightDeepLink(insight.affectedTrades, "journal")
+        : undefined,
+      viewTradesLabel: insight.affectedTrades.length
+        ? uiLabel(
+            ctx.lang,
+            `Voir les ${insight.affectedTrades.length} trades`,
+            `View the ${insight.affectedTrades.length} trades`,
+          )
         : undefined,
     });
   }

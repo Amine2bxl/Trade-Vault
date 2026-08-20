@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransition } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -60,6 +60,9 @@ import {
   loadStartingBalance,
   loadMonthlyReports,
   attachTradeToSession,
+  saveTradeIntent,
+  saveTradeReflection,
+  type TradeJournalMeta,
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
@@ -83,10 +86,13 @@ import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
+import { PageActionsProvider } from "./contexts/PageActionsContext";
 const Landing = lazy(() => import("./pages/Landing"));
 import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
+import { SkeletonForPage } from "./components/Skeleton";
+import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
@@ -151,7 +157,11 @@ function AppContent() {
    * quitte l'application sur Android.
    */
   const setPage = useCallback((next: Page) => {
-    setPageState(next);
+    // Transition React : l'ancienne page reste affichée pendant que le chunk de
+    // la suivante charge, au lieu de laisser le Suspense remplacer le contenu
+    // par un squelette à chaque navigation (le « chargement comme la première
+    // fois »).
+    startTransition(() => setPageState(next));
     if (typeof window === "undefined") return;
     const url = buildPageUrl(next, window.location.search);
     if (url === `${window.location.pathname}${window.location.search}`) return;
@@ -215,6 +225,8 @@ function AppContent() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
+  // Actions d'en-tête de la page courante, remontées dans la barre d'onglets.
+  const [pageActions, setPageActions] = useState<React.ReactNode | null>(null);
   // Notification ouverte via tv:open-notification → popup centré (fond flouté).
   const [detailNotification, setDetailNotification] = useState<AppNotification | null>(null);
   useEffect(() => {
@@ -248,10 +260,20 @@ function AppContent() {
   // vers une page sans coupler les modales au composant racine.
   useEffect(() => {
     const onNavigate = (e: Event) => {
-      const detail = (e as CustomEvent<{ page?: string }>).detail;
+      const detail = (e as CustomEvent<{ page?: string; filter?: string }>).detail;
       // Même garde que la restauration de session : la cible vient d'un
       // événement externe, elle doit être validée avant d'être appliquée.
-      if (isPage(detail?.page)) setPage(detail.page);
+      if (!isPage(detail?.page)) return;
+      setPage(detail.page);
+      // Deep-link : le filtre (`?f=`) accompagne la navigation. On le pose dans
+      // l'URL puis on notifie les pages déjà montées (`tv:filter`) — le hook
+      // `useTradeFilter` s'y synchronise.
+      if (detail.filter) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("f", detail.filter);
+        window.history.replaceState(window.history.state, "", url.pathname + url.search);
+        window.dispatchEvent(new CustomEvent("tv:filter"));
+      }
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);
@@ -391,7 +413,7 @@ function AppContent() {
   }, [user?.id, accountsReady, tradesLoading, trades, stats]);
 
   const handleSave = useCallback(
-    async (trade: Trade) => {
+    async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
       setModalOpen(false);
       setEditingTrade(null);
@@ -408,6 +430,16 @@ function AppContent() {
         setTrades(snapshot);
         toast(t("app.saveTradeFailed"), "error");
         return;
+      }
+
+      // Intention & réflexion (Phase 0b) — écriture AU MIEUX, jamais bloquante.
+      // Le trade est déjà enregistré : une capture qui échoue laisse un trade
+      // parfaitement valide. On ne reécrit que ce que le trader a rempli.
+      if (meta?.intent) {
+        void saveTradeIntent(user.id, trade, meta.intent).catch(() => {});
+      }
+      if (meta?.reflection) {
+        void saveTradeReflection(user.id, trade.id, meta.reflection).catch(() => {});
       }
 
       // Rattachement à la séance du jour — AU MIEUX, et surtout après coup.
@@ -430,6 +462,9 @@ function AppContent() {
           isNew,
           accountBalance: balance,
           rules: rulesRef.current,
+          // Intention + réflexion capturées au moment de l'enregistrement :
+          // l'étape d'observation (Step 6B) les lit pour produire son signal.
+          extras: { intent: meta?.intent ?? null, reflection: meta?.reflection ?? null },
         });
       })();
     },
@@ -610,6 +645,12 @@ function AppContent() {
     );
   }
 
+  // La carte de compte (capital, sous-comptes) doit être PRÊTE avant le shell :
+  // sans cette attente, elle afficherait un squelette puis se remplirait un
+  // battement plus tard (le « chargement en deux temps »). Les comptes se
+  // chargent en parallèle de l'auth, l'attente ajoutée est imperceptible.
+  if (!accountsReady) return <LoadingScreen message="Chargement de tes comptes…" />;
+
   return (
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
     // scrolls inside <main>, so the sidebar rail never moves on any page.
@@ -632,72 +673,99 @@ function AppContent() {
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :
-            un bandeau collé par-dessus le produit. Voir `MobileActions`. */}
-        <div className="flex items-center gap-3 px-4 pt-3 md:px-6">
+            un bandeau collé par-dessus le produit. Voir `MobileActions`.
+            `pb-3` : un écart vertical unique et identique entre la barre
+            d'onglets et le contenu, sur toutes les pages. */}
+        <div className="flex items-center gap-3 px-4 pt-3 pb-3 md:px-6">
           <div className="min-w-0 flex-1">
             {currentSection && pagesOfSection(currentSection).length > 1 && (
               <SectionTabs section={currentSection} page={page} setPage={setPage} />
             )}
           </div>
+          {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
           <MobileActions page={page} setPage={setPage} />
         </div>
-        <PageErrorBoundary resetKey={page}>
-          {/* No skeleton: pages are preloaded, so navigation is instant.
-              Previous page stays visible during the (near-zero) chunk load. */}
-          <Suspense fallback={null}>
-            {page === "dashboard" && (
-              <Dashboard
-                trades={trades}
-                onAddTrade={handleAdd}
-                tradesLoading={tradesLoading}
-                onOpenChecklist={() => setPage("checklist")}
-                onOpenImport={() => setImportOpen(true)}
-                onEditTrade={handleEdit}
-                onOpenJournal={() => setPage("journal")}
-              />
-            )}
-            {page === "journal" && (
-              <Journal
-                trades={trades}
-                onEdit={handleEdit}
-                onQuickEdit={handleQuickEdit}
-                onDelete={handleDelete}
-                onDeleteAll={handleDeleteAll}
-                onAdd={handleAdd}
-                onOpenMissed={() => setPage("missed")}
-              />
-            )}
-            {page === "checklist" && (
-              <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
-            )}
-            {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-            {page === "analytics" && <Analytics trades={trades} />}
-            {page === "mistakes" && <Mistakes trades={trades} />}
-            {page === "missed" && <MissedOpportunities />}
-            {page === "insights" && <Jarvis />}
-            {page === "news" && <EconomicNews />}
-            {page === "seasonality" && (
-              <Seasonality trades={trades} tradesLoading={tradesLoading} />
-            )}
-            {page === "calculator" && <LotSizeCalculator onAddTrade={handleAdd} />}
-            {page === "settings" && (
-              <Settings
-                trades={trades}
-                onDeleteAll={handleDeleteAll}
-                onOpenImport={() => setImportOpen(true)}
-                onOpenReports={() => setPage("reports")}
-              />
-            )}
-            {page === "reports" && <Reports trades={trades} />}
-            {page === "goals" && <Goals trades={trades} />}
-            {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-            {page === "appearance" && <Appearance />}
-            {page === "subscription" && <Subscription />}
-            {page === "montecarlo" && <MonteCarlo trades={trades} />}
-            {page === "inbox" && <Inbox />}
-            {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-          </Suspense>
-        </PageErrorBoundary>
+        <PageActionsProvider setActions={setPageActions}>
+          <PageErrorBoundary resetKey={page}>
+            {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
+              destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
+              En dessous, le chunk est déjà en mémoire (préchargement au survol
+              + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
+              gris de deux frames : le signal « ça charge » sans le chargement.
+              L'espace, lui, reste réservé, donc rien ne bouge. */}
+            <Suspense
+              fallback={
+                <DeferredFallback key={page}>
+                  <SkeletonForPage page={page} />
+                </DeferredFallback>
+              }
+            >
+              {/* PageTransition est DANS le Suspense, pas autour.
+                Autour, il jouait sa transition sur la boîte vide réservée
+                pendant l'attente, puis le contenu réel arrivait après coup,
+                sans aucune animation : on ne voyait donc jamais la transition
+                sur ce qui compte. Ici, l'animation se déclenche au moment où
+                la page est réellement peinte. Il ne remonte JAMAIS son enfant
+                (voir le composant) : défilement, filtres et lignes dépliées
+                survivent au changement de page. */}
+              <PageTransition page={page}>
+                {page === "dashboard" && (
+                  <Dashboard
+                    trades={trades}
+                    onAddTrade={handleAdd}
+                    tradesLoading={tradesLoading}
+                    onOpenChecklist={() => setPage("checklist")}
+                    onOpenImport={() => setImportOpen(true)}
+                    onEditTrade={handleEdit}
+                    onOpenJournal={() => setPage("journal")}
+                  />
+                )}
+                {page === "journal" && (
+                  <Journal
+                    trades={trades}
+                    onEdit={handleEdit}
+                    onQuickEdit={handleQuickEdit}
+                    onDelete={handleDelete}
+                    onDeleteAll={handleDeleteAll}
+                    onAdd={handleAdd}
+                    onOpenMissed={() => setPage("missed")}
+                  />
+                )}
+                {page === "checklist" && (
+                  <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+                )}
+                {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
+                {page === "analytics" && <Analytics trades={trades} />}
+                {page === "mistakes" && <Mistakes trades={trades} />}
+                {page === "missed" && <MissedOpportunities />}
+                {page === "insights" && <Jarvis />}
+                {page === "news" && <EconomicNews />}
+                {page === "seasonality" && (
+                  <Seasonality trades={trades} tradesLoading={tradesLoading} />
+                )}
+                {page === "calculator" && (
+                  <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+                )}
+                {page === "settings" && (
+                  <Settings
+                    trades={trades}
+                    onDeleteAll={handleDeleteAll}
+                    onOpenImport={() => setImportOpen(true)}
+                    onOpenReports={() => setPage("reports")}
+                  />
+                )}
+                {page === "reports" && <Reports trades={trades} />}
+                {page === "goals" && <Goals trades={trades} />}
+                {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+                {page === "appearance" && <Appearance />}
+                {page === "subscription" && <Subscription />}
+                {page === "montecarlo" && <MonteCarlo trades={trades} />}
+                {page === "inbox" && <Inbox />}
+                {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+              </PageTransition>
+            </Suspense>
+          </PageErrorBoundary>
+        </PageActionsProvider>
       </main>
       {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
       <AccountSwitcher

@@ -23,7 +23,8 @@ import { Skeleton } from "../components/Skeleton";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 import { cn } from "../utils/cn";
 import type { Trade } from "../types";
-import { PageHeader, Button } from "@/shared/ui";
+import { Button } from "@/shared/ui";
+import { usePageActions } from "../contexts/PageActionsContext";
 
 const LOCALE_MAP: Record<string, string> = {
   en: "en-US",
@@ -137,41 +138,36 @@ export default function Reports({ trades }: { trades: Trade[] }) {
     [generating, refresh, t, toast],
   );
 
+  const headerActions = useMemo(
+    () =>
+      missing.length > 0 &&
+      !loading && (
+        <Button
+          onClick={() => generateMonths(missing)}
+          disabled={generating}
+          className="shrink-0 disabled:opacity-60 animate-fade-in-up stagger-1"
+        >
+          {generating ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          <span className="hidden sm:inline">
+            {generating
+              ? t("reports.generating")
+              : missing.length === 1
+                ? t("reports.generate")
+                : t("reports.generateAll").replace("{n}", String(missing.length))}
+          </span>
+        </Button>
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [missing, loading, generating, t],
+  );
+  usePageActions(headerActions);
+
   return (
     <div className="p-4 md:p-5 max-w-[900px] mx-auto">
-      <PageHeader
-        className="stagger-0"
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <FileText className="w-4 h-4 text-white" />
-          </span>
-        }
-        title={t("reports.title")}
-        actions={
-          missing.length > 0 &&
-          !loading && (
-            <Button
-              onClick={() => generateMonths(missing)}
-              disabled={generating}
-              className="shrink-0 disabled:opacity-60 animate-fade-in-up stagger-1"
-            >
-              {generating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">
-                {generating
-                  ? t("reports.generating")
-                  : missing.length === 1
-                    ? t("reports.generate")
-                    : t("reports.generateAll").replace("{n}", String(missing.length))}
-              </span>
-            </Button>
-          )
-        }
-      />
-
       {loading ? (
         <div className="space-y-3" aria-busy="true">
           {[0, 1, 2].map((i) => (

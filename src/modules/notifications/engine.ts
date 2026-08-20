@@ -1,5 +1,6 @@
 import { generateId } from "@/domain";
 import { events } from "@/modules/events";
+import { afterTradeCopy } from "@/modules/coaching";
 import type {
   AppNotification,
   NotificationAdapters,
@@ -61,7 +62,13 @@ export function categoryOf(
   if (kind.startsWith("risk")) return "risk";
   if (kind.startsWith("economic")) return "economic";
   if (kind.startsWith("activity")) return "activity";
-  if (kind === "trade_analyzed" || kind === "daily_brief" || kind === "weekly_review")
+  if (
+    kind === "trade_analyzed" ||
+    kind === "daily_brief" ||
+    kind === "daily_review" ||
+    kind === "after_trade_insight" ||
+    kind === "weekly_review"
+  )
     return "jarvis";
   return "system";
 }
@@ -177,6 +184,36 @@ export function initNotificationListeners(): void {
         : `Day closed with ${summary.tradesToday} trade(s) and zero rule breaks.`,
       severity: "success",
       channels: ["dashboard"],
+    });
+  });
+
+  // ── Après-trade (Step 6B) : l'écart intention → exécution, notifié seulement
+  // quand il compte. LOW ne remonte jamais ici (le build l'écarte déjà) ; la
+  // médium reste en toast + inbox, la haute peut sonner (push, dédupée / jour).
+  events.on("AfterTradeInsight", async ({ userId, observation }) => {
+    if (observation.priority !== "high" && observation.priority !== "medium") return;
+    const fr = isFr();
+    const { title, body, plan } = afterTradeCopy(observation, fr);
+    const high = observation.priority === "high";
+    const tradeIds = observation.affectedTradeIds.slice(0, 50);
+    await NotificationEngine.notify(userId, {
+      kind: "after_trade_insight",
+      title,
+      body,
+      severity: high ? "warning" : "info",
+      channels: high ? ["dashboard", "toast", "push"] : ["dashboard", "toast"],
+      // Deep-link ACTIONNABLE : ouvre le journal filtré sur CE trade, et le
+      // détail du popup propose le même filtre via `ctaPage` + `filter`.
+      url: `/journal?f=${encodeURIComponent("trades=" + encodeURIComponent(tradeIds.join(",")))}`,
+      dedupKey: `after_trade_insight:${observation.kind}`,
+      data: {
+        plan,
+        ctaLabel: fr ? "Voir ce trade" : "View this trade",
+        ctaPage: "journal",
+        filter: { trades: tradeIds },
+        tradeIds,
+        priority: observation.priority,
+      },
     });
   });
 }
