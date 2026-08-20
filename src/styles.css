@@ -759,9 +759,9 @@ input[type="number"] {
 }
 
 .glass {
-  /* Deep-navy glass — same blue family as the landing cards (#0a1625/#0b1727).
-   * The hairline border stays deliberately faint: surfaces should be read by
-   * their fill, not outlined like a wireframe.
+  /* Solid card surface — unified with the PNL/Performance KPI look
+   * (`.stat-card`), so every card across the product reads the same way:
+   * numbers and text printed on a quiet, solid navy, never on glass.
    *
    * NO `backdrop-filter` HERE — and this is the single biggest rendering win in
    * the product. `.glass` is the page-level card: a dashboard carries a dozen of
@@ -771,16 +771,15 @@ input[type="number"] {
    *
    * What was actually behind them? A static gradient and two static orbs. The
    * blur of a static gradient is… the same gradient. So the effect cost a great
-   * deal and showed almost nothing. The fill is raised slightly to land on the
-   * same rendered colour, and the panel stays translucent so a theme change
-   * still reads through it.
+   * deal and showed almost nothing. The fill is raised to a near-solid navy and
+   * the panel keeps a hairline border, exactly like the KPI stat cards.
    *
    * Blur is KEPT where it means something: `.glass-strong` (modals and menus,
    * which sit over real content), and the floating docks, which overlay the
    * page as it scrolls under them. Those are a handful of surfaces at a time,
    * not dozens. */
-  background: linear-gradient(135deg, rgba(13, 24, 40, 0.86) 0%, rgba(10, 19, 32, 0.66) 100%);
-  border: 1px solid rgba(56, 84, 116, 0.18);
+  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .glass-strong {
   background: linear-gradient(135deg, rgba(10, 20, 34, 0.99) 0%, rgba(8, 15, 26, 0.98) 100%);
