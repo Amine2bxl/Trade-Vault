@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { Trade } from "../../../../types";
+import type { EdgeResult } from "../../../../utils/edgeScore";
+import type { TradeIntent, TradeReflection } from "../../../../store/tradeIntel";
 import { computeStats } from "../../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../../utils/behaviorSignals";
 import { buildWeeklyEvolution, type WeeklyInput } from "../weekly/build";
@@ -41,13 +43,21 @@ function input(overrides: Partial<WeeklyInput> = {}): WeeklyInput {
     stats: computeStats(trades),
     signals: computeBehaviorSignals(trades),
     adherence: [],
-    edge: {
-      score: 72,
-      weakest: "risk",
-      subs: { risk: { value: 40, detail: "8/20" } },
-      tradedDays: 0,
-      cleanDays: 0,
-    },
+    edge: (() => {
+      const e: EdgeResult = {
+        score: 72,
+        weakest: "risk",
+        tradedDays: 0,
+        cleanDays: 0,
+        subs: {
+          cleanTrades: { value: 100 },
+          risk: { value: 40, detail: "8/20" },
+          cleanDays: { value: 0 },
+          routine: { value: 0 },
+        },
+      };
+      return e;
+    })(),
     now: NOW,
     ...overrides,
   };
@@ -121,27 +131,8 @@ describe("buildWeeklyEvolution (Step 7)", () => {
     const trades = Array.from({ length: 12 }, (_, i) =>
       mk(THIS, i % 2 === 0 ? 60 : -30, { riskAmount: 100 }),
     );
-    const intents: Record<
-      string,
-      {
-        tradeId: string;
-        plannedRisk: number | null;
-        confidence: number | null;
-        emotion: string | null;
-        reasoning: string | null;
-        plan: string | null;
-        setup: string | null;
-      }
-    > = {};
-    const reflections: Record<
-      string,
-      {
-        tradeId: string;
-        planRespected: "yes" | "partial" | "no" | null;
-        reason: string | null;
-        note: string | null;
-      }
-    > = {};
+    const intents: Record<string, TradeIntent | null> = {};
+    const reflections: Record<string, TradeReflection | null> = {};
     for (const t of trades) {
       intents[t.id] = {
         tradeId: t.id,

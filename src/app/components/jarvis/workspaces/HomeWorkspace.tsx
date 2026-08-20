@@ -8,7 +8,6 @@ import { computeStats } from "../../../utils/tradeCalcs";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { deriveDailyRule } from "../../../utils/edgeScore";
 import { useEdgeScore } from "../../../hooks/useEdgeScore";
-import { EDGE_WINDOW_DAYS } from "../../../utils/edgeScore";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { useGoalProgress } from "../../../hooks/useGoalProgress";
 import { computeRuleAdherence } from "../../../utils/ruleAdherence";
@@ -229,17 +228,9 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       stats: data.stats,
       signals: data.signals,
       adherence: data.adherence ?? [],
-      edge: {
-        score: edge.score,
-        weakest: edge.weakest,
-        windowDays: EDGE_WINDOW_DAYS,
-        subs: Object.entries(edge.subs ?? {}).reduce<
-          Record<string, { value: number | null; detail?: string }>
-        >((acc, [k, v]) => {
-          acc[k] = v;
-          return acc;
-        }, {}),
-      },
+      // Edge déjà calculé par `useEdgeScore` (EdgeResult) — aucune réassemblage,
+      // aucune seconde définition du score.
+      edge,
       goals: measured,
       intents: weeklyIntents,
       reflections: weeklyReflections,
