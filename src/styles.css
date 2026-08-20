@@ -843,6 +843,19 @@ input[type="number"] {
     0 14px 40px -18px rgba(0, 0, 0, 0.6);
 }
 
+/* Surface de carte unifiée — le même design sombre que les KPI Performance /
+ * PnL / Monte Carlo / Checklist, appliqué à TOUTES les cartes du produit
+ * (y compris les blocs Jarvis : insight, stats, card, brief, review, weekly).
+ * Fond navy quasi-solide + liseré discret + liseré interne haut + ombre douce.
+ * Le rayon vient des utilitaires d'usage (`rounded-2xl`/`rounded-3xl`). */
+.panel {
+  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 30px -16px rgba(0, 0, 0, 0.55);
+}
+
 /* Horizontal progress / R:R bar used in headline metric tiles. */
 .metric-bar {
   height: 6px;

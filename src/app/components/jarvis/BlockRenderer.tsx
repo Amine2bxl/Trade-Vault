@@ -82,7 +82,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
   const showButton = !!block.filter || (block.affectedTrades?.length ?? 0) > 0;
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-3">
+    <div className="panel rounded-2xl p-3.5 space-y-3">
       <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
         {block.patternLabel}
       </div>
@@ -240,7 +240,7 @@ function AlertView({ block }: { block: Extract<JarvisBlock, { type: "alert" }> }
 /* ── Stats : une rangée de métriques ── */
 function StatsView({ block }: { block: Extract<JarvisBlock, { type: "stats" }> }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-3">
+    <div className="panel rounded-2xl p-3.5 space-y-3">
       {block.title && (
         <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
           {block.title}
@@ -282,7 +282,7 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
             ? "border-cyan-500/25"
             : "border-white/[0.08]";
   return (
-    <div className={"rounded-2xl border bg-white/[0.02] p-3.5 space-y-1 " + tone}>
+    <div className={"panel rounded-2xl p-3.5 space-y-1 " + tone}>
       <div className="text-sm font-bold text-white">{block.title}</div>
       <p className="text-sm text-slate-300 leading-relaxed">{block.body}</p>
     </div>
@@ -291,7 +291,7 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
 
 function PendingBlock({ block }: { block: JarvisBlock }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-xs text-slate-500">
+    <div className="panel rounded-2xl px-3.5 py-2.5 text-xs text-slate-500">
       {`[${block.type}]`} — bientôt disponible
     </div>
   );
