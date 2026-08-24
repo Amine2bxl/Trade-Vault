@@ -322,7 +322,7 @@ function ReportCard({
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[9.5px] uppercase tracking-[0.14em] text-slate-600 font-bold">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-slate-600 font-bold">
             {t("reports.docLabel")}
           </div>
           <div className="font-display text-base md:text-lg font-bold text-white capitalize leading-tight">

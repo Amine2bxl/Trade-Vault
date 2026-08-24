@@ -789,7 +789,7 @@ function SummaryTile({
           {label}
         </span>
         {hint && (
-          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
             {hint}
           </span>
         )}

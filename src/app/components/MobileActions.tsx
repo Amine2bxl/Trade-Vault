@@ -57,7 +57,7 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
       {icon}
       {badge !== undefined && badge > 0 && (
         <span
-          className="absolute right-1 top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-cyan-500 px-[3px] text-[8px] font-bold leading-none text-white"
+          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-500 px-1 text-[10px] font-bold leading-none text-white"
           role="status"
           aria-label={`${badge} ${badge > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
         >

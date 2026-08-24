@@ -417,7 +417,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
             <div className="animate-fade-in">
               <div className="relative text-center pt-2 pb-3">
                 <div className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-40 h-24 rounded-full bg-cyan-500/15 blur-2xl" />
-                <div className="relative inline-block bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent font-display text-6xl font-extrabold tabular-nums tracking-tight drop-shadow-[0_0_20px_rgba(34,211,238,0.25)]">
+                <div className="relative inline-block text-white font-display text-6xl font-extrabold tabular-nums tracking-tight">
                   {forex.lots.toFixed(2)}
                 </div>
                 <div className="relative mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">
@@ -441,7 +441,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
             <div className="animate-fade-in">
               <div className="relative text-center pt-2 pb-3">
                 <div className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-40 h-24 rounded-full bg-cyan-500/15 blur-2xl" />
-                <div className="relative inline-block bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent font-display text-6xl font-extrabold tabular-nums tracking-tight drop-shadow-[0_0_20px_rgba(34,211,238,0.25)]">
+                <div className="relative inline-block text-white font-display text-6xl font-extrabold tabular-nums tracking-tight">
                   {futures.contracts}
                 </div>
                 <div className="relative mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">

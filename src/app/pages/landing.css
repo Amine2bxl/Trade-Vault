@@ -41,7 +41,6 @@
   scroll-margin-top: 76px;
 }
 
-
 /* ── Reveal on scroll ──
  *
  * Le contenu est VISIBLE par défaut. L'état masqué n'est appliqué que si les
@@ -136,7 +135,6 @@
 .mobile-nav-link:hover {
   color: #22d3ee;
 }
-
 
 /* ── Cards ── */
 .glass-card {
@@ -258,28 +256,6 @@
 .faq-open {
   grid-template-rows: 1fr;
   opacity: 1;
-}
-
-/* ── Auth input ── */
-.auth-input {
-  width: 100%;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 0.78rem 0.9rem 0.78rem 2.5rem;
-  font-size: 0.875rem;
-  color: #f8fafc;
-  outline: none;
-  transition:
-    border-color 0.16s ease,
-    box-shadow 0.16s ease;
-}
-.auth-input::placeholder {
-  color: #475569;
-}
-.auth-input:focus {
-  border-color: rgba(34, 211, 238, 0.7);
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
 }
 
 /* ── ROI range ── */
@@ -566,7 +542,6 @@
   opacity: 1;
 }
 
-
 /* ── Glow orb ── */
 .glow-orb {
   position: absolute;
@@ -594,7 +569,9 @@
   color: #ffffff;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: filter 0.16s ease, opacity 0.16s ease;
+  transition:
+    filter 0.16s ease,
+    opacity 0.16s ease;
 }
 .btn-accent:hover {
   filter: brightness(1.05);
@@ -605,4 +582,27 @@
 
 .section-divider {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── « Réduire les animations » : les boucles décoratives s'arrêtent ──
+ *
+ * Six animations `infinite` tournaient sans fin sur la landing sans aucune
+ * échappatoire : orbes flottantes, halo pulsé, points de parcours, ping, et
+ * l'indicateur de saisie de la démo. Aucune ne porte d'information — ce sont des
+ * effets d'ambiance. Sous `prefers-reduced-motion: reduce`, elles se figent dans
+ * leur état de repos.
+ *
+ * On fige la boucle, on ne masque pas l'élément : les orbes et le point restent
+ * visibles, ils cessent seulement de bouger. Les transitions déclenchées par une
+ * action (survol, ouverture de la FAQ) sont volontairement laissées intactes —
+ * réduire le mouvement ne veut pas dire supprimer le retour d'une action. */
+@media (prefers-reduced-motion: reduce) {
+  .float-a,
+  .float-b,
+  .glow-pulse,
+  .journey-dot,
+  .ping-dot::before,
+  .typing span {
+    animation: none;
+  }
 }

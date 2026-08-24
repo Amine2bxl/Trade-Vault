@@ -1,23 +1,9 @@
 /* ==========================================================================
-   Pre-Market Checklist — light holographic identity + voice waveform.
+   Pre-Market Checklist — voice waveform + accusés de réception.
    Intentionally tiny and fully scoped (tvchk-*). The page is otherwise pure
    design-system; this only adds the checklist's own subtle signature.
    ========================================================================== */
 
-/* Faint holographic grid behind the page — fixed, masked, very subtle. */
-.tvchk-grid {
-  position: fixed;
-  inset: 0;
-  z-index: -10;
-  pointer-events: none;
-  opacity: 0.55;
-  background-image:
-    linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
-  background-size: 42px 42px;
-  -webkit-mask-image: radial-gradient(ellipse 85% 55% at 50% -5%, #000 0%, transparent 75%);
-  mask-image: radial-gradient(ellipse 85% 55% at 50% -5%, #000 0%, transparent 75%);
-}
 /* Fondu discret sur un item coché. */
 .tvchk-item {
   position: relative;
