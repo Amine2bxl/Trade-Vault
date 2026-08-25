@@ -62,7 +62,7 @@ export default function MarkdownAnswer({ content }: { content: string }) {
             </code>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-cyan-500/60 pl-3 py-1 bg-cyan-500/5 rounded-r text-slate-200 italic">
+            <blockquote className="border-l border-cyan-500/50 pl-3.5 py-1 text-slate-200 italic">
               {children}
             </blockquote>
           ),

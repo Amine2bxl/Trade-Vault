@@ -128,7 +128,7 @@ function KpiCard({
         {label}
       </div>
       <div className={cn("font-display text-base font-extrabold tabular-nums", cls)}>{value}</div>
-      {sub && <div className="text-[9px] text-slate-600 mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -245,7 +245,7 @@ function EquityCurves({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex items-center gap-4 mt-2 text-[9px] text-slate-600">
+      <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-600">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-cyan-400" />
           Median
@@ -710,7 +710,7 @@ export default function MonteCarloPage({ trades }: Props) {
                     const h = range > 0 ? ((v - minV) / range) * 100 : 50;
                     return (
                       <div key={k} className="flex-1 flex flex-col items-center gap-1">
-                        <span className="text-[9px] text-slate-500 tabular-nums">
+                        <span className="text-[10px] text-slate-500 tabular-nums">
                           {formatMoney(v)}
                         </span>
                         <div
@@ -720,7 +720,7 @@ export default function MonteCarloPage({ trades }: Props) {
                           )}
                           style={{ height: `${Math.max(2, h)}%` }}
                         />
-                        <span className="text-[8px] text-slate-600 uppercase">
+                        <span className="text-[10px] text-slate-600 uppercase">
                           {k.toUpperCase()}
                         </span>
                       </div>

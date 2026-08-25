@@ -1191,7 +1191,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
               Heatmap annuel
             </div>
             <div className="flex flex-col gap-0.5 w-full">
-              <div className="grid grid-cols-12 gap-0.5 text-[9px] font-bold uppercase text-slate-600 pl-9">
+              <div className="grid grid-cols-12 gap-0.5 text-[10px] font-bold uppercase text-slate-600 pl-9">
                 {monthly.map((m, i) => (
                   <div key={i} className="text-center">
                     {m.month}
@@ -1211,7 +1211,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
                       return (
                         <div
                           key={i}
-                          className="h-7 rounded flex items-center justify-center text-[9px] font-bold tabular-nums"
+                          className="h-7 rounded flex items-center justify-center text-[10px] font-bold tabular-nums"
                           style={{
                             background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`,
                             color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b",

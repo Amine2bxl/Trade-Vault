@@ -1326,7 +1326,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     <div ref={wrapRef} onMouseOver={onHover} onPointerDown={autoStartAudio} className="relative">
       {/* Light holographic identity: a faint drifting grid, a slow scanline and
           ambient particles — a discreet nod to the original Pre-Trade OS. */}
-      <div className="tvchk-grid" />
       <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 -z-10 opacity-[0.12]" />
       {/* Subtle validation pulse — reuses the global fade, no HUD flash. */}
       <div
