@@ -646,6 +646,8 @@ const fr: Dict = {
   "trade.addConfluencePlaceholder": "Ajouter une confluence personnalisée...",
   "trade.mistakes": "Erreurs",
   "trade.screenshots": "Captures d'écran (max 3)",
+  "trade.moveScreenshotLeft": "Déplacer à gauche",
+  "trade.moveScreenshotRight": "Déplacer à droite",
   "trade.upload": "Téléverser",
   "common.pasteHint": "Capture avec Win+Maj+S, puis colle avec Ctrl+V",
   "trade.notes": "Notes",

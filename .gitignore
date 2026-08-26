@@ -47,3 +47,4 @@ probe.mjs
 scripts/voices/.venv
 scripts/voices/.venv-f5
 scripts/voices/.gen-tmp
+package-lock.json

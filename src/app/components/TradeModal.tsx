@@ -12,6 +12,8 @@ import {
   CandlestickChart,
   Brain,
   ClipboardCheck,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "../types";
 import { getSession } from "../utils/quantStats";
@@ -31,15 +33,10 @@ import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
+import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import Lightbox from "./Lightbox";
-import { Modal, FIELD_BASE, Button, Chip, RemovableChip, CHIP_ROW } from "@/shared/ui";
-import {
-  tradeDraftKey,
-  readJSON,
-  writeJSON,
-  removeKey,
-  type TradeDraft,
-} from "../utils/persistence";
+import { Modal, FIELD_BASE, Textarea, Button, Chip, RemovableChip, CHIP_ROW } from "@/shared/ui";
+import { tradeDraftKey, nsKey, readJSON, removeKey, type TradeDraft } from "../utils/persistence";
 import {
   REFLECTION_REASONS,
   isIntentEmpty,
@@ -139,11 +136,16 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // Draft memory: a NEW trade restores from the auto-saved draft (text fields
   // only — screenshots can't outlive the modal). Editing an existing trade never
   // touches the draft. `draftRestored` drives the "brouillon" badge in the header.
-  const draftKey = tradeDraftKey(userId);
+  // Un trade EN COURS D'ÉDITION a son propre brouillon, distinct de celui du
+  // formulaire vierge : corriger la note d'un trade existant, cliquer à côté
+  // par accident et tout reperdre était exactement le même drame que pour une
+  // nouvelle saisie — la seule différence était qu'on ne protégeait que l'une
+  // des deux.
+  const draftKey = trade ? nsKey(userId, `draft.trade.${trade.id}`) : tradeDraftKey(userId);
   const [draftRestored, setDraftRestored] = useState(false);
   const [form, setForm] = useState(() => {
     if (trade) {
-      return {
+      const base = {
         ...defaultForm,
         date: trade.date,
         symbol: trade.symbol,
@@ -164,6 +166,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         mfe: trade.mfe != null ? String(trade.mfe) : "",
         slippage: trade.slippage != null ? String(trade.slippage) : "",
       };
+      // Modifications non enregistrées récupérées telles quelles (hors
+      // captures : leurs fichiers ne survivent pas à la popup).
+      const pending = readJSON<TradeDraft | null>(draftKey, null);
+      return pending ? { ...base, ...pending, screenshots: trade.screenshots } : base;
     }
     const saved = readJSON<TradeDraft | null>(draftKey, null);
     if (saved) return { ...defaultForm, ...saved, screenshots: [] as string[] };
@@ -179,7 +185,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   // Flag the restored-draft badge on first mount (post-state, avoids SSR mismatch).
   useEffect(() => {
-    if (!trade && readJSON<TradeDraft | null>(draftKey, null)) setDraftRestored(true);
+    if (readJSON<TradeDraft | null>(draftKey, null)) setDraftRestored(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -304,34 +310,63 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return () => document.removeEventListener("paste", onPaste);
   }, [handleScreenshotUpload]);
 
-  // Auto-save the in-progress trade as a draft (debounced), so a half-written
-  // entry survives closing the modal, switching pages, or coming back later.
-  // Only for NEW trades, only once something meaningful is entered, and never
-  // the screenshots (their storage lifecycle can't outlive the modal).
+  // Sauvegarde automatique du travail en cours (nouveau trade ET édition).
+  //
+  // Ce qui est tapé est écrit en continu et, surtout, IMMÉDIATEMENT quand la
+  // popup se ferme ou que la page passe en arrière-plan : un clic à côté, un
+  // onglet fermé ou une coupure réseau ne fait plus disparaître une note
+  // écrite d'un jet. Les captures sont exclues (leur cycle de vie Storage ne
+  // survit pas à la popup) ; en édition, celles du trade sont reprises telles
+  // quelles à la réouverture.
+  const initialSnapshot = useRef<string | null>(null);
+  const draftBody = useMemo(() => {
+    const { screenshots: _omit, ...rest } = form;
+    void _omit;
+    return JSON.stringify(rest);
+  }, [form]);
+  if (initialSnapshot.current === null) initialSnapshot.current = draftBody;
+
+  const hasContent =
+    form.symbol.trim() !== "" ||
+    form.riskAmount !== "" ||
+    form.rMultiple !== "" ||
+    form.notes.trim() !== "" ||
+    form.mistakes.length > 0 ||
+    form.confluences.length > 0;
+  // « Sale » = différent de l'état d'ouverture. En édition, rouvrir sans rien
+  // toucher n'écrit donc aucun brouillon fantôme.
+  const dirty = draftBody !== initialSnapshot.current && hasContent;
+
+  useDraftAutosave(draftKey, form, {
+    dirty,
+    omit: ["screenshots"],
+    guard: () => !savedRef.current,
+  });
+
   useEffect(() => {
-    if (trade) return;
-    const meaningful =
-      form.symbol.trim() !== "" ||
-      form.riskAmount !== "" ||
-      form.rMultiple !== "" ||
-      form.notes.trim() !== "" ||
-      form.mistakes.length > 0 ||
-      form.confluences.length > 0;
-    if (!meaningful) return;
-    const id = setTimeout(() => {
-      const { screenshots: _omit, ...rest } = form;
-      void _omit;
-      writeJSON(draftKey, rest);
-      setDraftRestored(true);
-    }, 500);
-    return () => clearTimeout(id);
-  }, [form, trade, draftKey]);
+    if (dirty) setDraftRestored(true);
+  }, [dirty]);
 
   const discardDraft = () => {
     removeKey(draftKey);
     setDraftRestored(false);
     setForm({ ...defaultForm });
   };
+
+  // Ordre des captures : la première image est la vignette du trade et la
+  // séquence raconte le trade (contexte → entrée → sortie). On peut la
+  // réarranger sans devoir tout resupprimer et réuploader : glisser-déposer
+  // au bureau, flèches au doigt sur mobile.
+  const dragIndex = useRef<number | null>(null);
+  const moveScreenshot = useCallback((from: number, to: number) => {
+    setForm((f) => {
+      if (to < 0 || to >= f.screenshots.length || from === to) return f;
+      const next = [...f.screenshots];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return { ...f, screenshots: next };
+    });
+  }, []);
 
   const removeScreenshot = (idx: number) => {
     const removed = form.screenshots[idx];
@@ -376,7 +411,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     const risk = riskDollar;
     savedRef.current = true;
     // Trade committed — the draft has served its purpose.
-    if (!trade) removeKey(draftKey);
+    removeKey(draftKey);
     // Pre-existing screenshots the user removed in this session: their files
     // are no longer referenced once the trade saves — delete them now.
     if (trade) {
@@ -460,6 +495,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       <Modal
         open
         onClose={onClose}
+        // Un clic à côté ne referme JAMAIS une saisie en cours : c'est le
+        // geste accidentel qui faisait perdre une note écrite d'un jet. Sans
+        // modification en attente, le comportement habituel reste.
+        closeOnBackdrop={!dirty}
         className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
       >
         {/* Dynamic accent: green when the entry is a gain, red when a loss */}
@@ -1023,22 +1062,22 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </div>
                 <div>
                   <label className={labelClass}>{t("trade.intentReasoning")}</label>
-                  <input
-                    type="text"
+                  <Textarea
                     value={form.intentReasoning}
                     onChange={(e) => setForm((f) => ({ ...f, intentReasoning: e.target.value }))}
                     placeholder={t("trade.intentReasoningPh")}
-                    className={inputClass}
+                    rows={2}
+                    className={cn(textareaClass, "text-xs sm:text-sm")}
                   />
                 </div>
                 <div>
                   <label className={labelClass}>{t("trade.intentPlan")}</label>
-                  <input
-                    type="text"
+                  <Textarea
                     value={form.intentPlan}
                     onChange={(e) => setForm((f) => ({ ...f, intentPlan: e.target.value }))}
                     placeholder={t("trade.intentPlanPh")}
-                    className={inputClass}
+                    rows={2}
+                    className={cn(textareaClass, "text-xs sm:text-sm")}
                   />
                 </div>
               </div>
@@ -1192,12 +1231,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </div>
                 <div>
                   <label className={labelClass}>{t("trade.reflectionNote")}</label>
-                  <input
-                    type="text"
+                  <Textarea
                     value={form.reflectionNote}
                     onChange={(e) => setForm((f) => ({ ...f, reflectionNote: e.target.value }))}
                     placeholder={t("trade.reflectionNotePh")}
-                    className={inputClass}
+                    rows={2}
+                    className={cn(textareaClass, "text-xs sm:text-sm")}
                   />
                 </div>
               </div>
@@ -1215,8 +1254,21 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             <div className="flex gap-3 flex-wrap items-start">
               {form.screenshots.map((shot, i) => (
                 <div
-                  key={i}
-                  className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group"
+                  key={shot || i}
+                  draggable
+                  onDragStart={() => {
+                    dragIndex.current = i;
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragIndex.current !== null) moveScreenshot(dragIndex.current, i);
+                    dragIndex.current = null;
+                  }}
+                  onDragEnd={() => {
+                    dragIndex.current = null;
+                  }}
+                  className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group cursor-grab active:cursor-grabbing"
                 >
                   <button
                     type="button"
@@ -1238,6 +1290,32 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       </div>
                     )}
                   </button>
+                  {/* Rang + flèches de réordonnancement (tactile). */}
+                  <span className="absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[10px] font-bold text-white">
+                    {i + 1}
+                  </span>
+                  {form.screenshots.length > 1 && (
+                    <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        disabled={i === 0}
+                        onClick={() => moveScreenshot(i, i - 1)}
+                        aria-label={t("trade.moveScreenshotLeft")}
+                        className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={i === form.screenshots.length - 1}
+                        onClick={() => moveScreenshot(i, i + 1)}
+                        aria-label={t("trade.moveScreenshotRight")}
+                        className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                      >
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <button
                     onClick={() => removeScreenshot(i)}
                     aria-label={t("common.remove")}
@@ -1328,12 +1406,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           {/* Notes */}
           <div>
             <label className={labelClass}>{t("trade.notes")}</label>
-            <textarea
+            <Textarea
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
               rows={3}
               placeholder={t("trade.notesPlaceholder")}
-              className={cn(textareaClass, "resize-none")}
+              className={textareaClass}
             />
           </div>
         </div>

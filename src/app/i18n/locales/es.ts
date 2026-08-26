@@ -231,6 +231,8 @@ const es: Dict = {
   "trade.addConfluencePlaceholder": "Añadir confluencia personalizada...",
   "trade.mistakes": "Errores",
   "trade.screenshots": "Capturas del gráfico (máx 3)",
+  "trade.moveScreenshotLeft": "Mover a la izquierda",
+  "trade.moveScreenshotRight": "Mover a la derecha",
   "trade.upload": "Subir",
   "trade.notes": "Notas",
   "trade.notesPlaceholder": "Observaciones del trade, lecciones aprendidas...",

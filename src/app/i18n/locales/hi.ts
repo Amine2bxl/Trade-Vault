@@ -234,6 +234,8 @@ const hi: Dict = {
   "trade.addConfluencePlaceholder": "कस्टम कन्फ्लुएंस जोड़ें...",
   "trade.mistakes": "गलतियाँ",
   "trade.screenshots": "चार्ट स्क्रीनशॉट (अधिकतम 3)",
+  "trade.moveScreenshotLeft": "बाएँ ले जाएँ",
+  "trade.moveScreenshotRight": "दाएँ ले जाएँ",
   "trade.upload": "अपलोड करें",
   "trade.notes": "नोट्स",
   "trade.notesPlaceholder": "ट्रेड अवलोकन, सीखे गए सबक...",

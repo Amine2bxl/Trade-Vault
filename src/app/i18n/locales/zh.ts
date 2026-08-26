@@ -231,6 +231,8 @@ const zh: Dict = {
   "trade.addConfluencePlaceholder": "添加自定义共振因素...",
   "trade.mistakes": "错误",
   "trade.screenshots": "图表截图（最多 3 张）",
+  "trade.moveScreenshotLeft": "左移",
+  "trade.moveScreenshotRight": "右移",
   "trade.upload": "上传",
   "trade.notes": "备注",
   "trade.notesPlaceholder": "交易观察、学到的教训...",

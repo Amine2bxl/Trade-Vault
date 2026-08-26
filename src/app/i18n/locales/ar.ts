@@ -232,6 +232,8 @@ const ar: Dict = {
   "trade.addConfluencePlaceholder": "أضف تقاطعًا مخصصًا...",
   "trade.mistakes": "الأخطاء",
   "trade.screenshots": "لقطات شاشة الرسم البياني (بحد أقصى 3)",
+  "trade.moveScreenshotLeft": "تحريك لليسار",
+  "trade.moveScreenshotRight": "تحريك لليمين",
   "trade.upload": "رفع",
   "trade.notes": "ملاحظات",
   "trade.notesPlaceholder": "ملاحظات على الصفقة، الدروس المستفادة...",

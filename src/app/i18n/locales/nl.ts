@@ -234,6 +234,8 @@ const nl: Dict = {
   "trade.addConfluencePlaceholder": "Aangepaste confluentie toevoegen...",
   "trade.mistakes": "Fouten",
   "trade.screenshots": "Chart-screenshots (max 3)",
+  "trade.moveScreenshotLeft": "Naar links",
+  "trade.moveScreenshotRight": "Naar rechts",
   "trade.upload": "Uploaden",
   "trade.notes": "Notities",
   "trade.notesPlaceholder": "Observaties over de trade, geleerde lessen...",

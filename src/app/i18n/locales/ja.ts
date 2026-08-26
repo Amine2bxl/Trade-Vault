@@ -233,6 +233,8 @@ const ja: Dict = {
   "trade.addConfluencePlaceholder": "カスタムコンフルエンスを追加...",
   "trade.mistakes": "ミス",
   "trade.screenshots": "チャートスクリーンショット（最大3枚）",
+  "trade.moveScreenshotLeft": "左へ移動",
+  "trade.moveScreenshotRight": "右へ移動",
   "trade.upload": "アップロード",
   "trade.notes": "メモ",
   "trade.notesPlaceholder": "トレードの所感、学んだ教訓...",
