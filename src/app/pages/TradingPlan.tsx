@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
+import { Textarea } from "@/shared/ui";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import {
@@ -136,7 +137,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
         <Field
           label={tr("Ma mission (relue les jours de tilt)", "My mission (re-read on tilt days)")}
         >
-          <textarea
+          <Textarea
             value={plan.mission}
             onChange={(e) => update({ mission: e.target.value })}
             placeholder={tr(
@@ -144,7 +145,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
               "E.g.: Become consistent before becoming big. I protect my capital first.",
             )}
             rows={3}
-            className={inputCls + " resize-none leading-relaxed"}
+            className={inputCls}
           />
         </Field>
         <div className="grid md:grid-cols-2 gap-3">
@@ -366,18 +367,18 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       >
         <div className="grid md:grid-cols-3 gap-3">
           <Field label={tr("Avant la session", "Pre-market")}>
-            <textarea
+            <Textarea
               value={plan.routine.preMarket}
               onChange={(e) =>
                 update((p) => ({ ...p, routine: { ...p.routine, preMarket: e.target.value } }))
               }
               placeholder={tr("Checklist, niveaux clés, news…", "Checklist, key levels, news…")}
               rows={4}
-              className={inputCls + " resize-none leading-relaxed"}
+              className={inputCls}
             />
           </Field>
           <Field label={tr("Après la session", "Post-market")}>
-            <textarea
+            <Textarea
               value={plan.routine.postMarket}
               onChange={(e) =>
                 update((p) => ({ ...p, routine: { ...p.routine, postMarket: e.target.value } }))
@@ -387,18 +388,18 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
                 "Journal, screenshots, grade /10…",
               )}
               rows={4}
-              className={inputCls + " resize-none leading-relaxed"}
+              className={inputCls}
             />
           </Field>
           <Field label={tr("Chaque semaine", "Weekly")}>
-            <textarea
+            <Textarea
               value={plan.routine.weekly}
               onChange={(e) =>
                 update((p) => ({ ...p, routine: { ...p.routine, weekly: e.target.value } }))
               }
               placeholder={tr("Revue des trades, stats, leçons…", "Trade review, stats, lessons…")}
               rows={4}
-              className={inputCls + " resize-none leading-relaxed"}
+              className={inputCls}
             />
           </Field>
         </div>
@@ -652,14 +653,14 @@ function SetupCard({
         </button>
       </div>
       <div className="grid md:grid-cols-2 gap-2.5">
-        <textarea
+        <Textarea
           value={setup.rules}
           onChange={(e) => onChange({ ...setup, rules: e.target.value })}
           placeholder={tr("Conditions d'entrée / confluences…", "Entry conditions / confluences…")}
           rows={3}
-          className={inputCls + " resize-none leading-relaxed text-xs"}
+          className={inputCls + " text-xs"}
         />
-        <textarea
+        <Textarea
           value={setup.invalidation}
           onChange={(e) => onChange({ ...setup, invalidation: e.target.value })}
           placeholder={tr(
@@ -667,7 +668,7 @@ function SetupCard({
             "Invalidation — when NOT to take it…",
           )}
           rows={3}
-          className={inputCls + " resize-none leading-relaxed text-xs"}
+          className={inputCls + " text-xs"}
         />
       </div>
     </div>

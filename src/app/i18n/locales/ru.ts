@@ -232,6 +232,8 @@ const ru: Dict = {
   "trade.addConfluencePlaceholder": "Добавить своё слияние...",
   "trade.mistakes": "Ошибки",
   "trade.screenshots": "Скриншоты графика (макс 3)",
+  "trade.moveScreenshotLeft": "Влево",
+  "trade.moveScreenshotRight": "Вправо",
   "trade.upload": "Загрузить",
   "trade.notes": "Заметки",
   "trade.notesPlaceholder": "Наблюдения по сделке, извлечённые уроки...",

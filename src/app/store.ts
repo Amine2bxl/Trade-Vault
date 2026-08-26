@@ -23,6 +23,7 @@ export {
 } from "./store/accounts";
 export {
   loadUserTrades,
+  rowToTrade,
   upsertTrade,
   importTrades,
   deleteTrade,

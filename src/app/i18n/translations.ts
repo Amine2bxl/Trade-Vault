@@ -699,6 +699,8 @@ const en = {
   "trade.addConfluencePlaceholder": "Add custom confluence...",
   "trade.mistakes": "Mistakes",
   "trade.screenshots": "Chart Screenshots (max 3)",
+  "trade.moveScreenshotLeft": "Move left",
+  "trade.moveScreenshotRight": "Move right",
   "trade.upload": "Upload",
   "common.pasteHint": "Snip with Win+Shift+S, then paste with Ctrl+V",
   "trade.notes": "Notes",

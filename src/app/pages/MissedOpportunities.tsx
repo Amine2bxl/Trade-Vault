@@ -11,6 +11,8 @@ import {
   Loader2,
   ChevronDown,
   Download,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
@@ -32,7 +34,10 @@ import { useToast } from "../contexts/ToastContext";
 import { useConfirm } from "../contexts/ConfirmContext";
 import Lightbox from "../components/Lightbox";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import { Card, PageContainer, Button, EmptyState, Modal, FIELD_BASE } from "@/shared/ui";
+import { useRealtimeTable } from "../hooks/useRealtimeTable";
+import { Card, PageContainer, Button, EmptyState, Modal, Textarea, FIELD_BASE } from "@/shared/ui";
+import { useDraftAutosave } from "../hooks/useDraftAutosave";
+import { nsKey, readJSON, removeKey } from "../utils/persistence";
 import { usePageActions } from "../contexts/PageActionsContext";
 
 function emptyMissed(): MissedOpportunity {
@@ -112,6 +117,14 @@ export default function MissedOpportunities() {
     URL.revokeObjectURL(url);
   }, [items]);
 
+  const reload = useCallback(() => {
+    if (!user) return;
+    loadMissedOpportunities(user.id)
+      .then(setItems)
+      .catch((e) => console.error(e))
+      .finally(() => setLoading(false));
+  }, [user?.id]);
+
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -127,6 +140,10 @@ export default function MissedOpportunities() {
       active = false;
     };
   }, [user?.id, activeId]);
+
+  // Live entre appareils : un setup manqué ajouté sur le téléphone apparaît
+  // ici sans rafraîchir.
+  useRealtimeTable("missed_opportunities", user?.id, reload);
 
   const handleSave = useCallback(
     async (m: MissedOpportunity) => {
@@ -378,10 +395,13 @@ function Field({
 export function ScreenshotsView({
   paths,
   onRemove,
+  onReorder,
   size = "sm",
 }: {
   paths: string[];
   onRemove?: (p: string) => void;
+  /** Fourni = les captures deviennent réordonnables (glisser-déposer + flèches). */
+  onReorder?: (from: number, to: number) => void;
   size?: "sm" | "lg";
 }) {
   const { t } = useT();
@@ -389,6 +409,7 @@ export function ScreenshotsView({
   const urls = useScreenshotUrls(paths);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const resolvedUrls = paths.map((p) => urls[p]).filter(Boolean);
+  const dragIndex = useRef<number | null>(null);
 
   return (
     <>
@@ -401,8 +422,25 @@ export function ScreenshotsView({
         {paths.map((p, i) => (
           <div
             key={p}
+            draggable={!!onReorder}
+            onDragStart={() => {
+              dragIndex.current = i;
+            }}
+            onDragOver={(e) => {
+              if (onReorder) e.preventDefault();
+            }}
+            onDrop={(e) => {
+              if (!onReorder) return;
+              e.preventDefault();
+              if (dragIndex.current !== null) onReorder(dragIndex.current, i);
+              dragIndex.current = null;
+            }}
+            onDragEnd={() => {
+              dragIndex.current = null;
+            }}
             className={cn(
               "relative group aspect-video overflow-hidden bg-white/[0.04] border border-white/[0.08] hover:border-cyan-500/30 transition",
+              onReorder && "cursor-grab active:cursor-grabbing",
               size === "lg" ? "rounded-2xl shadow-lg shadow-black/20" : "rounded-xl",
             )}
           >
@@ -439,6 +477,28 @@ export function ScreenshotsView({
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-600">
                 <Loader2 className="w-4 h-4 animate-spin" />
+              </div>
+            )}
+            {onReorder && paths.length > 1 && (
+              <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  disabled={i === 0}
+                  onClick={() => onReorder(i, i - 1)}
+                  aria-label={t("trade.moveScreenshotLeft")}
+                  className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  disabled={i === paths.length - 1}
+                  onClick={() => onReorder(i, i + 1)}
+                  aria-label={t("trade.moveScreenshotRight")}
+                  className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
             {onRemove && (
@@ -478,7 +538,38 @@ function MissedEditor({
   const { user } = useAuth();
   const { t } = useT();
   const { toast } = useToast();
-  const [m, setM] = useState<MissedOpportunity>(value);
+  // Même filet que la popup de trade : ce qui est écrit ici survit à un clic
+  // à côté, à une coupure ou à un onglet fermé.
+  const draftKey = nsKey(user?.id, `draft.missed.${value.id}`);
+  const [m, setM] = useState<MissedOpportunity>(() => {
+    const pending = readJSON<Partial<MissedOpportunity> | null>(draftKey, null);
+    return pending ? { ...value, ...pending, screenshots: value.screenshots ?? [] } : value;
+  });
+  const savedRef = useRef(false);
+  const initial = useRef<string | null>(null);
+  const body = useMemo(() => {
+    const { screenshots: _omit, ...rest } = m;
+    void _omit;
+    return JSON.stringify(rest);
+  }, [m]);
+  if (initial.current === null) initial.current = body;
+  const dirty = body !== initial.current;
+
+  useDraftAutosave(draftKey, m, {
+    dirty,
+    omit: ["screenshots"],
+    guard: () => !savedRef.current,
+  });
+
+  const reorderShots = useCallback((from: number, to: number) => {
+    setM((prev) => {
+      const shots = [...(prev.screenshots ?? [])];
+      if (to < 0 || to >= shots.length || from === to) return prev;
+      const [moved] = shots.splice(from, 1);
+      shots.splice(to, 0, moved);
+      return { ...prev, screenshots: shots };
+    });
+  }, []);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof MissedOpportunity>(k: K, v: MissedOpportunity[K]) =>
@@ -544,6 +635,8 @@ function MissedEditor({
     <Modal
       open
       onClose={onClose}
+      // Une saisie en cours ne se referme pas sur un clic à côté.
+      closeOnBackdrop={!dirty}
       className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
       labelledBy="missed-editor-title"
     >
@@ -635,7 +728,11 @@ function MissedEditor({
               {t("missed.field.screenshotsHint")} · {t("common.pasteHint")}
             </span>
           </div>
-          <ScreenshotsView paths={m.screenshots ?? []} onRemove={removeShot} />
+          <ScreenshotsView
+            paths={m.screenshots ?? []}
+            onRemove={removeShot}
+            onReorder={reorderShots}
+          />
           {(m.screenshots ?? []).length < 3 && (
             <>
               <input
@@ -674,7 +771,12 @@ function MissedEditor({
           {t("common.cancel")}
         </button>
         <button
-          onClick={() => onSave(m)}
+          onClick={() => {
+            // Enregistré : le brouillon a fait son office.
+            savedRef.current = true;
+            removeKey(draftKey);
+            onSave(m);
+          }}
           disabled={uploading}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 transition"
         >
@@ -734,12 +836,12 @@ function FieldArea({
   return (
     <label className="block">
       <span className={EDITOR_LABEL}>{label}</span>
-      <textarea
+      <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={2}
-        className={cn(FIELD_BASE, "py-2.5 resize-y min-h-[56px]")}
+        className="min-h-[56px]"
       />
     </label>
   );

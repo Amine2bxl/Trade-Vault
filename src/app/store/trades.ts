@@ -28,7 +28,9 @@ interface TradeRow {
   is_example?: boolean;
 }
 
-function rowToTrade(r: TradeRow): Trade {
+/** Ligne SQL → `Trade`. Exporté pour le temps réel : un événement Supabase
+ *  livre exactement cette forme de ligne. */
+export function rowToTrade(r: TradeRow): Trade {
   const dir = r.direction === "short" ? "short" : r.direction === "be" ? "be" : "long";
   return {
     id: r.id,

@@ -648,7 +648,10 @@ export default function TradeDetailModal({
                     <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">
                       {t("tradeDetail.notes")}
                     </span>
-                    <div className="bg-white/[0.03] rounded-xl p-4 text-sm text-slate-300 leading-relaxed border border-white/[0.04]">
+                    {/* `whitespace-pre-wrap` : les retours à la ligne écrits
+                        dans la note étaient écrasés à l'affichage — un texte
+                        structuré redevenait un pavé illisible. */}
+                    <div className="bg-white/[0.03] rounded-xl p-4 text-sm text-slate-300 leading-relaxed border border-white/[0.04] whitespace-pre-wrap break-words">
                       {trade.notes}
                     </div>
                   </div>

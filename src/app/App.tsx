@@ -65,6 +65,7 @@ import {
   type TradeJournalMeta,
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
+import { useRealtimeTrades } from "./hooks/useRealtimeTrades";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { missingReportMonths } from "./utils/reportMonths";
 import { withPnlFromRiskAndR } from "./utils/tradeCalcs";
@@ -111,6 +112,9 @@ function AppContent() {
   // convertit les lignes une fois en base, pas une lentille appliquée à
   // chaque lecture (voir `utils/accountCalibration.ts`).
   const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  // Multi-appareils : ce qui est encodé/modifié/supprimé ailleurs arrive ici
+  // instantanément, sans rafraîchissement (voir `useRealtimeTrades`).
+  useRealtimeTrades(user?.id, activeId);
   // Shim preserving the exact `setTrades` signature the optimistic write
   // handlers already use — updates the cache in place instead of local state,
   // so none of the save/delete/import logic below had to change.
