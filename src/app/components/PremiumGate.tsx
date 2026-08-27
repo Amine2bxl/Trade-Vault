@@ -61,9 +61,7 @@ export function PremiumGate({
           </span>
           <h2 className="mt-4 font-display text-lg font-extrabold tracking-tight text-white">
             {title ??
-              (fr
-                ? `Inclus dans l'offre ${tier.name.fr}`
-                : `Included in the ${tier.name.en} plan`)}
+              (fr ? `Inclus dans l'offre ${tier.name.fr}` : `Included in the ${tier.name.en} plan`)}
           </h2>
           <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
             {description ?? tier.tagline[fr ? "fr" : "en"]}

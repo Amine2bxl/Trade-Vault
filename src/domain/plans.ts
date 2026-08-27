@@ -68,7 +68,10 @@ export const TIERS: TierDef[] = [
     monthly: 0,
     yearly: 0,
     features: [
-      { fr: "Journal illimité, captures d'écran incluses", en: "Unlimited journal, screenshots included" },
+      {
+        fr: "Journal illimité, captures d'écran incluses",
+        en: "Unlimited journal, screenshots included",
+      },
       { fr: "Tableau de bord et calendrier", en: "Dashboard and calendar" },
       { fr: "Calculateur de lot et plan de trading", en: "Lot calculator and trading plan" },
       { fr: "Checklist avant trade", en: "Pre-trade checklist" },
@@ -86,7 +89,10 @@ export const TIERS: TierDef[] = [
     yearly: 120,
     featured: true,
     features: [
-      { fr: "Analyses complètes : edge, séries, sessions", en: "Full analytics: edge, streaks, sessions" },
+      {
+        fr: "Analyses complètes : edge, séries, sessions",
+        en: "Full analytics: edge, streaks, sessions",
+      },
       { fr: "Erreurs récurrentes et discipline", en: "Recurring mistakes and discipline" },
       { fr: "Objectifs et suivi de progression", en: "Goals and progress tracking" },
       { fr: "Setups manqués", en: "Missed setups" },
@@ -104,7 +110,10 @@ export const TIERS: TierDef[] = [
     monthly: 29,
     yearly: 240,
     features: [
-      { fr: "Jarvis illimité — analyses et débriefs", en: "Unlimited Jarvis — analysis and debriefs" },
+      {
+        fr: "Jarvis illimité — analyses et débriefs",
+        en: "Unlimited Jarvis — analysis and debriefs",
+      },
       { fr: "Rapports mensuels générés par l'IA", en: "AI-generated monthly reports" },
       { fr: "Monte-Carlo et simulateur de risque", en: "Monte Carlo and risk simulator" },
       { fr: "Saisonnalité et probabilités", en: "Seasonality and probabilities" },

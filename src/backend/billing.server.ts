@@ -283,7 +283,8 @@ function planFromStripeSub(sub: any): PaidPlan {
   if (isPaidPlan(fromMeta)) return fromMeta;
 
   const priceId = sub.items?.data?.[0]?.price?.id;
-  const interval = sub.items?.data?.[0]?.price?.recurring?.interval === "year" ? "yearly" : "monthly";
+  const interval =
+    sub.items?.data?.[0]?.price?.recurring?.interval === "year" ? "yearly" : "monthly";
   if (priceId) {
     for (const [key, value] of Object.entries(process.env)) {
       if (value === priceId && key.startsWith("STRIPE_PRICE_")) {
