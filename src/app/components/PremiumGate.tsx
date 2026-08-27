@@ -150,14 +150,42 @@ export function PageGate({
 }) {
   const { lang } = useT();
   const fr = lang === "fr";
+  const locked = usePageLock(page);
+  const value = PAGE_VALUE[page];
+
+  // La phrase « à quoi sert cette page » est affichée pour TOUT LE MONDE, pas
+  // seulement derrière le mur : un abonné qui ouvre Monte-Carlo pour la
+  // première fois a le même besoin de comprendre que le visiteur qui hésite.
+  const purpose = value ? (
+    <p className="px-4 pt-3 text-[12.5px] leading-snug text-slate-400 md:px-5">
+      <span className="font-semibold text-slate-200">{value.title[fr ? "fr" : "en"]}</span>
+      <span className="mx-1.5 text-slate-600">·</span>
+      {value.benefit[fr ? "fr" : "en"]}
+    </p>
+  ) : null;
+
+  if (!locked) {
+    return (
+      <>
+        {purpose}
+        {children}
+      </>
+    );
+  }
+
   return (
-    <PreviewWall
-      locked={usePageLock(page)}
-      requiredTier={PAGE_TIER[page] ?? "pro"}
-      onUpgrade={onUpgrade}
-    >
-      {children}
-    </PreviewWall>
+    <>
+      {purpose}
+      <PreviewWall
+        locked
+        requiredTier={PAGE_TIER[page] ?? "pro"}
+        headline={value ? value.title[fr ? "fr" : "en"] : undefined}
+        benefit={value ? value.benefit[fr ? "fr" : "en"] : undefined}
+        onUpgrade={onUpgrade}
+      >
+        {children}
+      </PreviewWall>
+    </>
   );
 }
 

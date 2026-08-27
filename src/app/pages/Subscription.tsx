@@ -225,8 +225,15 @@ export default function Subscription() {
 
         <div className="space-y-4">
           {(["pro", "elite"] as const).map((tierId) => {
-            const pages = pagesOfTier(tierId);
-            if (pages.length === 0) return null;
+            // Pro ouvre des PAGES, Elite enlève des LIMITES : les deux ont une
+            // valeur à montrer, mais elle ne se décrit pas de la même façon.
+            const rows = pagesOfTier(tierId)
+              .map((page) => PAGE_VALUE[page])
+              .filter((v): v is NonNullable<typeof v> => !!v)
+              .map((v) => ({ title: v.title[fr ? "fr" : "en"], sub: v.benefit[fr ? "fr" : "en"] }));
+            const items = rows.length
+              ? rows
+              : TIER_BY_ID[tierId].features.map((f) => ({ title: f[fr ? "fr" : "en"], sub: "" }));
             const owned = tierAtLeast(currentTier, tierId);
             return (
               <div key={tierId}>
@@ -246,44 +253,40 @@ export default function Subscription() {
                   </span>
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
-                  {pages.map((page) => {
-                    const value = PAGE_VALUE[page];
-                    if (!value) return null;
-                    return (
-                      <div
-                        key={page}
+                  {items.map((item) => (
+                    <div
+                      key={item.title}
+                      className={cn(
+                        "flex items-start gap-2.5 rounded-xl border p-3",
+                        owned
+                          ? "border-white/[0.07] bg-white/[0.03]"
+                          : "border-white/[0.05] bg-white/[0.015]",
+                      )}
+                    >
+                      <span
                         className={cn(
-                          "flex items-start gap-2.5 rounded-xl border p-3",
+                          "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full",
                           owned
-                            ? "border-white/[0.07] bg-white/[0.03]"
-                            : "border-white/[0.05] bg-white/[0.015]",
+                            ? "bg-emerald-400/15 text-emerald-400"
+                            : "bg-white/[0.05] text-slate-500",
                         )}
                       >
-                        <span
-                          className={cn(
-                            "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full",
-                            owned
-                              ? "bg-emerald-400/15 text-emerald-400"
-                              : "bg-white/[0.05] text-slate-500",
-                          )}
-                        >
-                          {owned ? (
-                            <CheckCircle2 className="h-3 w-3" />
-                          ) : (
-                            <Lock className="h-3 w-3" />
-                          )}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-white">
-                            {value.title[fr ? "fr" : "en"]}
-                          </div>
+                        {owned ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <Lock className="h-3 w-3" />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white">{item.title}</div>
+                        {item.sub && (
                           <div className="mt-0.5 text-[11.5px] leading-snug text-slate-400">
-                            {value.benefit[fr ? "fr" : "en"]}
+                            {item.sub}
                           </div>
-                        </div>
+                        )}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
             );

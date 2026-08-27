@@ -26,6 +26,10 @@ par l'app, la landing, Stripe et le paiement crypto) :
 | Pro | 15 € | 120 € (4 mois offerts) | `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PRO_YEARLY` |
 | Elite | 25 € | 200 € (4 mois offerts) | `STRIPE_PRICE_ELITE_MONTHLY` / `STRIPE_PRICE_ELITE_YEARLY` |
 
+Pro ouvre TOUTES les pages d'analyse ; Elite n'en ouvre aucune de plus — elle
+enlève les limites (Jarvis sans plafond, comptes illimités, alertes, support
+prioritaire). Un trader qui paie ne doit jamais tomber sur un second mur.
+
 Le nom de la variable est dérivé de l'identifiant du plan
 (`STRIPE_PRICE_${PLAN.toUpperCase()}`) : ajouter un palier au catalogue ne
 demande aucune modification du code de facturation, seulement la variable

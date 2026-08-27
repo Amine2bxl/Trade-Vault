@@ -76,7 +76,6 @@ export function eur(n: number): string {
  * utilisable, et donc l'offre payante honnête.
  */
 export const PAGE_TIER: Partial<Record<Page, Tier>> = {
-  // Pro porte la promesse du produit — comprendre son trading.
   analytics: "pro",
   mistakes: "pro",
   missed: "pro",
@@ -84,9 +83,8 @@ export const PAGE_TIER: Partial<Record<Page, Tier>> = {
   news: "pro",
   insights: "pro",
   reports: "pro",
-  // Elite ajoute la projection : ce qui n'existe qu'une fois le reste maîtrisé.
-  montecarlo: "elite",
-  seasonality: "elite",
+  montecarlo: "pro",
+  seasonality: "pro",
 };
 
 /**

@@ -68,8 +68,8 @@ export const TIERS: TierDef[] = [
   {
     id: "pro",
     name: { fr: "Pro", en: "Pro" },
-    // La promesse centrale du produit. Tout ce qu'un trader vient chercher —
-    // comprendre son edge, voir ses erreurs, se faire coacher — est ICI.
+    // La promesse centrale du produit. TOUS les outils d'analyse sont ici :
+    // un trader qui paie ne doit jamais tomber sur un mur.
     tagline: {
       fr: "Découvre ce qui te rapporte, et ce qui te ruine.",
       en: "Find what pays you, and what ruins you.",
@@ -78,35 +78,32 @@ export const TIERS: TierDef[] = [
     yearly: 120,
     featured: true,
     features: [
-      { fr: "Analyses complètes de ton edge", en: "Full edge analytics" },
+      { fr: "Toutes les analyses de ton edge", en: "Every analysis of your edge" },
       { fr: "Tes erreurs chiffrées en euros", en: "Your mistakes priced in euros" },
+      { fr: "Monte-Carlo : ta probabilité de ruine", en: "Monte Carlo: your risk of ruin" },
+      { fr: "Saisonnalité : tes heures rentables", en: "Seasonality: your profitable hours" },
       { fr: "Jarvis, le coach qui lit tes trades", en: "Jarvis, the coach that reads your trades" },
       { fr: "Rapports mensuels automatiques", en: "Automatic monthly reports" },
-      {
-        fr: "Objectifs, setups manqués, calendrier éco",
-        en: "Goals, missed setups, econ calendar",
-      },
       { fr: "5 comptes de trading", en: "5 trading accounts" },
     ],
   },
   {
     id: "elite",
     name: { fr: "Elite", en: "Elite" },
+    // Elite ne débloque aucune page : elle enlève les limites. C'est une offre
+    // de VOLUME, pas de fonctionnalités — sinon elle reprendrait à Pro ce qui
+    // fait la valeur du produit.
     tagline: {
-      fr: "Projette ton edge avant de risquer un euro.",
-      en: "Project your edge before risking a euro.",
+      fr: "Les mêmes outils, sans aucune limite.",
+      en: "The same tools, with no limits at all.",
     },
     monthly: 25,
     yearly: 200,
     features: [
-      { fr: "Monte-Carlo : ta probabilité de ruine", en: "Monte Carlo: your risk of ruin" },
-      {
-        fr: "Saisonnalité : tes heures et jours rentables",
-        en: "Seasonality: your profitable hours and days",
-      },
       { fr: "Jarvis sans limite de messages", en: "Jarvis with no message cap" },
-      { fr: "Détection automatique de patterns", en: "Automatic pattern detection" },
       { fr: "Comptes de trading illimités", en: "Unlimited trading accounts" },
+      { fr: "Détection automatique de patterns", en: "Automatic pattern detection" },
+      { fr: "Alertes push et rappels de session", en: "Push alerts and session reminders" },
       { fr: "Support prioritaire", en: "Priority support" },
     ],
   },
@@ -184,7 +181,10 @@ export type Capability =
   | "prioritySupport";
 
 export const CAPABILITY_TIER: Record<Capability, Tier> = {
-  // L'offre Pro porte la promesse du produit : c'est elle qu'on vient acheter.
+  // TOUT ce qui est un outil d'analyse est dans Pro. Un trader qui paie ne
+  // doit jamais tomber sur un second mur : Monte-Carlo et la saisonnalité sont
+  // précisément ce dont il a besoin, les garder plus haut n'aurait vendu ni
+  // l'un ni l'autre.
   analytics: "pro",
   mistakes: "pro",
   goals: "pro",
@@ -192,9 +192,9 @@ export const CAPABILITY_TIER: Record<Capability, Tier> = {
   news: "pro",
   jarvis: "pro",
   reports: "pro",
-  // Elite ajoute la projection et l'absence de limites — pas le cœur du produit.
-  montecarlo: "elite",
-  seasonality: "elite",
+  montecarlo: "pro",
+  seasonality: "pro",
+  // Elite n'ouvre aucune page : elle enlève les limites.
   patterns: "elite",
   automation: "elite",
   pushAlerts: "elite",
