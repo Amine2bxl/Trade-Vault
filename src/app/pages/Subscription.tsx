@@ -1,8 +1,6 @@
 import { useCallback, type ReactNode } from "react";
 import {
   Sparkles,
-  Shield,
-  Zap,
   Crown,
   Clock,
   CheckCircle2,
@@ -19,7 +17,16 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
-import { eur, planPrice, YEARLY_PER_MONTH } from "../utils/pricing";
+import {
+  eur,
+  planPrice,
+  intervalOf,
+  tierOf,
+  yearlyPerMonth,
+  TIER_BY_ID,
+  HEADLINE_TIER,
+  type PaidPlan,
+} from "../utils/pricing";
 import { PageHeader } from "@/shared/ui";
 import SubscriptionSection from "../components/SubscriptionSection";
 
@@ -46,32 +53,26 @@ export default function Subscription() {
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
   const { sub, loading, isPro, trialDaysLeft } = useSubscription();
 
-  const features = [
-    {
-      icon: Sparkles,
-      title: tr("Jarvis illimité", "Unlimited Jarvis"),
-      sub: tr("Analyses et débriefs sans limite", "Unlimited analysis and debriefs"),
-    },
-    {
-      icon: Zap,
-      title: tr("Rapports mensuels IA", "AI monthly reports"),
-      sub: tr("Synthèse automatique chaque mois", "Automatic synthesis every month"),
-    },
-    {
-      icon: Shield,
-      title: tr("Comptes illimités", "Unlimited accounts"),
-      sub: tr("Prop firms, démo, réel — tout séparé", "Prop firms, demo, live — all separate"),
-    },
-  ];
+  // Ce que le trader a débloqué — lu depuis le catalogue de son propre palier,
+  // pas une liste figée : un abonné Elite ne doit pas lire la promesse Pro.
+  const currentTier = tierOf(sub?.plan);
+  const shownTier = currentTier === "free" ? HEADLINE_TIER : currentTier;
+  const features = TIER_BY_ID[shownTier].features.map((f) => ({
+    icon: Sparkles,
+    title: fr ? f.fr : f.en,
+    sub: "",
+  }));
 
   const planLabel =
-    sub?.plan === "pro_yearly"
-      ? t("billing.planProYearly")
-      : sub?.plan === "pro_monthly"
-        ? t("billing.planProMonthly")
-        : t("billing.planFree");
+    currentTier === "free"
+      ? t("billing.planFree")
+      : `TradeVault ${TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]} · ${
+          intervalOf(sub?.plan ?? "free") === "yearly"
+            ? tr("annuel", "yearly")
+            : tr("mensuel", "monthly")
+        }`;
 
-  const paid = sub?.plan === "pro_yearly" || sub?.plan === "pro_monthly";
+  const paid = currentTier !== "free";
   const dateFmt = (d: Date) =>
     d.toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric" });
 
@@ -120,12 +121,14 @@ export default function Subscription() {
           {!loading && (
             <div className="text-right shrink-0">
               <div className="font-display text-3xl font-extrabold tabular-nums text-white leading-none">
-                {paid && sub ? eur(planPrice(sub.plan as "pro_monthly" | "pro_yearly")) : "0 €"}
+                {paid && sub ? eur(planPrice(sub.plan as PaidPlan)) : "0 €"}
               </div>
               <div className="text-[11px] text-slate-500 mt-1">
                 {paid
-                  ? sub?.plan === "pro_yearly"
-                    ? `${t("billing.perYear")} · ${eur(YEARLY_PER_MONTH)}${t("billing.perMonth")}`
+                  ? intervalOf(sub?.plan ?? "free") === "yearly"
+                    ? `${t("billing.perYear")} · ${eur(
+                        Math.round(yearlyPerMonth(currentTier) * 100) / 100,
+                      )}${t("billing.perMonth")}`
                     : t("billing.perMonth")
                   : tr("/ toujours", "/ forever")}
               </div>
@@ -231,7 +234,9 @@ export default function Subscription() {
             >
               <f.icon className="w-4 h-4 text-cyan-400 mb-1.5" />
               <div className="text-xs font-bold text-white">{f.title}</div>
-              <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{f.sub}</div>
+              {f.sub && (
+                <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{f.sub}</div>
+              )}
             </div>
           ))}
         </div>

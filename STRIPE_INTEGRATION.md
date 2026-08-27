@@ -17,8 +17,21 @@ before you touch code.
 
 ## 1. Current state (verified)
 
-Stripe account is in **live mode**, EUR, one product `TradeVault Pro` with two
-prices: `19.00 EUR / month` and `180.00 EUR / year`.
+Stripe account is in **live mode**, EUR. Le catalogue applicatif compte
+maintenant **trois offres payantes** (`src/domain/plans.ts`, source unique lue
+par l'app, la landing, Stripe et le paiement crypto) :
+
+| Offre | Mensuel | Annuel | Variables d'environnement |
+|---|---|---|---|
+| Pro | 15 € | 120 € (2 mois offerts) | `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PRO_YEARLY` |
+| Elite | 29 € | 240 € | `STRIPE_PRICE_ELITE_MONTHLY` / `STRIPE_PRICE_ELITE_YEARLY` |
+| Fund | 49 € | 390 € | `STRIPE_PRICE_FUND_MONTHLY` / `STRIPE_PRICE_FUND_YEARLY` |
+
+Le nom de la variable est dérivé de l'identifiant du plan
+(`STRIPE_PRICE_${PLAN.toUpperCase()}`) : ajouter un palier au catalogue ne
+demande aucune modification du code de facturation, seulement la variable
+correspondante. Les anciens prix (19 € / 199 €) ne sont plus référencés nulle
+part dans le code.
 
 | Area | State |
 |---|---|
@@ -145,8 +158,11 @@ Give this list to the owner verbatim.
 1. **Create the webhook endpoint.** URL `https://tradevault.be/api/stripe/webhook`,
    events: the five listed above. Copy the signing secret into Vercel as
    `STRIPE_WEBHOOK_SECRET`. Do this in **test mode first**, then live.
-2. **Copy both price IDs** (`price_...`) into Vercel as `STRIPE_PRICE_PRO_MONTHLY`
-   and `STRIPE_PRICE_PRO_YEARLY`.
+2. **Créer trois produits** (Pro, Elite, Fund) avec chacun un prix mensuel et un
+   prix annuel, aux montants du tableau §1, puis copier les six identifiants
+   `price_...` dans Vercel sous les six noms de variables listés. Un plan dont
+   la variable manque renvoie « price not configured » au checkout — c'est
+   volontaire : mieux vaut un échec visible qu'un encaissement au mauvais prix.
 3. **Publish ToS and Privacy pages** on tradevault.be, then declare them in
    Stripe → Public business information. They render on Checkout and the portal.
 4. **Enable Stripe Tax** and register for OSS.

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { Page, SectionId } from "../types";
+import { Lock } from "lucide-react";
 import { PAGE_META, pagesOfSection } from "../navigation";
+import { useSubscription } from "../hooks/useSubscription";
+import { canAccessPage } from "../utils/pricing";
 import { preloadPage } from "../pageModules";
 import { pathForPage } from "../utils/pageUrl";
 import { cn } from "../utils/cn";
@@ -40,6 +43,9 @@ interface SectionTabsProps {
 export default function SectionTabs({ section, page, setPage }: SectionTabsProps) {
   const { t } = useT();
   const pages = pagesOfSection(section);
+  // Un petit cadenas sur l'onglet dit ce qui est payant AVANT le clic : on
+  // n'apprend pas qu'une page est verrouillée en y arrivant.
+  const { tier, loading: subLoading } = useSubscription();
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   const activeIndex = Math.max(
@@ -112,6 +118,9 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
                 strokeWidth={active ? 2.2 : 1.9}
               />
               <span className="whitespace-nowrap">{t(labelKey)}</span>
+              {!subLoading && !canAccessPage(tier, p) && (
+                <Lock className="h-3 w-3 shrink-0 text-slate-500" aria-hidden />
+              )}
             </a>
           );
         })}

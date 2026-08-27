@@ -5,21 +5,30 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // the four calls we make). All handlers here are wired as raw HTTP endpoints
 // in src/server.ts.
 //
-// Plans: free / pro_monthly / pro_yearly. Trial is app-level (14 days from
-// signup, see the billing migration); when a trialing user checks out we pass
-// the remaining trial to Stripe as `trial_end` so nothing is charged early.
+// Plans: free, puis trois paliers payants (pro / elite / fund) en mensuel ou
+// annuel — le catalogue est dans `src/domain/plans.ts`, partagé avec l'app.
+// Trial is app-level (14 days from signup, see the billing migration); when a
+// trialing user checks out we pass the remaining trial to Stripe as
+// `trial_end` so nothing is charged early.
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyClient = SupabaseClient<any, any, any>;
 
 const STRIPE_API = "https://api.stripe.com/v1";
 
-export type PaidPlan = "pro_monthly" | "pro_yearly";
+export type { PaidPlan } from "../domain/plans";
+import { isPaidPlan, tierOf, type PaidPlan } from "../domain/plans";
 
+/**
+ * L'identifiant de prix Stripe d'un plan.
+ *
+ * Une variable d'environnement par palier et par période :
+ * `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_ELITE_YEARLY`, etc. Le nom est
+ * dérivé du plan, donc ajouter un palier au catalogue ne demande aucune
+ * modification ici — seulement la variable correspondante dans Vercel.
+ */
 function stripePriceId(plan: PaidPlan): string | undefined {
-  return plan === "pro_monthly"
-    ? process.env.STRIPE_PRICE_PRO_MONTHLY
-    : process.env.STRIPE_PRICE_PRO_YEARLY;
+  return process.env[`STRIPE_PRICE_${plan.toUpperCase()}`];
 }
 
 import { json } from "../shared/response";
@@ -133,8 +142,8 @@ export async function handleCheckout(request: Request): Promise<Response> {
   } catch {
     return json({ error: "invalid body" }, 400);
   }
-  const plan = payload.plan as PaidPlan;
-  if (plan !== "pro_monthly" && plan !== "pro_yearly") return json({ error: "invalid plan" }, 400);
+  const plan = payload.plan;
+  if (!isPaidPlan(plan)) return json({ error: "invalid plan" }, 400);
   const price = stripePriceId(plan);
   if (!price) return json({ error: "price not configured" }, 500);
 
@@ -260,11 +269,30 @@ async function verifyStripeSignature(payload: string, header: string | null): Pr
   return timingSafeEqualHex(expected, v1);
 }
 
+/**
+ * Le plan d'un abonnement Stripe.
+ *
+ * Les métadonnées sont la source fiable : c'est nous qui les écrivons au
+ * checkout. En secours — un abonnement créé depuis le dashboard, ou une
+ * ancienne ligne — on retombe sur le palier déduit de l'identifiant de prix,
+ * puis sur la période de facturation. Sans cela, un abonné Elite serait
+ * silencieusement projeté en Pro par le webhook.
+ */
 function planFromStripeSub(sub: any): PaidPlan {
-  if (sub.metadata?.plan === "pro_yearly") return "pro_yearly";
-  if (sub.metadata?.plan === "pro_monthly") return "pro_monthly";
-  const interval = sub.items?.data?.[0]?.price?.recurring?.interval;
-  return interval === "year" ? "pro_yearly" : "pro_monthly";
+  const fromMeta = sub.metadata?.plan;
+  if (isPaidPlan(fromMeta)) return fromMeta;
+
+  const priceId = sub.items?.data?.[0]?.price?.id;
+  const interval = sub.items?.data?.[0]?.price?.recurring?.interval === "year" ? "yearly" : "monthly";
+  if (priceId) {
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value === priceId && key.startsWith("STRIPE_PRICE_")) {
+        const candidate = key.slice("STRIPE_PRICE_".length).toLowerCase();
+        if (isPaidPlan(candidate)) return candidate;
+      }
+    }
+  }
+  return `${tierOf(fromMeta) === "free" ? "pro" : tierOf(fromMeta)}_${interval}` as PaidPlan;
 }
 
 export async function handleStripeWebhook(request: Request): Promise<Response> {

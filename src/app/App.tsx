@@ -95,6 +95,7 @@ import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
+import { PageGate } from "./components/PremiumGate";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
@@ -713,59 +714,64 @@ function AppContent() {
                 (voir le composant) : défilement, filtres et lignes dépliées
                 survivent au changement de page. */}
               <PageTransition page={page}>
-                {page === "dashboard" && (
-                  <Dashboard
-                    trades={trades}
-                    onAddTrade={handleAdd}
-                    tradesLoading={tradesLoading}
-                    onOpenChecklist={() => setPage("checklist")}
-                    onOpenImport={() => setImportOpen(true)}
-                    onEditTrade={handleEdit}
-                    onOpenJournal={() => setPage("journal")}
-                  />
-                )}
-                {page === "journal" && (
-                  <Journal
-                    trades={trades}
-                    onEdit={handleEdit}
-                    onQuickEdit={handleQuickEdit}
-                    onDelete={handleDelete}
-                    onDeleteAll={handleDeleteAll}
-                    onAdd={handleAdd}
-                    onOpenMissed={() => setPage("missed")}
-                  />
-                )}
-                {page === "checklist" && (
-                  <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
-                )}
-                {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-                {page === "analytics" && <Analytics trades={trades} />}
-                {page === "mistakes" && <Mistakes trades={trades} />}
-                {page === "missed" && <MissedOpportunities />}
-                {page === "insights" && <Jarvis />}
-                {page === "news" && <EconomicNews />}
-                {page === "seasonality" && (
-                  <Seasonality trades={trades} tradesLoading={tradesLoading} />
-                )}
-                {page === "calculator" && (
-                  <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
-                )}
-                {page === "settings" && (
-                  <Settings
-                    trades={trades}
-                    onDeleteAll={handleDeleteAll}
-                    onOpenImport={() => setImportOpen(true)}
-                    onOpenReports={() => setPage("reports")}
-                  />
-                )}
-                {page === "reports" && <Reports trades={trades} />}
-                {page === "goals" && <Goals trades={trades} />}
-                {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-                {page === "appearance" && <Appearance />}
-                {page === "subscription" && <Subscription />}
-                {page === "montecarlo" && <MonteCarlo trades={trades} />}
-                {page === "inbox" && <Inbox />}
-                {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                {/* Le verrou premium enveloppe la page rendue : la table
+                    `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
+                    la facturation. */}
+                <PageGate page={page} onUpgrade={() => setPage("subscription")}>
+                  {page === "dashboard" && (
+                    <Dashboard
+                      trades={trades}
+                      onAddTrade={handleAdd}
+                      tradesLoading={tradesLoading}
+                      onOpenChecklist={() => setPage("checklist")}
+                      onOpenImport={() => setImportOpen(true)}
+                      onEditTrade={handleEdit}
+                      onOpenJournal={() => setPage("journal")}
+                    />
+                  )}
+                  {page === "journal" && (
+                    <Journal
+                      trades={trades}
+                      onEdit={handleEdit}
+                      onQuickEdit={handleQuickEdit}
+                      onDelete={handleDelete}
+                      onDeleteAll={handleDeleteAll}
+                      onAdd={handleAdd}
+                      onOpenMissed={() => setPage("missed")}
+                    />
+                  )}
+                  {page === "checklist" && (
+                    <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+                  )}
+                  {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
+                  {page === "analytics" && <Analytics trades={trades} />}
+                  {page === "mistakes" && <Mistakes trades={trades} />}
+                  {page === "missed" && <MissedOpportunities />}
+                  {page === "insights" && <Jarvis />}
+                  {page === "news" && <EconomicNews />}
+                  {page === "seasonality" && (
+                    <Seasonality trades={trades} tradesLoading={tradesLoading} />
+                  )}
+                  {page === "calculator" && (
+                    <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+                  )}
+                  {page === "settings" && (
+                    <Settings
+                      trades={trades}
+                      onDeleteAll={handleDeleteAll}
+                      onOpenImport={() => setImportOpen(true)}
+                      onOpenReports={() => setPage("reports")}
+                    />
+                  )}
+                  {page === "reports" && <Reports trades={trades} />}
+                  {page === "goals" && <Goals trades={trades} />}
+                  {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+                  {page === "appearance" && <Appearance />}
+                  {page === "subscription" && <Subscription />}
+                  {page === "montecarlo" && <MonteCarlo trades={trades} />}
+                  {page === "inbox" && <Inbox />}
+                  {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                </PageGate>
               </PageTransition>
             </Suspense>
           </PageErrorBoundary>
