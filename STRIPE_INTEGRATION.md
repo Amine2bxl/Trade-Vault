@@ -23,7 +23,7 @@ par l'app, la landing, Stripe et le paiement crypto) :
 
 | Offre | Mensuel | Annuel | Variables d'environnement |
 |---|---|---|---|
-| Pro | 15 € | 120 € (2 mois offerts) | `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PRO_YEARLY` |
+| Pro | 15 € | 120 € (4 mois offerts) | `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PRO_YEARLY` |
 | Elite | 29 € | 240 € | `STRIPE_PRICE_ELITE_MONTHLY` / `STRIPE_PRICE_ELITE_YEARLY` |
 | Fund | 49 € | 390 € | `STRIPE_PRICE_FUND_MONTHLY` / `STRIPE_PRICE_FUND_YEARLY` |
 
@@ -151,6 +151,24 @@ Add:
 - **`invoice.payment_failed`** — for the dunning email. Status already flips via
   `subscription.updated`, so this is notification only, not state.
 
+## 6bis. Accès offert (influenceurs, collègues, soi-même)
+
+Donner le premium sans paiement passe par `ADMIN_EMAILS` (variable Vercel,
+liste d'adresses séparées par des virgules) et le panneau « Accès offert » qui
+apparaît alors dans Réglages → Abonnement.
+
+- La liste est tenue par adresse e-mail dans `public.comp_grants`. Elle vaut
+  aussi pour quelqu'un qui n'a pas encore de compte : l'accès s'applique à son
+  inscription, via `handle_new_user_billing`.
+- L'abonnement écrit porte `source = 'comp'` : tout le reste de l'application
+  (paliers, cadenas, page d'abonnement) fonctionne sans savoir que l'accès est
+  offert, et aucun client Stripe n'est créé.
+- Révoquer retire de la liste et repasse la ligne en `free` — **uniquement** si
+  sa source est `comp`, pour ne jamais couper un abonnement réellement payé.
+- `comp_grants` a RLS active et aucune politique : la table est invisible aux
+  clients, seul le rôle de service y touche. Le panneau masqué n'est pas le
+  contrôle d'accès — chaque appel revérifie `ADMIN_EMAILS` côté serveur.
+
 ## 7. Owner tasks — dashboard only, cannot be done in code
 
 Give this list to the owner verbatim.
@@ -167,7 +185,9 @@ Give this list to the owner verbatim.
    Stripe → Public business information. They render on Checkout and the portal.
 4. **Enable Stripe Tax** and register for OSS.
 5. **Enable the trial-ending reminder email** in Stripe's subscription settings.
-6. **Checkout branding**: button colour `#2563EB`, font `Inter` (Manrope is not
+6. **Définir `ADMIN_EMAILS`** dans Vercel avec ta propre adresse, pour voir le
+   panneau « Accès offert » (§6bis).
+7. **Checkout branding**: button colour `#2563EB`, font `Inter` (Manrope is not
    in Stripe's font list; Inter is already the app's fallback), upload the logo
    and the square icon.
 

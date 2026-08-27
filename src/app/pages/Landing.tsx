@@ -712,12 +712,6 @@ function LandingPage() {
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
             <SectionHead tag={t("pricing.tag")} title={t("pricing.title")} sub={t("pricing.sub")} />
 
-            <div className="reveal mb-10 flex justify-center">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-emerald-400/30 bg-emerald-400/[.1] px-5 py-2 text-sm font-bold text-emerald-300">
-                <Icon n="sparkle" cls="h-4 w-4" /> {t("pricing.save")}
-              </div>
-            </div>
-
             {/* La grille tarifaire — le MÊME composant que dans l'application.
                 Ce que le visiteur compare ici est exactement ce qu'il retrouve
                 dans sa page d'abonnement, aux mêmes prix : il n'y a plus qu'un

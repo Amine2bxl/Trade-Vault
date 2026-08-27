@@ -198,6 +198,23 @@ export default {
         const { handleCryptoCheckout } = await import("./backend/crypto-pay.server");
         return await handleCryptoCheckout(request);
       }
+      // Accès offert — réservé aux adresses listées dans `ADMIN_EMAILS`.
+      if (pathname === "/api/admin/me" && request.method === "GET") {
+        const { handleAdminMe } = await import("./backend/admin.server");
+        return await handleAdminMe(request);
+      }
+      if (pathname === "/api/admin/grants" && request.method === "GET") {
+        const { handleListGrants } = await import("./backend/admin.server");
+        return await handleListGrants(request);
+      }
+      if (pathname === "/api/admin/grants" && request.method === "POST") {
+        const { handleGrant } = await import("./backend/admin.server");
+        return await handleGrant(request);
+      }
+      if (pathname === "/api/admin/grants/revoke" && request.method === "POST") {
+        const { handleRevokeGrant } = await import("./backend/admin.server");
+        return await handleRevokeGrant(request);
+      }
       if (pathname === "/api/crypto/webhook" && request.method === "POST") {
         const { handleCryptoWebhook } = await import("./backend/crypto-pay.server");
         return await handleCryptoWebhook(request);

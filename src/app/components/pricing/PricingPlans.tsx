@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Check, Sparkles, Zap, Building2, ArrowRight, Bitcoin, CreditCard } from "lucide-react";
+import { Check, Sparkles, Zap, Building2, ArrowRight, Bitcoin } from "lucide-react";
 import { cn } from "../../utils/cn";
 import {
   TIERS,
@@ -159,33 +159,22 @@ export default function PricingPlans({
                 </span>
               </div>
 
-              <p className="mt-2 min-h-[20px] text-[13px] text-slate-400">
+              <p className="mt-1.5 text-[12px] text-slate-500">
                 {yearly ? (
                   <>
-                    <span className="font-semibold text-white">{eur(tier.yearly)}</span>{" "}
-                    {lang === "fr" ? "facturés par an" : "billed yearly"}
-                    <span className="ml-2 text-slate-600 line-through">
-                      {eur(tier.monthly * 12)}
-                    </span>
+                    {eur(tier.yearly)} {lang === "fr" ? "par an" : "per year"}
+                    <span className="ml-2 text-emerald-400">−{eur(yearlySaving(tier.id))}</span>
                   </>
+                ) : lang === "fr" ? (
+                  "Sans engagement"
                 ) : (
-                  <>
-                    {lang === "fr" ? "Sans engagement, résiliable" : "No commitment, cancel"}{" "}
-                    {lang === "fr" ? "en un clic" : "in one click"}
-                  </>
+                  "No commitment"
                 )}
               </p>
 
-              {yearly && (
-                <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg bg-emerald-400/15 px-2.5 py-1 text-[12px] font-bold text-emerald-300">
-                  <Check className="h-3.5 w-3.5" />
-                  {lang === "fr"
-                    ? `${eur(yearlySaving(tier.id))} économisés`
-                    : `${eur(yearlySaving(tier.id))} saved`}
-                </div>
-              )}
-
-              <p className="mt-4 text-[13px] leading-5 text-slate-400">{tr(tier.tagline)}</p>
+              <p className="mt-4 text-[13.5px] font-medium leading-5 text-slate-200">
+                {tr(tier.tagline)}
+              </p>
 
               <button
                 onClick={() => onChoose(plan)}
@@ -211,8 +200,7 @@ export default function PricingPlans({
                   )
                 ) : (
                   <>
-                    <CreditCard className="h-4 w-4" />
-                    {lang === "fr" ? `Choisir ${tr(tier.name)}` : `Choose ${tr(tier.name)}`}
+                    {lang === "fr" ? "Commencer" : "Get started"}
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -222,16 +210,10 @@ export default function PricingPlans({
                 <button
                   onClick={() => onCrypto(plan)}
                   disabled={busy != null}
-                  className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2.5 text-[13px] font-semibold text-slate-300 transition hover:bg-white/[0.04] disabled:opacity-60"
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-[11.5px] font-medium text-slate-500 transition hover:text-slate-300 disabled:opacity-60"
                 >
-                  <Bitcoin className="h-4 w-4 text-amber-400" />
-                  {busy === `crypto-${plan}`
-                    ? lang === "fr"
-                      ? "Ouverture…"
-                      : "Opening…"
-                    : lang === "fr"
-                      ? "Payer en crypto"
-                      : "Pay with crypto"}
+                  <Bitcoin className="h-3 w-3" />
+                  {lang === "fr" ? "ou payer en crypto" : "or pay with crypto"}
                 </button>
               )}
 
@@ -262,24 +244,16 @@ export default function PricingPlans({
         })}
       </div>
 
-      {/* L'offre gratuite — une ligne entière, pas une note de bas de page. */}
+      {/* L'offre gratuite — visible, courte, sans argumentaire. */}
       {onFree && (
-        <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.015] p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-white">
-              {lang === "fr" ? "Rester gratuitement" : "Stay on the free plan"}
-              <span className="ml-2 text-slate-500">· 0 €</span>
-            </p>
-            <p className="mt-1 text-[13px] leading-5 text-slate-400">{tr(free.tagline)}</p>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500">
-              {free.features.map((f) => (
-                <span key={f.en} className="inline-flex items-center gap-1.5">
-                  <Check className="h-3 w-3 text-slate-600" />
-                  {tr(f)}
-                </span>
-              ))}
-            </div>
-          </div>
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.015] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13.5px] text-slate-300">
+            <span className="font-bold text-white">
+              {lang === "fr" ? "Rester gratuit" : "Stay free"}
+            </span>
+            <span className="mx-2 text-slate-600">·</span>
+            {tr(free.tagline)}
+          </p>
           <button
             onClick={onFree}
             className="shrink-0 rounded-xl border border-white/[0.1] bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07]"

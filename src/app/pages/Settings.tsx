@@ -35,6 +35,7 @@ import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
 import ThemeSettings from "../components/ThemeSettings";
 import SubscriptionSection from "../components/SubscriptionSection";
+import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -99,6 +100,7 @@ export default function Settings({
   onOpenReports,
 }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
+  const isAdmin = useIsAdmin();
   const { activeId, activeAccount } = useAccounts();
   const [recalOpen, setRecalOpen] = useState(false);
   const { t, setLang } = useT();
@@ -331,6 +333,9 @@ export default function Settings({
                 title={t("nav.subscription")}
               />
               <SubscriptionSection />
+              {/* Panneau propriétaire : n'apparaît que pour une adresse listée
+                  dans `ADMIN_EMAILS`, et chaque action est revérifiée serveur. */}
+              {isAdmin && <CompAccessSection />}
             </div>
           )}
 

@@ -82,6 +82,7 @@ import {
 } from "@/modules/notifications";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
+import { previewTrades } from "./utils/previewTrades";
 import { computeBehavioral } from "./utils/behavioral";
 import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
@@ -95,7 +96,7 @@ import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
-import { PageGate } from "./components/PremiumGate";
+import { PageGate, usePageLock } from "./components/PremiumGate";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
@@ -228,6 +229,12 @@ function AppContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Page verrouillée : elle est rendue avec un historique de DÉMONSTRATION, pas
+  // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
+  // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
+  const pageLocked = usePageLock(page);
+  const shownTrades = pageLocked ? previewTrades() : trades;
+
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   // Actions d'en-tête de la page courante, remontées dans la barre d'onglets.
@@ -744,13 +751,13 @@ function AppContent() {
                     <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
                   )}
                   {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-                  {page === "analytics" && <Analytics trades={trades} />}
-                  {page === "mistakes" && <Mistakes trades={trades} />}
+                  {page === "analytics" && <Analytics trades={shownTrades} />}
+                  {page === "mistakes" && <Mistakes trades={shownTrades} />}
                   {page === "missed" && <MissedOpportunities />}
                   {page === "insights" && <Jarvis />}
                   {page === "news" && <EconomicNews />}
                   {page === "seasonality" && (
-                    <Seasonality trades={trades} tradesLoading={tradesLoading} />
+                    <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
                   )}
                   {page === "calculator" && (
                     <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
@@ -763,12 +770,12 @@ function AppContent() {
                       onOpenReports={() => setPage("reports")}
                     />
                   )}
-                  {page === "reports" && <Reports trades={trades} />}
-                  {page === "goals" && <Goals trades={trades} />}
+                  {page === "reports" && <Reports trades={shownTrades} />}
+                  {page === "goals" && <Goals trades={shownTrades} />}
                   {page === "tradingplan" && <TradingPlan setPage={setPage} />}
                   {page === "appearance" && <Appearance />}
                   {page === "subscription" && <Subscription />}
-                  {page === "montecarlo" && <MonteCarlo trades={trades} />}
+                  {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
                   {page === "inbox" && <Inbox />}
                   {page === "profile" && <Profile trades={trades} setPage={setPage} />}
                 </PageGate>

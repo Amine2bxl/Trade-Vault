@@ -378,10 +378,11 @@ const M: Record<string, Msg> = {
     fr: "Commence gratuitement. Passe Premium quand tu es prêt.",
   },
   "pricing.save": {
-    // Pas de montant en dur : l'économie dépend de l'offre choisie et elle est
-    // affichée, exacte, sur chaque colonne de la grille.
-    en: "2 months free on every yearly plan",
-    fr: "2 mois offerts sur chaque offre annuelle",
+    // Conservé pour d'éventuels usages hors grille. Aucun montant en dur : le
+    // nombre de mois offerts est calculé depuis le catalogue et affiché sur la
+    // bascule mensuel/annuel.
+    en: "Months free on every yearly plan",
+    fr: "Des mois offerts sur chaque offre annuelle",
   },
   "pricing.free": { en: "Free", fr: "Free" },
   "pricing.free.price": { en: "€0", fr: "0 €" },
