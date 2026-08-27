@@ -18,14 +18,13 @@ before you touch code.
 ## 1. Current state (verified)
 
 Stripe account is in **live mode**, EUR. Le catalogue applicatif compte
-maintenant **trois offres payantes** (`src/domain/plans.ts`, source unique lue
+**deux offres payantes** (plus l'offre gratuite) (`src/domain/plans.ts`, source unique lue
 par l'app, la landing, Stripe et le paiement crypto) :
 
 | Offre | Mensuel | Annuel | Variables d'environnement |
 |---|---|---|---|
 | Pro | 15 € | 120 € (4 mois offerts) | `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PRO_YEARLY` |
-| Elite | 29 € | 240 € | `STRIPE_PRICE_ELITE_MONTHLY` / `STRIPE_PRICE_ELITE_YEARLY` |
-| Fund | 49 € | 390 € | `STRIPE_PRICE_FUND_MONTHLY` / `STRIPE_PRICE_FUND_YEARLY` |
+| Elite | 25 € | 200 € (4 mois offerts) | `STRIPE_PRICE_ELITE_MONTHLY` / `STRIPE_PRICE_ELITE_YEARLY` |
 
 Le nom de la variable est dérivé de l'identifiant du plan
 (`STRIPE_PRICE_${PLAN.toUpperCase()}`) : ajouter un palier au catalogue ne

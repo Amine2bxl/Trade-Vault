@@ -50,12 +50,18 @@ function maskStyle(blur: number, from: number, to: number): CSSProperties {
 export function PreviewWall({
   locked,
   requiredTier,
+  headline,
+  benefit,
   onUpgrade,
   children,
   className,
 }: {
   locked: boolean;
   requiredTier: Tier;
+  /** Le nom de ce qui est verrouillé. À défaut, le nom de l'offre. */
+  headline?: string;
+  /** Ce que la page apporte, en une phrase — le vrai argument de vente. */
+  benefit?: string;
   onUpgrade: () => void;
   children: ReactNode;
   className?: string;
@@ -96,8 +102,13 @@ export function PreviewWall({
           </span>
 
           <h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white sm:text-[28px]">
-            {fr ? "Cette page, avec tes trades." : "This page, with your trades."}
+            {benefit ?? (fr ? "Cette page, avec tes trades." : "This page, with your trades.")}
           </h2>
+          <p className="mt-2 text-[13px] text-slate-400">
+            {fr
+              ? `Ci-dessus : ${headline ?? "la page"} sur un compte d'exemple. Débloque-la pour la voir sur le tien.`
+              : `Above: ${headline ?? "the page"} on a sample account. Unlock it to see yours.`}
+          </p>
 
           <div className="mt-4 flex items-center justify-center gap-3">
             <button
@@ -137,6 +148,8 @@ export function PageGate({
   onUpgrade: () => void;
   children: ReactNode;
 }) {
+  const { lang } = useT();
+  const fr = lang === "fr";
   return (
     <PreviewWall
       locked={usePageLock(page)}

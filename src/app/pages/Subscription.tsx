@@ -22,9 +22,11 @@ import {
   planPrice,
   intervalOf,
   tierOf,
+  tierAtLeast,
   yearlyPerMonth,
+  pagesOfTier,
+  PAGE_VALUE,
   TIER_BY_ID,
-  HEADLINE_TIER,
   type PaidPlan,
 } from "../utils/pricing";
 import { PageHeader } from "@/shared/ui";
@@ -51,17 +53,9 @@ export default function Subscription() {
   const { t, lang } = useT();
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
-  const { sub, loading, isPro, trialDaysLeft } = useSubscription();
+  const { sub, loading, trialDaysLeft } = useSubscription();
 
-  // Ce que le trader a débloqué — lu depuis le catalogue de son propre palier,
-  // pas une liste figée : un abonné Elite ne doit pas lire la promesse Pro.
   const currentTier = tierOf(sub?.plan);
-  const shownTier = currentTier === "free" ? HEADLINE_TIER : currentTier;
-  const features = TIER_BY_ID[shownTier].features.map((f) => ({
-    icon: Sparkles,
-    title: fr ? f.fr : f.en,
-    sub: "",
-  }));
 
   const planLabel =
     currentTier === "free"
@@ -216,29 +210,84 @@ export default function Subscription() {
         )}
       </div>
 
-      {/* ── What the plan unlocks ── */}
-      <div className="glass rounded-2xl p-4 animate-fade-in-up stagger-2">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-cyan-400" />
+      {/* ── Ce que chaque page payante apporte ──
+          Une liste de noms de fonctionnalités ne vend rien : « Saisonnalité »
+          ne dit rien à personne. Chaque ligne dit ce que la page APPORTE, et
+          porte une coche ou un cadenas selon le palier — on voit d'un coup
+          d'œil ce qu'on a et ce qu'il manque. */}
+      <div className="glass animate-fade-in-up stagger-2 rounded-2xl p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-cyan-400" />
           <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-            {isPro
-              ? tr("Ce que tu as débloqué", "What you have unlocked")
-              : t("billing.premiumTitle")}
+            {tr("Ce que tu débloques", "What you unlock")}
           </h3>
         </div>
-        <div className="grid md:grid-cols-3 gap-2.5">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-3"
-            >
-              <f.icon className="w-4 h-4 text-cyan-400 mb-1.5" />
-              <div className="text-xs font-bold text-white">{f.title}</div>
-              {f.sub && (
-                <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{f.sub}</div>
-              )}
-            </div>
-          ))}
+
+        <div className="space-y-4">
+          {(["pro", "elite"] as const).map((tierId) => {
+            const pages = pagesOfTier(tierId);
+            if (pages.length === 0) return null;
+            const owned = tierAtLeast(currentTier, tierId);
+            return (
+              <div key={tierId}>
+                <div className="mb-2 flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-[.15em]",
+                      owned ? "text-emerald-400" : "text-cyan-300",
+                    )}
+                  >
+                    {TIER_BY_ID[tierId].name[fr ? "fr" : "en"]}
+                  </span>
+                  <span className="text-[10px] text-slate-600">
+                    {owned
+                      ? tr("· inclus dans ton offre", "· included in your plan")
+                      : `· ${eur(Math.round(yearlyPerMonth(tierId) * 100) / 100)}${tr("/mois", "/month")}`}
+                  </span>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {pages.map((page) => {
+                    const value = PAGE_VALUE[page];
+                    if (!value) return null;
+                    return (
+                      <div
+                        key={page}
+                        className={cn(
+                          "flex items-start gap-2.5 rounded-xl border p-3",
+                          owned
+                            ? "border-white/[0.07] bg-white/[0.03]"
+                            : "border-white/[0.05] bg-white/[0.015]",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full",
+                            owned
+                              ? "bg-emerald-400/15 text-emerald-400"
+                              : "bg-white/[0.05] text-slate-500",
+                          )}
+                        >
+                          {owned ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <Lock className="h-3 w-3" />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-white">
+                            {value.title[fr ? "fr" : "en"]}
+                          </div>
+                          <div className="mt-0.5 text-[11.5px] leading-snug text-slate-400">
+                            {value.benefit[fr ? "fr" : "en"]}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

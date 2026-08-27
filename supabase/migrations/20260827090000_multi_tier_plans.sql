@@ -1,7 +1,7 @@
--- Trois paliers payants au lieu d'un seul.
+-- Deux paliers payants au lieu d'un seul.
 --
 -- `subscriptions.plan` n'acceptait que `free / pro_monthly / pro_yearly`.
--- L'offre en compte maintenant trois (pro, elite, fund), chacune en mensuel ou
+-- L'offre en compte maintenant deux (pro, elite), chacune en mensuel ou
 -- annuel. Sans cette contrainte élargie, le webhook Stripe d'un abonné Elite
 -- échouerait à l'écriture et l'abonnement payé n'ouvrirait aucun accès.
 --
@@ -16,7 +16,6 @@ alter table public.subscriptions
     plan in (
       'free',
       'pro_monthly', 'pro_yearly',
-      'elite_monthly', 'elite_yearly',
-      'fund_monthly', 'fund_yearly'
+      'elite_monthly', 'elite_yearly'
     )
   );

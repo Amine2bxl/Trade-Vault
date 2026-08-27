@@ -11,21 +11,15 @@
  * pouvoir être importé des deux côtés.
  */
 
-export type Tier = "free" | "pro" | "elite" | "fund";
+export type Tier = "free" | "pro" | "elite";
 export type Interval = "monthly" | "yearly";
-export type PaidPlan =
-  | "pro_monthly"
-  | "pro_yearly"
-  | "elite_monthly"
-  | "elite_yearly"
-  | "fund_monthly"
-  | "fund_yearly";
+export type PaidPlan = "pro_monthly" | "pro_yearly" | "elite_monthly" | "elite_yearly";
 export type Plan = "free" | PaidPlan;
 
 /** Ordre des paliers : un palier donne accès à tout ce qu'offrent ceux d'en dessous. */
-export const TIER_RANK: Record<Tier, number> = { free: 0, pro: 1, elite: 2, fund: 3 };
+export const TIER_RANK: Record<Tier, number> = { free: 0, pro: 1, elite: 2 };
 
-export const PAID_TIERS = ["pro", "elite", "fund"] as const;
+export const PAID_TIERS = ["pro", "elite"] as const;
 export type PaidTier = (typeof PAID_TIERS)[number];
 
 /** Texte bilingue — la landing et l'app n'ont pas le même dictionnaire i18n,
@@ -61,62 +55,58 @@ export const TIERS: TierDef[] = [
   {
     id: "free",
     name: { fr: "Gratuit", en: "Free" },
-    tagline: { fr: "Ton journal, sans limite.", en: "Your journal, unlimited." },
+    tagline: { fr: "Note tes trades. Pour toujours.", en: "Log your trades. Forever." },
     monthly: 0,
     yearly: 0,
     features: [
       { fr: "Journal et captures illimités", en: "Unlimited journal and screenshots" },
       { fr: "Tableau de bord et calendrier", en: "Dashboard and calendar" },
       { fr: "Checklist, plan, calculateur", en: "Checklist, plan, calculator" },
-      { fr: "1 compte", en: "1 account" },
+      { fr: "1 compte de trading", en: "1 trading account" },
     ],
   },
   {
     id: "pro",
     name: { fr: "Pro", en: "Pro" },
+    // La promesse centrale du produit. Tout ce qu'un trader vient chercher —
+    // comprendre son edge, voir ses erreurs, se faire coacher — est ICI.
     tagline: {
-      fr: "Sais ce qui te rapporte et ce qui te coûte.",
-      en: "Know what pays and what costs you.",
+      fr: "Découvre ce qui te rapporte, et ce qui te ruine.",
+      en: "Find what pays you, and what ruins you.",
     },
     monthly: 15,
     yearly: 120,
     featured: true,
     features: [
       { fr: "Analyses complètes de ton edge", en: "Full edge analytics" },
-      { fr: "Tes erreurs, chiffrées", en: "Your mistakes, quantified" },
-      { fr: "Objectifs et setups manqués", en: "Goals and missed setups" },
-      { fr: "3 comptes", en: "3 accounts" },
+      { fr: "Tes erreurs chiffrées en euros", en: "Your mistakes priced in euros" },
+      { fr: "Jarvis, le coach qui lit tes trades", en: "Jarvis, the coach that reads your trades" },
+      { fr: "Rapports mensuels automatiques", en: "Automatic monthly reports" },
+      {
+        fr: "Objectifs, setups manqués, calendrier éco",
+        en: "Goals, missed setups, econ calendar",
+      },
+      { fr: "5 comptes de trading", en: "5 trading accounts" },
     ],
   },
   {
     id: "elite",
     name: { fr: "Elite", en: "Elite" },
     tagline: {
-      fr: "Un coach qui a lu tous tes trades.",
-      en: "A coach that has read every trade.",
+      fr: "Projette ton edge avant de risquer un euro.",
+      en: "Project your edge before risking a euro.",
     },
-    monthly: 29,
-    yearly: 240,
+    monthly: 25,
+    yearly: 200,
     features: [
-      { fr: "Jarvis illimité + rapports IA", en: "Unlimited Jarvis + AI reports" },
-      { fr: "Monte-Carlo et simulateur", en: "Monte Carlo and simulator" },
-      { fr: "Saisonnalité et patterns", en: "Seasonality and patterns" },
-      { fr: "10 comptes", en: "10 accounts" },
-    ],
-  },
-  {
-    id: "fund",
-    name: { fr: "Fund", en: "Fund" },
-    tagline: {
-      fr: "Plusieurs comptes prop firm, un seul pilote.",
-      en: "Several prop accounts, one cockpit.",
-    },
-    monthly: 49,
-    yearly: 390,
-    features: [
-      { fr: "Comptes illimités", en: "Unlimited accounts" },
-      { fr: "Automatisation et alertes", en: "Automation and alerts" },
-      { fr: "Exports investisseurs", en: "Investor-ready exports" },
+      { fr: "Monte-Carlo : ta probabilité de ruine", en: "Monte Carlo: your risk of ruin" },
+      {
+        fr: "Saisonnalité : tes heures et jours rentables",
+        en: "Seasonality: your profitable hours and days",
+      },
+      { fr: "Jarvis sans limite de messages", en: "Jarvis with no message cap" },
+      { fr: "Détection automatique de patterns", en: "Automatic pattern detection" },
+      { fr: "Comptes de trading illimités", en: "Unlimited trading accounts" },
       { fr: "Support prioritaire", en: "Priority support" },
     ],
   },
@@ -128,7 +118,7 @@ export const TIER_BY_ID = Object.fromEntries(TIERS.map((p) => [p.id, p])) as Rec
 export function tierOf(plan: Plan | string | null | undefined): Tier {
   if (typeof plan !== "string") return "free";
   const tier = plan.split("_")[0];
-  return tier === "pro" || tier === "elite" || tier === "fund" ? tier : "free";
+  return tier === "pro" || tier === "elite" ? tier : "free";
 }
 
 export function intervalOf(plan: Plan | string): Interval {
@@ -194,27 +184,28 @@ export type Capability =
   | "prioritySupport";
 
 export const CAPABILITY_TIER: Record<Capability, Tier> = {
+  // L'offre Pro porte la promesse du produit : c'est elle qu'on vient acheter.
   analytics: "pro",
   mistakes: "pro",
   goals: "pro",
   missed: "pro",
   news: "pro",
-  jarvis: "elite",
-  reports: "elite",
+  jarvis: "pro",
+  reports: "pro",
+  // Elite ajoute la projection et l'absence de limites — pas le cœur du produit.
   montecarlo: "elite",
   seasonality: "elite",
   patterns: "elite",
-  automation: "fund",
-  pushAlerts: "fund",
-  prioritySupport: "fund",
+  automation: "elite",
+  pushAlerts: "elite",
+  prioritySupport: "elite",
 };
 
 /** Nombre de comptes de trading autorisés (Infinity au palier Fund). */
 export const ACCOUNT_LIMIT: Record<Tier, number> = {
   free: 1,
-  pro: 3,
-  elite: 10,
-  fund: Infinity,
+  pro: 5,
+  elite: Infinity,
 };
 
 export function tierAtLeast(current: Tier, required: Tier): boolean {

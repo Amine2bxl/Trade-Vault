@@ -26,8 +26,7 @@ create table if not exists public.comp_grants (
   plan        text not null default 'elite_yearly'
               check (plan in (
                 'pro_monthly', 'pro_yearly',
-                'elite_monthly', 'elite_yearly',
-                'fund_monthly', 'fund_yearly'
+                'elite_monthly', 'elite_yearly'
               )),
   note        text,
   granted_by  text,

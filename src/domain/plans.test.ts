@@ -13,17 +13,14 @@ import {
   ACCOUNT_LIMIT,
   PAID_TIERS,
   CAPABILITY_TIER,
-  type PaidTier,
 } from "./plans";
 
 describe("catalogue d'offres", () => {
   it("annonce les prix convenus", () => {
     expect(TIER_BY_ID.pro.monthly).toBe(15);
     expect(TIER_BY_ID.pro.yearly).toBe(120);
-    expect(TIER_BY_ID.elite.monthly).toBe(29);
-    expect(TIER_BY_ID.elite.yearly).toBe(240);
-    expect(TIER_BY_ID.fund.monthly).toBe(49);
-    expect(TIER_BY_ID.fund.yearly).toBe(390);
+    expect(TIER_BY_ID.elite.monthly).toBe(25);
+    expect(TIER_BY_ID.elite.yearly).toBe(200);
   });
 
   it("offre le MÊME nombre de mois sur les trois offres annuelles", () => {
@@ -46,7 +43,7 @@ describe("catalogue d'offres", () => {
   });
 
   it("facture exactement ce que le catalogue annonce", () => {
-    for (const tier of ["pro", "elite", "fund"] as PaidTier[]) {
+    for (const tier of PAID_TIERS) {
       expect(planPrice(planId(tier, "monthly"))).toBe(TIER_BY_ID[tier].monthly);
       expect(planPrice(planId(tier, "yearly"))).toBe(TIER_BY_ID[tier].yearly);
     }
@@ -54,6 +51,9 @@ describe("catalogue d'offres", () => {
 
   it("reconnaît les plans valides et rejette le reste", () => {
     expect(isPaidPlan("elite_yearly")).toBe(true);
+    // L'offre Fund a été retirée du catalogue : ses plans ne doivent plus
+    // ouvrir quoi que ce soit, y compris pour une ligne restée en base.
+    expect(isPaidPlan("fund_yearly")).toBe(false);
     expect(isPaidPlan("free")).toBe(false);
     expect(isPaidPlan("pro_weekly")).toBe(false);
     expect(isPaidPlan("")).toBe(false);
@@ -63,7 +63,7 @@ describe("catalogue d'offres", () => {
   });
 
   it("déduit palier et période d'un plan, y compris d'une valeur inconnue", () => {
-    expect(tierOf("fund_monthly")).toBe("fund");
+    expect(tierOf("fund_monthly")).toBe("free");
     expect(tierOf("free")).toBe("free");
     expect(tierOf(null)).toBe("free");
     expect(tierOf("n'importe quoi")).toBe("free");
@@ -72,7 +72,7 @@ describe("catalogue d'offres", () => {
   });
 
   it("fait hériter chaque palier de ceux d'en dessous", () => {
-    expect(tierAtLeast("fund", "pro")).toBe(true);
+    expect(tierAtLeast("elite", "pro")).toBe(true);
     expect(tierAtLeast("elite", "elite")).toBe(true);
     expect(tierAtLeast("pro", "elite")).toBe(false);
     expect(tierAtLeast("free", "pro")).toBe(false);
@@ -81,7 +81,13 @@ describe("catalogue d'offres", () => {
   it("ouvre plus de comptes à chaque palier", () => {
     expect(ACCOUNT_LIMIT.free).toBeLessThan(ACCOUNT_LIMIT.pro);
     expect(ACCOUNT_LIMIT.pro).toBeLessThan(ACCOUNT_LIMIT.elite);
-    expect(ACCOUNT_LIMIT.elite).toBeLessThan(ACCOUNT_LIMIT.fund);
+  });
+
+  it("met la promesse du produit dans Pro, pas dans l'offre la plus chère", () => {
+    // Pro doit ouvrir strictement plus de capacités qu'Elite n'en ajoute :
+    // c'est l'offre qu'on veut vendre, donc c'est elle qui porte la valeur.
+    const perTier = (t: string) => Object.values(CAPABILITY_TIER).filter((v) => v === t).length;
+    expect(perTier("pro")).toBeGreaterThan(perTier("elite"));
   });
 
   it("ne garde aucune capacité derrière l'offre gratuite", () => {
