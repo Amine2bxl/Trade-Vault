@@ -213,7 +213,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-5 max-w-3xl mx-auto">
+      <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
         <div className="glass rounded-3xl p-10 flex justify-center">
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
         </div>
@@ -222,7 +222,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   }
 
   return (
-    <div className="p-4 md:p-5 max-w-3xl mx-auto">
+    <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
       {!plan ? (
         <GoalPicker ctx={ctx} fr={fr} busy={busy} onGenerate={generate} />
       ) : (

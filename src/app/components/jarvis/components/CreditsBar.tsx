@@ -1,11 +1,13 @@
 import { Zap, Check, Sparkles, ArrowUpRight } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
-import { aiUsageToday, FREE_DAILY_LIMIT } from "../../../utils/aiUsage";
+import { aiUsageToday, jarvisDailyLimit } from "../../../utils/aiUsage";
+import { useSubscription } from "../../../hooks/useSubscription";
 import { cn } from "../../../utils/cn";
 
 /**
- * Jarvis Intelligence — le quota IA de Jarvis (5 analyses gratuites / jour).
+ * Jarvis Intelligence — le quota IA du jour, selon le palier (3 en gratuit,
+ * 20 en Pro, aucune limite en Elite).
  *
  * Rendu premium : jauge radiale dégradé, compteur réel issu du compteur local
  * (`aiUsage`), bénéfices immédiatement lisibles et texte explicatif en pied de
@@ -18,9 +20,12 @@ const CIRC = 2 * Math.PI * RADIUS;
 export default function CreditsBar() {
   const { t } = useT();
   const { user } = useAuth();
+  const { tier } = useSubscription();
+  const limit = jarvisDailyLimit(tier);
+  const unlimited = !Number.isFinite(limit);
   const used = aiUsageToday(user?.id);
-  const remaining = Math.max(0, FREE_DAILY_LIMIT - used);
-  const pct = (used / FREE_DAILY_LIMIT) * 100;
+  const remaining = unlimited ? Infinity : Math.max(0, limit - used);
+  const pct = unlimited ? 0 : Math.min(100, (used / limit) * 100);
   const exhausted = remaining === 0;
   const values = [t("credits.value1"), t("credits.value2"), t("credits.value3")];
 
@@ -65,14 +70,14 @@ export default function CreditsBar() {
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-1.5">
             <span className="font-display text-sm font-extrabold text-white tabular-nums leading-none">
-              {remaining}
+              {unlimited ? "∞" : remaining}
             </span>
             <span className="text-[11px] text-slate-500 leading-none">
               {t("credits.remaining")}
             </span>
           </div>
           <div className="mt-0.5 text-[11px] uppercase tracking-[0.16em] text-slate-600 font-bold">
-            {t("credits.title")} · {FREE_DAILY_LIMIT}/j
+            {t("credits.title")} · {unlimited ? "∞" : `${limit}/j`}
           </div>
         </div>
 

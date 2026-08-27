@@ -219,7 +219,7 @@ export default function MissedOpportunities() {
   usePageActions(headerActions);
 
   return (
-    <PageContainer className="max-w-[1100px]">
+    <PageContainer>
       {/* Cost of hesitation, up front. Seeing "+18.4 R left on the table" is
           what turns this page from a notebook into an argument. */}
       {!loading && items.length > 0 && (

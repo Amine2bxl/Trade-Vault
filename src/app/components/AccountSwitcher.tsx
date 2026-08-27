@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
+import { useToast } from "../contexts/ToastContext";
+import { isPlanLimitError } from "../utils/planLimits";
 import { cn } from "../utils/cn";
 import type { Account, AccountType } from "../store";
 import { Modal, FIELD_BASE, Chip, CHIP_ROW } from "@/shared/ui";
@@ -650,7 +652,8 @@ function DeleteAccountModal({
 
 function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Account }) {
   const { addAccount, editAccount } = useAccounts();
-  const { t } = useT();
+  const { t, lang } = useT();
+  const { toast } = useToast();
   const [name, setName] = useState(edit?.name ?? "");
   const [type, setType] = useState<AccountType>(edit?.type ?? "prop");
   const [selectedIcon, setSelectedIcon] = useState<string | null>(edit?.icon ?? null);
@@ -695,6 +698,19 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
       }
       onClose();
     } catch (e) {
+      // Limite de comptes atteinte : ce n'est pas un échec technique, c'est un
+      // moment de vente — on le dit et on emmène vers l'offre.
+      if (isPlanLimitError(e)) {
+        toast(
+          lang === "fr"
+            ? "Ton offre autorise un seul compte — passe à Pro pour en ouvrir jusqu'à 3."
+            : "Your plan allows one account — go Pro for up to 3.",
+          "info",
+        );
+        window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "subscription" } }));
+        onClose();
+        return;
+      }
       console.error("Failed to save account", e);
       setBusy(false);
     }

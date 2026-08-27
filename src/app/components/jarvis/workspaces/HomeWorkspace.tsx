@@ -299,7 +299,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     window.dispatchEvent(new CustomEvent("tv:ask-coach", { detail: { prompt } }));
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-3xl mx-auto w-full">
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-[1100px] mx-auto w-full">
       {/* En-tête — le premier écran d'un assistant personnel, pas une page de stats. */}
       <div className="relative mb-6">
         <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-32 rounded-full bg-cyan-500/10 blur-3xl" />

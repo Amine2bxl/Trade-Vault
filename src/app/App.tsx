@@ -66,6 +66,7 @@ import {
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { useRealtimeTrades } from "./hooks/useRealtimeTrades";
+import { useSubscription } from "./hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { missingReportMonths } from "./utils/reportMonths";
 import { withPnlFromRiskAndR } from "./utils/tradeCalcs";
@@ -83,6 +84,7 @@ import {
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
 import { previewTrades } from "./utils/previewTrades";
+import { canLogTrade, isPlanLimitError } from "./utils/planLimits";
 import { computeBehavioral } from "./utils/behavioral";
 import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
@@ -105,7 +107,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
   const { activeId, ready: accountsReady, activeAccount } = useAccounts();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
   const queryClient = useQueryClient();
@@ -233,6 +235,7 @@ function AppContent() {
   // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
   // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
   const pageLocked = usePageLock(page);
+  const { tier } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
 
   const [importOpen, setImportOpen] = useState(false);
@@ -427,6 +430,22 @@ function AppContent() {
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
+      // Quota mensuel d'encodage. Il porte sur les CRÉATIONS : corriger un
+      // trade déjà saisi reste possible quel que soit le palier — bloquer une
+      // correction serait punitif et sans rapport avec l'offre.
+      const isEdit = trades.some((t) => t.id === trade.id);
+      if (!canLogTrade(tier, trades, isEdit)) {
+        setModalOpen(false);
+        setEditingTrade(null);
+        toast(
+          lang === "fr"
+            ? "Limite de 10 trades par mois atteinte — passe à Pro pour encoder sans limite."
+            : "10 trades a month reached — go Pro to log without limits.",
+          "info",
+        );
+        setPage("subscription");
+        return;
+      }
       setModalOpen(false);
       setEditingTrade(null);
       let snapshot: Trade[] = [];
@@ -480,7 +499,7 @@ function AppContent() {
         });
       })();
     },
-    [user],
+    [user, trades, tier, lang, toast, t, setPage],
   );
 
   /**

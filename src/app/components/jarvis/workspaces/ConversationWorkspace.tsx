@@ -21,6 +21,7 @@ import { computeRuleAdherence } from "../../../utils/ruleAdherence";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";
 import { computeStats } from "../../../utils/tradeCalcs";
+import { useSubscription } from "../../../hooks/useSubscription";
 import { useEdgeScore } from "../../../hooks/useEdgeScore";
 import { EDGE_WINDOW_DAYS } from "../../../utils/edgeScore";
 import { loadTodaySession } from "../../../store";
@@ -41,7 +42,7 @@ import {
   exceedsDailyLimit,
   incrementAiUsage,
   aiUsageToday,
-  FREE_DAILY_LIMIT,
+  jarvisDailyLimit,
 } from "../../../utils/aiUsage";
 import { effectiveCopyLang } from "../prefs";
 import { jarvisConversationStore } from "../conversations";
@@ -220,6 +221,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const signals = useMemo(() => computeBehaviorSignals(context.trades), [context.trades]);
   const stats = useMemo(() => computeStats(context.trades), [context.trades]);
   const userId = user?.id ?? context.userId;
+  // Le quota Jarvis du jour dépend du palier — jamais d'un nombre écrit ici.
+  const { tier } = useSubscription();
+  const dailyLimit = jarvisDailyLimit(tier);
   // Edge Score via le hook PARTAGE avec le tableau de bord — jamais recalcule ici.
   const edge = useEdgeScore(context.trades, userId);
   // Objectifs mesurés — hook PARTAGÉ avec la page Goals. Le pipeline du coach
@@ -478,9 +482,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     async (q: string) => {
       const query = q.trim();
       if (!query || loading || !loaded) return;
-      // Quota gratuit : au-delà de 5 analyses/jour, on explique et on oriente
-      // vers Premium — aucune requête n'est envoyée (0 token consommé).
-      if (exceedsDailyLimit(userId)) {
+      // Quota du jour (3 en gratuit, 20 en Pro, aucun en Elite) : au-delà, on
+      // explique et on oriente vers l'offre supérieure — aucune requête n'est
+      // envoyée, donc zéro token consommé.
+      if (exceedsDailyLimit(userId, dailyLimit)) {
         setQuotaBanner(true);
         setQuestion("");
         return;
@@ -883,7 +888,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
       {/* Saisie */}
       <div className="p-3 md:p-4 border-t border-white/[0.06] shrink-0">
-        {(quotaBanner || aiUsageToday(userId) >= FREE_DAILY_LIMIT) && (
+        {(quotaBanner || exceedsDailyLimit(userId, dailyLimit)) && (
           <div className="mb-2.5 rounded-xl border border-amber-500/25 bg-gradient-to-r from-amber-500/[0.08] to-amber-500/[0.03] px-3.5 py-3 flex items-start gap-2.5">
             <Zap className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
