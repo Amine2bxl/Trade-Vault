@@ -45,40 +45,27 @@ part dans le code.
 | Code | `src/backend/billing.server.ts` complete but untested end-to-end |
 | DB | `public.subscriptions` + `processed_webhook_events` exist, RLS select-own |
 
-## 2. [DECISION] The trial model contradicts itself
+## 2. Essai gratuit : supprimé (décision prise)
 
-This is the most important item in this document. Fix it before anything else.
+L'inscription n'accorde plus rien. `handle_new_user_billing` insère
+`plan='free', status='canceled', source='signup'` — l'offre gratuite,
+utilisable indéfiniment (journal, tableau de bord, calendrier, checklist, plan,
+calculateur). L'accès payant s'ouvre au paiement, immédiatement, sans période
+d'essai côté Stripe non plus : le report de l'essai restant
+(`subscription_data[trial_end]`) a été retiré de `handleCheckout`, il n'avait
+plus d'objet.
 
-**What the code does today.** `supabase/migrations/20260717100000_billing.sql`
-creates a trigger `handle_new_user_billing` that gives every new signup:
+Migration : `20260827220000_no_free_trial.sql`. **Aucune ligne existante n'est
+touchée** — un essai historique encore en cours va jusqu'à son terme, couper
+l'accès de quelqu'un pendant qu'il l'utilise se voit comme une panne, pas comme
+une décision commerciale.
 
-```
-plan = 'pro_monthly', status = 'trialing', trial_ends_at = now() + 14 days
-```
+Conséquence à ne pas manquer : `AI_REQUIRE_PRO` doit passer à `"true"` dans
+Vercel pour que les points d'entrée IA soient réellement payants. Tant qu'il
+vaut `false`, l'IA reste ouverte à tous les comptes authentifiés.
 
-No card. Full Pro for 14 days, granted at signup. `handleCheckout` then carries
-the *remaining* trial into Stripe via `subscription_data[trial_end]`.
-
-**What the owner specified.** A **7-day trial that requires a card up front.**
-
-These are incompatible. A card-required trial means the trial lives in Stripe,
-starts at checkout, and users who never check out get nothing.
-
-**Target design (implement this unless told otherwise):**
-
-1. Signup trigger inserts `plan='free', status='canceled', source='trial',
-   trial_ends_at=null`. New users are on the free tier, full stop.
-2. Checkout passes `subscription_data[trial_period_days]=7`. Stripe collects and
-   validates the card, charges nothing for 7 days.
-3. Delete the `trial_end` carry-over branch in `handleCheckout` — it becomes
-   dead code and would double-apply a trial.
-4. Backfill: existing `trialing` rows keep their current `trial_ends_at` so no
-   one loses access mid-trial. Do not retroactively downgrade anyone.
-5. `AI_REQUIRE_PRO` stays `false` until this ships, then flips to `true`.
-
-Note the gating consequence: today every signup silently gets Pro. After this
-change the free tier must actually be usable, or signups hit a wall. Confirm the
-free-tier feature set before shipping.
+Le seul chemin qui donne le premium sans payer est désormais l'accès offert
+(§6bis).
 
 ## 3. Bug: webhook idempotency loses events
 

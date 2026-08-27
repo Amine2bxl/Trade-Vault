@@ -73,6 +73,9 @@ export default function Subscription() {
   // Trial progress — a 14-day trial with 5 days left reads very differently as
   // a bar than as a sentence, and it is the single most retention-relevant
   // thing on this page.
+  // L'application n'accorde plus d'essai. Ce compteur ne sert qu'aux comptes
+  // dont l'essai historique court encore : on ne coupe l'accès de personne en
+  // cours de route.
   const TRIAL_DAYS = 14;
   const trialPct = Math.max(0, Math.min(100, ((TRIAL_DAYS - trialDaysLeft) / TRIAL_DAYS) * 100));
 

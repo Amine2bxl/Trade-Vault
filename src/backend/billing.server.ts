@@ -5,11 +5,13 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // the four calls we make). All handlers here are wired as raw HTTP endpoints
 // in src/server.ts.
 //
-// Plans: free, puis trois paliers payants (pro / elite / fund) en mensuel ou
-// annuel — le catalogue est dans `src/domain/plans.ts`, partagé avec l'app.
-// Trial is app-level (14 days from signup, see the billing migration); when a
-// trialing user checks out we pass the remaining trial to Stripe as
-// `trial_end` so nothing is charged early.
+// Plans : free, puis deux paliers payants (pro / elite) en mensuel ou annuel —
+// le catalogue est dans `src/domain/plans.ts`, partagé avec l'app.
+//
+// PAS D'ESSAI GRATUIT. Une inscription démarre sur l'offre gratuite, qui est
+// utilisable indéfiniment ; le paiement ouvre l'accès payant immédiatement.
+// Le statut `trialing` reste géré côté webhook au cas où un essai serait
+// configuré dans le dashboard Stripe, mais l'application n'en accorde aucun.
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyClient = SupabaseClient<any, any, any>;
@@ -128,8 +130,7 @@ async function ensureCustomer(sb: AnyClient, userId: string, email: string): Pro
 // ── POST /api/billing/checkout  { plan, promoCode? } ────────────────────────
 // Returns { url } to a Stripe Checkout session. Cards + Apple Pay + Google Pay
 // come from Stripe's automatic payment methods (enabled per default in the
-// dashboard). A user still inside their signup trial gets the remainder as a
-// Stripe trial — card saved, zero charged until the trial ends.
+// dashboard). Le paiement démarre immédiatement : il n'y a pas d'essai.
 export async function handleCheckout(request: Request): Promise<Response> {
   const user = await userFromRequest(request);
   if (!user) return json({ error: "unauthorized" }, 401);
@@ -149,12 +150,6 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
   const customer = await ensureCustomer(sb, user.id, user.email);
 
-  const { data: sub } = await sb
-    .from("subscriptions")
-    .select("status, trial_ends_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
   const params: Record<string, string> = {
     mode: "subscription",
     customer,
@@ -165,15 +160,6 @@ export async function handleCheckout(request: Request): Promise<Response> {
     "subscription_data[metadata][user_id]": user.id,
     "subscription_data[metadata][plan]": plan,
   };
-
-  // Remaining signup trial carries over: Stripe requires trial_end ≥ 48h out,
-  // closer than that we just start the paid period immediately.
-  if (sub?.status === "trialing" && sub.trial_ends_at) {
-    const trialEnd = Math.floor(new Date(sub.trial_ends_at).getTime() / 1000);
-    if (trialEnd > Math.floor(Date.now() / 1000) + 48 * 3600) {
-      params["subscription_data[trial_end]"] = String(trialEnd);
-    }
-  }
 
   if (payload.promoCode) {
     // Promotion codes (e.g. VAULT20) are created in the Stripe dashboard;

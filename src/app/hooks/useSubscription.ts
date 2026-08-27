@@ -25,7 +25,7 @@ export type SubStatus = "trialing" | "active" | "past_due" | "canceled" | "expir
 export interface Subscription {
   plan: Plan;
   status: SubStatus;
-  source: "trial" | "stripe" | "crypto";
+  source: "signup" | "trial" | "stripe" | "crypto" | "comp";
   trialEndsAt: Date | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;

@@ -5,6 +5,7 @@ import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
 import {
   PAGE_TIER,
+  PAGE_VALUE,
   TIER_BY_ID,
   eur,
   tierAtLeast,
