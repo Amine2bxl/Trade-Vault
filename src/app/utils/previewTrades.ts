@@ -1,4 +1,4 @@
-import type { Trade } from "../types";
+import type { MissedOpportunity, Trade } from "../types";
 
 /**
  * Le jeu de données de DÉMONSTRATION des pages verrouillées.
@@ -132,4 +132,99 @@ export function previewTrades({ count = 140, seed = 20260827 }: PreviewOptions =
   trades.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   cache = { key, trades };
   return trades;
+}
+
+/**
+ * Setups manqués de démonstration.
+ *
+ * La page « Setups manqués » ne lit pas les trades : sans jeu dédié, son
+ * aperçu serait un état vide — l'écran le moins vendeur du produit.
+ */
+export function previewMissed(fr: boolean): MissedOpportunity[] {
+  const day = (back: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - back);
+    return d.toISOString().slice(0, 10);
+  };
+  const rows: [string, string, string, string, string, number][] = fr
+    ? [
+        [
+          "NQ",
+          "Pas devant l'écran à l'ouverture",
+          "Le setup est parti sans moi, +3,2R en 40 minutes",
+          "Mes meilleurs setups sont dans la première heure",
+          "Alarme 15 min avant l'open, plus de réunion à cette heure-là",
+          3.2,
+        ],
+        [
+          "XAUUSD",
+          "Hésitation, j'ai attendu une confirmation de plus",
+          "Entrée ratée de 4 points, le trade a fait +2,5R",
+          "Ma confirmation supplémentaire ne change rien au résultat",
+          "Entrer au signal prévu dans le plan, pas un cran plus tard",
+          2.5,
+        ],
+        [
+          "EURUSD",
+          "Déjà deux pertes ce jour-là, je me suis arrêté",
+          "Le troisième setup était le meilleur de la semaine",
+          "Ma règle d'arrêt me coûte parfois plus qu'elle ne me protège",
+          "Arrêt après 2 pertes, sauf setup noté 5/5",
+          1.8,
+        ],
+        [
+          "ES",
+          "Spread trop large à l'annonce",
+          "Le mouvement a suivi le plan, +2R sans moi",
+          "Attendre 2 minutes après l'annonce suffisait",
+          "Plan d'entrée post-news défini à l'avance",
+          2,
+        ],
+      ]
+    : [
+        [
+          "NQ",
+          "Not at the screen at the open",
+          "Setup ran without me, +3.2R in 40 minutes",
+          "My best setups are in the first hour",
+          "Alarm 15 min before the open, no meetings then",
+          3.2,
+        ],
+        [
+          "XAUUSD",
+          "Hesitated, waited for one more confirmation",
+          "Missed entry by 4 points, the trade made +2.5R",
+          "The extra confirmation changes nothing about the outcome",
+          "Enter on the planned signal, not one step later",
+          2.5,
+        ],
+        [
+          "EURUSD",
+          "Two losses that day, I stopped",
+          "The third setup was the best of the week",
+          "My stop rule sometimes costs more than it protects",
+          "Stop after 2 losses, unless the setup grades 5/5",
+          1.8,
+        ],
+        [
+          "ES",
+          "Spread too wide at the release",
+          "The move followed the plan, +2R without me",
+          "Waiting 2 minutes after the release was enough",
+          "Pre-defined post-news entry plan",
+          2,
+        ],
+      ];
+
+  return rows.map(([symbol, reason, happened, lesson, plan, r], i) => ({
+    id: `preview-missed-${i}`,
+    date: day(2 + i * 3),
+    symbol,
+    reasonNotTaken: reason,
+    whatHappened: happened,
+    lessonLearned: lesson,
+    nextTimePlan: plan,
+    estimatedR: r,
+    screenshots: [],
+  }));
 }

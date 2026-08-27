@@ -97,7 +97,7 @@ const M: Record<string, Msg> = {
   "nav.problem": { en: "Problem", fr: "Problème" },
   "nav.features": { en: "Features", fr: "Fonctionnalités" },
   "nav.signin": { en: "Sign in", fr: "Se connecter" },
-  "nav.cta": { en: "Start free", fr: "Essai gratuit" },
+  "nav.cta": { en: "Start free", fr: "Commencer gratuitement" },
   "nav.cta.plan": { en: "Start free", fr: "Commencer gratuitement" },
 
   "nav.p.jarvis": { en: "Jarvis — AI Coach", fr: "Jarvis — Coach IA" },
@@ -271,7 +271,7 @@ const M: Record<string, Msg> = {
     en: "Each tool serves one thing: better decisions, trade after trade.",
     fr: "Chaque outil sert une seule chose : de meilleures décisions, trade après trade.",
   },
-  "features.cta": { en: "Unlock everything free", fr: "Tout débloquer gratuitement" },
+  "features.cta": { en: "Create my free account", fr: "Créer mon compte gratuit" },
   "features.cta.sub": {
     en: "Free forever · no credit card",
     fr: "Gratuit pour toujours · sans carte bancaire",

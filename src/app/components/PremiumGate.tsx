@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
-import { Lock, ArrowRight, Eye } from "lucide-react";
+import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
+import { Lock, ArrowRight, Eye, Check } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { cn } from "../utils/cn";
@@ -13,6 +13,21 @@ import {
   type Tier,
 } from "../utils/pricing";
 import type { Page } from "../types";
+
+/**
+ * « Cet écran est-il rendu derrière le mur d'aperçu ? »
+ *
+ * Les pages nourries par les trades reçoivent l'historique de démonstration
+ * depuis `App.tsx`. Celles qui vont chercher leurs propres données (Jarvis,
+ * setups manqués) ne peuvent pas : elles lisent ce drapeau et servent leur
+ * propre jeu d'exemple. Sans lui, leur aperçu serait un état vide — l'écran le
+ * moins vendeur du produit.
+ */
+const PreviewContext = createContext(false);
+
+export function usePreviewMode(): boolean {
+  return useContext(PreviewContext);
+}
 
 /**
  * Le mur d'aperçu.
@@ -94,9 +109,10 @@ export function PreviewWall({
         <div className="absolute inset-x-0 bottom-0 top-[38%] bg-[linear-gradient(to_bottom,transparent,rgba(4,16,26,.55)_45%,rgb(4,16,26)_92%)]" />
       </div>
 
-      {/* L'appel à l'action, posé dans le dégradé. */}
-      <div className="absolute inset-x-0 bottom-0 flex justify-center px-4 pb-6">
-        <div className="w-full max-w-lg text-center">
+      {/* L'appel à l'action, posé dans le dégradé. Informatif : ce qu'on voit,
+          ce que ça débloque, ce que ça coûte — dans cet ordre. */}
+      <div className="absolute inset-x-0 bottom-0 flex justify-center px-4 pb-7">
+        <div className="w-full max-w-xl text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-slate-300 backdrop-blur">
             <Eye className="h-3 w-3" />
             {fr ? "Aperçu — données d'exemple" : "Preview — sample data"}
@@ -105,27 +121,40 @@ export function PreviewWall({
           <h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white sm:text-[28px]">
             {benefit ?? (fr ? "Cette page, avec tes trades." : "This page, with your trades.")}
           </h2>
-          <p className="mt-2 text-[13px] text-slate-400">
+          <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-slate-400">
             {fr
-              ? `Ci-dessus : ${headline ?? "la page"} sur un compte d'exemple. Débloque-la pour la voir sur le tien.`
-              : `Above: ${headline ?? "the page"} on a sample account. Unlock it to see yours.`}
+              ? `Ce que tu vois au-dessus est ${headline ?? "cette page"} sur un compte d'exemple. Débloque-la pour la voir sur le tien.`
+              : `What you see above is ${headline ?? "this page"} on a sample account. Unlock it to see yours.`}
           </p>
 
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <button
-              onClick={onUpgrade}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-6 py-3 text-sm font-bold text-[#04101a] shadow-lg shadow-cyan-500/20 transition hover:brightness-110"
-            >
-              <Lock className="h-4 w-4" />
-              {fr ? `Débloquer · ${perMonth}/mois` : `Unlock · ${perMonth}/month`}
-              <ArrowRight className="h-4 w-4" />
-            </button>
+          {/* Ce qui vient avec, pas seulement cette page. */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+            {tier.features.slice(0, 3).map((f) => (
+              <span
+                key={f.en}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-slate-300 backdrop-blur"
+              >
+                <Check className="h-3 w-3 text-cyan-400" />
+                {f[fr ? "fr" : "en"]}
+              </span>
+            ))}
           </div>
+
+          <button
+            onClick={onUpgrade}
+            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-6 py-3 text-sm font-bold text-[#04101a] shadow-lg shadow-cyan-500/20 transition hover:brightness-110"
+          >
+            <Lock className="h-4 w-4" />
+            {fr
+              ? `Passer à ${tier.name.fr} · ${perMonth}/mois`
+              : `Go ${tier.name.en} · ${perMonth}/month`}
+            <ArrowRight className="h-4 w-4" />
+          </button>
 
           <p className="mt-3 text-[11px] text-slate-500">
             {fr
-              ? `Inclus dans ${tier.name.fr}. Ton journal reste gratuit, sans limite.`
-              : `Included in ${tier.name.en}. Your journal stays free, unlimited.`}
+              ? "Résiliable en un clic. Ton journal reste gratuit, sans limite."
+              : "Cancel in one click. Your journal stays free, unlimited."}
           </p>
         </div>
       </div>
@@ -175,7 +204,7 @@ export function PageGate({
   }
 
   return (
-    <>
+    <PreviewContext.Provider value>
       {purpose}
       <PreviewWall
         locked
@@ -186,7 +215,7 @@ export function PageGate({
       >
         {children}
       </PreviewWall>
-    </>
+    </PreviewContext.Provider>
   );
 }
 

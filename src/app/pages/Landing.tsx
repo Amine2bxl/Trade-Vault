@@ -8,6 +8,7 @@ import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
 import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
 import PricingPlans from "../components/pricing/PricingPlans";
+import ProValueGrid from "../components/pricing/ProValueGrid";
 import { LandingLangProvider, useLandingT } from "./landing/i18n";
 import "./landing.css";
 
@@ -711,6 +712,13 @@ function LandingPage() {
         <section id="pricing" className="relative section-divider py-14 lg:py-20">
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
             <SectionHead tag={t("pricing.tag")} title={t("pricing.title")} sub={t("pricing.sub")} />
+
+            {/* Ce que Pro débloque, écran par écran — mêmes phrases que le
+                cadenas dans l'application, pour que la promesse tienne d'un
+                bout à l'autre du parcours. */}
+            <div className="reveal mb-10">
+              <ProValueGrid lang={lang} />
+            </div>
 
             {/* La grille tarifaire — le MÊME composant que dans l'application.
                 Ce que le visiteur compare ici est exactement ce qu'il retrouve
