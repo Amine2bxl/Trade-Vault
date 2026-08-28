@@ -143,10 +143,13 @@ async function ensureCustomer(sb: AnyClient, userId: string, email: string): Pro
 // sa communauté obtient une réduction via un coupon Stripe réel. Sans code ou
 // code inconnu ici, on retombe sur les promotion codes du dashboard Stripe.
 export async function handleCheckout(request: Request): Promise<Response> {
-  const user = await userFromRequest(request);
-  if (!user) return json({ error: "unauthorized" }, 401);
+  // Ordre volontaire : vérifier LA CONFIG d'abord, la session ensuite. Sinon,
+  // un `SUPABASE_SERVICE_ROLE_KEY` absent se cacherait derrière un
+  // « unauthorized » trompeur sur des endpoints qui n'existent pas encore.
   const sb = serviceClient();
   if (!sb) return json({ error: "server misconfigured" }, 500);
+  const user = await userFromRequest(request);
+  if (!user) return json({ error: "unauthorized" }, 401);
 
   let payload: { plan?: string; promoCode?: string };
   try {
@@ -267,10 +270,10 @@ export async function createCheckoutSession(
 // Stripe Billing Portal: upgrade/downgrade, change card, cancel — all managed
 // by Stripe's hosted UI, one click from the profile page.
 export async function handlePortal(request: Request): Promise<Response> {
-  const user = await userFromRequest(request);
-  if (!user) return json({ error: "unauthorized" }, 401);
   const sb = serviceClient();
   if (!sb) return json({ error: "server misconfigured" }, 500);
+  const user = await userFromRequest(request);
+  if (!user) return json({ error: "unauthorized" }, 401);
 
   const { data: sub } = await sb
     .from("subscriptions")
