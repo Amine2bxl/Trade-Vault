@@ -43,6 +43,17 @@ export function serviceClient(): AnyClient | null {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+/** Les variables Supabase serveur manquantes — pour nommer l'erreur au lieu
+ *  de renvoyer un « misconfigured » muet. Le client de l'app utilise
+ *  `VITE_SUPABASE_URL` (compilée dans le bundle) ; les server functions, elles,
+ *  lisent `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` à l'exécution. */
+export function missingServerSupabaseConfig(): string[] {
+  return [
+    !process.env.SUPABASE_URL && "SUPABASE_URL",
+    !process.env.SUPABASE_SERVICE_ROLE_KEY && "SUPABASE_SERVICE_ROLE_KEY",
+  ].filter(Boolean) as string[];
+}
+
 /** Resolves the calling user from the Supabase access token in the
  *  Authorization header. Returns null on any failure — callers 401. */
 export async function userFromRequest(
@@ -147,7 +158,13 @@ export async function handleCheckout(request: Request): Promise<Response> {
   // un `SUPABASE_SERVICE_ROLE_KEY` absent se cacherait derrière un
   // « unauthorized » trompeur sur des endpoints qui n'existent pas encore.
   const sb = serviceClient();
-  if (!sb) return json({ error: "server misconfigured" }, 500);
+  if (!sb) {
+    const missing = missingServerSupabaseConfig();
+    return json(
+      { error: `server misconfigured${missing.length ? `: ${missing.join(", ")}` : ""}` },
+      500,
+    );
+  }
   const user = await userFromRequest(request);
   if (!user) return json({ error: "unauthorized" }, 401);
 
@@ -271,7 +288,13 @@ export async function createCheckoutSession(
 // by Stripe's hosted UI, one click from the profile page.
 export async function handlePortal(request: Request): Promise<Response> {
   const sb = serviceClient();
-  if (!sb) return json({ error: "server misconfigured" }, 500);
+  if (!sb) {
+    const missing = missingServerSupabaseConfig();
+    return json(
+      { error: `server misconfigured${missing.length ? `: ${missing.join(", ")}` : ""}` },
+      500,
+    );
+  }
   const user = await userFromRequest(request);
   if (!user) return json({ error: "unauthorized" }, 401);
 
