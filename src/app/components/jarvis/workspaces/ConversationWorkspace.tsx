@@ -900,11 +900,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               </p>
             </div>
             <button
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent("tv:navigate", { detail: { page: "subscription" } }),
-                )
-              }
+              onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
               className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white hover:brightness-110 transition"
             >
               {t("credits.upgrade")}

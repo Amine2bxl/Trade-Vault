@@ -95,7 +95,8 @@ export default function AccountSwitcher({
   // un free ne remplit jamais le formulaire pour découvrir la limite.
   const canAddAccount = accountLimit > accounts.length;
   const goPro = () => {
-    window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "subscription" } }));
+    // « Plus de comptes en Pro » → checkout Stripe direct (géré par App).
+    window.dispatchEvent(new CustomEvent("tv:upgrade"));
   };
 
   // Le renommage EN LIGNE a été retiré ici. Il coexistait avec le formulaire
@@ -750,7 +751,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
             : "Your plan allows one account — go Pro for up to 3.",
           "info",
         );
-        window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "subscription" } }));
+        window.dispatchEvent(new CustomEvent("tv:upgrade"));
         onClose();
         return;
       }

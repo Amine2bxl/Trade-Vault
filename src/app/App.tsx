@@ -1,4 +1,13 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransition } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  lazy,
+  Suspense,
+  startTransition,
+} from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -235,8 +244,32 @@ function AppContent() {
   // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
   // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
   const pageLocked = usePageLock(page);
-  const { tier } = useSubscription();
+  const { tier, checkout } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
+
+  // Tous les « Go Pro » partent DIRECTEMENT au checkout Stripe (plan annuel
+  // Pro, l'offre mise en avant) au lieu de passer par la page d'abonnement.
+  // Un code promo porté par l'URL (`?promo=») est repris automatiquement : un
+  // client qui a un code 100 % n'ira jamais jusqu'à Stripe — l'accès s'ouvre
+  // au vol.
+  const promoFromUrl = useMemo(
+    () =>
+      typeof window !== "undefined"
+        ? (new URLSearchParams(window.location.search).get("promo") ?? undefined)
+        : undefined,
+    [],
+  );
+  const goProDirect = useCallback(() => {
+    void checkout("pro_yearly", promoFromUrl).then((err) => {
+      if (err) setPage("subscription");
+    });
+  }, [checkout, promoFromUrl]);
+
+  useEffect(() => {
+    const onUpgrade = () => goProDirect();
+    window.addEventListener("tv:upgrade", onUpgrade);
+    return () => window.removeEventListener("tv:upgrade", onUpgrade);
+  }, [goProDirect]);
 
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
@@ -743,7 +776,7 @@ function AppContent() {
                 {/* Le verrou premium enveloppe la page rendue : la table
                     `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
                     la facturation. */}
-                <PageGate page={page} onUpgrade={() => setPage("subscription")}>
+                <PageGate page={page} onUpgrade={goProDirect}>
                   {page === "dashboard" && (
                     <Dashboard
                       trades={trades}
