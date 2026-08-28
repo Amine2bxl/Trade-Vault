@@ -5,8 +5,7 @@
 
 .landing-root {
   font-family:
-    "Manrope",
-    "Inter",
+    "IBM Plex Sans",
     ui-sans-serif,
     system-ui,
     -apple-system,
@@ -21,7 +20,7 @@
 }
 
 .landing-root .font-display {
-  font-family: "Sora", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display);
   font-feature-settings: normal;
 }
 

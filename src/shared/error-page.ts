@@ -16,11 +16,11 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" />
     <style>
       :root { --bg:#060810; --accent:#22d3ee; --accent2:#14b8a6;
-        --font-body:'Manrope','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
-        --font-display:'Sora','Manrope',system-ui,-apple-system,sans-serif; }
+        --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+        --font-display:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; }
       * { box-sizing: border-box; }
       html,body { margin:0; height:100%; }
       body {
@@ -43,7 +43,7 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
          que l'on atteint quand quelque chose vient déjà d'échouer. */
       .code {
         font-family:var(--font-display);
-        font-weight:800; font-size:clamp(5rem,22vw,9rem); line-height:1; letter-spacing:-.04em;
+        font-weight:700; font-size:clamp(5rem,22vw,9rem); line-height:1; letter-spacing:-.04em;
         color:#f1f5f9;
         position:relative; margin-bottom:.5rem;
       }

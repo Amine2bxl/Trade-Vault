@@ -47,6 +47,29 @@
  * ============================================================ */
 @theme {
   /* ----------------------------------------------------------------
+   * Typographie — IBM Plex Sans, une seule famille pour toute l'interface.
+   *
+   * Conçue par IBM pour les interfaces denses où 0/O, 1/l/I et 5/8 ne doivent
+   * jamais se confondre : le caractère exact d'un terminal de trading. Elle
+   * remplace les deux familles (Manrope body / Sora display) par une voix
+   * unique — la hiérarchie se fait par graisse, taille et approche, pas par
+   * changement de police. IBM Plex Mono sert aux rares données techniques.
+   * ---------------------------------------------------------------- */
+  --font-sans:
+    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+  /* IBM Plex Sans s'arrête à 700. Les classes `font-extrabold`/`font-black`
+     (800/900, héritées de l'ancienne pile) feraient un faux-gras synthétisé
+     par le navigateur — plus terne. On les plafonne à 700 : graisse réelle,
+     netteté de terminal, et la présence des données vient de la taille + de
+     l'approche négative, pas d'un gras fondu. */
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
+
+  /* ----------------------------------------------------------------
    * Plancher de lisibilité de la rampe slate.
    *
    * ~560 appels à `text-slate-500` / `text-slate-600` court-circuitent
@@ -229,6 +252,14 @@
  * pre-paint bootstrap in __root) override these on :root at runtime. Defining
  * them here means SSR / no-JS still renders the default identity with no flash. */
 :root {
+  /* IBM Plex Sans — la même famille partout (body + display). `--font-display`
+     est une variable pure, PAS un token `@theme` : une `--font-*` dans @theme
+     aurait généré une utility Tailwind `font-display` en conflit avec notre
+     classe du même nom. H1–H6, `.font-display`, `.metric-display` et la marque
+     de la sidebar l'utilisent. */
+  --font-display:
+    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   /* Default identity = "Jarvis" cyan/teal — matches the public landing page so
      the signed-in app and the marketing site share one visual identity. */
   /* Surfaces et textes — extraits en variables pour que le studio de thème
@@ -552,18 +583,9 @@ select,
 }
 
 body {
-  /* Landing kit fonts everywhere: Manrope body (+ Sora display below) — one
-     typographic identity across marketing site and product. */
-  font-family:
-    "Manrope",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  /* IBM Plex Sans — l'identité complète (body + UI + titres), même voix des
+     deux côtés du mur de connexion. */
+  font-family: var(--font-sans);
   font-weight: 400;
   font-size: 15px;
   line-height: 1.55;
@@ -585,7 +607,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  /* IBM Plex différencie déjà 0/O et 1/l à la fonte — aucun remplacement de
+     glyphe nécessaire : on ne force aucune OpenType alternative. */
+  font-feature-settings: normal;
 }
 
 /* Full-height app shell that respects the notch/status bar and the home
@@ -636,46 +660,35 @@ body {
   }
 }
 
-/* Display family — Sora, exactly like the landing page headings, so titles
- * carry the same voice on both sides of the sign-in wall. */
+/* Display family — IBM Plex Sans, la même voix que la landing : les titres
+ * portent la même identité des deux côtés du mur de connexion. */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family:
-    "Sora",
-    "Manrope",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-display);
   letter-spacing: -0.02em;
   font-weight: 700;
   line-height: 1.18;
 }
 
 .font-display {
-  font-family:
-    "Sora",
-    "Manrope",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-display);
   letter-spacing: -0.025em;
   font-weight: 700;
 }
 
 /* Tabular figures everywhere numbers carry meaning (prices, R, stats) so digits
- * align in columns and don't jitter as values change. */
+ * align in columns and don't jitter as values change. Le zéro barré (`zero`)
+ * renforce l'anti-confusion 0/O dans les données de trading. */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 .font-display,
 .tabular-nums {
-  font-feature-settings: "tnum", "cv02", "cv03", "cv04";
+  font-feature-settings: "tnum", "zero";
 }
 
 ::-webkit-scrollbar {
@@ -979,9 +992,9 @@ input[type="number"] {
   line-height: 1.05;
 }
 .sidebar-brand-name {
-  font-family: "Sora", "Manrope", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
   color: #fff;
 }
