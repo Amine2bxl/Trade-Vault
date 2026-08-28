@@ -108,7 +108,10 @@ export function siteUrl(request: Request): string {
   return process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin;
 }
 
-/** Finds (or creates) the Stripe customer for a user, persisting the id. */
+/** Finds (or creates) the Stripe customer for a user, persisting the id.
+ *  §4 STRIPE_INTEGRATION : l'écriture est un UPSERT — une `update` matchant
+ *  zéro ligne ne renvoyait pas d'erreur et laissait le client Stripe orphelin,
+ *  puis le checkout suivant créait un DEUXIÈME customer pour le même humain. */
 async function ensureCustomer(sb: AnyClient, userId: string, email: string): Promise<string> {
   const { data: sub } = await sb
     .from("subscriptions")
@@ -123,8 +126,10 @@ async function ensureCustomer(sb: AnyClient, userId: string, email: string): Pro
   });
   await sb
     .from("subscriptions")
-    .update({ stripe_customer_id: customer.id, updated_at: new Date().toISOString() })
-    .eq("user_id", userId);
+    .upsert(
+      { user_id: userId, stripe_customer_id: customer.id, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
   return customer.id;
 }
 
@@ -412,7 +417,19 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
         .eq("user_id", userId);
     }
   } catch (e) {
+    // §3 STRIPE_INTEGRATION : on RETIRE la marque d'idempotence avant de
+    // renvoyer 500. Sinon, la retransmission de Stripe était dédupliquée
+    // comme « déjà traitée » et l'événement — un abonnement payé — était
+    // perdu pour toujours, sans erreur remontée à personne.
     console.error("stripe webhook failed", e);
+    const eventId = typeof event?.id === "string" ? event.id : null;
+    if (eventId) {
+      await sb
+        .from("processed_webhook_events")
+        .delete()
+        .eq("provider", "stripe")
+        .eq("event_id", eventId);
+    }
     return json({ error: "handler failed" }, 500);
   }
 
