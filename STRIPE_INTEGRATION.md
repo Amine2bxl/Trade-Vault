@@ -67,6 +67,35 @@ vaut `false`, l'IA reste ouverte à tous les comptes authentifiés.
 Le seul chemin qui donne le premium sans payer est désormais l'accès offert
 (§6bis).
 
+## 2.5 Promo codes — accès permanent influenceur + réduction communauté
+
+Les codes promo ont deux couches, qui coexistent au checkout :
+
+1. **Codes Stripe dashboard** (classiques) : un coupon + promotion code créés dans
+   Stripe. `handleCheckout` les résout par leur nom et les pré-applique ; s'il ne
+   trouve pas le code, Checkout garde `allow_promotion_codes=true`.
+2. **Codes gérés par l'app** (`promo_codes`) : créés dans le panneau
+   Réglages → Abonnement (réservé à `ADMIN_EMAILS`). Un code peut porter :
+   - `owner_email` — **l'influenceur** : son code lui ouvre l'accès PERMANENT
+     (`source='promo'` en base, aucune carte, aucun client Stripe créé) ;
+   - `discount_percent` — **sa communauté** : -N% encaissé réellement via un
+     coupon Stripe récurrent (`percent_off`, `duration=forever`), créé une fois
+     sous l'id déterministe `coupon_<CODE>` ;
+   - rien des deux — code d'invitation : accès permanent à quiconque, dans la
+     limite de `max_uses`.
+
+La résolution se fait **serveur** au checkout (rôle de service ; `promo_codes` et
+`promo_redemptions` ont RLS active et aucune politique). Chaque utilisation est
+tracée dans `promo_redemptions` (`code, user_id, kind`) et compte dans
+`uses_count`. La révocation repasse la ligne en `free` **seulement si** elle est
+encore `source='promo'` — un abonnement payé n'est jamais touché, ni par le code,
+ni par sa révocation.
+
+Règle : si un code existe à la fois dans `promo_codes` et dans le dashboard
+Stripe, c'est le catalogue applicatif qui gagne. Un code applicatif inactif ou
+expiré renvoie une erreur explicite — on ne retombe pas silencieusement sur un
+code Stripe de même nom.
+
 ## 3. Bug: webhook idempotency loses events
 
 `markWebhookProcessed` inserts `(provider, event_id)` **before** the state change

@@ -8,7 +8,6 @@ import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
 import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
 import PricingPlans from "../components/pricing/PricingPlans";
-import ProValueGrid from "../components/pricing/ProValueGrid";
 import { LandingLangProvider, useLandingT } from "./landing/i18n";
 import "./landing.css";
 
@@ -713,13 +712,6 @@ function LandingPage() {
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
             <SectionHead tag={t("pricing.tag")} title={t("pricing.title")} sub={t("pricing.sub")} />
 
-            {/* Ce que Pro débloque, écran par écran — mêmes phrases que le
-                cadenas dans l'application, pour que la promesse tienne d'un
-                bout à l'autre du parcours. */}
-            <div className="reveal mb-10">
-              <ProValueGrid lang={lang} />
-            </div>
-
             {/* La grille tarifaire — le MÊME composant que dans l'application.
                 Ce que le visiteur compare ici est exactement ce qu'il retrouve
                 dans sa page d'abonnement, aux mêmes prix : il n'y a plus qu'un
@@ -734,17 +726,16 @@ function LandingPage() {
 
             <div className="reveal mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
               {[
-                ["shield", t("pricing.trust1")],
-                ["lock", t("pricing.trust2")],
-                ["check", t("pricing.trust3")],
-                ["download", t("pricing.trust4")],
+                ["shield", "pricing.trust1"],
+                ["lock", "pricing.trust2"],
+                ["check", "pricing.trust3"],
               ].map(([ic, s]) => (
                 <span
                   key={s}
                   className="flex items-center gap-2 text-sm font-medium text-slate-500"
                 >
                   <Icon n={ic as IName} cls="h-4 w-4 text-emerald-400" />
-                  {s}
+                  {t(s)}
                 </span>
               ))}
             </div>

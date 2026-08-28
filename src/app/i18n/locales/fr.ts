@@ -208,8 +208,6 @@ const fr: Dict = {
   "billing.active": "Actif",
   "billing.pastDue": "Problème de paiement",
   "billing.cancelsAtPeriodEnd": "S'arrête en fin de période",
-  "billing.trialDaysLeft": "Essai — {n} jours restants",
-  "billing.trialEndsOn": "Fin de l'essai le",
   "billing.renewsOn": "Renouvellement le",
   "billing.accessUntil": "Accès jusqu'au",
   "billing.freeHint": "Passe en Pro pour les stats avancées, le multi-comptes et les insights IA.",
@@ -477,6 +475,8 @@ const fr: Dict = {
 
   // Comptes
   "account.active": "Compte actif",
+  "account.moreAccountsPro": "Plus de comptes en Pro",
+  "account.goProShort": "Pro",
 
   // Conversations Jarvis
   "jarvisConv.new": "Nouvelle discussion",
@@ -1351,7 +1351,7 @@ const fr: Dict = {
     "Importe un CSV depuis ton broker ou un autre journal, ou saisis tes trades en un geste. Les trades de démo te permettent d'explorer tout de suite.",
   "landing.faqQ2": "C'est vraiment gratuit ?",
   "landing.faqA2":
-    "Oui — tout est gratuit pendant l'accès anticipé. Sans carte bancaire, sans piège d'essai.",
+    "L'offre gratuite est gratuite pour toujours : note tes trades, utilise le tableau de bord, sans carte. Passe à Pro quand tu le veux.",
   "landing.faqQ3": "Quels marchés sont pris en charge ?",
   "landing.faqA3":
     "Forex, futures, indices, crypto et actions — tout ce que tu peux enregistrer comme trade.",

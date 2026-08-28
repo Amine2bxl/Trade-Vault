@@ -25,6 +25,7 @@ function adminEmails(): string[] {
 function isAdminEmail(email: string): boolean {
   return adminEmails().includes(email.toLowerCase());
 }
+export { isAdminEmail };
 
 /** L'appelant, s'il est administrateur. `null` sinon — jamais d'exception. */
 async function adminFromRequest(request: Request) {
@@ -130,7 +131,7 @@ export async function handleRevokeGrant(request: Request): Promise<Response> {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /** L'identifiant du compte portant cette adresse, s'il existe déjà. */
-async function findUserId(sb: any, email: string): Promise<string | null> {
+export async function findUserId(sb: any, email: string): Promise<string | null> {
   // `listUsers` est paginé et ne filtre pas par e-mail sur toutes les versions
   // de l'API : on parcourt, mais en s'arrêtant dès qu'on a trouvé.
   for (let page = 1; page <= 20; page++) {

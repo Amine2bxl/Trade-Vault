@@ -1,15 +1,9 @@
 import { useState } from "react";
-import {
-  CreditCard,
-  Sparkles,
-  ExternalLink,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
+import { CreditCard, Sparkles, ExternalLink, CheckCircle2, AlertTriangle, X } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { useSubscription } from "../hooks/useSubscription";
 import PricingPlans from "./pricing/PricingPlans";
+import { Input } from "@/shared/ui";
 
 // "Gestion d'abonnement" card on the profile page.
 //
@@ -21,16 +15,28 @@ import PricingPlans from "./pricing/PricingPlans";
 
 export default function SubscriptionSection() {
   const { t, lang } = useT();
-  const { sub, loading, isPro, trialDaysLeft, checkout, openPortal, cryptoCheckout } =
-    useSubscription();
+  const { sub, loading, isPro, checkout, openPortal, cryptoCheckout } = useSubscription();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
 
-  // Promo deep link from the winback email: /?upgrade=1&promo=VAULT20
-  const promo =
+  // Deep link from lifecycle emails: /?upgrade=1&promo=VAULT20 lands on the
+  // subscription section with the code already applied. La saisie manuelle
+  // permet ensuite à l'influenceur de taper le sien, et à sa communauté de
+  // coller son code.
+  const [promo, setPromo] = useState<string | undefined>(() =>
     typeof window !== "undefined"
       ? (new URLSearchParams(window.location.search).get("promo") ?? undefined)
-      : undefined;
+      : undefined,
+  );
+
+  const applyCode = () => {
+    const clean = typed.trim().toUpperCase();
+    if (clean) {
+      setPromo(clean);
+      setTyped("");
+    }
+  };
 
   if (loading || !sub) {
     return (
@@ -59,12 +65,7 @@ export default function SubscriptionSection() {
         : t("billing.planFree");
 
   const statusChip =
-    sub.status === "trialing" ? (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 px-3 py-1 text-xs font-bold text-cyan-300">
-        <Clock className="w-3.5 h-3.5" />
-        {t("billing.trialDaysLeft").replace("{n}", String(trialDaysLeft))}
-      </span>
-    ) : sub.status === "active" ? (
+    sub.status === "active" || sub.status === "trialing" ? (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 text-xs font-bold text-emerald-300">
         <CheckCircle2 className="w-3.5 h-3.5" />
         {sub.cancelAtPeriodEnd ? t("billing.cancelsAtPeriodEnd") : t("billing.active")}
@@ -102,8 +103,10 @@ export default function SubscriptionSection() {
           <div className="text-[11px] text-slate-500">
             {sub.status === "active" && sub.currentPeriodEnd
               ? `${sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("billing.renewsOn")} ${sub.currentPeriodEnd.toLocaleDateString()}`
-              : sub.status === "trialing" && sub.trialEndsAt
-                ? `${t("billing.trialEndsOn")} ${sub.trialEndsAt.toLocaleDateString()}`
+              : sub.status === "active" || sub.status === "trialing"
+                ? lang === "fr"
+                  ? "Accès permanent — offert"
+                  : "Permanent access — complimentary"
                 : t("billing.freeHint")}
           </div>
         </div>
@@ -116,8 +119,39 @@ export default function SubscriptionSection() {
       )}
 
       {promo && showPlans && (
-        <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-4 py-3 text-sm text-emerald-300 font-semibold">
-          {t("billing.promoApplied").replace("{code}", promo)}
+        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-4 py-3 text-sm text-emerald-300 font-semibold">
+          <span className="min-w-0 flex-1 truncate">
+            {t("billing.promoApplied").replace("{code}", promo)}
+          </span>
+          <button
+            onClick={() => setPromo(undefined)}
+            aria-label={lang === "fr" ? "Retirer le code" : "Remove code"}
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-emerald-300/70 transition hover:bg-emerald-500/10 hover:text-emerald-200"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Code promo — l'influenceur tape le sien pour activer l'accès
+          permanent, sa communauté colle le sien pour la réduction. */}
+      {showPlans && !promo && (
+        <div className="flex gap-2">
+          <Input
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && applyCode()}
+            placeholder={lang === "fr" ? "Code promo (facultatif)" : "Promo code (optional)"}
+            aria-label={lang === "fr" ? "Code promo" : "Promo code"}
+            className="uppercase"
+          />
+          <button
+            onClick={applyCode}
+            disabled={!typed.trim()}
+            className="shrink-0 px-4 rounded-xl border border-white/[0.1] bg-white/[0.04] text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] disabled:opacity-50"
+          >
+            {lang === "fr" ? "Appliquer" : "Apply"}
+          </button>
         </div>
       )}
 

@@ -246,8 +246,6 @@ const en = {
   "billing.active": "Active",
   "billing.pastDue": "Payment issue",
   "billing.cancelsAtPeriodEnd": "Cancels at period end",
-  "billing.trialDaysLeft": "Trial — {n} days left",
-  "billing.trialEndsOn": "Trial ends on",
   "billing.renewsOn": "Renews on",
   "billing.accessUntil": "Access until",
   "billing.freeHint": "Upgrade to unlock advanced analytics, multi-account and AI insights.",
@@ -521,6 +519,8 @@ const en = {
 
   // Accounts
   "account.active": "Active account",
+  "account.moreAccountsPro": "More accounts with Pro",
+  "account.goProShort": "Pro",
 
   // Jarvis conversations
   "jarvisConv.new": "New conversation",
@@ -1432,7 +1432,8 @@ const en = {
   "landing.faqA1":
     "Import a CSV from your broker or another journal, or log trades one tap at a time. Demo trades let you explore instantly.",
   "landing.faqQ2": "Is it really free?",
-  "landing.faqA2": "Yes — everything is free during early access. No credit card, no trial trap.",
+  "landing.faqA2":
+    "The free plan is free forever — log trades, use the dashboard, no card needed. Upgrade to Pro when you want it.",
   "landing.faqQ3": "Which markets are supported?",
   "landing.faqA3": "Forex, futures, indices, crypto and stocks — anything you can log as a trade.",
   "landing.faqQ4": "Is my data private?",

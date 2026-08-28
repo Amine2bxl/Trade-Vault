@@ -10,6 +10,7 @@ import {
   eur,
   tierAtLeast,
   yearlyPerMonth,
+  monthsFree,
   type Tier,
 } from "../utils/pricing";
 import type { Page } from "../types";
@@ -66,7 +67,6 @@ function maskStyle(blur: number, from: number, to: number): CSSProperties {
 export function PreviewWall({
   locked,
   requiredTier,
-  headline,
   benefit,
   onUpgrade,
   children,
@@ -74,8 +74,6 @@ export function PreviewWall({
 }: {
   locked: boolean;
   requiredTier: Tier;
-  /** Le nom de ce qui est verrouillé. À défaut, le nom de l'offre. */
-  headline?: string;
   /** Ce que la page apporte, en une phrase — le vrai argument de vente. */
   benefit?: string;
   onUpgrade: () => void;
@@ -88,6 +86,7 @@ export function PreviewWall({
 
   const tier = TIER_BY_ID[requiredTier];
   const perMonth = eur(Math.round(yearlyPerMonth(requiredTier) * 100) / 100);
+  const freeMonths = monthsFree(requiredTier);
 
   return (
     <div className={cn("relative", className)}>
@@ -96,7 +95,7 @@ export function PreviewWall({
         aria-hidden
         // @ts-expect-error `inert` n'est pas encore typé dans React 19 DOM
         inert=""
-        className="pointer-events-none max-h-[76vh] select-none overflow-hidden"
+        className="pointer-events-none max-h-[74vh] select-none overflow-hidden"
       >
         {children}
       </div>
@@ -106,25 +105,26 @@ export function PreviewWall({
         {BLUR_LAYERS.map((l) => (
           <div key={l.blur} className="absolute inset-0" style={maskStyle(l.blur, l.from, l.to)} />
         ))}
-        <div className="absolute inset-x-0 bottom-0 top-[38%] bg-[linear-gradient(to_bottom,transparent,rgba(4,16,26,.55)_45%,rgb(4,16,26)_92%)]" />
+        <div className="absolute inset-x-0 bottom-0 top-[42%] bg-[linear-gradient(to_bottom,rgba(4,16,26,.38)_35%,rgba(4,16,26,.62)_62%,rgb(6,15,24))]" />
       </div>
 
-      {/* L'appel à l'action, posé dans le dégradé. Informatif : ce qu'on voit,
-          ce que ça débloque, ce que ça coûte — dans cet ordre. */}
-      <div className="absolute inset-x-0 bottom-0 flex justify-center px-4 pb-7">
-        <div className="w-full max-w-xl text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-slate-300 backdrop-blur">
+      {/* L'appel à l'action : UNE carte, la décision en cinq secondes. Ce qu'on
+          voit, ce que ça débloque, le prix, le geste — dans cet ordre, sans
+          rien de plus. */}
+      <div className="absolute inset-x-0 bottom-0 flex justify-center px-4 pb-6 sm:pb-8">
+        <div className="w-full max-w-lg rounded-2xl border border-white/[0.12] bg-[#060f18]/90 p-5 text-center shadow-[0_-16px_80px_-24px_rgba(0,0,0,.9)] backdrop-blur-xl sm:p-6">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.06] px-3 py-1 text-[11px] font-semibold tracking-wide text-slate-300">
             <Eye className="h-3 w-3" />
             {fr ? "Aperçu — données d'exemple" : "Preview — sample data"}
           </span>
 
-          <h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white sm:text-[28px]">
+          <h2 className="mt-3 font-display text-[22px] font-extrabold leading-tight tracking-tight text-white sm:text-2xl">
             {benefit ?? (fr ? "Cette page, avec tes trades." : "This page, with your trades.")}
           </h2>
-          <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-slate-400">
+          <p className="mx-auto mt-1.5 max-w-md text-[12.5px] leading-snug text-slate-400">
             {fr
-              ? `Ce que tu vois au-dessus est ${headline ?? "cette page"} sur un compte d'exemple. Débloque-la pour la voir sur le tien.`
-              : `What you see above is ${headline ?? "this page"} on a sample account. Unlock it to see yours.`}
+              ? "Débloque-la et elle se remplit avec TES chiffres."
+              : "Unlock it and it fills with YOUR numbers."}
           </p>
 
           {/* Ce qui vient avec, pas seulement cette page. */}
@@ -132,7 +132,7 @@ export function PreviewWall({
             {tier.features.slice(0, 3).map((f) => (
               <span
                 key={f.en}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-slate-300 backdrop-blur"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.09] bg-white/[0.05] px-2.5 py-1 text-[11.5px] font-medium text-slate-200"
               >
                 <Check className="h-3 w-3 text-cyan-400" />
                 {f[fr ? "fr" : "en"]}
@@ -140,21 +140,37 @@ export function PreviewWall({
             ))}
           </div>
 
+          {/* Le prix, posé juste au-dessus du geste. */}
+          <div className="mt-5 flex items-baseline justify-center gap-1.5">
+            <span className="font-display text-4xl font-extrabold tabular-nums tracking-tight text-white">
+              {perMonth}
+            </span>
+            <span className="text-sm text-slate-400">{fr ? "/mois" : "/month"}</span>
+            {freeMonths > 0 && (
+              <span className="ml-1 text-[11.5px] font-semibold text-emerald-400">
+                · {freeMonths} {fr ? "mois offerts" : "months free"}
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            {fr
+              ? `${tier.name.fr} · facturé ${eur(tier.yearly)}/an`
+              : `${tier.name.en} · billed ${eur(tier.yearly)}/year`}
+          </p>
+
           <button
             onClick={onUpgrade}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-6 py-3 text-sm font-bold text-[#04101a] shadow-lg shadow-cyan-500/20 transition hover:brightness-110"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-6 py-3.5 text-[15px] font-bold text-[#04101a] shadow-lg shadow-cyan-500/25 transition hover:brightness-110"
           >
             <Lock className="h-4 w-4" />
-            {fr
-              ? `Passer à ${tier.name.fr} · ${perMonth}/mois`
-              : `Go ${tier.name.en} · ${perMonth}/month`}
+            {fr ? `Passer à ${tier.name.fr}` : `Go ${tier.name.en}`}
             <ArrowRight className="h-4 w-4" />
           </button>
 
           <p className="mt-3 text-[11px] text-slate-500">
             {fr
-              ? "Résiliable en un clic. Ton journal reste gratuit, sans limite."
-              : "Cancel in one click. Your journal stays free, unlimited."}
+              ? "Sans engagement · Annulation en un clic · Ton journal reste gratuit"
+              : "No commitment · Cancel in one click · Your journal stays free"}
           </p>
         </div>
       </div>
@@ -209,7 +225,6 @@ export function PageGate({
       <PreviewWall
         locked
         requiredTier={PAGE_TIER[page] ?? "pro"}
-        headline={value ? value.title[fr ? "fr" : "en"] : undefined}
         benefit={value ? value.benefit[fr ? "fr" : "en"] : undefined}
         onUpgrade={onUpgrade}
       >

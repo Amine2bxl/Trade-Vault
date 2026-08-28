@@ -56,7 +56,7 @@ const byLang: Partial<Record<Lang, ContactDoc>> = {
       {
         icon: "receipt",
         title: "Billing & subscription",
-        body: "Invoices, plan changes, trial length, refunds. TradeVault is in free early access, so there is nothing to pay today.",
+        body: "Invoices, plan changes, renewals, refunds. The free plan stays free forever — upgrade only when you want Pro.",
         subject: "TradeVault — billing",
       },
       {
@@ -102,7 +102,7 @@ const byLang: Partial<Record<Lang, ContactDoc>> = {
       {
         icon: "receipt",
         title: "Facturation & abonnement",
-        body: "Factures, changement de formule, durée d'essai, remboursements. TradeVault est en accès anticipé gratuit : il n'y a rien à payer aujourd'hui.",
+        body: "Factures, changement de formule, renouvellements, remboursements. L'offre gratuite reste gratuite pour toujours — passe à Pro seulement quand tu le veux.",
         subject: "TradeVault — facturation",
       },
       {

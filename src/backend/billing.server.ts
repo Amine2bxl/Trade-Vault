@@ -20,6 +20,7 @@ const STRIPE_API = "https://api.stripe.com/v1";
 
 export type { PaidPlan } from "../domain/plans";
 import { isPaidPlan, tierOf, type PaidPlan } from "../domain/plans";
+import { normalizePromoCode } from "../domain/promo";
 
 /**
  * L'identifiant de prix Stripe d'un plan.
@@ -81,7 +82,7 @@ export async function markWebhookProcessed(
   }
 }
 
-async function stripe(
+export async function stripe(
   path: string,
   params: Record<string, string>,
   method: "POST" | "GET" = "POST",
@@ -103,7 +104,7 @@ async function stripe(
   return data;
 }
 
-function siteUrl(request: Request): string {
+export function siteUrl(request: Request): string {
   return process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin;
 }
 
@@ -131,6 +132,11 @@ async function ensureCustomer(sb: AnyClient, userId: string, email: string): Pro
 // Returns { url } to a Stripe Checkout session. Cards + Apple Pay + Google Pay
 // come from Stripe's automatic payment methods (enabled per default in the
 // dashboard). Le paiement démarre immédiatement : il n'y a pas d'essai.
+//
+// Un code promo passe d'abord par le catalogue applicatif (`promo_codes`) :
+// le titulaire (influenceur) obtient l'accès permanent sans carte ni Stripe,
+// sa communauté obtient une réduction via un coupon Stripe réel. Sans code ou
+// code inconnu ici, on retombe sur les promotion codes du dashboard Stripe.
 export async function handleCheckout(request: Request): Promise<Response> {
   const user = await userFromRequest(request);
   if (!user) return json({ error: "unauthorized" }, 401);
@@ -145,6 +151,43 @@ export async function handleCheckout(request: Request): Promise<Response> {
   }
   const plan = payload.plan;
   if (!isPaidPlan(plan)) return json({ error: "invalid plan" }, 400);
+
+  const appCode = normalizePromoCode(payload.promoCode);
+  if (appCode) {
+    const { resolveAppPromo, grantPromoAccess, recordPromoRedemption, ensureDiscountStripeCoupon } =
+      await import("./promo.server");
+
+    const app = await resolveAppPromo(sb, appCode, user);
+    if (app.status === "invalid" || app.status === "owner_mismatch") {
+      return json({ error: "invalid promo code" }, 400);
+    }
+    if (app.status === "granted") {
+      // Accès permanent, sans paiement — c'est le parcours influenceur.
+      const granted = await grantPromoAccess(sb, user.id, app.plan);
+      if (!granted.ok) return json({ error: "grant failed" }, 500);
+      await recordPromoRedemption(sb, appCode, user, app.plan, app.kind);
+      return json({
+        url: `${siteUrl(request)}/?billing=success&promo=${encodeURIComponent(appCode)}`,
+      });
+    }
+    if (app.status === "discount") {
+      // Réduction communauté : on encaisse réellement, à prix réduit.
+      const couponId = await ensureDiscountStripeCoupon(appCode, app.percent);
+      const price = stripePriceId(plan);
+      if (!price) return json({ error: "price not configured" }, 500);
+      const customer = await ensureCustomer(sb, user.id, user.email);
+      const success = await createCheckoutSession(request, user.id, price, {
+        couponId,
+        plan,
+        customer,
+      });
+      await recordPromoRedemption(sb, appCode, user, plan, "discount");
+      return success;
+    }
+    // `app.status === "not_app"` : code inconnu de l'app — on laisse Stripe
+    // dashboard tenter le sien plus bas.
+  }
+
   const price = stripePriceId(plan);
   if (!price) return json({ error: "price not configured" }, 500);
 
@@ -175,6 +218,36 @@ export async function handleCheckout(request: Request): Promise<Response> {
   } else {
     params.allow_promotion_codes = "true";
   }
+
+  try {
+    const session = await stripe("/checkout/sessions", params);
+    return json({ url: session.url });
+  } catch (e) {
+    console.error("checkout failed", e);
+    return json({ error: "checkout failed" }, 500);
+  }
+}
+
+/** Remplit et ouvre une session de checkout. Partagé entre le parcours
+ *  standard et le parcours « réduction communauté ». */
+export async function createCheckoutSession(
+  request: Request,
+  userId: string,
+  price: string,
+  opts: { couponId?: string; plan?: PaidPlan; customer?: string },
+): Promise<Response> {
+  const params: Record<string, string> = {
+    mode: "subscription",
+    "line_items[0][price]": price,
+    "line_items[0][quantity]": "1",
+    success_url: `${siteUrl(request)}/?billing=success`,
+    cancel_url: `${siteUrl(request)}/?billing=canceled`,
+  };
+  if (userId) params["subscription_data[metadata][user_id]"] = userId;
+  if (opts.plan) params["subscription_data[metadata][plan]"] = opts.plan;
+  if (opts.customer) params.customer = opts.customer;
+  if (opts.couponId) params["discounts[0][coupon]"] = opts.couponId;
+  else params.allow_promotion_codes = "true";
 
   try {
     const session = await stripe("/checkout/sessions", params);

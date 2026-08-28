@@ -36,6 +36,7 @@ import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
 import ThemeSettings from "../components/ThemeSettings";
 import SubscriptionSection from "../components/SubscriptionSection";
 import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
+import PromoCodeSection from "../components/PromoCodeSection";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -336,6 +337,7 @@ export default function Settings({
               {/* Panneau propriétaire : n'apparaît que pour une adresse listée
                   dans `ADMIN_EMAILS`, et chaque action est revérifiée serveur. */}
               {isAdmin && <CompAccessSection />}
+              {isAdmin && <PromoCodeSection />}
             </div>
           )}
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Sparkles, Zap, Gauge, ArrowRight, Bitcoin } from "lucide-react";
+import { Check, Sparkles, Zap, Gauge, ArrowRight, Bitcoin, Lock } from "lucide-react";
 import { cn } from "../../utils/cn";
 import {
   TIERS,
@@ -20,15 +20,15 @@ import {
 /**
  * La grille tarifaire — un seul composant, la landing et l'application.
  *
- * Trois colonnes, dans l'ordre où on les lit : ce qu'on a déjà (Gratuit), ce
- * qu'on devrait prendre (Pro), ce qu'on prendra peut-être un jour (Elite). Pro
- * est au centre, surélevée, et porte la promesse du produit : c'est l'offre
- * qu'on veut vendre, donc c'est elle qui reçoit le plus de valeur, pas la plus
- * chère.
+ * Trois colonnes, mais une seule qui doit être lue : Pro est la vedette. La
+ * grille ne vend pas trois offres, elle vend UNE offre (Pro) en rassurant sur
+ * la gratuité d'à-côté. Chaque élément qui n'aide pas à prendre cette décision
+ * a été retiré : pas de sous-titre, pas de calcul en cascade, pas de troisième
+ * prière — les deux autres colonnes restent discrètes.
  *
- * Les cartes sont construites depuis `domain/plans` : le tarif affiché est
- * littéralement celui que Stripe encaissera, et l'offre décrite sur la landing
- * est littéralement celle qu'on retrouve dans l'application.
+ * Pro mène avec ses DEUX bénéfices les plus concrets (tes erreurs chiffrées en
+ * euros, ta probabilité de ruine) — ce sont eux, pas le nom d'une page, qui
+ * font passer à l'action. Le reste est une liste courte et vérifiable.
  */
 
 const ICONS: Record<Tier, typeof Sparkles> = {
@@ -70,7 +70,7 @@ export default function PricingPlans({
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Bascule mensuel / annuel */}
+      {/* Bascule mensuel / annuel — la seule décision avant l'offre. */}
       <div className="flex justify-center">
         <div
           role="tablist"
@@ -87,13 +87,13 @@ export default function PricingPlans({
                 "rounded-full px-4 py-2 text-[13px] font-semibold transition",
                 interval === value
                   ? "bg-white text-[#04101a] shadow-lg shadow-black/30"
-                  : "text-slate-400 hover:text-slate-200",
+                  : "text-slate-500 hover:text-slate-200",
               )}
             >
               {value === "monthly" ? (fr ? "Mensuel" : "Monthly") : fr ? "Annuel" : "Yearly"}
               {value === "yearly" && (
-                <span className="ml-2 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                  {fr ? `${monthsFree("pro")} mois offerts` : `${monthsFree("pro")} months free`}
+                <span className="ml-1.5 text-[11px] font-bold text-emerald-400">
+                  −{monthsFree("pro")} {fr ? "mois" : "mo."}
                 </span>
               )}
             </button>
@@ -102,19 +102,24 @@ export default function PricingPlans({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
-        {TIERS.map((tier) => (
-          <PlanColumn
-            key={tier.id}
-            tier={tier}
-            lang={lang}
-            yearly={yearly}
-            currentPlan={currentPlan}
-            busy={busy}
-            onChoose={onChoose}
-            onCrypto={onCrypto}
-            onFree={onFree}
-          />
-        ))}
+        {TIERS.map((tier) => {
+          const val =
+            tier.id === "free" ? null : planId(tier.id as PaidTier, yearly ? "yearly" : "monthly");
+          const current = val != null ? currentPlan === val : currentPlan === "free";
+          return (
+            <PlanColumn
+              key={tier.id}
+              tier={tier}
+              lang={lang}
+              yearly={yearly}
+              current={current}
+              busy={busy}
+              onChoose={val ? onChoose : undefined}
+              onCrypto={onCrypto}
+              onFree={tier.id === "free" ? onFree : undefined}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -124,7 +129,7 @@ function PlanColumn({
   tier,
   lang,
   yearly,
-  currentPlan,
+  current,
   busy,
   onChoose,
   onCrypto,
@@ -133,9 +138,9 @@ function PlanColumn({
   tier: TierDef;
   lang: "fr" | "en";
   yearly: boolean;
-  currentPlan?: Plan | null;
+  current: boolean;
   busy?: string | null;
-  onChoose: (plan: PaidPlan) => void;
+  onChoose?: (plan: PaidPlan) => void;
   onCrypto?: (plan: PaidPlan) => void;
   onFree?: () => void;
 }) {
@@ -143,93 +148,136 @@ function PlanColumn({
   const tr = (b: Bi) => b[lang];
   const Icon = ICONS[tier.id];
   const isFree = tier.id === "free";
+  const isPro = tier.id === "pro";
   const plan = isFree ? null : planId(tier.id as PaidTier, yearly ? "yearly" : "monthly");
-  const current = isFree ? currentPlan === "free" : currentPlan === plan;
-  const monthlyFigure = yearly && !isFree ? yearlyPerMonth(tier.id) : tier.monthly;
+  const key = plan ?? "free";
+  const price = isFree
+    ? "0 €"
+    : eur(Math.round((yearly ? yearlyPerMonth(tier.id) : tier.monthly) * 100) / 100);
+
+  // Les deux bénéfices les plus concrets de Pro, en tête de liste. Texte déjà
+  // utilisé partout (PAGE_VALUE), pas de promesse nouvelle. Liste courte,
+  // vérifiable, chiffrée — c'est ce qui rend l'offre irrésistible.
+  const proHighlights = [
+    {
+      fr: "Le prix en euros de chaque erreur que tu répètes.",
+      en: "The euro price of every mistake you keep repeating.",
+    },
+    {
+      fr: "Ta probabilité de ruine sur 10 000 scénarios de ton edge.",
+      en: "Your risk of ruin across 10,000 runs of your edge.",
+    },
+  ];
+  const featured = isPro ? tier.features : tier.features.slice(0, isFree ? 4 : 5);
 
   return (
     <div
       className={cn(
         "relative flex flex-col rounded-3xl border p-6 transition",
-        tier.featured
-          ? "border-cyan-400/30 bg-[linear-gradient(160deg,rgba(14,58,82,.55),rgba(7,14,24,.92)_60%)] lg:-my-3 lg:py-9"
+        isPro
+          ? "border-cyan-400/40 bg-[linear-gradient(165deg,rgba(16,72,102,.6),rgba(7,14,24,.94)_62%)] lg:-my-4 lg:py-12 shadow-[0_24px_80px_-32px_rgba(34,211,238,.35)]"
           : "border-white/[0.07] bg-white/[0.015]",
-        isFree && "lg:bg-transparent",
+        isFree && "lg:bg-transparent lg:opacity-80",
       )}
     >
-      {tier.featured && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
+      {isPro && (
+        <>
+          {/* Liseré haut, le seul « chrome » — il oriente l'œil vers Pro. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
+          <span className="absolute right-6 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#041018]">
+            <Sparkles className="h-3 w-3" />
+            {fr ? "Recommandé" : "Recommended"}
+          </span>
+        </>
       )}
 
-      <div className="flex items-center justify-between gap-2">
+      {/* Le nom — aucune prière, juste ce qu'on achète. */}
+      <div className="flex items-center gap-2">
+        <Icon className={cn("h-4 w-4", isPro ? "text-cyan-300" : "text-slate-500")} />
         <span
           className={cn(
-            "inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.15em]",
-            tier.featured ? "text-cyan-300" : "text-slate-400",
+            "inline-flex items-center text-[11px] font-bold uppercase tracking-[.16em]",
+            isPro ? "text-cyan-300" : "text-slate-400",
           )}
         >
-          <Icon className="h-3.5 w-3.5" />
           {tr(tier.name)}
         </span>
-        {current ? (
-          <Pill tone="neutral">{fr ? "Offre en cours" : "Current plan"}</Pill>
-        ) : tier.featured ? (
-          <Pill tone="accent">{fr ? "Recommandé" : "Recommended"}</Pill>
-        ) : null}
+        {current && (
+          <span className="ml-1 rounded-full border border-white/[0.1] bg-white/[0.05] px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+            {fr ? "Offre en cours" : "Current"}
+          </span>
+        )}
       </div>
 
-      <div className="mt-4 flex items-end gap-1.5">
-        <span className="font-display text-4xl font-extrabold tracking-tight text-white tabular-nums">
-          {eur(Math.round(monthlyFigure * 100) / 100)}
+      {/* Prix — un seul chiffre à lire. */}
+      <div className="mt-5 flex items-end gap-1.5">
+        <span
+          className={cn(
+            "font-display font-extrabold tracking-tight text-white tabular-nums",
+            isPro ? "text-5xl" : "text-4xl",
+          )}
+        >
+          {price}
         </span>
-        <span className="mb-1.5 text-sm text-slate-400">{fr ? "/mois" : "/month"}</span>
+        <span className="mb-1.5 text-sm text-slate-400">
+          {isFree ? (fr ? "/ pour toujours" : "/ forever") : fr ? "/mois" : "/month"}
+        </span>
       </div>
-
       <p className="mt-1.5 min-h-[18px] text-[12px] text-slate-500">
         {isFree ? (
           fr ? (
-            "Pour toujours"
+            "Sans carte, sans engagement."
           ) : (
-            "Forever"
+            "No card, no commitment."
           )
         ) : yearly ? (
           <>
             {eur(tier.yearly)} {fr ? "par an" : "per year"}
-            <span className="ml-2 text-emerald-400">−{eur(yearlySaving(tier.id))}</span>
+            {!isFree && (
+              <>
+                <span className="mx-2 text-slate-600">·</span>
+                <span className="text-slate-500 line-through">{eur(tier.monthly)}/mois</span>
+              </>
+            )}
+            <span className="ml-2 text-emerald-400">
+              {fr ? `−${eur(yearlySaving(tier.id))}` : `save ${eur(yearlySaving(tier.id))}`}
+            </span>
           </>
         ) : fr ? (
-          "Sans engagement"
+          "Sans engagement, résiliable en 1 clic."
         ) : (
-          "No commitment"
+          "No commitment, cancel in one click."
         )}
       </p>
 
-      <p className="mt-4 text-[13.5px] font-medium leading-5 text-slate-200">{tr(tier.tagline)}</p>
+      <p
+        className={cn(
+          "mt-4 text-[13.5px] font-medium leading-5",
+          isPro ? "text-cyan-100" : "text-slate-300",
+        )}
+      >
+        {tr(tier.tagline)}
+      </p>
 
+      {/* Call to action — le point focal de la colonne. */}
       {isFree ? (
         <button
           onClick={onFree}
           disabled={!onFree || current}
-          className="mt-5 w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] disabled:opacity-50"
+          className="mt-6 w-full rounded-xl border border-white/[0.1] bg-transparent px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/[0.05] hover:text-white disabled:opacity-50"
         >
-          {current
-            ? fr
-              ? "Offre en cours"
-              : "Current plan"
-            : fr
-              ? "Continuer gratuitement"
-              : "Continue for free"}
+          {fr ? "Commencer gratuitement" : "Start for free"}
         </button>
       ) : (
         <>
           <button
-            onClick={() => plan && onChoose(plan)}
+            onClick={() => plan && onChoose && onChoose(plan)}
             disabled={busy != null || current}
             className={cn(
-              "mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition disabled:opacity-60",
-              tier.featured
-                ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-[#04101a] hover:brightness-110"
-                : "border border-white/[0.1] bg-white/[0.04] text-white hover:bg-white/[0.07]",
+              "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[15px] font-bold transition disabled:opacity-60",
+              isPro
+                ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-[#04101a] shadow-lg shadow-cyan-500/25 hover:brightness-110"
+                : "border border-white/[0.12] bg-white/[0.04] text-white hover:bg-white/[0.08]",
             )}
           >
             {current ? (
@@ -238,7 +286,7 @@ function PlanColumn({
               ) : (
                 "Current plan"
               )
-            ) : busy === plan ? (
+            ) : busy === key ? (
               fr ? (
                 "Ouverture…"
               ) : (
@@ -246,11 +294,19 @@ function PlanColumn({
               )
             ) : (
               <>
-                {fr ? "Commencer" : "Get started"}
+                {fr ? (isPro ? "Passer à Pro" : "Passer à Elite") : isPro ? "Get Pro" : "Go Elite"}
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
+
+          {isPro && (
+            <p className="mt-2.5 text-center text-[11px] text-slate-500">
+              {fr
+                ? "Sans engagement · Annulation en 1 clic"
+                : "No commitment · Cancel in one click"}
+            </p>
+          )}
 
           {onCrypto && !current && plan && (
             <button
@@ -265,47 +321,54 @@ function PlanColumn({
         </>
       )}
 
-      <div className="mt-6 space-y-2.5 text-[13px]">
-        {!isFree && (
-          <p className="text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/80">
-            {tier.id === "pro"
-              ? fr
-                ? "Tout le gratuit, plus :"
-                : "Everything free, plus:"
-              : fr
-                ? "Tout Pro, plus :"
-                : "Everything in Pro, plus:"}
-          </p>
+      {/* Pro mène avec ses bénéfices chiffrés ; les autres restent laconiques. */}
+      <div className="mt-7 space-y-3">
+        {isPro ? (
+          <>
+            {proHighlights.map((h) => (
+              <div
+                key={h.en}
+                className="flex items-start gap-2.5 rounded-xl border border-cyan-400/15 bg-cyan-400/[0.06] px-3.5 py-2.5"
+              >
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+                <span className="text-[13px] font-semibold leading-snug text-cyan-50">
+                  {h[lang]}
+                </span>
+              </div>
+            ))}
+            <div className="grid gap-1.5 pt-1">
+              {[...tier.features.slice(0, 2), ...tier.features.slice(4)].map((f) => (
+                <p key={f.en} className="flex items-start gap-2 text-[13px] text-slate-300">
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                  {tr(f)}
+                </p>
+              ))}
+            </div>
+            <p className="pt-1 text-[12px] text-slate-500">
+              {fr
+                ? "+ tout le plan gratuit, sans aucune limite."
+                : "+ everything in Free, with no limits at all."}
+            </p>
+          </>
+        ) : (
+          <div className="space-y-2.5">
+            {featured.map((f) => (
+              <p key={f.en} className="flex items-start gap-2 text-[13px] text-slate-400">
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400/80" />
+                <span className="text-slate-300">{tr(f)}</span>
+              </p>
+            ))}
+            {tier.id === "elite" && (
+              <p className="flex items-start gap-2 text-[13px] text-slate-500">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                {fr
+                  ? "Prends-la seulement si le Pro te limite."
+                  : "Only if Pro starts limiting you."}
+              </p>
+            )}
+          </div>
         )}
-        {tier.features.map((f) => (
-          <p key={f.en} className="flex items-start gap-2.5 text-slate-300">
-            <span
-              className={cn(
-                "mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full",
-                tier.featured ? "bg-cyan-400/20 text-cyan-300" : "bg-white/[0.06] text-slate-400",
-              )}
-            >
-              <Check className="h-2.5 w-2.5" />
-            </span>
-            {tr(f)}
-          </p>
-        ))}
       </div>
     </div>
-  );
-}
-
-function Pill({ tone, children }: { tone: "accent" | "neutral"; children: React.ReactNode }) {
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide",
-        tone === "accent"
-          ? "bg-emerald-400 text-[#041018]"
-          : "border border-white/[0.1] bg-white/[0.05] text-slate-300",
-      )}
-    >
-      {children}
-    </span>
   );
 }

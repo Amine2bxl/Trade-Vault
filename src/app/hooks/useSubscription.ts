@@ -35,7 +35,7 @@ export interface Subscription {
 export interface UseSubscription {
   sub: Subscription | null;
   loading: boolean;
-  /** Pro access right now (paid, or trial still running). */
+  /** Pro access right now (paid, or a legacy trial still running). */
   isPro: boolean;
   /** Le palier réellement accessible : `free` dès que l'abonnement n'est plus
    *  actif, même si la ligne garde le nom du plan acheté. */
@@ -46,8 +46,6 @@ export interface UseSubscription {
   requiredTier: (capability: Capability) => Tier;
   /** Nombre de comptes de trading autorisés par le palier courant. */
   accountLimit: number;
-  /** Whole days of trial left, 0 when none. */
-  trialDaysLeft: number;
   /** Opens Stripe Checkout for the given plan (optionally with a promo code). */
   checkout: (plan: PaidPlan, promoCode?: string) => Promise<string | null>;
   /** Opens the Stripe Billing Portal (change card, upgrade/downgrade, cancel). */
@@ -152,11 +150,6 @@ export function useSubscription(): UseSubscription {
     await hydrate();
   }, [hydrate]);
 
-  const trialDaysLeft =
-    sub?.status === "trialing" && sub.trialEndsAt
-      ? Math.max(0, Math.ceil((sub.trialEndsAt.getTime() - Date.now()) / (24 * 3600 * 1000)))
-      : 0;
-
   const isPro =
     !!sub &&
     (sub.status === "active" ||
@@ -184,7 +177,6 @@ export function useSubscription(): UseSubscription {
     can: (capability: Capability) => tierAtLeast(tier, CAPABILITY_TIER[capability]),
     requiredTier: (capability: Capability) => CAPABILITY_TIER[capability],
     accountLimit: ACCOUNT_LIMIT[tier],
-    trialDaysLeft,
     checkout: (plan, promoCode) => redirect("/api/billing/checkout", { plan, promoCode }),
     openPortal: () => redirect("/api/billing/portal"),
     cryptoCheckout: (plan) => redirect("/api/crypto/checkout", { plan }),
