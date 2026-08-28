@@ -224,7 +224,8 @@ export async function handleCheckout(request: Request): Promise<Response> {
     "line_items[0][price]": price,
     "line_items[0][quantity]": "1",
     success_url: `${siteUrl(request)}/?billing=success`,
-    cancel_url: `${siteUrl(request)}/?billing=canceled`,
+    // Annulation → racine propre, jamais de `?billing=canceled` dans l'URL.
+    cancel_url: `${siteUrl(request)}/`,
     "subscription_data[metadata][user_id]": user.id,
     "subscription_data[metadata][plan]": plan,
   };
@@ -266,7 +267,8 @@ export async function createCheckoutSession(
     "line_items[0][price]": price,
     "line_items[0][quantity]": "1",
     success_url: `${siteUrl(request)}/?billing=success`,
-    cancel_url: `${siteUrl(request)}/?billing=canceled`,
+    // Annulation → racine propre, jamais de `?billing=canceled` dans l'URL.
+    cancel_url: `${siteUrl(request)}/`,
   };
   if (userId) params["subscription_data[metadata][user_id]"] = userId;
   if (opts.plan) params["subscription_data[metadata][plan]"] = opts.plan;

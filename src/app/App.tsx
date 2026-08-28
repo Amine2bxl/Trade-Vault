@@ -705,11 +705,10 @@ function AppContent() {
     );
   }
 
-  // La carte de compte (capital, sous-comptes) doit être PRÊTE avant le shell :
-  // sans cette attente, elle afficherait un squelette puis se remplirait un
-  // battement plus tard (le « chargement en deux temps »). Les comptes se
-  // chargent en parallèle de l'auth, l'attente ajoutée est imperceptible.
-  if (!accountsReady) return <LoadingScreen message="Chargement de tes comptes…" />;
+  // Les comptes se chargent en parallèle de l'auth : AUCUNE porte plein écran
+  // « Chargement de tes comptes… » ne sépare le shell de ses pages. Le shell
+  // (sidebar, navigation) se peint immédiatement ; seul le contenu montre un
+  // squelette contextuel jusqu'à ce que les comptes soient prêts.
 
   return (
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
@@ -746,21 +745,22 @@ function AppContent() {
           <MobileActions page={page} setPage={setPage} />
         </div>
         <PageActionsProvider setActions={setPageActions}>
-          <PageErrorBoundary resetKey={page}>
-            {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
+          {accountsReady ? (
+            <PageErrorBoundary resetKey={page}>
+              {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
               En dessous, le chunk est déjà en mémoire (préchargement au survol
               + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
               gris de deux frames : le signal « ça charge » sans le chargement.
               L'espace, lui, reste réservé, donc rien ne bouge. */}
-            <Suspense
-              fallback={
-                <DeferredFallback key={page}>
-                  <SkeletonForPage page={page} />
-                </DeferredFallback>
-              }
-            >
-              {/* PageTransition est DANS le Suspense, pas autour.
+              <Suspense
+                fallback={
+                  <DeferredFallback key={page}>
+                    <SkeletonForPage page={page} />
+                  </DeferredFallback>
+                }
+              >
+                {/* PageTransition est DANS le Suspense, pas autour.
                 Autour, il jouait sa transition sur la boîte vide réservée
                 pendant l'attente, puis le contenu réel arrivait après coup,
                 sans aucune animation : on ne voyait donc jamais la transition
@@ -768,68 +768,77 @@ function AppContent() {
                 la page est réellement peinte. Il ne remonte JAMAIS son enfant
                 (voir le composant) : défilement, filtres et lignes dépliées
                 survivent au changement de page. */}
-              <PageTransition page={page}>
-                {/* Le verrou premium enveloppe la page rendue : la table
+                <PageTransition page={page}>
+                  {/* Le verrou premium enveloppe la page rendue : la table
                     `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
                     la facturation. */}
-                <PageGate page={page} onUpgrade={openUpgrade}>
-                  {page === "dashboard" && (
-                    <Dashboard
-                      trades={trades}
-                      onAddTrade={handleAdd}
-                      tradesLoading={tradesLoading}
-                      onOpenChecklist={() => setPage("checklist")}
-                      onOpenImport={() => setImportOpen(true)}
-                      onEditTrade={handleEdit}
-                      onOpenJournal={() => setPage("journal")}
-                    />
-                  )}
-                  {page === "journal" && (
-                    <Journal
-                      trades={trades}
-                      onEdit={handleEdit}
-                      onQuickEdit={handleQuickEdit}
-                      onDelete={handleDelete}
-                      onDeleteAll={handleDeleteAll}
-                      onAdd={handleAdd}
-                      onOpenMissed={() => setPage("missed")}
-                    />
-                  )}
-                  {page === "checklist" && (
-                    <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
-                  )}
-                  {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-                  {page === "analytics" && <Analytics trades={shownTrades} />}
-                  {page === "mistakes" && <Mistakes trades={shownTrades} />}
-                  {page === "missed" && <MissedOpportunities />}
-                  {page === "insights" && <Jarvis />}
-                  {page === "news" && <EconomicNews />}
-                  {page === "seasonality" && (
-                    <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
-                  )}
-                  {page === "calculator" && (
-                    <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
-                  )}
-                  {page === "settings" && (
-                    <Settings
-                      trades={trades}
-                      onDeleteAll={handleDeleteAll}
-                      onOpenImport={() => setImportOpen(true)}
-                      onOpenReports={() => setPage("reports")}
-                    />
-                  )}
-                  {page === "reports" && <Reports trades={shownTrades} />}
-                  {page === "goals" && <Goals trades={shownTrades} />}
-                  {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-                  {page === "appearance" && <Appearance />}
-                  {page === "subscription" && <Subscription />}
-                  {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
-                  {page === "inbox" && <Inbox />}
-                  {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-                </PageGate>
-              </PageTransition>
-            </Suspense>
-          </PageErrorBoundary>
+                  <PageGate page={page} onUpgrade={openUpgrade}>
+                    {page === "dashboard" && (
+                      <Dashboard
+                        trades={trades}
+                        onAddTrade={handleAdd}
+                        tradesLoading={tradesLoading}
+                        onOpenChecklist={() => setPage("checklist")}
+                        onOpenImport={() => setImportOpen(true)}
+                        onEditTrade={handleEdit}
+                        onOpenJournal={() => setPage("journal")}
+                      />
+                    )}
+                    {page === "journal" && (
+                      <Journal
+                        trades={trades}
+                        onEdit={handleEdit}
+                        onQuickEdit={handleQuickEdit}
+                        onDelete={handleDelete}
+                        onDeleteAll={handleDeleteAll}
+                        onAdd={handleAdd}
+                        onOpenMissed={() => setPage("missed")}
+                      />
+                    )}
+                    {page === "checklist" && (
+                      <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+                    )}
+                    {page === "calendar" && (
+                      <CalendarPage trades={trades} onDelete={handleDelete} />
+                    )}
+                    {page === "analytics" && <Analytics trades={shownTrades} />}
+                    {page === "mistakes" && <Mistakes trades={shownTrades} />}
+                    {page === "missed" && <MissedOpportunities />}
+                    {page === "insights" && <Jarvis />}
+                    {page === "news" && <EconomicNews />}
+                    {page === "seasonality" && (
+                      <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
+                    )}
+                    {page === "calculator" && (
+                      <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+                    )}
+                    {page === "settings" && (
+                      <Settings
+                        trades={trades}
+                        onDeleteAll={handleDeleteAll}
+                        onOpenImport={() => setImportOpen(true)}
+                        onOpenReports={() => setPage("reports")}
+                      />
+                    )}
+                    {page === "reports" && <Reports trades={shownTrades} />}
+                    {page === "goals" && <Goals trades={shownTrades} />}
+                    {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+                    {page === "appearance" && <Appearance />}
+                    {page === "subscription" && <Subscription />}
+                    {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
+                    {page === "inbox" && <Inbox />}
+                    {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                  </PageGate>
+                </PageTransition>
+              </Suspense>
+            </PageErrorBoundary>
+          ) : (
+            /* Comptes en chargement : le shell est peint, la page répond avec
+               son squelette contextuel — pas de porte plein écran. */
+            <div className="p-4 md:p-5">
+              <SkeletonForPage page={page} />
+            </div>
+          )}
         </PageActionsProvider>
       </main>
       {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
