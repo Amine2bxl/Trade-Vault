@@ -11,12 +11,15 @@ import {
   TrendingDown,
   Brain,
   Calendar,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { sendPushToSelf } from "@/backend/push.functions";
 import { useT } from "../i18n/LanguageContext";
+import { useSubscription } from "../hooks/useSubscription";
+import { tierAtLeast } from "../utils/pricing";
 import { cn } from "../utils/cn";
 
 type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
@@ -78,7 +81,9 @@ function Switch({ on }: { on: boolean }) {
 }
 
 export function PushNotificationSettings() {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const { tier, loading: subLoading } = useSubscription();
+  const canUse = subLoading ? true : tierAtLeast(tier, "elite");
   const { isSupported, isSubscribed, permission, isLoading, isiOS, isPWA, subscribe, unsubscribe } =
     usePushNotifications();
   const sendPush = useServerFn(sendPushToSelf);
@@ -133,111 +138,144 @@ export function PushNotificationSettings() {
         </div>
       </div>
 
-      {isiOS && !isPWA ? (
-        <div className="flex gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.05] p-3.5">
-          <Smartphone className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-          <div className="text-xs text-slate-300 leading-relaxed">
-            <div className="font-semibold text-white mb-1">{t("push.iosInstallTitle")}</div>
-            <ol className="list-decimal list-inside space-y-0.5 text-slate-400">
-              <li>{t("push.iosStep1")}</li>
-              <li>{t("push.iosStep2")}</li>
-              <li>{t("push.iosStep3")}</li>
-            </ol>
+      {/* Alertes push = offre Elite. Un verrou le dit ici plutôt qu'un
+          réglage qui semble permis puis échoue. `canUse` reste vrai tant que
+          l'abonnement n'est pas chargé pour éviter un clignotement de cadenas
+          chez un abonné Elite. */}
+      {!canUse ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+          <div className="flex items-start gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.05] text-slate-500">
+              <Lock className="w-4 h-4" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-white">
+                {lang === "fr" ? "Alertes push — offre Elite" : "Push alerts — Elite plan"}
+              </div>
+              <p className="mt-0.5 text-[11.5px] leading-snug text-slate-500">
+                {lang === "fr"
+                  ? "Les alertes push et les rappels de session sont réservés à l'offre Elite."
+                  : "Push alerts and session reminders are reserved for the Elite plan."}
+              </p>
+            </div>
           </div>
-        </div>
-      ) : !isSupported ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-xs text-slate-400">
-          <AlertCircle className="w-4 h-4" /> {t("push.unsupported")}
-        </div>
-      ) : permission === "denied" ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.05] p-3.5 text-xs text-red-300">
-          <AlertCircle className="w-4 h-4" /> {t("push.denied")}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-4 py-2.5 text-[13px] font-bold text-[#04101a] shadow-lg shadow-cyan-500/20 hover:brightness-110 transition"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            {lang === "fr" ? "Passer à Elite" : "Go Elite"}
+          </button>
         </div>
       ) : (
         <>
-          {/* Toggle principal — carte action */}
-          <button
-            onClick={handleToggle}
-            disabled={isLoading}
-            className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] transition disabled:opacity-50"
-          >
-            <span className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "grid h-9 w-9 place-items-center rounded-xl border",
-                  isSubscribed
-                    ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                    : "bg-white/[0.04] border-white/[0.08] text-slate-400",
-                )}
+          {isiOS && !isPWA ? (
+            <div className="flex gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.05] p-3.5">
+              <Smartphone className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-slate-300 leading-relaxed">
+                <div className="font-semibold text-white mb-1">{t("push.iosInstallTitle")}</div>
+                <ol className="list-decimal list-inside space-y-0.5 text-slate-400">
+                  <li>{t("push.iosStep1")}</li>
+                  <li>{t("push.iosStep2")}</li>
+                  <li>{t("push.iosStep3")}</li>
+                </ol>
+              </div>
+            </div>
+          ) : !isSupported ? (
+            <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-xs text-slate-400">
+              <AlertCircle className="w-4 h-4" /> {t("push.unsupported")}
+            </div>
+          ) : permission === "denied" ? (
+            <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.05] p-3.5 text-xs text-red-300">
+              <AlertCircle className="w-4 h-4" /> {t("push.denied")}
+            </div>
+          ) : (
+            <>
+              {/* Toggle principal — carte action */}
+              <button
+                onClick={handleToggle}
+                disabled={isLoading}
+                className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] transition disabled:opacity-50"
               >
-                {isSubscribed ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-              </span>
-              <span className="text-left">
-                <span className="block text-sm text-white font-semibold">
-                  {isSubscribed ? t("push.enabled") : t("push.enable")}
+                <span className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "grid h-9 w-9 place-items-center rounded-xl border",
+                      isSubscribed
+                        ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                        : "bg-white/[0.04] border-white/[0.08] text-slate-400",
+                    )}
+                  >
+                    {isSubscribed ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                  </span>
+                  <span className="text-left">
+                    <span className="block text-sm text-white font-semibold">
+                      {isSubscribed ? t("push.enabled") : t("push.enable")}
+                    </span>
+                    <span className="block text-[10px] text-slate-500">{t("push.hint")}</span>
+                  </span>
                 </span>
-                <span className="block text-[10px] text-slate-500">{t("push.hint")}</span>
-              </span>
-            </span>
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-            ) : (
-              <Switch on={isSubscribed} />
-            )}
-          </button>
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                ) : (
+                  <Switch on={isSubscribed} />
+                )}
+              </button>
 
-          {isSubscribed && (
-            <button
-              onClick={handleTest}
-              disabled={isSending}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-50 text-sm font-semibold"
-            >
-              {isSending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
+              {isSubscribed && (
+                <button
+                  onClick={handleTest}
+                  disabled={isSending}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-50 text-sm font-semibold"
+                >
+                  {isSending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {t("push.sendTest")}
+                </button>
               )}
-              {t("push.sendTest")}
-            </button>
+            </>
           )}
+
+          {/* Notification category preferences */}
+          <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
+            <p className="px-1 pt-1 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              {t("push.categories")}
+            </p>
+            {CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <label
+                  key={cat.key}
+                  className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition cursor-pointer"
+                >
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-400">
+                      <Icon className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="text-xs text-slate-300 truncate">{t(cat.labelKey)}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={prefs[cat.key]}
+                    onChange={() =>
+                      setPrefs((p) => {
+                        const next = { ...p, [cat.key]: !p[cat.key] };
+                        savePrefs(next);
+                        return next;
+                      })
+                    }
+                    className="sr-only"
+                  />
+                  <Switch on={prefs[cat.key]} />
+                </label>
+              );
+            })}
+          </div>
         </>
       )}
-
-      {/* Notification category preferences */}
-      <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
-        <p className="px-1 pt-1 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-          {t("push.categories")}
-        </p>
-        {CATEGORIES.map((cat) => {
-          const Icon = cat.icon;
-          return (
-            <label
-              key={cat.key}
-              className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition cursor-pointer"
-            >
-              <span className="flex items-center gap-2.5 min-w-0">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-400">
-                  <Icon className="w-3.5 h-3.5" />
-                </span>
-                <span className="text-xs text-slate-300 truncate">{t(cat.labelKey)}</span>
-              </span>
-              <input
-                type="checkbox"
-                checked={prefs[cat.key]}
-                onChange={() =>
-                  setPrefs((p) => {
-                    const next = { ...p, [cat.key]: !p[cat.key] };
-                    savePrefs(next);
-                    return next;
-                  })
-                }
-                className="sr-only"
-              />
-              <Switch on={prefs[cat.key]} />
-            </label>
-          );
-        })}
-      </div>
     </div>
   );
 }
