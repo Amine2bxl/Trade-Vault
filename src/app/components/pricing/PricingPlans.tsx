@@ -7,7 +7,6 @@ import {
   monthsFree,
   planId,
   yearlyPerMonth,
-  yearlySaving,
   type Bi,
   type Interval,
   type PaidPlan,
@@ -225,28 +224,20 @@ function PlanColumn({
       </div>
       <p className="mt-1.5 min-h-[18px] text-[12px] text-slate-500">
         {isFree ? (
-          fr ? (
-            "Sans carte, sans engagement."
-          ) : (
-            "No card, no commitment."
-          )
+          <>&nbsp;</>
         ) : yearly ? (
           <>
-            {eur(tier.yearly)} {fr ? "par an" : "per year"}
-            {!isFree && (
-              <>
-                <span className="mx-2 text-slate-600">·</span>
-                <span className="text-slate-500 line-through">{eur(tier.monthly)}/mois</span>
-              </>
+            <span className="text-slate-500 line-through">{eur(tier.monthly)}</span>
+            <span className="mx-2 text-slate-600">·</span>
+            {fr ? "facturé" : "billed"} {eur(tier.yearly)}/an
+            {!current && (
+              <span className="ml-2 text-emerald-400">
+                {monthsFree(tier.id)} {fr ? "mois offerts" : "mo. free"}
+              </span>
             )}
-            <span className="ml-2 text-emerald-400">
-              {fr ? `−${eur(yearlySaving(tier.id))}` : `save ${eur(yearlySaving(tier.id))}`}
-            </span>
           </>
-        ) : fr ? (
-          "Sans engagement, résiliable en 1 clic."
         ) : (
-          "No commitment, cancel in one click."
+          " "
         )}
       </p>
 
