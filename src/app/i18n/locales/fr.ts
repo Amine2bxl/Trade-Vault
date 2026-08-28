@@ -1479,6 +1479,7 @@ const fr: Dict = {
   "proposal.failed": "Rien n'a été modifié",
   "proposal.expires": "Expire le {date}",
   "settings.paneAccount": "Comptes",
+  "settings.admin": "Admin",
   "settings.paneAccountSub": "Bascule entre tes comptes de trading.",
   "nav.collapseSidebar": "Replier la barre latérale",
   "nav.expandSidebar": "Déplier la barre latérale",

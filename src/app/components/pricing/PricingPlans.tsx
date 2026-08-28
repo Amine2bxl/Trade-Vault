@@ -7,6 +7,8 @@ import {
   monthsFree,
   planId,
   yearlyPerMonth,
+  PAGE_VALUE,
+  pagesOfTier,
   type Bi,
   type Interval,
   type PaidPlan,
@@ -327,15 +329,30 @@ function PlanColumn({
                 </span>
               </div>
             ))}
-            <div className="grid gap-1.5 pt-1">
-              {[...tier.features.slice(0, 2), ...tier.features.slice(4)].map((f) => (
-                <p key={f.en} className="flex items-start gap-2 text-[13px] text-slate-300">
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-                  {tr(f)}
-                </p>
-              ))}
+            {/* Les 9 pages Premium — la liste concrète de ce qui se débloque. */}
+            <div className="pt-1">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/90">
+                {fr
+                  ? `${pagesOfTier("pro").length} pages Premium`
+                  : `${pagesOfTier("pro").length} Premium pages`}
+              </p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                {pagesOfTier("pro").map((page) => {
+                  const v = PAGE_VALUE[page];
+                  if (!v) return null;
+                  return (
+                    <p
+                      key={page}
+                      className="flex items-start gap-2 text-[12.5px] leading-snug text-slate-300"
+                    >
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                      <span>{v.title[fr ? "fr" : "en"]}</span>
+                    </p>
+                  );
+                })}
+              </div>
             </div>
-            <p className="pt-1 text-[12px] text-slate-500">
+            <p className="pt-2 text-[12px] text-slate-500">
               {fr
                 ? "+ tout le plan gratuit, sans aucune limite."
                 : "+ everything in Free, with no limits at all."}
