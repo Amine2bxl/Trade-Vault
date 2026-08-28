@@ -163,8 +163,17 @@ const M: Record<string, Msg> = {
     fr: "Tes setups VWAP : 71% de réussite.",
   },
 
-  /* platforms */
-  "platforms.label": { en: "Import from your platforms", fr: "Importe depuis tes plateformes" },
+  /* platforms — les VRAIES portes d'entrée des trades (aucune prétention de
+     synchro broker, il n'y a pas d'API : import CSV, copier-coller, saisie,
+     démo). */
+  "platforms.label": {
+    en: "Your trades get in — instantly",
+    fr: "Tes trades entrent — en un instant",
+  },
+  "platforms.i1": { en: "Universal CSV import", fr: "Import CSV universel" },
+  "platforms.i2": { en: "Copy & paste", fr: "Copier-coller" },
+  "platforms.i3": { en: "Quick logging", fr: "Saisie rapide" },
+  "platforms.i4": { en: "Demo trades", fr: "Trades de démo" },
 
   /* problem */
   "problem.tag": { en: "The real problem", fr: "Le vrai problème" },

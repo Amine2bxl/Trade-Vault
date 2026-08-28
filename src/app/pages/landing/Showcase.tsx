@@ -5,25 +5,26 @@ import { useLandingT, type LandingKey } from "./i18n";
  * Les bandes de la landing : plateformes, preuve, confiance.
  *
  * Le contenu est VÉRIFIABLE : pas de faux avis, pas d'allégation inventée.
- * Les noms de plateformes sont des noms propres (jamais traduits).
+ * La bande « comment tes trades entrent » ne prétend AUCUNE synchronisation
+ * avec un broker (il n'y en a pas d'API) : elle nomme les vraies portes
+ * d'entrée — import CSV universel, copier-coller, saisie rapide, démo.
  */
-
-const PLATFORMS = ["NinjaTrader", "TradingView", "TopStep", "CSV universel"] as const;
 
 export function PlatformsStrip() {
   const { t } = useLandingT();
+  const items: LandingKey[] = ["platforms.i1", "platforms.i2", "platforms.i3", "platforms.i4"];
   return (
     <div className="reveal rounded-2xl border border-white/[.07] bg-white/[.02] px-6 py-6 backdrop-blur-md">
       <p className="text-center text-[10px] font-bold uppercase tracking-[.18em] text-slate-500">
         {t("platforms.label")}
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-        {PLATFORMS.map((name) => (
+        {items.map((k) => (
           <span
-            key={name}
+            key={k}
             className="font-display text-base font-bold tracking-tight text-slate-300/90 sm:text-lg"
           >
-            {name}
+            {t(k)}
           </span>
         ))}
       </div>

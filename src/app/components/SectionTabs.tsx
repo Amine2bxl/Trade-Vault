@@ -104,6 +104,8 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
               href={pathForPage(p)}
               role="tab"
               aria-selected={active}
+              aria-label={t(labelKey)}
+              title={t(labelKey)}
               tabIndex={active ? 0 : -1}
               onClick={(e) => go(p, e)}
               // Le chunk part au survol / focus / premier contact du doigt,
@@ -117,9 +119,11 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
                 className={cn("h-4 w-4 shrink-0", active ? "text-cyan-300" : "text-slate-500")}
                 strokeWidth={active ? 2.2 : 1.9}
               />
-              <span className="whitespace-nowrap">{t(labelKey)}</span>
+              {/* Mobile : icônes seules (le texte revient dès md) — un label sur
+                  une rangée de 6 onglets devenait illisible et dur à toucher. */}
+              <span className="hidden whitespace-nowrap md:inline">{t(labelKey)}</span>
               {!subLoading && !canAccessPage(tier, p) && (
-                <Lock className="h-3 w-3 shrink-0 text-slate-500" aria-hidden />
+                <Lock className="hidden h-3 w-3 shrink-0 text-slate-500 md:block" aria-hidden />
               )}
             </a>
           );

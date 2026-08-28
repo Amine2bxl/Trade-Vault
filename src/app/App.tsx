@@ -1,13 +1,4 @@
-import {
-  useState,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  lazy,
-  Suspense,
-  startTransition,
-} from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransition } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -108,6 +99,8 @@ import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { PageGate, usePageLock } from "./components/PremiumGate";
+import UpgradeModal from "./components/UpgradeModal";
+import UpgradeSuccessOverlay from "./components/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
@@ -244,32 +237,35 @@ function AppContent() {
   // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
   // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
   const pageLocked = usePageLock(page);
-  const { tier, checkout } = useSubscription();
+  const { tier } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
 
-  // Tous les « Go Pro » partent DIRECTEMENT au checkout Stripe (plan annuel
-  // Pro, l'offre mise en avant) au lieu de passer par la page d'abonnement.
-  // Un code promo porté par l'URL (`?promo=») est repris automatiquement : un
-  // client qui a un code 100 % n'ira jamais jusqu'à Stripe — l'accès s'ouvre
-  // au vol.
-  const promoFromUrl = useMemo(
-    () =>
-      typeof window !== "undefined"
-        ? (new URLSearchParams(window.location.search).get("promo") ?? undefined)
-        : undefined,
-    [],
-  );
-  const goProDirect = useCallback(() => {
-    void checkout("pro_yearly", promoFromUrl).then((err) => {
-      if (err) setPage("subscription");
-    });
-  }, [checkout, promoFromUrl]);
+  // Tous les « Go Pro » ouvrent la modale d'abonnement (Pro/Elite, mensuel ou
+  // annuel) au lieu d'un checkout forcé : l'utilisateur a décidé de payer,
+  // on ne lui impose pas un plan. `UpgradeModal` gère le checkout lui-même.
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const openUpgrade = useCallback(() => setUpgradeOpen(true), []);
 
   useEffect(() => {
-    const onUpgrade = () => goProDirect();
+    const onUpgrade = () => setUpgradeOpen(true);
     window.addEventListener("tv:upgrade", onUpgrade);
     return () => window.removeEventListener("tv:upgrade", onUpgrade);
-  }, [goProDirect]);
+  }, []);
+
+  // Confirmation visuelle d'abonnement : le checkout Stripe (et l'octroi d'un
+  // code 100 %) redirigent vers `/?billing=success`. À l'arrivée on montre
+  // les confettis + la carte, puis on nettoie l'URL pour ne pas rejouer.
+  const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
+  useEffect(() => {
+    if (window.location.search.includes("billing=success")) {
+      setShowUpgradeSuccess(true);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search.replace(/([?&])billing=success&?/, "$1"),
+      );
+    }
+  }, []);
 
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
@@ -776,7 +772,7 @@ function AppContent() {
                 {/* Le verrou premium enveloppe la page rendue : la table
                     `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
                     la facturation. */}
-                <PageGate page={page} onUpgrade={goProDirect}>
+                <PageGate page={page} onUpgrade={openUpgrade}>
                   {page === "dashboard" && (
                     <Dashboard
                       trades={trades}
@@ -896,6 +892,21 @@ function AppContent() {
           />
         )}
       </Suspense>
+
+      {/* Passer Pro — la modale ouverte par chaque « Go Pro » (mur d'aperçu,
+          quota Jarvis, cadenas multi-comptes…). */}
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+
+      {/* Confirmation d'abonnement — confettis + carte à l'arrivée. */}
+      {showUpgradeSuccess && (
+        <UpgradeSuccessOverlay
+          onClose={() => setShowUpgradeSuccess(false)}
+          onExplore={() => {
+            setShowUpgradeSuccess(false);
+            setPage("analytics");
+          }}
+        />
+      )}
     </div>
   );
 }

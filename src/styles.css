@@ -1247,6 +1247,38 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
+/* Confettis de confirmation d'abonnement — purement transform/opacity (GPU),
+ * chaque pièce ne fait que tomber et tourner. `top:-8vh` : sorti de l'écran +
+ * penché pour que la chute commence déjà orientée. */
+.confetti-piece {
+  position: absolute;
+  top: -8vh;
+  opacity: 0;
+  transform: rotate(var(--tw-rotate, 0deg));
+  animation-name: confetti-fall;
+  animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(var(--tw-rotate, 0deg));
+  }
+  6% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.15;
+    transform: translate3d(var(--tw-drift, 40px), 112vh, 0) rotate(calc(var(--tw-rotate, 0deg) + 540deg));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece {
+    display: none;
+  }
+}
+
 /* cmdk: kill default outline, selection handled via data-[selected] classes */
 [cmdk-root] {
   outline: none;
@@ -1563,6 +1595,38 @@ a:focus-visible,
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
+}
+
+/* ── Mobile : onglets en icônes seules, une pulsation dit quelle vue est
+ * affichée (le texte, illisible à 6 onglets sur 380px, revient à partir
+ * de md). L'animation ne touche que transform/opacity — aucun reflow. */
+@media (max-width: 767px) {
+  .section-tab {
+    padding: 0 0.7rem;
+  }
+  .section-tab-active {
+    animation: section-tab-pop 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+}
+@keyframes section-tab-pop {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.25),
+      0 2px 8px rgb(var(--tv-accent-rgb) / 0.12);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow:
+      inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.55),
+      0 0 16px rgb(var(--tv-accent-rgb) / 0.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section-tab-active {
+    animation: none;
+  }
 }
 
 /* ── Infobulle de la barre repliée ──
