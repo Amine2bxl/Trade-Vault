@@ -255,7 +255,7 @@ export function JournalSkeleton() {
 /** Missed setups: 3 tiles then the collapsed one-line rows. */
 export function MissedSkeleton() {
   return (
-    <Shell width="max-w-[1100px]">
+    <Shell width="max-w-[1400px]">
       <TileRow n={3} cols="grid-cols-3" />
       <div className="space-y-1.5">
         {Array.from({ length: 8 }, (_, i) => (
@@ -279,7 +279,7 @@ export function MissedSkeleton() {
 /** Economic news: week navigator, impact tiles, search, then day groups. */
 export function NewsSkeleton() {
   return (
-    <Shell width="max-w-[1100px]" pad="p-4 md:p-8">
+    <Shell width="max-w-[1400px]" pad="p-4 md:p-8">
       <div className="glass rounded-2xl p-2.5 mb-3 flex items-center justify-between">
         <Skeleton className="h-9 w-9 rounded-xl" />
         <Skeleton className="h-4 w-36 rounded" />

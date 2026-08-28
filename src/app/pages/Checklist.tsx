@@ -1336,7 +1336,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         )}
       />
 
-      <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
+      <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
         {day.locked && (
           <div className="flex items-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 animate-fade-in-up">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />

@@ -4,8 +4,17 @@ import {
   serviceClient,
   timingSafeEqualHex,
   userFromRequest,
-  type PaidPlan,
 } from "./billing.server";
+import {
+  PAID_TIERS,
+  TIER_BY_ID,
+  intervalOf,
+  isPaidPlan,
+  planId,
+  planPrice,
+  tierOf,
+  type PaidPlan,
+} from "../domain/plans";
 
 // Crypto payments via Coinbase Commerce (self-custody / onchain checkout —
 // funds settle to the merchant wallet, no intermediary). Accepts USDC, USDT,
@@ -16,11 +25,29 @@ import {
 
 const COMMERCE_API = "https://api.commerce.coinbase.com";
 
-// Mirrors the landing pricing: 19,99 €/mois · 199 €/an (2 mois offerts).
-const PLAN_PRICING: Record<PaidPlan, { amount: string; label: string; days: number }> = {
-  pro_monthly: { amount: "19.99", label: "TradeVault Pro — 1 mois", days: 31 },
-  pro_yearly: { amount: "199.00", label: "TradeVault Pro — 1 an", days: 366 },
-};
+/**
+ * Le tarif crypto d'un plan — dérivé du catalogue, jamais recopié.
+ *
+ * Les montants étaient écrits en dur ici : la moindre évolution de l'offre
+ * laissait le paiement crypto encaisser l'ancien prix, en silence. Ils sont
+ * maintenant calculés depuis `domain/plans`, comme partout ailleurs.
+ */
+function cryptoPricing(plan: PaidPlan): { amount: string; label: string; days: number } | null {
+  if (!isPaidPlan(plan)) return null;
+  const yearly = intervalOf(plan) === "yearly";
+  const tier = TIER_BY_ID[tierOf(plan)];
+  return {
+    amount: planPrice(plan).toFixed(2),
+    label: `TradeVault ${tier.name.en} — ${yearly ? "1 an" : "1 mois"}`,
+    days: yearly ? 366 : 31,
+  };
+}
+
+/** Tous les plans payants, pour les vérifications exhaustives. */
+export const CRYPTO_PLANS: PaidPlan[] = PAID_TIERS.flatMap((t) => [
+  planId(t, "monthly"),
+  planId(t, "yearly"),
+]);
 
 // ── POST /api/crypto/checkout  { plan } ──────────────────────────────────────
 // Creates a Commerce charge and returns { url } to its hosted payment page.
@@ -37,7 +64,7 @@ export async function handleCryptoCheckout(request: Request): Promise<Response> 
     return json({ error: "invalid body" }, 400);
   }
   const plan = payload.plan as PaidPlan;
-  const pricing = PLAN_PRICING[plan];
+  const pricing = cryptoPricing(plan);
   if (!pricing) return json({ error: "invalid plan" }, 400);
 
   const res = await fetch(`${COMMERCE_API}/charges`, {
@@ -104,7 +131,7 @@ export async function handleCryptoWebhook(request: Request): Promise<Response> {
   const charge = event.data;
   const userId: string | undefined = charge?.metadata?.user_id;
   const plan = charge?.metadata?.plan as PaidPlan;
-  const pricing = PLAN_PRICING[plan];
+  const pricing = cryptoPricing(plan);
   if (!userId || !pricing) return json({ received: true, skipped: "missing metadata" });
 
   // Extend from the later of (now, existing paid period end) so renewing

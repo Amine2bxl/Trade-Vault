@@ -97,8 +97,8 @@ const M: Record<string, Msg> = {
   "nav.problem": { en: "Problem", fr: "Problème" },
   "nav.features": { en: "Features", fr: "Fonctionnalités" },
   "nav.signin": { en: "Sign in", fr: "Se connecter" },
-  "nav.cta": { en: "Start free", fr: "Essai gratuit" },
-  "nav.cta.plan": { en: "Premium 14-day trial", fr: "Essai Premium 14 jours" },
+  "nav.cta": { en: "Start free", fr: "Commencer gratuitement" },
+  "nav.cta.plan": { en: "Start free", fr: "Commencer gratuitement" },
 
   "nav.p.jarvis": { en: "Jarvis — AI Coach", fr: "Jarvis — Coach IA" },
   "nav.p.jarvis.d": {
@@ -271,10 +271,10 @@ const M: Record<string, Msg> = {
     en: "Each tool serves one thing: better decisions, trade after trade.",
     fr: "Chaque outil sert une seule chose : de meilleures décisions, trade après trade.",
   },
-  "features.cta": { en: "Unlock everything free", fr: "Tout débloquer gratuitement" },
+  "features.cta": { en: "Create my free account", fr: "Créer mon compte gratuit" },
   "features.cta.sub": {
-    en: "14 days Premium · no credit card",
-    fr: "14 jours Premium · sans carte bancaire",
+    en: "Free forever · no credit card",
+    fr: "Gratuit pour toujours · sans carte bancaire",
   },
 
   /* bento */
@@ -341,7 +341,7 @@ const M: Record<string, Msg> = {
     en: "Open your journal, import your history, and see what comes out.",
     fr: "Ouvre ton journal, importe ton historique, et vois ce qu'il en sort.",
   },
-  "proof.cta.p1": { en: "14-day free trial", fr: "Essai gratuit 14 jours" },
+  "proof.cta.p1": { en: "Free plan, no time limit", fr: "Offre gratuite, sans limite de temps" },
   "proof.cta.p2": {
     en: "Full access to all features",
     fr: "Accès complet à toutes les fonctionnalités",
@@ -378,8 +378,11 @@ const M: Record<string, Msg> = {
     fr: "Commence gratuitement. Passe Premium quand tu es prêt.",
   },
   "pricing.save": {
-    en: "2 months free yearly — save €40",
-    fr: "2 mois offerts à l'année, soit 40 € d'économie",
+    // Conservé pour d'éventuels usages hors grille. Aucun montant en dur : le
+    // nombre de mois offerts est calculé depuis le catalogue et affiché sur la
+    // bascule mensuel/annuel.
+    en: "Months free on every yearly plan",
+    fr: "Des mois offerts sur chaque offre annuelle",
   },
   "pricing.free": { en: "Free", fr: "Free" },
   "pricing.free.price": { en: "€0", fr: "0 €" },
@@ -409,7 +412,7 @@ const M: Record<string, Msg> = {
   "pricing.pro.per": { en: "/ month", fr: "/ mois" },
   "pricing.pro.billed": { en: "billed once a year", fr: "facturés une fois par an" },
   "pricing.pro.save": { en: "saved / year", fr: "/ an économisés" },
-  "pricing.pro.btn": { en: "Start — 14 days free", fr: "Démarrer — 14 jours gratuits" },
+  "pricing.pro.btn": { en: "Get started", fr: "Commencer" },
   "pricing.pro.note": {
     en: "No commitment · No card required",
     fr: "Sans engagement · Sans carte requise",
@@ -476,7 +479,7 @@ const M: Record<string, Msg> = {
     fr: "Mêmes fonctionnalités que l'annuel — seule la facturation change.",
   },
   "pricing.monthly.btn": { en: "Go monthly", fr: "Prendre au mois" },
-  "pricing.trust1": { en: "14 days free", fr: "14 jours gratuits" },
+  "pricing.trust1": { en: "Free plan forever", fr: "Offre gratuite à vie" },
   "pricing.trust2": { en: "Secure Stripe payment", fr: "Paiement Stripe sécurisé" },
   "pricing.trust3": { en: "Cancel in 1 click", fr: "Annulation en 1 clic" },
   "pricing.trust4": { en: "Exportable data", fr: "Données exportables" },
@@ -493,12 +496,12 @@ const M: Record<string, Msg> = {
     fr: "Un journal enregistre. TradeVault comprend : il analyse tes données, détecte tes schémas et te dit quoi corriger.",
   },
   "faq.q2": {
-    en: "Is the free trial really commitment-free?",
-    fr: "L'essai gratuit est-il vraiment sans engagement ?",
+    en: "Is the free plan really free?",
+    fr: "L'offre gratuite est-elle vraiment gratuite ?",
   },
   "faq.a2": {
-    en: "Yes. 14 days of full Premium, no credit card. Cancel in 1 click.",
-    fr: "Oui. 14 jours d'accès Premium complet, sans carte bancaire. Annulation en 1 clic.",
+    en: "Yes — no time limit, no credit card. Your journal, dashboard, calendar, checklist and plan stay free for good. Paid plans add the analysis tools.",
+    fr: "Oui — sans limite de temps ni carte bancaire. Ton journal, ton tableau de bord, ton calendrier, ta checklist et ton plan restent gratuits pour toujours. Les offres payantes ajoutent les outils d'analyse.",
   },
   "faq.q3": {
     en: "Is my trading data secure?",
@@ -527,8 +530,8 @@ const M: Record<string, Msg> = {
   },
   "cta.btn": { en: "Get started free", fr: "Commencer gratuitement" },
   "cta.note": {
-    en: "14 days Premium · No credit card · Cancel in 1 click",
-    fr: "14 jours Premium · Sans carte bancaire · Annulation en 1 clic",
+    en: "Free plan forever · No credit card · Cancel in 1 click",
+    fr: "Offre gratuite à vie · Sans carte bancaire · Annulation en 1 clic",
   },
 
   /* footer */

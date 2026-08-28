@@ -16,11 +16,11 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
     <style>
       :root { --bg:#060810; --accent:#22d3ee; --accent2:#14b8a6;
-        --font-body:'Manrope','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
-        --font-display:'Sora','Manrope',system-ui,-apple-system,sans-serif; }
+        --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+        --font-display:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; }
       * { box-sizing: border-box; }
       html,body { margin:0; height:100%; }
       body {

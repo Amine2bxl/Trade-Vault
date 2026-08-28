@@ -113,7 +113,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                 </p>
                 <p
                   className="mt-0.5 text-sm font-extrabold text-white tabular-nums"
-                  style={{ fontFamily: "'Sora','Manrope',sans-serif" }}
+                  style={{ fontFamily: "'Inter',sans-serif" }}
                 >
                   $
                   {Number(val).toLocaleString("en-US", {

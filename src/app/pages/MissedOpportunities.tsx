@@ -35,6 +35,8 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import Lightbox from "../components/Lightbox";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useRealtimeTable } from "../hooks/useRealtimeTable";
+import { usePreviewMode } from "../components/PremiumGate";
+import { previewMissed } from "../utils/previewTrades";
 import { Card, PageContainer, Button, EmptyState, Modal, Textarea, FIELD_BASE } from "@/shared/ui";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { nsKey, readJSON, removeKey } from "../utils/persistence";
@@ -57,7 +59,7 @@ function emptyMissed(): MissedOpportunity {
 export default function MissedOpportunities() {
   const { user } = useAuth();
   const { activeId } = useAccounts();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
   const [items, setItems] = useState<MissedOpportunity[]>([]);
@@ -117,6 +119,10 @@ export default function MissedOpportunities() {
     URL.revokeObjectURL(url);
   }, [items]);
 
+  // Derrière le mur d'aperçu : jeu d'exemple, aucune requête. Un état vide ne
+  // vend pas une page dont l'intérêt est précisément d'être remplie.
+  const preview = usePreviewMode();
+
   const reload = useCallback(() => {
     if (!user) return;
     loadMissedOpportunities(user.id)
@@ -126,6 +132,11 @@ export default function MissedOpportunities() {
   }, [user?.id]);
 
   useEffect(() => {
+    if (preview) {
+      setItems(previewMissed(lang === "fr"));
+      setLoading(false);
+      return;
+    }
     if (!user) return;
     let active = true;
     loadMissedOpportunities(user.id)
@@ -139,7 +150,7 @@ export default function MissedOpportunities() {
     return () => {
       active = false;
     };
-  }, [user?.id, activeId]);
+  }, [user?.id, activeId, preview, lang]);
 
   // Live entre appareils : un setup manqué ajouté sur le téléphone apparaît
   // ici sans rafraîchir.
@@ -208,7 +219,7 @@ export default function MissedOpportunities() {
   usePageActions(headerActions);
 
   return (
-    <PageContainer className="max-w-[1100px]">
+    <PageContainer>
       {/* Cost of hesitation, up front. Seeing "+18.4 R left on the table" is
           what turns this page from a notebook into an argument. */}
       {!loading && items.length > 0 && (

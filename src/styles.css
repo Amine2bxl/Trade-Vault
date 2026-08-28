@@ -47,6 +47,24 @@
  * ============================================================ */
 @theme {
   /* ----------------------------------------------------------------
+   * Typographie — Inter, la grotesque neutre moderne de référence.
+   *
+   * C'est la famille des produits qui définissent le standard web actuel :
+   * Geist/21st.dev et Linktree (qui s'en inspirent directement), et le
+   * raffinement de Roboto (Google, YouTube, Facebook). Distinction 0/O et
+   * 1/l garanties par ses glyphes de base, chiffres tabulaires à la norme,
+   * excellente lisibilité en petite taille ET en dark mode, vraies graisses
+   * jusqu'à 800/900 (pas de faux-gras). Une seule famille porte body + display
+   * : la hiérarchie vient de la graisse, de la taille et de l'approche.
+   * Roboto Mono sert aux rares données techniques (codes, heures).
+   * ---------------------------------------------------------------- */
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:
+    "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+
+  /* ----------------------------------------------------------------
    * Plancher de lisibilité de la rampe slate.
    *
    * ~560 appels à `text-slate-500` / `text-slate-600` court-circuitent
@@ -229,6 +247,13 @@
  * pre-paint bootstrap in __root) override these on :root at runtime. Defining
  * them here means SSR / no-JS still renders the default identity with no flash. */
 :root {
+  /* Inter — la même famille partout (body + display). `--font-display` est
+     une variable pure, PAS un token `@theme` : une `--font-*` dans @theme
+     aurait généré une utility Tailwind `font-display` en conflit avec notre
+     classe du même nom. H1–H6, `.font-display`, `.metric-display` et la marque
+     de la sidebar l'utilisent. */
+  --font-display:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   /* Default identity = "Jarvis" cyan/teal — matches the public landing page so
      the signed-in app and the marketing site share one visual identity. */
   /* Surfaces et textes — extraits en variables pour que le studio de thème
@@ -552,18 +577,9 @@ select,
 }
 
 body {
-  /* Landing kit fonts everywhere: Manrope body (+ Sora display below) — one
-     typographic identity across marketing site and product. */
-  font-family:
-    "Manrope",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  /* Inter — l'identité complète (body + UI + titres), même voix des
+     deux côtés du mur de connexion. */
+  font-family: var(--font-sans);
   font-weight: 400;
   font-size: 15px;
   line-height: 1.55;
@@ -585,6 +601,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
+  /* Inter : glyphes alternatifs de désambiguïsation (1 vs l, etc.) déjà
+     activés dans l'ancienne pile Inter — on les conserve. */
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
@@ -636,34 +654,22 @@ body {
   }
 }
 
-/* Display family — Sora, exactly like the landing page headings, so titles
- * carry the same voice on both sides of the sign-in wall. */
+/* Display family — Inter, la même voix que la landing : les titres portent la
+ * même identité des deux côtés du mur de connexion. */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family:
-    "Sora",
-    "Manrope",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-display);
   letter-spacing: -0.02em;
   font-weight: 700;
   line-height: 1.18;
 }
 
 .font-display {
-  font-family:
-    "Sora",
-    "Manrope",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-display);
   letter-spacing: -0.025em;
   font-weight: 700;
 }
@@ -675,7 +681,7 @@ h6 {
 }
 .font-display,
 .tabular-nums {
-  font-feature-settings: "tnum", "cv02", "cv03", "cv04";
+  font-feature-settings: "tnum";
 }
 
 ::-webkit-scrollbar {
@@ -835,12 +841,15 @@ input[type="number"] {
     0 10px 30px -16px rgba(0, 0, 0, 0.55);
 }
 .stat-card-elevated {
-  background: linear-gradient(180deg, rgba(20, 32, 50, 0.98) 0%, rgba(12, 20, 34, 0.99) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Même dégradé que `.stat-card` / `.glass` / `.panel` : les cartes hero du
+     dashboard (Equity Curve, résumé du mois) partagent EXACTEMENT la surface
+     de toutes les autres — une seule grammaire visuelle, aucun halo vitreux. */
+  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-2xl);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 14px 40px -18px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 30px -16px rgba(0, 0, 0, 0.55);
 }
 
 /* Surface de carte unifiée — le même design sombre que les KPI Performance /
@@ -979,9 +988,9 @@ input[type="number"] {
   line-height: 1.05;
 }
 .sidebar-brand-name {
-  font-family: "Sora", "Manrope", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
   color: #fff;
 }

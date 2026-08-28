@@ -21,6 +21,9 @@ import {
   saveActiveAccountId,
   setActiveAccountId,
 } from "../store";
+import { ACCOUNT_LIMIT } from "@/domain/plans";
+import { useSubscription } from "../hooks/useSubscription";
+import { PlanLimitError } from "../utils/planLimits";
 import { factorFor } from "../utils/accountCalibration";
 import { clearTradesCache } from "../hooks/useTrades";
 
@@ -62,6 +65,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const { tier } = useSubscription();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -144,6 +148,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const addAccount = useCallback(
     async (input: { name: string; type: AccountType; icon?: string; startingBalance: number }) => {
       if (!user) throw new Error("not authenticated");
+      // Limite de comptes du palier. Refusée ICI, à la seule porte d'entrée :
+      // masquer le bouton ailleurs laisserait passer tout appel direct, et la
+      // limite ferait partie de la promesse sans être tenue.
+      if (accounts.length >= ACCOUNT_LIMIT[tier]) throw new PlanLimitError("accounts");
       const acc = await createAccount(user.id, {
         name: input.name,
         type: input.type,
@@ -163,7 +171,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       saveActiveAccountId(user.id, acc.id).catch(() => {});
       return acc;
     },
-    [user, apply],
+    [user, apply, accounts.length, tier],
   );
 
   const editAccount = useCallback(

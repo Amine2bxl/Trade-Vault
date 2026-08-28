@@ -6,15 +6,8 @@ import { AuthModal } from "./landing/AuthModal";
 import { FeaturesBento } from "./landing/FeaturesBento";
 import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
 import MegaNav from "./landing/MegaNav";
-import {
-  eur,
-  MONTHLY_EUR,
-  YEARLY_EUR,
-  YEARLY_FULL_PRICE,
-  YEARLY_PER_MONTH,
-  YEARLY_SAVING,
-} from "../utils/pricing";
 import { CookieConsent } from "../components/CookieConsent";
+import PricingPlans from "../components/pricing/PricingPlans";
 import { LandingLangProvider, useLandingT } from "./landing/i18n";
 import "./landing.css";
 
@@ -403,7 +396,7 @@ function JourneySection() {
 
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
-  const { t } = useLandingT();
+  const { t, lang } = useLandingT();
   const [auth, setAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [authPlan, setAuthPlan] = useState<string | undefined>();
@@ -448,19 +441,6 @@ function LandingPage() {
     { q: t("faq.q3"), a: t("faq.a3") },
     { q: t("faq.q4"), a: t("faq.a4") },
   ];
-  const freeIncluded = [t("pricing.f1"), t("pricing.f2"), t("pricing.f3"), t("pricing.f4")];
-  const freeMissing = [t("pricing.m1"), t("pricing.m2"), t("pricing.m3"), t("pricing.m4")];
-  const premiumFeatures: [string, string][] = [
-    [t("pricing.pro.pf1"), t("pricing.pro.pf1d")],
-    [t("pricing.pro.pf2"), t("pricing.pro.pf2d")],
-    [t("pricing.pro.pf3"), t("pricing.pro.pf3d")],
-    [t("pricing.pro.pf4"), t("pricing.pro.pf4d")],
-    [t("pricing.pro.pf5"), t("pricing.pro.pf5d")],
-    [t("pricing.pro.pf6"), t("pricing.pro.pf6d")],
-    [t("pricing.pro.pf7"), t("pricing.pro.pf7d")],
-    [t("pricing.pro.pf8"), t("pricing.pro.pf8d")],
-  ];
-
   const scrollLockRef = useRef(false);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -732,161 +712,30 @@ function LandingPage() {
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
             <SectionHead tag={t("pricing.tag")} title={t("pricing.title")} sub={t("pricing.sub")} />
 
-            <div className="reveal mb-10 flex justify-center">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-emerald-400/30 bg-emerald-400/[.1] px-5 py-2 text-sm font-bold text-emerald-300">
-                <Icon n="sparkle" cls="h-4 w-4" /> {t("pricing.save")}
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
-              {/* FREE */}
-              <div onPointerMove={spot} className="reveal spot card-premium p-6">
-                <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400 mb-4">
-                  {t("pricing.free")}
-                </p>
-                <div className="flex items-end gap-1.5 mb-3">
-                  <span className="font-display text-4xl font-bold text-white">
-                    {t("pricing.free.price")}
-                  </span>
-                  <span className="mb-1 text-sm text-slate-500">{t("pricing.free.per")}</span>
-                </div>
-                <p className="text-sm text-slate-500 mb-5">{t("pricing.free.d")}</p>
-                <button onClick={() => open("signup", "Free")} className="btn-ghost w-full py-3">
-                  {t("pricing.free.btn")}
-                </button>
-                <div className="mt-6 space-y-2.5 text-sm">
-                  {freeIncluded.map((f) => (
-                    <p key={f} className="flex items-start gap-2.5 text-slate-300">
-                      <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-400">
-                        <Icon n="check" cls="h-3 w-3" />
-                      </span>
-                      {f}
-                    </p>
-                  ))}
-                </div>
-                <div className="mt-5 rounded-xl border border-white/[.06] bg-white/[.02] p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-500 mb-2.5">
-                    {t("pricing.notincluded")}
-                  </p>
-                  <div className="space-y-2 text-[13px]">
-                    {freeMissing.map((f) => (
-                      <p key={f} className="flex items-start gap-2.5 text-slate-600">
-                        <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.03]">
-                          <Icon n="x" cls="h-3 w-3" />
-                        </span>
-                        {f}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* PRO ANNUEL */}
-              <div
-                onPointerMove={spot}
-                className="reveal spot card-featured p-6 lg:-my-3 lg:py-9"
-                style={{ transitionDelay: "80ms" }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[.15em] text-cyan-300">
-                    {t("pricing.pro.year")}
-                  </p>
-                  <span className="rounded-full bg-emerald-400 px-2.5 py-1 text-[11px] font-bold uppercase text-[#041018] flex items-center gap-1">
-                    <Icon n="flame" cls="h-3 w-3 fill-current" />
-                    {t("pricing.pro.badge")}
-                  </span>
-                </div>
-                <div className="flex items-end gap-1.5 mb-2">
-                  <span className="font-display text-5xl font-bold text-white">
-                    {eur(Math.round(YEARLY_PER_MONTH * 100) / 100)}
-                  </span>
-                  <span className="mb-1.5 text-sm text-slate-400">{t("pricing.pro.per")}</span>
-                </div>
-                <p className="text-sm text-slate-300 mb-3">
-                  <span className="font-semibold text-white">{eur(YEARLY_EUR)}</span>{" "}
-                  {t("pricing.pro.billed")}
-                  <span className="ml-2 text-slate-500 line-through">{eur(YEARLY_FULL_PRICE)}</span>
-                </p>
-                <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-400/15 px-2.5 py-1 text-[12px] font-bold text-emerald-300 mb-5">
-                  <Icon n="check" cls="h-3.5 w-3.5" /> {eur(YEARLY_SAVING)} {t("pricing.pro.save")}
-                </div>
-                <button
-                  onClick={() => open("signup", "Pro Annuel — 14 jours d'essai")}
-                  className="btn-primary w-full py-3 mb-2"
-                >
-                  {t("pricing.pro.btn")} <Icon n="arrow" cls="h-4 w-4" />
-                </button>
-                <p className="text-center text-[11px] text-slate-500 mb-6">
-                  {t("pricing.pro.note")}
-                </p>
-                <p className="text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/80 mb-3">
-                  {t("pricing.pro.all")}
-                </p>
-                <div className="space-y-3 text-sm">
-                  {premiumFeatures.map(([f, why]) => (
-                    <div key={f} className="flex items-start gap-2.5">
-                      <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-cyan-400/20 text-cyan-300">
-                        <Icon n="check" cls="h-3 w-3" />
-                      </span>
-                      <span>
-                        <span className="block text-white font-semibold">{f}</span>
-                        <span className="block text-[12px] leading-5 text-slate-400 mt-0.5">
-                          {why}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* PRO MENSUEL */}
-              <div
-                onPointerMove={spot}
-                className="reveal spot card-premium p-6 opacity-[.92]"
-                style={{ transitionDelay: "160ms" }}
-              >
-                <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400 mb-4">
-                  {t("pricing.monthly")}
-                </p>
-                <div className="flex items-end gap-1.5 mb-3">
-                  <span className="font-display text-4xl font-bold text-slate-200">
-                    {eur(MONTHLY_EUR)}
-                  </span>
-                  <span className="mb-1 text-sm text-slate-500">{t("pricing.pro.per")}</span>
-                </div>
-                <p className="text-sm text-slate-500 mb-5">{t("pricing.monthly.d")}</p>
-                <button
-                  onClick={() => open("signup", "Pro Mensuel — 14 jours d'essai")}
-                  className="btn-ghost w-full py-3"
-                >
-                  {t("pricing.monthly.btn")}
-                </button>
-                <div className="mt-6 space-y-2.5 text-sm">
-                  {premiumFeatures.map(([f]) => (
-                    <p key={f} className="flex items-start gap-2.5 text-slate-400">
-                      <span className="mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-white/[.06] text-slate-500">
-                        <Icon n="check" cls="h-3 w-3" />
-                      </span>
-                      {f}
-                    </p>
-                  ))}
-                </div>
-              </div>
+            {/* La grille tarifaire — le MÊME composant que dans l'application.
+                Ce que le visiteur compare ici est exactement ce qu'il retrouve
+                dans sa page d'abonnement, aux mêmes prix : il n'y a plus qu'un
+                seul endroit où une offre est décrite. */}
+            <div className="reveal">
+              <PricingPlans
+                lang={lang}
+                onChoose={(plan) => open("signup", `TradeVault — ${plan}`)}
+                onFree={() => open("signup", "Free")}
+              />
             </div>
 
             <div className="reveal mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
               {[
-                ["shield", t("pricing.trust1")],
-                ["lock", t("pricing.trust2")],
-                ["check", t("pricing.trust3")],
-                ["download", t("pricing.trust4")],
+                ["shield", "pricing.trust1"],
+                ["lock", "pricing.trust2"],
+                ["check", "pricing.trust3"],
               ].map(([ic, s]) => (
                 <span
                   key={s}
                   className="flex items-center gap-2 text-sm font-medium text-slate-500"
                 >
                   <Icon n={ic as IName} cls="h-4 w-4 text-emerald-400" />
-                  {s}
+                  {t(s)}
                 </span>
               ))}
             </div>

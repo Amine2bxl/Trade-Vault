@@ -5,21 +5,33 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // the four calls we make). All handlers here are wired as raw HTTP endpoints
 // in src/server.ts.
 //
-// Plans: free / pro_monthly / pro_yearly. Trial is app-level (14 days from
-// signup, see the billing migration); when a trialing user checks out we pass
-// the remaining trial to Stripe as `trial_end` so nothing is charged early.
+// Plans : free, puis deux paliers payants (pro / elite) en mensuel ou annuel —
+// le catalogue est dans `src/domain/plans.ts`, partagé avec l'app.
+//
+// PAS D'ESSAI GRATUIT. Une inscription démarre sur l'offre gratuite, qui est
+// utilisable indéfiniment ; le paiement ouvre l'accès payant immédiatement.
+// Le statut `trialing` reste géré côté webhook au cas où un essai serait
+// configuré dans le dashboard Stripe, mais l'application n'en accorde aucun.
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyClient = SupabaseClient<any, any, any>;
 
 const STRIPE_API = "https://api.stripe.com/v1";
 
-export type PaidPlan = "pro_monthly" | "pro_yearly";
+export type { PaidPlan } from "../domain/plans";
+import { isPaidPlan, tierOf, type PaidPlan } from "../domain/plans";
+import { normalizePromoCode } from "../domain/promo";
 
+/**
+ * L'identifiant de prix Stripe d'un plan.
+ *
+ * Une variable d'environnement par palier et par période :
+ * `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_ELITE_YEARLY`, etc. Le nom est
+ * dérivé du plan, donc ajouter un palier au catalogue ne demande aucune
+ * modification ici — seulement la variable correspondante dans Vercel.
+ */
 function stripePriceId(plan: PaidPlan): string | undefined {
-  return plan === "pro_monthly"
-    ? process.env.STRIPE_PRICE_PRO_MONTHLY
-    : process.env.STRIPE_PRICE_PRO_YEARLY;
+  return process.env[`STRIPE_PRICE_${plan.toUpperCase()}`];
 }
 
 import { json } from "../shared/response";
@@ -29,6 +41,17 @@ export function serviceClient(): AnyClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false } });
+}
+
+/** Les variables Supabase serveur manquantes — pour nommer l'erreur au lieu
+ *  de renvoyer un « misconfigured » muet. Le client de l'app utilise
+ *  `VITE_SUPABASE_URL` (compilée dans le bundle) ; les server functions, elles,
+ *  lisent `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` à l'exécution. */
+export function missingServerSupabaseConfig(): string[] {
+  return [
+    !process.env.SUPABASE_URL && "SUPABASE_URL",
+    !process.env.SUPABASE_SERVICE_ROLE_KEY && "SUPABASE_SERVICE_ROLE_KEY",
+  ].filter(Boolean) as string[];
 }
 
 /** Resolves the calling user from the Supabase access token in the
@@ -70,7 +93,7 @@ export async function markWebhookProcessed(
   }
 }
 
-async function stripe(
+export async function stripe(
   path: string,
   params: Record<string, string>,
   method: "POST" | "GET" = "POST",
@@ -92,11 +115,14 @@ async function stripe(
   return data;
 }
 
-function siteUrl(request: Request): string {
+export function siteUrl(request: Request): string {
   return process.env.PUBLIC_SITE_URL ?? new URL(request.url).origin;
 }
 
-/** Finds (or creates) the Stripe customer for a user, persisting the id. */
+/** Finds (or creates) the Stripe customer for a user, persisting the id.
+ *  §4 STRIPE_INTEGRATION : l'écriture est un UPSERT — une `update` matchant
+ *  zéro ligne ne renvoyait pas d'erreur et laissait le client Stripe orphelin,
+ *  puis le checkout suivant créait un DEUXIÈME customer pour le même humain. */
 async function ensureCustomer(sb: AnyClient, userId: string, email: string): Promise<string> {
   const { data: sub } = await sb
     .from("subscriptions")
@@ -111,21 +137,36 @@ async function ensureCustomer(sb: AnyClient, userId: string, email: string): Pro
   });
   await sb
     .from("subscriptions")
-    .update({ stripe_customer_id: customer.id, updated_at: new Date().toISOString() })
-    .eq("user_id", userId);
+    .upsert(
+      { user_id: userId, stripe_customer_id: customer.id, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
   return customer.id;
 }
 
 // ── POST /api/billing/checkout  { plan, promoCode? } ────────────────────────
 // Returns { url } to a Stripe Checkout session. Cards + Apple Pay + Google Pay
 // come from Stripe's automatic payment methods (enabled per default in the
-// dashboard). A user still inside their signup trial gets the remainder as a
-// Stripe trial — card saved, zero charged until the trial ends.
+// dashboard). Le paiement démarre immédiatement : il n'y a pas d'essai.
+//
+// Un code promo passe d'abord par le catalogue applicatif (`promo_codes`) :
+// le titulaire (influenceur) obtient l'accès permanent sans carte ni Stripe,
+// sa communauté obtient une réduction via un coupon Stripe réel. Sans code ou
+// code inconnu ici, on retombe sur les promotion codes du dashboard Stripe.
 export async function handleCheckout(request: Request): Promise<Response> {
+  // Ordre volontaire : vérifier LA CONFIG d'abord, la session ensuite. Sinon,
+  // un `SUPABASE_SERVICE_ROLE_KEY` absent se cacherait derrière un
+  // « unauthorized » trompeur sur des endpoints qui n'existent pas encore.
+  const sb = serviceClient();
+  if (!sb) {
+    const missing = missingServerSupabaseConfig();
+    return json(
+      { error: `server misconfigured${missing.length ? `: ${missing.join(", ")}` : ""}` },
+      500,
+    );
+  }
   const user = await userFromRequest(request);
   if (!user) return json({ error: "unauthorized" }, 401);
-  const sb = serviceClient();
-  if (!sb) return json({ error: "server misconfigured" }, 500);
 
   let payload: { plan?: string; promoCode?: string };
   try {
@@ -133,18 +174,49 @@ export async function handleCheckout(request: Request): Promise<Response> {
   } catch {
     return json({ error: "invalid body" }, 400);
   }
-  const plan = payload.plan as PaidPlan;
-  if (plan !== "pro_monthly" && plan !== "pro_yearly") return json({ error: "invalid plan" }, 400);
+  const plan = payload.plan;
+  if (!isPaidPlan(plan)) return json({ error: "invalid plan" }, 400);
+
+  const appCode = normalizePromoCode(payload.promoCode);
+  if (appCode) {
+    const { resolveAppPromo, grantPromoAccess, recordPromoRedemption, ensureDiscountStripeCoupon } =
+      await import("./promo.server");
+
+    const app = await resolveAppPromo(sb, appCode, user);
+    if (app.status === "invalid" || app.status === "owner_mismatch") {
+      return json({ error: "invalid promo code" }, 400);
+    }
+    if (app.status === "granted") {
+      // Accès permanent, sans paiement — c'est le parcours influenceur.
+      const granted = await grantPromoAccess(sb, user.id, app.plan);
+      if (!granted.ok) return json({ error: "grant failed" }, 500);
+      await recordPromoRedemption(sb, appCode, user, app.plan, app.kind);
+      return json({
+        url: `${siteUrl(request)}/?billing=success&promo=${encodeURIComponent(appCode)}`,
+      });
+    }
+    if (app.status === "discount") {
+      // Réduction communauté : on encaisse réellement, à prix réduit.
+      const couponId = await ensureDiscountStripeCoupon(appCode, app.percent);
+      const price = stripePriceId(plan);
+      if (!price) return json({ error: "price not configured" }, 500);
+      const customer = await ensureCustomer(sb, user.id, user.email);
+      const success = await createCheckoutSession(request, user.id, price, {
+        couponId,
+        plan,
+        customer,
+      });
+      await recordPromoRedemption(sb, appCode, user, plan, "discount");
+      return success;
+    }
+    // `app.status === "not_app"` : code inconnu de l'app — on laisse Stripe
+    // dashboard tenter le sien plus bas.
+  }
+
   const price = stripePriceId(plan);
   if (!price) return json({ error: "price not configured" }, 500);
 
   const customer = await ensureCustomer(sb, user.id, user.email);
-
-  const { data: sub } = await sb
-    .from("subscriptions")
-    .select("status, trial_ends_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
 
   const params: Record<string, string> = {
     mode: "subscription",
@@ -156,15 +228,6 @@ export async function handleCheckout(request: Request): Promise<Response> {
     "subscription_data[metadata][user_id]": user.id,
     "subscription_data[metadata][plan]": plan,
   };
-
-  // Remaining signup trial carries over: Stripe requires trial_end ≥ 48h out,
-  // closer than that we just start the paid period immediately.
-  if (sub?.status === "trialing" && sub.trial_ends_at) {
-    const trialEnd = Math.floor(new Date(sub.trial_ends_at).getTime() / 1000);
-    if (trialEnd > Math.floor(Date.now() / 1000) + 48 * 3600) {
-      params["subscription_data[trial_end]"] = String(trialEnd);
-    }
-  }
 
   if (payload.promoCode) {
     // Promotion codes (e.g. VAULT20) are created in the Stripe dashboard;
@@ -190,14 +253,50 @@ export async function handleCheckout(request: Request): Promise<Response> {
   }
 }
 
+/** Remplit et ouvre une session de checkout. Partagé entre le parcours
+ *  standard et le parcours « réduction communauté ». */
+export async function createCheckoutSession(
+  request: Request,
+  userId: string,
+  price: string,
+  opts: { couponId?: string; plan?: PaidPlan; customer?: string },
+): Promise<Response> {
+  const params: Record<string, string> = {
+    mode: "subscription",
+    "line_items[0][price]": price,
+    "line_items[0][quantity]": "1",
+    success_url: `${siteUrl(request)}/?billing=success`,
+    cancel_url: `${siteUrl(request)}/?billing=canceled`,
+  };
+  if (userId) params["subscription_data[metadata][user_id]"] = userId;
+  if (opts.plan) params["subscription_data[metadata][plan]"] = opts.plan;
+  if (opts.customer) params.customer = opts.customer;
+  if (opts.couponId) params["discounts[0][coupon]"] = opts.couponId;
+  else params.allow_promotion_codes = "true";
+
+  try {
+    const session = await stripe("/checkout/sessions", params);
+    return json({ url: session.url });
+  } catch (e) {
+    console.error("checkout failed", e);
+    return json({ error: "checkout failed" }, 500);
+  }
+}
+
 // ── POST /api/billing/portal ─────────────────────────────────────────────────
 // Stripe Billing Portal: upgrade/downgrade, change card, cancel — all managed
 // by Stripe's hosted UI, one click from the profile page.
 export async function handlePortal(request: Request): Promise<Response> {
+  const sb = serviceClient();
+  if (!sb) {
+    const missing = missingServerSupabaseConfig();
+    return json(
+      { error: `server misconfigured${missing.length ? `: ${missing.join(", ")}` : ""}` },
+      500,
+    );
+  }
   const user = await userFromRequest(request);
   if (!user) return json({ error: "unauthorized" }, 401);
-  const sb = serviceClient();
-  if (!sb) return json({ error: "server misconfigured" }, 500);
 
   const { data: sub } = await sb
     .from("subscriptions")
@@ -260,11 +359,31 @@ async function verifyStripeSignature(payload: string, header: string | null): Pr
   return timingSafeEqualHex(expected, v1);
 }
 
+/**
+ * Le plan d'un abonnement Stripe.
+ *
+ * Les métadonnées sont la source fiable : c'est nous qui les écrivons au
+ * checkout. En secours — un abonnement créé depuis le dashboard, ou une
+ * ancienne ligne — on retombe sur le palier déduit de l'identifiant de prix,
+ * puis sur la période de facturation. Sans cela, un abonné Elite serait
+ * silencieusement projeté en Pro par le webhook.
+ */
 function planFromStripeSub(sub: any): PaidPlan {
-  if (sub.metadata?.plan === "pro_yearly") return "pro_yearly";
-  if (sub.metadata?.plan === "pro_monthly") return "pro_monthly";
-  const interval = sub.items?.data?.[0]?.price?.recurring?.interval;
-  return interval === "year" ? "pro_yearly" : "pro_monthly";
+  const fromMeta = sub.metadata?.plan;
+  if (isPaidPlan(fromMeta)) return fromMeta;
+
+  const priceId = sub.items?.data?.[0]?.price?.id;
+  const interval =
+    sub.items?.data?.[0]?.price?.recurring?.interval === "year" ? "yearly" : "monthly";
+  if (priceId) {
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value === priceId && key.startsWith("STRIPE_PRICE_")) {
+        const candidate = key.slice("STRIPE_PRICE_".length).toLowerCase();
+        if (isPaidPlan(candidate)) return candidate;
+      }
+    }
+  }
+  return `${tierOf(fromMeta) === "free" ? "pro" : tierOf(fromMeta)}_${interval}` as PaidPlan;
 }
 
 export async function handleStripeWebhook(request: Request): Promise<Response> {
@@ -324,7 +443,19 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
         .eq("user_id", userId);
     }
   } catch (e) {
+    // §3 STRIPE_INTEGRATION : on RETIRE la marque d'idempotence avant de
+    // renvoyer 500. Sinon, la retransmission de Stripe était dédupliquée
+    // comme « déjà traitée » et l'événement — un abonnement payé — était
+    // perdu pour toujours, sans erreur remontée à personne.
     console.error("stripe webhook failed", e);
+    const eventId = typeof event?.id === "string" ? event.id : null;
+    if (eventId) {
+      await sb
+        .from("processed_webhook_events")
+        .delete()
+        .eq("provider", "stripe")
+        .eq("event_id", eventId);
+    }
     return json({ error: "handler failed" }, 500);
   }
 

@@ -17,8 +17,24 @@ before you touch code.
 
 ## 1. Current state (verified)
 
-Stripe account is in **live mode**, EUR, one product `TradeVault Pro` with two
-prices: `19.00 EUR / month` and `180.00 EUR / year`.
+Stripe account is in **live mode**, EUR. Le catalogue applicatif compte
+**deux offres payantes** (plus l'offre gratuite) (`src/domain/plans.ts`, source unique lue
+par l'app, la landing, Stripe et le paiement crypto) :
+
+| Offre | Mensuel | Annuel | Variables d'environnement |
+|---|---|---|---|
+| Pro | 15 € | 120 € (4 mois offerts) | `STRIPE_PRICE_PRO_MONTHLY` / `STRIPE_PRICE_PRO_YEARLY` |
+| Elite | 25 € | 200 € (4 mois offerts) | `STRIPE_PRICE_ELITE_MONTHLY` / `STRIPE_PRICE_ELITE_YEARLY` |
+
+Pro ouvre TOUTES les pages d'analyse ; Elite n'en ouvre aucune de plus — elle
+enlève les limites (Jarvis sans plafond, comptes illimités, alertes, support
+prioritaire). Un trader qui paie ne doit jamais tomber sur un second mur.
+
+Le nom de la variable est dérivé de l'identifiant du plan
+(`STRIPE_PRICE_${PLAN.toUpperCase()}`) : ajouter un palier au catalogue ne
+demande aucune modification du code de facturation, seulement la variable
+correspondante. Les anciens prix (19 € / 199 €) ne sont plus référencés nulle
+part dans le code.
 
 | Area | State |
 |---|---|
@@ -29,40 +45,56 @@ prices: `19.00 EUR / month` and `180.00 EUR / year`.
 | Code | `src/backend/billing.server.ts` complete but untested end-to-end |
 | DB | `public.subscriptions` + `processed_webhook_events` exist, RLS select-own |
 
-## 2. [DECISION] The trial model contradicts itself
+## 2. Essai gratuit : supprimé (décision prise)
 
-This is the most important item in this document. Fix it before anything else.
+L'inscription n'accorde plus rien. `handle_new_user_billing` insère
+`plan='free', status='canceled', source='signup'` — l'offre gratuite,
+utilisable indéfiniment (journal, tableau de bord, calendrier, checklist, plan,
+calculateur). L'accès payant s'ouvre au paiement, immédiatement, sans période
+d'essai côté Stripe non plus : le report de l'essai restant
+(`subscription_data[trial_end]`) a été retiré de `handleCheckout`, il n'avait
+plus d'objet.
 
-**What the code does today.** `supabase/migrations/20260717100000_billing.sql`
-creates a trigger `handle_new_user_billing` that gives every new signup:
+Migration : `20260827220000_no_free_trial.sql`. **Aucune ligne existante n'est
+touchée** — un essai historique encore en cours va jusqu'à son terme, couper
+l'accès de quelqu'un pendant qu'il l'utilise se voit comme une panne, pas comme
+une décision commerciale.
 
-```
-plan = 'pro_monthly', status = 'trialing', trial_ends_at = now() + 14 days
-```
+Conséquence à ne pas manquer : `AI_REQUIRE_PRO` doit passer à `"true"` dans
+Vercel pour que les points d'entrée IA soient réellement payants. Tant qu'il
+vaut `false`, l'IA reste ouverte à tous les comptes authentifiés.
 
-No card. Full Pro for 14 days, granted at signup. `handleCheckout` then carries
-the *remaining* trial into Stripe via `subscription_data[trial_end]`.
+Le seul chemin qui donne le premium sans payer est désormais l'accès offert
+(§6bis).
 
-**What the owner specified.** A **7-day trial that requires a card up front.**
+## 2.5 Promo codes — accès permanent influenceur + réduction communauté
 
-These are incompatible. A card-required trial means the trial lives in Stripe,
-starts at checkout, and users who never check out get nothing.
+Les codes promo ont deux couches, qui coexistent au checkout :
 
-**Target design (implement this unless told otherwise):**
+1. **Codes Stripe dashboard** (classiques) : un coupon + promotion code créés dans
+   Stripe. `handleCheckout` les résout par leur nom et les pré-applique ; s'il ne
+   trouve pas le code, Checkout garde `allow_promotion_codes=true`.
+2. **Codes gérés par l'app** (`promo_codes`) : créés dans le panneau
+   Réglages → Abonnement (réservé à `ADMIN_EMAILS`). Un code peut porter :
+   - `owner_email` — **l'influenceur** : son code lui ouvre l'accès PERMANENT
+     (`source='promo'` en base, aucune carte, aucun client Stripe créé) ;
+   - `discount_percent` — **sa communauté** : -N% encaissé réellement via un
+     coupon Stripe récurrent (`percent_off`, `duration=forever`), créé une fois
+     sous l'id déterministe `coupon_<CODE>` ;
+   - rien des deux — code d'invitation : accès permanent à quiconque, dans la
+     limite de `max_uses`.
 
-1. Signup trigger inserts `plan='free', status='canceled', source='trial',
-   trial_ends_at=null`. New users are on the free tier, full stop.
-2. Checkout passes `subscription_data[trial_period_days]=7`. Stripe collects and
-   validates the card, charges nothing for 7 days.
-3. Delete the `trial_end` carry-over branch in `handleCheckout` — it becomes
-   dead code and would double-apply a trial.
-4. Backfill: existing `trialing` rows keep their current `trial_ends_at` so no
-   one loses access mid-trial. Do not retroactively downgrade anyone.
-5. `AI_REQUIRE_PRO` stays `false` until this ships, then flips to `true`.
+La résolution se fait **serveur** au checkout (rôle de service ; `promo_codes` et
+`promo_redemptions` ont RLS active et aucune politique). Chaque utilisation est
+tracée dans `promo_redemptions` (`code, user_id, kind`) et compte dans
+`uses_count`. La révocation repasse la ligne en `free` **seulement si** elle est
+encore `source='promo'` — un abonnement payé n'est jamais touché, ni par le code,
+ni par sa révocation.
 
-Note the gating consequence: today every signup silently gets Pro. After this
-change the free tier must actually be usable, or signups hit a wall. Confirm the
-free-tier feature set before shipping.
+Règle : si un code existe à la fois dans `promo_codes` et dans le dashboard
+Stripe, c'est le catalogue applicatif qui gagne. Un code applicatif inactif ou
+expiré renvoie une erreur explicite — on ne retombe pas silencieusement sur un
+code Stripe de même nom.
 
 ## 3. Bug: webhook idempotency loses events
 
@@ -138,6 +170,24 @@ Add:
 - **`invoice.payment_failed`** — for the dunning email. Status already flips via
   `subscription.updated`, so this is notification only, not state.
 
+## 6bis. Accès offert (influenceurs, collègues, soi-même)
+
+Donner le premium sans paiement passe par `ADMIN_EMAILS` (variable Vercel,
+liste d'adresses séparées par des virgules) et le panneau « Accès offert » qui
+apparaît alors dans Réglages → Abonnement.
+
+- La liste est tenue par adresse e-mail dans `public.comp_grants`. Elle vaut
+  aussi pour quelqu'un qui n'a pas encore de compte : l'accès s'applique à son
+  inscription, via `handle_new_user_billing`.
+- L'abonnement écrit porte `source = 'comp'` : tout le reste de l'application
+  (paliers, cadenas, page d'abonnement) fonctionne sans savoir que l'accès est
+  offert, et aucun client Stripe n'est créé.
+- Révoquer retire de la liste et repasse la ligne en `free` — **uniquement** si
+  sa source est `comp`, pour ne jamais couper un abonnement réellement payé.
+- `comp_grants` a RLS active et aucune politique : la table est invisible aux
+  clients, seul le rôle de service y touche. Le panneau masqué n'est pas le
+  contrôle d'accès — chaque appel revérifie `ADMIN_EMAILS` côté serveur.
+
 ## 7. Owner tasks — dashboard only, cannot be done in code
 
 Give this list to the owner verbatim.
@@ -145,13 +195,18 @@ Give this list to the owner verbatim.
 1. **Create the webhook endpoint.** URL `https://tradevault.be/api/stripe/webhook`,
    events: the five listed above. Copy the signing secret into Vercel as
    `STRIPE_WEBHOOK_SECRET`. Do this in **test mode first**, then live.
-2. **Copy both price IDs** (`price_...`) into Vercel as `STRIPE_PRICE_PRO_MONTHLY`
-   and `STRIPE_PRICE_PRO_YEARLY`.
+2. **Créer trois produits** (Pro, Elite, Fund) avec chacun un prix mensuel et un
+   prix annuel, aux montants du tableau §1, puis copier les six identifiants
+   `price_...` dans Vercel sous les six noms de variables listés. Un plan dont
+   la variable manque renvoie « price not configured » au checkout — c'est
+   volontaire : mieux vaut un échec visible qu'un encaissement au mauvais prix.
 3. **Publish ToS and Privacy pages** on tradevault.be, then declare them in
    Stripe → Public business information. They render on Checkout and the portal.
 4. **Enable Stripe Tax** and register for OSS.
 5. **Enable the trial-ending reminder email** in Stripe's subscription settings.
-6. **Checkout branding**: button colour `#2563EB`, font `Inter` (Manrope is not
+6. **Définir `ADMIN_EMAILS`** dans Vercel avec ta propre adresse, pour voir le
+   panneau « Accès offert » (§6bis).
+7. **Checkout branding**: button colour `#2563EB`, font `Inter` (Manrope is not
    in Stripe's font list; Inter is already the app's fallback), upload the logo
    and the square icon.
 

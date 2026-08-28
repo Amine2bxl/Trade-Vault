@@ -205,7 +205,7 @@ export function AuthModal({
             <p className="mt-1 text-sm text-slate-400">
               {mode === "login"
                 ? "Reprends où tu t'es arrêté."
-                : "14 jours de Premium, sans carte bancaire."}
+                : "Gratuit pour toujours. Passe Premium quand tu le décides."}
             </p>
 
             {/* SSO Google */}
@@ -322,11 +322,7 @@ export function AuthModal({
                 disabled={loading}
                 className="btn-primary w-full h-11! mt-1 disabled:opacity-60 disabled:cursor-wait"
               >
-                {loading
-                  ? "Un instant…"
-                  : mode === "login"
-                    ? "Se connecter"
-                    : "Démarrer mes 14 jours"}
+                {loading ? "Un instant…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
                 {!loading && <Icon n="arrow" cls="h-4 w-4" />}
               </button>
             </form>

@@ -1,4 +1,13 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransition } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  lazy,
+  Suspense,
+  startTransition,
+} from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -66,6 +75,7 @@ import {
 } from "./store";
 import { useTrades, tradesQueryKey } from "./hooks/useTrades";
 import { useRealtimeTrades } from "./hooks/useRealtimeTrades";
+import { useSubscription } from "./hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { missingReportMonths } from "./utils/reportMonths";
 import { withPnlFromRiskAndR } from "./utils/tradeCalcs";
@@ -82,6 +92,8 @@ import {
 } from "@/modules/notifications";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
+import { previewTrades } from "./utils/previewTrades";
+import { canLogTrade, isPlanLimitError } from "./utils/planLimits";
 import { computeBehavioral } from "./utils/behavioral";
 import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
@@ -95,6 +107,7 @@ import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
+import { PageGate, usePageLock } from "./components/PremiumGate";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
@@ -103,7 +116,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
   const { activeId, ready: accountsReady, activeAccount } = useAccounts();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
   const queryClient = useQueryClient();
@@ -227,6 +240,37 @@ function AppContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Page verrouillée : elle est rendue avec un historique de DÉMONSTRATION, pas
+  // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
+  // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
+  const pageLocked = usePageLock(page);
+  const { tier, checkout } = useSubscription();
+  const shownTrades = pageLocked ? previewTrades() : trades;
+
+  // Tous les « Go Pro » partent DIRECTEMENT au checkout Stripe (plan annuel
+  // Pro, l'offre mise en avant) au lieu de passer par la page d'abonnement.
+  // Un code promo porté par l'URL (`?promo=») est repris automatiquement : un
+  // client qui a un code 100 % n'ira jamais jusqu'à Stripe — l'accès s'ouvre
+  // au vol.
+  const promoFromUrl = useMemo(
+    () =>
+      typeof window !== "undefined"
+        ? (new URLSearchParams(window.location.search).get("promo") ?? undefined)
+        : undefined,
+    [],
+  );
+  const goProDirect = useCallback(() => {
+    void checkout("pro_yearly", promoFromUrl).then((err) => {
+      if (err) setPage("subscription");
+    });
+  }, [checkout, promoFromUrl]);
+
+  useEffect(() => {
+    const onUpgrade = () => goProDirect();
+    window.addEventListener("tv:upgrade", onUpgrade);
+    return () => window.removeEventListener("tv:upgrade", onUpgrade);
+  }, [goProDirect]);
+
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   // Actions d'en-tête de la page courante, remontées dans la barre d'onglets.
@@ -419,6 +463,22 @@ function AppContent() {
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
+      // Quota mensuel d'encodage. Il porte sur les CRÉATIONS : corriger un
+      // trade déjà saisi reste possible quel que soit le palier — bloquer une
+      // correction serait punitif et sans rapport avec l'offre.
+      const isEdit = trades.some((t) => t.id === trade.id);
+      if (!canLogTrade(tier, trades, isEdit)) {
+        setModalOpen(false);
+        setEditingTrade(null);
+        toast(
+          lang === "fr"
+            ? "Limite de 10 trades par mois atteinte — passe à Pro pour encoder sans limite."
+            : "10 trades a month reached — go Pro to log without limits.",
+          "info",
+        );
+        setPage("subscription");
+        return;
+      }
       setModalOpen(false);
       setEditingTrade(null);
       let snapshot: Trade[] = [];
@@ -472,7 +532,7 @@ function AppContent() {
         });
       })();
     },
-    [user],
+    [user, trades, tier, lang, toast, t, setPage],
   );
 
   /**
@@ -713,59 +773,64 @@ function AppContent() {
                 (voir le composant) : défilement, filtres et lignes dépliées
                 survivent au changement de page. */}
               <PageTransition page={page}>
-                {page === "dashboard" && (
-                  <Dashboard
-                    trades={trades}
-                    onAddTrade={handleAdd}
-                    tradesLoading={tradesLoading}
-                    onOpenChecklist={() => setPage("checklist")}
-                    onOpenImport={() => setImportOpen(true)}
-                    onEditTrade={handleEdit}
-                    onOpenJournal={() => setPage("journal")}
-                  />
-                )}
-                {page === "journal" && (
-                  <Journal
-                    trades={trades}
-                    onEdit={handleEdit}
-                    onQuickEdit={handleQuickEdit}
-                    onDelete={handleDelete}
-                    onDeleteAll={handleDeleteAll}
-                    onAdd={handleAdd}
-                    onOpenMissed={() => setPage("missed")}
-                  />
-                )}
-                {page === "checklist" && (
-                  <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
-                )}
-                {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-                {page === "analytics" && <Analytics trades={trades} />}
-                {page === "mistakes" && <Mistakes trades={trades} />}
-                {page === "missed" && <MissedOpportunities />}
-                {page === "insights" && <Jarvis />}
-                {page === "news" && <EconomicNews />}
-                {page === "seasonality" && (
-                  <Seasonality trades={trades} tradesLoading={tradesLoading} />
-                )}
-                {page === "calculator" && (
-                  <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
-                )}
-                {page === "settings" && (
-                  <Settings
-                    trades={trades}
-                    onDeleteAll={handleDeleteAll}
-                    onOpenImport={() => setImportOpen(true)}
-                    onOpenReports={() => setPage("reports")}
-                  />
-                )}
-                {page === "reports" && <Reports trades={trades} />}
-                {page === "goals" && <Goals trades={trades} />}
-                {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-                {page === "appearance" && <Appearance />}
-                {page === "subscription" && <Subscription />}
-                {page === "montecarlo" && <MonteCarlo trades={trades} />}
-                {page === "inbox" && <Inbox />}
-                {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                {/* Le verrou premium enveloppe la page rendue : la table
+                    `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
+                    la facturation. */}
+                <PageGate page={page} onUpgrade={goProDirect}>
+                  {page === "dashboard" && (
+                    <Dashboard
+                      trades={trades}
+                      onAddTrade={handleAdd}
+                      tradesLoading={tradesLoading}
+                      onOpenChecklist={() => setPage("checklist")}
+                      onOpenImport={() => setImportOpen(true)}
+                      onEditTrade={handleEdit}
+                      onOpenJournal={() => setPage("journal")}
+                    />
+                  )}
+                  {page === "journal" && (
+                    <Journal
+                      trades={trades}
+                      onEdit={handleEdit}
+                      onQuickEdit={handleQuickEdit}
+                      onDelete={handleDelete}
+                      onDeleteAll={handleDeleteAll}
+                      onAdd={handleAdd}
+                      onOpenMissed={() => setPage("missed")}
+                    />
+                  )}
+                  {page === "checklist" && (
+                    <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+                  )}
+                  {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
+                  {page === "analytics" && <Analytics trades={shownTrades} />}
+                  {page === "mistakes" && <Mistakes trades={shownTrades} />}
+                  {page === "missed" && <MissedOpportunities />}
+                  {page === "insights" && <Jarvis />}
+                  {page === "news" && <EconomicNews />}
+                  {page === "seasonality" && (
+                    <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
+                  )}
+                  {page === "calculator" && (
+                    <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+                  )}
+                  {page === "settings" && (
+                    <Settings
+                      trades={trades}
+                      onDeleteAll={handleDeleteAll}
+                      onOpenImport={() => setImportOpen(true)}
+                      onOpenReports={() => setPage("reports")}
+                    />
+                  )}
+                  {page === "reports" && <Reports trades={shownTrades} />}
+                  {page === "goals" && <Goals trades={shownTrades} />}
+                  {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+                  {page === "appearance" && <Appearance />}
+                  {page === "subscription" && <Subscription />}
+                  {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
+                  {page === "inbox" && <Inbox />}
+                  {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                </PageGate>
               </PageTransition>
             </Suspense>
           </PageErrorBoundary>

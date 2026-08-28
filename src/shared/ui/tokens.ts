@@ -1,7 +1,7 @@
 /**
  * Design tokens — the TradeVault visual identity, centralized.
  *
- * These tokens codify the **landing page theme** (Manrope/Sora type, cyan/teal
+ * These tokens codify the landing page theme (Inter type, cyan/teal
  * accents, deep-navy glass surfaces, the shared motion language) which
  * `styles.css` already applies across the whole product. This file is the
  * single, typed, documented reference every primitive and every future screen
@@ -13,13 +13,19 @@
  * the rendered theme instead of hardcoding divergent values.
  */
 
-/** Typography — one identity across marketing site and product. */
+/** Typography — one identity across marketing site and product.
+ *  Inter porte body ET display (la grotesque de référence côté 21st.dev /
+ *  Linktree, le raffinement de Roboto côté Google/YouTube) : la hiérarchie
+ *  vient de la graisse, de la taille et de l'approche, jamais d'un changement
+ *  de police. */
 export const font = {
-  /** Manrope body stack (applied to `body` in styles.css). */
-  body: '"Manrope","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
-  /** Sora display stack — use via the `font-display` utility class. */
-  display: '"Sora","Manrope","Inter",-apple-system,BlinkMacSystemFont,sans-serif',
-  /** Utility class for display/headings (Sora). */
+  /** Inter body stack (applied to `body` in styles.css). */
+  body: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  /** Inter display stack — use via the `font-display` utility class. */
+  display: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  /** Roboto Mono stack for the rare technical spots (codes, session times). */
+  mono: '"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
+  /** Utility class for display emphasis (headings + hero metrics). */
   displayClass: "font-display",
   /** Tabular figures for prices / R / stats. */
   tabularClass: "tabular-nums",
@@ -121,6 +127,8 @@ export const density = {
  * Toute nouvelle surface utilise ces rôles, jamais une classe en pixels.
  */
 export const type = {
+  /** Hero / display — chiffres et titres d'en-tête à très forte présence. */
+  display: "font-display text-[30px] md:text-[34px] font-bold tracking-[-0.025em]",
   /** Page title — calm, not massive. */
   h1: "text-[26px] md:text-[30px] font-bold tracking-[-0.02em]",
   /** Section title. */
@@ -135,6 +143,12 @@ export const type = {
   label: "text-[11px] uppercase tracking-[0.08em] font-medium",
   /** Chrome dense : badges, unités, méta de cellule. Le plancher — rien en dessous. */
   micro: "text-[10px]",
+  /** Données financières : chiffres tabulaires, alignés, à forte présence. */
+  fin: "font-display tabular-nums text-base font-bold tracking-[-0.02em]",
+  /** Navigation (rail, onglets). */
+  nav: "text-[13px] font-medium tracking-[-0.01em]",
+  /** Boutons. */
+  button: "text-sm font-semibold",
 } as const;
 
 /**

@@ -13,7 +13,6 @@ import {
   Loader2,
   X,
   Sparkles,
-  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
@@ -102,7 +101,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   if (loading) {
     return (
-      <div className="p-4 md:p-5 max-w-3xl mx-auto">
+      <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
         <div className="glass rounded-3xl p-10 flex justify-center">
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
         </div>
@@ -111,7 +110,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   }
 
   return (
-    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
       {/* Autosave indicator */}
       <div className="h-4 -mt-2 text-right text-[10px] font-semibold uppercase tracking-wider">
         {saveState === "saving" && (
@@ -677,24 +676,50 @@ function SetupCard({
 
 function CompletionRing({ value, label }: { value: number; label: string }) {
   const pct = Math.round(value * 100);
-  const r = 24;
-  const c = 2 * Math.PI * r;
+  const R = 25;
+  const C = 2 * Math.PI * R;
+  // La jauge démarre en haut et balaye vers la droite ; la pointe lumineuse
+  // suit l'extrémité de l'arc, comme l'aiguille d'un compteur.
+  const angle = 2 * Math.PI * value - Math.PI / 2;
+  const tipX = 30 + R * Math.cos(angle);
+  const tipY = 30 + R * Math.sin(angle);
   return (
     <div className="relative w-16 h-16 shrink-0 animate-fade-in-up">
       <svg viewBox="0 0 60 60" className="w-16 h-16 -rotate-90">
-        <circle cx="30" cy="30" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+        {/* Piste : anneau neutre + liseré fin pour le volume. */}
+        <circle cx="30" cy="30" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
         <circle
           cx="30"
           cy="30"
-          r={r}
+          r={R + 4.5}
+          fill="none"
+          stroke="rgba(255,255,255,0.05)"
+          strokeWidth="1"
+        />
+        {/* Arc de progression — halo, caps ronds, douce animation. */}
+        <circle
+          cx="30"
+          cy="30"
+          r={R}
           fill="none"
           stroke="url(#tpGrad)"
           strokeWidth="5"
           strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - value)}
+          strokeDasharray={C}
+          strokeDashoffset={C * (1 - value)}
+          style={{ filter: "drop-shadow(0 0 5px rgba(34,211,238,.55))" }}
           className="transition duration-250"
         />
+        {/* La pointe de la jauge, visible dès qu'il y a une progression. */}
+        {value > 0 && (
+          <circle
+            cx={tipX}
+            cy={tipY}
+            r="3.2"
+            fill="#a5f3fc"
+            style={{ filter: "drop-shadow(0 0 4px rgba(34,211,238,.95))" }}
+          />
+        )}
         <defs>
           <linearGradient id="tpGrad" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="var(--tv-accent)" />
@@ -704,7 +729,7 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-xs font-bold text-white tabular-nums leading-none">{pct}%</span>
-        <span className="text-[11px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
+        <span className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ export default function Appearance() {
   };
 
   return (
-    <div className="p-4 md:p-5 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
       <PageHeader
         className="mb-2 md:mb-2"
         title={tr("Apparence", "Appearance")}

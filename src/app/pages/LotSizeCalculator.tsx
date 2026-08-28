@@ -185,7 +185,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
   usePageActions(headerActions);
 
   return (
-    <div className="p-4 md:p-5 max-w-[920px] mx-auto">
+    <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
       <div className="grid md:grid-cols-[1fr_320px] gap-4 md:gap-5 items-start">
         {/* ══ Colonne gauche : capital → risque → instrument ══ */}
         <div className="space-y-4">

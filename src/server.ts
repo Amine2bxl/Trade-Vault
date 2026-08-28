@@ -198,6 +198,48 @@ export default {
         const { handleCryptoCheckout } = await import("./backend/crypto-pay.server");
         return await handleCryptoCheckout(request);
       }
+      // Accès offert — réservé aux adresses listées dans `ADMIN_EMAILS`.
+      if (pathname === "/api/admin/me" && request.method === "GET") {
+        const { handleAdminMe } = await import("./backend/admin.server");
+        return await handleAdminMe(request);
+      }
+      if (pathname === "/api/admin/grants" && request.method === "GET") {
+        const { handleListGrants } = await import("./backend/admin.server");
+        return await handleListGrants(request);
+      }
+      if (pathname === "/api/admin/grants" && request.method === "POST") {
+        const { handleGrant } = await import("./backend/admin.server");
+        return await handleGrant(request);
+      }
+      if (pathname === "/api/admin/grants/revoke" && request.method === "POST") {
+        const { handleRevokeGrant } = await import("./backend/admin.server");
+        return await handleRevokeGrant(request);
+      }
+      // Codes promo gérés par l'app — réservés aux adresses `ADMIN_EMAILS`.
+      if (pathname === "/api/admin/promos" && request.method === "GET") {
+        const { handleListPromos } = await import("./backend/promo.server");
+        return await handleListPromos(request);
+      }
+      if (pathname === "/api/admin/promos" && request.method === "POST") {
+        const { handleCreatePromo } = await import("./backend/promo.server");
+        return await handleCreatePromo(request);
+      }
+      if (pathname === "/api/admin/promos/set-active" && request.method === "POST") {
+        const { handleSetPromoActive } = await import("./backend/promo.server");
+        return await handleSetPromoActive(request);
+      }
+      if (pathname === "/api/admin/promos/delete" && request.method === "POST") {
+        const { handleDeletePromo } = await import("./backend/promo.server");
+        return await handleDeletePromo(request);
+      }
+      if (pathname === "/api/admin/promos/redemptions" && request.method === "GET") {
+        const { handleListPromoRedemptions } = await import("./backend/promo.server");
+        return await handleListPromoRedemptions(request);
+      }
+      if (pathname === "/api/admin/promos/revoke" && request.method === "POST") {
+        const { handleRevokePromoRedemption } = await import("./backend/promo.server");
+        return await handleRevokePromoRedemption(request);
+      }
       if (pathname === "/api/crypto/webhook" && request.method === "POST") {
         const { handleCryptoWebhook } = await import("./backend/crypto-pay.server");
         return await handleCryptoWebhook(request);

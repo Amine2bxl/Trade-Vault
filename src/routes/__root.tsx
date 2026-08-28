@@ -19,9 +19,14 @@ const ROOT_TITLE = "TradeVault — Ton coach IA de trading personnel";
 const ROOT_DESCRIPTION =
   "Pas un simple journal de trading : un coach IA qui lit chacun de tes trades, chiffre les erreurs qui te coûtent le plus et t'impose la discipline. Journal, analytics quantitatives et checklist pré-market.";
 
-/** Google Fonts — chargées en non-bloquant (preload → stylesheet après paint). */
+/** Google Fonts — chargées en non-bloquant (preload → stylesheet après paint).
+ *  Inter porte TOUTE l'identité (body, UI, titres) : la grotesque neutre et
+ *  moderne des produits qui font référence (Geist/21st.dev, Linktree, et le
+ *  raffinement de Roboto/Google/YouTube) — plus lisible et plus premium que
+ *  Roboto lui-même. Roboto Mono sert aux rares données techniques (codes,
+ *  heures). */
 const GOOGLE_FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap";
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap";
 
 import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../app/components/ErrorScreen";
@@ -148,7 +153,7 @@ function RootShell({ children }: { children: ReactNode }) {
          * transforme en feuille de style. C'était fait dans un `useEffect`,
          * donc APRÈS l'hydratation — plusieurs centaines de millisecondes de
          * page entièrement composée dans la pile de repli (Arial/Helvetica),
-         * puis un basculement vers Sora/Manrope qui remesure chaque titre et
+         * puis un basculement vers Inter qui remesure chaque titre et
          * chaque ligne de texte : un reflow de la page complète, à chaque
          * premier chargement. C'est la source de décalage la plus visible du
          * produit, et elle n'a rien à voir avec React.

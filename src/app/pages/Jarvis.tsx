@@ -2,6 +2,8 @@ import { Bot, Send, TrendingUp, Shield, Zap, MessageSquare } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useTrades } from "../hooks/useTrades";
+import { usePreviewMode } from "../components/PremiumGate";
+import { previewTrades } from "../utils/previewTrades";
 import { useTradeStats } from "../hooks/useTradeStats";
 import { useEdgeScore } from "../hooks/useEdgeScore";
 import { PageContainer } from "@/shared/ui";
@@ -16,7 +18,11 @@ import { cn } from "../utils/cn";
 export default function Jarvis() {
   const { user } = useAuth();
   const { activeId, ready: accountsReady } = useAccounts();
-  const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  const { trades: realTrades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  // Derrière le mur d'aperçu, Jarvis raisonne sur l'historique de démonstration :
+  // un coach qui n'a rien à commenter ne donne envie de rien.
+  const preview = usePreviewMode();
+  const trades = preview ? previewTrades() : realTrades;
   const stats = useTradeStats(trades);
   const edge = useEdgeScore(trades, user?.id);
 
