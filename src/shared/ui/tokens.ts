@@ -1,7 +1,7 @@
 /**
  * Design tokens — the TradeVault visual identity, centralized.
  *
- * These tokens codify the landing page theme (IBM Plex Sans type, cyan/teal
+ * These tokens codify the landing page theme (Inter type, cyan/teal
  * accents, deep-navy glass surfaces, the shared motion language) which
  * `styles.css` already applies across the whole product. This file is the
  * single, typed, documented reference every primitive and every future screen
@@ -14,16 +14,17 @@
  */
 
 /** Typography — one identity across marketing site and product.
- *  IBM Plex Sans porte body ET display : la hiérarchie vient de la graisse,
- *  de la taille et de l'approche, jamais d'un changement de police. */
+ *  Inter porte body ET display (la grotesque de référence côté 21st.dev /
+ *  Linktree, le raffinement de Roboto côté Google/YouTube) : la hiérarchie
+ *  vient de la graisse, de la taille et de l'approche, jamais d'un changement
+ *  de police. */
 export const font = {
-  /** IBM Plex Sans body stack (applied to `body` in styles.css). */
-  body: '"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
-  /** IBM Plex Sans display stack — use via the `font-display` utility class. */
-  display:
-    '"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
-  /** IBM Plex Mono stack for the rare technical spots (codes, session times). */
-  mono: '"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
+  /** Inter body stack (applied to `body` in styles.css). */
+  body: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  /** Inter display stack — use via the `font-display` utility class. */
+  display: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  /** Roboto Mono stack for the rare technical spots (codes, session times). */
+  mono: '"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
   /** Utility class for display emphasis (headings + hero metrics). */
   displayClass: "font-display",
   /** Tabular figures for prices / R / stats. */
