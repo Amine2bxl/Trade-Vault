@@ -1,7 +1,8 @@
 import { Fragment } from "react";
 import { Check } from "lucide-react";
-import { TIERS, type Tier, type TierDef } from "@/domain/plans";
+import { TIERS, yearlyPerMonth, type Tier, type TierDef } from "@/domain/plans";
 import { useT } from "../../i18n/LanguageContext";
+import { eur } from "../../utils/pricing";
 import { cn } from "../../utils/cn";
 
 /**
@@ -49,34 +50,49 @@ export default function PlanMatrix() {
         </h3>
       </div>
 
-      {/* En-tête : trois colonnes, Pro mise en valeur. */}
+      {/* En-tête : trois colonnes, Pro la VEEDETTE — carte surélevée au
+          dégradé accent, badge « Le plus choisi », prix en une ligne. */}
       <div className="grid grid-cols-[minmax(0,1fr)_52px_64px_52px] items-stretch gap-1.5">
         <div />
-        {TIERS.map((t) => (
-          <div
-            key={t.id}
-            className={cn(
-              "flex flex-col items-center justify-end rounded-xl px-2 pb-1.5 pt-2 text-center",
-              t.id === "pro"
-                ? "border border-cyan-400/30 bg-cyan-400/[0.06]"
-                : "border border-transparent",
-            )}
-          >
-            <span
+        {TIERS.map((t) => {
+          const featured = t.id === "pro";
+          return (
+            <div
+              key={t.id}
               className={cn(
-                "text-[11px] font-bold uppercase tracking-wider",
-                t.id === "pro" ? "text-cyan-300" : "text-slate-400",
+                "relative flex flex-col items-center justify-end rounded-xl px-2 pb-2 pt-2.5 text-center",
+                featured
+                  ? "border border-cyan-400/40 bg-[linear-gradient(170deg,rgba(16,72,102,.55),rgba(7,14,24,.92)_70%)] shadow-[0_14px_40px_-20px_rgba(34,211,238,.4)] lg:scale-[1.06]"
+                  : "border border-transparent",
               )}
             >
-              {tr(t.name)}
-            </span>
-            {t.id === "pro" && (
-              <span className="mt-1 rounded-full bg-emerald-400 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-[#041018]">
-                {fr ? "Le plus choisi" : "Most chosen"}
+              {featured && (
+                <span className="absolute -top-2 rounded-full bg-emerald-400 px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-[#041018]">
+                  {fr ? "Le plus choisi" : "Most chosen"}
+                </span>
+              )}
+              <span
+                className={cn(
+                  "text-[11px] font-bold uppercase tracking-wider",
+                  featured ? "text-cyan-300" : "text-slate-400",
+                )}
+              >
+                {tr(t.name)}
               </span>
-            )}
-          </div>
-        ))}
+              <span
+                className={cn(
+                  "mt-1 font-display font-extrabold tabular-nums leading-none",
+                  featured ? "text-white" : "text-slate-500",
+                )}
+              >
+                {t.monthly === 0 ? "0 €" : eur(Math.round(yearlyPerMonth(t.id) * 100) / 100)}
+              </span>
+              <span className="text-[8.5px] text-slate-600 leading-none mt-0.5">
+                {fr ? "/mois" : "/mo"}
+              </span>
+            </div>
+          );
+        })}
 
         {/* Lignes, groupées par palier qui ajoute. */}
         {groups.map(({ tier: g, rows }) => (

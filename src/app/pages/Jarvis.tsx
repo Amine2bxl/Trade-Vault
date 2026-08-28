@@ -1,140 +1,165 @@
-import { Bot, Send, TrendingUp, Shield, Zap, MessageSquare } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Bot, Eraser } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useTrades } from "../hooks/useTrades";
 import { usePreviewMode } from "../components/PremiumGate";
 import { previewTrades } from "../utils/previewTrades";
-import { useTradeStats } from "../hooks/useTradeStats";
-import { useEdgeScore } from "../hooks/useEdgeScore";
-import { PageContainer } from "@/shared/ui";
-import { formatPnl, formatPct } from "../utils/tradeCalcs";
-import { cn } from "../utils/cn";
+import { useT } from "../i18n/LanguageContext";
+import { loadJarvisProfile, type JarvisProfile } from "../store";
+import { jarvisConversationStore } from "../components/jarvis/conversations";
+import type { JarvisContext } from "../components/jarvis/context";
+import CreditsBar from "../components/jarvis/components/CreditsBar";
 
-// Jarvis est la page de synthèse du coach : PAS un décor. Chaque chiffre vient
-// des trades réels du compte actif — zéro valeur codée en dur. Le vrai dialogue
-// s'ouvre via le CTA (AiAssistant), cette page donne le contexte que le coach
-// a déjà en tête avant même qu'on lui parle.
+const ConversationWorkspace = lazy(
+  () => import("../components/jarvis/workspaces/ConversationWorkspace"),
+);
+
+/**
+ * Jarvis — LE coach, en direct.
+ *
+ * La page EST la conversation : un champ qui écrit ou écoute (micro), et le
+ * dialogue. Plus de vitrine de chiffres entre le trader et son coach — il les
+ * a déjà dans le Dashboard. La seule chrome : l'identité, une nouvelle
+ * conversation, et le compteur de crédits IA.
+ */
 
 export default function Jarvis() {
   const { user } = useAuth();
+  const { lang } = useT();
+  const fr = lang === "fr";
   const { activeId, ready: accountsReady } = useAccounts();
-  const { trades: realTrades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  const { trades: realTrades } = useTrades(user?.id, activeId, accountsReady);
   // Derrière le mur d'aperçu, Jarvis raisonne sur l'historique de démonstration :
   // un coach qui n'a rien à commenter ne donne envie de rien.
   const preview = usePreviewMode();
   const trades = preview ? previewTrades() : realTrades;
-  const stats = useTradeStats(trades);
-  const edge = useEdgeScore(trades, user?.id);
 
-  const cards = [
-    {
-      icon: TrendingUp,
-      label: "P&L total",
-      value: formatPnl(stats.totalPnl),
-      tone: stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400",
-      sub: `${stats.totalTrades} trades`,
-    },
-    {
-      icon: Zap,
-      label: "Win rate",
-      value: stats.totalTrades > 0 ? formatPct(stats.winRate) : "—",
-      tone: "text-cyan-300",
-      sub: `${stats.wins}W · ${stats.losses}L`,
-    },
-    {
-      icon: Shield,
-      label: "Profit factor",
-      value: stats.profitFactor > 0 ? stats.profitFactor.toFixed(2) : "—",
-      tone: stats.profitFactor >= 1 ? "text-emerald-400" : "text-amber-400",
-      sub: "≥ 1.0 = rentable",
-    },
-    {
-      icon: Bot,
-      label: "Edge score",
-      value: edge.score !== null ? `${edge.score}/100` : "—",
-      tone: "text-cyan-300",
-      sub: "discipline + risque",
-    },
-  ];
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<JarvisProfile | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    const store = jarvisConversationStore(user.id);
+    store
+      .list()
+      .then((list) => {
+        if (!active) return;
+        if (list.length > 0) {
+          setConversationId(list[0].id);
+          return;
+        }
+        return store.create().then((c) => {
+          if (active) setConversationId(c.id);
+        });
+      })
+      .catch(() => {
+        store
+          .create()
+          .then((c) => {
+            if (active) setConversationId(c.id);
+          })
+          .catch(() => {});
+      });
+    loadJarvisProfile(user.id)
+      .then((p) => {
+        if (active) setProfile(p);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  const newConversation = async () => {
+    if (!user?.id) return;
+    try {
+      const c = await jarvisConversationStore(user.id).create();
+      setConversationId(c.id);
+    } catch {
+      /* best-effort */
+    }
+  };
+
+  const context: JarvisContext = useMemo(
+    () => ({
+      userId: user?.id,
+      trades,
+      profile,
+      page: "insights",
+      conversationId,
+      pendingPrompt: undefined,
+    }),
+    [user?.id, trades, profile, conversationId],
+  );
+
+  const spinner = (
+    <div className="flex h-full items-center justify-center">
+      <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="h-4 w-4 rounded-full border-2 border-cyan-500/30 border-t-cyan-500 animate-spin" />
+        {fr ? "Jarvis se réveille…" : "Jarvis is waking up…"}
+      </div>
+    </div>
+  );
 
   return (
-    <PageContainer>
-      {/* ── En-tête : Jarvis, avec son état dérivé des données ── */}
-      <div className="flex items-center gap-3 mb-4 md:mb-5">
-        <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-          <Bot className="h-5 w-5 text-white" />
-        </span>
-        <div className="min-w-0">
-          <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">Jarvis</h1>
-          <p className="text-[11px] text-slate-500">
-            Ton coach lit les mêmes données que toi — et il te les résume ici.
-          </p>
-        </div>
-        <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+    <div className="p-3 md:p-4 h-[calc(100dvh-9rem)] min-h-[560px]">
+      <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/[0.06] bg-white/[0.015]">
+        {/* ── En-tête minimal ── */}
+        <header className="flex shrink-0 items-center gap-3 border-b border-white/[0.06] px-4 py-3">
+          <span className="relative shrink-0">
+            <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
+              <Bot className="h-4.5 w-4.5 text-white" />
+            </span>
           </span>
-          ONLINE
-        </span>
-      </div>
-
-      {/* ── Les quatre chiffres que Jarvis surveille ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-5">
-        {cards.map(({ icon: Icon, label, value, tone, sub }) => (
-          <div key={label} className="stat-card card-premium p-3.5 md:p-4">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Icon className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                {label}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold tracking-tight text-white">Jarvis</h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                </span>
+                {fr ? "En ligne" : "Online"}
               </span>
             </div>
-            <div
-              className={cn("font-display text-lg md:text-xl font-extrabold tabular-nums", tone)}
-            >
-              {value}
-            </div>
-            <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Verdict du coach, en une phrase honnête ── */}
-      <div className="glass-strong rounded-3xl p-5 md:p-6 mb-4 md:mb-5">
-        <div className="flex items-start gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
-            <Shield className="w-4 h-4" />
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-white mb-1">Ce que Jarvis voit</h2>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              {tradesLoading
-                ? "Lecture de ton journal…"
-                : stats.totalTrades === 0
-                  ? "Aucun trade pour l'instant — ajoute ton premier trade et Jarvis pourra te coacher."
-                  : stats.profitFactor >= 1.2 && edge.score !== null && edge.score >= 60
-                    ? "Ta discipline et ton edge tiennent la route. Jarvis peut maintenant t'aider à passer à l'échelle sans casser ce qui marche."
-                    : stats.totalPnl >= 0
-                      ? "Tu es en positif, mais la marge est fine. Parle à Jarvis pour solidifier ton process avant que la variance ne parle."
-                      : "Le compte recule. C'est exactement le moment d'ouvrir le coach : un œil extérieur sur ton journal vaut mieux qu'un trade de plus pour « se refaire »."}
+            <p className="truncate text-[11px] text-slate-500">
+              {fr
+                ? "Tu écrits ou tu lui parles — il a déjà lu ton journal."
+                : "Type or speak — he has already read your journal."}
             </p>
           </div>
+          <button
+            onClick={() => void newConversation()}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[12px] font-semibold text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+          >
+            <Eraser className="h-3.5 w-3.5" />
+            {fr ? "Nouvelle" : "New"}
+          </button>
+        </header>
+
+        {/* ── La conversation, grande — écriture ou micro directs ── */}
+        <div className="min-h-0 flex-1">
+          <Suspense fallback={spinner}>
+            {conversationId ? (
+              <ConversationWorkspace
+                context={context}
+                initialPrompt={undefined}
+                openWorkspace={() => {}}
+              />
+            ) : (
+              spinner
+            )}
+          </Suspense>
+        </div>
+
+        {/* ── Crédits IA (quota du jour) ── */}
+        <div className="shrink-0 border-t border-white/[0.05] bg-gradient-to-b from-transparent to-white/[0.02]">
+          <CreditsBar />
         </div>
       </div>
-
-      {/* ── CTA : ouvrir le vrai coach ── */}
-      <button
-        onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl text-sm font-bold text-white transition hover:brightness-110 active:scale-[0.99]"
-        style={{
-          background: "linear-gradient(135deg, #06b6d4, #10b981)",
-          boxShadow: "0 0 32px 4px rgba(6,182,212,0.18)",
-        }}
-      >
-        <MessageSquare className="w-4 h-4" />
-        Ouvrir le coach
-        <Send className="w-4 h-4" />
-      </button>
-    </PageContainer>
+    </div>
   );
 }

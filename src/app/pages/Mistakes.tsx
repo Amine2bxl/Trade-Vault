@@ -170,7 +170,13 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
           {/* Discipline dial */}
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-1 flex items-center gap-4">
             <div className="relative shrink-0" style={{ width: 84, height: 84 }}>
-              <svg width="84" height="84" viewBox="0 0 84 84" className="-rotate-90">
+              <svg
+                width="84"
+                height="84"
+                viewBox="0 0 84 84"
+                className="-rotate-90"
+                style={{ overflow: "visible" }}
+              >
                 <circle
                   cx="42"
                   cy="42"

@@ -343,6 +343,11 @@ function PlanColumn({
           </>
         ) : (
           <div className="space-y-2.5">
+            {tier.id === "elite" && (
+              <p className="text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/90">
+                {fr ? "Tout Pro, mais sans limites, plus :" : "All of Pro without limits, plus:"}
+              </p>
+            )}
             {featured.map((f) => (
               <p key={f.en} className="flex items-start gap-2 text-[13px] text-slate-400">
                 <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400/80" />

@@ -28,6 +28,8 @@ import {
 import { PageHeader } from "@/shared/ui";
 import SubscriptionSection from "../components/SubscriptionSection";
 import PlanMatrix from "../components/pricing/PlanMatrix";
+import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
+import PromoCodeSection from "../components/PromoCodeSection";
 
 type TFn = (k: TKey) => string;
 
@@ -50,6 +52,7 @@ export default function Subscription() {
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
   const { sub, loading } = useSubscription();
+  const isAdmin = useIsAdmin();
 
   const currentTier = tierOf(sub?.plan);
 
@@ -63,6 +66,9 @@ export default function Subscription() {
         }`;
 
   const paid = currentTier !== "free";
+  // Un abonnement PAYÉ actif se lit en vert, comme la carte de confirmation
+  // d'achat : on voit d'un coup d'œil que c'est en cours, pas à vendre.
+  const isActivePaid = paid && sub?.status === "active";
   const dateFmt = (d: Date) =>
     d.toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric" });
 
@@ -71,21 +77,57 @@ export default function Subscription() {
       <PageHeader
         className="mb-1 md:mb-1"
         icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
+          <span
+            className={cn(
+              "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
+              isActivePaid
+                ? "bg-gradient-to-br from-emerald-400 to-teal-500"
+                : "bg-gradient-to-br from-cyan-500 to-teal-600",
+            )}
+          >
             <Crown className="w-4 h-4 text-white" />
           </span>
         }
         title={tr("Abonnement", "Subscription")}
       />
 
-      {/* ── Status hero, landing-page language ── */}
-      <div className="relative rounded-3xl p-6 md:p-7 overflow-hidden border border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.5),rgba(7,14,24,.9)_60%)] animate-fade-in-up stagger-1">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-        <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl" />
+      {/* ── Status hero — VERT quand l'abonnement est actif, cyan quand il
+          reste à souscrire (comme la carte de confirmation d'achat). */}
+      <div
+        className={cn(
+          "relative rounded-3xl p-6 md:p-7 overflow-hidden border animate-fade-in-up stagger-1",
+          isActivePaid
+            ? "border-emerald-400/25 bg-[linear-gradient(160deg,rgba(12,84,62,.5),rgba(6,24,20,.94)_60%)]"
+            : "border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.5),rgba(7,14,24,.9)_60%)]",
+        )}
+      >
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-60% to-transparent",
+            isActivePaid ? "via-emerald-400/70" : "via-cyan-400/60",
+          )}
+        />
+        <div
+          className={cn(
+            "pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full blur-3xl",
+            isActivePaid ? "bg-emerald-400/10" : "bg-cyan-500/10",
+          )}
+        />
 
         <div className="relative flex items-start gap-4 flex-wrap">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shrink-0">
-            <Crown className="w-6 h-6 text-white" />
+          <div
+            className={cn(
+              "relative grid h-12 w-12 place-items-center rounded-xl shrink-0",
+              isActivePaid
+                ? "bg-gradient-to-br from-emerald-400 to-teal-500 shadow-[0_0_28px_-6px_rgba(52,211,153,.6)]"
+                : "bg-gradient-to-br from-cyan-500 to-teal-600",
+            )}
+          >
+            {isActivePaid ? (
+              <CheckCircle2 className="w-6 h-6 text-[#03140e]" strokeWidth={2.5} />
+            ) : (
+              <Crown className="w-6 h-6 text-white" />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -104,7 +146,12 @@ export default function Subscription() {
           {/* The price of what they are on right now — not a sales price. */}
           {!loading && (
             <div className="text-right shrink-0">
-              <div className="font-display text-3xl font-extrabold tabular-nums text-white leading-none">
+              <div
+                className={cn(
+                  "font-display text-3xl font-extrabold tabular-nums leading-none",
+                  isActivePaid ? "text-emerald-300" : "text-white",
+                )}
+              >
                 {paid && sub ? eur(planPrice(sub.plan as PaidPlan)) : "0 €"}
               </div>
               <div className="text-[11px] text-slate-500 mt-1">
@@ -187,6 +234,15 @@ export default function Subscription() {
       <div className="animate-fade-in-up stagger-3">
         <SubscriptionSection />
       </div>
+
+      {/* Panneaux propriétaires : n'apparaissent que pour une adresse listée
+          dans `ADMIN_EMAILS`, et chaque action est revérifiée côté serveur. */}
+      {isAdmin && (
+        <div className="space-y-4">
+          <CompAccessSection />
+          <PromoCodeSection />
+        </div>
+      )}
 
       {/* ── Reassurance rail, straight from the landing ── */}
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">

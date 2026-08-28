@@ -1,13 +1,4 @@
-import {
-  useState,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  lazy,
-  Suspense,
-  startTransition,
-} from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransition } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -108,6 +99,8 @@ import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { PageGate, usePageLock } from "./components/PremiumGate";
+import UpgradeModal from "./components/UpgradeModal";
+import UpgradeSuccessOverlay from "./components/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
@@ -244,32 +237,35 @@ function AppContent() {
   // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
   // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
   const pageLocked = usePageLock(page);
-  const { tier, checkout } = useSubscription();
+  const { tier } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
 
-  // Tous les « Go Pro » partent DIRECTEMENT au checkout Stripe (plan annuel
-  // Pro, l'offre mise en avant) au lieu de passer par la page d'abonnement.
-  // Un code promo porté par l'URL (`?promo=») est repris automatiquement : un
-  // client qui a un code 100 % n'ira jamais jusqu'à Stripe — l'accès s'ouvre
-  // au vol.
-  const promoFromUrl = useMemo(
-    () =>
-      typeof window !== "undefined"
-        ? (new URLSearchParams(window.location.search).get("promo") ?? undefined)
-        : undefined,
-    [],
-  );
-  const goProDirect = useCallback(() => {
-    void checkout("pro_yearly", promoFromUrl).then((err) => {
-      if (err) setPage("subscription");
-    });
-  }, [checkout, promoFromUrl]);
+  // Tous les « Go Pro » ouvrent la modale d'abonnement (Pro/Elite, mensuel ou
+  // annuel) au lieu d'un checkout forcé : l'utilisateur a décidé de payer,
+  // on ne lui impose pas un plan. `UpgradeModal` gère le checkout lui-même.
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const openUpgrade = useCallback(() => setUpgradeOpen(true), []);
 
   useEffect(() => {
-    const onUpgrade = () => goProDirect();
+    const onUpgrade = () => setUpgradeOpen(true);
     window.addEventListener("tv:upgrade", onUpgrade);
     return () => window.removeEventListener("tv:upgrade", onUpgrade);
-  }, [goProDirect]);
+  }, []);
+
+  // Confirmation visuelle d'abonnement : le checkout Stripe (et l'octroi d'un
+  // code 100 %) redirigent vers `/?billing=success`. À l'arrivée on montre
+  // les confettis + la carte, puis on nettoie l'URL pour ne pas rejouer.
+  const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
+  useEffect(() => {
+    if (window.location.search.includes("billing=success")) {
+      setShowUpgradeSuccess(true);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search.replace(/([?&])billing=success&?/, "$1"),
+      );
+    }
+  }, []);
 
   const [importOpen, setImportOpen] = useState(false);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
@@ -709,11 +705,10 @@ function AppContent() {
     );
   }
 
-  // La carte de compte (capital, sous-comptes) doit être PRÊTE avant le shell :
-  // sans cette attente, elle afficherait un squelette puis se remplirait un
-  // battement plus tard (le « chargement en deux temps »). Les comptes se
-  // chargent en parallèle de l'auth, l'attente ajoutée est imperceptible.
-  if (!accountsReady) return <LoadingScreen message="Chargement de tes comptes…" />;
+  // Les comptes se chargent en parallèle de l'auth : AUCUNE porte plein écran
+  // « Chargement de tes comptes… » ne sépare le shell de ses pages. Le shell
+  // (sidebar, navigation) se peint immédiatement ; seul le contenu montre un
+  // squelette contextuel jusqu'à ce que les comptes soient prêts.
 
   return (
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
@@ -750,21 +745,22 @@ function AppContent() {
           <MobileActions page={page} setPage={setPage} />
         </div>
         <PageActionsProvider setActions={setPageActions}>
-          <PageErrorBoundary resetKey={page}>
-            {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
+          {accountsReady ? (
+            <PageErrorBoundary resetKey={page}>
+              {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
               En dessous, le chunk est déjà en mémoire (préchargement au survol
               + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
               gris de deux frames : le signal « ça charge » sans le chargement.
               L'espace, lui, reste réservé, donc rien ne bouge. */}
-            <Suspense
-              fallback={
-                <DeferredFallback key={page}>
-                  <SkeletonForPage page={page} />
-                </DeferredFallback>
-              }
-            >
-              {/* PageTransition est DANS le Suspense, pas autour.
+              <Suspense
+                fallback={
+                  <DeferredFallback key={page}>
+                    <SkeletonForPage page={page} />
+                  </DeferredFallback>
+                }
+              >
+                {/* PageTransition est DANS le Suspense, pas autour.
                 Autour, il jouait sa transition sur la boîte vide réservée
                 pendant l'attente, puis le contenu réel arrivait après coup,
                 sans aucune animation : on ne voyait donc jamais la transition
@@ -772,68 +768,77 @@ function AppContent() {
                 la page est réellement peinte. Il ne remonte JAMAIS son enfant
                 (voir le composant) : défilement, filtres et lignes dépliées
                 survivent au changement de page. */}
-              <PageTransition page={page}>
-                {/* Le verrou premium enveloppe la page rendue : la table
+                <PageTransition page={page}>
+                  {/* Le verrou premium enveloppe la page rendue : la table
                     `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
                     la facturation. */}
-                <PageGate page={page} onUpgrade={goProDirect}>
-                  {page === "dashboard" && (
-                    <Dashboard
-                      trades={trades}
-                      onAddTrade={handleAdd}
-                      tradesLoading={tradesLoading}
-                      onOpenChecklist={() => setPage("checklist")}
-                      onOpenImport={() => setImportOpen(true)}
-                      onEditTrade={handleEdit}
-                      onOpenJournal={() => setPage("journal")}
-                    />
-                  )}
-                  {page === "journal" && (
-                    <Journal
-                      trades={trades}
-                      onEdit={handleEdit}
-                      onQuickEdit={handleQuickEdit}
-                      onDelete={handleDelete}
-                      onDeleteAll={handleDeleteAll}
-                      onAdd={handleAdd}
-                      onOpenMissed={() => setPage("missed")}
-                    />
-                  )}
-                  {page === "checklist" && (
-                    <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
-                  )}
-                  {page === "calendar" && <CalendarPage trades={trades} onDelete={handleDelete} />}
-                  {page === "analytics" && <Analytics trades={shownTrades} />}
-                  {page === "mistakes" && <Mistakes trades={shownTrades} />}
-                  {page === "missed" && <MissedOpportunities />}
-                  {page === "insights" && <Jarvis />}
-                  {page === "news" && <EconomicNews />}
-                  {page === "seasonality" && (
-                    <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
-                  )}
-                  {page === "calculator" && (
-                    <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
-                  )}
-                  {page === "settings" && (
-                    <Settings
-                      trades={trades}
-                      onDeleteAll={handleDeleteAll}
-                      onOpenImport={() => setImportOpen(true)}
-                      onOpenReports={() => setPage("reports")}
-                    />
-                  )}
-                  {page === "reports" && <Reports trades={shownTrades} />}
-                  {page === "goals" && <Goals trades={shownTrades} />}
-                  {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-                  {page === "appearance" && <Appearance />}
-                  {page === "subscription" && <Subscription />}
-                  {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
-                  {page === "inbox" && <Inbox />}
-                  {page === "profile" && <Profile trades={trades} setPage={setPage} />}
-                </PageGate>
-              </PageTransition>
-            </Suspense>
-          </PageErrorBoundary>
+                  <PageGate page={page} onUpgrade={openUpgrade}>
+                    {page === "dashboard" && (
+                      <Dashboard
+                        trades={trades}
+                        onAddTrade={handleAdd}
+                        tradesLoading={tradesLoading}
+                        onOpenChecklist={() => setPage("checklist")}
+                        onOpenImport={() => setImportOpen(true)}
+                        onEditTrade={handleEdit}
+                        onOpenJournal={() => setPage("journal")}
+                      />
+                    )}
+                    {page === "journal" && (
+                      <Journal
+                        trades={trades}
+                        onEdit={handleEdit}
+                        onQuickEdit={handleQuickEdit}
+                        onDelete={handleDelete}
+                        onDeleteAll={handleDeleteAll}
+                        onAdd={handleAdd}
+                        onOpenMissed={() => setPage("missed")}
+                      />
+                    )}
+                    {page === "checklist" && (
+                      <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+                    )}
+                    {page === "calendar" && (
+                      <CalendarPage trades={trades} onDelete={handleDelete} />
+                    )}
+                    {page === "analytics" && <Analytics trades={shownTrades} />}
+                    {page === "mistakes" && <Mistakes trades={shownTrades} />}
+                    {page === "missed" && <MissedOpportunities />}
+                    {page === "insights" && <Jarvis />}
+                    {page === "news" && <EconomicNews />}
+                    {page === "seasonality" && (
+                      <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
+                    )}
+                    {page === "calculator" && (
+                      <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+                    )}
+                    {page === "settings" && (
+                      <Settings
+                        trades={trades}
+                        onDeleteAll={handleDeleteAll}
+                        onOpenImport={() => setImportOpen(true)}
+                        onOpenReports={() => setPage("reports")}
+                      />
+                    )}
+                    {page === "reports" && <Reports trades={shownTrades} />}
+                    {page === "goals" && <Goals trades={shownTrades} />}
+                    {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+                    {page === "appearance" && <Appearance />}
+                    {page === "subscription" && <Subscription />}
+                    {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
+                    {page === "inbox" && <Inbox />}
+                    {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                  </PageGate>
+                </PageTransition>
+              </Suspense>
+            </PageErrorBoundary>
+          ) : (
+            /* Comptes en chargement : le shell est peint, la page répond avec
+               son squelette contextuel — pas de porte plein écran. */
+            <div className="p-4 md:p-5">
+              <SkeletonForPage page={page} />
+            </div>
+          )}
         </PageActionsProvider>
       </main>
       {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
@@ -896,6 +901,21 @@ function AppContent() {
           />
         )}
       </Suspense>
+
+      {/* Passer Pro — la modale ouverte par chaque « Go Pro » (mur d'aperçu,
+          quota Jarvis, cadenas multi-comptes…). */}
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+
+      {/* Confirmation d'abonnement — confettis + carte à l'arrivée. */}
+      {showUpgradeSuccess && (
+        <UpgradeSuccessOverlay
+          onClose={() => setShowUpgradeSuccess(false)}
+          onExplore={() => {
+            setShowUpgradeSuccess(false);
+            setPage("analytics");
+          }}
+        />
+      )}
     </div>
   );
 }

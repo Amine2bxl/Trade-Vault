@@ -16,8 +16,6 @@ import {
   UserX,
   AlertTriangle,
   FileText,
-  Palette,
-  CreditCard,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
@@ -33,10 +31,6 @@ import AccountSwitcher from "../components/AccountSwitcher";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
-import ThemeSettings from "../components/ThemeSettings";
-import SubscriptionSection from "../components/SubscriptionSection";
-import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
-import PromoCodeSection from "../components/PromoCodeSection";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -57,21 +51,12 @@ import PromoCodeSection from "../components/PromoCodeSection";
  * contenu : la même structure, sans imposer une colonne de 240 px à un écran
  * qui en fait 390.
  */
-type PaneId =
-  | "general"
-  | "account"
-  | "appearance"
-  | "subscription"
-  | "notifications"
-  | "data"
-  | "danger";
+type PaneId = "general" | "account" | "notifications" | "data" | "danger";
 
 /** Rubrique du rail : son icône, sa clé de libellé, sa clé de recherche. */
 const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: LucideIcon }[] = [
   { id: "general", section: "prefs", labelKey: "settings.preferences", icon: SlidersHorizontal },
   { id: "account", section: "account", labelKey: "settings.paneAccount", icon: Wallet },
-  { id: "appearance", section: "appearance", labelKey: "nav.appearance", icon: Palette },
-  { id: "subscription", section: "subscription", labelKey: "nav.subscription", icon: CreditCard },
   { id: "notifications", section: "notifs", labelKey: "push.title", icon: Bell },
   { id: "data", section: "data", labelKey: "settings.data", icon: Database },
   { id: "danger", section: "danger", labelKey: "settings.dangerZone", icon: AlertTriangle },
@@ -80,8 +65,6 @@ const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: 
 interface SearchSections {
   prefs: boolean;
   account: boolean;
-  appearance: boolean;
-  subscription: boolean;
   notifs: boolean;
   data: boolean;
   danger: boolean;
@@ -101,7 +84,6 @@ export default function Settings({
   onOpenReports,
 }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
-  const isAdmin = useIsAdmin();
   const { activeId, activeAccount } = useAccounts();
   const [recalOpen, setRecalOpen] = useState(false);
   const { t, setLang } = useT();
@@ -126,15 +108,6 @@ export default function Settings({
         "language",
         "langue",
         "equity",
-      ),
-      appearance: match(t("nav.appearance"), "theme", "thème", "couleur", "color", "palette"),
-      subscription: match(
-        t("nav.subscription"),
-        "plan",
-        "paiement",
-        "billing",
-        "stripe",
-        "abonnement",
       ),
       notifs: match(t("push.title"), t("push.enable"), "push", "notification"),
       data: match(
@@ -223,8 +196,8 @@ export default function Settings({
 
   // Les onglets « General / Profile / Theme / Plan » vivaient ici, en état
   // local, et rendaient trois PAGES entières sans changer l'URL. Ce sont
-  // maintenant les onglets de la section Réglages (`SectionTabs`), donc de
-  // vrais liens vers `/profile`, `/appearance` et `/subscription`.
+  // maintenant des pages à part : Profil, Apparence et Abonnement se gèrent
+  // ailleurs (nav + page Abonnement), Réglages garde le reste.
 
   if (!user) return null;
 
@@ -315,29 +288,6 @@ export default function Settings({
                 title={t("settings.paneAccount")}
               />
               <AccountSwitcher variant="card" />
-            </div>
-          )}
-
-          {/* Appearance — theme settings, same page */}
-          {pane === "appearance" && sections.appearance && (
-            <div className="space-y-4">
-              <SectionHeading icon={<Palette className="w-4 h-4" />} title={t("nav.appearance")} />
-              <ThemeSettings />
-            </div>
-          )}
-
-          {/* Subscription — billing, same page */}
-          {pane === "subscription" && sections.subscription && (
-            <div className="space-y-4">
-              <SectionHeading
-                icon={<CreditCard className="w-4 h-4" />}
-                title={t("nav.subscription")}
-              />
-              <SubscriptionSection />
-              {/* Panneau propriétaire : n'apparaît que pour une adresse listée
-                  dans `ADMIN_EMAILS`, et chaque action est revérifiée serveur. */}
-              {isAdmin && <CompAccessSection />}
-              {isAdmin && <PromoCodeSection />}
             </div>
           )}
 
