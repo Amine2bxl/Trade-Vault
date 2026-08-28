@@ -956,7 +956,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             <div className="flex items-center gap-4">
               {/* Jauge radiale — la couleur suit le niveau, comme le badge */}
               <div className="relative shrink-0">
-                <svg width="68" height="68" viewBox="0 0 68 68" className="-rotate-90">
+                <svg
+                  width="68"
+                  height="68"
+                  viewBox="0 0 68 68"
+                  className="-rotate-90"
+                  style={{ overflow: "visible" }}
+                >
                   <circle
                     cx="34"
                     cy="34"

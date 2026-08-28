@@ -94,7 +94,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   usePageActions(
     useMemo(
       () => <CompletionRing value={completion} label={tr("complet", "complete")} />,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+
       [completion, tr],
     ),
   );
@@ -685,7 +685,7 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
   const tipY = 30 + R * Math.sin(angle);
   return (
     <div className="relative w-16 h-16 shrink-0 animate-fade-in-up">
-      <svg viewBox="0 0 60 60" className="w-16 h-16 -rotate-90">
+      <svg viewBox="0 0 60 60" className="w-16 h-16 -rotate-90" style={{ overflow: "visible" }}>
         {/* Piste : anneau neutre + liseré fin pour le volume. */}
         <circle cx="30" cy="30" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
         <circle

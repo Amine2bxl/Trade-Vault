@@ -1095,7 +1095,10 @@ input[type="range"]::-webkit-slider-thumb {
     0 1px 0 rgba(255, 255, 255, 0.05) inset;
   backdrop-filter: blur(26px);
   -webkit-backdrop-filter: blur(26px);
-  overflow: hidden;
+  /* overflow VISIBLE : la pastille de l'onglet actif et le trait du haut
+     portent un halo (box-shadow) qui doit pouvoir déborder de la bulle sans
+     être découpé en carré par un `overflow: hidden`. */
+  overflow: visible;
 }
 /* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
    la barre de navigation — même dégradé (opacité renforcée), même liseré

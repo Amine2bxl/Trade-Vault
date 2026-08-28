@@ -2092,7 +2092,11 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             <div className="text-sm font-bold text-white">{t("chk.cdTitle")}</div>
             <div className="text-xs text-slate-400 mb-5">{t("chk.cdSub")}</div>
             <div className="relative w-40 h-40 mx-auto mb-5">
-              <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
+              <svg
+                viewBox="0 0 200 200"
+                className="w-full h-full -rotate-90"
+                style={{ overflow: "visible" }}
+              >
                 <circle
                   cx="100"
                   cy="100"
