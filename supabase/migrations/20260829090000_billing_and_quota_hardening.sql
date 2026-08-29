@@ -532,3 +532,51 @@ revoke all on function public.users_with_trades_since(date, uuid, int) from publ
 -- chaque passage relit la table entière.
 create index if not exists trades_date_user_idx
   on public.trades (trade_date, user_id);
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 9. AJUSTEMENT ATOMIQUE DE LA CONFIANCE D'UN SOUVENIR
+-- ════════════════════════════════════════════════════════════════════════════
+--
+-- `adjustConfidence` lisait `confidence`, calculait la nouvelle valeur en
+-- JavaScript, puis l'écrivait. Deux ajustements concurrents — le détecteur de
+-- patterns et une conversation, par exemple — lisaient la même valeur et l'un
+-- écrasait l'autre : une contradiction pouvait donc être annulée par une
+-- confirmation arrivée en même temps, et le souvenir restait audible alors que
+-- les données le démentaient.
+--
+-- `security invoker` (le défaut) : la RLS de `ai_memory` s'applique telle
+-- quelle, donc personne ne peut ajuster la confiance d'un souvenir qui n'est
+-- pas le sien. Le filtre `user_id` est répété malgré tout — une défense de plus
+-- ne coûte rien ici.
+create or replace function public.adjust_memory_confidence(
+  -- `ai_memory.id` est de type `uuid` : déclarer `text` obligerait à un cast
+  -- côté colonne (`id::text = p_id`), ce qui écarterait l'index de clé primaire.
+  p_id    uuid,
+  p_delta numeric
+)
+returns real
+language sql
+volatile
+set search_path = public
+as $$
+  update public.ai_memory
+     set confidence = least(1, greatest(0, coalesce(confidence, 0.6) + p_delta))::real
+   where id = p_id
+     and user_id = auth.uid()
+  returning confidence;
+$$;
+
+revoke all on function public.adjust_memory_confidence(uuid, numeric) from public, anon;
+grant execute on function public.adjust_memory_confidence(uuid, numeric) to authenticated;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 10. ICÔNE DE COMPTE — synchronisée, et non plus locale à un navigateur
+-- ════════════════════════════════════════════════════════════════════════════
+--
+-- L'icône choisie pour un compte de trading vivait UNIQUEMENT dans
+-- `localStorage` (`tv.accountIcon.<id>`). Elle disparaissait donc sur un autre
+-- appareil, en navigation privée, et à chaque vidage du cache — alors que tout
+-- le reste du compte (nom, type, capital) est en base. Une personnalisation qui
+-- s'évapore d'un appareil à l'autre donne l'impression d'un produit qui oublie.
+alter table public.accounts
+  add column if not exists icon text;

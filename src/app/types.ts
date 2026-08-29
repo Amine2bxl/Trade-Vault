@@ -97,6 +97,18 @@ export interface Trade {
   slippage?: number | null;
   /** Demo trade inserted by onboarding — badged "Example" until the user edits it */
   isExample?: boolean;
+  /**
+   * Le compte de trading auquel ce trade appartient.
+   *
+   * PORTÉ PAR LE TRADE, et non déduit du compte actif au moment de l'écriture.
+   * `tradeToRow` lisait `getActiveAccountId()` à chaque enregistrement, y
+   * compris lors d'une MODIFICATION : corriger une note sur un trade du compte
+   * A pendant que le compte B était sélectionné déplaçait silencieusement ce
+   * trade vers B — il disparaissait de son compte d'origine sans que rien ne le
+   * signale. Absent (import, création) : le compte actif s'applique, ce qui est
+   * le comportement voulu à la CRÉATION.
+   */
+  accountId?: string | null;
 }
 
 export interface User {

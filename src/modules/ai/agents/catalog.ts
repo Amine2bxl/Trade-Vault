@@ -12,6 +12,21 @@
 import type { AgentBlueprint } from "./types";
 
 export const AGENT_CATALOG: Record<AgentBlueprint["id"], AgentBlueprint> = {
+  // `memory-extract` existait dans `AgentId` mais manquait au catalogue : le
+  // `Record` était donc incomplet, ce que TypeScript signalait — sans que
+  // personne ne le voie, faute de `tsc` en CI. Contrairement aux autres, cet
+  // agent est DÉJÀ implémenté (`memory.agent.ts`) ; c'est sa fiche descriptive
+  // qui manquait, donc il n'apparaissait dans aucun inventaire.
+  "memory-extract": {
+    id: "memory-extract",
+    title: "Memory Extractor",
+    description:
+      "Reads a finished conversation and writes down only what cannot be recomputed — commitments, durable preferences, lessons the trader accepted.",
+    persona:
+      "Silent archivist. Never addresses the trader, never invents a fact, never stores anything a deterministic engine could derive from the journal.",
+    tools: [],
+    output: "json",
+  },
   coach: {
     id: "coach",
     title: "AI Coach",

@@ -459,4 +459,44 @@ begin
          'une adresse inconnue rend null';
 end $$;
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- 9. adjust_memory_confidence — atomique et borné
+-- ════════════════════════════════════════════════════════════════════════════
+do $$
+declare c real;
+begin
+  perform set_config('tv.uid', '11111111-1111-1111-1111-111111111111', false);
+  delete from public.ai_memory;
+  insert into public.ai_memory (id, user_id, kind, content, confidence)
+  values ('99999999-9999-9999-9999-999999999999',
+          '11111111-1111-1111-1111-111111111111', 'fact', 'un souvenir', 0.6);
+
+  -- Une confirmation monte la confiance, une contradiction la baisse.
+  c := public.adjust_memory_confidence('99999999-9999-9999-9999-999999999999', 0.2);
+  assert abs(c - 0.8) < 0.001, format('attendu 0.8, obtenu %s', c);
+  c := public.adjust_memory_confidence('99999999-9999-9999-9999-999999999999', -0.5);
+  assert abs(c - 0.3) < 0.001, format('attendu 0.3, obtenu %s', c);
+
+  -- Bornée à [0, 1] : la confiance n'est pas un compteur.
+  c := public.adjust_memory_confidence('99999999-9999-9999-9999-999999999999', -5);
+  assert c = 0, format('attendu 0, obtenu %s', c);
+  c := public.adjust_memory_confidence('99999999-9999-9999-9999-999999999999', 99);
+  assert c = 1, format('attendu 1, obtenu %s', c);
+end $$;
+
+do $$
+declare c real;
+begin
+  -- LE SOUVENIR DE QUELQU'UN D'AUTRE est intouchable. Ce qui est vérifié ici,
+  -- c'est le filtre `user_id = auth.uid()` ÉCRIT DANS LA FONCTION — la RLS de
+  -- `ai_memory` n'est pas rejouée par ce socle de test. Les deux protections
+  -- existent en production ; celle-ci est celle que ce test couvre.
+  perform set_config('tv.uid', '22222222-2222-2222-2222-222222222222', false);
+  c := public.adjust_memory_confidence('99999999-9999-9999-9999-999999999999', 0.5);
+  assert c is null, format('un souvenir d''autrui ne doit rien rendre, obtenu %s', c);
+  assert (select confidence from public.ai_memory
+          where id = '99999999-9999-9999-9999-999999999999') = 1,
+         'la confiance d''autrui ne doit pas avoir bougé';
+end $$;
+
 select 'ALL SQL BILLING ASSERTIONS PASSED' as result;

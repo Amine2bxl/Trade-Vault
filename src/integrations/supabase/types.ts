@@ -8,12 +8,292 @@ export type Database = {
   };
   public: {
     Tables: {
+      // ── Tables ajoutées à la main ──────────────────────────────────────────
+      // Ce fichier est REGÉNÉRÉ depuis le schéma Supabase, mais il avait pris
+      // du retard sur les migrations : six tables et deux colonnes existantes
+      // en base y manquaient. Conséquence, chaque store qui les touche devait
+      // écrire `as unknown as XRow` — et `tsc --noEmit` produisait une centaine
+      // d'erreurs, ce qui rendait la porte de typecheck infranchissable et donc
+      // absente de la CI. Ces définitions sont transcrites des migrations qui
+      // les créent ; une régénération depuis le projet Supabase les produira à
+      // l'identique et remplacera ce bloc.
+      agent_proposals: {
+        Row: {
+          action_type: string;
+          applied_ref: string | null;
+          created_at: string;
+          decided_at: string | null;
+          expires_at: string;
+          id: string;
+          pattern_id: string | null;
+          payload: Json;
+          rationale: string;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          action_type: string;
+          applied_ref?: string | null;
+          created_at?: string;
+          decided_at?: string | null;
+          expires_at?: string;
+          id?: string;
+          pattern_id?: string | null;
+          payload: Json;
+          rationale: string;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          action_type?: string;
+          applied_ref?: string | null;
+          created_at?: string;
+          decided_at?: string | null;
+          expires_at?: string;
+          id?: string;
+          pattern_id?: string | null;
+          payload?: Json;
+          rationale?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      detected_patterns: {
+        Row: {
+          cluster_id: string | null;
+          dismissed_at: string | null;
+          evidence: Json;
+          first_seen: string;
+          id: string;
+          impact_r: number | null;
+          kind: string;
+          last_seen: string;
+          user_id: string;
+        };
+        Insert: {
+          cluster_id?: string | null;
+          dismissed_at?: string | null;
+          evidence: Json;
+          first_seen?: string;
+          id?: string;
+          impact_r?: number | null;
+          kind: string;
+          last_seen?: string;
+          user_id: string;
+        };
+        Update: {
+          cluster_id?: string | null;
+          dismissed_at?: string | null;
+          evidence?: Json;
+          first_seen?: string;
+          id?: string;
+          impact_r?: number | null;
+          kind?: string;
+          last_seen?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      simulation_scenarios: {
+        Row: {
+          account_id: string | null;
+          created_at: string;
+          engine_version: string | null;
+          horizon_unit: string;
+          horizon_value: number;
+          id: string;
+          last_pass_probability: number | null;
+          last_risk_of_ruin: number | null;
+          last_run_at: string | null;
+          last_sample_size: number | null;
+          name: string;
+          risk_multiplier: number;
+          rules: Json;
+          runs: number;
+          seed: number | null;
+          stop_after_losses: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          account_id?: string | null;
+          created_at?: string;
+          engine_version?: string | null;
+          horizon_unit?: string;
+          horizon_value?: number;
+          id?: string;
+          last_pass_probability?: number | null;
+          last_risk_of_ruin?: number | null;
+          last_run_at?: string | null;
+          last_sample_size?: number | null;
+          name?: string;
+          risk_multiplier?: number;
+          rules?: Json;
+          runs?: number;
+          seed?: number | null;
+          stop_after_losses?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          account_id?: string | null;
+          created_at?: string;
+          engine_version?: string | null;
+          horizon_unit?: string;
+          horizon_value?: number;
+          id?: string;
+          last_pass_probability?: number | null;
+          last_risk_of_ruin?: number | null;
+          last_run_at?: string | null;
+          last_sample_size?: number | null;
+          name?: string;
+          risk_multiplier?: number;
+          rules?: Json;
+          runs?: number;
+          seed?: number | null;
+          stop_after_losses?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      trade_intent: {
+        Row: {
+          confidence: number | null;
+          created_at: string;
+          emotion: string | null;
+          id: string;
+          plan: string | null;
+          planned_risk: number | null;
+          reasoning: string | null;
+          setup: string | null;
+          trade_id: string;
+          user_id: string;
+        };
+        Insert: {
+          confidence?: number | null;
+          created_at?: string;
+          emotion?: string | null;
+          id?: string;
+          plan?: string | null;
+          planned_risk?: number | null;
+          reasoning?: string | null;
+          setup?: string | null;
+          trade_id: string;
+          user_id: string;
+        };
+        Update: {
+          confidence?: number | null;
+          created_at?: string;
+          emotion?: string | null;
+          id?: string;
+          plan?: string | null;
+          planned_risk?: number | null;
+          reasoning?: string | null;
+          setup?: string | null;
+          trade_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      trade_reflection: {
+        Row: {
+          created_at: string;
+          id: string;
+          note: string | null;
+          plan_respected: string | null;
+          reason: string | null;
+          trade_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          plan_respected?: string | null;
+          reason?: string | null;
+          trade_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          plan_respected?: string | null;
+          reason?: string | null;
+          trade_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      trading_sessions: {
+        Row: {
+          account_id: string | null;
+          active_rules: Json;
+          checklist_snapshot: Json;
+          created_at: string;
+          daily_objective: string | null;
+          discipline_score: number | null;
+          emotional_state: string | null;
+          ended_at: string | null;
+          id: string;
+          market_context: string | null;
+          readiness_inputs: Json;
+          readiness_score: number | null;
+          review_note: string | null;
+          session_date: string;
+          started_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          account_id?: string | null;
+          active_rules?: Json;
+          checklist_snapshot?: Json;
+          created_at?: string;
+          daily_objective?: string | null;
+          discipline_score?: number | null;
+          emotional_state?: string | null;
+          ended_at?: string | null;
+          id?: string;
+          market_context?: string | null;
+          readiness_inputs?: Json;
+          readiness_score?: number | null;
+          review_note?: string | null;
+          session_date: string;
+          started_at?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          account_id?: string | null;
+          active_rules?: Json;
+          checklist_snapshot?: Json;
+          created_at?: string;
+          daily_objective?: string | null;
+          discipline_score?: number | null;
+          emotional_state?: string | null;
+          ended_at?: string | null;
+          id?: string;
+          market_context?: string | null;
+          readiness_inputs?: Json;
+          readiness_score?: number | null;
+          review_note?: string | null;
+          session_date?: string;
+          started_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       accounts: {
         Row: {
           color: string;
           created_at: string;
           currency: string;
           id: string;
+          icon: string | null;
           is_default: boolean;
           name: string;
           starting_balance: number;
@@ -26,6 +306,7 @@ export type Database = {
           created_at?: string;
           currency?: string;
           id?: string;
+          icon?: string | null;
           is_default?: boolean;
           name?: string;
           starting_balance?: number;
@@ -38,6 +319,7 @@ export type Database = {
           created_at?: string;
           currency?: string;
           id?: string;
+          icon?: string | null;
           is_default?: boolean;
           name?: string;
           starting_balance?: number;
@@ -49,24 +331,39 @@ export type Database = {
       };
       ai_memory: {
         Row: {
+          confidence: number;
           content: string;
           created_at: string;
           id: string;
+          key: string | null;
           kind: string;
+          importance: number;
+          source: string;
+          updated_at: string;
           user_id: string;
         };
         Insert: {
+          confidence?: number;
           content: string;
           created_at?: string;
           id: string;
+          key?: string | null;
           kind: string;
+          importance?: number;
+          source?: string;
+          updated_at?: string;
           user_id: string;
         };
         Update: {
+          confidence?: number;
           content?: string;
           created_at?: string;
           id?: string;
+          key?: string | null;
           kind?: string;
+          importance?: number;
+          source?: string;
+          updated_at?: string;
           user_id?: string;
         };
         Relationships: [];
@@ -208,6 +505,7 @@ export type Database = {
       };
       goal_plans: {
         Row: {
+          account_id: string | null;
           created_at: string;
           goals: Json;
           horizon_months: number;
@@ -217,6 +515,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          account_id?: string | null;
           created_at?: string;
           goals?: Json;
           horizon_months?: number;
@@ -226,6 +525,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          account_id?: string | null;
           created_at?: string;
           goals?: Json;
           horizon_months?: number;
@@ -351,6 +651,7 @@ export type Database = {
       };
       notifications: {
         Row: {
+          session_id: string | null;
           body: string;
           created_at: string;
           data: Json;
@@ -363,6 +664,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          session_id?: string | null;
           body: string;
           created_at?: string;
           data?: Json;
@@ -375,6 +677,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          session_id?: string | null;
           body?: string;
           created_at?: string;
           data?: Json;
@@ -580,6 +883,7 @@ export type Database = {
           crypto_charge_id: string | null;
           current_period_end: string | null;
           plan: string;
+          provider_event_at: string | null;
           source: string;
           status: string;
           stripe_customer_id: string | null;
@@ -594,6 +898,7 @@ export type Database = {
           crypto_charge_id?: string | null;
           current_period_end?: string | null;
           plan?: string;
+          provider_event_at?: string | null;
           source?: string;
           status?: string;
           stripe_customer_id?: string | null;
@@ -608,6 +913,7 @@ export type Database = {
           crypto_charge_id?: string | null;
           current_period_end?: string | null;
           plan?: string;
+          provider_event_at?: string | null;
           source?: string;
           status?: string;
           stripe_customer_id?: string | null;
@@ -620,6 +926,7 @@ export type Database = {
       };
       trades: {
         Row: {
+          session_id: string | null;
           account_id: string | null;
           confidence: number;
           confluences: string[];
@@ -646,6 +953,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          session_id?: string | null;
           account_id?: string | null;
           confidence?: number;
           confluences?: string[];
@@ -672,6 +980,7 @@ export type Database = {
           user_id?: string;
         };
         Update: {
+          session_id?: string | null;
           account_id?: string | null;
           confidence?: number;
           confluences?: string[];
@@ -730,9 +1039,67 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      // Les fonctions ajoutées par
+      // `supabase/migrations/20260829090000_billing_and_quota_hardening.sql`.
+      // Ce fichier est REGÉNÉRÉ depuis le schéma réel ; ces entrées sont ce
+      // qu'une régénération produirait, ajoutées à la main faute d'accès au
+      // projet Supabase depuis l'environnement de développement.
+      adjust_memory_confidence: {
+        Args: { p_id: string; p_delta: number };
+        Returns: number | null;
+      };
+      apply_subscription_event: {
+        Args: {
+          p_user_id: string;
+          p_plan: string;
+          p_status: string;
+          p_source: string;
+          p_stripe_subscription_id: string | null;
+          p_stripe_customer_id: string | null;
+          p_crypto_charge_id: string | null;
+          p_current_period_end: string | null;
+          p_cancel_at_period_end: boolean;
+          p_event_at: string;
+        };
+        Returns: string;
+      };
       consume_ai_quota: {
         Args: { p_limit: number; p_window_seconds: number };
         Returns: boolean;
+      };
+      consume_ai_quota_scoped: {
+        Args: { p_scope: string; p_limit: number; p_window_seconds: number };
+        Returns: boolean;
+      };
+      count_trades_in_month: {
+        Args: { p_user_id: string; p_month: string };
+        Returns: number;
+      };
+      effective_tier: {
+        Args: { p_user_id: string };
+        Returns: string;
+      };
+      find_user_id_by_email: {
+        Args: { p_email: string };
+        Returns: string | null;
+      };
+      redeem_promo_code: {
+        Args: {
+          p_code: string;
+          p_user_id: string;
+          p_email: string;
+          p_plan: string;
+          p_kind: string;
+        };
+        Returns: string;
+      };
+      release_promo_redemption: {
+        Args: { p_code: string; p_user_id: string };
+        Returns: boolean;
+      };
+      users_with_trades_since: {
+        Args: { p_since: string; p_after: string | null; p_limit: number };
+        Returns: { user_id: string }[];
       };
     };
     Enums: {

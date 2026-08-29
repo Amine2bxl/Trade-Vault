@@ -18,6 +18,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { sendPushToSelf } from "@/backend/push.functions";
 import { useT } from "../i18n/LanguageContext";
+import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { tierAtLeast } from "../utils/pricing";
 import { cn } from "../utils/cn";
@@ -26,7 +27,10 @@ type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
 
 const CATEGORIES: {
   key: NotifCategory;
-  labelKey: string;
+  /** Clé i18n. Typée par le dictionnaire plutôt que `string` : une clé
+   *  inexistante devient une erreur de compilation au lieu d'un libellé
+   *  affiché brut à l'écran. */
+  labelKey: TKey;
   icon: ComponentType<{ className?: string }>;
 }[] = [
   { key: "discipline", labelKey: "push.catDiscipline", icon: ShieldAlert },

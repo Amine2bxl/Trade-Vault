@@ -126,6 +126,19 @@ create table if not exists public.trades (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.ai_memory (
+  id         uuid primary key,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  kind       text not null,
+  content    text not null,
+  key        text,
+  importance smallint not null default 3,
+  confidence real not null default 0.6,
+  source     text not null default 'unknown',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.accounts (
   id               uuid primary key default gen_random_uuid(),
   user_id          uuid not null references auth.users(id) on delete cascade,
@@ -135,3 +148,4 @@ create table if not exists public.accounts (
   is_default       boolean not null default false,
   created_at       timestamptz not null default now()
 );
+

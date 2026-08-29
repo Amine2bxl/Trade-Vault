@@ -109,7 +109,18 @@ psql_run() {
 echo "→ socle de test"
 psql_run -f tests/sql/harness.sql
 echo "→ migration $MIGRATION"
-psql_run -f "$MIGRATION" 2>&1 | grep -v "^NOTICE:" || true
+# Le filtrage des NOTICE passait par un tube suivi de `|| true` : le code de
+# sortie observé était alors celui de `grep`, donc une migration EN ERREUR
+# passait pour un succès. On capture la sortie, on vérifie le code de `psql`,
+# et on n'affiche les NOTICE que si tout va bien.
+MIGRATION_LOG=$(mktemp)
+if ! psql_run -f "$MIGRATION" >"$MIGRATION_LOG" 2>&1; then
+  grep -v "^NOTICE:" "$MIGRATION_LOG" >&2 || true
+  rm -f "$MIGRATION_LOG"
+  echo "ÉCHEC : la migration ne s'applique pas." >&2
+  exit 1
+fi
+rm -f "$MIGRATION_LOG"
 echo "→ assertions de facturation et de quota"
 psql_run -f tests/sql/billing.sql
 echo "→ concurrence (deux sessions simultanées)"

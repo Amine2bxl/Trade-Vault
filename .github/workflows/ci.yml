@@ -21,6 +21,16 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # LA PORTE QUI MANQUAIT. La charte du projet exige quatre vérifications
+      # avant tout push — `tsc --noEmit`, `lint`, `build`, `test` — mais seules
+      # trois tournaient ici. Le typecheck produisait 188 erreurs (types
+      # Supabase générés en retard sur les migrations, `bun:test` sans
+      # déclarations) : il était donc infranchissable, et personne ne l'avait
+      # remis en état. C'est ce trou qui a laissé un appel à
+      # `.onConflict().ignore()` — une méthode qui n'existe pas — casser tous
+      # les checkouts avec code promo en production.
+      - run: bun run typecheck
+
       - run: bun run lint
 
       - run: bun run build

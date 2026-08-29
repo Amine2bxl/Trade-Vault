@@ -150,7 +150,6 @@ export default function Profile({ trades, setPage }: ProfileProps) {
       <button
         onClick={async () => {
           try {
-            // @ts-expect-error — supabase client via global for simplicity
             const { supabase } = await import("@/integrations/supabase/client");
             await supabase.from("profiles").update({ onboarded_at: null }).eq("id", user?.id);
             window.location.reload();

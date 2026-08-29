@@ -89,19 +89,46 @@ export const acceptProposal = createServerFn({ method: "POST" })
       return { ok: false, appliedRef: null, reason: check.reason };
     }
 
+    // ── RÉSERVATION ATOMIQUE ────────────────────────────────────────────────
+    //
+    // La lecture de `status` plus haut n'engage à rien : entre elle et
+    // l'écriture, une seconde requête peut passer. Un double-clic, ou le même
+    // écran ouvert sur deux appareils, créait DEUX règles de trading pour une
+    // seule proposition — et le trader se retrouvait avec un doublon qu'il
+    // n'avait jamais accepté deux fois.
+    //
+    // `update … where status = 'pending'` est un test-et-pose : la première
+    // requête change la ligne, la seconde ne matche plus rien. `select()` rend
+    // les lignes touchées, donc un tableau vide signifie « perdu la course ».
+    const { data: claimed, error: claimError } = await sb
+      .from("agent_proposals")
+      .update({ status: "accepted", decided_at: new Date().toISOString() })
+      .eq("id", proposal.id)
+      .eq("status", "pending")
+      .select("id");
+
+    if (claimError) {
+      return { ok: false, appliedRef: null, reason: "could not claim proposal" };
+    }
+    if (!claimed || claimed.length === 0) {
+      // Quelqu'un d'autre l'a prise entre-temps. Ce n'est pas une erreur : la
+      // proposition A ÉTÉ appliquée, simplement pas par cet appel.
+      return { ok: false, appliedRef: null, reason: "already accepted" };
+    }
+
     const appliedRef = await applyAction(sb, userId, proposal.action_type, check.value);
     if (!appliedRef) {
+      // L'action n'a rien créé : on REND la proposition. La laisser `accepted`
+      // sans `applied_ref` la rendrait morte — ni appliquée, ni réessayable.
+      await sb
+        .from("agent_proposals")
+        .update({ status: "pending", decided_at: null })
+        .eq("id", proposal.id)
+        .eq("status", "accepted");
       return { ok: false, appliedRef: null, reason: "action not supported yet" };
     }
 
-    await sb
-      .from("agent_proposals")
-      .update({
-        status: "accepted",
-        decided_at: new Date().toISOString(),
-        applied_ref: appliedRef,
-      })
-      .eq("id", proposal.id);
+    await sb.from("agent_proposals").update({ applied_ref: appliedRef }).eq("id", proposal.id);
 
     return { ok: true, appliedRef, reason: null };
   });

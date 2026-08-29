@@ -36,7 +36,11 @@ export interface TelemetryStats extends TelemetrySummary {
 export const aiTelemetryStats = createServerFn({ method: "GET" })
   .middleware([requireAdminAccess])
   .handler(async ({ context }): Promise<TelemetryStats> => {
-    const { supabase, userId } = context as {
+    // Le client réel est typé par le schéma généré ; on ne veut ici que la
+    // forme minimale utilisée. TypeScript refuse la conversion directe entre
+    // deux types qui ne se recouvrent pas — le passage par `unknown` est la
+    // façon qu'il indique lui-même de l'exprimer.
+    const { supabase, userId } = context as unknown as {
       supabase: {
         from: (t: string) => {
           select: (c: string) => {

@@ -207,7 +207,9 @@ export default function Inbox() {
                   : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
               )}
             >
-              {k === "all" ? "Toutes" : t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}`)}
+              {k === "all"
+                ? t("common.all")
+                : t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}` as never)}
               {unread > 0 && (
                 <span
                   className={cn(

@@ -46,6 +46,7 @@ interface AccountRow {
   calibration_scale?: number | null;
   original_balance?: number | null;
   calibrated_at?: string | null;
+  icon?: string | null;
 }
 function rowToAccount(r: AccountRow): Account {
   return {
@@ -61,6 +62,11 @@ function rowToAccount(r: AccountRow): Account {
     calibrationScale: Number(r.calibration_scale) || 1,
     originalBalance: Number(r.original_balance) || Number(r.starting_balance),
     calibratedAt: r.calibrated_at ?? null,
+    // L'icône vit en BASE depuis la migration `icon`. Avant, elle n'existait
+    // que dans le `localStorage` du navigateur courant : elle disparaissait
+    // d'un appareil à l'autre. `AccountContext` reprend l'ancienne valeur
+    // locale quand la colonne est encore vide, et la remonte en base.
+    icon: r.icon ?? undefined,
   };
 }
 
@@ -95,6 +101,7 @@ export async function createAccount(
     startingBalance: number;
     currency?: string;
     color?: string;
+    icon?: string;
   },
 ): Promise<Account> {
   const { data, error } = await supabase
@@ -106,6 +113,7 @@ export async function createAccount(
       starting_balance: input.startingBalance,
       currency: input.currency ?? "USD",
       color: input.color ?? "#22d3ee",
+      ...(input.icon ? { icon: input.icon } : {}),
       is_default: false,
     })
     // Même raison que dans `loadAccounts` : ne jamais nommer une colonne qui
@@ -132,6 +140,7 @@ export async function updateAccount(
     startingBalance: number;
     currency: string;
     color: string;
+    icon: string;
   }>,
 ): Promise<void> {
   const row: Record<string, unknown> = {};
@@ -140,6 +149,7 @@ export async function updateAccount(
   if (patch.startingBalance !== undefined) row.starting_balance = patch.startingBalance;
   if (patch.currency !== undefined) row.currency = patch.currency;
   if (patch.color !== undefined) row.color = patch.color;
+  if (patch.icon !== undefined) row.icon = patch.icon;
   const { error } = await supabase
     .from("accounts")
     .update(row as never)

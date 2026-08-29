@@ -222,10 +222,27 @@ export function PageGate({
  * d'un compte vide ne montrerait rien du tout.
  */
 export function usePageLock(page: Page): boolean {
+  return usePageLockState(page).locked;
+}
+
+/**
+ * L'état COMPLET du verrou : verrouillé, et surtout — le sait-on déjà ?
+ *
+ * POURQUOI LA DEUXIÈME QUESTION EXISTE. `usePageLock` répond `false` tant que
+ * l'abonnement n'est pas chargé, ce qui est le bon choix pour le MUR (afficher
+ * un mur puis le retirer donnerait à un abonné l'impression d'avoir perdu son
+ * accès). Mais `App` s'en servait aussi pour choisir QUELLES DONNÉES passer à
+ * la page : `pageLocked ? previewTrades() : trades`. Pendant le chargement, un
+ * compte gratuit voyait donc ses VRAIS chiffres s'afficher sur la page
+ * Analytics… puis être remplacés sous ses yeux par des données de
+ * démonstration. Ses propres nombres, changés en direct.
+ *
+ * Avec `resolved`, l'appelant peut attendre de savoir avant de peindre — un
+ * squelette une demi-seconde, plutôt qu'une bascule de chiffres.
+ */
+export function usePageLockState(page: Page): { locked: boolean; resolved: boolean } {
   const { tier, loading } = useSubscription();
   const required = PAGE_TIER[page];
-  // Tant que l'abonnement n'est pas chargé on ne verrouille rien : montrer le
-  // mur puis le retirer donnerait à un abonné l'impression d'avoir perdu son
-  // accès.
-  return !!required && !loading && !tierAtLeast(tier, required);
+  if (!required) return { locked: false, resolved: true };
+  return { locked: !loading && !tierAtLeast(tier, required), resolved: !loading };
 }
