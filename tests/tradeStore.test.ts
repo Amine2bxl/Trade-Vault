@@ -20,10 +20,25 @@ import { readSource, requireIndex } from "./helpers/source";
 let allRows: Record<string, unknown>[] = [];
 let ranges: [number, number][] = [];
 let eqFilters: Record<string, unknown> = {};
+/** Chemins réellement passés à la suppression du bucket. */
+let removedPaths: string[] = [];
+
+/**
+ * La suppression : `delete().eq().eq()` doit s'attendre à n'importe quel
+ * maillon, puisque le filtre de compte n'est ajouté que s'il y a un compte
+ * actif. Un objet « thenable » qui se rend lui-même le fait exactement.
+ */
+const del: { eq: () => typeof del; then: (r: (v: { error: null }) => void) => Promise<void> } = {
+  eq: () => del,
+  then: (r) => Promise.resolve({ error: null as null }).then(r),
+};
 
 function makeQuery() {
   const q = {
     select: () => q,
+    // `delete()` rend une requête « terminale » : elle se résout sur le
+    // dernier `.eq()`, comme le client réel.
+    delete: () => del,
     eq: (col: string, value: unknown) => {
       eqFilters[col] = value;
       return q;
@@ -41,10 +56,18 @@ function makeQuery() {
 mock.module("@/integrations/supabase/client", () => ({
   supabase: {
     from: () => makeQuery(),
+    storage: {
+      from: () => ({
+        remove: (paths: string[]) => {
+          removedPaths.push(...paths);
+          return Promise.resolve({ data: null, error: null });
+        },
+      }),
+    },
   },
 }));
 
-const { loadUserTrades, rowToTrade } = await import("../src/app/store/trades");
+const { loadUserTrades, rowToTrade, deleteAllTrades } = await import("../src/app/store/trades");
 const { setActiveAccountId } = await import("../src/app/store/accounts");
 
 const row = (id: number, over: Record<string, unknown> = {}) => ({
@@ -73,6 +96,7 @@ beforeEach(() => {
   ranges = [];
   eqFilters = {};
   allRows = [];
+  removedPaths = [];
 });
 
 describe("loadUserTrades — plus de troncature silencieuse", () => {
@@ -222,5 +246,50 @@ describe("miroir de session", () => {
 
   test("la requête reçoit le compte de la CLÉ de cache", () => {
     expect(SOURCE).toContain("loadUserTrades(userId as string, { accountId })");
+  });
+});
+
+describe("deleteAllTrades — les captures d'écran suivent les lignes", () => {
+  test("efface les images des trades AU-DELÀ du millième", async () => {
+    // Même défaut que la lecture de l'historique, dans la même fonction du même
+    // fichier : la requête n'avait pas de `.range()`, PostgREST s'arrêtait donc
+    // à `db.max_rows` SANS erreur. Les lignes, elles, étaient toutes
+    // supprimées ensuite — les captures des trades suivants restaient dans le
+    // bucket, orphelines et définitives. Ce ne sont pas des octets perdus :
+    // ce sont les images d'un journal que le trader vient d'effacer.
+    allRows = Array.from({ length: 2_500 }, (_, i) => ({
+      id: `t${i}`,
+      screenshots: [`u1/shot-${i}.png`],
+    }));
+
+    await deleteAllTrades("u1");
+
+    expect(removedPaths).toHaveLength(2_500);
+    expect(removedPaths).toContain("u1/shot-0.png");
+    // Celles-là étaient exactement les oubliées.
+    expect(removedPaths).toContain("u1/shot-1000.png");
+    expect(removedPaths).toContain("u1/shot-2499.png");
+  });
+
+  test("pagine par tranches de mille, sans en sauter", async () => {
+    allRows = Array.from({ length: 2_500 }, (_, i) => ({
+      id: `t${i}`,
+      screenshots: [`u1/shot-${i}.png`],
+    }));
+    await deleteAllTrades("u1");
+    expect(ranges).toEqual([
+      [0, 999],
+      [1000, 1999],
+      [2000, 2999],
+    ]);
+  });
+
+  test("un journal sans capture ne déclenche aucune suppression de fichier", () => {
+    // `removeScreenshotFiles` sort tôt sur une liste vide ; on vérifie qu'on ne
+    // lui envoie pas non plus un appel pour rien.
+    allRows = Array.from({ length: 3 }, (_, i) => ({ id: `t${i}`, screenshots: [] }));
+    return deleteAllTrades("u1").then(() => {
+      expect(removedPaths).toEqual([]);
+    });
   });
 });

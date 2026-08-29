@@ -264,12 +264,27 @@ export async function deleteTrade(userId: string, id: string): Promise<void> {
 // Scoped to the active account: "delete all" only clears the current account.
 export async function deleteAllTrades(userId: string): Promise<void> {
   const activeId = getActiveAccountId();
-  let selectQ = supabase.from("trades").select("screenshots").eq("user_id", userId);
-  if (activeId) selectQ = selectQ.eq("account_id", activeId);
-  const { data } = await selectQ;
-  const allPaths = (data ?? []).flatMap((r: { screenshots: string[] }) =>
-    storagePathsOf(r.screenshots),
-  );
+
+  // PAGINÉ, pour la même raison que la lecture de l'historique : sans
+  // `.range()`, PostgREST s'arrête à `db.max_rows` (mille) SANS erreur. Les
+  // lignes, elles, étaient toutes supprimées ensuite — les captures d'écran
+  // des trades au-delà du millième restaient donc dans le bucket, orphelines,
+  // définitivement. Ce n'est pas seulement de l'espace perdu : ce sont les
+  // images d'un journal que le trader vient d'effacer.
+  const allPaths: string[] = [];
+  for (let from = 0; from < READ_HARD_CAP; from += READ_PAGE_SIZE) {
+    let selectQ = supabase.from("trades").select("id, screenshots").eq("user_id", userId);
+    if (activeId) selectQ = selectQ.eq("account_id", activeId);
+    const { data, error } = await selectQ
+      // Ordre stable : sans lui, deux pages peuvent rendre la même ligne et en
+      // sauter une autre.
+      .order("id", { ascending: true })
+      .range(from, from + READ_PAGE_SIZE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as { screenshots: string[] | null }[];
+    for (const r of rows) allPaths.push(...storagePathsOf(r.screenshots ?? []));
+    if (rows.length < READ_PAGE_SIZE) break;
+  }
   if (allPaths.length) {
     await removeScreenshotFiles(allPaths);
   }
