@@ -117,7 +117,7 @@ export default function AccountSwitcher({
     <Modal
       open={open}
       onClose={onClose}
-      wrapperClassName="z-[70]"
+      wrapperClassName="z-[var(--tv-z-sheet)]"
       className="md:max-w-sm max-h-[80vh] overflow-hidden"
     >
       <div className="px-5 py-4 border-b border-white/[0.06]">
@@ -236,7 +236,7 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 pl-1.5 pr-3.5 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
+          className="md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 pl-1.5 pr-3.5 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
         >
           <span
             className="relative grid h-8 w-8 shrink-0 place-items-center rounded-[14px] border shadow-sm"
@@ -262,7 +262,7 @@ export default function AccountSwitcher({
 
         {open && (
           <div
-            className="md:hidden fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm animate-fade-in"
+            className="md:hidden fixed inset-0 z-[var(--tv-z-sheet)] flex items-end bg-black/60 backdrop-blur-sm animate-fade-in"
             onClick={() => setOpen(false)}
           >
             <div
@@ -634,7 +634,7 @@ function DeleteAccountModal({
       open
       onClose={onClose}
       className="md:max-w-sm p-6 border border-red-500/20"
-      wrapperClassName="z-[110]"
+      wrapperClassName="z-[var(--tv-z-modal-top)]"
     >
       <div>
         <div className="flex justify-center mb-4">
@@ -772,7 +772,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
       onClose={onClose}
       className="md:max-w-lg"
       labelledBy="create-account-title"
-      wrapperClassName="z-[100]"
+      wrapperClassName="z-[var(--tv-z-modal-nested)]"
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
         <h2

@@ -2053,10 +2053,10 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       </div>
 
       {/* ══ VOICE WIDGET — Jarvis speaking indicator ══
-          z-[60] + bottom-28 on mobile keeps it clear of (and above) the bottom
+          `--tv-z-fab` + bottom-28 on mobile keeps it clear of (and above) the bottom
           nav and the FAB; a floating pill, never hidden. */}
       {voice.show && (
-        <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
+        <div className="fixed z-[var(--tv-z-fab)] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
           <div className="relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3">
             <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
             <span className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
@@ -2087,7 +2087,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ COUNTDOWN OVERLAY ══ */}
       {countdownVal !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
           <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in">
             <div className="text-sm font-bold text-white">{t("chk.cdTitle")}</div>
             <div className="text-xs text-slate-400 mb-5">{t("chk.cdSub")}</div>
@@ -2110,7 +2110,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   cy="100"
                   r="80"
                   fill="none"
-                  stroke="#22d3ee"
+                  stroke="var(--tv-highlight)"
                   strokeWidth="8"
                   strokeLinecap="round"
                   pathLength="100"
@@ -2138,7 +2138,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ EDGE LOCKED OVERLAY ══ */}
       {lockOverlay && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-cyan-500/20">
             <div className="relative w-20 h-20 mx-auto mb-4">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">

@@ -100,7 +100,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "relative hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
+        "relative hidden md:flex h-dvh sticky top-0 z-[var(--tv-z-rail)] shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
         // Largeur animée, contenu clippé par le wrapper interne : au dépli, les
         // étiquettes et la carte de compte se révèlent au lieu de déborder ; au
         // repli, la barre rétrécit sans texte orphelin. 300 ms, easing fluide
@@ -262,7 +262,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         <Modal
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          wrapperClassName="z-[80] md:items-center md:justify-center"
+          wrapperClassName="z-[var(--tv-z-modal)] md:items-center md:justify-center"
           className="md:max-w-xs"
         >
           <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3">

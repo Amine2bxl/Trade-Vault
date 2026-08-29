@@ -41,8 +41,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           open
           onClose={() => settle(false)}
           size="sm"
-          // Rides above every other modal (z-110), with a stronger dim.
-          wrapperClassName="z-[110]"
+          // Passe au-dessus de toute autre modale — `--tv-z-modal-top` — avec un
+          // fond plus sombre.
+          wrapperClassName="z-[var(--tv-z-modal-top)]"
           backdropClassName="bg-black/70"
         >
           <div className="p-6">

@@ -341,13 +341,33 @@
   --tv-dur-3: 260ms;
   --tv-dur-4: 400ms;
 
-  /* Stacking order — declared once so no component has to guess a number. */
-  --tv-z-rail: 30;
-  --tv-z-float: 40;
-  --tv-z-nav: 50;
-  --tv-z-modal: 70;
-  --tv-z-toast: 80;
-  --tv-z-palette: 90;
+  /* ORDRE D'EMPILEMENT — déclaré une fois pour que rien n'ait à deviner.
+     Ces jetons existaient déjà mais n'étaient utilisés NULLE PART : onze
+     composants choisissaient leur propre nombre entre 50 et 200, et l'ordre
+     réel du produit n'était écrit dans aucun fichier.
+
+     Le défaut que ça avait produit : le TOAST était à 100, donc SOUS la
+     confirmation (110), sous la modale de mise à niveau (110), sous la
+     célébration (120), sous la visionneuse et la modale d'inscription (200).
+     Un toast est un retour éphémère : caché, il n'est pas retardé, il est
+     perdu. « Erreur d'enregistrement » affiché derrière la modale qu'on est en
+     train d'utiliser n'existe pas.
+
+     Les valeurs reprennent l'ordre existant à l'identique — seul le toast
+     change de place, et il passe au-dessus de tout, par définition de ce
+     qu'il est. Son conteneur est `pointer-events-none` : il ne peut donc rien
+     bloquer de ce qu'il survole. */
+  --tv-z-rail: 30; /* colonnes collantes : barre latérale, tiroir Jarvis */
+  --tv-z-float: 40; /* chrome flottant : barre du bas mobile, actions flottantes */
+  --tv-z-nav: 50; /* navigation, en-têtes collants, modale par défaut */
+  --tv-z-fab: 60; /* action flottante au-dessus de la barre du bas */
+  --tv-z-sheet: 70; /* feuilles ancrées, palette de commandes */
+  --tv-z-modal: 80; /* dialogue ouvert depuis une page */
+  --tv-z-modal-nested: 100; /* dialogue ouvert DEPUIS un dialogue */
+  --tv-z-modal-top: 110; /* confirmation, paywall : au-dessus de tout dialogue */
+  --tv-z-overlay: 120; /* plein écran : démo, célébration, assistant */
+  --tv-z-top: 200; /* visionneuse, inscription, bandeau de consentement */
+  --tv-z-toast: 300; /* retour transitoire — AU-DESSUS DE TOUT */
 
   /* Type scale — the ladder the `type` tokens in shared/ui/tokens.ts express
      as classes. 10px is the floor; there is no step below it. */

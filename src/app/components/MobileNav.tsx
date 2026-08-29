@@ -88,7 +88,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
   );
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-[var(--tv-z-float)] bottom-nav">
       <div className="bottom-nav-shell">
         {/* 2 + bouton d'ajout + 2 = cinq enfants, cinq colonnes. */}
         <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2 gap-1">

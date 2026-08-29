@@ -28,7 +28,7 @@ export function CookieConsent() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Préférences de cookies"
-        className="fixed bottom-4 left-4 z-[200] flex items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-slate-500 backdrop-blur-md transition hover:border-cyan-500/30 hover:bg-white/[.06] hover:text-slate-200"
+        className="fixed bottom-4 left-4 z-[var(--tv-z-top)] flex items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-slate-500 backdrop-blur-md transition hover:border-cyan-500/30 hover:bg-white/[.06] hover:text-slate-200"
       >
         <Cookie className="w-3.5 h-3.5" /> Cookies
       </button>

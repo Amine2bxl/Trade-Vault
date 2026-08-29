@@ -409,7 +409,7 @@ export default function ChecklistWizard({
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[var(--tv-z-overlay)] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div

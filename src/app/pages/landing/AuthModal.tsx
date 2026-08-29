@@ -105,7 +105,7 @@ export function AuthModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-[var(--tv-z-top)] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md overflow-y-auto"
       onMouseDown={(e) => e.currentTarget === e.target && onClose()}
     >
       <div className="modal-in relative my-auto w-full max-w-[880px] overflow-hidden rounded-2xl border border-white/[.09] bg-[#0a1220] shadow-[0_40px_110px_rgba(0,0,0,.7)]">

@@ -471,7 +471,7 @@ function DeleteAccountModal({
       open
       onClose={onClose}
       className="md:max-w-md p-5 border border-red-500/20"
-      wrapperClassName="z-[100]"
+      wrapperClassName="z-[var(--tv-z-modal-nested)]"
     >
       <div>
         <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">

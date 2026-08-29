@@ -180,8 +180,8 @@ function EquityCurves({
           <ComposedChart data={chartData} margin={{ top: 20, right: 10, bottom: 20, left: 0 }}>
             <defs>
               <linearGradient id="mcBand" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.08} />
-                <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.08} />
+                <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke="rgba(148,163,184,0.06)" strokeDasharray="4 8" vertical={false} />
@@ -217,7 +217,13 @@ function EquityCurves({
             />
 
             {/* Median line */}
-            <Line type="monotone" dataKey="p50" stroke="#22d3ee" strokeWidth={1.5} dot={false} />
+            <Line
+              type="monotone"
+              dataKey="p50"
+              stroke="var(--tv-highlight)"
+              strokeWidth={1.5}
+              dot={false}
+            />
 
             <Tooltip
               content={({ active, payload }) => {

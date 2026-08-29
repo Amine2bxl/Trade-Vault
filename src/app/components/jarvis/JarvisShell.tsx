@@ -131,7 +131,7 @@ export default function JarvisShell({
                   className="md:hidden absolute inset-0 z-20 bg-black/60 backdrop-blur-sm"
                   onClick={() => setSidebarOpen(false)}
                 />
-                <aside className="md:hidden absolute inset-y-0 left-0 z-30 w-72 bg-[#0a1120] border-r border-white/[0.06] min-h-0">
+                <aside className="md:hidden absolute inset-y-0 left-0 z-[var(--tv-z-rail)] w-72 bg-[#0a1120] border-r border-white/[0.06] min-h-0">
                   {sidebar}
                 </aside>
               </>

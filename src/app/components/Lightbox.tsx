@@ -42,7 +42,7 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[var(--tv-z-top)] bg-black/80 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       {/* Controls are anchored to the viewport, not the image, so they stay put
