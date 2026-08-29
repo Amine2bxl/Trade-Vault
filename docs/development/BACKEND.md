@@ -268,8 +268,8 @@ sauf celles préfixées `VITE_`.
 
 | Variable | Rôle |
 | --- | --- |
-| `SUPABASE_URL` · `SUPABASE_PUBLISHABLE_KEY` · `SUPABASE_PROJECT_ID` | Accès serveur (client RLS-scopé) |
-| `VITE_SUPABASE_URL` · `VITE_SUPABASE_PUBLISHABLE_KEY` · `VITE_SUPABASE_PROJECT_ID` | Accès client (clé publiable uniquement) |
+| `SUPABASE_URL` · `SUPABASE_PUBLISHABLE_KEY` | Accès serveur (client RLS-scopé) |
+| `VITE_SUPABASE_URL` · `VITE_SUPABASE_PUBLISHABLE_KEY` | Accès client (clé publiable uniquement) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Secret critique** — crons et webhooks uniquement, jamais dans une server function utilisateur |
 
 ### IA
