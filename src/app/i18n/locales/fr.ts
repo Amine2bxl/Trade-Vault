@@ -1,6 +1,8 @@
 import type { Dict } from "../translations";
 
 const fr: Dict = {
+  "app.checkingAccount": "Vérification de ton compte…",
+  "app.loadingOnboarding": "Chargement de l'onboarding…",
   "nav.dashboard": "Tableau de bord",
   "error.pageTitle": "Cette section a rencontré un souci",
   "error.pageBody": "Le chargement de cette page a échoué. Tes données sont intactes.",

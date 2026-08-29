@@ -30,6 +30,8 @@ export const LANG_NAMES: Record<Lang, string> = {
 // English is the source-of-truth key set.
 const en = {
   // Nav
+  "app.checkingAccount": "Checking your account…",
+  "app.loadingOnboarding": "Loading onboarding…",
   "nav.dashboard": "Dashboard",
   "error.pageTitle": "This section hit a snag",
   "error.pageBody": "Something went wrong loading this page. Your data is safe.",

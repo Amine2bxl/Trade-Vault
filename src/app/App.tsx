@@ -693,7 +693,7 @@ function AppContent() {
   );
 
   if (loading) {
-    return <LoadingScreen message="Vérification de ton compte…" />;
+    return <LoadingScreen message={t("app.checkingAccount")} />;
   }
 
   // Signed-out visitors get the public landing page (its CTAs open the auth
@@ -705,7 +705,7 @@ function AppContent() {
   // as auth resolves; data streams in behind the already-painted frame).
   if (onboarding === "needed" && user) {
     return (
-      <Suspense fallback={<LoadingScreen message="Chargement de l'onboarding…" />}>
+      <Suspense fallback={<LoadingScreen message={t("app.loadingOnboarding")} />}>
         <Onboarding userId={user.id} onDone={handleOnboardingDone} />
       </Suspense>
     );

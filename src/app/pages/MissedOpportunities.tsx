@@ -214,7 +214,7 @@ export default function MissedOpportunities() {
         </Button>
       </div>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [items.length, exportCsv, t],
   );
   usePageActions(headerActions);
