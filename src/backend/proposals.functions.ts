@@ -115,7 +115,7 @@ export const acceptProposal = createServerFn({ method: "POST" })
  * et le moteur n'en émet pas — plutôt que d'écrire quatre chemins de création
  * non testés pour des propositions que rien ne produit encore.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 async function applyAction(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sb: any,

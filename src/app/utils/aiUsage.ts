@@ -6,9 +6,21 @@
  * dur ici la ferait diverger du catalogue au premier changement d'offre.
  *
  * Le compteur vit dans localStorage : il survit aux rechargements et se remet à
- * zéro à minuit. C'est un garde-fou de CONFORT, pas une barrière de sécurité —
- * le vrai contrôle est côté serveur (`backend/require-pro.ts`), parce qu'un
- * compteur navigateur s'efface en trois clics.
+ * zéro à minuit. C'est un garde-fou de CONFORT — il sert à AFFICHER « il te
+ * reste 2 analyses aujourd'hui » sans aller interroger le serveur, pas à
+ * empêcher quoi que ce soit : un compteur navigateur s'efface en trois clics.
+ *
+ * LA BARRIÈRE RÉELLE est `backend/require-pro.ts`, qui compte le même quota
+ * dans Postgres (`consume_ai_quota_scoped`, portée `daily`) à partir du palier
+ * lu en base. Ce n'était PAS le cas jusqu'ici : le serveur ne connaissait qu'un
+ * plafond horaire global de 60 appels, identique pour tous les paliers, soit
+ * 1 440 par jour pour un compte gratuit censé en avoir 3. Le commentaire qui
+ * renvoyait ici vers le serveur décrivait une protection qui n'existait pas.
+ *
+ * Comme le quota quotidien fait partie de l'OFFRE (3 / 20 / illimité), il n'est
+ * appliqué que lorsque la monétisation est active (`AI_REQUIRE_PRO`) —
+ * exactement comme le paywall. Le plafond horaire anti-abus, lui, tourne
+ * toujours.
  */
 
 import { LIMITS, type Tier } from "@/domain/plans";

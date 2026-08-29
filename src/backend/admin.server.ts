@@ -15,17 +15,12 @@ import { isPaidPlan, type PaidPlan } from "../domain/plans";
  * invisible aux clients (RLS active, aucune politique).
  */
 
-function adminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function isAdminEmail(email: string): boolean {
-  return adminEmails().includes(email.toLowerCase());
-}
-export { isAdminEmail };
+// La décision « qui est administrateur » vit dans `admin-access.ts`, un module
+// sans dépendance : le middleware des server functions en a besoin sans vouloir
+// traîner Stripe et le client Supabase dans son graphe d'import. Réexportée ici
+// pour ne pas casser les appelants historiques.
+export { isAdminEmail } from "./admin-access";
+import { isAdminEmail } from "./admin-access";
 
 /** L'appelant, s'il est administrateur. `null` sinon — jamais d'exception. */
 async function adminFromRequest(request: Request) {

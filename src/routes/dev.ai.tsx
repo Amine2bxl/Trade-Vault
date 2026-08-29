@@ -5,9 +5,17 @@ import { aiRuntimeProbe } from "@/modules/ai/runtime/probe";
 import { aiTelemetryStats } from "@/modules/ai/runtime/telemetry-stats";
 
 /**
- * Page de diagnostic interne — réservée au développement, jamais liée depuis
- * l'app. Affiche l'état des providers IA (avec bouton « Tester » par clé),
- * les métriques runtime et la PRÉSENCE des clés (jamais leur contenu).
+ * Page de diagnostic interne — réservée aux administrateurs.
+ *
+ * CE QUI PROTÈGE CETTE PAGE N'EST PAS CETTE PAGE. Les trois server functions
+ * qu'elle appelle exigent chacune, côté serveur, une adresse listée dans
+ * `ADMIN_EMAILS` (`backend/require-admin.ts`). Un visiteur qui ouvre l'URL
+ * n'obtient donc rien, et un attaquant qui appelle directement les server
+ * functions n'obtient rien non plus — c'était le vrai trou : la page était
+ * seulement « non liée » et `noindex`, ce qui ne protège rien.
+ *
+ * L'écran ci-dessous ne fait que REFLÉTER ce refus proprement, au lieu
+ * d'afficher une pile d'erreurs techniques.
  */
 
 export const Route = createFileRoute("/dev/ai")({
@@ -16,6 +24,13 @@ export const Route = createFileRoute("/dev/ai")({
   }),
   component: DevAiPage,
 });
+
+/** Le refus renvoyé par `requireAdminAccess`, reconnu à son préfixe. Les
+ *  server functions sérialisent l'erreur : on n'a que son message. */
+function isForbidden(e: unknown): boolean {
+  const message = e instanceof Error ? e.message : String(e);
+  return message.includes("FORBIDDEN") || message.includes("Unauthorized");
+}
 
 type Status = Awaited<ReturnType<typeof aiRuntimeStatus>>;
 type ProbeResult = Awaited<ReturnType<typeof aiRuntimeProbe>>;
@@ -30,6 +45,7 @@ const CIRCUIT_LABEL: Record<string, string> = {
 function DevAiPage() {
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, ProbeResult>>({});
   // Télémétrie PERSISTANTE (ai_agent_runs), par opposition aux compteurs
@@ -39,8 +55,17 @@ function DevAiPage() {
 
   const load = () => {
     aiRuntimeStatus()
-      .then(setStatus)
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .then((s) => {
+        setStatus(s);
+        setForbidden(false);
+      })
+      .catch((e) => {
+        if (isForbidden(e)) {
+          setForbidden(true);
+          return;
+        }
+        setError(e instanceof Error ? e.message : String(e));
+      });
     // Best-effort : un diagnostic partiel vaut mieux qu'une page en erreur.
     aiTelemetryStats()
       .then(setTelemetry)
@@ -71,6 +96,22 @@ function DevAiPage() {
       setTesting(null);
     }
   };
+
+  // Refus du serveur : un écran net, aucune donnée, aucun bouton d'action. On
+  // ne dit pas « connecte-toi avec la bonne adresse » — cette page ne doit pas
+  // renseigner sur l'existence d'une liste d'administrateurs.
+  if (forbidden) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#05070a] px-6 text-center">
+        <div>
+          <p className="text-sm font-semibold text-slate-300">Page indisponible</p>
+          <p className="mt-1.5 text-xs text-slate-500">
+            Ce diagnostic n'est pas accessible depuis ce compte.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

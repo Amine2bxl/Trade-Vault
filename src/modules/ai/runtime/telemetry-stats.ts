@@ -1,16 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAdminAccess } from "@/backend/require-admin";
 import { summarizeRuns, type AgentRunRow, type TelemetrySummary } from "./telemetry-summary";
 
 /**
  * Lecture de la télémétrie IA pour l'écran de diagnostic `/dev/ai`.
  *
- * PÉRIMÈTRE : les appels de l'utilisateur AUTHENTIFIÉ uniquement.
+ * PÉRIMÈTRE : les appels du compte ADMINISTRATEUR connecté, et eux seuls.
  *
- * Ce n'est pas une limitation technique mais un choix de sécurité : il
- * n'existe pas de rôle admin dans ce produit, et `/dev/ai` n'est protégée que
- * par l'absence de lien vers elle. Renvoyer des agrégats globaux ferait fuiter
- * l'activité de tous les utilisateurs à quiconque connaît l'URL.
+ * Deux gardes, pas une. La première est la garde d'accès : `requireAdminAccess`
+ * — la version précédente se contentait de `requireSupabaseAuth` parce qu'il
+ * n'existait alors aucun rôle administrateur, et `/dev/ai` n'était protégée que
+ * par l'absence de lien vers elle. Ce n'est plus le cas.
+ *
+ * La seconde est le PÉRIMÈTRE DES DONNÉES, et elle reste inchangée : même pour
+ * un administrateur, la requête est filtrée sur `userId`. Élargir aux agrégats
+ * globaux ferait de cette page une vue sur l'activité IA de tout le monde, ce
+ * qui n'est pas ce qu'on veut d'un écran de diagnostic technique.
  *
  * Conséquence assumée : les chiffres reflètent l'usage du compte connecté. Pour
  * calibrer un modèle ou un budget de tokens, tester depuis un compte dédié.
@@ -29,7 +34,7 @@ export interface TelemetryStats extends TelemetrySummary {
 }
 
 export const aiTelemetryStats = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdminAccess])
   .handler(async ({ context }): Promise<TelemetryStats> => {
     const { supabase, userId } = context as {
       supabase: {

@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { JARVIS_VOICE } from "@/modules/voice";
 
 /**
@@ -15,6 +17,17 @@ import { JARVIS_VOICE } from "@/modules/voice";
  *   - `TTS_PROVIDER=local`         → hosted is force-disabled even with a key
  *
  * The voice id is fixed: traders cannot switch voices, there is one Jarvis.
+ *
+ * ── AUTHENTIFICATION ET QUOTA ───────────────────────────────────────────────
+ * `ttsSpeak` n'avait AUCUN middleware. Une server function est un point
+ * d'entrée HTTP : n'importe qui, sans compte, pouvait la boucler et brûler le
+ * quota ElevenLabs — payé par nous — six cents caractères à la fois. Le
+ * limiteur d'IP de `server.ts` ne la couvrait pas non plus : il ne s'applique
+ * qu'aux chemins `/api/`, et les server functions n'y sont pas.
+ *
+ * Deux barrières désormais : l'authentification, et un quota horaire par
+ * compte compté en base (portée `tts`, distincte de celle du coach — griller
+ * sa voix ne doit pas empêcher de poser une question).
  */
 
 function hostedEnabled(): boolean {
@@ -36,11 +49,47 @@ const SpeakInput = z.object({
   text: z.string().min(1).max(600),
 });
 
+/**
+ * Répliques hébergées autorisées par heure et par compte.
+ *
+ * Jarvis parle par phrases courtes : deux cents lignes par heure couvrent très
+ * largement une séance de trading commentée de bout en bout, et plafonnent le
+ * coût d'un compte qui boucle. Réglable sans redéploiement.
+ */
+const TTS_LIMIT_PER_HOUR = Number(process.env.TTS_RATE_LIMIT_PER_HOUR ?? "200");
+
 export const ttsSpeak = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SpeakInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     if (!hostedEnabled()) return { available: false as const };
     const apiKey = process.env.ELEVENLABS_API_KEY as string;
+
+    // Quota horaire par compte, compté atomiquement en base. Portée `tts` : le
+    // compteur du coach et celui de la voix sont deux lignes distinctes.
+    //
+    // ÉCHOUE FERMÉ, contrairement au quota du coach. La différence est
+    // délibérée : une voix qui ne se déclenche pas retombe sur la voix locale
+    // du navigateur, donc l'utilisateur garde exactement la fonctionnalité. Il
+    // n'y a aucune raison de laisser passer un appel facturé quand on ne sait
+    // pas s'il est dans les clous.
+    try {
+      const { data: allowed, error } = await (context.supabase as unknown as SupabaseClient).rpc(
+        "consume_ai_quota_scoped",
+        {
+          p_scope: "tts",
+          p_limit: TTS_LIMIT_PER_HOUR,
+          p_window_seconds: 3600,
+        },
+      );
+      if (error || allowed === false) {
+        if (error) console.error("[tts] quota check failed", error);
+        return { available: false as const };
+      }
+    } catch (e) {
+      console.error("[tts] quota check threw", e);
+      return { available: false as const };
+    }
 
     try {
       const res = await fetch(

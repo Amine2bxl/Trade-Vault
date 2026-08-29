@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { planLimitFromDbError } from "../utils/planLimits";
 
 // ── Sub-accounts ──
 export type AccountType = "personal" | "prop" | "demo" | "live";
@@ -111,7 +112,14 @@ export async function createAccount(
     // peut ne pas encore exister en base.
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) {
+    // La limite de comptes est aussi appliquée par un déclencheur Postgres :
+    // son refus doit arriver à l'interface comme un moment de vente, pas comme
+    // une erreur de contrainte SQL.
+    const limit = planLimitFromDbError(error);
+    if (limit) throw limit;
+    throw error;
+  }
   return rowToAccount(data as unknown as AccountRow);
 }
 

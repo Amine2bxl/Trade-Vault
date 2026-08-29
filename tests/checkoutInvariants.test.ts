@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readSource, stripComments } from "./helpers/source";
 
 /**
  * L'ordre des opérations du checkout.
@@ -13,22 +12,8 @@ import { resolve } from "node:path";
  * Aucun typecheck et aucun test unitaire ne voit ces deux inversions.
  */
 
-const read = (p: string) => readFileSync(resolve(import.meta.dir, p), "utf8");
-
-/**
- * La source SANS ses commentaires.
- *
- * Indispensable pour les tests d'interdiction : les commentaires de ce dépôt
- * citent volontiers le motif fautif pour expliquer pourquoi il a été retiré
- * (« il appelait `.onConflict().ignore()`, qui n'existe pas »). Chercher le
- * motif dans la prose ferait échouer le test sur l'explication elle-même.
- */
-const code = (source: string): string =>
-  source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .map((line) => line.replace(/(^|[^:])\/\/.*$/, "$1"))
-    .join("\n");
+const read = (p: string) => readSource(import.meta.dir, p);
+const code = stripComments;
 
 const BILLING = read("../src/backend/billing.server.ts");
 const PROMO = read("../src/backend/promo.server.ts");

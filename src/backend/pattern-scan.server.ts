@@ -92,7 +92,6 @@ export async function handlePatternScanCron(request: Request): Promise<Response>
   return json(report, 200);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function scanUser(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sb: any,
@@ -171,7 +170,7 @@ async function scanUser(
  * Tout échec est silencieux et local : pas de proposition ce soir, les motifs
  * sont écrits quand même. Une panne de fournisseur ne doit pas coûter le scan.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 async function proposeOne(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sb: any,

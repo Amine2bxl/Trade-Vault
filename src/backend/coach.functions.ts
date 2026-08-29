@@ -4,6 +4,15 @@ import { requireProAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
 import { fallbackCoachAnswer } from "@/modules/ai/fallback-coach";
 import { recordAgentRun } from "./telemetry.server";
+import {
+  ConversationSchema,
+  GoalsSchema,
+  RulesSchema,
+  StatsSchema,
+  TradesSchema,
+  withGlobalByteCeiling,
+} from "./ai-payload";
+import { AI_LIMITS } from "@/domain/ai-limits";
 
 /**
  * AI Coach V1 — server function. Validates the trader's real data (Zod, with
@@ -12,36 +21,19 @@ import { recordAgentRun } from "./telemetry.server";
  * server-side. No memory, no proactivity, no other agents — the V1 surface.
  */
 
-const TradeSummary = z.object({
-  date: z.string().max(10),
-  symbol: z.string().max(20),
-  direction: z.string().max(10),
-  pnl: z.number(),
-  rMultiple: z.number(),
-  strategy: z.string().max(50),
-  mistakes: z.array(z.string().max(100)).max(20),
-  setupQuality: z.number(),
-  confluences: z.array(z.string().max(100)).max(30),
-  notes: z.string().max(10000).optional(),
-});
-
-const CoachAsk = z.object({
-  question: z.string().min(1).max(500),
+// Les briques et leurs plafonds viennent de `ai-payload.ts` — voir l'en-tête
+// de ce module pour le raisonnement de coût derrière chaque borne.
+const CoachAskShape = z.object({
+  question: z.string().min(1).max(AI_LIMITS.question),
   language: z.string().min(2).max(8).optional(),
-  stats: z.record(z.string(), z.union([z.number(), z.string(), z.null()])).optional(),
-  trades: z.array(TradeSummary).max(500).optional(),
+  stats: StatsSchema.optional(),
+  trades: TradesSchema.optional(),
   mistakes: z
     .array(z.object({ name: z.string().max(100), count: z.number(), totalPnl: z.number() }))
-    .max(40)
+    .max(AI_LIMITS.mistakes)
     .optional(),
-  goals: z
-    .array(z.object({ kind: z.string().max(40), target: z.number(), current: z.number() }))
-    .max(10)
-    .optional(),
-  rules: z
-    .array(z.object({ kind: z.string().max(40), text: z.string().max(300), enabled: z.boolean() }))
-    .max(30)
-    .optional(),
+  goals: GoalsSchema.optional(),
+  rules: RulesSchema.optional(),
   /**
    * Souvenirs DÉJÀ sélectionnés par le client sous budget de tokens. Le serveur
    * ne fait pas confiance à cette sélection : il re-borne (12 entrées, 300
@@ -127,11 +119,15 @@ const CoachAsk = z.object({
     .optional(),
   /** Compact onboarding profile so the coaching is never generic. */
   profile: z.string().max(600).optional(),
-  conversation: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
-    .max(20)
-    .optional(),
+  conversation: ConversationSchema.optional(),
 });
+
+/**
+ * Le schéma appliqué, avec le PLAFOND GLOBAL d'octets en plus des bornes par
+ * champ. Les bornes par champ se multiplient entre elles ; celle-ci non, et
+ * c'est la seule qui tiendra encore quand un champ sera ajouté au contexte.
+ */
+const CoachAsk = withGlobalByteCeiling(CoachAskShape);
 
 function sanitizePrompt(text: string): string {
   return text

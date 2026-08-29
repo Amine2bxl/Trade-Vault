@@ -646,9 +646,9 @@ function AppContent() {
     async (
       imported: Trade[],
       onProgress?: (done: number, total: number) => void,
-    ): Promise<{ saved: number; failed: number }> => {
+    ): Promise<{ saved: number; failed: number; planLimitReached?: boolean }> => {
       if (!user) return { saved: 0, failed: imported.length };
-      const { saved, failed } = await importTrades(user.id, imported, onProgress);
+      const { saved, failed, planLimitReached } = await importTrades(user.id, imported, onProgress);
       if (saved.length > 0) {
         setTrades((prev) => [...saved, ...prev]);
         // Backfill: a multi-month CSV history should come with its monthly
@@ -681,7 +681,7 @@ function AppContent() {
           }
         })();
       }
-      return { saved: saved.length, failed };
+      return { saved: saved.length, failed, planLimitReached };
     },
     [user, generateReport, t, toast],
   );

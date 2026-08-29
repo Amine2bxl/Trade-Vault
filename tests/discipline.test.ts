@@ -68,6 +68,8 @@ describe("require-pro — invariants de la garde serveur", () => {
     // `error || !isEntitled(data)` — l'erreur de lecture doit refuser l'accès,
     // jamais l'accorder. Un paywall qui s'ouvre pendant une panne n'est pas un
     // paywall.
-    expect(REQUIRE_PRO).toContain("if (error || !isEntitled(data)) throw new ProRequiredError();");
+    expect(REQUIRE_PRO).toContain(
+      "if (rowError || !isEntitled(row)) throw new ProRequiredError();",
+    );
   });
 });

@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Trade } from "../types";
 import { getActiveAccountId } from "./accounts";
 import { storagePathsOf, removeScreenshotFiles, uploadScreenshot } from "./storage";
+import { planLimitFromDbError } from "../utils/planLimits";
 
 interface TradeRow {
   id: string;
@@ -114,7 +115,14 @@ export async function upsertTrade(userId: string, trade: Trade): Promise<void> {
   // RLS ensures auth.uid() = user_id on both INSERT and UPDATE.
   // The row's user_id is always set from the authenticated userId param.
   const { error } = await supabase.from("trades").upsert(tradeToRow(trade, userId));
-  if (error) throw error;
+  if (error) {
+    // La limite mensuelle est aussi appliquée par un déclencheur Postgres : son
+    // refus doit arriver à l'interface comme un moment de vente, pas comme une
+    // erreur de contrainte SQL.
+    const limit = planLimitFromDbError(error);
+    if (limit) throw limit;
+    throw error;
+  }
 }
 
 /** Taille d'un lot d'import. Assez gros pour être rapide, assez petit pour
@@ -138,9 +146,15 @@ export async function importTrades(
   userId: string,
   trades: readonly Trade[],
   onProgress?: (done: number, total: number) => void,
-): Promise<{ saved: Trade[]; failed: number }> {
+): Promise<{ saved: Trade[]; failed: number; planLimitReached: boolean }> {
   const saved: Trade[] = [];
   let failed = 0;
+  // Vrai dès qu'une ligne a été refusée par la limite mensuelle de l'offre.
+  // À distinguer d'un échec technique : ce n'est pas une panne, c'est le
+  // produit qui dit non — et l'interface doit proposer l'offre supérieure au
+  // lieu d'afficher « 490 trades ont échoué ».
+  let planLimitReached = false;
+
   for (let i = 0; i < trades.length; i += IMPORT_BATCH_SIZE) {
     const batch = trades.slice(i, i + IMPORT_BATCH_SIZE);
     const { error } = await supabase.from("trades").upsert(batch.map((t) => tradeToRow(t, userId)));
@@ -153,13 +167,25 @@ export async function importTrades(
         batch.map((t) => supabase.from("trades").upsert(tradeToRow(t, userId))),
       );
       results.forEach((r, k) => {
-        if (r.status === "fulfilled" && !r.value.error) saved.push(batch[k]);
-        else failed++;
+        if (r.status === "fulfilled" && !r.value.error) {
+          saved.push(batch[k]);
+          return;
+        }
+        failed++;
+        const rowError = r.status === "fulfilled" ? r.value.error : r.reason;
+        if (planLimitFromDbError(rowError)) planLimitReached = true;
       });
+      // Une fois la limite atteinte, les lots suivants échoueront tous : on
+      // arrête plutôt que de lancer des centaines de requêtes vouées au refus.
+      if (planLimitReached) {
+        failed += trades.length - (i + batch.length);
+        onProgress?.(trades.length, trades.length);
+        break;
+      }
     }
     onProgress?.(Math.min(i + batch.length, trades.length), trades.length);
   }
-  return { saved, failed };
+  return { saved, failed, planLimitReached };
 }
 
 export async function deleteTrade(userId: string, id: string): Promise<void> {

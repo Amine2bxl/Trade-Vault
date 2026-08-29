@@ -926,6 +926,8 @@ const en = {
   "import.confirmBtn": "Confirm import",
   "import.failedRows":
     "{n} trades could not be saved. Your existing journal is untouched — you can retry with the same file, duplicates will be skipped.",
+  "import.planLimit":
+    "Your free plan is capped at 10 trades a month, so the rest of the import was not saved. Upgrade to Pro to import your full history at once.",
   "import.errTooLarge": "This file is too large (max 10 MB). Split your export into several files.",
   "import.errNotCsv":
     "This file is not a CSV. Export your history as CSV from your broker or journal.",
