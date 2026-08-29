@@ -192,8 +192,23 @@ describe("expiration des périodes payées", () => {
   test("l'écriture est gardée contre une réouverture concurrente", () => {
     // Si un paiement rouvre l'accès entre la lecture et l'écriture, le balayage
     // ne doit surtout pas le refermer.
-    const sweep = LIFECYCLE.slice(idx(LIFECYCLE, "for (const row of lapsedPaid ?? [])"));
+    const sweep = LIFECYCLE.slice(idx(LIFECYCLE, "async function expireBatch"));
     expect(sweep).toContain('.eq("status", "active")');
     expect(sweep).toContain('.eq("current_period_end", row.current_period_end)');
+  });
+
+  test("le balayage d'expiration est PAGINÉ", () => {
+    // Une requête sans borne est tronquée en silence par `db.max_rows` : passé
+    // le plafond, des abonnements échus resteraient `active` indéfiniment —
+    // exactement le défaut que ce balayage existe pour corriger.
+    expect(LIFECYCLE).toContain("EXPIRY_PAGE");
+    expect(LIFECYCLE).toContain(".range(scanned, scanned + EXPIRY_PAGE - 1)");
+  });
+
+  test("les envois d'e-mails de cycle de vie sont bornés explicitement", () => {
+    // Ce qui déborde d'un passage part au suivant : les fenêtres de relance
+    // durent plusieurs jours et `email_log` empêche tout doublon.
+    expect(LIFECYCLE).toContain("const EMAIL_BATCH = 200;");
+    expect(LIFECYCLE.match(/\.limit\(EMAIL_BATCH\)/g) ?? []).toHaveLength(2);
   });
 });

@@ -1,5 +1,6 @@
 import { serviceClient } from "./billing.server";
 import { json } from "../shared/response";
+import { chainNextInvocation, cursorFrom, runUserBatch } from "./cron-batch";
 import { scan } from "@/modules/patterns/scan";
 import { deriveAction } from "@/modules/patterns/derive";
 import type { DetectedPattern } from "@/modules/patterns/detectors";
@@ -61,35 +62,42 @@ export async function handlePatternScanCron(request: Request): Promise<Response>
 
   const since = windowStart(new Date());
 
-  // Les utilisateurs actifs sur la fenêtre. Balayer tout le monde ferait tourner
-  // quatre détecteurs sur des comptes vides pour rien.
-  const { data: rows, error } = await sb.from("trades").select("user_id").gte("trade_date", since);
-  if (error) return json({ error: error.message }, 500);
+  // Les utilisateurs actifs sur la fenêtre, PAGINÉS. La requête d'origine
+  // (`select user_id` sans limite, dédoublonné en mémoire) était tronquée en
+  // silence par `db.max_rows` : passé quelques centaines de trades sur la
+  // fenêtre, la plupart des comptes n'étaient tout simplement plus scannés.
+  const after = cursorFrom(request);
+  const startedAt = Date.now();
 
-  const owners = (rows ?? []) as { user_id: string }[];
-  const userIds: string[] = [...new Set(owners.map((r) => r.user_id))];
-  const report: ScanReport = {
-    users: userIds.length,
-    written: 0,
-    suppressed: 0,
-    proposed: 0,
-    failed: 0,
-  };
+  const report: ScanReport = { users: 0, written: 0, suppressed: 0, proposed: 0, failed: 0 };
 
-  for (const userId of userIds) {
-    try {
-      const result = await scanUser(sb, userId, since);
-      report.written += result.written;
-      report.suppressed += result.suppressed;
-      if (result.proposed) report.proposed += 1;
-    } catch (e) {
-      report.failed += 1;
-      // Un compte qui échoue ne doit pas emporter le passage des autres.
-      console.error("[pattern-scan] failed for", userId, e);
-    }
+  const batch = await runUserBatch(sb, { since, after, startedAt }, async (userId) => {
+    const result = await scanUser(sb, userId, since);
+    report.written += result.written;
+    report.suppressed += result.suppressed;
+    if (result.proposed) report.proposed += 1;
+  });
+
+  report.users = batch.processed;
+  report.failed = batch.failed;
+
+  // Budget épuisé : on relance la suite. Sans ce chaînage, tout ce qui suivait
+  // la coupure attendait le lendemain — et l'attendait encore, puisque le
+  // balayage repartait chaque jour du début.
+  let chained = false;
+  if (batch.hasMore && batch.lastUserId) {
+    chained = await chainNextInvocation(request, { after: batch.lastUserId });
   }
 
-  return json(report, 200);
+  return json(
+    {
+      ...report,
+      hasMore: batch.hasMore,
+      chained,
+      resumeAfter: batch.hasMore ? batch.lastUserId : null,
+    },
+    200,
+  );
 }
 
 async function scanUser(

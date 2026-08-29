@@ -489,3 +489,46 @@ as $$
 $$;
 
 revoke all on function public.find_user_id_by_email(text) from public, anon, authenticated;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 8. PAGINATION DES BALAYAGES PAR UTILISATEUR
+-- ════════════════════════════════════════════════════════════════════════════
+--
+-- Les crons mensuels et le scan de patterns faisaient
+-- `select user_id from trades where trade_date >= …` SANS AUCUNE LIMITE, puis
+-- dédoublonnaient en mémoire. Deux problèmes, tous deux silencieux :
+--
+--  1. PostgREST plafonne les réponses à `db.max_rows` (1 000 par défaut chez
+--     Supabase). Passé quelques centaines de trades sur la fenêtre, le cron ne
+--     voyait plus qu'une FRACTION des utilisateurs — sans erreur, sans journal,
+--     sans que personne ne remarque que les rapports mensuels avaient cessé
+--     d'arriver à la majorité des comptes.
+--  2. Même sans ce plafond, la requête lit une ligne par trade pour n'en
+--     retenir qu'une par personne.
+--
+-- Cette fonction rend les identifiants DISTINCTS, triés, après un curseur : la
+-- pagination est exacte (pas de doublon, pas d'oubli) et s'appuie sur l'index.
+create or replace function public.users_with_trades_since(
+  p_since date,
+  p_after uuid,
+  p_limit int
+)
+returns table (user_id uuid)
+language sql
+stable
+security definer set search_path = public
+as $$
+  select distinct t.user_id
+  from public.trades t
+  where t.trade_date >= p_since
+    and (p_after is null or t.user_id > p_after)
+  order by t.user_id
+  limit greatest(p_limit, 1);
+$$;
+
+revoke all on function public.users_with_trades_since(date, uuid, int) from public, anon, authenticated;
+
+-- Le balayage filtre sur la date puis trie par utilisateur : sans cet index,
+-- chaque passage relit la table entière.
+create index if not exists trades_date_user_idx
+  on public.trades (trade_date, user_id);

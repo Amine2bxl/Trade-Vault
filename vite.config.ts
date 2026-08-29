@@ -63,5 +63,23 @@ export default defineConfig({
   // node-server bundle (.output/) — the Vercel deploy is unaffected.
   nitro: {
     preset: process.env.NITRO_PRESET || "vercel",
+    // Durée maximale de la fonction serveur.
+    //
+    // Les crons « une opération par utilisateur » (rapport mensuel, scan de
+    // patterns) tournaient dans le défaut de la plateforme et mouraient au
+    // milieu de leur boucle dès quelques dizaines de comptes. Ils reprennent
+    // désormais là où ils se sont arrêtés (`backend/cron-batch.ts`), mais
+    // chaque maillon de la chaîne a d'autant moins de reprises à faire qu'il
+    // dispose de temps : 300 s est le maximum d'un plan Vercel Pro.
+    //
+    // `CRON_TIME_BUDGET_MS` (240 s par défaut) reste EN DESSOUS : il faut qu'il
+    // reste de quoi écrire l'état, lancer le maillon suivant et répondre.
+    // `vercel` est une option NITRO valide, mais le typage du wrapper
+    // `@lovable.dev/vite-tanstack-config` ne déclare que `preset`, `output` et
+    // `cloudflare`. L'objet est bien transmis à Nitro — vérifié dans la sortie
+    // de build : `.vercel/output/functions/__server.func/.vc-config.json`
+    // contient `"maxDuration": 300`. L'élargissement est donc limité à cette
+    // clé, et documenté, plutôt qu'un `as any` sur toute la configuration.
+    ...({ vercel: { functions: { maxDuration: 300 } } } as Record<string, unknown>),
   },
 });
