@@ -1,4 +1,5 @@
 import { serviceClient, userFromRequest } from "./billing.server";
+import { needsExpiry } from "../domain/entitlement";
 import {
   welcomeEmail,
   trialEndingEmail,
@@ -97,13 +98,55 @@ export async function handleLifecycleCron(request: Request): Promise<Response> {
   let trialEndingSent = 0;
   let winbackSent = 0;
 
-  // Sweep: trials past their end date fall back to free.
+  // Sweep 1 : les essais dépassés retombent en gratuit.
   await sb
     .from("subscriptions")
     .update({ plan: "free", status: "expired", updated_at: now.toISOString() })
     .eq("status", "trialing")
     .eq("source", "trial")
     .lt("trial_ends_at", now.toISOString());
+
+  // Sweep 2 : LES PÉRIODES PAYÉES ÉCOULÉES — le balayage qui manquait.
+  //
+  // Une charge crypto achète une période fixe (il n'existe aucune facturation
+  // récurrente en crypto) et un accès offert porte la date de fin décidée par
+  // l'administrateur. Les deux étaient écrits `status = 'active'` et RIEN, nulle
+  // part, ne les faisait jamais expirer : quinze euros payés une fois en USDT
+  // ouvraient l'accès à vie, et `comp_grants.expires_at` était décoratif.
+  //
+  // `domain/entitlement` ferme déjà l'accès en LECTURE dès la date passée ; ce
+  // balayage aligne la BASE sur cette décision, pour que les relances, les
+  // statistiques et le support ne lisent pas un `active` qui ment.
+  //
+  // Stripe est volontairement EXCLU : c'est lui qui pilote son cycle de vie et
+  // son webhook écrit `past_due` puis `canceled`. Réécrire ici créerait une
+  // seconde autorité sur la même donnée. Voir `needsExpiry`.
+  const { data: lapsedPaid } = await sb
+    .from("subscriptions")
+    .select("user_id, plan, status, source, trial_ends_at, current_period_end")
+    .eq("status", "active")
+    .in("source", ["crypto", "comp", "promo"])
+    .not("current_period_end", "is", null)
+    .lt("current_period_end", now.toISOString());
+
+  let expiredPaid = 0;
+  for (const row of lapsedPaid ?? []) {
+    // Le prédicat partagé décide, pas la requête : le filtre SQL ci-dessus est
+    // une PRÉ-SÉLECTION (il évite de lire toute la table), `needsExpiry` est la
+    // règle. Les deux ne peuvent donc pas diverger.
+    if (!needsExpiry(row)) continue;
+    const { error } = await sb
+      .from("subscriptions")
+      .update({ plan: "free", status: "expired", updated_at: now.toISOString() })
+      .eq("user_id", row.user_id)
+      // Garde de concurrence : si un paiement a rouvert l'accès entre la
+      // lecture et l'écriture, la ligne n'est plus `active` sur cette période
+      // et on ne doit surtout pas la refermer.
+      .eq("status", "active")
+      .eq("current_period_end", row.current_period_end);
+    if (!error) expiredPaid++;
+  }
+  if (expiredPaid > 0) console.log("[lifecycle] expired paid periods", expiredPaid);
 
   // J+12 — trial ends within 48h, still trialing, not yet warned.
   const { data: ending } = await sb
@@ -151,5 +194,5 @@ export async function handleLifecycleCron(request: Request): Promise<Response> {
     if (await sendEmail(prof.email, subject, html)) winbackSent++;
   }
 
-  return json({ ok: true, trialEndingSent, winbackSent });
+  return json({ ok: true, trialEndingSent, winbackSent, expiredPaid });
 }

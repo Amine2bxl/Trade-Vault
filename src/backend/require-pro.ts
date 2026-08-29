@@ -1,6 +1,12 @@
 import { createMiddleware } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isEntitled, type EntitlementRow } from "@/domain/entitlement";
+
+// Réexporté pour que le point d'entrée serveur reste le seul import des
+// appelants historiques ; la DÉFINITION, elle, vit dans `domain/entitlement`.
+export { isEntitled };
+export type { EntitlementRow };
 
 // Server-side entitlement gate for the expensive AI endpoints. Chains after
 // `requireSupabaseAuth`, so the request is already authenticated and the
@@ -43,18 +49,14 @@ class RateLimitError extends Error {
   }
 }
 
-type EntitlementRow = { status?: string | null; trial_ends_at?: string | null } | null;
-
-/** Pure predicate: is this subscription row an active entitlement right now?
- *  Deterministic and side-effect-free so it is trivially testable. */
-export function isEntitled(row: EntitlementRow): boolean {
-  if (!row) return false;
-  if (row.status === "active") return true;
-  if (row.status === "trialing") {
-    return !!row.trial_ends_at && new Date(row.trial_ends_at).getTime() > Date.now();
-  }
-  return false;
-}
+/**
+ * Les colonnes dont dépend la décision d'accès.
+ *
+ * `plan`, `source` et `current_period_end` ont été AJOUTÉES : sans elles,
+ * `isEntitled` ne pouvait pas voir qu'une période payée était écoulée, et un
+ * abonnement crypto d'un mois ouvrait l'accès pour toujours (audit P0-2).
+ */
+const ENTITLEMENT_COLS = "plan, status, source, trial_ends_at, current_period_end";
 
 export const requireProAccess = createMiddleware({ type: "function" })
   .middleware([requireSupabaseAuth])
@@ -68,7 +70,7 @@ export const requireProAccess = createMiddleware({ type: "function" })
     if (REQUIRE_PRO) {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("status, trial_ends_at")
+        .select(ENTITLEMENT_COLS)
         .eq("user_id", userId)
         .maybeSingle();
       if (error || !isEntitled(data)) throw new ProRequiredError();

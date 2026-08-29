@@ -2,6 +2,8 @@ node_modules
 dist
 .output
 .vinxi
+# Sortie de build (preset nitro `vercel`) — même raison que dans eslint.config.js.
+.vercel
 pnpm-lock.yaml
 package-lock.json
 bun.lock

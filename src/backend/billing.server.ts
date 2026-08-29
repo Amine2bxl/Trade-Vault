@@ -179,35 +179,71 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
   const appCode = normalizePromoCode(payload.promoCode);
   if (appCode) {
-    const { resolveAppPromo, grantPromoAccess, recordPromoRedemption, ensureDiscountStripeCoupon } =
-      await import("./promo.server");
+    const {
+      resolveAppPromo,
+      grantPromoAccess,
+      reservePromoRedemption,
+      releasePromoRedemption,
+      redemptionGrantsAccess,
+      ensureDiscountStripeCoupon,
+    } = await import("./promo.server");
 
     const app = await resolveAppPromo(sb, appCode, user);
     if (app.status === "invalid" || app.status === "owner_mismatch") {
       return json({ error: "invalid promo code" }, 400);
     }
+
     if (app.status === "granted") {
-      // Accès permanent, sans paiement — c'est le parcours influenceur.
+      // Parcours influenceur : accès permanent, sans paiement.
+      //
+      // ORDRE VOLONTAIRE — on RÉSERVE l'usage AVANT d'ouvrir l'accès. Réserver
+      // après (l'ordre précédent) laissait `max_uses` inopérant : l'accès était
+      // déjà donné quand on découvrait que le code était épuisé, et il n'y
+      // avait plus rien à refuser. `resolveAppPromo` a déjà lu le compteur,
+      // mais sa lecture n'est pas verrouillée ; la réservation, elle, l'est.
+      const outcome = await reservePromoRedemption(sb, appCode, user, app.plan, app.kind);
+      if (outcome === "error") return json({ error: "promo unavailable" }, 503);
+      if (!redemptionGrantsAccess(outcome)) return json({ error: "invalid promo code" }, 400);
+
       const granted = await grantPromoAccess(sb, user.id, app.plan);
-      if (!granted.ok) return json({ error: "grant failed" }, 500);
-      await recordPromoRedemption(sb, appCode, user, app.plan, app.kind);
+      if (!granted.ok) {
+        // L'accès n'a pas pu être écrit : rendre l'usage, sinon la personne
+        // perd sa place sans rien avoir obtenu.
+        await releasePromoRedemption(sb, appCode, user.id);
+        return json({ error: "grant failed" }, 500);
+      }
       return json({
         url: `${siteUrl(request)}/?billing=success&promo=${encodeURIComponent(appCode)}`,
       });
     }
+
     if (app.status === "discount") {
       // Réduction communauté : on encaisse réellement, à prix réduit.
-      const couponId = await ensureDiscountStripeCoupon(appCode, app.percent);
       const price = stripePriceId(plan);
       if (!price) return json({ error: "price not configured" }, 500);
-      const customer = await ensureCustomer(sb, user.id, user.email);
-      const success = await createCheckoutSession(request, user.id, price, {
-        couponId,
-        plan,
-        customer,
-      });
-      await recordPromoRedemption(sb, appCode, user, plan, "discount");
-      return success;
+
+      const outcome = await reservePromoRedemption(sb, appCode, user, plan, "discount");
+      if (outcome === "error") return json({ error: "promo unavailable" }, 503);
+      if (!redemptionGrantsAccess(outcome)) return json({ error: "invalid promo code" }, 400);
+
+      try {
+        const couponId = await ensureDiscountStripeCoupon(appCode, app.percent);
+        const customer = await ensureCustomer(sb, user.id, user.email);
+        const url = await openCheckoutSession(request, {
+          userId: user.id,
+          plan,
+          price,
+          customer,
+          couponId,
+        });
+        return json({ url });
+      } catch (e) {
+        // Stripe n'a pas ouvert la session : l'usage réservé n'a servi à rien,
+        // on le rend au pot avant de répondre.
+        console.error("discount checkout failed", e);
+        await releasePromoRedemption(sb, appCode, user.id);
+        return json({ error: "checkout failed" }, 500);
+      }
     }
     // `app.status === "not_app"` : code inconnu de l'app — on laisse Stripe
     // dashboard tenter le sien plus bas.
@@ -218,71 +254,89 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
   const customer = await ensureCustomer(sb, user.id, user.email);
 
-  const params: Record<string, string> = {
-    mode: "subscription",
-    customer,
-    "line_items[0][price]": price,
-    "line_items[0][quantity]": "1",
-    success_url: `${siteUrl(request)}/?billing=success`,
-    // Annulation → racine propre, jamais de `?billing=canceled` dans l'URL.
-    cancel_url: `${siteUrl(request)}/`,
-    "subscription_data[metadata][user_id]": user.id,
-    "subscription_data[metadata][plan]": plan,
-  };
-
+  // Promotion codes (e.g. VAULT20) créés dans le dashboard Stripe : on résout
+  // le code humain vers son identifiant pour le pré-appliquer. Un code
+  // introuvable n'est pas une erreur — on laisse simplement le champ ouvert
+  // dans le checkout.
+  let promotionCodeId: string | undefined;
   if (payload.promoCode) {
-    // Promotion codes (e.g. VAULT20) are created in the Stripe dashboard;
-    // resolve the human code to its id and pre-apply it.
-    const found = await stripe(
-      "/promotion_codes",
-      { code: payload.promoCode, active: "true", limit: "1" },
-      "GET",
-    );
-    const promoId = found?.data?.[0]?.id;
-    if (promoId) params["discounts[0][promotion_code]"] = promoId;
-    else params.allow_promotion_codes = "true";
-  } else {
-    params.allow_promotion_codes = "true";
+    try {
+      const found = await stripe(
+        "/promotion_codes",
+        { code: payload.promoCode, active: "true", limit: "1" },
+        "GET",
+      );
+      promotionCodeId = found?.data?.[0]?.id;
+    } catch (e) {
+      // La résolution d'un code est un CONFORT : si elle échoue, le checkout
+      // doit quand même s'ouvrir. Avant, l'exception remontait jusqu'au
+      // gestionnaire global et rendait une page d'erreur 500.
+      console.error("promotion code lookup failed", e);
+    }
   }
 
   try {
-    const session = await stripe("/checkout/sessions", params);
-    return json({ url: session.url });
+    const url = await openCheckoutSession(request, {
+      userId: user.id,
+      plan,
+      price,
+      customer,
+      promotionCodeId,
+    });
+    return json({ url });
   } catch (e) {
     console.error("checkout failed", e);
     return json({ error: "checkout failed" }, 500);
   }
 }
 
-/** Remplit et ouvre une session de checkout. Partagé entre le parcours
- *  standard et le parcours « réduction communauté ». */
-export async function createCheckoutSession(
+/**
+ * Ouvre une session de checkout Stripe et rend son URL.
+ *
+ * SEUL constructeur de session du fichier. Il y en avait deux — celui-ci et
+ * une copie inline dans `handleCheckout` — et ils avaient déjà divergé : la
+ * copie posait `subscription_data[metadata]`, l'autre non systématiquement.
+ * Ces métadonnées sont ce que le webhook lit pour savoir À QUI attribuer
+ * l'abonnement ; les oublier sur un chemin, c'est perdre un paiement.
+ *
+ * Lève en cas d'échec — c'est l'appelant qui décide quoi défaire (rendre un
+ * usage promo réservé, par exemple) avant de répondre.
+ */
+async function openCheckoutSession(
   request: Request,
-  userId: string,
-  price: string,
-  opts: { couponId?: string; plan?: PaidPlan; customer?: string },
-): Promise<Response> {
+  opts: {
+    userId: string;
+    plan: PaidPlan;
+    price: string;
+    customer: string;
+    couponId?: string;
+    promotionCodeId?: string;
+  },
+): Promise<string> {
   const params: Record<string, string> = {
     mode: "subscription",
-    "line_items[0][price]": price,
+    customer: opts.customer,
+    "line_items[0][price]": opts.price,
     "line_items[0][quantity]": "1",
     success_url: `${siteUrl(request)}/?billing=success`,
     // Annulation → racine propre, jamais de `?billing=canceled` dans l'URL.
     cancel_url: `${siteUrl(request)}/`,
+    // Les DEUX métadonnées, toujours : le webhook n'a rien d'autre pour
+    // rattacher l'abonnement à un compte et à un palier.
+    "subscription_data[metadata][user_id]": opts.userId,
+    "subscription_data[metadata][plan]": opts.plan,
   };
-  if (userId) params["subscription_data[metadata][user_id]"] = userId;
-  if (opts.plan) params["subscription_data[metadata][plan]"] = opts.plan;
-  if (opts.customer) params.customer = opts.customer;
+
+  // Un coupon applicatif et un promotion code du dashboard sont exclusifs :
+  // Stripe refuse les deux ensemble. Le coupon applicatif prime, parce qu'il
+  // vient d'un code que nous avons nous-mêmes validé et déjà réservé.
   if (opts.couponId) params["discounts[0][coupon]"] = opts.couponId;
+  else if (opts.promotionCodeId) params["discounts[0][promotion_code]"] = opts.promotionCodeId;
   else params.allow_promotion_codes = "true";
 
-  try {
-    const session = await stripe("/checkout/sessions", params);
-    return json({ url: session.url });
-  } catch (e) {
-    console.error("checkout failed", e);
-    return json({ error: "checkout failed" }, 500);
-  }
+  const session = await stripe("/checkout/sessions", params);
+  if (!session?.url) throw new Error("Stripe returned a checkout session without a url");
+  return session.url;
 }
 
 // ── POST /api/billing/portal ─────────────────────────────────────────────────
@@ -370,7 +424,38 @@ async function verifyStripeSignature(payload: string, header: string | null): Pr
  * puis sur la période de facturation. Sans cela, un abonné Elite serait
  * silencieusement projeté en Pro par le webhook.
  */
-function planFromStripeSub(sub: any): PaidPlan {
+/**
+ * La FORME de l'objet Stripe que nous lisons — pas le modèle complet.
+ *
+ * Ces champs étaient traversés depuis un `Record<string, unknown>` :
+ * TypeScript signalait chaque accès (`Property 'metadata' does not exist`) et
+ * les erreurs étaient tolérées parce que la CI ne lance pas `tsc`. Or c'est
+ * précisément ici qu'une faute de frappe sur `metadata.user_id` perd un
+ * paiement en silence. On déclare donc ce qu'on lit, et rien de plus.
+ */
+export interface StripeSubscriptionObject {
+  id?: string;
+  customer?: string;
+  status?: string;
+  cancel_at_period_end?: boolean;
+  current_period_end?: number;
+  metadata?: { user_id?: string; plan?: string };
+  items?: {
+    data?: {
+      price?: { id?: string; recurring?: { interval?: string } };
+      current_period_end?: number;
+    }[];
+  };
+}
+
+interface StripeEvent {
+  id?: string;
+  type?: string;
+  created?: number;
+  data?: { object?: StripeSubscriptionObject };
+}
+
+function planFromStripeSub(sub: StripeSubscriptionObject): PaidPlan {
   const fromMeta = sub.metadata?.plan;
   if (isPaidPlan(fromMeta)) return fromMeta;
 
@@ -388,6 +473,57 @@ function planFromStripeSub(sub: any): PaidPlan {
   return `${tierOf(fromMeta) === "free" ? "pro" : tierOf(fromMeta)}_${interval}` as PaidPlan;
 }
 
+/**
+ * Projette un état d'abonnement en base, via `apply_subscription_event`.
+ *
+ * Passe par la fonction SQL plutôt que par un `update` : elle CRÉE la ligne si
+ * elle manque (abonnement né dans le dashboard Stripe, compte recréé — le
+ * `update` précédent ne touchait alors aucune ligne, ne renvoyait aucune
+ * erreur, et le paiement était perdu en silence) et elle ignore une livraison
+ * arrivée hors ordre au lieu de faire régresser l'état.
+ *
+ * Lève si l'écriture échoue vraiment : l'appelant doit alors répondre 500 pour
+ * que le fournisseur réessaie.
+ */
+export async function applySubscriptionEvent(
+  sb: AnyClient,
+  input: {
+    userId: string;
+    plan: string;
+    status: string;
+    source: "stripe" | "crypto";
+    stripeSubscriptionId?: string | null;
+    stripeCustomerId?: string | null;
+    cryptoChargeId?: string | null;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    eventAt: string;
+  },
+): Promise<"applied" | "stale"> {
+  const { data, error } = await sb.rpc("apply_subscription_event", {
+    p_user_id: input.userId,
+    p_plan: input.plan,
+    p_status: input.status,
+    p_source: input.source,
+    p_stripe_subscription_id: input.stripeSubscriptionId ?? null,
+    p_stripe_customer_id: input.stripeCustomerId ?? null,
+    p_crypto_charge_id: input.cryptoChargeId ?? null,
+    p_current_period_end: input.currentPeriodEnd,
+    p_cancel_at_period_end: input.cancelAtPeriodEnd,
+    p_event_at: input.eventAt,
+  });
+  if (error) throw new Error(`apply_subscription_event failed: ${error.message}`);
+  return data === "stale" ? "stale" : "applied";
+}
+
+/** L'horodatage d'un événement fournisseur (secondes epoch) en ISO. Sans date
+ *  exploitable on retombe sur « maintenant » : mieux vaut appliquer l'état que
+ *  refuser un paiement pour un champ absent. */
+function eventTimestamp(seconds: unknown): string {
+  const n = typeof seconds === "number" ? seconds : Number(seconds);
+  return Number.isFinite(n) && n > 0 ? new Date(n * 1000).toISOString() : new Date().toISOString();
+}
+
 export async function handleStripeWebhook(request: Request): Promise<Response> {
   const payload = await request.text();
   const ok = await verifyStripeSignature(payload, request.headers.get("stripe-signature"));
@@ -395,14 +531,14 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
   const sb = serviceClient();
   if (!sb) return json({ error: "server misconfigured" }, 500);
 
-  let event: Record<string, unknown>;
+  let event: StripeEvent;
   try {
-    event = JSON.parse(payload);
+    event = JSON.parse(payload) as StripeEvent;
   } catch {
     return json({ error: "invalid payload" }, 400);
   }
-  const type: string = (event.type as string) ?? "";
-  const obj = ((event.data as Record<string, unknown>)?.object as Record<string, unknown>) ?? {};
+  const type: string = event.type ?? "";
+  const obj: StripeSubscriptionObject = event.data?.object ?? {};
 
   // Drop duplicate deliveries before touching subscription state.
   if (await markWebhookProcessed(sb, "stripe", event.id)) {
@@ -415,7 +551,7 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
       type === "customer.subscription.updated" ||
       type === "customer.subscription.deleted"
     ) {
-      const userId: string | undefined = obj.metadata?.user_id;
+      const userId = obj.metadata?.user_id;
       if (!userId) return json({ received: true, skipped: "no user_id metadata" });
 
       const status: string =
@@ -430,19 +566,20 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
                 : "canceled";
 
       const periodEnd = obj.items?.data?.[0]?.current_period_end ?? obj.current_period_end;
-      await sb
-        .from("subscriptions")
-        .update({
-          plan: type === "customer.subscription.deleted" ? "free" : planFromStripeSub(obj),
-          status,
-          source: "stripe",
-          stripe_subscription_id: obj.id,
-          stripe_customer_id: obj.customer,
-          current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-          cancel_at_period_end: !!obj.cancel_at_period_end,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+      const result = await applySubscriptionEvent(sb, {
+        userId,
+        plan: type === "customer.subscription.deleted" ? "free" : planFromStripeSub(obj),
+        status,
+        source: "stripe",
+        stripeSubscriptionId: obj.id ?? null,
+        stripeCustomerId: obj.customer ?? null,
+        currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+        cancelAtPeriodEnd: !!obj.cancel_at_period_end,
+        eventAt: eventTimestamp(event.created),
+      });
+      if (result === "stale") {
+        return json({ received: true, skipped: "out-of-order event" });
+      }
     }
   } catch (e) {
     // §3 STRIPE_INTEGRATION : on RETIRE la marque d'idempotence avant de
@@ -450,7 +587,7 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
     // comme « déjà traitée » et l'événement — un abonnement payé — était
     // perdu pour toujours, sans erreur remontée à personne.
     console.error("stripe webhook failed", e);
-    const eventId = typeof event?.id === "string" ? event.id : null;
+    const eventId = event.id ?? null;
     if (eventId) {
       await sb
         .from("processed_webhook_events")

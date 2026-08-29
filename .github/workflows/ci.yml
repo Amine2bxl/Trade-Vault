@@ -26,3 +26,38 @@ jobs:
       - run: bun run build
 
       - run: bun test
+
+  # Les garanties de facturation et de quota vivent dans du SQL : un verrou de
+  # ligne sur `promo_codes`, un `on conflict … where` sur `subscriptions`, deux
+  # déclencheurs `before insert`. Aucun test TypeScript ne peut les observer —
+  # il faut un vrai Postgres, et pour la concurrence, deux vraies sessions.
+  #
+  # Job SÉPARÉ pour que son échec se lise comme ce qu'il est : une régression de
+  # la base, pas un test unitaire cassé.
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # Même famille majeure que Supabase. Un conteneur de service plutôt que
+        # le serveur du runner : sa présence est garantie et sa version est
+        # explicite, donc le jour où un test échoue on sait contre quoi.
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tradevault_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: tradevault_test
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/test-sql.sh

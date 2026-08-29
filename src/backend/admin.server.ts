@@ -77,7 +77,16 @@ export async function handleGrant(request: Request): Promise<Response> {
   const email = (payload.email ?? "").trim().toLowerCase();
   if (!email || !email.includes("@")) return json({ error: "invalid email" }, 400);
   const plan: PaidPlan = isPaidPlan(payload.plan) ? payload.plan : "elite_yearly";
-  const expiresAt = payload.expiresAt || null;
+
+  // La date de fin partait telle quelle dans une colonne `timestamptz` : une
+  // chaîne invalide faisait échouer l'écriture, et l'échec était renvoyé comme
+  // `applied: false` — indistinguable d'« aucun compte à cette adresse ».
+  let expiresAt: string | null = null;
+  if (payload.expiresAt) {
+    const parsed = new Date(String(payload.expiresAt));
+    if (Number.isNaN(parsed.getTime())) return json({ error: "invalid expiry" }, 400);
+    expiresAt = parsed.toISOString();
+  }
 
   const { error } = await sb.from("comp_grants").upsert(
     {
@@ -130,17 +139,35 @@ export async function handleRevokeGrant(request: Request): Promise<Response> {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/** L'identifiant du compte portant cette adresse, s'il existe déjà. */
+/**
+ * L'identifiant du compte portant cette adresse, s'il existe déjà.
+ *
+ * Recherche INDEXÉE via `find_user_id_by_email`. La version précédente
+ * parcourait `auth.admin.listUsers()` par pages de deux cents, plafonnée à
+ * vingt pages : passé 4 000 comptes elle renvoyait `null` en silence, et
+ * accorder ou révoquer un accès cessait simplement de marcher — sans erreur,
+ * sans journal, sans que personne le voie.
+ *
+ * Le balayage reste en REPLI pour le seul cas où la migration n'est pas encore
+ * appliquée (déploiement du code avant le SQL). Il porte la même limite qu'avant
+ * — mais elle est désormais journalisée au lieu d'être muette.
+ */
 export async function findUserId(sb: any, email: string): Promise<string | null> {
-  // `listUsers` est paginé et ne filtre pas par e-mail sur toutes les versions
-  // de l'API : on parcourt, mais en s'arrêtant dès qu'on a trouvé.
+  const target = email.trim().toLowerCase();
+  if (!target) return null;
+
+  const { data, error } = await sb.rpc("find_user_id_by_email", { p_email: target });
+  if (!error) return (data as string | null) ?? null;
+
+  console.warn("[admin] find_user_id_by_email unavailable, falling back to scan", error);
   for (let page = 1; page <= 20; page++) {
-    const { data, error } = await sb.auth.admin.listUsers({ page, perPage: 200 });
-    if (error || !data?.users?.length) return null;
-    const hit = data.users.find((u: any) => (u.email ?? "").toLowerCase() === email);
+    const { data: list, error: listError } = await sb.auth.admin.listUsers({ page, perPage: 200 });
+    if (listError || !list?.users?.length) return null;
+    const hit = list.users.find((u: any) => (u.email ?? "").toLowerCase() === target);
     if (hit) return hit.id as string;
-    if (data.users.length < 200) return null;
+    if (list.users.length < 200) return null;
   }
+  console.error("[admin] user lookup exhausted the 4000-account scan limit for", target);
   return null;
 }
 

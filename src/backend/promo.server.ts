@@ -95,31 +95,91 @@ export async function grantPromoAccess(
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
-/** Trace l'utilisation et remonte `uses_count` d'un cran, une seule fois par
- *  personne et par code (contrainte d'unicité `(code, user_id)`). */
-export async function recordPromoRedemption(
+/**
+ * L'issue d'une tentative de rédemption. Miroir exact des retours de la
+ * fonction SQL `redeem_promo_code`, plus `error` pour un échec d'infrastructure.
+ */
+export type RedemptionOutcome =
+  | "redeemed"
+  | "already_redeemed"
+  | "exhausted"
+  | "inactive"
+  | "expired"
+  | "unknown"
+  | "error";
+
+/** Ces deux issues laissent le parcours continuer : l'usage est acquis. */
+export function redemptionGrantsAccess(outcome: RedemptionOutcome): boolean {
+  return outcome === "redeemed" || outcome === "already_redeemed";
+}
+
+/**
+ * RÉSERVE l'usage du code pour cette personne — atomiquement.
+ *
+ * POURQUOI UNE FONCTION SQL. Le code précédent enchaînait une insertion, une
+ * lecture de `uses_count` puis une écriture de `uses_count + 1`. Deux défauts,
+ * tous deux confirmés :
+ *
+ *  1. Il appelait `.onConflict().ignore()`, qui N'EXISTE PAS dans
+ *     `@supabase/postgrest-js` v2 (seul `upsert(values, { onConflict,
+ *     ignoreDuplicates })` existe). L'appel levait donc un `TypeError` à
+ *     l'exécution — invisible pour TypeScript parce que le client est typé
+ *     `any` — et faisait échouer en 500 TOUT checkout portant un code promo,
+ *     y compris ceux où l'accès venait d'être accordé.
+ *  2. La lecture-puis-écriture perdait la course : deux checkouts simultanés
+ *     lisaient la même valeur, donc `max_uses` n'était pas une limite.
+ *
+ * La fonction SQL prend un verrou de ligne sur le code et fait les deux
+ * opérations sous ce verrou. Ici on ne fait plus que transporter le verdict.
+ */
+export async function reservePromoRedemption(
   sb: AnyClient,
   code: string,
   user: { id: string; email: string },
   plan: PaidPlan,
   kind: "owner" | "free" | "discount",
+): Promise<RedemptionOutcome> {
+  try {
+    const { data, error } = await sb.rpc("redeem_promo_code", {
+      p_code: code,
+      p_user_id: user.id,
+      p_email: user.email,
+      p_plan: plan,
+      p_kind: kind,
+    });
+    if (error) {
+      console.error("[promo] redeem_promo_code failed", error);
+      return "error";
+    }
+    return (data as RedemptionOutcome) ?? "error";
+  } catch (e) {
+    console.error("[promo] redeem_promo_code threw", e);
+    return "error";
+  }
+}
+
+/**
+ * Rend un usage réservé.
+ *
+ * Le parcours « réduction communauté » réserve AVANT d'ouvrir la session
+ * Stripe, pour que `max_uses` ne soit jamais dépassable. Si Stripe échoue
+ * ensuite, l'usage doit revenir au pot : sans cela, une panne réseau chez
+ * Stripe consommerait définitivement les places d'un code limité.
+ */
+export async function releasePromoRedemption(
+  sb: AnyClient,
+  code: string,
+  userId: string,
 ): Promise<void> {
-  const { data: inserted, error } = await sb
-    .from("promo_redemptions")
-    .insert({ code, user_id: user.id, email: user.email, plan, kind })
-    .select()
-    .onConflict("code,user_id")
-    .ignore();
-  if (error || !inserted?.length) return;
-  const { data: row } = await sb
-    .from("promo_codes")
-    .select("uses_count")
-    .eq("code", code)
-    .maybeSingle();
-  await sb
-    .from("promo_codes")
-    .update({ uses_count: (row?.uses_count ?? 0) + 1 })
-    .eq("code", code);
+  try {
+    const { error } = await sb.rpc("release_promo_redemption", {
+      p_code: code,
+      p_user_id: userId,
+    });
+    if (error) console.error("[promo] release_promo_redemption failed", error);
+  } catch (e) {
+    console.error("[promo] release_promo_redemption threw", e);
+  }
 }
 
 /** Le coupon Stripe de la réduction communauté, créé une fois avec un id
@@ -310,17 +370,20 @@ export async function handleRevokePromoRedemption(request: Request): Promise<Res
   if (!code || !email) return json({ error: "bad request" }, 400);
 
   const userId = await findUserId(sb, email);
-  if (userId) {
-    await sb
-      .from("subscriptions")
-      .update({ plan: "free", status: "expired", current_period_end: null })
-      .eq("user_id", userId)
-      .eq("source", "promo");
-  }
+  if (!userId) return json({ error: "no account for this email" }, 404);
+
   await sb
-    .from("promo_redemptions")
-    .delete()
-    .eq("code", code)
-    .eq("user_id", userId ?? "");
-  return json({ ok: true });
+    .from("subscriptions")
+    .update({ plan: "free", status: "expired", current_period_end: null })
+    .eq("user_id", userId)
+    .eq("source", "promo");
+
+  // Passe par `release_promo_redemption` : supprimer la rédemption sans
+  // décrémenter `uses_count` laissait le code consommé pour toujours — révoquer
+  // dix accès sur un code à dix usages le rendait définitivement inutilisable.
+  // (L'ancien code faisait en plus `.eq("user_id", "")` quand l'adresse était
+  // inconnue : une chaîne vide contre une colonne `uuid`, donc une erreur SQL
+  // renvoyée comme un succès.)
+  await releasePromoRedemption(sb, code, userId);
+  return json({ ok: true, email, code });
 }
