@@ -37,6 +37,19 @@ jobs:
 
       - run: bun test
 
+      # LA SUITE, SOUS D'AUTRES FUSEAUX.
+      #
+      # Les dates métier du produit (série de discipline, compteur du jour,
+      # fenêtres de période) sont celles du TRADER, pas celles de Greenwich.
+      # Une suite qui ne tourne qu'en UTC ne peut pas voir la différence — et
+      # c'est ce qui a laissé passer vingt-quatre `toISOString().slice(0, 10)`
+      # qui décalaient la journée d'un cran pour tout le continent américain.
+      #
+      # Deux fuseaux extrêmes suffisent : l'un derrière UTC, l'autre devant,
+      # de part et d'autre de la ligne de date.
+      - run: TZ=America/New_York bun test
+      - run: TZ=Pacific/Auckland bun test
+
   # Les garanties de facturation et de quota vivent dans du SQL : un verrou de
   # ligne sur `promo_codes`, un `on conflict … where` sur `subscriptions`, deux
   # déclencheurs `before insert`. Aucun test TypeScript ne peut les observer —

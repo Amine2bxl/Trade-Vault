@@ -1,5 +1,6 @@
 import type { Trade } from "../types";
 import { checkTradeAgainstRules, type TradingRule } from "./ruleCheck";
+import { localDateOf } from "@/shared/calendar-date";
 
 /**
  * ADHÉRENCE AUX RÈGLES — le maillon qui ferme la boucle du produit.
@@ -44,7 +45,7 @@ export interface RuleAdherence {
 function isoDaysBefore(ref: string, n: number): string {
   const d = new Date(ref + "T12:00:00");
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return localDateOf(d);
 }
 
 /**

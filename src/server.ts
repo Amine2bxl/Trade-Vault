@@ -39,6 +39,9 @@ function robotsTxt(request: Request): Response {
 }
 
 function sitemapXml(): Response {
+  // UTC est ICI le bon choix, contrairement au reste du produit : `lastmod`
+  // d'un sitemap n'appartient à personne en particulier, et le serveur n'a
+  // aucun fuseau « local » qui voudrait dire quelque chose.
   const today = new Date().toISOString().slice(0, 10);
   const urls = PUBLIC_ROUTES.map((path) => {
     const loc = path === "/" ? `${SITE_URL}/` : `${SITE_URL}${path}`;

@@ -41,11 +41,12 @@ import { Card, PageContainer, Button, EmptyState, Modal, Textarea, FIELD_BASE } 
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { nsKey, readJSON, removeKey } from "../utils/persistence";
 import { usePageActions } from "../contexts/PageActionsContext";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 function emptyMissed(): MissedOpportunity {
   return {
     id: generateId(),
-    date: new Date().toISOString().slice(0, 10),
+    date: todayLocalDate(),
     symbol: "",
     reasonNotTaken: "",
     whatHappened: "",
@@ -112,7 +113,7 @@ export default function MissedOpportunities() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `missed-setups-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `missed-setups-${todayLocalDate()}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();

@@ -1,3 +1,4 @@
+import { todayLocalDate } from "@/shared/calendar-date";
 import { generateId } from "@/domain";
 import { events } from "@/modules/events";
 import { afterTradeCopy } from "@/modules/coaching";
@@ -82,7 +83,7 @@ const PUSH_LOG_KEY = "tv.notif.pushed";
 function alreadyPushedToday(dedupKey: string): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalDate();
     const raw = localStorage.getItem(PUSH_LOG_KEY);
     const log = raw ? (JSON.parse(raw) as { date: string; keys: string[] }) : null;
     if (!log || log.date !== today) {

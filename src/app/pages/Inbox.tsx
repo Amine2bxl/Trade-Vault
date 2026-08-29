@@ -20,6 +20,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { PageContainer } from "@/shared/ui/PageContainer";
 import { cn } from "../utils/cn";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 type FilterKind = NotificationCategory | "all";
 
@@ -71,7 +72,7 @@ function groupLabel(date: Date): string {
 function useFirstLoginToday(): boolean {
   return useMemo(() => {
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayLocalDate();
       const last = localStorage.getItem("tv.lastInboxVisit");
       if (last !== today) {
         localStorage.setItem("tv.lastInboxVisit", today);

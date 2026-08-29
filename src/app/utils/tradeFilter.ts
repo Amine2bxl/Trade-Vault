@@ -1,5 +1,6 @@
 import { isBreakEven, type Trade } from "../types";
 import { getSession, type TradingSession } from "./quantStats";
+import { localDateOf } from "@/shared/calendar-date";
 
 /**
  * FILTRE UNIFIÉ — la SEULE façon de filtrer les trades dans tout le produit.
@@ -92,7 +93,7 @@ function periodCutoff(period: NonNullable<UnifiedFilter["period"]>): string | nu
   else if (period === "30d") d.setDate(d.getDate() - 30);
   else if (period === "90d") d.setDate(d.getDate() - 90);
   else if (period === "1y") d.setFullYear(d.getFullYear() - 1);
-  return d.toISOString().slice(0, 10);
+  return localDateOf(d);
 }
 
 /** Tri chronologique stable — identique à `computeBehaviorSignals` (date seule),

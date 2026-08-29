@@ -1,5 +1,6 @@
 import { Trade } from "../types";
 import { getSession, TradingSession } from "./quantStats";
+import { localDateOf } from "@/shared/calendar-date";
 
 // ── Behavioral taxonomy ─────────────────────────────────────────────────────
 // Each logged mistake maps to a severity tier. Severity weights the discipline
@@ -150,7 +151,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
     midCut.setDate(midCut.getDate() - TREND_WINDOW_DAYS);
     const startCut = new Date(end);
     startCut.setDate(startCut.getDate() - TREND_WINDOW_DAYS * 2);
-    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const iso = (d: Date) => localDateOf(d);
     const midKey = iso(midCut);
     const startKey = iso(startCut);
 

@@ -1,5 +1,6 @@
 import { Flame } from "lucide-react";
 import { cn } from "./cn";
+import { localDateOf } from "@/shared/calendar-date";
 
 /**
  * StreakCalendar — bande des 7 derniers jours, un jour = une cellule.
@@ -31,7 +32,7 @@ export function StreakCalendar({
   const cells = Array.from({ length: days }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (days - 1 - i));
-    const iso = d.toISOString().slice(0, 10);
+    const iso = localDateOf(d);
     const isToday = i === days - 1;
     const label = d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2);
     return { iso, label, done: completed.has(iso), isToday };
