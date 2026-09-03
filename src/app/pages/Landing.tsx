@@ -1,6 +1,6 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
+import { BrandMark } from "@/shared/ui";
 import { PlayCircle, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
-import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
 import { FeaturesBento } from "./landing/FeaturesBento";
@@ -19,13 +19,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
       href="#"
       className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-sm"
     >
-      <img
-        src={logoSrc}
-        alt="TradeVault"
-        width={s}
-        height={s}
-        className={`${compact ? "h-7 w-7" : "h-9 w-9"} object-contain`}
-      />
+      <BrandMark size={s} className="text-[var(--tv-highlight)]" />
       <span
         className={`font-display font-bold tracking-[-0.02em] text-white leading-none hidden sm:block ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
       >

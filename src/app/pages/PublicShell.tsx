@@ -1,5 +1,4 @@
-import logoSrc from "@/assets/tradevault-logo.webp";
-
+import { BrandMark } from "@/shared/ui";
 /**
  * Le repli SSR des écrans AUTHENTIFIÉS (`/journal`, `/settings`, …).
  *
@@ -22,13 +21,12 @@ import logoSrc from "@/assets/tradevault-logo.webp";
 export default function PublicShell() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center gap-5 bg-[var(--tv-bg)] px-6 text-center">
-      <img
-        src={logoSrc}
-        alt="TradeVault"
-        width={56}
-        height={56}
-        className="h-14 w-14 rounded-2xl"
-      />
+      <span
+        className="grid h-14 w-14 place-items-center rounded-3xl tv-accent-fill"
+        aria-label="TradeVault"
+      >
+        <BrandMark size={30} />
+      </span>
       <div className="space-y-1.5">
         <p className="text-xl font-bold tracking-tight text-white">TradeVault</p>
         <p className="text-sm text-slate-400">Journal de trading et coach IA.</p>

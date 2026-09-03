@@ -1579,7 +1579,31 @@ a:focus-visible,
    comme un onglet de classeur planté dans son intercalaire. */
 .rail-item-active,
 .rail-item-active:hover {
-  background: #ffffff;
+  /* La pilule est blanche sur la partie qui porte l'icône et le libellé, puis
+     sa QUEUE s'éteint.
+
+     Le dosage est tout : une rampe linéaire du blanc au transparent passe par
+     50 % à mi-course, et 50 % de blanc sur un fond sombre, c'est un bloc gris
+     — on lit une tache, pas un fondu. La rampe ci-dessous tombe à 30 % dès le
+     premier tiers puis à 7 % : la queue s'efface vite, sans jamais s'installer
+     dans le gris.
+
+     Elle s'éteint vers le TRANSPARENT et non vers une couleur donnée, parce
+     qu'elle traverse deux fonds différents — l'écart entre les deux pièces,
+     puis la fenêtre elle-même. Une couleur d'arrivée fixe collerait à l'un et
+     ferait une marque sur l'autre. En transparent, elle se fond dans les deux.
+
+     C'est ce qui donne la sensation cherchée : la page ne s'arrête pas au bord
+     du rail, elle vient mourir sous le libellé actif. */
+  background-image: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #ffffff calc(100% - var(--rail-bridge)),
+    rgb(255 255 255 / 0.3) calc(100% - var(--rail-bridge) * 0.58),
+    rgb(255 255 255 / 0.07) calc(100% - var(--rail-bridge) * 0.24),
+    rgb(255 255 255 / 0) 100%
+  );
+  background-color: transparent;
   color: var(--tv-rail-bot);
   /* C'est la LARGEUR qui s'allonge, pas une marge négative : l'entrée porte
      `w-full` (`width: 100%`), et sur une boîte dont la largeur est fixée, une
@@ -1598,6 +1622,16 @@ a:focus-visible,
 /* Pliée, la pilule est un disque : elle déborde tout autant, mais sans
    libellé à replacer. */
 .rail-collapsed .rail-item-active {
+  /* Pliée, la queue fait presque autant que le disque : le dégradé démarre au
+     bord du disque (2.5rem) et non à un pourcentage de l'ensemble. */
+  background-image: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #ffffff 2.5rem,
+    rgb(255 255 255 / 0.3) calc(2.5rem + var(--rail-bridge) * 0.42),
+    rgb(255 255 255 / 0.07) calc(2.5rem + var(--rail-bridge) * 0.76),
+    rgb(255 255 255 / 0) 100%
+  );
   /* Le DISQUE reste centré sur le rail — c'est lui qu'on lit comme l'entrée
      active — et seule la queue s'allonge vers la droite. Une marge `auto`
      aurait recentré l'ensemble disque+queue, donc décalé le disque. */
@@ -1627,15 +1661,18 @@ a:focus-visible,
 /* Sauf sur un écran très bas, où la liste doit pouvoir défiler. Le lien
    visuel se perd alors — c'est le bon arbitrage : à cette hauteur, atteindre
    ses entrées compte plus que voir laquelle est reliée à la page. */
-@media (max-height: 620px) {
+@media (max-height: 560px) {
   .rail nav {
     overflow-y: auto;
     overflow-x: hidden;
   }
-  .rail-item-active {
+  .rail-item-active,
+  .rail-collapsed .rail-item-active {
     width: 100%;
     padding-right: 0.75rem;
     border-radius: 9999px;
+    background-image: none;
+    background-color: #ffffff;
   }
   .rail-collapsed .rail-item-active {
     width: 2.5rem;
@@ -1668,10 +1705,11 @@ a:focus-visible,
   background: #ffffff;
   overflow: hidden;
 }
-.rail-brand img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.rail-brand svg {
+  /* Le tracé est optiquement décalé d'un demi-pixel vers la droite dans son
+     carré (la barre du T pèse à gauche) : on le recale pour qu'il paraisse
+     centré dans le disque, pas pour qu'il le soit mathématiquement. */
+  margin-left: -0.5px;
 }
 
 /* Le bouton plier/déplier — un petit disque translucide DANS le rail (et non

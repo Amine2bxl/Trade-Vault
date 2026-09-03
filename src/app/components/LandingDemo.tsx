@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { BrandMark } from "@/shared/ui";
 import { Bot, X, ArrowRight, ArrowLeft, Play, CheckCircle2 } from "lucide-react";
 import { cn } from "../utils/cn";
-import logoSrc from "@/assets/tradevault-logo.webp";
 // `demoBar` / `demoProgress` vivent dans la feuille de la landing, pas dans le
 // CSS global : la démo est aussi montée par /demo et /demo-site, qui
 // n'importent pas Landing.tsx — d'où cet import ici plutôt que là-bas.
@@ -110,15 +110,8 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
-            <span className="relative">
-              <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-              <img
-                src={logoSrc}
-                alt="TradeVault"
-                width={28}
-                height={28}
-                className="relative w-7 h-7 rounded-lg"
-              />
+            <span className="grid h-7 w-7 place-items-center rounded-xl tv-accent-fill">
+              <BrandMark size={16} />
             </span>
             <div className="leading-none">
               <div className="text-sm font-bold text-white tracking-tight">TradeVault</div>

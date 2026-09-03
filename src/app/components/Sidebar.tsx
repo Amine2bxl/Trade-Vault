@@ -15,10 +15,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
-import logoSrc from "@/assets/tradevault-logo.webp";
 import { useT } from "../i18n/LanguageContext";
 import { useUnreadCount } from "../hooks/useUnreadCount";
-import { Modal } from "@/shared/ui";
+import { Modal, BrandMark, BrandWord } from "@/shared/ui";
 import AccountSwitcher from "./AccountSwitcher";
 
 interface SidebarProps {
@@ -116,14 +115,10 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           )}
         >
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="rail-brand">
-              <img src={logoSrc} alt="TradeVault" width={36} height={36} />
+            <div className="rail-brand" aria-label="TradeVault">
+              <BrandMark size={19} className="text-[var(--tv-rail-bot)]" />
             </div>
-            {!collapsed && (
-              <span className="truncate text-sm font-bold tracking-[-0.02em] text-white">
-                TradeVault
-              </span>
-            )}
+            {!collapsed && <BrandWord className="truncate text-[15px] text-white" />}
           </div>
           {/* Le chevron n'existe en haut que DÉPLIÉ. Plié, la tête du rail est
               le disque de marque et rien d'autre — un second objet sur 68px de

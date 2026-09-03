@@ -1,8 +1,8 @@
 /* Modale d'authentification (login/signup) affichée par-dessus la landing.
  * Layout split-screen : marque + confiance à gauche, formulaire à droite. */
 import { FormEvent, useEffect, useState } from "react";
+import { BrandMark } from "@/shared/ui";
 import { useAuth } from "../../contexts/AuthContext";
-import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon } from "./Icon";
 
 export function AuthModal({
@@ -114,13 +114,7 @@ export function AuthModal({
           <div className="relative hidden md:flex flex-col justify-between p-8 overflow-hidden bg-[linear-gradient(160deg,rgba(14,58,82,.4),rgba(7,14,24,.95)_70%)]">
             <div className="relative">
               <div className="flex items-center gap-2.5">
-                <img
-                  src={logoSrc}
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="h-8 w-8 object-contain"
-                />
+                <BrandMark size={30} className="text-[var(--tv-highlight)]" />
                 <span className="font-display text-[1.1rem] font-bold leading-none tracking-[-0.03em] text-white">
                   TradeVault
                 </span>
@@ -185,7 +179,7 @@ export function AuthModal({
           <div className="relative p-7 sm:p-8">
             {/* Logo mobile */}
             <div className="flex items-center gap-2.5 md:hidden mb-6">
-              <img src={logoSrc} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
+              <BrandMark size={26} className="text-[var(--tv-highlight)]" />
               <span className="font-display text-[1.05rem] font-bold leading-none tracking-[-0.03em] text-white">
                 TradeVault
               </span>

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BrandMark } from "@/shared/ui";
 import { useEffect, useState, FormEvent } from "react";
 import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logoSrc from "@/assets/tradevault-logo.webp";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -60,15 +60,12 @@ function ResetPasswordPage() {
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="glass-strong rounded-3xl p-8 shadow-2xl shadow-black/40">
           <div className="text-center mb-8">
-            <div className="relative w-14 h-14 mx-auto mb-4">
-              <img
-                src={logoSrc}
-                alt="TradeVault"
-                width={56}
-                height={56}
-                className="relative w-14 h-14 rounded-2xl"
-              />
-            </div>
+            <span
+              className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-3xl tv-accent-fill"
+              aria-label="TradeVault"
+            >
+              <BrandMark size={30} />
+            </span>
             <h1 className="text-2xl font-bold text-white">Reset Password</h1>
             <p className="text-sm text-slate-400 mt-1">Choose a new password for your account</p>
           </div>
