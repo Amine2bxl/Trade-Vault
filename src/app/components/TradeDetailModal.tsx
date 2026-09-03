@@ -208,7 +208,7 @@ export default function TradeDetailModal({
               )}
               <div
                 className={cn(
-                  "font-display text-2xl font-extrabold tabular-nums",
+                  "tv-figure text-2xl",
                   dayPnl >= 0 ? "text-emerald-400" : "text-red-400",
                 )}
               >
@@ -303,7 +303,7 @@ export default function TradeDetailModal({
                   <div className="text-right">
                     <div
                       className={cn(
-                        "font-display text-xl font-extrabold tabular-nums",
+                        "tv-figure text-xl",
                         be
                           ? "text-slate-300"
                           : trade.pnl >= 0

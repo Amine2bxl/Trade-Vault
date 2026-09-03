@@ -67,7 +67,7 @@ function Switch({ on }: { on: boolean }) {
     <span
       className={cn(
         "relative h-5 w-9 shrink-0 rounded-full p-0.5 transition-colors",
-        on ? "bg-gradient-to-r from-cyan-500 to-teal-500" : "bg-white/10",
+        on ? "tv-accent-fill" : "bg-white/10",
       )}
     >
       <span
@@ -128,8 +128,8 @@ export function PushNotificationSettings() {
       <div className="flex items-center gap-2.5">
         <span className="relative shrink-0">
           <span className="absolute -inset-1 rounded-lg bg-cyan-500/30 blur-md" />
-          <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Bell className="w-4 h-4 text-white" />
+          <span className="relative grid h-8 w-8 place-items-center rounded-xl tv-accent-fill">
+            <Bell className="w-4 h-4" />
           </span>
         </span>
         <div className="min-w-0">
@@ -161,7 +161,7 @@ export function PushNotificationSettings() {
           </div>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-4 py-2.5 text-[13px] font-bold text-[#04101a] shadow-lg shadow-cyan-500/20 hover:brightness-110 transition"
+            className="inline-flex items-center justify-center gap-2 rounded-xl tv-accent-fill px-4 py-2.5 text-[13px] font-bold transition"
           >
             <Lock className="h-3.5 w-3.5" />
             {lang === "fr" ? "Passer à Elite" : "Go Elite"}

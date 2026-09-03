@@ -81,7 +81,7 @@ export default function PlanMatrix() {
               </span>
               <span
                 className={cn(
-                  "mt-1 font-display font-extrabold tabular-nums leading-none",
+                  "mt-1 tv-figure leading-none",
                   featured ? "text-white" : "text-slate-500",
                 )}
               >

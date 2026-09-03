@@ -168,9 +168,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
               onClick={() => setModePersisted(m)}
               className={cn(
                 "h-8 px-4 rounded-lg text-xs font-bold transition",
-                mode === m
-                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
-                  : "text-slate-500 hover:text-slate-300",
+                mode === m ? "tv-accent-fill" : "text-slate-500 hover:text-slate-300",
               )}
             >
               {t(m === "forex" ? "calc.forex" : "calc.futures")}
@@ -275,9 +273,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div
                   className={cn(
                     "h-full rounded-full transition-[width] duration-250",
-                    riskTooHigh
-                      ? "bg-gradient-to-r from-amber-500 to-red-500"
-                      : "bg-gradient-to-r from-cyan-500 to-teal-400",
+                    riskTooHigh ? "bg-gradient-to-r from-amber-500 to-red-500" : "tv-accent-fill",
                   )}
                   style={{ width: `${gaugePct}%` }}
                 />
@@ -390,8 +386,8 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
           )}
         >
           <div className="flex items-center gap-2 mb-3">
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
-              <Gauge className="w-3 h-3 text-white" />
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md tv-accent-fill">
+              <Gauge className="w-3 h-3" />
             </span>
             <div>
               <h2 className="text-sm font-bold text-white leading-none">{t("calc.resultLive")}</h2>
@@ -416,8 +412,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
           ) : mode === "forex" && forex ? (
             <div className="animate-fade-in">
               <div className="relative text-center pt-2 pb-3">
-                <div className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-40 h-24 rounded-full bg-cyan-500/15 blur-2xl" />
-                <div className="relative inline-block text-white font-display text-6xl font-extrabold tabular-nums tracking-tight">
+                <div className="relative inline-block text-white tv-figure text-6xl">
                   {forex.lots.toFixed(2)}
                 </div>
                 <div className="relative mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">
@@ -440,8 +435,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
           ) : futures ? (
             <div className="animate-fade-in">
               <div className="relative text-center pt-2 pb-3">
-                <div className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-40 h-24 rounded-full bg-cyan-500/15 blur-2xl" />
-                <div className="relative inline-block text-white font-display text-6xl font-extrabold tabular-nums tracking-tight">
+                <div className="relative inline-block text-white tv-figure text-6xl">
                   {futures.contracts}
                 </div>
                 <div className="relative mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">

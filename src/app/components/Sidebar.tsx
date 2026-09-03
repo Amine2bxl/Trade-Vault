@@ -100,7 +100,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "relative hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
+        "relative hidden md:flex h-dvh sticky top-0 z-30 shrink-0 flex-col bg-[var(--tv-rail)] border-r border-white/[0.05]",
         // Largeur animée, contenu clippé par le wrapper interne : au dépli, les
         // étiquettes et la carte de compte se révèlent au lieu de déborder ; au
         // repli, la barre rétrécit sans texte orphelin. 300 ms, easing fluide
@@ -248,7 +248,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         aria-expanded={!collapsed}
         aria-label={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
         title={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
-        className="absolute -right-3 top-[24px] z-20 grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-[#0d1a2b] text-slate-400 shadow-[0_2px_10px_rgba(0,0,0,0.45)] transition-colors duration-200 hover:border-cyan-400/40 hover:text-cyan-300"
+        className="absolute -right-3 top-[24px] z-20 grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-[var(--tv-plate-3)] text-slate-400 shadow-[0_2px_10px_rgba(0,0,0,0.45)] transition-colors duration-200 hover:border-cyan-400/40 hover:text-cyan-300"
       >
         {collapsed ? (
           <ChevronRight className="h-3.5 w-3.5" />

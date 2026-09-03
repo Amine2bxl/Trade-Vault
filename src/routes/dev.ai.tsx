@@ -76,13 +76,12 @@ function DevAiPage() {
     <div
       className="min-h-screen text-slate-200"
       style={{
-        background:
-          "radial-gradient(1000px 700px at 80% -10%, rgba(34,211,238,.08), transparent 60%), linear-gradient(160deg,#05070a 0%,#0a0f1e 55%,#05080c 100%)",
+        background: "var(--tv-bg)",
       }}
     >
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="flex items-center gap-3 mb-1">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 text-white font-bold text-sm">
+          <span className="grid h-9 w-9 place-items-center rounded-xl tv-accent-fill font-bold text-sm">
             J
           </span>
           <div className="flex-1">
@@ -215,9 +214,7 @@ function DevAiPage() {
                     <span
                       className={
                         "h-2 w-2 rounded-full " +
-                        (p.state === "closed"
-                          ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,.6)]"
-                          : "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,.6)]")
+                        (p.state === "closed" ? "bg-emerald-400" : "bg-amber-400")
                       }
                     />
                     <span className="flex-1 font-mono text-sm font-semibold text-white">

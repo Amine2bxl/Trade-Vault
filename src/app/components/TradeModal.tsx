@@ -516,7 +516,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         />
         {/* Header premium — même matière que le widget compte/Jarvis */}
         <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.07] to-transparent overflow-hidden">
-          <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-cyan-500/10 blur-2xl" />
           <div className="relative flex items-center gap-2.5 min-w-0">
             <span className="relative shrink-0">
               <span
@@ -919,9 +918,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     <Star
                       className={cn(
                         "w-4 h-4 transition duration-200",
-                        on
-                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]"
-                          : "text-slate-600",
+                        on ? "text-amber-400 fill-amber-400" : "text-slate-600",
                       )}
                       strokeWidth={on ? 2 : 1.75}
                     />
@@ -1008,12 +1005,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   </defs>
                 </svg>
                 <div className="absolute inset-0 grid place-items-center">
-                  <span
-                    className={cn(
-                      "font-display text-base font-extrabold tabular-nums",
-                      confidenceColor.text,
-                    )}
-                  >
+                  <span className={cn("tv-figure text-base", confidenceColor.text)}>
                     {form.confidence}%
                   </span>
                 </div>
@@ -1462,7 +1454,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             {rMultipleError && <p className="text-xs text-red-400">{rMultipleError}</p>}
           </div>
         )}
-        <div className="sticky bottom-0 bg-[#0a1220] border-t border-white/[.06] px-4 md:px-6 py-3 md:py-4 flex items-center justify-end gap-2 z-10">
+        <div className="sticky bottom-0 bg-[var(--tv-plate-1)] border-t border-white/[.06] px-4 md:px-6 py-3 md:py-4 flex items-center justify-end gap-2 z-10">
           <button
             onClick={onClose}
             className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
@@ -1474,9 +1466,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             disabled={!isValid}
             className={cn(
               "px-6 py-2.5 rounded-xl text-sm font-bold transition",
-              isValid
-                ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white"
-                : "bg-slate-800 text-slate-500 cursor-not-allowed",
+              isValid ? "tv-accent-fill" : "bg-slate-800 text-slate-500 cursor-not-allowed",
             )}
           >
             {trade ? t("trade.updateTrade") : t("trade.saveTrade")}

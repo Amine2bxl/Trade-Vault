@@ -1,11 +1,18 @@
 /**
  * Design tokens — the TradeVault visual identity, centralized.
  *
- * These tokens codify the landing page theme (Inter type, cyan/teal
- * accents, deep-navy glass surfaces, the shared motion language) which
- * `styles.css` already applies across the whole product. This file is the
- * single, typed, documented reference every primitive and every future screen
- * builds on — the "soul & skeleton" of the UI.
+ * Ils codifient l'identité « Vault » : Inter pour la parole, chasse fixe pour
+ * le chiffre, un accent vert unique et rare, des plaques opaques sur un noir
+ * neutre, une seule échelle de mouvement. C'est la référence typée et
+ * documentée sur laquelle chaque primitive et chaque nouvel écran s'appuient.
+ *
+ * Les trois règles que ce fichier fait tenir :
+ *   1. La couleur est RARE — elle marque l'état actif, l'action principale et
+ *      le signe du P&L. Une surface qui n'est ni l'un ni l'autre est grise.
+ *   2. La profondeur vient de la VALEUR, pas de la lumière — une plaque plus
+ *      claire est devant. Rien ne rayonne, rien ne flotte sans raison.
+ *   3. Le chiffre a sa propre voix — chasse fixe, tabulaire, et seulement
+ *      pour les montants de tête.
  *
  * IMPORTANT: this does not restyle anything. The visual source of truth is the
  * CSS in `src/styles.css` (custom properties + utility classes); these tokens
@@ -34,9 +41,13 @@ export const font = {
 /**
  * Color — semantic roles as Tailwind color *stems* (compose with a utility
  * prefix, e.g. `text-${color.profit}`, `bg-${color.brand}/15`). Brand accents
- * are runtime-themeable via the `--tv-*` variables (default = landing cyan/teal).
+ * are runtime-themeable via the `--tv-*` variables (défaut = émeraude « Vault »).
  */
 export const color = {
+  // Les noms de rampe restent `cyan`/`teal` — ce sont les utilitaires Tailwind
+  // que ~700 appels portent déjà — mais leurs valeurs sont RÉGÉNÉRÉES depuis
+  // l'accent du thème (émeraude par défaut). Écrire `text-cyan-400` revient
+  // donc à écrire « la couleur d'accent, cran 400 ».
   brand: "cyan", // primary accent ramp (regenerated from --tv-primary-*)
   brandAlt: "teal", // secondary accent ramp (--tv-secondary-*)
   profit: "emerald-500",
@@ -46,25 +57,26 @@ export const color = {
 
 /** Brand accent CSS variables (themeable at runtime by the ThemeProvider). */
 export const accentVar = {
-  accent: "var(--tv-accent)", // #06b6d4 default
-  accentAlt: "var(--tv-accent-2)", // #14b8a6 default
-  highlight: "var(--tv-highlight)", // #22d3ee default
+  accent: "var(--tv-accent)", // #10b981 par défaut
+  accentAlt: "var(--tv-accent-2)", // #059669 par défaut
+  highlight: "var(--tv-highlight)", // #34d399 par défaut
 } as const;
 
-/** Surfaces — the deep-navy glass system shared by landing and app. */
+/** Surfaces — les plaques opaques partagées par la landing et le produit. */
 export const surface = {
-  /** Base page background (html), the landing's deep navy. */
-  base: "#060d16",
-  /** Translucent glass panel. */
+  /** Base page background (html) — noir neutre, un seul à-plat. */
+  base: "#0a0b0d",
+  /** La plaque standard. Le nom « glass » survit aux ~200 appels existants ;
+   *  la matière, elle, est opaque depuis la refonte. */
   glassClass: "glass",
-  /** Opaque glass (modals, menus). */
+  /** Plaque des surfaces qui flottent réellement (modales, menus). */
   glassStrongClass: "glass-strong",
-  /** Hover-lift premium card. */
+  /** Carte qui répond au survol (éclaircissement, jamais de soulèvement). */
   cardPremiumClass: "card-premium",
-  /** Solid, slightly elevated panel for dense dashboards (TradeTanto direction). */
-  panelClass: "bg-[#0b1220] border border-white/[0.06] rounded-2xl",
-  /** Subtle inset surface for nested sections. */
-  insetClass: "bg-white/[0.02] border border-white/[0.05] rounded-xl",
+  /** Alias historique — rend exactement la même plaque que `glass`. */
+  panelClass: "panel rounded-2xl",
+  /** Surface creuse pour une section imbriquée. */
+  insetClass: "bg-white/[0.025] border border-white/[0.06] rounded-xl",
 } as const;
 
 /** Radius scale (Tailwind `rounded-*`). `2xl`/`3xl` dominate the app. */
@@ -84,6 +96,8 @@ export const motion = {
   slideIn: "animate-slide-in",
   /** Bottom-sheet entrance (used by the Modal primitive on mobile). */
   slideUp: "animate-slide-up",
+  /** Neutralisée par la refonte — ne peint plus rien. Conservée le temps que
+   *  les derniers appels disparaissent ; ne pas en ajouter. */
   glow: "animate-glow",
 } as const;
 
@@ -127,7 +141,7 @@ export const density = {
  * Toute nouvelle surface utilise ces rôles, jamais une classe en pixels.
  */
 export const type = {
-  /** Hero / display — chiffres et titres d'en-tête à très forte présence. */
+  /** Hero / display — titres d'en-tête à très forte présence. */
   display: "font-display text-[30px] md:text-[34px] font-bold tracking-[-0.025em]",
   /** Page title — calm, not massive. */
   h1: "text-[26px] md:text-[30px] font-bold tracking-[-0.02em]",
@@ -139,12 +153,21 @@ export const type = {
   body: "text-[15px] leading-relaxed",
   /** Secondary/meta copy. */
   caption: "text-xs",
-  /** Compact uppercase label (11px). */
-  label: "text-[11px] uppercase tracking-[0.08em] font-medium",
+  /** Libellé de case — petites capitales espacées, à la Topstep/Lucid.
+   *  C'est le rôle d'étiquetage du produit : il NOMME une case, il ne la
+   *  décrit pas. Toute étiquette de KPI, de colonne ou de champ le porte. */
+  label: "text-[10px] uppercase tracking-[0.09em] font-semibold",
   /** Chrome dense : badges, unités, méta de cellule. Le plancher — rien en dessous. */
   micro: "text-[10px]",
-  /** Données financières : chiffres tabulaires, alignés, à forte présence. */
-  fin: "font-display tabular-nums text-base font-bold tracking-[-0.02em]",
+  /** LE CHIFFRE — chasse fixe, tabulaire. Réservé aux montants de tête
+   *  (P&L, solde, drawdown, cible) : c'est la signature typographique de la
+   *  refonte, et elle ne vaut que si elle reste rare. Les nombres au fil du
+   *  texte et dans les tableaux denses gardent Inter + `tabular-nums`. */
+  fin: "tv-figure text-base tracking-[-0.03em]",
+  /** Le même chiffre, taille de tuile KPI. */
+  figure: "tv-figure text-xl md:text-[26px] leading-none",
+  /** Le même chiffre, taille héros (P&L du mois, solde du compte). */
+  figureLg: "tv-figure text-[30px] md:text-[38px] leading-none",
   /** Navigation (rail, onglets). */
   nav: "text-[13px] font-medium tracking-[-0.01em]",
   /** Boutons. */
@@ -191,7 +214,11 @@ export const border = {
   accent: "var(--tv-border-accent)",
 } as const;
 
-/** Elevation — shadows lift a surface; glow is reserved for the accent. */
+/** Élévation — et le premier cran est `none` : sur un fond quasi noir, une
+ *  ombre portée assombrit du noir. Ce qui sépare deux plans, c'est la valeur
+ *  de la plaque et son liseré. Les ombres ne restent que sous ce qui flotte
+ *  vraiment (modales, menus, docks). `glow` ne vaut plus rien : l'accent est
+ *  une couleur, pas une source de lumière. */
 export const elevation = {
   low: "var(--tv-elev-1)",
   medium: "var(--tv-elev-2)",
@@ -222,6 +249,10 @@ export const zIndex = {
 
 /** Signature interaction/animation classes from `styles.css`. */
 export const behavior = {
+  /** Un chiffre de tête (chasse fixe, tabulaire). */
+  figure: "tv-figure",
+  /** Un libellé de case (petites capitales espacées). */
+  label: "tv-label",
   /** Shared hover/press/focus contract for anything clickable. */
   interactive: "tv-interactive",
   /** Page-change reveal (applied by `PageTransition`). */

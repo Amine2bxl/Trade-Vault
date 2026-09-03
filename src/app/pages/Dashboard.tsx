@@ -375,7 +375,12 @@ export default function Dashboard({
                 visual={{
                   kind: "bar",
                   pct: Math.min(stats.avgRR / 3, 1),
-                  color: stats.avgRR >= 1.5 ? "#10b981" : stats.avgRR >= 1 ? "#22d3ee" : "#ef4444",
+                  color:
+                    stats.avgRR >= 1.5
+                      ? "#10b981"
+                      : stats.avgRR >= 1
+                        ? "var(--tv-highlight)"
+                        : "#ef4444",
                 }}
                 footer={{
                   label: t("dashboard.bestWorst"),
@@ -513,7 +518,7 @@ export default function Dashboard({
                       <div className="flex items-baseline gap-3 flex-wrap">
                         <span
                           className={cn(
-                            "font-display text-3xl md:text-4xl font-extrabold tabular-nums tracking-tight",
+                            "tv-figure text-3xl md:text-4xl",
                             gain ? "text-emerald-400" : "text-red-400",
                           )}
                         >
@@ -766,12 +771,7 @@ function StatRow({
       <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold truncate">
         {label}
       </div>
-      <div
-        className={cn(
-          "font-display text-sm md:text-base font-extrabold tabular-nums truncate mt-0.5",
-          valueClass,
-        )}
-      >
+      <div className={cn("tv-figure text-sm md:text-base truncate mt-0.5", valueClass)}>
         {value}
       </div>
       {sub && <div className="text-[10px] text-slate-600 tabular-nums truncate">{sub}</div>}

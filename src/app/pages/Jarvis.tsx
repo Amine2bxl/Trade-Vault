@@ -110,8 +110,8 @@ export default function Jarvis() {
         <header className="flex shrink-0 items-center gap-3 border-b border-white/[0.06] px-4 py-3">
           <span className="relative shrink-0">
             <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-              <Bot className="h-4.5 w-4.5 text-white" />
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl tv-accent-fill">
+              <Bot className="h-4.5 w-4.5" />
             </span>
           </span>
           <div className="min-w-0 flex-1">

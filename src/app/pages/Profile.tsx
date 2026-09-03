@@ -55,9 +55,8 @@ export default function Profile({ trades, setPage }: ProfileProps) {
       {/* Identity */}
       <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.45),rgba(7,14,24,.9)_60%)] p-4 sm:p-5 animate-fade-in-up">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-        <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 text-lg font-bold text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl tv-accent-fill text-lg font-bold">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -116,8 +115,8 @@ export default function Profile({ trades, setPage }: ProfileProps) {
       {/* Contact / Support */}
       <Card variant="glass-strong" pad="default" className="space-y-2.5">
         <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <MessageSquare className="w-3.5 h-3.5 text-white" />
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg tv-accent-fill">
+            <MessageSquare className="w-3.5 h-3.5" />
           </span>
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">
             {t("profile.getInTouch")}

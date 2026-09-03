@@ -75,8 +75,8 @@ function IconBadge({ icon: Icon }: { icon: typeof Target }) {
   return (
     <div className="relative mb-5">
       <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
-      <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
-        <Icon className="w-7 h-7 text-white" />
+      <div className="relative grid h-14 w-14 place-items-center rounded-2xl tv-accent-fill">
+        <Icon className="w-7 h-7" />
       </div>
     </div>
   );
@@ -134,9 +134,7 @@ function OptionCard({
         <span
           className={cn(
             "absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full border transition",
-            selected
-              ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent"
-              : "border-white/15",
+            selected ? "tv-accent-fill border-transparent" : "border-white/15",
           )}
         >
           {selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -319,7 +317,7 @@ export default function Onboarding({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
+      className="w-full h-12 rounded-xl text-sm font-bold tv-accent-fill transition active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
     >
       {children}
     </button>
@@ -337,17 +335,8 @@ export default function Onboarding({
   return (
     <div
       className="relative h-dvh w-full overflow-hidden flex flex-col"
-      style={{ background: "linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)" }}
+      style={{ background: "var(--tv-bg)" }}
     >
-      <div
-        className="auth-orb w-[520px] h-[520px] bg-cyan-600 -top-44 -left-44"
-        style={{ animationDelay: "0s" }}
-      />
-      <div
-        className="auth-orb w-[420px] h-[420px] bg-teal-600 -bottom-36 -right-36"
-        style={{ animationDelay: "-5s" }}
-      />
-
       {/* Top bar : back · progress · étape */}
       <div className="relative z-20 flex items-center gap-3 px-4 pt-4 md:px-6 max-w-2xl mx-auto w-full">
         {idx > 0 ? (
@@ -364,7 +353,7 @@ export default function Onboarding({
 
         <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
           <div
-            className="relative h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250 ease-out"
+            className="relative h-full rounded-full bg-[var(--tv-accent)] transition duration-250 ease-out"
             style={{ width: `${Math.round(progress * 100)}%` }}
           >
             <div className="onb-progress-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
@@ -387,13 +376,12 @@ export default function Onboarding({
             <div className="text-center">
               <div className="flex justify-center mb-5">
                 <div className="relative">
-                  <div className="onb-halo absolute inset-0 rounded-2xl bg-cyan-500/40 blur-xl" />
                   <img
                     src={logoSrc}
                     alt="TradeVault"
                     width={64}
                     height={64}
-                    className="relative w-16 h-16 rounded-2xl drop-shadow-[0_0_14px_rgba(6,182,212,0.5)]"
+                    className="relative w-16 h-16 rounded-2xl"
                   />
                 </div>
               </div>
@@ -656,7 +644,7 @@ export default function Onboarding({
 
               <button
                 onClick={next}
-                className="w-full h-12 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition"
+                className="w-full h-12 rounded-xl text-sm font-bold tv-accent-fill transition"
               >
                 {c.cont}
               </button>
@@ -675,8 +663,8 @@ export default function Onboarding({
               <div className="flex justify-center">
                 <div className="relative mb-4">
                   <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-md" />
-                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
-                    <Bell className="w-6 h-6 text-white" />
+                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl tv-accent-fill">
+                    <Bell className="w-6 h-6" />
                   </div>
                 </div>
               </div>
@@ -719,8 +707,8 @@ export default function Onboarding({
                 <div className="flex justify-center">
                   <div className="relative mb-4">
                     <span className="absolute -inset-2 rounded-2xl bg-teal-500/30 blur-md" />
-                    <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/30">
-                      <Rocket className="w-6 h-6 text-white" />
+                    <div className="relative grid h-12 w-12 place-items-center rounded-2xl tv-accent-fill shadow-xl">
+                      <Rocket className="w-6 h-6" />
                     </div>
                   </div>
                 </div>
@@ -749,7 +737,7 @@ export default function Onboarding({
                   disabled={!!saving}
                   className="onb-card relative flex items-start gap-3.5 rounded-2xl p-4 border text-left bg-cyan-500/[0.1] border-cyan-400/40 hover:bg-cyan-500/[0.15] transition disabled:opacity-60"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-xl tv-accent-fill flex items-center justify-center shrink-0">
                     {saving === "import" ? (
                       <Loader2 className="w-5 h-5 text-white animate-spin" />
                     ) : (

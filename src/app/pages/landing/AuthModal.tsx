@@ -100,7 +100,7 @@ export function AuthModal({
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md overflow-y-auto"
       onMouseDown={(e) => e.currentTarget === e.target && onClose()}
     >
-      <div className="modal-in relative my-auto w-full max-w-[880px] overflow-hidden rounded-2xl border border-white/[.09] bg-[#0a1220] shadow-[0_40px_110px_rgba(0,0,0,.7)]">
+      <div className="modal-in relative my-auto w-full max-w-[880px] overflow-hidden rounded-2xl border border-white/[.09] bg-[var(--tv-plate-1)] shadow-[0_40px_110px_rgba(0,0,0,.7)]">
         <button
           onClick={onClose}
           aria-label="Fermer"
@@ -112,8 +112,6 @@ export function AuthModal({
         <div className="grid md:grid-cols-2">
           {/* ── Colonne gauche : marque + confiance (masquée sur mobile) ── */}
           <div className="relative hidden md:flex flex-col justify-between p-8 overflow-hidden bg-[linear-gradient(160deg,rgba(14,58,82,.4),rgba(7,14,24,.95)_70%)]">
-            <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-cyan-500/[.08] blur-3xl" />
-
             <div className="relative">
               <div className="flex items-center gap-2.5">
                 <img

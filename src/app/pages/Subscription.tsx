@@ -80,9 +80,7 @@ export default function Subscription() {
           <span
             className={cn(
               "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-              isActivePaid
-                ? "bg-gradient-to-br from-emerald-400 to-teal-500"
-                : "bg-gradient-to-br from-cyan-500 to-teal-600",
+              isActivePaid ? "bg-emerald-500" : "tv-accent-fill",
             )}
           >
             <Crown className="w-4 h-4 text-white" />
@@ -107,20 +105,11 @@ export default function Subscription() {
             isActivePaid ? "via-emerald-400/70" : "via-cyan-400/60",
           )}
         />
-        <div
-          className={cn(
-            "pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full blur-3xl",
-            isActivePaid ? "bg-emerald-400/10" : "bg-cyan-500/10",
-          )}
-        />
-
         <div className="relative flex items-start gap-4 flex-wrap">
           <div
             className={cn(
               "relative grid h-12 w-12 place-items-center rounded-xl shrink-0",
-              isActivePaid
-                ? "bg-gradient-to-br from-emerald-400 to-teal-500 shadow-[0_0_28px_-6px_rgba(52,211,153,.6)]"
-                : "bg-gradient-to-br from-cyan-500 to-teal-600",
+              isActivePaid ? "bg-gradient-to-br from-emerald-400 to-teal-500" : "tv-accent-fill",
             )}
           >
             {isActivePaid ? (
@@ -148,7 +137,7 @@ export default function Subscription() {
             <div className="text-right shrink-0">
               <div
                 className={cn(
-                  "font-display text-3xl font-extrabold tabular-nums leading-none",
+                  "tv-figure text-3xl leading-none",
                   isActivePaid ? "text-emerald-300" : "text-white",
                 )}
               >

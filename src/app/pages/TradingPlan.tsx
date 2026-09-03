@@ -461,8 +461,8 @@ function Section({
       style={{ animationDelay: `${delay * 70}ms` }}
     >
       <div className="flex items-start gap-3 mb-4">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-          <Icon className="w-4 h-4 text-white" />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+          <Icon className="w-4 h-4" />
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
@@ -707,19 +707,10 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={C * (1 - value)}
-          style={{ filter: "drop-shadow(0 0 5px rgba(34,211,238,.55))" }}
           className="transition duration-250"
         />
         {/* La pointe de la jauge, visible dès qu'il y a une progression. */}
-        {value > 0 && (
-          <circle
-            cx={tipX}
-            cy={tipY}
-            r="3.2"
-            fill="#a5f3fc"
-            style={{ filter: "drop-shadow(0 0 4px rgba(34,211,238,.95))" }}
-          />
-        )}
+        {value > 0 && <circle cx={tipX} cy={tipY} r="3.2" fill="#a5f3fc" />}
         <defs>
           <linearGradient id="tpGrad" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="var(--tv-accent)" />

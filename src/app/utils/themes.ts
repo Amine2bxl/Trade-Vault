@@ -9,7 +9,12 @@
 //     Tailwind ramp (regenerated in oklch from the hue + chroma).
 //   • --tv-secondary-h / --tv-secondary-c → drive the `teal-*` ramp.
 //   • --tv-accent / --tv-accent-2 / --tv-highlight (hex) and their
-//     `-rgb` triplets → drive glows, gradients, charts, navbar, FAB…
+//     `-rgb` triplets → drive charts, active states, the primary button…
+//
+//  Un thème ne change QUE l'identité (la teinte de l'accent, le fond). Il ne
+//  peut pas changer la grammaire : la plaque, le liseré, la densité et le
+//  vocabulaire du chiffre sont les mêmes partout. C'est ce qui fait qu'un
+//  thème est une variante du produit, et non un autre produit.
 //
 //  Because every accent surface reads these variables, swapping the
 //  active theme retints the app in one paint with zero component edits.
@@ -36,8 +41,8 @@ export interface ThemeDef {
 }
 
 /** Valeurs d'origine — le rendu sans thème personnalisé, à l'identique. */
-export const DEFAULT_BACKGROUND = "#060d16";
-export const DEFAULT_TEXT = "#e2e8f0";
+export const DEFAULT_BACKGROUND = "#0a0b0d";
+export const DEFAULT_TEXT = "#e6e8ea";
 
 export type ThemeVars = Record<string, string>;
 
@@ -113,7 +118,7 @@ export function applyThemeVars(vars: ThemeVars) {
   for (const k in vars) root.style.setProperty(k, vars[k]);
   // Keep the browser UI (address bar / notch) in step with the theme.
   const tc = document.querySelector('meta[name="theme-color"]');
-  if (tc) tc.setAttribute("content", "#060810");
+  if (tc) tc.setAttribute("content", vars["--tv-bg"] ?? DEFAULT_BACKGROUND);
 }
 
 // ---- palette helpers for the theme editor -----------------------------
@@ -158,61 +163,81 @@ function oklchToHex(L: number, C: number, H: number): string {
 
 export const BUILTIN_THEMES: ThemeDef[] = [
   {
+    /* L'identité par défaut. Émeraude sobre sur noir neutre — la lecture
+       que font les plateformes de prop firm (Lucid, Topstep) : le vert est
+       déjà la couleur du gain, l'accent parle donc la langue du métier. */
+    id: "vault",
+    name: "Vault",
+    builtin: true,
+    primary: "#10b981",
+    secondary: "#059669",
+    highlight: "#34d399",
+  },
+  {
+    /* Gris pur, aucune teinte. Pour qui ne veut AUCUNE couleur en dehors
+       du P&L lui-même — la version la plus austère du produit. */
+    id: "graphite",
+    name: "Graphite",
+    builtin: true,
+    primary: "#94a3b8",
+    secondary: "#64748b",
+    highlight: "#cbd5e1",
+  },
+  {
+    /* Bleu d'acier. Le calme d'un terminal, sans le cyan électrique
+       d'origine : la chroma de l'ancre est volontairement basse. */
+    id: "steel",
+    name: "Steel",
+    builtin: true,
+    primary: "#3b82f6",
+    secondary: "#2563eb",
+    highlight: "#60a5fa",
+  },
+  {
+    /* Ambre. Un accent chaud, utile aux daltonismes deutan/protan pour
+       qui vert et rouge se ressemblent. */
+    id: "amber",
+    name: "Amber",
+    builtin: true,
+    primary: "#f59e0b",
+    secondary: "#d97706",
+    highlight: "#fbbf24",
+  },
+  {
+    /* Indigo. La seule fantaisie qui reste, et elle est sombre. */
+    id: "indigo",
+    name: "Indigo",
+    builtin: true,
+    primary: "#6366f1",
+    secondary: "#4f46e5",
+    highlight: "#818cf8",
+  },
+  {
+    /* Cyan — l'ancienne identité « Jarvis », conservée comme thème pour
+       qui la préférait. Elle n'est plus le défaut. */
     id: "jarvis",
     name: "Jarvis",
     builtin: true,
     primary: "#06b6d4",
-    secondary: "#14b8a6",
+    secondary: "#0891b2",
     highlight: "#22d3ee",
-  },
-  {
-    id: "midnight",
-    name: "Midnight",
-    builtin: true,
-    primary: "#6366f1",
-    secondary: "#8b5cf6",
-    highlight: "#a5b4fc",
-  },
-  {
-    id: "lucid",
-    name: "Lucid",
-    builtin: true,
-    primary: "#10b981",
-    secondary: "#2dd4bf",
-    highlight: "#6ee7b7",
-  },
-  {
-    id: "ember",
-    name: "Ember",
-    builtin: true,
-    primary: "#f59e0b",
-    secondary: "#fb7185",
-    highlight: "#fcd34d",
-  },
-  {
-    id: "plasma",
-    name: "Plasma",
-    builtin: true,
-    primary: "#ec4899",
-    secondary: "#a855f7",
-    highlight: "#f0abfc",
-  },
-  {
-    id: "graphite",
-    name: "Graphite",
-    builtin: true,
-    primary: "#64748b",
-    secondary: "#94a3b8",
-    highlight: "#cbd5e1",
   },
 ];
 
-export const DEFAULT_THEME_ID = "jarvis";
+export const DEFAULT_THEME_ID = "vault";
 
 // ---- persistence (localStorage; per device, restored before paint) -----
 
-const STORE_KEY = "tv-themes"; // { custom: ThemeDef[], activeId, defaultId }
-const VARS_KEY = "tv-theme-vars"; // flat resolved map for the active theme
+/* Les clés portent un « v2 » : les appareils qui ont déjà navigué sur
+   TradeVault ont en mémoire la carte de variables de l'ancienne identité
+   (fond navy, accent cyan), et le script de pré-peinture l'applique AVANT
+   la feuille de style. Sans changement de clé, la refonte serait invisible
+   sur exactement les appareils des utilisateurs existants. Repartir d'une
+   clé neuve les remet sur l'identité par défaut ; les thèmes personnalisés
+   de l'ancienne clé sont récupérés une fois, à la première lecture. */
+const STORE_KEY = "tv-themes-v2"; // { custom: ThemeDef[], activeId, defaultId }
+const LEGACY_STORE_KEY = "tv-themes";
+const VARS_KEY = "tv-theme-vars-v2"; // flat resolved map for the active theme
 
 export interface ThemeStore {
   custom: ThemeDef[];
@@ -229,7 +254,14 @@ export function loadThemeStore(): ThemeStore {
   if (typeof localStorage === "undefined") return fallback;
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return fallback;
+    if (!raw) {
+      // Première visite depuis la refonte : on ne reprend QUE les thèmes que
+      // l'utilisateur a lui-même créés. Le thème actif, lui, repart du défaut.
+      const legacy = localStorage.getItem(LEGACY_STORE_KEY);
+      if (!legacy) return fallback;
+      const old = JSON.parse(legacy);
+      return { ...fallback, custom: Array.isArray(old.custom) ? old.custom : [] };
+    }
     const parsed = JSON.parse(raw);
     return {
       custom: Array.isArray(parsed.custom) ? parsed.custom : [],

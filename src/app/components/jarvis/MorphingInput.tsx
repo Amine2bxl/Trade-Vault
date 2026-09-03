@@ -91,7 +91,7 @@ export default function MorphingInput({
         onClick={onSubmit}
         disabled={disabled || !value.trim()}
         aria-label="Send"
-        className="shrink-0 p-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all active:scale-95"
+        className="shrink-0 p-2 rounded-xl tv-accent-fill disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
       >
         <Send className="w-4 h-4" />
       </button>

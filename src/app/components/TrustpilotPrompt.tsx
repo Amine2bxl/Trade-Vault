@@ -121,7 +121,7 @@ export default function TrustpilotPrompt({
       <div className="flex items-center gap-2 mt-3">
         <button
           onClick={rate}
-          className="flex-1 h-11 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/20 transition"
+          className="flex-1 h-11 rounded-xl text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-400 transition"
         >
           {t("trustpilot.cta")}
         </button>

@@ -57,7 +57,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
     <header
       className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 ${
         y > 10
-          ? "border-white/[.07] bg-[#060d16]/90 backdrop-blur-[12px]"
+          ? "border-white/[.07] bg-[var(--tv-bg)]/90 backdrop-blur-[12px]"
           : "border-transparent bg-transparent"
       }`}
       style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
@@ -99,7 +99,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
               />
             </button>
             {openMenu && (
-              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-white/[.08] bg-[#0a1220] p-1.5 shadow-[0_20px_50px_rgba(0,0,0,.45)]">
+              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-white/[.08] bg-[var(--tv-plate-1)] p-1.5 shadow-[0_20px_50px_rgba(0,0,0,.45)]">
                 {productItems.map((item) => (
                   <button
                     key={item.title}

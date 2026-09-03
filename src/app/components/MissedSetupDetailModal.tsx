@@ -144,7 +144,6 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
 
       {/* Header */}
       <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden shrink-0">
-        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl" />
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 md:gap-3.5 min-w-0">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">

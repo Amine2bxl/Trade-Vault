@@ -154,8 +154,8 @@ export default function SessionPanel({
     <Card variant="glass-strong" pad="default" className="space-y-3 animate-fade-in-up">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Activity className="w-4 h-4 text-white" />
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+            <Activity className="w-4 h-4" />
           </span>
           <div>
             <h3 className="text-sm font-bold text-white">{t("session.title")}</h3>
@@ -168,7 +168,7 @@ export default function SessionPanel({
         {/* Le score et, à côté, ce qui le compose : un chiffre sans ses
             entrées n'est pas interprétable. */}
         <div className="text-right">
-          <div className="font-display text-xl font-extrabold text-white tabular-nums">
+          <div className="tv-figure text-xl text-white">
             {session?.readinessScore ?? preview.score ?? "—"}
             <span className="text-xs font-bold text-slate-500">/100</span>
           </div>
@@ -228,10 +228,7 @@ export default function SessionPanel({
               {t("session.tradesAttached").replace("{n}", String(dayTrades.length))}
             </span>
             <span
-              className={cn(
-                "font-display text-sm font-extrabold tabular-nums",
-                dayPnl >= 0 ? "text-emerald-400" : "text-red-400",
-              )}
+              className={cn("tv-figure text-sm", dayPnl >= 0 ? "text-emerald-400" : "text-red-400")}
             >
               {formatPnl(dayPnl)}
             </span>

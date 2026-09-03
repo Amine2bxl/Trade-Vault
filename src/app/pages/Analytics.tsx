@@ -363,7 +363,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
                   {t("analytics.profits")}
                 </div>
-                <div className="font-display text-base md:text-lg font-extrabold text-emerald-400 tabular-nums">
+                <div className="tv-figure text-base md:text-lg text-emerald-400">
                   {formatPnl(profitFactorData.totalProfits)}
                 </div>
               </div>
@@ -372,7 +372,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
                   {t("analytics.losses")}
                 </div>
-                <div className="font-display text-base md:text-lg font-extrabold text-red-400 tabular-nums">
+                <div className="tv-figure text-base md:text-lg text-red-400">
                   {formatPnl(-profitFactorData.totalLosses)}
                 </div>
               </div>
@@ -383,7 +383,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </div>
                 <div
                   className={cn(
-                    "font-display text-lg md:text-xl font-extrabold tabular-nums",
+                    "tv-figure text-lg md:text-xl",
                     profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
                   )}
                 >
@@ -515,7 +515,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </div>
               <div
                 className={cn(
-                  "font-display text-base md:text-lg font-extrabold tabular-nums",
+                  "tv-figure text-base md:text-lg",
                   m.good ? "text-emerald-400" : "text-amber-400",
                 )}
               >
@@ -787,7 +787,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         key={i}
                         fill={e.color}
                         style={{
-                          filter: activePieIndex === i ? `drop-shadow(0 0 8px ${e.color})` : "none",
+                          opacity: activePieIndex === null || activePieIndex === i ? 1 : 0.45,
                           transform: activePieIndex === i ? "scale(1.04)" : "scale(1)",
                           transformOrigin: "center",
                           transformBox: "fill-box",
@@ -805,7 +805,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
             <div className="text-center mt-1">
-              <div className="font-display text-xl md:text-2xl font-extrabold text-white tabular-nums">
+              <div className="tv-figure text-xl md:text-2xl text-white">
                 {formatPct(stats.winRate)}
               </div>
               <div className="text-[10px] text-slate-500">{t("analytics.winRateLabel")}</div>
@@ -1165,9 +1165,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
                 Mois tradés
               </span>
             </div>
-            <div className="font-display text-base font-extrabold text-white tabular-nums">
-              {tradedMonths}/12
-            </div>
+            <div className="tv-figure text-base text-white">{tradedMonths}/12</div>
             <div className="text-[11px] text-slate-500 mt-0.5">{totalTrades} trades</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
@@ -1177,9 +1175,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
                 Années
               </span>
             </div>
-            <div className="font-display text-base font-extrabold text-white tabular-nums">
-              {years.length}
-            </div>
+            <div className="tv-figure text-base text-white">{years.length}</div>
             <div className="text-[11px] text-slate-500 mt-0.5">de données</div>
           </div>
         </div>

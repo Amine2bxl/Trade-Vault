@@ -81,8 +81,8 @@ export default function RecalibrateAccountModal({
     <Modal open onClose={onClose} className="md:max-w-lg">
       <div className="px-6 py-5 space-y-5">
         <header className="flex items-start gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Scale className="w-4 h-4 text-white" />
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl tv-accent-fill">
+            <Scale className="w-4 h-4" />
           </span>
           <div className="min-w-0">
             <h2 className="font-display text-base font-bold text-white leading-tight">

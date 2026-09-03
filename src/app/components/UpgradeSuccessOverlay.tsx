@@ -80,7 +80,7 @@ export default function UpgradeSuccessOverlay({
           <X className="h-4 w-4" />
         </button>
 
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-[0_0_40px_-8px_rgba(16,185,129,.7)]">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500">
           <CheckCircle2 className="h-8 w-8 text-[#04101a]" strokeWidth={2.5} />
         </span>
 
@@ -95,7 +95,7 @@ export default function UpgradeSuccessOverlay({
 
         <button
           onClick={onExplore}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-5 py-3 text-[15px] font-bold text-[#04101a] shadow-lg shadow-cyan-500/25 transition hover:brightness-110"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-[15px] font-bold transition"
         >
           <Sparkles className="h-4 w-4" />
           {fr ? "Voir mes analyses" : "See my analytics"}

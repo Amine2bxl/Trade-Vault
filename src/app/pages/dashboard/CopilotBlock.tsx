@@ -38,7 +38,8 @@ interface CopilotBlockProps {
 function scoreTone(score: number): { ring: string; text: string; glow: string } {
   if (score >= 75)
     return { ring: "#10b981", text: "text-emerald-400", glow: "rgba(16,185,129,0.35)" };
-  if (score >= 50) return { ring: "#22d3ee", text: "text-cyan-300", glow: "rgba(34,211,238,0.30)" };
+  if (score >= 50)
+    return { ring: "var(--tv-highlight)", text: "text-cyan-300", glow: "rgba(34,211,238,0.30)" };
   if (score >= 25)
     return { ring: "#f59e0b", text: "text-amber-400", glow: "rgba(245,158,11,0.30)" };
   return { ring: "#ef4444", text: "text-red-400", glow: "rgba(239,68,68,0.30)" };
@@ -70,14 +71,7 @@ function EdgeDial({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span
-          className={cn(
-            "font-display text-4xl font-extrabold tabular-nums leading-none",
-            tone.text,
-          )}
-        >
-          {score}
-        </span>
+        <span className={cn("tv-figure text-4xl leading-none", tone.text)}>{score}</span>
         <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mt-1">
           / 100
         </span>
@@ -254,8 +248,8 @@ function CopilotBlock({
           {/* Jarvis coaching line — signée Jarvis */}
           <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 px-3.5 py-3 overflow-hidden">
             <div className="flex gap-2.5 items-start">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
-                <Bot className="w-3 h-3 text-white" />
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md tv-accent-fill">
+                <Bot className="w-3 h-3" />
               </span>
               <p className="text-[13px] leading-relaxed text-slate-200 min-w-0">
                 <span className="font-semibold text-cyan-300">Jarvis</span>{" "}
@@ -293,7 +287,7 @@ function CopilotBlock({
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250"
+                        className="h-full rounded-full bg-[var(--tv-accent)] transition duration-250"
                         style={{ width: `${Math.round((objPct ?? 0) * 100)}%` }}
                       />
                     </div>

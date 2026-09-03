@@ -34,7 +34,7 @@ export default function ContactPage() {
   return (
     <div
       dir={dir}
-      className="relative min-h-dvh bg-[#060d16] text-slate-300 overflow-x-clip selection:bg-cyan-400 selection:text-slate-950"
+      className="relative min-h-dvh bg-[var(--tv-bg)] text-slate-300 overflow-x-clip selection:bg-cyan-400 selection:text-slate-950"
     >
       {/* Same ambient mesh as the landing and the legal pages. */}
       <div
@@ -44,13 +44,7 @@ export default function ContactPage() {
             "radial-gradient(ellipse 80% 55% at 60% -10%,rgba(6,182,212,.09),transparent 60%),radial-gradient(ellipse 55% 45% at 95% 55%,rgba(99,102,241,.07),transparent 55%)",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="auth-orb w-[420px] h-[420px] bg-cyan-600 -top-40 -right-32" />
-        <div
-          className="auth-orb w-[320px] h-[320px] bg-teal-600 bottom-10 -left-32"
-          style={{ animationDelay: "-7s" }}
-        />
-      </div>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden"></div>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 md:px-6 py-10 md:py-16 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)]">
         <Link
@@ -71,7 +65,7 @@ export default function ContactPage() {
         <div className="glass-strong rounded-2xl p-5 md:p-6 mb-4">
           <a
             href={mailto()}
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition"
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold tv-accent-fill transition"
           >
             <Mail className="w-4 h-4" /> {doc.emailLabel}
           </a>

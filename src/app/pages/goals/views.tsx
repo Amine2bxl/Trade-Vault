@@ -334,9 +334,7 @@ export function GoalPicker({
         disabled={busy || !goals}
         className={cn(
           "w-full h-12 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2",
-          goals && !busy
-            ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:brightness-110"
-            : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
+          goals && !busy ? "tv-accent-fill" : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
         )}
       >
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -481,9 +479,7 @@ export function PlanView({
                   <div
                     className={cn(
                       "h-full rounded-full transition duration-250",
-                      finalReached
-                        ? "bg-emerald-400/80"
-                        : "bg-gradient-to-r from-cyan-500 to-teal-400",
+                      finalReached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
                     )}
                     style={{
                       width: `${Math.round((goalDirection(g) === "down" ? (finalReached ? 1 : overall === 0 && current <= g.startValue ? Math.max(0, Math.min(1, (g.startValue - current) / (g.startValue - g.targetValue || 1))) : overall) : overall) * 100)}%`,
@@ -643,9 +639,7 @@ export function PlanView({
                               <div
                                 className={cn(
                                   "h-full rounded-full transition duration-250",
-                                  reached
-                                    ? "bg-emerald-400/80"
-                                    : "bg-gradient-to-r from-cyan-500 to-teal-400",
+                                  reached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
                                 )}
                                 style={{ width: `${Math.round(prog * 100)}%` }}
                               />

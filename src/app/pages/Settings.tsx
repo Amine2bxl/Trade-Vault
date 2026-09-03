@@ -312,7 +312,7 @@ export default function Settings({
                   className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
                 >
                   {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code} className="bg-[#0a0f1e]">
+                    <option key={l.code} value={l.code} className="bg-[var(--tv-plate-2)]">
                       {l.label}
                     </option>
                   ))}
@@ -519,8 +519,8 @@ function DeleteAccountModal({
 function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-        <span className="text-white">{icon}</span>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+        <span className="">{icon}</span>
       </span>
       <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
     </div>

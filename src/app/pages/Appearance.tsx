@@ -39,14 +39,14 @@ export default function Appearance() {
         className="mb-2 md:mb-2"
         title={tr("Apparence", "Appearance")}
         icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Palette className="w-4 h-4 text-white" />
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+            <Palette className="w-4 h-4" />
           </span>
         }
         actions={
           <button
             onClick={handleCreateTheme}
-            className="inline-flex items-center gap-1.5 shrink-0 h-9 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition hover:brightness-110 active:scale-[0.99]"
+            className="inline-flex items-center gap-1.5 shrink-0 h-9 px-4 rounded-xl text-xs font-bold tv-accent-fill transition active:scale-[0.99]"
           >
             <Palette className="w-3.5 h-3.5" />
             {tr("Créer un thème", "Create theme")}

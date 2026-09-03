@@ -197,7 +197,6 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   strokeDashoffset={C * (1 - disc / 100)}
                   style={{
                     transition: "stroke-dashoffset 900ms cubic-bezier(0.16,1,0.3,1)",
-                    filter: `drop-shadow(0 0 5px ${discStroke})`,
                   }}
                 />
               </svg>

@@ -21,7 +21,7 @@ import logoSrc from "@/assets/tradevault-logo.webp";
  */
 export default function PublicShell() {
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center gap-5 bg-[#060d16] px-6 text-center">
+    <div className="min-h-dvh flex flex-col items-center justify-center gap-5 bg-[var(--tv-bg)] px-6 text-center">
       <img
         src={logoSrc}
         alt="TradeVault"

@@ -82,15 +82,31 @@
    * Les 19 usages non-textuels (`bg-slate-500`, `border-slate-*`) ne perdent
    * rien : un slate un cran plus clair y est neutre ou meilleur.
    * ---------------------------------------------------------------- */
-  --color-slate-500: #8296ad;
-  --color-slate-600: #7c8ba1;
+  /* La rampe entière est NEUTRALISÉE : le slate de Tailwind est un gris
+     bleuté, pensé pour des fonds bleutés. Sur le nouveau fond neutre, ce
+     bleu résiduel se voyait — il donnait à tout le texte secondaire une
+     teinte froide qui rappelait l'ancienne identité. Les valeurs ci-dessous
+     conservent EXACTEMENT la même luminance perçue, cran par cran : rien ne
+     change de hiérarchie, tout perd sa teinte. */
+  --color-slate-200: #e3e5e7;
+  --color-slate-300: #c8ccd0;
+  --color-slate-400: #9ba1a6;
+  --color-slate-500: #8b9196;
+  --color-slate-600: #848a90;
+  --color-slate-700: #3f4448;
+  --color-slate-800: #26292c;
+  --color-slate-900: #171a1c;
+  --color-slate-950: #0e1012;
 
   --color-brand: var(--tv-accent);
   --color-brand-light: var(--tv-highlight);
   --color-brand-dark: var(--tv-accent);
-  --color-surface: #0c1222;
-  --color-surface-light: #111827;
-  --color-surface-lighter: #1e293b;
+  /* Rampe de surfaces héritée : aucun appel `bg-surface*` ne subsiste dans
+     l'UI, mais les tokens restent alignés sur les trois plaques pour qu'un
+     usage futur tombe sur la bonne matière plutôt que sur l'ancien navy. */
+  --color-surface: #101214;
+  --color-surface-light: #14171a;
+  --color-surface-lighter: #191d21;
   --color-profit: #10b981;
   --color-loss: #ef4444;
 
@@ -259,18 +275,50 @@
   /* Surfaces et textes — extraits en variables pour que le studio de thème
      puisse les piloter. Les valeurs par défaut sont EXACTEMENT celles qui
      étaient codées en dur : sans thème personnalisé, le rendu est inchangé. */
-  --tv-bg: #060d16;
-  --tv-text: #e2e8f0;
-  --tv-primary-h: 215.2;
-  --tv-primary-c: 0.898;
-  --tv-secondary-h: 182.5;
-  --tv-secondary-c: 0.879;
-  --tv-accent: #06b6d4;
-  --tv-accent-2: #14b8a6;
-  --tv-highlight: #22d3ee;
-  --tv-accent-rgb: 6 182 212;
-  --tv-accent-2-rgb: 20 184 166;
-  --tv-highlight-rgb: 34 211 238;
+  /* ────────────────────────────────────────────────────────────────
+   * IDENTITÉ — « Vault », le pupitre de trading.
+   *
+   * L'ancienne identité était un navy #060d16 rehaussé de cyan néon :
+   * jolie en capture d'écran, mais elle datait l'outil (halos, dégradés,
+   * pulsations) et le faisait ressembler à un gadget plutôt qu'à un poste
+   * de travail. Les plateformes que le trader respecte — Topstep, Lucid —
+   * partagent trois partis pris, et ce sont les nôtres désormais :
+   *
+   *   1. Un fond NEUTRE, presque noir. Pas un bleu. Un fond coloré teinte
+   *      chaque surface posée dessus ; un fond neutre laisse la seule
+   *      couleur de l'écran être la donnée (vert = gagné, rouge = perdu).
+   *   2. Un accent VERT, unique, sobre. Le vert est déjà la couleur du
+   *      profit dans ce métier : l'accent et la donnée parlent la même
+   *      langue au lieu de se disputer l'attention.
+   *   3. La couleur est RARE. Elle marque l'état actif, le chiffre du
+   *      jour, l'action principale. Rien d'autre.
+   *
+   * L'accent n'a plus de « halo » : `--tv-glow-accent` reste défini pour
+   * compatibilité, mais vaut `none` (voir le bloc élévation plus bas).
+   * ──────────────────────────────────────────────────────────────── */
+  --tv-bg: #0a0b0d;
+  --tv-text: #e6e8ea;
+  /* Émeraude #10b981 (H 162.5). La chroma est volontairement rentrée sous
+     sa valeur nominale (1.065 → 0.95) : le vert doit se lire comme une
+     encre, pas comme une diode. */
+  --tv-primary-h: 162.5;
+  --tv-primary-c: 0.95;
+  --tv-secondary-h: 163.2;
+  --tv-secondary-c: 0.88;
+  --tv-accent: #10b981;
+  --tv-accent-2: #059669;
+  --tv-highlight: #34d399;
+  --tv-accent-rgb: 16 185 129;
+  --tv-accent-2-rgb: 5 150 105;
+  --tv-highlight-rgb: 52 211 153;
+
+  /* Surfaces opaques — l'app ne peint plus de « verre ». Une carte est une
+     plaque : une valeur fixe, un liseré, rien derrière à deviner. Elles
+     sont exprimées en dur (et non en voiles blancs) parce qu'un voile sur
+     un fond quasi noir vire au gris sale dès la deuxième superposition. */
+  --tv-plate-1: #101214;
+  --tv-plate-2: #14171a;
+  --tv-plate-3: #191d21;
 
   /* ══════════════════════════════════════════════════════════════════
    * SEMANTIC LAYER — the TradeVault visual language.
@@ -288,17 +336,19 @@
 
   /* L2/L3/L4 — surfaces, expressed as white veils over --tv-bg so a theme
      that changes the background keeps the exact same depth relationships. */
-  --tv-surface-1: rgb(255 255 255 / 0.022);
-  --tv-surface-2: rgb(255 255 255 / 0.04);
-  --tv-surface-3: rgb(255 255 255 / 0.065);
-  --tv-surface-hover: rgb(255 255 255 / 0.08);
+  --tv-surface-1: var(--tv-plate-1);
+  --tv-surface-2: var(--tv-plate-2);
+  --tv-surface-3: var(--tv-plate-3);
+  --tv-surface-hover: #1e2226;
   /* The navigation rail — opaque on purpose (see Sidebar: no backdrop-filter). */
-  --tv-rail: #08111e;
+  --tv-rail: #0c0e10;
 
-  /* Borders — a hairline is structure, not decoration. Three weights only. */
-  --tv-border: rgb(255 255 255 / 0.06);
-  --tv-border-strong: rgb(255 255 255 / 0.11);
-  --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.3);
+  /* Borders — a hairline is structure, not decoration. Three weights only.
+     Elles remontent (0.06 → 0.08) : sur un fond neutre quasi noir, c'est le
+     liseré qui dessine la grille, puisque plus aucune ombre ne le fait. */
+  --tv-border: rgb(255 255 255 / 0.08);
+  --tv-border-strong: rgb(255 255 255 / 0.14);
+  --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.35);
 
   /* Text — three steps. Anything below `muted` is not readable content.
    *
@@ -312,9 +362,9 @@
    * un plancher de lisibilité que sa propre valeur ne tenait pas. Le palier est
    * remonté au lieu d'être documenté comme illisible — c'est le dernier cran de
    * texte réel, pas de la décoration. */
-  --tv-text-primary: #f1f5f9;
-  --tv-text-secondary: #94a3b8;
-  --tv-text-muted: #8296ad;
+  --tv-text-primary: #f4f5f6;
+  --tv-text-secondary: #9ba1a6;
+  --tv-text-muted: #878d93;
 
   /* L5 data emphasis / L6 risk / L7 discipline */
   --tv-success: #10b981;
@@ -324,12 +374,18 @@
   --tv-warning-rgb: 245 158 11;
   --tv-danger-rgb: 239 68 68;
 
-  /* Elevation — three steps. A surface that lifts casts a real shadow;
-     it does not glow. Glow is reserved for the accent, as an accent. */
-  --tv-elev-1: 0 1px 2px rgb(0 0 0 / 0.3);
-  --tv-elev-2: 0 8px 24px -12px rgb(0 0 0 / 0.55);
-  --tv-elev-3: 0 18px 48px -24px rgb(0 0 0 / 0.6);
-  --tv-glow-accent: 0 0 18px -6px rgb(var(--tv-accent-rgb) / 0.22);
+  /* Élévation — trois crans, et le premier est « rien ».
+   *
+   * Sur un fond quasi noir, une ombre portée ne se voit pas : elle assombrit
+   * du noir. Ce qui sépare deux plans ici, c'est la VALEUR de la plaque et
+   * son liseré, pas un flou sous la carte. Les ombres ne subsistent donc
+   * que là où un élément flotte réellement au-dessus du contenu (modales,
+   * menus, docks), et `--tv-glow-accent` ne vaut plus rien du tout :
+   * l'accent est une couleur, pas une source de lumière. */
+  --tv-elev-1: none;
+  --tv-elev-2: 0 8px 24px -14px rgb(0 0 0 / 0.75);
+  --tv-elev-3: 0 24px 60px -28px rgb(0 0 0 / 0.85);
+  --tv-glow-accent: none;
 
   /* Motion — four durations, two curves. Every transition in the product
      picks from this list; nothing invents its own timing.
@@ -546,34 +602,12 @@ select,
   user-select: text;
 }
 
-/* Ambient cursor glow — blurred radial that trails the pointer, retinted by
-   the active theme. Fixed, behind all content, never intercepts input. */
+/* Le halo qui suivait le curseur a été SUPPRIMÉ (la classe reste neutralisée
+   le temps que les derniers appels disparaissent). Un rond flou qui poursuit
+   la souris est le prototype de l'effet gadget : il ne dit rien, il n'aide à
+   rien, il repeint une zone de 320px à chaque mouvement de pointeur. */
 .cursor-glow {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9998;
-  /* SAME glow as the landing page (.landing-cursor-glow): a wide, whisper-soft
-     halo — not a bright spotlight — retinted live by the active theme. */
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  will-change: transform, opacity;
-  transition: opacity var(--duration-panel) var(--ease-standard);
-  background: radial-gradient(
-    circle,
-    rgb(var(--tv-highlight-rgb) / 0.045) 0%,
-    rgba(99, 102, 241, 0.02) 45%,
-    transparent 72%
-  );
-  filter: blur(6px);
-}
-@media (pointer: coarse), (prefers-reduced-motion: reduce) {
-  .cursor-glow {
-    display: none;
-  }
+  display: none !important;
 }
 
 body {
@@ -583,17 +617,11 @@ body {
   font-weight: 400;
   font-size: 15px;
   line-height: 1.55;
-  /* Same deep-navy mesh as the landing hero (hero-mesh): soft cyan/sky
-     ellipses over #060d16 — no more near-black backdrop. */
-  background:
-    radial-gradient(
-      ellipse 70% 50% at 70% -8%,
-      rgb(var(--tv-accent-rgb) / 0.075) 0%,
-      transparent 70%
-    ),
-    radial-gradient(ellipse 50% 60% at 0% 85%, rgba(14, 165, 233, 0.055) 0%, transparent 60%),
-    var(--tv-bg);
-  background-attachment: fixed;
+  /* UN SEUL À-PLAT. Le fond portait deux ellipses colorées « d'ambiance » :
+     elles teintaient chaque carte posée dessus, faisaient respirer l'écran
+     sans qu'il se passe rien, et coûtaient un dégradé plein écran à chaque
+     repeint. Un poste de travail a un fond, pas une scène. */
+  background: var(--tv-bg);
   color: var(--tv-text);
   min-height: 100vh;
   min-height: 100dvh;
@@ -691,12 +719,15 @@ h6 {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+/* Une barre de défilement est un organe de chrome, pas un accent : elle est
+   grise. Colorée, elle mettait la couleur de marque sur le bord de CHAQUE
+   liste de l'application — l'exact inverse d'un accent. */
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--tv-accent-rgb) / 0.5);
+  background: rgb(255 255 255 / 0.14);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--tv-accent-rgb) / 0.8);
+  background: rgb(255 255 255 / 0.24);
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -735,8 +766,10 @@ input[type="number"] {
 .animate-slide-up {
   animation: slide-in-panel var(--duration-panel) var(--ease-out) forwards;
 }
+/* `animate-glow` est neutralisée : plus aucune surface ne rayonne. La classe
+   survit pour ne pas casser les appels existants, elle ne peint plus rien. */
 .animate-glow {
-  box-shadow: 0 0 24px rgb(var(--tv-accent-rgb) / 0.14);
+  box-shadow: none;
 }
 
 .stagger-0 {
@@ -765,33 +798,31 @@ input[type="number"] {
 }
 
 .glass {
-  /* Solid card surface — unified with the PNL/Performance KPI look
-   * (`.stat-card`), so every card across the product reads the same way:
-   * numbers and text printed on a quiet, solid navy, never on glass.
+  /* UNE plaque, une seule, partout : `.glass`, `.panel`, `.stat-card` et
+   * `.stat-card-elevated` rendent désormais exactement la même surface.
+   * Il n'y a plus de « verre » dans l'application — le nom reste parce que
+   * ~200 appels le portent, la matière, elle, a changé.
    *
-   * NO `backdrop-filter` HERE — and this is the single biggest rendering win in
-   * the product. `.glass` is the page-level card: a dashboard carries a dozen of
-   * them, Analytics more. Every one of those forced the compositor to snapshot
-   * the area behind it and run a 24px blur each time it repainted — on scroll,
-   * on hover, on every data update, on the device least able to afford it.
-   *
-   * What was actually behind them? A static gradient and two static orbs. The
-   * blur of a static gradient is… the same gradient. So the effect cost a great
-   * deal and showed almost nothing. The fill is raised to a near-solid navy and
-   * the panel keeps a hairline border, exactly like the KPI stat cards.
-   *
-   * Blur is KEPT where it means something: `.glass-strong` (modals and menus,
-   * which sit over real content), and the floating docks, which overlay the
-   * page as it scrolls under them. Those are a handful of surfaces at a time,
-   * not dozens. */
-  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+   * Ce que la carte a perdu, et pourquoi :
+   *   • le dégradé vertical — deux valeurs pour une seule plaque, invisible
+   *     à l'œil, mais qui empêchait deux cartes voisines de s'aligner ;
+   *   • le liseré interne blanc en haut (« sheen ») — un reflet simulé sur
+   *     une surface qui ne reflète rien ;
+   *   • l'ombre portée de 48px — sur un fond quasi noir, elle assombrissait
+   *     du noir.
+   * Reste ce qui porte l'information : une valeur, un liseré.
+   */
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border);
 }
 .glass-strong {
-  background: linear-gradient(135deg, rgba(10, 20, 34, 0.99) 0%, rgba(8, 15, 26, 0.98) 100%);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(56, 84, 116, 0.5);
+  /* Modales et menus : la seule famille de surfaces qui flotte réellement
+     au-dessus du contenu. Elle est donc OPAQUE (pas translucide : on ne
+     veut pas lire à travers une modale) et plus claire d'un cran que les
+     cartes, pour dire « ceci est devant ». Le flou disparaît — il n'y a
+     plus rien de coloré derrière à adoucir. */
+  background: var(--tv-plate-2);
+  border: 1px solid var(--tv-border-strong);
 }
 /* Premium card hover — transition only the properties that change (never `all`,
  * which would also animate layout). A layered shadow lifts the card while a
@@ -809,60 +840,42 @@ input[type="number"] {
 }
 @media (hover: hover) {
   .card-premium:hover {
-    /* Restrained lift: a tool's surfaces acknowledge the pointer, they don't
-     * perform. Shorter travel + a tighter, dimmer shadow than a marketing card. */
-    transform: translateY(-1px);
-    box-shadow:
-      0 12px 30px -14px rgba(0, 0, 0, 0.5),
-      0 3px 14px -8px rgb(var(--tv-accent-rgb) / 0.16);
-    border-color: rgb(var(--tv-accent-rgb) / 0.18);
+    /* Le survol ne SOULÈVE plus rien et n'allume plus rien : il ÉCLAIRCIT
+     * la plaque d'un cran et affirme son liseré. C'est la même réponse que
+     * donne une ligne de tableau — cohérente avec le reste de l'outil, et
+     * lisible même quand douze cartes sont à l'écran, là où douze cartes
+     * qui décollent donnaient le tournis. */
+    background: var(--tv-plate-2);
+    border-color: var(--tv-border-strong);
   }
 }
 
-/* Premium sheen: a faint theme-tinted top edge on glass panels for depth. Pure
-   box-shadow (no layout impact), so it layers safely over any card. */
-.glass,
+/* Les cartes ne portent AUCUNE ombre. L'ombre est réservée à ce qui flotte
+   vraiment : modales, menus, docks — et elle est déclarée là où ça flotte. */
+.glass {
+  box-shadow: none;
+}
 .glass-strong {
-  box-shadow:
-    inset 0 1px 0 rgb(var(--tv-highlight-rgb) / 0.05),
-    0 18px 48px -24px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--tv-elev-3);
 }
 
-/* ── Dense dashboard stat cards (TradeTanto / top-row KPI direction) ──
- * Solid, slightly elevated surfaces with a faint top highlight. Used for the
- * four headline metrics on Dashboard and the monthly summary on Calendar.
- * They intentionally do NOT use glass so numbers read first. */
-.stat-card {
-  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-2xl);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 30px -16px rgba(0, 0, 0, 0.55);
-}
-.stat-card-elevated {
-  /* Même dégradé que `.stat-card` / `.glass` / `.panel` : les cartes hero du
-     dashboard (Equity Curve, résumé du mois) partagent EXACTEMENT la surface
-     de toutes les autres — une seule grammaire visuelle, aucun halo vitreux. */
-  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-2xl);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 30px -16px rgba(0, 0, 0, 0.55);
-}
-
-/* Surface de carte unifiée — le même design sombre que les KPI Performance /
- * PnL / Monte Carlo / Checklist, appliqué à TOUTES les cartes du produit
- * (y compris les blocs Jarvis : insight, stats, card, brief, review, weekly).
- * Fond navy quasi-solide + liseré discret + liseré interne haut + ombre douce.
- * Le rayon vient des utilitaires d'usage (`rounded-2xl`/`rounded-3xl`). */
+/* ── Cartes de chiffres (KPI du dashboard, résumé mensuel du calendrier) ──
+ * Rigoureusement la même plaque que `.glass` et `.panel`. Il y avait trois
+ * classes pour trois nuances de la même carte ; il y en a toujours trois
+ * (les appels existent), mais elles rendent une seule et même surface.
+ * Une grammaire visuelle, pas trois. */
+.stat-card,
+.stat-card-elevated,
 .panel {
-  background: linear-gradient(180deg, rgba(16, 26, 42, 0.95) 0%, rgba(10, 17, 28, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 30px -16px rgba(0, 0, 0, 0.55);
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border);
+  box-shadow: none;
+}
+/* Seules les deux classes de KPI imposent leur rayon : `.panel` est posé sur
+   des éléments qui portent déjà le leur (`rounded-2xl` / `rounded-3xl`). */
+.stat-card,
+.stat-card-elevated {
+  border-radius: var(--radius-2xl);
 }
 
 /* Anatomie de carte du bloc checklist (StreakCard) — appliquée à toutes les
@@ -888,8 +901,8 @@ input[type="number"] {
   height: 2rem;
   flex-shrink: 0;
   border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(30, 46, 66, 0.6), rgba(16, 26, 42, 0.6));
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
   color: var(--tv-accent);
 }
 .card-header-title {
@@ -916,10 +929,11 @@ input[type="number"] {
   }
 }
 .metric-display {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #fff;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--tv-text-primary);
   line-height: 1;
 }
 .card-divider {
@@ -945,7 +959,10 @@ input[type="number"] {
   width: 100%;
   transform-origin: left center;
   transform: scaleX(var(--metric-fill, 0));
-  background: linear-gradient(90deg, var(--tv-accent), var(--tv-accent-2));
+  /* Un à-plat, pas un dégradé : la barre code une PROPORTION. Un dégradé y
+     ajoute une seconde variable (la teinte change le long de la barre) qui
+     ne veut rien dire et rend deux barres voisines incomparables. */
+  background: var(--tv-accent);
   transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -965,16 +982,8 @@ input[type="number"] {
   position: relative;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 0 12px rgb(var(--tv-accent-rgb) / 0.14);
-}
-.sidebar-brand-logo::before {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  background: radial-gradient(circle, rgb(var(--tv-accent-rgb) / 0.45) 0%, transparent 70%);
-  filter: blur(8px);
 }
 .sidebar-brand-logo img {
   position: relative;
@@ -1061,15 +1070,15 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: var(--tv-accent);
   cursor: pointer;
-  box-shadow: 0 0 10px rgb(var(--tv-accent-rgb) / 0.4);
 }
 
+/* Les « orbes » d'ambiance (gros ronds colorés floutés à 80px, posés derrière
+   la coquille de l'app, l'onboarding, les pages légales et l'écran d'erreur)
+   sont NEUTRALISÉES. C'était la même idée que le halo du curseur : de la
+   lumière décorative, coûteuse à peindre, qui teintait tout ce qui passait
+   devant. La classe reste inerte le temps de retirer les appels. */
 .auth-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.06;
-  animation: none;
+  display: none !important;
 }
 /* Continuously animating 80px blurs are a GPU drain on phones — freeze them
  * on small screens and for users who prefer reduced motion. */
@@ -1086,18 +1095,14 @@ input[type="range"]::-webkit-slider-thumb {
   background: transparent;
 }
 .bottom-nav-shell {
-  border-radius: 26px;
-  background: linear-gradient(180deg, rgba(12, 22, 37, 0.96) 0%, rgba(7, 13, 22, 0.98) 100%);
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.1);
-  box-shadow:
-    0 10px 34px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 rgba(255, 255, 255, 0.05) inset;
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
-  /* overflow VISIBLE : la pastille de l'onglet actif et le trait du haut
-     portent un halo (box-shadow) qui doit pouvoir déborder de la bulle sans
-     être découpé en carré par un `overflow: hidden`. */
+  border-radius: 22px;
+  /* La barre flotte réellement au-dessus du contenu qui défile dessous :
+     c'est l'un des trois seuls endroits où une ombre a un sens. Elle est
+     opaque (le flou coûtait un instantané de l'arrière-plan à chaque frame
+     de défilement) et son liseré est neutre, plus accentué. */
+  background: var(--tv-plate-2);
+  border: 1px solid var(--tv-border-strong);
+  box-shadow: var(--tv-elev-3);
   overflow: visible;
 }
 /* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
@@ -1105,14 +1110,9 @@ input[type="range"]::-webkit-slider-thumb {
    accent, mêmes ombres internes, même blur. La forme est posée sur l'élément
    (rounded-full = pilule, comme la nav). */
 .float-shell {
-  background: linear-gradient(180deg, rgba(12, 22, 37, 0.96) 0%, rgba(7, 13, 22, 0.98) 100%);
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.12);
-  box-shadow:
-    0 10px 34px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 rgba(255, 255, 255, 0.05) inset;
-  backdrop-filter: blur(26px);
-  -webkit-backdrop-filter: blur(26px);
+  background: var(--tv-plate-2);
+  border: 1px solid var(--tv-border-strong);
+  box-shadow: var(--tv-elev-3);
 }
 .bottom-nav-item {
   position: relative;
@@ -1143,12 +1143,11 @@ input[type="range"]::-webkit-slider-thumb {
   width: 26px;
   height: 2px;
   border-radius: 0 0 3px 3px;
-  background: linear-gradient(90deg, var(--tv-accent), var(--tv-highlight));
+  background: var(--tv-accent);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .bottom-nav-bar-active {
   transform: translateX(-50%) scaleX(1);
-  box-shadow: 0 0 10px rgb(var(--tv-highlight-rgb) / 0.7);
 }
 
 /* Icon sits on a pill that fills with a soft accent glow when active */
@@ -1166,10 +1165,6 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .bottom-nav-icon-active {
   background: rgb(var(--tv-accent-rgb) / 0.14);
-  box-shadow:
-    inset 0 0 0 1px rgb(var(--tv-highlight-rgb) / 0.18),
-    0 0 14px rgb(var(--tv-accent-rgb) / 0.18);
-  transform: translateY(-1px);
 }
 
 /* The "add trade" FAB.
@@ -1188,15 +1183,19 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--tv-accent), var(--tv-accent-2));
-  box-shadow:
-    0 4px 22px rgb(var(--tv-accent-rgb) / 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  border: 1px solid rgb(var(--tv-highlight-rgb) / 0.35);
+  /* Un à-plat vert, un chiffre de contraste maximal dessus. Le bouton était
+     un dégradé cerclé d'un liseré clair et posé sur un halo de 22px : trois
+     effets pour dire « appuie ici », là où la taille, la position centrale et
+     la seule couleur saturée de l'écran le disaient déjà. */
+  background: var(--tv-accent);
+  color: #04140d;
+  border: none;
   transition: transform var(--tv-dur-2) var(--tv-ease);
 }
 .fab-button:active {
-  transform: scale(0.88) rotate(90deg);
+  /* La rotation de 90° était une cabriole : le bouton ouvre un formulaire,
+     il ne se transforme pas. Reste l'enfoncement, qui est un vrai retour. */
+  transform: scale(0.92);
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
@@ -1208,7 +1207,6 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .star-on {
   animation: scale-in var(--duration-micro) var(--ease-out);
-  filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.55));
 }
 
 .trade-card {
@@ -1222,9 +1220,9 @@ input[type="range"]::-webkit-slider-thumb {
 .skeleton {
   background: linear-gradient(
     100deg,
-    rgba(30, 41, 59, 0.45) 40%,
-    rgba(56, 72, 100, 0.55) 50%,
-    rgba(30, 41, 59, 0.45) 60%
+    rgb(255 255 255 / 0.04) 40%,
+    rgb(255 255 255 / 0.09) 50%,
+    rgb(255 255 255 / 0.04) 60%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
@@ -1240,7 +1238,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, var(--tv-accent, #22d3ee), var(--tv-accent-2, #14b8a6));
+  background: var(--tv-accent);
   animation: pulse 1.2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1273,7 +1271,8 @@ input[type="range"]::-webkit-slider-thumb {
   }
   100% {
     opacity: 0.15;
-    transform: translate3d(var(--tw-drift, 40px), 112vh, 0) rotate(calc(var(--tw-rotate, 0deg) + 540deg));
+    transform: translate3d(var(--tw-drift, 40px), 112vh, 0)
+      rotate(calc(var(--tw-rotate, 0deg) + 540deg));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1320,16 +1319,21 @@ svg.lucide {
   font-weight: 600;
   letter-spacing: 0;
   border-radius: 0.625rem;
-  /* Signature TradeVault — cyan→teal, texte clair, sans glow. */
-  background: linear-gradient(90deg, #06b6d4, #14b8a6);
-  color: #ffffff;
-  transition: filter 0.16s ease, opacity 0.16s ease;
+  /* Un à-plat vert, sur du texte quasi noir. Le dégradé cyan→teal était le
+     dernier vestige de l'ancienne identité, et il était codé EN DUR : le
+     bouton principal restait cyan même quand tout le reste changeait de
+     thème. Il suit désormais l'accent. */
+  background: var(--tv-accent);
+  color: #04140d;
+  transition:
+    background-color 0.16s ease,
+    opacity 0.16s ease;
 }
 .btn-primary:hover {
-  filter: brightness(1.05);
+  background: var(--tv-highlight);
 }
 .btn-primary:active {
-  filter: brightness(0.97);
+  background: var(--tv-accent-2);
 }
 .btn-primary:disabled {
   opacity: 0.45;
@@ -1439,6 +1443,70 @@ a:focus-visible,
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   letter-spacing: -0.01em;
+}
+
+/* ══ LA SURFACE D'ACCENT ══
+ *
+ * Un à-plat vert avec du texte quasi noir dessus. C'est la seule surface
+ * pleinement colorée du produit : l'action principale, la pastille active,
+ * la vignette d'icône qui compte.
+ *
+ * Elle remplace ~85 appels à `bg-gradient-to-r from-cyan-500 to-teal-500` et
+ * ses variantes. Le dégradé posait deux problèmes bien réels :
+ *   • il était CODÉ EN DUR sur la rampe cyan/teal — donc la moitié des
+ *     boutons de l'application ignorait le thème actif ;
+ *   • du blanc sur du vert vif plafonne à 2,3:1. Le libellé du bouton le plus
+ *     important du produit était le texte le moins lisible de l'écran. Le
+ *     texte quasi noir sur le même vert donne 8,4:1.
+ */
+.tv-accent-fill {
+  background: var(--tv-accent);
+  color: #04140d;
+}
+@media (hover: hover) {
+  .tv-accent-fill:hover {
+    background: var(--tv-highlight);
+  }
+}
+
+/* ══ LE CHIFFRE ══
+ *
+ * Les chiffres de tête — le P&L du jour, le solde, le drawdown, la cible —
+ * passent en CHASSE FIXE. C'est le signe distinctif des plateformes que le
+ * trader prend au sérieux (Topstep, Lucid, un terminal Bloomberg) et ce
+ * n'est pas une coquetterie : une chasse fixe donne à chaque chiffre la
+ * même largeur, donc à chaque montant la même longueur pour un même nombre
+ * de chiffres. Deux colonnes de montants s'alignent d'elles-mêmes, et un
+ * total qui passe de 999 à 1 000 ne fait plus glisser la ligne.
+ *
+ * C'est réservé aux chiffres de tête : le texte courant, les libellés et
+ * les tableaux denses restent en Inter, qui tient plus de mots sur la même
+ * largeur. Une interface entièrement en chasse fixe est un déguisement.
+ */
+.tv-figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  /* La chasse fixe est large : on la resserre pour qu'un « -$1 284,50 »
+     tienne dans la même case qu'avant. */
+  letter-spacing: -0.03em;
+  /* 600, pas 800 : en chasse fixe, un chiffre gras devient un pavé. La
+     présence vient de la taille et de l'alignement, pas de l'encre. */
+  font-weight: 600;
+}
+
+/* ══ LE LIBELLÉ ══
+ *
+ * Petites capitales espacées, gris sourd : le vocabulaire d'étiquetage de
+ * Topstep (« BAL: », « MLL: », « RPNL: ») et de Lucid (« START », « TARGET »,
+ * « EOD DRAWDOWN »). Un libellé n'est pas une phrase — il nomme la case, et
+ * doit pouvoir être ignoré une fois qu'on sait ce qu'il y a dedans. */
+.tv-label {
+  font-size: var(--tv-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tv-text-muted);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1588,47 +1656,30 @@ a:focus-visible,
   color: rgb(226 232 240);
   background-color: rgba(255, 255, 255, 0.05);
 }
+/* L'onglet actif est une pastille CLAIRE sur un cadre sombre — la grammaire
+   d'un contrôle segmenté (macOS, Linear, Lucid), pas d'un bouton allumé. Il se
+   lit par le contraste, comme un onglet de classeur, et n'a donc besoin ni de
+   teinte d'accent ni d'ombre colorée. */
 .section-tab-active {
-  color: #fff;
-  background: rgb(var(--tv-accent-rgb) / 0.16);
-  box-shadow:
-    inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.25),
-    0 2px 8px rgb(var(--tv-accent-rgb) / 0.12);
+  color: var(--tv-text-primary);
+  background: var(--tv-plate-3);
+  box-shadow: inset 0 0 0 1px var(--tv-border-strong);
 }
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
 
-/* ── Mobile : onglets en icônes seules, une pulsation dit quelle vue est
- * affichée (le texte, illisible à 6 onglets sur 380px, revient à partir
- * de md). L'animation ne touche que transform/opacity — aucun reflow. */
+/* ── Mobile : onglets en icônes seules (le texte, illisible à six onglets sur
+ * 380px, revient à partir de md).
+ *
+ * L'onglet actif PULSAIT en boucle, indéfiniment, tant que la page restait
+ * ouverte. C'était le gadget le plus coûteux du produit — un contrôle qui
+ * s'agite en permanence pour dire ce que sa couleur dit déjà — et le premier
+ * à disparaître. Il est actif, il est plus clair : c'est tout. */
 @media (max-width: 767px) {
   .section-tab {
     padding: 0 0.7rem;
-  }
-  .section-tab-active {
-    animation: section-tab-pop 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-  }
-}
-@keyframes section-tab-pop {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow:
-      inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.25),
-      0 2px 8px rgb(var(--tv-accent-rgb) / 0.12);
-  }
-  50% {
-    transform: scale(1.1);
-    box-shadow:
-      inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.55),
-      0 0 16px rgb(var(--tv-accent-rgb) / 0.35);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .section-tab-active {
-    animation: none;
   }
 }
 
@@ -1645,9 +1696,9 @@ a:focus-visible,
   z-index: 50;
   padding: 0.3rem 0.55rem;
   border-radius: 0.5rem;
-  background: #0d1a2b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgb(226 232 240);
+  background: var(--tv-plate-3);
+  border: 1px solid var(--tv-border-strong);
+  color: var(--tv-text-primary);
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1;

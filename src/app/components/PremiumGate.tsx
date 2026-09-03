@@ -115,7 +115,7 @@ export function PreviewWall({
       {/* L'appel à l'action — UNE barre basse, pas une fenêtre : la page reste
           lisible au-dessus. Ce qu'on voit, le prix, le geste — en une ligne. */}
       <div className="absolute inset-x-0 bottom-0 flex justify-center px-4 pb-5 sm:pb-6">
-        <div className="w-full max-w-2xl rounded-2xl border border-white/[0.12] bg-[#060f18]/92 p-3.5 shadow-[0_-16px_80px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl sm:p-4">
+        <div className="w-full max-w-2xl rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-3.5 shadow-[var(--tv-elev-3)] sm:p-4">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-[15px] font-bold leading-snug text-white">
@@ -134,7 +134,7 @@ export function PreviewWall({
             </div>
             <button
               onClick={onUpgrade}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-5 py-3 text-sm font-bold text-[#04101a] shadow-lg shadow-cyan-500/25 transition hover:brightness-110"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-sm font-bold transition"
             >
               <Lock className="h-4 w-4" />
               {fr ? `Passer à ${tier.name.fr}` : `Go ${tier.name.en}`}

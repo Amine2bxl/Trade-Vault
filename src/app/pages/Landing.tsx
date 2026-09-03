@@ -151,15 +151,15 @@ function Sparkline({ points, up = true }: { points: string; up?: boolean }) {
     <svg viewBox="0 0 96 32" className="h-8 w-full" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id={gid.current} x1="0" x2="0" y1="0" y2="1">
-          <stop stopColor={up ? "#22d3ee" : "#f87171"} stopOpacity=".25" />
-          <stop offset="1" stopColor={up ? "#22d3ee" : "#f87171"} stopOpacity="0" />
+          <stop stopColor={up ? "var(--tv-highlight)" : "#f87171"} stopOpacity=".25" />
+          <stop offset="1" stopColor={up ? "var(--tv-highlight)" : "#f87171"} stopOpacity="0" />
         </linearGradient>
       </defs>
       <polygon points={`${points} 96,32 0,32`} fill={`url(#${gid.current})`} />
       <polyline
         points={points}
         fill="none"
-        stroke={up ? "#22d3ee" : "#f87171"}
+        stroke={up ? "var(--tv-highlight)" : "#f87171"}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -176,7 +176,6 @@ function HeroProductVisual() {
   const pts = "0,112 38,96 76,102 114,74 152,88 190,56 228,70 266,36 304,50 340,20";
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-cyan-500/[.08] blur-3xl glow-pulse" />
       <div className="relative rounded-2xl border border-white/10 bg-[#0a1625]/95 p-5 shadow-[0_30px_80px_rgba(0,0,0,.6)] backdrop-blur-xl">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -199,8 +198,8 @@ function HeroProductVisual() {
           >
             <defs>
               <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1">
-                <stop stopColor="#22d3ee" stopOpacity=".25" />
-                <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+                <stop stopColor="var(--tv-highlight)" stopOpacity=".25" />
+                <stop offset="1" stopColor="var(--tv-highlight)" stopOpacity="0" />
               </linearGradient>
             </defs>
             {[30, 65, 100].map((yy) => (
@@ -215,7 +214,7 @@ function HeroProductVisual() {
             <polyline
               points={pts}
               fill="none"
-              stroke="#22d3ee"
+              stroke="var(--tv-highlight)"
               strokeWidth="2.5"
               vectorEffect="non-scaling-stroke"
               className="chart-line"
@@ -483,7 +482,7 @@ function LandingPage() {
   };
 
   return (
-    <div className="landing-root min-h-screen overflow-x-clip bg-[#060d16] text-white selection:bg-cyan-400 selection:text-[#060d16]">
+    <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white selection:bg-cyan-400 selection:text-[var(--tv-bg)]">
       <CursorGlow />
       <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
 
@@ -521,7 +520,7 @@ function LandingPage() {
                     <path
                       d="M4 14C40 6 70 18 105 12S190 4 226 12S280 16 296 8"
                       fill="none"
-                      stroke="#22d3ee"
+                      stroke="var(--tv-highlight)"
                       strokeWidth="4"
                       strokeLinecap="round"
                     />

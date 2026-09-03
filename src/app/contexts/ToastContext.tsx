@@ -28,7 +28,7 @@ const ICONS: Record<ToastType, ReactNode> = {
   info: <Info className="w-4 h-4 text-cyan-400 shrink-0" />,
 };
 const ACCENT: Record<ToastType, string> = {
-  success: "border-emerald-500/20 shadow-emerald-500/10",
+  success: "border-emerald-500/20",
   error: "border-red-500/20 shadow-red-500/10",
   info: "border-cyan-500/20",
 };

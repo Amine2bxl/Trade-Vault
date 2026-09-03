@@ -26,7 +26,7 @@ const ROOT_DESCRIPTION =
  *  Roboto lui-même. Roboto Mono sert aux rares données techniques (codes,
  *  heures). */
 const GOOGLE_FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap";
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap";
 
 import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../app/components/ErrorScreen";
@@ -70,7 +70,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover",
       },
-      { name: "theme-color", content: "#060810" },
+      { name: "theme-color", content: "#0a0b0d" },
       {
         name: "trustpilot-one-time-domain-verification-id",
         content: "3a2800eb-0ad2-4c9a-bda2-1d3833f70ef0",

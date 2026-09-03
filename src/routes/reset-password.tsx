@@ -55,19 +55,18 @@ function ResetPasswordPage() {
   return (
     <div
       className="fixed inset-0 flex items-center justify-center min-h-screen overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #060810 0%, #0a0f1e 40%, #0c1222 100%)" }}
+      style={{ background: "var(--tv-bg)" }}
     >
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="glass-strong rounded-3xl p-8 shadow-2xl shadow-black/40">
           <div className="text-center mb-8">
             <div className="relative w-14 h-14 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-2xl bg-blue-500/40 blur-xl opacity-70" />
               <img
                 src={logoSrc}
                 alt="TradeVault"
                 width={56}
                 height={56}
-                className="relative w-14 h-14 rounded-2xl drop-shadow-[0_0_14px_rgba(59,130,246,0.5)]"
+                className="relative w-14 h-14 rounded-2xl"
               />
             </div>
             <h1 className="text-2xl font-bold text-white">Reset Password</h1>

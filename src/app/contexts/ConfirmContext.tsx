@@ -66,9 +66,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 onClick={() => settle(true)}
                 className={cn(
                   "px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-lg",
-                  pending.danger
-                    ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-400 hover:to-rose-400 shadow-red-500/20"
-                    : "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400",
+                  pending.danger ? "bg-red-500 hover:bg-red-400" : "tv-accent-fill",
                 )}
               >
                 {t("common.confirm")}

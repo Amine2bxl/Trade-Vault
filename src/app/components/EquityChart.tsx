@@ -149,7 +149,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
           activeDot={{
             r: 5,
             strokeWidth: 2.5,
-            stroke: "#0a0f1e",
+            stroke: "var(--tv-plate-1)",
             fill: accent,
             filter: "url(#dotGlow)",
           }}
@@ -169,7 +169,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                 cy={props.cy}
                 r={6}
                 fill={isPositive ? accent : "#ef4444"}
-                stroke="#0a0f1e"
+                stroke="var(--tv-plate-1)"
                 strokeWidth={2.5}
                 filter="url(#dotGlow)"
               />

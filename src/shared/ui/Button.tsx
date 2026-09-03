@@ -19,16 +19,18 @@ const VARIANT: Record<ButtonVariant, string> = {
   ghost: "btn-ghost",
   // Named versions of the recurring inline styles — calm, hairline-bordered.
   subtle:
-    "inline-flex items-center justify-center gap-2 rounded-lg border border-white/[0.07] " +
-    "bg-transparent font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-white",
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--tv-border)] " +
+    "bg-transparent font-medium text-slate-400 transition " +
+    "hover:border-[var(--tv-border-strong)] hover:bg-white/[0.04] hover:text-white",
   danger:
     "inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 " +
     "bg-transparent font-medium text-red-400/90 transition hover:bg-red-500/10 hover:text-red-300",
   // Same toolbar shape as `subtle` (Export CSV / Delete all) but tinted with the
   // product accent so the primary action stands out while staying in the family.
   accent:
-    "inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-500/25 " +
-    "bg-transparent font-medium text-cyan-300 transition hover:bg-cyan-500/10 hover:text-cyan-200",
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--tv-border-accent)] " +
+    "bg-transparent font-medium text-[var(--tv-highlight)] transition " +
+    "hover:bg-[rgb(var(--tv-accent-rgb)/0.12)]",
 };
 
 // Composed variants get Tailwind sizing; the CSS-class variants (`.btn-*`)

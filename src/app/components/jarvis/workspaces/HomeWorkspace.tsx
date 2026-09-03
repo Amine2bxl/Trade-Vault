@@ -302,13 +302,12 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-[1100px] mx-auto w-full">
       {/* En-tête — le premier écran d'un assistant personnel, pas une page de stats. */}
       <div className="relative mb-6">
-        <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-32 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
           {/* Avatar Jarvis — la voix clonée, la même identité partout */}
           <div className="relative shrink-0">
             <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-md" />
-            <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
-              <Bot className="w-7 h-7 text-white" />
+            <div className="relative grid h-14 w-14 place-items-center rounded-2xl tv-accent-fill">
+              <Bot className="w-7 h-7" />
             </div>
           </div>
           <div className="min-w-0">
@@ -448,8 +447,8 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           <div className="flex items-start gap-3">
             <span className="relative shrink-0">
               <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-                <Sparkles className="w-4.5 h-4.5 text-white" />
+              <span className="relative grid h-10 w-10 place-items-center rounded-xl tv-accent-fill">
+                <Sparkles className="w-4.5 h-4.5" />
               </span>
             </span>
             <div className="min-w-0 flex-1">
@@ -475,7 +474,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 disabled={ruleSaving}
                 className={cn(
                   "mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white",
-                  "bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110",
+                  "tv-accent-fill",
                   "transition disabled:opacity-60",
                 )}
               >

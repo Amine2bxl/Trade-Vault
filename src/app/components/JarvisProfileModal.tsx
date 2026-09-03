@@ -88,8 +88,8 @@ export default function JarvisProfileModal({
         <div className="flex items-start gap-3 mb-5">
           <div className="relative shrink-0">
             <div className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md" />
-            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="relative w-11 h-11 rounded-2xl tv-accent-fill flex items-center justify-center">
+              <Sparkles className="w-5 h-5" />
             </div>
           </div>
           <div className="min-w-0">
@@ -174,7 +174,7 @@ export default function JarvisProfileModal({
             className={cn(
               "px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2",
               canSave && !saving
-                ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white"
+                ? "tv-accent-fill"
                 : "bg-slate-800 text-slate-500 cursor-not-allowed",
             )}
           >

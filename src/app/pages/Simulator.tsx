@@ -582,7 +582,7 @@ function Stat({
         {icon}
         {label}
       </div>
-      <p className="text-xl font-display tabular-nums mt-1">{value}</p>
+      <p className="text-xl tv-figure mt-1">{value}</p>
       <p className="text-[11px] text-slate-500 tabular-nums">{hint}</p>
     </div>
   );

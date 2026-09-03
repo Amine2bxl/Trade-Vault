@@ -767,12 +767,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
              quoi demander, à partir des données réelles du trader. */
           <div className="animate-fade-in-up">
             <div className="relative">
-              <div className="pointer-events-none absolute -top-8 left-0 h-24 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
               <div className="relative flex items-center gap-3">
                 <span className="relative shrink-0">
                   <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/35 blur-md" />
-                  <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
-                    <Bot className="w-5 h-5 text-white" />
+                  <span className="relative grid h-11 w-11 place-items-center rounded-2xl tv-accent-fill">
+                    <Bot className="w-5 h-5" />
                   </span>
                 </span>
                 <div className="min-w-0">
@@ -813,7 +812,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               /* L'utilisateur garde la bulle : l'asymétrie devient le repère de
                  tour, sans enfermer le contenu analytique de Jarvis. */
               <div key={m.id} className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-medium text-white">
+                <div className="max-w-[85%] rounded-2xl rounded-br-md tv-accent-fill px-4 py-2.5 text-sm font-medium">
                   {textOf(m) || ""}
                 </div>
               </div>
@@ -825,8 +824,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 className={cn("animate-fade-in-up", i > 0 && "border-t border-white/[0.05] pt-5")}
               >
                 <div className="flex items-center gap-2 mb-2.5">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-                    <Bot className="w-3.5 h-3.5 text-white" />
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
+                    <Bot className="w-3.5 h-3.5" />
                   </span>
                   <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
                     {t("assistant.title")}
@@ -864,8 +863,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           /* Chargement informatif : on annonce ce que Jarvis lit réellement. */
           <div className="animate-fade-in border-t border-white/[0.05] pt-5">
             <div className="flex items-center gap-2 mb-2.5">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-                <Bot className="w-3.5 h-3.5 text-white" />
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
+                <Bot className="w-3.5 h-3.5" />
               </span>
               <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
                 {t("assistant.title")}
@@ -901,7 +900,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             </div>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white hover:brightness-110 transition"
+              className="shrink-0 px-3 py-1.5 rounded-lg tv-accent-fill text-xs font-bold transition"
             >
               {t("credits.upgrade")}
             </button>

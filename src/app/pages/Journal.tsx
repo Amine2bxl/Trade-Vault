@@ -571,7 +571,7 @@ export default function Journal({
       <Card className="hidden md:block overflow-hidden">
         <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[880px]">
-            <thead className="sticky top-0 z-10 bg-[#0a0f1e]/85 backdrop-blur-md">
+            <thead className="sticky top-0 z-10 bg-[var(--tv-plate-1)]/95 backdrop-blur-md">
               <tr className="border-b border-white/[0.06]">
                 {(["date", "symbol", "strategy", "pnl", "rMultiple"] as SortKey[]).map((key) => (
                   <th
@@ -796,7 +796,7 @@ function SummaryTile({
       </div>
       <div
         className={cn(
-          "mt-1 font-display text-base md:text-lg font-extrabold tabular-nums tracking-tight",
+          "mt-1 tv-figure text-base md:text-lg",
           tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white",
         )}
       >

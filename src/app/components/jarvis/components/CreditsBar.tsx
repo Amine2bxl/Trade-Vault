@@ -57,7 +57,7 @@ export default function CreditsBar() {
             />
             <defs>
               <linearGradient id="creditsGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#22d3ee" />
+                <stop offset="0%" stopColor="var(--tv-highlight)" />
                 <stop offset="100%" stopColor="#2dd4bf" />
               </linearGradient>
             </defs>
@@ -69,7 +69,7 @@ export default function CreditsBar() {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-sm font-extrabold text-white tabular-nums leading-none">
+            <span className="tv-figure text-sm text-white leading-none">
               {unlimited ? "∞" : remaining}
             </span>
             <span className="text-[11px] text-slate-500 leading-none">

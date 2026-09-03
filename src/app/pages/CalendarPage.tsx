@@ -309,14 +309,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">
               {card.label}
             </div>
-            <div
-              className={cn(
-                "font-display text-base md:text-xl font-extrabold tabular-nums",
-                card.color,
-              )}
-            >
-              {card.value}
-            </div>
+            <div className={cn("tv-figure text-base md:text-xl", card.color)}>{card.value}</div>
           </div>
         ))}
       </div>
@@ -459,7 +452,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                         <div className="flex-1 flex flex-col justify-center">
                           <div
                             className={cn(
-                              "font-display text-sm md:text-lg font-extrabold tabular-nums leading-none",
+                              "tv-figure text-sm md:text-lg leading-none",
                               isAllBE
                                 ? "text-slate-300"
                                 : isWin
@@ -507,7 +500,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                   </div>
                   <div
                     className={cn(
-                      "font-display text-[13px] md:text-sm font-extrabold tabular-nums leading-none",
+                      "tv-figure text-[13px] md:text-sm leading-none",
                       week.days === 0
                         ? "text-slate-600"
                         : week.pnl > 0

@@ -120,7 +120,7 @@ export default function CompAccessSection() {
   return (
     <div className="glass-strong space-y-4 rounded-3xl p-5">
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-600">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-500">
           <Gift className="h-4 w-4 text-white" />
         </span>
         <div className="min-w-0">

@@ -92,7 +92,6 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import { PageActionsProvider } from "./contexts/PageActionsContext";
 const Landing = lazy(() => import("./pages/Landing"));
-import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
@@ -715,18 +714,9 @@ function AppContent() {
     // scrolls inside <main>, so the sidebar rail never moves on any page.
     <div className="relative flex h-dvh text-white overflow-hidden">
       <FirstSessionWelcome />
-      <CursorGlow />
-      {/* Ambient background glow */}
-      <div className="shell-bg-orbs pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          className="auth-orb w-[600px] h-[600px] bg-cyan-600 -top-64 -right-64"
-          style={{ animationDelay: "0s" }}
-        />
-        <div
-          className="auth-orb w-[500px] h-[500px] bg-teal-600 top-1/2 -left-64"
-          style={{ animationDelay: "-7s" }}
-        />
-      </div>
+      {/* Le halo qui suivait le curseur et les deux orbes cyan/teal d'ambiance
+          ont été retirés : de la lumière décorative, repeinte en permanence,
+          qui teintait chaque carte posée devant elle. Le fond est un à-plat. */}
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} />
       <main className="app-main relative flex-1 overflow-y-auto">
         {/* Onglets de la section courante à gauche, actions mobiles à droite —

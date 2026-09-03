@@ -111,8 +111,8 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
         <div className="relative shrink-0">
           <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-          <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="relative grid h-10 w-10 place-items-center rounded-xl tv-accent-fill">
+            <Bot className="w-5 h-5" />
           </div>
         </div>
         <div className="flex-1 min-w-0">
@@ -180,7 +180,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
       <div className="flex items-center gap-2 px-5 py-4 border-t border-white/[0.06]">
         <button
           onClick={go}
-          className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition inline-flex items-center justify-center gap-1.5"
+          className="flex-1 h-11 rounded-xl text-sm font-bold tv-accent-fill transition inline-flex items-center justify-center gap-1.5"
         >
           {ctaLabel}
           <ArrowRight className="w-4 h-4" />

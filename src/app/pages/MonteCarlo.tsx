@@ -127,7 +127,7 @@ function KpiCard({
       <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
         {label}
       </div>
-      <div className={cn("font-display text-base font-extrabold tabular-nums", cls)}>{value}</div>
+      <div className={cn("tv-figure text-base", cls)}>{value}</div>
       {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
     </div>
   );
@@ -180,8 +180,8 @@ function EquityCurves({
           <ComposedChart data={chartData} margin={{ top: 20, right: 10, bottom: 20, left: 0 }}>
             <defs>
               <linearGradient id="mcBand" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.08} />
-                <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.08} />
+                <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke="rgba(148,163,184,0.06)" strokeDasharray="4 8" vertical={false} />
@@ -217,7 +217,13 @@ function EquityCurves({
             />
 
             {/* Median line */}
-            <Line type="monotone" dataKey="p50" stroke="#22d3ee" strokeWidth={1.5} dot={false} />
+            <Line
+              type="monotone"
+              dataKey="p50"
+              stroke="var(--tv-highlight)"
+              strokeWidth={1.5}
+              dot={false}
+            />
 
             <Tooltip
               content={({ active, payload }) => {
@@ -402,7 +408,7 @@ export default function MonteCarloPage({ trades }: Props) {
       <button
         onClick={handleRun}
         disabled={running || trades.length < 5}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-sm font-bold hover:brightness-110 transition disabled:opacity-50"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl tv-accent-fill text-sm font-bold transition disabled:opacity-50"
       >
         {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
         {running ? "Running..." : `Run ${simCount.toLocaleString()} simulations`}

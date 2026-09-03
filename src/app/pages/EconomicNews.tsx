@@ -569,7 +569,7 @@ export default function EconomicNews() {
             </div>
           </div>
           <div className="shrink-0 text-right">
-            <div className="font-display text-xl font-extrabold text-cyan-300 tabular-nums leading-none">
+            <div className="tv-figure text-xl text-cyan-300 leading-none">
               {formatCountdown(new Date(nextEvent.startsAt).getTime() - now)}
             </div>
           </div>

@@ -210,14 +210,7 @@ function PlanColumn({
 
       {/* Prix — un seul chiffre à lire. */}
       <div className="mt-5 flex items-end gap-1.5">
-        <span
-          className={cn(
-            "font-display font-extrabold tracking-tight text-white tabular-nums",
-            isPro ? "text-5xl" : "text-4xl",
-          )}
-        >
-          {price}
-        </span>
+        <span className={cn("tv-figure text-white", isPro ? "text-5xl" : "text-4xl")}>{price}</span>
         <span className="mb-1.5 text-sm text-slate-400">
           {isFree ? (fr ? "/ pour toujours" : "/ forever") : fr ? "/mois" : "/month"}
         </span>
@@ -267,7 +260,7 @@ function PlanColumn({
             className={cn(
               "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[15px] font-bold transition disabled:opacity-60",
               isPro
-                ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-[#04101a] shadow-lg shadow-cyan-500/25 hover:brightness-110"
+                ? "tv-accent-fill"
                 : "border border-white/[0.12] bg-white/[0.04] text-white hover:bg-white/[0.08]",
             )}
           >

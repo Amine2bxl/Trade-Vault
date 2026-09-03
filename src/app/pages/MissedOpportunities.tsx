@@ -366,7 +366,7 @@ function MissedTile({ label, value, accent }: { label: string; value: string; ac
       </div>
       <div
         className={cn(
-          "mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight",
+          "mt-0.5 tv-figure text-[15px] md:text-base",
           accent ? "text-amber-300" : "text-white",
         )}
       >
@@ -658,7 +658,6 @@ function MissedEditor({
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
       {/* Header premium — même architecture que New Trade */}
       <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-amber-500/10 blur-2xl" />
         <div className="relative flex items-center gap-2.5 min-w-0">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
             <Target className="w-4 h-4 text-white" />

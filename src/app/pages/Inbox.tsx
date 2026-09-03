@@ -170,8 +170,8 @@ export default function Inbox() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Bell className="w-4 h-4 text-white" />
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+            <Bell className="w-4 h-4" />
           </span>
           <div>
             <h1 className="text-lg font-bold text-white">{t("inbox.title")}</h1>

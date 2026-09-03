@@ -352,7 +352,7 @@ export default function AccountSwitcher({
                           className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
                           style={{ background: a.color }}
                         >
-                          <Check className="w-3 h-3 text-[#0a0f1e]" strokeWidth={3} />
+                          <Check className="w-3 h-3 text-[#04140d]" strokeWidth={3} />
                         </span>
                       )}
                     </div>
@@ -432,7 +432,7 @@ export default function AccountSwitcher({
           title={t("account.switch")}
           className={cn(
             "relative w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 transition overflow-hidden text-left",
-            "bg-gradient-to-br from-[#0f1c2f] to-[#0a1525]",
+            "bg-[var(--tv-plate-2)]",
             "border border-white/[0.08] hover:border-cyan-500/30 hover:from-[#122038] hover:to-[#0c182a]",
             "shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.04)]",
             "group/acc",
@@ -470,7 +470,7 @@ export default function AccountSwitcher({
           </span>
 
           <span className="text-right shrink-0">
-            <span className="block font-display text-[15px] font-extrabold text-white tabular-nums leading-tight">
+            <span className="block tv-figure text-[15px] text-white leading-tight">
               {fmtBalance}
             </span>
             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-500/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-300 border border-cyan-500/20">
@@ -876,7 +876,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
           className={cn(
             "px-5 py-2.5 rounded-xl text-sm font-bold transition whitespace-nowrap",
             name.trim() && !busy
-              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:brightness-110"
+              ? "tv-accent-fill"
               : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
           )}
         >

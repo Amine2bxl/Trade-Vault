@@ -1488,7 +1488,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                     onChange={(e) => patch({ timeZone: e.target.value })}
                   >
                     {tzOptions.map((z) => (
-                      <option key={z} value={z} className="bg-[#0a0f1e]">
+                      <option key={z} value={z} className="bg-[var(--tv-plate-2)]">
                         {z}
                       </option>
                     ))}
@@ -1571,7 +1571,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                         }));
                         void syncWizardRules(user?.id, generated.items);
                       }}
-                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 transition"
+                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold tv-accent-fill transition"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> {t("chk.applyRecommended")}
                     </button>
@@ -1831,7 +1831,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   </div>
                   <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250"
+                      className="h-full rounded-full bg-[var(--tv-accent)] transition duration-250"
                       style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
                     />
                   </div>
@@ -2029,7 +2029,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   "w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wide transition",
                   !allGates || day.locked
                     ? "bg-white/[0.04] border border-white/[0.08] text-slate-600 cursor-not-allowed"
-                    : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.01] active:scale-95",
+                    : "tv-accent-fill hover:scale-[1.01] active:scale-95",
                 )}
               >
                 {day.locked ? t("chk.lockedBtn") : t("chk.initiate")}
@@ -2058,8 +2058,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       {voice.show && (
         <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
           <div className="relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3">
-            <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
-            <span className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
+            <div className="pointer-events-none absolute -inset-px rounded-2xl tv-accent-fill opacity-60" />
+            <span className="relative flex items-center justify-center w-8 h-8 rounded-lg tv-accent-fill shrink-0">
               {voice.speaking && (
                 <span className="absolute -inset-1 rounded-xl bg-cyan-500/40 blur-md animate-pulse" />
               )}
@@ -2110,7 +2110,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   cy="100"
                   r="80"
                   fill="none"
-                  stroke="#22d3ee"
+                  stroke="var(--tv-highlight)"
                   strokeWidth="8"
                   strokeLinecap="round"
                   pathLength="100"
@@ -2118,7 +2118,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   strokeDashoffset={((config.countdown - countdownVal) / config.countdown) * 100}
                   style={{
                     transition: "stroke-dashoffset 1s linear",
-                    filter: "drop-shadow(0 0 8px rgba(34,211,238,0.5))",
                   }}
                 />
               </svg>
@@ -2141,8 +2140,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-cyan-500/20">
             <div className="relative w-20 h-20 mx-auto mb-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-                <Lock className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 rounded-full tv-accent-fill flex items-center justify-center">
+                <Lock className="w-8 h-8" />
               </div>
             </div>
             <div className="text-lg font-bold text-white mb-3">Edge Locked</div>

@@ -163,9 +163,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="font-display text-3xl font-extrabold tabular-nums tracking-tight text-white">
-                    {perMonth(tier)}
-                  </span>
+                  <span className="tv-figure text-3xl text-white">{perMonth(tier)}</span>
                   <span className="text-sm text-slate-400">{fr ? "/mois" : "/mo"}</span>
                 </div>
                 <p className="mt-0.5 text-[11.5px] text-slate-500">
@@ -201,7 +199,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                   className={cn(
                     "mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-60",
                     tier === "pro"
-                      ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-[#04101a] shadow-lg shadow-cyan-500/20 hover:brightness-110"
+                      ? "tv-accent-fill"
                       : "border border-white/[0.12] bg-white/[0.04] text-white hover:bg-white/[0.08]",
                   )}
                 >
