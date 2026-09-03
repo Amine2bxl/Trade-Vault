@@ -65,7 +65,7 @@ export const accentVar = {
 /** Surfaces — les plaques opaques partagées par la landing et le produit. */
 export const surface = {
   /** Base page background (html) — noir neutre, un seul à-plat. */
-  base: "#0a0b0d",
+  base: "#07090a",
   /** La plaque standard. Le nom « glass » survit aux ~200 appels existants ;
    *  la matière, elle, est opaque depuis la refonte. */
   glassClass: "glass",
@@ -102,27 +102,31 @@ export const motion = {
 } as const;
 
 /**
- * Density — the app's spacing contract. TradeVault is a working tool (traders
- * scan it daily), so surfaces stay tight and information-dense in the spirit of
- * TradingView / Linear rather than the airy marketing-SaaS default. These are
- * the ONLY padding steps a screen should use; `Card`, `PageContainer` and
- * `PageHeader` consume them so density evolves in one place.
+ * Densité — le contrat d'espacement du produit.
+ *
+ * L'échelle précédente était celle d'un terminal : 14px de padding de carte,
+ * 12px de gouttière. Sur des cartes désormais arrondies à 18-24px, ce serrage
+ * donnait des angles qui mordaient sur le contenu — un rayon large a besoin
+ * d'air pour se lire comme une forme, sinon il se lit comme un défaut. Chaque
+ * cran monte donc d'une marche.
+ *
+ * Ce sont les SEULS paliers qu'un écran a le droit d'utiliser ; `Card`,
+ * `PageContainer` et `PageHeader` les consomment, donc la densité du produit
+ * entier se règle ici et nulle part ailleurs.
  */
 export const density = {
   /** Card/panel inner padding. */
-  cardPad: "p-3.5 md:p-4",
+  cardPad: "p-4 md:p-5",
   /** Tighter variant for list rows and compact tiles. */
-  cardPadTight: "p-3",
+  cardPadTight: "p-3.5",
   /** Roomier variant, reserved for hero/feature surfaces. */
-  cardPadLoose: "p-5 md:p-6",
-  /** Page gutters — mobile stays a touch tighter so more fits on screen.
-   *  `md:p-5` matches the Mistakes page (the spacing reference for the app):
-   *  one gutter size across every screen. */
-  pagePad: "p-4 md:p-5",
+  cardPadLoose: "p-6 md:p-7",
+  /** Page gutters — mobile reste un cran plus serré, l'écran est étroit. */
+  pagePad: "p-4 md:p-6",
   /** Vertical rhythm between page sections. */
-  sectionGap: "mb-4 md:mb-5",
+  sectionGap: "mb-5 md:mb-6",
   /** Grid gap between sibling cards. */
-  gridGap: "gap-3 md:gap-4",
+  gridGap: "gap-4 md:gap-5",
 } as const;
 
 /**

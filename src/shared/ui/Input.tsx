@@ -13,15 +13,19 @@ import { cn } from "./cn";
 import { Label } from "./Typography";
 
 /**
- * Form controls — one field skin for the whole app. `FIELD_BASE` is the exact
- * class string already duplicated across TradeModal / Journal / LotSizeCalculator
- * / TradingPlan, so adopting these renders identically while removing the copies.
+ * Les contrôles de formulaire — une seule peau de champ pour tout le produit.
+ *
+ * Un champ est une PLAQUE CREUSE : un cran plus clair que la carte qui le
+ * contient, arrondi comme elle, sans ombre. Au focus, c'est le liseré qui
+ * s'allume à l'accent du thème, doublé d'un anneau discret — jamais un halo.
+ * L'ancienne version codait le cyan en dur : les champs restaient bleus quel
+ * que soit le thème actif.
  */
 
 export const FIELD_BASE =
-  "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 text-sm text-white " +
-  "placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 focus:ring-1 " +
-  "focus:ring-cyan-500/20 transition";
+  "w-full bg-[var(--tv-plate-2)] border border-[var(--tv-border)] rounded-2xl px-3.5 text-sm " +
+  "text-white placeholder-slate-500 transition focus:outline-none " +
+  "focus:border-[var(--tv-border-accent)] focus:ring-2 focus:ring-[rgb(var(--tv-accent-rgb)/0.18)]";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, ...rest }, ref) {

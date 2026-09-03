@@ -14,17 +14,27 @@
  */
 
 @theme inline {
-  /* Dense "performance terminal" radius scale (Linear/TradingView direction).
-     rounded-xl/2xl/3xl dominate the app and resolve here, so tightening these
-     three retints every card/hero/button in one place — no component edits.
-     Kept monotonic; sm/md nearly unchanged (small controls stay crisp). */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 9px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
-  --radius-3xl: 16px;
-  --radius-4xl: 20px;
+  /* ────────────────────────────────────────────────────────────────
+   * L'ÉCHELLE DE RAYON — « bubble ».
+   *
+   * L'échelle précédente était celle d'un terminal dense (6→20px) : des
+   * angles presque vifs, qui donnaient à chaque carte un air de cellule de
+   * tableur. La nouvelle est franchement arrondie, dans la lignée de Lucid
+   * (cartes à 16px, boutons à 14px) et du rail de navigation en pilules.
+   *
+   * `rounded-xl/2xl/3xl` dominent le produit et se résolvent ici : élargir
+   * ces trois crans réarrondit CHAQUE carte, hero et bouton de l'application
+   * d'un seul geste, sans toucher un composant. L'échelle reste monotone,
+   * et les petits contrôles (sm/md) restent nets — une pastille de 24px avec
+   * 18px de rayon n'est plus une pastille, c'est un cercle raté.
+   * ──────────────────────────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 24px;
+  --radius-4xl: 32px;
 }
 
 @layer base {
@@ -104,9 +114,9 @@
   /* Rampe de surfaces héritée : aucun appel `bg-surface*` ne subsiste dans
      l'UI, mais les tokens restent alignés sur les trois plaques pour qu'un
      usage futur tombe sur la bonne matière plutôt que sur l'ancien navy. */
-  --color-surface: #101214;
-  --color-surface-light: #14171a;
-  --color-surface-lighter: #191d21;
+  --color-surface: #16191c;
+  --color-surface-light: #1d2125;
+  --color-surface-lighter: #23282d;
   --color-profit: #10b981;
   --color-loss: #ef4444;
 
@@ -296,7 +306,7 @@
    * L'accent n'a plus de « halo » : `--tv-glow-accent` reste défini pour
    * compatibilité, mais vaut `none` (voir le bloc élévation plus bas).
    * ──────────────────────────────────────────────────────────────── */
-  --tv-bg: #0a0b0d;
+  --tv-bg: #07090a;
   --tv-text: #e6e8ea;
   /* Émeraude #10b981 (H 162.5). La chroma est volontairement rentrée sous
      sa valeur nominale (1.065 → 0.95) : le vert doit se lire comme une
@@ -312,13 +322,27 @@
   --tv-accent-2-rgb: 5 150 105;
   --tv-highlight-rgb: 52 211 153;
 
-  /* Surfaces opaques — l'app ne peint plus de « verre ». Une carte est une
-     plaque : une valeur fixe, un liseré, rien derrière à deviner. Elles
-     sont exprimées en dur (et non en voiles blancs) parce qu'un voile sur
-     un fond quasi noir vire au gris sale dès la deuxième superposition. */
-  --tv-plate-1: #101214;
-  --tv-plate-2: #14171a;
-  --tv-plate-3: #191d21;
+  /* ── L'ÉCHELLE DE PROFONDEUR ──
+   *
+   * Cinq marches, et une seule règle : plus une surface est DEVANT, plus elle
+   * est CLAIRE. Il n'y a ni ombre ni halo pour dire la profondeur — sur un
+   * fond quasi noir, une ombre portée assombrit du noir et ne se voit pas.
+   * C'est la valeur seule qui construit les plans, et l'écart entre deux
+   * marches est calibré pour rester visible sans jamais virer au gris.
+   *
+   *   bg      #07090a  la page, derrière tout
+   *   plate-0 #0c0e10  la FENÊTRE de contenu (le cadre arrondi)
+   *   plate-1 #16191c  une CARTE posée dans la fenêtre
+   *   plate-2 #1d2125  un bloc DANS une carte
+   *   plate-3 #23282d  un contrôle interactif au repos
+   *
+   * Les valeurs sont écrites en dur, jamais en voiles blancs : un voile
+   * translucide sur un fond presque noir vire au gris sale dès la deuxième
+   * superposition, et deux cartes côte à côte ne se ressemblent plus. */
+  --tv-plate-0: #0c0e10;
+  --tv-plate-1: #16191c;
+  --tv-plate-2: #1d2125;
+  --tv-plate-3: #23282d;
 
   /* ══════════════════════════════════════════════════════════════════
    * SEMANTIC LAYER — the TradeVault visual language.
@@ -339,9 +363,24 @@
   --tv-surface-1: var(--tv-plate-1);
   --tv-surface-2: var(--tv-plate-2);
   --tv-surface-3: var(--tv-plate-3);
-  --tv-surface-hover: #1e2226;
-  /* The navigation rail — opaque on purpose (see Sidebar: no backdrop-filter). */
-  --tv-rail: #0c0e10;
+  --tv-surface-hover: #282d33;
+  /* ── LE RAIL ──
+   *
+   * C'est la seule surface de l'application qui n'est PAS neutre, et c'est
+   * volontaire : le rail doit se lire comme un objet distinct posé SUR le
+   * produit, pas comme une colonne découpée dedans. Il porte donc un dégradé
+   * vert profond, du plus saturé en haut au presque noir en bas.
+   *
+   * Les trois valeurs sont dérivées de la TEINTE de l'accent (`--tv-primary-h`)
+   * en oklch : le rail devient bleu profond avec le thème Steel, ambre profond
+   * avec Amber, gris avec Graphite. Une seule variable à changer, jamais une
+   * couleur codée en dur.
+   */
+  --tv-rail-top: oklch(0.34 calc(0.075 * var(--tv-primary-c)) var(--tv-primary-h));
+  --tv-rail-mid: oklch(0.25 calc(0.06 * var(--tv-primary-c)) var(--tv-primary-h));
+  --tv-rail-bot: oklch(0.135 calc(0.022 * var(--tv-primary-c)) var(--tv-primary-h));
+  /* Conservé : quelques surfaces héritées lisent encore `--tv-rail`. */
+  --tv-rail: var(--tv-rail-mid);
 
   /* Borders — a hairline is structure, not decoration. Three weights only.
      Elles remontent (0.06 → 0.08) : sur un fond neutre quasi noir, c'est le
@@ -364,7 +403,7 @@
    * texte réel, pas de la décoration. */
   --tv-text-primary: #f4f5f6;
   --tv-text-secondary: #9ba1a6;
-  --tv-text-muted: #878d93;
+  --tv-text-muted: #8f959b;
 
   /* L5 data emphasis / L6 risk / L7 discipline */
   --tv-success: #10b981;
@@ -645,6 +684,14 @@ body {
      the scrollbar and every centered container jumps ~8px sideways — the single
      most visible layout shift in the product, on every navigation. */
   scrollbar-gutter: stable;
+}
+/* Sur desktop la fenêtre est encadrée et détachée : sa hauteur doit venir de
+   la RANGÉE flex (viewport moins ses marges), pas d'un `100dvh` qui la ferait
+   dépasser sous la marge basse et se faire couper par la coquille. */
+@media (min-width: 768px) {
+  .app-main {
+    min-height: 0;
+  }
 }
 @media (max-width: 767px) {
   .app-main {
@@ -1095,14 +1142,16 @@ input[type="range"]::-webkit-slider-thumb {
   background: transparent;
 }
 .bottom-nav-shell {
-  border-radius: 22px;
-  /* La barre flotte réellement au-dessus du contenu qui défile dessous :
-     c'est l'un des trois seuls endroits où une ombre a un sens. Elle est
-     opaque (le flou coûtait un instantané de l'arrière-plan à chaque frame
-     de défilement) et son liseré est neutre, plus accentué. */
-  background: var(--tv-plate-2);
-  border: 1px solid var(--tv-border-strong);
-  box-shadow: var(--tv-elev-3);
+  border-radius: 28px;
+  /* C'est LE RAIL, couché. Même dégradé vert, même grammaire de pastille :
+     sur téléphone la navigation doit être reconnaissable comme la même pièce
+     que sur desktop, pas comme un autre composant. Elle flotte réellement
+     au-dessus du contenu qui défile dessous — l'un des trois seuls endroits
+     du produit où une ombre a un sens. */
+  background: linear-gradient(180deg, var(--tv-rail-mid) 0%, var(--tv-rail-bot) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    var(--tv-elev-3);
   overflow: visible;
 }
 /* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
@@ -1134,37 +1183,28 @@ input[type="range"]::-webkit-slider-thumb {
   transform: scale(0.9);
 }
 
-/* Top hairline that lights up under the active tab */
-.bottom-nav-bar {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%) scaleX(0);
-  width: 26px;
-  height: 2px;
-  border-radius: 0 0 3px 3px;
-  background: var(--tv-accent);
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-}
+/* Le trait lumineux qui s'allumait sous l'onglet actif a été supprimé : il
+   disait la même chose que la pastille, une deuxième fois. Les deux classes
+   restent inertes le temps que les derniers appels disparaissent. */
+.bottom-nav-bar,
 .bottom-nav-bar-active {
-  transform: translateX(-50%) scaleX(1);
+  display: none;
 }
 
-/* Icon sits on a pill that fills with a soft accent glow when active */
+/* L'icône est posée sur une pastille. Active, la pastille devient BLANCHE
+   pleine et l'icône passe en vert très foncé — exactement la pilule du rail. */
 .bottom-nav-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 28px;
-  border-radius: 12px;
-  transition:
-    background 0.22s ease,
-    box-shadow 0.22s ease,
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 44px;
+  height: 30px;
+  border-radius: 9999px;
+  transition: background-color var(--tv-dur-2) var(--tv-ease);
 }
 .bottom-nav-icon-active {
-  background: rgb(var(--tv-accent-rgb) / 0.14);
+  background: #ffffff;
+  color: var(--tv-rail-bot);
 }
 
 /* The "add trade" FAB.
@@ -1314,11 +1354,13 @@ svg.lucide {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
+  padding: 0.65rem 1.35rem;
   font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: 0;
-  border-radius: 0.625rem;
+  letter-spacing: -0.005em;
+  /* Une pilule franche, pas un rectangle radouci. C'est la forme que porte
+     déjà chaque entrée du rail : le bouton principal parle la même langue. */
+  border-radius: 9999px;
   /* Un à-plat vert, sur du texte quasi noir. Le dégradé cyan→teal était le
      dernier vestige de l'ancienne identité, et il était codé EN DUR : le
      bouton principal restait cyan même quand tout le reste changeait de
@@ -1340,7 +1382,7 @@ svg.lucide {
   cursor: not-allowed;
 }
 .btn-sm {
-  padding: 0.5rem 0.85rem;
+  padding: 0.5rem 0.95rem;
   font-size: 0.8125rem;
   gap: 0.375rem;
 }
@@ -1349,12 +1391,12 @@ svg.lucide {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
+  padding: 0.65rem 1.35rem;
   font-size: 0.875rem;
   font-weight: 500;
-  border-radius: 0.625rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-2);
   color: #cbd5e1;
   transition:
     border-color 0.16s ease,
@@ -1362,13 +1404,13 @@ svg.lucide {
     color 0.16s ease;
 }
 .btn-ghost:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
   color: var(--tv-text);
 }
 .btn-primary,
 .btn-ghost {
-  height: 2.375rem;
+  height: 2.5rem;
   white-space: nowrap;
 }
 
@@ -1443,6 +1485,195 @@ a:focus-visible,
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * LE RAIL DE NAVIGATION
+ *
+ * Une capsule verte qui FLOTTE sur la page, pas une colonne collée au bord.
+ * C'est la pièce qui donne son caractère au produit, et elle obéit à quatre
+ * règles :
+ *
+ *   1. Elle est DÉTACHÉE — une marge tout autour, un très grand rayon. On
+ *      doit voir le fond de la page passer derrière elle.
+ *   2. Elle est VERTE, alors que tout le reste est neutre. C'est la seule
+ *      surface colorée de l'application : elle dit « ceci est la navigation,
+ *      ce n'est pas le contenu ».
+ *   3. Chaque entrée est une PILULE. Au repos, un voile blanc à peine posé ;
+ *      active, une pilule BLANCHE PLEINE avec du texte vert foncé. L'état
+ *      actif se lit d'un bout à l'autre de la pièce, sans halo, sans liseré,
+ *      sans barre latérale — par le seul contraste.
+ *   4. Pliée, elle garde EXACTEMENT la même grammaire : la pilule blanche
+ *      devient un disque blanc. Rien d'autre ne change.
+ * ══════════════════════════════════════════════════════════════════════ */
+.rail {
+  /* La lumière tombe DU HAUT et s'éteint vite : vert franc sur le premier
+     quart, presque noir aux deux tiers. Un dégradé qui descend lentement sur
+     toute la hauteur donne une colonne verte uniforme — exactement ce qu'on
+     ne veut pas. Ici la couleur est un éclairage, pas un aplat. */
+  background: linear-gradient(
+    180deg,
+    var(--tv-rail-top) 0%,
+    var(--tv-rail-mid) 26%,
+    var(--tv-rail-bot) 68%,
+    var(--tv-rail-bot) 100%
+  );
+  /* Un liseré interne complet (l'épaisseur de la capsule) + un reflet plus
+     marqué sur l'arête haute, là où la lumière frappe. */
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.06),
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 18px 50px -24px rgb(0 0 0 / 0.8);
+  /* La largeur est la SEULE chose qui s'anime au pli/dépli. */
+  transition: width var(--tv-dur-4) var(--tv-ease);
+}
+
+/* Une entrée de navigation. La forme est la même pliée ou dépliée : une
+   pilule. Dépliée elle contient icône + libellé, pliée elle se referme sur
+   son icône. */
+/* PLIÉE, l'entrée n'est plus une pilule étirée mais un vrai DISQUE de 40px
+   centré dans le rail — c'est la forme de la maquette, et une pilule de 48×40
+   posée sur un rail de 68 ne se lit pas comme un bouton d'icône. */
+.rail-collapsed .rail-item {
+  width: 2.5rem;
+  margin-inline: auto;
+}
+.rail-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: rgb(255 255 255 / 0.72);
+  background: rgb(255 255 255 / 0.06);
+  transition:
+    background-color var(--tv-dur-2) var(--tv-ease),
+    color var(--tv-dur-2) var(--tv-ease);
+}
+@media (hover: hover) {
+  .rail-item:hover {
+    background: rgb(255 255 255 / 0.13);
+    color: #fff;
+  }
+}
+.rail-item:active {
+  transform: scale(0.97);
+}
+/* L'ACTIF : pilule blanche pleine, texte vert très foncé. Aucun autre état
+   de l'application n'utilise du blanc plein — c'est ce qui rend celui-ci
+   immédiatement lisible. */
+.rail-item-active,
+.rail-item-active:hover {
+  background: #ffffff;
+  color: var(--tv-rail-bot);
+}
+.rail-item-active .rail-icon {
+  color: var(--tv-rail-bot);
+}
+
+/* Le disque d'icône. Déplié il est transparent (la pilule porte le fond) ;
+   plié, c'est LUI qui devient la pilule blanche. */
+.rail-icon {
+  display: grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+/* La marque : un disque blanc, le seul autre élément blanc du rail. */
+.rail-brand {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: #ffffff;
+  overflow: hidden;
+}
+.rail-brand img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Le bouton plier/déplier — un petit disque translucide DANS le rail (et non
+   à cheval sur son bord : une capsule flottante n'a pas de bord où
+   s'accrocher). */
+.rail-toggle {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  color: rgb(255 255 255 / 0.6);
+  background: rgb(255 255 255 / 0.08);
+  transition:
+    background-color var(--tv-dur-2) var(--tv-ease),
+    color var(--tv-dur-2) var(--tv-ease);
+}
+@media (hover: hover) {
+  .rail-toggle:hover {
+    background: rgb(255 255 255 / 0.16);
+    color: #fff;
+  }
+}
+
+/* Séparateur interne : un trait blanc à peine visible, pas une bordure. */
+.rail-divider {
+  height: 1px;
+  background: rgb(255 255 255 / 0.1);
+}
+
+/* Le pied du rail (compte, déconnexion) parle la même langue que les
+   entrées : voile blanc, pilule, rien d'autre. */
+.rail-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.7);
+  background: rgb(255 255 255 / 0.07);
+  transition:
+    background-color var(--tv-dur-2) var(--tv-ease),
+    color var(--tv-dur-2) var(--tv-ease);
+}
+@media (hover: hover) {
+  .rail-chip:hover {
+    background: rgb(255 255 255 / 0.14);
+    color: #fff;
+  }
+}
+.rail-chip-danger:hover {
+  background: rgb(var(--tv-danger-rgb) / 0.18);
+  color: #fecaca;
+}
+
+/* ══ LA FENÊTRE DE CONTENU ══
+ *
+ * Le pendant du rail : une plaque neutre, elle aussi arrondie et détachée.
+ * Les deux flottent côte à côte sur le fond de la page — c'est ce qui crée
+ * la séparation nette que le rail seul ne suffisait pas à produire.
+ * Sur mobile, pas de cadre : l'écran est trop étroit pour s'offrir une
+ * marge, le contenu va d'un bord à l'autre. */
+@media (min-width: 768px) {
+  .app-frame {
+    background: var(--tv-plate-0);
+    border: 1px solid var(--tv-border);
+    border-radius: var(--radius-4xl);
+  }
 }
 
 /* ══ LA SURFACE D'ACCENT ══
@@ -1613,11 +1844,11 @@ a:focus-visible,
 .section-tabs {
   display: inline-flex;
   max-width: 100%;
-  padding: 0.35rem;
+  padding: 0.3rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border);
+  box-shadow: none;
 }
 .section-tabs-row {
   display: flex;
@@ -1653,8 +1884,8 @@ a:focus-visible,
   color: rgb(148 163 184);
 }
 .section-tab-idle:hover {
-  color: rgb(226 232 240);
-  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--tv-text-primary);
+  background-color: var(--tv-plate-2);
 }
 /* L'onglet actif est une pastille CLAIRE sur un cadre sombre — la grammaire
    d'un contrôle segmenté (macOS, Linear, Lucid), pas d'un bouton allumé. Il se
@@ -1663,7 +1894,7 @@ a:focus-visible,
 .section-tab-active {
   color: var(--tv-text-primary);
   background: var(--tv-plate-3);
-  box-shadow: inset 0 0 0 1px var(--tv-border-strong);
+  box-shadow: none;
 }
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);

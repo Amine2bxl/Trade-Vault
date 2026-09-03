@@ -5,11 +5,11 @@ import { cn } from "./cn";
  * Chip — the app's one "bubble": a small, tappable pill used for selectable
  * tags (mistakes, confluences), quick values and inline toggles.
  *
- * The geometry is lifted verbatim from the Mistakes / Confluences blocks in
- * `TradeModal`, which were already the reference: natural width, `rounded-xl`,
- * `px-3 py-1.5`, `text-xs font-medium`, 1px border, tinted when selected. Every
- * other hand-rolled pill in the product now routes through here so size, shape,
- * spacing and states stop drifting apart between screens.
+ * La géométrie est celle du rail, en petit : une PILULE pleine (`rounded-full`),
+ * largeur naturelle, `px-3 py-1.5`, un liseré d'un pixel, teintée à l'accent
+ * quand elle est sélectionnée. Toutes les pastilles bricolées à la main dans le
+ * produit passent par ici, pour que taille, forme, espacement et états cessent
+ * de diverger d'un écran à l'autre.
  *
  * `CHIP_ROW` is the matching container spacing — chips are always laid out in a
  * `flex-wrap` row with a 8px gutter.
@@ -18,18 +18,20 @@ import { cn } from "./cn";
 export type ChipTone = "accent" | "danger" | "warning" | "success";
 
 const SELECTED: Record<ChipTone, string> = {
-  accent: "bg-cyan-500/15 border-cyan-500/25 text-cyan-400",
+  accent:
+    "bg-[rgb(var(--tv-accent-rgb)/0.16)] border-[var(--tv-border-accent)] text-[var(--tv-highlight)]",
   danger: "bg-red-500/15 border-red-500/25 text-red-400",
   warning: "bg-amber-500/15 border-amber-500/25 text-amber-400",
   success: "bg-emerald-500/15 border-emerald-500/25 text-emerald-400",
 };
 
 const IDLE =
-  "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-slate-600";
+  "bg-[var(--tv-plate-2)] border-[var(--tv-border)] text-slate-400 " +
+  "hover:bg-[var(--tv-plate-3)] hover:text-slate-200";
 
 /** The one chip geometry. Shared by `Chip` and by chips that wrap extra controls. */
 export const CHIP_BASE =
-  "inline-flex items-center gap-1.5 rounded-xl border text-xs font-medium transition";
+  "inline-flex items-center gap-1.5 rounded-full border text-xs font-medium transition";
 
 /** Standard container for a group of chips. */
 export const CHIP_ROW = "flex flex-wrap gap-2";

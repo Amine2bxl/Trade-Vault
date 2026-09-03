@@ -718,7 +718,12 @@ function AppContent() {
           ont été retirés : de la lumière décorative, repeinte en permanence,
           qui teintait chaque carte posée devant elle. Le fond est un à-plat. */}
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} />
-      <main className="app-main relative flex-1 overflow-y-auto">
+      {/* La FENÊTRE de contenu. Sur desktop elle est, comme le rail, une plaque
+          arrondie et détachée : les deux flottent côte à côte sur le fond de la
+          page, et c'est cet écart — pas une bordure — qui sépare la navigation
+          du produit. Sur mobile le cadre disparaît : l'écran est trop étroit
+          pour s'offrir une marge, le contenu va d'un bord à l'autre. */}
+      <main className="app-main app-frame relative my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-3">
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :
