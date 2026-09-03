@@ -137,7 +137,7 @@ export default function ThemeSettings() {
 
         {/* Badges + actions */}
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-[11px] uppercase tracking-wider font-bold text-slate-600">
+          <span className="tv-label text-slate-600">
             {isDefault ? t("appearance.default") : th.builtin ? "" : t("appearance.yours")}
           </span>
           <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
@@ -246,10 +246,10 @@ function Section({
         aria-expanded={open}
         className="w-full flex items-center gap-2 mb-2 group"
       >
-        <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 group-hover:text-slate-300 transition-colors">
+        <span className="tv-label text-slate-500 group-hover:text-slate-300 transition-colors">
           {title}
         </span>
-        <span className="text-[10px] font-bold text-slate-600 tabular-nums">{count}</span>
+        <span className="tv-figure text-[10px] text-slate-600">{count}</span>
         <span className="flex-1 h-px bg-white/[0.06]" />
         <ChevronDown
           className={cn(

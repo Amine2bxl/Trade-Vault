@@ -157,10 +157,12 @@ export const type = {
   body: "text-[15px] leading-relaxed",
   /** Secondary/meta copy. */
   caption: "text-xs",
-  /** Libellé de case — petites capitales espacées, à la Topstep/Lucid.
-   *  C'est le rôle d'étiquetage du produit : il NOMME une case, il ne la
-   *  décrit pas. Toute étiquette de KPI, de colonne ou de champ le porte. */
-  label: "text-[10px] uppercase tracking-[0.09em] font-semibold",
+  /** Libellé de case — petites capitales espacées. C'est LE rôle d'étiquetage
+   *  du produit : il nomme une case, il ne la décrit pas. Toute étiquette de
+   *  KPI, de colonne ou de champ le porte. Les valeurs viennent de la page
+   *  Calculatrice de lot, référence typographique du produit. La couleur reste
+   *  au point d'appel (un libellé peut porter un état). */
+  label: "tv-label",
   /** Chrome dense : badges, unités, méta de cellule. Le plancher — rien en dessous. */
   micro: "text-[10px]",
   /** LE CHIFFRE — chasse fixe, tabulaire. Réservé aux montants de tête

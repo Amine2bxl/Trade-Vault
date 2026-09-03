@@ -360,7 +360,7 @@ export default function Onboarding({
           </div>
         </div>
 
-        <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-600 tabular-nums">
+        <span className="tv-label tv-figure shrink-0 text-slate-600">
           {stepNum}/{steps.length}
         </span>
       </div>
@@ -574,9 +574,7 @@ export default function Onboarding({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 onb-in max-w-md mx-auto">
                 <div className="glass-strong rounded-2xl p-4 text-center">
                   <Target className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Objectif mensuel
-                  </div>
+                  <div className="tv-label text-slate-400 mb-2">Objectif mensuel</div>
                   <div className="relative max-w-[120px] mx-auto">
                     <input
                       type="number"
@@ -587,7 +585,7 @@ export default function Onboarding({
                       value={target}
                       onChange={(e) => setTarget(e.target.value)}
                       placeholder="3"
-                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                      className="tv-figure w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06]"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
                       %
@@ -596,9 +594,7 @@ export default function Onboarding({
                 </div>
                 <div className="glass-strong rounded-2xl p-4 text-center">
                   <Wallet className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Capital de départ
-                  </div>
+                  <div className="tv-label text-slate-400 mb-2">Capital de départ</div>
                   <div className="relative max-w-[140px] mx-auto">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
                       $
@@ -610,7 +606,7 @@ export default function Onboarding({
                       value={accountSize}
                       onChange={(e) => setAccountSize(e.target.value)}
                       placeholder="25000"
-                      className="w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl font-extrabold text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06] tabular-nums"
+                      className="tv-figure w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06]"
                     />
                   </div>
                 </div>

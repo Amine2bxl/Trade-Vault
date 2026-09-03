@@ -78,8 +78,7 @@ export default function JarvisProfileModal({
   };
 
   const inputClass = cn(FIELD_BASE, "h-11 text-sm");
-  const labelClass =
-    "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+  const labelClass = "tv-label block text-slate-400 mb-1.5";
 
   return (
     <Modal open={open} onClose={onClose} className="md:max-w-lg" labelledBy="jarvis-profile-title">

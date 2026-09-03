@@ -241,9 +241,7 @@ export function PushNotificationSettings() {
 
           {/* Notification category preferences */}
           <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
-            <p className="px-1 pt-1 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              {t("push.categories")}
-            </p>
+            <p className="tv-label px-1 pt-1 pb-1 text-slate-500">{t("push.categories")}</p>
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               return (

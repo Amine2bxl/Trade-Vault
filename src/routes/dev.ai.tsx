@@ -106,7 +106,7 @@ function DevAiPage() {
 
         {telemetry && (
           <>
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
+            <h2 className="tv-label mt-8 text-slate-500">
               Télémétrie · {telemetry.days} derniers jours · compte connecté
             </h2>
             {!telemetry.available ? (
@@ -200,9 +200,7 @@ function DevAiPage() {
         {status && (
           <>
             {/* Providers configurés */}
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
-              Providers configurés
-            </h2>
+            <h2 className="tv-label mt-8 text-slate-500">Providers configurés</h2>
             <div className="mt-2 space-y-2">
               {status.providers
                 .filter((p) => p.configured)
@@ -262,9 +260,7 @@ function DevAiPage() {
             ))}
 
             {/* Non configurés (facultatif) */}
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
-              Non configurés (facultatif)
-            </h2>
+            <h2 className="tv-label mt-8 text-slate-500">Non configurés (facultatif)</h2>
             <div className="mt-2 flex flex-wrap gap-2">
               {status.providers
                 .filter((p) => !p.configured)
@@ -279,9 +275,7 @@ function DevAiPage() {
             </div>
 
             {/* Runtime */}
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
-              Runtime
-            </h2>
+            <h2 className="tv-label mt-8 text-slate-500">Runtime</h2>
             <div className="mt-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               <span className="text-slate-500">Requêtes</span>
               <span className="text-white tabular-nums">{status.runtime.requests}</span>

@@ -177,7 +177,7 @@ function AssetSeasonality() {
             </h3>
             <p className="text-[10px] text-slate-500">{t("seasonality.monthlyBiasSub")}</p>
           </div>
-          <span className="text-[10px] font-bold text-slate-500 tabular-nums shrink-0">
+          <span className="tv-figure text-[10px] text-slate-500 shrink-0">
             {asset.years} {t("seasonality.years")}
           </span>
         </div>
@@ -232,7 +232,7 @@ function AssetSeasonality() {
               <div className="text-[11px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
               <div
                 className={cn(
-                  "text-[11px] font-bold tabular-nums",
+                  "tv-figure text-[11px]",
                   d.win >= 60
                     ? "text-emerald-400"
                     : d.win >= 50
@@ -269,7 +269,7 @@ function AssetSeasonality() {
                 <div
                   key={m}
                   className={cn(
-                    "text-center text-[11px] font-bold uppercase tracking-wide pb-1",
+                    "tv-label text-center pb-1",
                     i === currentMonth ? "text-cyan-300" : "text-slate-500",
                   )}
                 >
@@ -318,7 +318,7 @@ function AssetHeatRow({
       <button
         onClick={onSelect}
         className={cn(
-          "flex items-center text-[10px] font-bold tabular-nums truncate pr-1 transition-colors",
+          "tv-figure flex items-center text-[10px] truncate pr-1 transition-colors",
           selected ? "text-cyan-300" : "text-slate-400 hover:text-white",
         )}
       >
@@ -335,7 +335,7 @@ function AssetHeatRow({
             key={i}
             title={`${asset.symbol} ${MONTHS_SHORT[i]}: ${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
             className={cn(
-              "h-8 rounded-md flex items-center justify-center text-[11px] font-bold tabular-nums cursor-default transition-transform hover:scale-[1.08]",
+              "tv-figure h-8 rounded-md flex items-center justify-center text-[11px] cursor-default transition-transform hover:scale-[1.08]",
               i === currentMonth && "ring-1 ring-cyan-400/50",
             )}
             style={{ background: bg, color: "#f1f5f9" }}
@@ -584,10 +584,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
             >
               <div />
               {monthly.map((m) => (
-                <div
-                  key={m.key}
-                  className="text-center text-[11px] font-bold uppercase tracking-wide text-slate-500 pb-1"
-                >
+                <div key={m.key} className="tv-label text-center text-slate-500 pb-1">
                   {m.month}
                 </div>
               ))}
@@ -693,9 +690,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
 function YearRow({ year, values, heatMax }: { year: number; values: number[]; heatMax: number }) {
   return (
     <>
-      <div className="flex items-center text-[10px] font-bold text-slate-400 tabular-nums">
-        {year}
-      </div>
+      <div className="tv-figure flex items-center text-[10px] text-slate-400">{year}</div>
       {values.map((v, i) => {
         const intensity = Math.min(Math.abs(v) / heatMax, 1);
         const bg =
@@ -708,7 +703,7 @@ function YearRow({ year, values, heatMax }: { year: number; values: number[]; he
           <div
             key={i}
             title={v === 0 ? "—" : `$${v.toFixed(2)}`}
-            className="h-9 rounded-lg flex items-center justify-center text-[11px] font-bold tabular-nums transition-transform hover:scale-[1.06] cursor-default"
+            className="tv-figure h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >
             {v === 0 ? "" : `${v > 0 ? "+" : ""}${Math.round(v)}`}
@@ -734,7 +729,7 @@ function HighlightCard({
 }) {
   return (
     <Card hover className="p-3.5 md:p-4 min-w-0">
-      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 truncate">
+      <div className="tv-label flex items-center gap-1.5 text-slate-500 mb-2 truncate">
         <span className={positive ? "text-emerald-400" : "text-red-400"}>{icon}</span>
         {label}
       </div>
@@ -742,7 +737,7 @@ function HighlightCard({
       {sub && (
         <div
           className={cn(
-            "text-[11px] font-bold tabular-nums mt-0.5",
+            "tv-figure text-[11px] mt-0.5",
             positive ? "text-emerald-400" : "text-red-400",
           )}
         >

@@ -120,7 +120,7 @@ export default function RecalibrateAccountModal({
             className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white tabular-nums focus:outline-none focus:border-cyan-500/50"
           />
           {valid && !noChange && (
-            <p className="mt-2 text-[11px] text-cyan-400 font-semibold tabular-nums">
+            <p className="tv-figure mt-2 text-[11px] text-cyan-400">
               {t("recal.scaleIs").replace("{scale}", fmtScale(factor))}
             </p>
           )}
@@ -129,7 +129,7 @@ export default function RecalibrateAccountModal({
         {/* L'aperçu sur un trade RÉEL du journal. */}
         {valid && !noChange && rows.length > 0 && (
           <div className="rounded-xl border border-white/[0.07] overflow-hidden">
-            <div className="px-3.5 py-2 border-b border-white/[0.05] text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+            <div className="tv-label px-3.5 py-2 border-b border-white/[0.05] text-slate-500">
               {sample ? t("recal.previewOn").replace("{date}", sample.date) : t("recal.preview")}
             </div>
             <ul className="divide-y divide-white/[0.04]">
@@ -196,7 +196,7 @@ function Line({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-[11px] text-slate-500">{label}</span>
-      <span className="text-[12px] font-semibold text-slate-200 tabular-nums">{value}</span>
+      <span className="tv-figure text-[12px] text-slate-200">{value}</span>
     </div>
   );
 }
@@ -224,21 +224,14 @@ function PreviewLine({
       <span className="text-slate-500 flex-1 min-w-0 truncate">{label}</span>
       {same ? (
         <>
-          <span className="text-slate-300 tabular-nums font-semibold">{fmt(row.before)}</span>
-          <span className="text-[10px] text-emerald-400/80 font-semibold uppercase tracking-wide shrink-0">
-            {unchanged}
-          </span>
+          <span className="tv-figure text-slate-300">{fmt(row.before)}</span>
+          <span className="tv-label text-emerald-400/80 shrink-0">{unchanged}</span>
         </>
       ) : (
         <>
           <span className="text-slate-500 tabular-nums">{fmt(row.before)}</span>
           <ArrowRight className="w-3 h-3 text-slate-600 shrink-0" />
-          <span
-            className={cn(
-              "tabular-nums font-bold",
-              row.after >= 0 ? "text-cyan-300" : "text-amber-300",
-            )}
-          >
+          <span className={cn("tv-figure", row.after >= 0 ? "text-cyan-300" : "text-amber-300")}>
             {fmt(row.after)}
           </span>
         </>

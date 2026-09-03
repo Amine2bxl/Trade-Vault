@@ -311,7 +311,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
             </div>
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-1">
+            <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-1">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -325,7 +325,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           </div>
         </div>
         {speaking && (
-          <div className="relative mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2.5 py-1">
+          <div className="tv-label relative mt-3 inline-flex items-center gap-1.5 text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2.5 py-1">
             <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
           </div>
         )}
@@ -452,9 +452,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
               </span>
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1">
-                {t("jarvisHome.proposal")}
-              </div>
+              <div className="tv-label text-cyan-400/80 mb-1">{t("jarvisHome.proposal")}</div>
               <p className="text-[13px] text-slate-300 leading-relaxed">
                 {lang === "fr" ? (
                   <>
@@ -502,9 +500,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       {suggestions.length > 0 && (
         <div className="mt-7">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              {t("jarvisHome.suggestions")}
-            </span>
+            <span className="tv-label text-slate-500">{t("jarvisHome.suggestions")}</span>
             <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
           </div>
           <div className="flex flex-wrap gap-2">

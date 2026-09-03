@@ -83,7 +83,7 @@ export default function JarvisSidebar({
 
         {/* Historique — les conversations, épinglées en tête */}
         <div className="space-y-px mt-1">
-          <div className="flex items-center gap-1.5 px-3 pb-1 pt-3 text-[11px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+          <div className="tv-label flex items-center gap-1.5 px-3 pb-1 pt-3 text-slate-600">
             <History className="w-3 h-3" />
             {t("jarvisSide.history")}
           </div>

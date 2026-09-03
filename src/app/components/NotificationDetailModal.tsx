@@ -120,7 +120,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
             <h2 className="text-[15px] font-bold text-white tracking-tight truncate">Jarvis</h2>
             <span
               className={cn(
-                "shrink-0 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider",
+                "tv-label shrink-0 px-2 py-0.5 rounded-full",
                 n.severity === "success" &&
                   "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20",
                 n.severity === "warning" &&
@@ -158,7 +158,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
             {rows.map(([k, v]) => (
               <div key={k} className="flex items-center justify-between px-3.5 py-2">
                 <span className="text-[11.5px] text-slate-500">{k}</span>
-                <span className="text-[13px] font-bold text-white tabular-nums">{v}</span>
+                <span className="tv-figure text-[13px] text-white">{v}</span>
               </div>
             ))}
           </div>
@@ -168,9 +168,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
         <div className="flex items-start gap-2.5 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.05] px-3.5 py-3">
           <Lightbulb className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-0.5">
-              {t("inbox.plan")}
-            </div>
+            <div className="tv-label text-cyan-400/80 mb-0.5">{t("inbox.plan")}</div>
             <p className="text-[12.5px] text-slate-300 leading-relaxed">{plan}</p>
           </div>
         </div>

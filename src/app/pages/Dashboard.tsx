@@ -279,7 +279,7 @@ export default function Dashboard({
       <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
         <Plus className="w-4 h-4" /> {t("common.addTrade")}
         {hasDraft && (
-          <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
+          <span className="tv-label flex items-center gap-1 ml-1 pl-2 border-l border-white/25">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
           </span>
         )}
@@ -384,9 +384,7 @@ export default function Dashboard({
                 className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
                 aria-hidden="true"
               >
-                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
-                  {t("empty.example")}
-                </div>
+                <div className="tv-label text-slate-500 mb-2">{t("empty.example")}</div>
                 <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 border-dashed">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
                     <ArrowUpRight className="w-4 h-4 text-emerald-400" />
@@ -415,7 +413,7 @@ export default function Dashboard({
                 <div className="relative stat-card-elevated card-premium overflow-hidden p-4 md:p-5">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div>
-                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
+                      <div className="tv-label flex items-center gap-2 text-slate-500 mb-1">
                         <LineChart className="w-3.5 h-3.5 text-slate-500" />
                         {t("dashboard.equityCurve")}
                       </div>
@@ -431,7 +429,7 @@ export default function Dashboard({
                         {periodPct !== null && (
                           <span
                             className={cn(
-                              "text-xs md:text-sm font-bold px-2 py-0.5 rounded-lg tabular-nums",
+                              "tv-figure text-xs md:text-sm px-2 py-0.5 rounded-lg",
                               gain
                                 ? "bg-emerald-500/10 text-emerald-400"
                                 : "bg-red-500/10 text-red-400",
@@ -453,7 +451,7 @@ export default function Dashboard({
                           key={p}
                           onClick={() => changePeriod(p)}
                           className={cn(
-                            "section-tab px-2.5 text-[11px] uppercase md:px-3.5 md:text-xs",
+                            "tv-label section-tab px-2.5 md:px-3.5 md:text-xs",
                             period === p ? "section-tab-active" : "section-tab-idle",
                           )}
                         >
@@ -723,7 +721,7 @@ export default function Dashboard({
                             <div className="text-right shrink-0">
                               <div
                                 className={cn(
-                                  "text-sm md:text-base font-bold tabular-nums",
+                                  "tv-figure text-sm md:text-base",
                                   be
                                     ? "text-slate-300"
                                     : trade.pnl >= 0
@@ -765,9 +763,7 @@ function StatRow({
 }) {
   return (
     <div className="min-w-0">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold truncate">
-        {label}
-      </div>
+      <div className="tv-label text-slate-500 truncate">{label}</div>
       <div className={cn("tv-figure text-sm md:text-base truncate mt-0.5", valueClass)}>
         {value}
       </div>

@@ -72,9 +72,7 @@ function EdgeDial({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className={cn("tv-figure text-4xl leading-none", tone.text)}>{score}</span>
-        <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mt-1">
-          / 100
-        </span>
+        <span className="tv-label text-slate-500 mt-1">/ 100</span>
       </div>
     </div>
   );
@@ -166,7 +164,7 @@ function CopilotBlock({
     edgeDelta !== null && edgeDelta !== 0 ? (
       <span
         className={cn(
-          "text-xs font-bold tabular-nums px-1.5 py-0.5 rounded-md",
+          "tv-figure text-xs px-1.5 py-0.5 rounded-md",
           edgeDelta > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400",
         )}
       >
@@ -183,7 +181,7 @@ function CopilotBlock({
         <EdgeSparkline scores={edgeScores} positive={edgeTrend.delta >= 0} />
         <span
           className={cn(
-            "text-xs font-semibold tabular-nums",
+            "tv-figure text-xs",
             edgeTrend.delta >= 0 ? "text-emerald-400/90" : "text-red-400/90",
           )}
         >
@@ -202,7 +200,7 @@ function CopilotBlock({
 
   return (
     <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden">
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-cyan-400/80 font-semibold mb-4">
+      <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-4">
         <Sparkles className="w-3.5 h-3.5" />
         <span>{t("copilot.title")}</span>
       </div>
@@ -218,9 +216,7 @@ function CopilotBlock({
             </div>
           )}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-              {t("copilot.edgeLabel")}
-            </span>
+            <span className="tv-label text-slate-500">{t("copilot.edgeLabel")}</span>
             {deltaEl}
           </div>
           {trendEl && <div className="flex items-center justify-center">{trendEl}</div>}
@@ -228,7 +224,7 @@ function CopilotBlock({
             <div className="w-full max-w-[160px]">
               <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
                 <span>{t("copilot.cleanDays")}</span>
-                <span className="tabular-nums text-slate-400 font-semibold">
+                <span className="tv-figure text-slate-400">
                   {edge.cleanDays}/{edge.tradedDays}
                 </span>
               </div>
@@ -261,7 +257,7 @@ function CopilotBlock({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Rule of the day */}
             <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] px-3.5 py-3">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-amber-400/80 font-semibold mb-1.5">
+              <div className="tv-label flex items-center gap-1.5 text-amber-400/80 mb-1.5">
                 <Flag className="w-3 h-3" /> {t("copilot.ruleTitle")}
               </div>
               <div className="text-sm font-semibold text-white truncate">
@@ -274,12 +270,12 @@ function CopilotBlock({
 
             {/* Monthly objective */}
             <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] px-3.5 py-3">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-cyan-400/80 font-semibold mb-1.5">
+              <div className="tv-label flex items-center gap-1.5 text-cyan-400/80 mb-1.5">
                 <Target className="w-3 h-3" /> {t("copilot.objTitle")}
               </div>
               {objective.targetPct && objective.targetPct > 0 ? (
                 <>
-                  <div className="text-sm font-semibold text-white tabular-nums">
+                  <div className="tv-figure text-sm text-white">
                     {objective.currentPct >= 0 ? "+" : ""}
                     {(objective.currentPct * 100).toFixed(1)}%{" "}
                     <span className="text-slate-600 text-xs">/ {objective.targetPct}%</span>
@@ -291,7 +287,7 @@ function CopilotBlock({
                         style={{ width: `${Math.round((objPct ?? 0) * 100)}%` }}
                       />
                     </div>
-                    <span className="text-[11px] font-bold tabular-nums text-cyan-300 shrink-0">
+                    <span className="tv-figure text-[11px] text-cyan-300 shrink-0">
                       {Math.round((objPct ?? 0) * 100)}%
                     </span>
                   </div>
@@ -327,7 +323,7 @@ function CopilotBlock({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-white">{t("chk.dashTitle")}</span>
                   {checklist.locked && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-300">
+                    <span className="tv-label inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-emerald-300">
                       <Check className="w-2.5 h-2.5" /> {t("chk.ready")}
                     </span>
                   )}
@@ -340,7 +336,7 @@ function CopilotBlock({
                       : t("chk.dashStart")}
                 </div>
               </div>
-              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-cyan-400 shrink-0">
+              <span className="tv-label flex items-center gap-1 text-cyan-400 shrink-0">
                 {t("chk.dashCta")} <ChevronRight className="w-3.5 h-3.5" />
               </span>
             </button>

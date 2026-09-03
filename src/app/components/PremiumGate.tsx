@@ -123,7 +123,7 @@ export function PreviewWall({
               </p>
               <p className="mt-1 text-[11.5px] font-medium text-slate-400">
                 {tier.name[fr ? "fr" : "en"]} ·{" "}
-                <span className="font-bold text-white tabular-nums">{perMonth}</span>
+                <span className="tv-figure text-white">{perMonth}</span>
                 {fr ? "/mois" : "/month"}
                 {freeMonths > 0 && (
                   <span className="ml-1 text-emerald-400">

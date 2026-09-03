@@ -361,9 +361,7 @@ export default function MissedOpportunities() {
 function MissedTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-      <div className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
-        {label}
-      </div>
+      <div className="tv-label md:text-xs text-slate-500 truncate">{label}</div>
       <div
         className={cn(
           "mt-0.5 tv-figure text-[15px] md:text-base",
@@ -393,9 +391,7 @@ function Field({
   };
   return (
     <div className={cn("rounded-lg bg-white/[0.02] border px-2.5 py-2", tones[tone])}>
-      <div className="text-[11px] uppercase tracking-wider font-bold mb-0.5 opacity-80">
-        {label}
-      </div>
+      <div className="tv-label mb-0.5 opacity-80">{label}</div>
       <div className="text-slate-200 text-xs md:text-sm whitespace-pre-wrap">
         {value || <span className="text-slate-600 italic">—</span>}
       </div>
@@ -799,8 +795,7 @@ function MissedEditor({
 
 // Both editors share one label style and one field skin (`FIELD_BASE`), so a
 // field in Missed Setup is pixel-identical to the same field in Add Trade.
-const EDITOR_LABEL =
-  "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+const EDITOR_LABEL = "tv-label block text-slate-400 mb-1.5";
 
 function FieldInput({
   label,

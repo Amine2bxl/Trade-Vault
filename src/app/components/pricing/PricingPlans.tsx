@@ -183,7 +183,7 @@ function PlanColumn({
         <>
           {/* Liseré haut, le seul « chrome » — il oriente l'œil vers Pro. */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
-          <span className="absolute right-6 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#041018]">
+          <span className="tv-label absolute right-6 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400 px-2.5 py-1 text-[#041018]">
             <Sparkles className="h-3 w-3" />
             {fr ? "Recommandé" : "Recommended"}
           </span>
@@ -195,7 +195,7 @@ function PlanColumn({
         <Icon className={cn("h-4 w-4", isPro ? "text-cyan-300" : "text-slate-500")} />
         <span
           className={cn(
-            "inline-flex items-center text-[11px] font-bold uppercase tracking-[.16em]",
+            "tv-label inline-flex items-center",
             isPro ? "text-cyan-300" : "text-slate-400",
           )}
         >
@@ -337,7 +337,7 @@ function PlanColumn({
         ) : (
           <div className="space-y-2.5">
             {tier.id === "elite" && (
-              <p className="text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/90">
+              <p className="tv-label text-cyan-300/90">
                 {fr ? "Tout Pro, mais sans limites, plus :" : "All of Pro without limits, plus:"}
               </p>
             )}

@@ -100,13 +100,7 @@ export function Label({
 }: WithAs<LabelHTMLAttributes<HTMLLabelElement>>) {
   const Comp = as ?? "label";
   return (
-    <Comp
-      className={cn(
-        "block text-[10px] font-semibold uppercase tracking-wider text-slate-400",
-        className,
-      )}
-      {...rest}
-    >
+    <Comp className={cn("tv-label block text-slate-400", className)} {...rest}>
       {children}
     </Comp>
   );

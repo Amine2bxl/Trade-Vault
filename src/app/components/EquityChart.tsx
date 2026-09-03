@@ -108,11 +108,9 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                   boxShadow: "0 12px 32px -8px rgba(0,0,0,0.7)",
                 }}
               >
-                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-                  {formatShortDate(label as string)}
-                </p>
+                <p className="tv-label text-slate-500">{formatShortDate(label as string)}</p>
                 <p
-                  className="mt-0.5 text-sm font-extrabold text-white tabular-nums"
+                  className="tv-figure mt-0.5 text-sm text-white"
                   style={{ fontFamily: "'Inter',sans-serif" }}
                 >
                   $

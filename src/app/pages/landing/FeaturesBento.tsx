@@ -44,9 +44,7 @@ export function FeaturesBento() {
               {t("bento.jarvis.q")}
             </div>
             <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] px-3.5 py-2.5">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                {t("bento.jarvis.mission")}
-              </div>
+              <div className="tv-label text-emerald-400">{t("bento.jarvis.mission")}</div>
               <div className="mt-0.5 text-[11px] text-slate-200">{t("bento.jarvis.mission.d")}</div>
             </div>
           </div>
@@ -76,7 +74,7 @@ export function FeaturesBento() {
                   </div>
                 </div>
                 <div className="ml-3 shrink-0 text-right">
-                  <div className="text-[11px] font-bold tabular-nums text-red-400">{m.cost}</div>
+                  <div className="tv-figure text-[11px] text-red-400">{m.cost}</div>
                   <div className="mt-1 h-1 w-16 overflow-hidden rounded-full bg-white/[0.05]">
                     <div
                       className="h-full rounded-full bg-red-500/60"
@@ -146,9 +144,7 @@ export function FeaturesBento() {
                 key={s.l}
                 className="rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2.5 text-center"
               >
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  {s.l}
-                </div>
+                <div className="tv-label text-slate-500">{s.l}</div>
                 <div className="mt-0.5 tv-figure text-sm text-cyan-300">{s.v}</div>
               </div>
             ))}

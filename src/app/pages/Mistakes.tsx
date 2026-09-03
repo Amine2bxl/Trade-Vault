@@ -201,8 +201,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={cn("text-xl font-bold tabular-nums", discColor)}>{disc}</span>
-                <span className="text-[11px] text-slate-500 uppercase tracking-wider">/ 100</span>
+                <span className={cn("tv-figure text-xl", discColor)}>{disc}</span>
+                <span className="tv-label text-slate-500">/ 100</span>
               </div>
             </div>
             <div className="min-w-0">
@@ -307,7 +307,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                           <span className={cn("w-1.5 h-1.5 rounded-full", SEV_STYLE[sev].dot)} />
                           {t(`mistakes.sev_${sev}` as never)}
                         </span>
-                        <span className="text-xs font-bold text-slate-400 tabular-nums">{cnt}</span>
+                        <span className="tv-figure text-xs text-slate-400">{cnt}</span>
                       </div>
                       <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
                         <div
@@ -415,7 +415,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   </div>
                   <span
                     className={cn(
-                      "text-[11px] font-bold tabular-nums shrink-0 w-16 text-right",
+                      "tv-figure text-[11px] shrink-0 w-16 text-right",
                       a.ratePct >= 80
                         ? "text-emerald-400"
                         : a.ratePct >= 50
@@ -502,7 +502,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                           style={{ width: `${(s.count / maxSessionCount) * 100}%` }}
                         />
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400 w-6 text-right tabular-nums">
+                      <span className="tv-figure text-[10px] text-slate-400 w-6 text-right">
                         {s.count}
                       </span>
                     </div>
@@ -565,7 +565,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       )}
                       <span
                         className={cn(
-                          "text-[11px] font-bold px-1 py-0.5 rounded uppercase",
+                          "tv-label px-1 py-0.5 rounded",
                           SEV_STYLE[m.severity].bg,
                           SEV_STYLE[m.severity].text,
                         )}

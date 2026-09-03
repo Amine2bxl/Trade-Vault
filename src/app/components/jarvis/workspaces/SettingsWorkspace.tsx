@@ -77,7 +77,7 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4 md:py-5 max-w-3xl">
-      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-4">
+      <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-4">
         <Settings className="w-3.5 h-3.5" /> {t("jarvisSettings.title")}
       </div>
 

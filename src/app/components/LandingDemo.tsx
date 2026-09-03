@@ -167,7 +167,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
         {/* Contenu */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6">
           <div key={slide.id} className="animate-fade-in-up">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1.5">
+            <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               {slide.tagline}
             </div>
@@ -220,7 +220,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-      <div className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
+      <div className="tv-label text-slate-500">{label}</div>
       <div className={cn("tv-figure text-base", color)}>{value}</div>
     </div>
   );
@@ -282,12 +282,7 @@ function JournalMock() {
             </div>
           </div>
           <div className="text-right">
-            <div
-              className={cn(
-                "text-xs font-bold tabular-nums",
-                r.win ? "text-emerald-400" : "text-red-400",
-              )}
-            >
+            <div className={cn("tv-figure text-xs", r.win ? "text-emerald-400" : "text-red-400")}>
               {r.r}
             </div>
             <div
@@ -316,9 +311,7 @@ function AnalyticsMock() {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-        <div className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-3">
-          Edge par jour de la semaine
-        </div>
+        <div className="tv-label text-slate-500 mb-3">Edge par jour de la semaine</div>
         <div className="flex items-end justify-between gap-2 h-20">
           {days.map((x, i) => (
             <div key={i} className="flex flex-col items-center gap-1 flex-1">
@@ -362,9 +355,7 @@ function JarvisMock() {
         </div>
       </div>
       <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.05] px-3.5 py-3">
-        <div className="text-[11px] uppercase tracking-wider text-cyan-400/80 font-bold mb-1">
-          Mission du jour
-        </div>
+        <div className="tv-label text-cyan-400/80 mb-1">Mission du jour</div>
         <div className="text-[12px] text-slate-200 leading-relaxed">
           Max 2 trades · taille fixe · stop après 1 perte. À revérifier ce soir.
         </div>

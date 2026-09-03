@@ -291,9 +291,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
 
             {/* Column mapping */}
             <div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                {t("import.mapColumns")}
-              </div>
+              <div className="tv-label text-slate-400 mb-2">{t("import.mapColumns")}</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                 {FIELDS.map((f) => (
                   <div key={f}>
@@ -345,7 +343,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
 
             {/* Preview */}
             <div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <div className="tv-label text-slate-400 mb-2">
                 {t("import.preview")} · {mappedTrades.valid.length} {t("import.validRows")}
                 {mappedTrades.invalid > 0
                   ? ` · ${mappedTrades.invalid} ${t("import.invalidSkipped")}`
@@ -356,13 +354,13 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                   <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
                     <span className="text-slate-500 w-20 shrink-0">{tr.date}</span>
                     <span className="font-bold text-white w-16 truncate">{tr.symbol}</span>
-                    <span className="text-slate-500 uppercase text-[10px]">{tr.direction}</span>
+                    <span className="tv-label text-slate-500">{tr.direction}</span>
                     {tr.entryTime && (
                       <span className="text-slate-600 text-[10px]">{tr.entryTime}</span>
                     )}
                     <span
                       className={cn(
-                        "ml-auto font-bold tabular-nums",
+                        "tv-figure ml-auto",
                         tr.pnl >= 0 ? "text-emerald-400" : "text-red-400",
                       )}
                     >
@@ -385,24 +383,18 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 <p className="text-sm font-semibold text-white">{t("import.confirmTitle")}</p>
                 <ul className="text-xs text-slate-400 space-y-1">
                   <li>
-                    <span className="font-bold text-emerald-400 tabular-nums">
-                      {plan.fresh.length}
-                    </span>{" "}
+                    <span className="tv-figure text-emerald-400">{plan.fresh.length}</span>{" "}
                     {t("import.willAdd")}
                   </li>
                   {plan.duplicates > 0 && (
                     <li>
-                      <span className="font-bold text-slate-300 tabular-nums">
-                        {plan.duplicates}
-                      </span>{" "}
+                      <span className="tv-figure text-slate-300">{plan.duplicates}</span>{" "}
                       {t("import.duplicatesSkipped")}
                     </li>
                   )}
                   {mappedTrades.invalid > 0 && (
                     <li>
-                      <span className="font-bold text-slate-300 tabular-nums">
-                        {mappedTrades.invalid}
-                      </span>{" "}
+                      <span className="tv-figure text-slate-300">{mappedTrades.invalid}</span>{" "}
                       {t("import.invalidSkipped")}
                     </li>
                   )}

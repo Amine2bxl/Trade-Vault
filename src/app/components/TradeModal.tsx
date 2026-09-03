@@ -487,8 +487,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // chip height (equal, symmetric bubbles). Desktop keeps the roomier 44px.
   const inputClass = cn(fieldBase, "h-9 sm:h-11 text-xs sm:text-sm");
   const textareaClass = cn(fieldBase, "py-2.5");
-  const labelClass =
-    "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+  const labelClass = "tv-label block text-slate-400 mb-1.5";
 
   return (
     <>
@@ -562,7 +561,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <button
                 onClick={discardDraft}
                 title={t("trade.discardDraft")}
-                className="group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold uppercase tracking-wide transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+                className="tv-label group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 group-hover:bg-red-400" />
                 {t("trade.draftBadge")}
@@ -697,7 +696,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <label className={labelClass}>{t("trade.estPnl")}</label>
               <div
                 className={cn(
-                  "w-full h-11 flex items-center rounded-xl px-3 text-sm font-bold border tabular-nums",
+                  "tv-figure w-full h-11 flex items-center rounded-xl px-3 text-sm border",
                   calculatedPnl > 0
                     ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-400"
                     : calculatedPnl < 0
@@ -854,9 +853,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Presets d'heure — un tap remplit entrée + sortie (puis ajustables) */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mr-0.5">
-              {t("trade.timePresets")}
-            </span>
+            <span className="tv-label text-slate-500 mr-0.5">{t("trade.timePresets")}</span>
             {[
               { t: "09:30", v: "10:15" },
               { t: "10:00", v: "11:00" },
@@ -880,7 +877,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <label className={labelClass + " mb-0"}>{t("trade.setupQuality")}</label>
               <span
                 className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                  "tv-label px-2 py-0.5 rounded-full border",
                   form.setupQuality <= 1 && "text-red-300 bg-red-500/10 border-red-500/25",
                   form.setupQuality === 2 && "text-amber-300 bg-amber-500/10 border-amber-500/25",
                   form.setupQuality === 3 && "text-slate-200 bg-white/[0.05] border-white/[0.1]",
@@ -934,7 +931,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <label className={labelClass + " mb-0"}>{t("trade.confidence")}</label>
               <span
                 className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                  "tv-label px-2 py-0.5 rounded-full border",
                   form.confidence >= 75 &&
                     "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
                   form.confidence >= 50 &&
@@ -1421,7 +1418,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <>
                 <span className="font-bold text-white shrink-0">{form.symbol.toUpperCase()}</span>
                 {session && (
-                  <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[11px] font-bold uppercase shrink-0">
+                  <span className="tv-label hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 shrink-0">
                     {t(`session.${session}` as never)}
                   </span>
                 )}
@@ -1430,7 +1427,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </span>
                 <span
                   className={cn(
-                    "font-bold tabular-nums shrink-0",
+                    "tv-figure shrink-0",
                     form.direction === "be"
                       ? "text-slate-300"
                       : calculatedPnl >= 0

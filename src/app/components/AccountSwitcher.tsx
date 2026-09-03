@@ -250,7 +250,7 @@ export default function AccountSwitcher({
             <ActiveIcon className="w-4 h-4" />
           </span>
           <span className="min-w-0 max-w-[96px] text-left">
-            <span className="block text-[10px] uppercase tracking-[0.12em] font-bold text-slate-500 leading-none mb-0.5">
+            <span className="tv-label block text-slate-500 leading-none mb-0.5">
               {t("account.fabLabel")}
             </span>
             <span className="block text-[13px] font-bold text-white truncate leading-tight">
@@ -452,9 +452,7 @@ export default function AccountSwitcher({
           </span>
 
           <span className="flex-1 min-w-0">
-            <span className="block text-[10px] uppercase tracking-[0.12em] text-slate-500 font-bold">
-              {t("account.active")}
-            </span>
+            <span className="tv-label block text-slate-500">{t("account.active")}</span>
             <span className="flex items-center gap-1.5 mt-0.5">
               <span className="block text-[14px] font-bold text-white truncate leading-tight">
                 {activeAccount.name}
@@ -473,7 +471,7 @@ export default function AccountSwitcher({
             <span className="block tv-figure text-[15px] text-white leading-tight">
               {fmtBalance}
             </span>
-            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-500/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-300 border border-cyan-500/20">
+            <span className="tv-label mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-500/12 px-2 py-0.5 text-cyan-300 border border-cyan-500/20">
               {t("account.switchShort")}
               <ChevronDown
                 className={cn("w-2.5 h-2.5 transition-transform", open && "rotate-180")}
@@ -569,7 +567,7 @@ export default function AccountSwitcher({
               {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
             </span>
           </span>
-          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-cyan-400/80 shrink-0">
+          <span className="tv-label flex items-center gap-1 text-cyan-400/80 shrink-0">
             {t("account.switchShort")}
             <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
           </span>
@@ -764,7 +762,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
   // desktop, bottom sheet on mobile, blurred backdrop, Esc-to-close,
   // scroll-lock), a 2px accent rule, a 24px header, a body on the design
   // system's field skin, and a sticky action footer.
-  const label = "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+  const label = "tv-label block text-slate-400 mb-1.5";
 
   return (
     <Modal

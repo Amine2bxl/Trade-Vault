@@ -179,9 +179,7 @@ function HeroProductVisual() {
       <div className="relative rounded-2xl border border-white/10 bg-[#0a1625]/95 p-5 shadow-[0_30px_80px_rgba(0,0,0,.6)] backdrop-blur-xl">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-slate-500">
-              {t("hero.eq")}
-            </p>
+            <p className="tv-label text-slate-500">{t("hero.eq")}</p>
             <p className="mt-1 font-display text-2xl font-bold text-emerald-400 tracking-tight">
               +4 218,50 €
             </p>
@@ -237,9 +235,7 @@ function HeroProductVisual() {
             [t("hero.sharpe"), "1.84"],
           ].map(([l, v]) => (
             <div key={l} className="text-center">
-              <p className="text-[11px] font-medium uppercase tracking-[.08em] text-slate-500">
-                {l}
-              </p>
+              <p className="tv-label text-slate-500">{l}</p>
               <p className="mt-1 font-display text-base font-bold text-cyan-300">{v}</p>
             </div>
           ))}
@@ -306,9 +302,7 @@ function AIConversation() {
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-3.5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-              {t("ai.c.plan")}
-            </span>
+            <span className="tv-label text-emerald-400">{t("ai.c.plan")}</span>
           </div>
           <p className="text-xs leading-5 text-slate-200">{t("ai.c.plan.d")}</p>
         </div>
@@ -503,7 +497,7 @@ function LandingPage() {
 
           <div className="relative mx-auto grid max-w-[1200px] items-center gap-12 px-5 lg:grid-cols-[1.02fr_.98fr] lg:gap-14 lg:px-8">
             <div className="text-center lg:text-left">
-              <div className="fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/[.08] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300">
+              <div className="tv-label fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/[.08] px-4 py-1.5 text-cyan-300">
                 <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />{" "}
                 {t("hero.eyebrow")}
               </div>

@@ -182,9 +182,7 @@ export default function SessionPanel({
       {!session && (
         <>
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-              {t("session.howDoYouFeel")}
-            </p>
+            <p className="tv-label text-slate-500 mb-1.5">{t("session.howDoYouFeel")}</p>
             <div className="flex flex-wrap gap-1.5">
               {EMOTIONAL_STATES.map((s) => (
                 <button

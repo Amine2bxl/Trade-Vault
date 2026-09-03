@@ -193,9 +193,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
       {mobile && (
         <div className="lg:hidden border-t border-white/[.07] bg-[#070f1a] px-5 py-4">
           <div className="flex flex-col">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-2 px-1">
-              {t("nav.product")}
-            </p>
+            <p className="tv-label text-slate-600 mb-2 px-1">{t("nav.product")}</p>
             {productItems.map((item) => (
               <button
                 key={item.title}

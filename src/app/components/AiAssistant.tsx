@@ -225,7 +225,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         </span>
         <span className="hidden md:block text-left leading-none">
           <span className="block text-[13px] font-bold text-white">{t("assistant.title")}</span>
-          <span className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80">
+          <span className="tv-label mt-1 flex items-center gap-1.5 text-cyan-300/80">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60 animate-ping" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />

@@ -293,7 +293,7 @@ export default function TradeDetailModal({
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-500">{trade.strategy}</span>
                         {getSession(trade.entryTime) && (
-                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[11px] font-bold uppercase">
+                          <span className="tv-label px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
                             {t(`session.${getSession(trade.entryTime)}` as never)}
                           </span>
                         )}
@@ -444,7 +444,7 @@ export default function TradeDetailModal({
                 {/* Confluences */}
                 {trade.confluences.length > 0 && (
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">
+                    <span className="tv-label text-slate-500 block mb-2">
                       {t("tradeDetail.confluences")}
                     </span>
                     <div className="flex flex-wrap gap-2">
@@ -463,7 +463,7 @@ export default function TradeDetailModal({
                 {/* Mistakes */}
                 {trade.mistakes.length > 0 && (
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">
+                    <span className="tv-label text-slate-500 block mb-2">
                       {t("tradeDetail.mistakes")}
                     </span>
                     <div className="flex flex-wrap gap-1.5">
@@ -482,13 +482,13 @@ export default function TradeDetailModal({
                 {/* AVANT → APRÈS → RÉSULTAT (Phase 0b Step 6I) */}
                 {(intent || reflection) && (
                   <div className="space-y-2">
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block">
+                    <span className="tv-label text-slate-500 block">
                       {t("tradeDetail.intentFlow")}
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {intent ? (
                         <div className="rounded-xl bg-cyan-500/[0.06] border border-cyan-500/20 p-3">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 mb-1.5">
+                          <div className="tv-label text-cyan-300 mb-1.5">
                             {t("tradeDetail.intent")}
                           </div>
                           <dl className="text-xs text-slate-300 space-y-1">
@@ -541,7 +541,7 @@ export default function TradeDetailModal({
                       ) : null}
                       {reflection ? (
                         <div className="rounded-xl bg-amber-500/[0.06] border border-amber-500/20 p-3">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300 mb-1.5">
+                          <div className="tv-label text-amber-300 mb-1.5">
                             {t("tradeDetail.reflection")}
                           </div>
                           <dl className="text-xs text-slate-300 space-y-1">
@@ -574,12 +574,10 @@ export default function TradeDetailModal({
                       ) : null}
                     </div>
                     <div className="text-xs text-slate-300 border-t border-white/[0.06] pt-2 mt-1 flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                        {t("tradeDetail.result")}
-                      </span>
+                      <span className="tv-label text-slate-500">{t("tradeDetail.result")}</span>
                       <span
                         className={cn(
-                          "font-bold tabular-nums",
+                          "tv-figure",
                           be
                             ? "text-slate-300"
                             : trade.pnl >= 0
@@ -590,9 +588,7 @@ export default function TradeDetailModal({
                         {formatPnl(trade.pnl)}
                       </span>
                       <span className="text-slate-500">·</span>
-                      <span className="font-semibold text-white tabular-nums">
-                        {trade.rMultiple.toFixed(2)}R
-                      </span>
+                      <span className="tv-figure text-white">{trade.rMultiple.toFixed(2)}R</span>
                     </div>
                   </div>
                 )}
@@ -600,7 +596,7 @@ export default function TradeDetailModal({
                 {/* Screenshots */}
                 {trade.screenshots.length > 0 && (
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">
+                    <span className="tv-label text-slate-500 block mb-2">
                       {t("tradeDetail.chartScreenshots")}
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -645,7 +641,7 @@ export default function TradeDetailModal({
                 {/* Notes */}
                 {trade.notes && (
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">
+                    <span className="tv-label text-slate-500 block mb-2">
                       {t("tradeDetail.notes")}
                     </span>
                     {/* `whitespace-pre-wrap` : les retours à la ligne écrits

@@ -310,7 +310,7 @@ export default function PromoCodeSection() {
 
               {open === p.code && (
                 <div className="mt-2.5 space-y-1.5 border-t border-white/[0.05] pt-2.5">
-                  <div className="flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <div className="tv-label flex items-center gap-1.5 px-1 text-slate-500">
                     <ChevronDown className="h-3 w-3" />
                     {fr ? "Utilisations" : "Redemptions"}
                   </div>

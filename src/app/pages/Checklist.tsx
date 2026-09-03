@@ -1366,7 +1366,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             </span>
             <span
               className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide",
+                "tv-label inline-flex items-center rounded-full border px-2.5 py-1",
                 allGates || day.locked
                   ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                   : "border-white/[0.08] bg-white/[0.03] text-slate-400",
@@ -1470,9 +1470,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "session" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgSession")}
-                </div>
+                <div className="tv-label text-slate-500">{t("chk.cfgSession")}</div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                   <label>{t("chk.cfgStart")}</label>
                   <input
@@ -1515,9 +1513,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "models" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgTemplates")}
-                </div>
+                <div className="tv-label text-slate-500">{t("chk.cfgTemplates")}</div>
                 <p className="text-[11px] text-slate-500">{t("chk.cfgTemplatesHint")}</p>
                 <div className="flex flex-wrap gap-2">
                   {templates.map((tp) => (
@@ -1543,9 +1539,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-3">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
-                        {t("chk.recommended")}
-                      </span>
+                      <span className="tv-label text-cyan-400/80">{t("chk.recommended")}</span>
                     </div>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed mb-2.5">
                       {t("chk.recommendedSub")}
@@ -1578,7 +1572,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   </div>
                 )}
 
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
+                <div className="tv-label text-slate-500">
                   {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
                 </div>
                 <div className="text-[11px] text-slate-500">{t("chk.cfgDragHint")}</div>
@@ -1666,9 +1660,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "advanced" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgMotivs")}
-                </div>
+                <div className="tv-label text-slate-500">{t("chk.cfgMotivs")}</div>
                 <div className="text-[11px] text-slate-500">{t("chk.cfgMotivHint")}</div>
                 {config.motivs.map((m, i) => (
                   <div
@@ -1725,9 +1717,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "advanced" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgStates")}
-                </div>
+                <div className="tv-label text-slate-500">{t("chk.cfgStates")}</div>
                 {config.fomo.map((f, i) => (
                   <div className="flex items-center gap-2" key={i}>
                     <input
@@ -1765,9 +1755,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   1
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepPrep")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepPrep")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <div className="glass rounded-2xl p-3 md:p-3.5">
@@ -1816,16 +1804,14 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   2
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepValidation")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepValidation")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <div className="glass rounded-2xl p-3.5 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="text-slate-400 font-semibold">{t("chk.gateChecklist")}</span>
-                    <span className="tabular-nums text-white font-bold">
+                    <span className="tv-figure text-white">
                       {nChecked}/{nActive}
                     </span>
                   </div>
@@ -1855,9 +1841,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   3
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepMental")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepMental")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
 
@@ -1929,7 +1913,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                       )}
                     >
                       <div className="text-base leading-none mb-1">{FOMO_ICONS[i]}</div>
-                      <div className="text-[10px] font-bold uppercase tracking-wide">
+                      <div className="tv-label">
                         <Ed
                           value={f.label}
                           editable={editMode}
@@ -1966,9 +1950,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   4
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepLock")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepLock")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <div className="glass rounded-2xl p-3.5 space-y-3">
@@ -2017,9 +1999,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   5
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepTrade")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepTrade")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <Button
@@ -2067,9 +2047,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             </span>
             <div className="relative min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
-                  Jarvis
-                </span>
+                <span className="tv-label text-cyan-300">Jarvis</span>
                 <span className={cn("tvchk-wave", voice.speaking && "on")}>
                   <span />
                   <span />
@@ -2121,7 +2099,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   }}
                 />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-4xl font-extrabold text-white tabular-nums">
+              <div className="tv-figure absolute inset-0 flex items-center justify-center text-4xl text-white">
                 {countdownVal}
               </div>
             </div>

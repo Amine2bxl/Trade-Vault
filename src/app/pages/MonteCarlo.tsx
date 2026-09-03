@@ -83,7 +83,7 @@ function ParamRow({
           type="number"
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          className="w-[80px] h-7 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 text-[11px] font-semibold text-white text-right tabular-nums focus:outline-none focus:border-cyan-500/40 transition"
+          className="tv-figure w-[80px] h-7 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 text-[11px] text-white text-right focus:outline-none focus:border-cyan-500/40 transition"
         />
         {suffix && <span className="text-[10px] text-slate-500 w-3">{suffix}</span>}
       </div>
@@ -94,7 +94,7 @@ function ParamRow({
 function SectionHeader({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between mb-2">
-      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{title}</h4>
+      <h4 className="tv-label text-slate-500">{title}</h4>
       {children}
     </div>
   );
@@ -124,9 +124,7 @@ function KpiCard({
             : "text-white";
   return (
     <div className="glass rounded-xl p-3 text-center">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
-        {label}
-      </div>
+      <div className="tv-label text-slate-500 mb-1">{label}</div>
       <div className={cn("tv-figure text-base", cls)}>{value}</div>
       {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
     </div>
@@ -172,7 +170,7 @@ function EquityCurves({
 
   return (
     <div className="glass rounded-2xl p-4">
-      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3">
+      <h4 className="tv-label text-slate-500 mb-3">
         Equity Curves — {result.runs.length.toLocaleString()} simulations
       </h4>
       <div className="h-64 md:h-80">
@@ -234,9 +232,7 @@ function EquityCurves({
                     className="rounded-xl border border-white/[0.08] px-3 py-2"
                     style={{ background: "rgba(10,15,30,0.97)" }}
                   >
-                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-0.5">
-                      Equity Distribution
-                    </p>
+                    <p className="tv-label text-slate-500 mb-0.5">Equity Distribution</p>
                     <div className="space-y-0.5 text-[10px] tabular-nums">
                       <p className="text-emerald-400">P95: {formatMoney(d.p95)}</p>
                       <p className="text-cyan-300">P75: {formatMoney(d.p75)}</p>
@@ -442,9 +438,7 @@ export default function MonteCarloPage({ trades }: Props) {
         <div className="space-y-3">
           {/* Preset */}
           <div className="glass rounded-2xl p-4">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Quick Preset
-            </h4>
+            <h4 className="tv-label text-slate-500 mb-2">Quick Preset</h4>
             <select
               value={firmId}
               onChange={(e) => selectFirm(e.target.value)}
@@ -538,7 +532,7 @@ export default function MonteCarloPage({ trades }: Props) {
               {startingBalance > 0 && (
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-500">Risk %</span>
-                  <span className="text-slate-400 tabular-nums font-semibold">
+                  <span className="tv-figure text-slate-400">
                     {((riskPerTrade / startingBalance) * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -704,9 +698,7 @@ export default function MonteCarloPage({ trades }: Props) {
 
               {/* Confidence intervals */}
               <div className="glass rounded-2xl p-4">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Final Balance Distribution
-                </h4>
+                <h4 className="tv-label text-slate-500 mb-2">Final Balance Distribution</h4>
                 <div className="flex items-end gap-1 h-10">
                   {(["p5", "p25", "p50", "p75", "p95"] as const).map((k) => {
                     const v = result.finalBalanceDistribution[k];
@@ -726,9 +718,7 @@ export default function MonteCarloPage({ trades }: Props) {
                           )}
                           style={{ height: `${Math.max(2, h)}%` }}
                         />
-                        <span className="text-[10px] text-slate-600 uppercase">
-                          {k.toUpperCase()}
-                        </span>
+                        <span className="tv-label text-slate-600">{k.toUpperCase()}</span>
                       </div>
                     );
                   })}
@@ -792,9 +782,7 @@ function StatRow({
         )}
         <span className="text-[10px] text-slate-500">{label}</span>
       </div>
-      <span className={cn("text-[10px] font-semibold tabular-nums", accent || "text-white")}>
-        {value}
-      </span>
+      <span className={cn("tv-figure text-[10px]", accent || "text-white")}>{value}</span>
     </div>
   );
 }

@@ -112,7 +112,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   return (
     <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
       {/* Autosave indicator */}
-      <div className="h-4 -mt-2 text-right text-[10px] font-semibold uppercase tracking-wider">
+      <div className="tv-label h-4 -mt-2 text-right">
         {saveState === "saving" && (
           <span className="text-slate-500">{tr("Enregistrement…", "Saving…")}</span>
         )}
@@ -480,9 +480,7 @@ function Section({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">
-        {label}
-      </span>
+      <span className="tv-label block text-slate-500 mb-1.5">{label}</span>
       {children}
     </label>
   );
@@ -503,9 +501,7 @@ function NumField({
 }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 truncate">
-        {label}
-      </span>
+      <span className="tv-label block text-slate-500 mb-1.5 truncate">{label}</span>
       <div className="relative">
         <input
           type="number"
@@ -513,7 +509,7 @@ function NumField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={cn(inputCls, "pr-8 font-bold tabular-nums")}
+          className={cn(inputCls, "tv-figure pr-8")}
         />
         {unit && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold">
@@ -719,8 +715,8 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
         </defs>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xs font-bold text-white tabular-nums leading-none">{pct}%</span>
-        <span className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
+        <span className="tv-figure text-xs text-white leading-none">{pct}%</span>
+        <span className="tv-label text-slate-500 mt-0.5">{label}</span>
       </div>
     </div>
   );

@@ -322,9 +322,7 @@ function ReportCard({
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-slate-600 font-bold">
-            {t("reports.docLabel")}
-          </div>
+          <div className="tv-label text-slate-600">{t("reports.docLabel")}</div>
           <div className="font-display text-base md:text-lg font-bold text-white capitalize leading-tight">
             {monthLabel(row.month, locale)}
           </div>
@@ -347,12 +345,7 @@ function ReportCard({
           >
             {formatPnl(r.totalPnl)}
           </div>
-          <div
-            className={cn(
-              "mt-1 text-[10px] font-bold uppercase tracking-wider",
-              gain ? "text-emerald-500/70" : "text-red-500/70",
-            )}
-          >
+          <div className={cn("tv-label mt-1", gain ? "text-emerald-500/70" : "text-red-500/70")}>
             {gain ? t("reports.positive") : t("reports.negative")}
           </div>
         </div>
@@ -398,9 +391,7 @@ function ReportCard({
           {/* MoM comparison */}
           {r.prev && (
             <div className="flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/[0.06] px-3.5 py-2.5 text-xs">
-              <span className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] shrink-0">
-                {t("reports.mom")}
-              </span>
+              <span className="tv-label text-slate-500 shrink-0">{t("reports.mom")}</span>
               <span className="text-slate-400">
                 {monthLabel(r.prev.month, locale)}:{" "}
                 <span
@@ -418,7 +409,7 @@ function ReportCard({
               </span>
               <span
                 className={cn(
-                  "ml-auto font-bold tabular-nums shrink-0",
+                  "tv-figure ml-auto shrink-0",
                   r.totalPnl - r.prev.totalPnl >= 0 ? "text-emerald-400" : "text-red-400",
                 )}
               >
@@ -436,9 +427,7 @@ function ReportCard({
                 <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md tv-accent-fill">
                   <Bot className="w-3.5 h-3.5" />
                 </span>
-                <h4 className="text-[11px] uppercase tracking-wider text-cyan-400 font-bold">
-                  {t("reports.aiSummary")}
-                </h4>
+                <h4 className="tv-label text-cyan-400">{t("reports.aiSummary")}</h4>
               </div>
               <div className="text-sm text-slate-300 leading-relaxed">
                 <MarkdownAnswer content={r.aiSummary} />
@@ -472,7 +461,7 @@ function ReportCard({
                       </div>
                       <span
                         className={cn(
-                          "text-[11px] font-bold tabular-nums w-20 text-right",
+                          "tv-figure text-[11px] w-20 text-right",
                           win ? "text-emerald-400" : "text-red-400",
                         )}
                       >
@@ -517,10 +506,7 @@ function ReportCard({
                       {m.name} <span className="text-slate-600">×{m.count}</span>
                     </span>
                     <span
-                      className={cn(
-                        "font-bold tabular-nums",
-                        m.cost >= 0 ? "text-emerald-400" : "text-red-400",
-                      )}
+                      className={cn("tv-figure", m.cost >= 0 ? "text-emerald-400" : "text-red-400")}
                     >
                       {formatPnl(m.cost)}
                     </span>
@@ -545,9 +531,7 @@ function SectionTitle({ children, icon }: { children: React.ReactNode; icon?: Re
   return (
     <h4 className="flex items-center gap-2 mb-2.5">
       {icon}
-      <span className="text-[11px] uppercase tracking-[0.12em] text-slate-400 font-bold shrink-0">
-        {children}
-      </span>
+      <span className="tv-label text-slate-400 shrink-0">{children}</span>
       <span aria-hidden className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
     </h4>
   );
@@ -574,9 +558,7 @@ function Kpi({
           neutral ? "via-white/20" : good ? "via-emerald-400/40" : "via-amber-400/40",
         )}
       />
-      <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1 truncate">
-        {label}
-      </div>
+      <div className="tv-label text-slate-500 mb-1 truncate">{label}</div>
       <div
         className={cn(
           "tv-figure text-base",
@@ -620,7 +602,7 @@ function SetupList({
             </span>
             <span
               className={cn(
-                "font-bold tabular-nums shrink-0 ml-2",
+                "tv-figure shrink-0 ml-2",
                 positive ? "text-emerald-400" : "text-red-400",
               )}
             >

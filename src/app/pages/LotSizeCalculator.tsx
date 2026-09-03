@@ -139,8 +139,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
   };
 
   const inputClass = cn(FIELD_BASE, "h-11");
-  const labelClass =
-    "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+  const labelClass = "tv-label block text-slate-400 mb-1.5";
   const hasResult =
     mode === "forex" ? !!forex && forex.lots > 0 : !!futures && futures.contracts > 0;
 
@@ -192,11 +191,9 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <Lock className="w-4 h-4 text-cyan-300 shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                  {t("calc.capital")}
-                </span>
+                <span className="tv-label text-slate-500">{t("calc.capital")}</span>
               </div>
-              <span className="text-2xl md:text-3xl font-extrabold tabular-nums text-white">
+              <span className="tv-figure text-2xl md:text-3xl text-white">
                 ${balance.toLocaleString()}
               </span>
             </div>
@@ -213,13 +210,11 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2.5">
                 <Gauge className="w-4 h-4 text-cyan-300 shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                  {t("calc.riskPresets")}
-                </span>
+                <span className="tv-label text-slate-500">{t("calc.riskPresets")}</span>
               </div>
               <span
                 className={cn(
-                  "text-sm font-extrabold tabular-nums",
+                  "tv-figure text-sm",
                   riskTooHigh ? "text-amber-300" : "text-cyan-300",
                 )}
               >
@@ -247,7 +242,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                         : "border-white/[0.06] bg-white/[0.03] text-slate-400 hover:text-white hover:border-white/[0.12]",
                     )}
                   >
-                    <span className="block text-sm font-bold tabular-nums">{p}%</span>
+                    <span className="tv-figure block text-sm">{p}%</span>
                     <span
                       className={cn(
                         "block text-[10px] font-medium tabular-nums mt-0.5",
@@ -264,9 +259,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
             {/* Jauge de risque — le $ en jeu, en live */}
             <div className="mt-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
               <div className="flex items-center justify-between gap-3 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  {t("calc.riskBudget")}
-                </span>
+                <span className="tv-label text-slate-500">{t("calc.riskBudget")}</span>
                 <span className="text-[10px] text-slate-500 tabular-nums">{riskPctNum}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
@@ -297,9 +290,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
           <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-3">
             <div className="flex items-center gap-2.5 mb-3">
               <Layers className="w-4 h-4 text-cyan-300 shrink-0" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                {t("calc.sectionInstrument")}
-              </span>
+              <span className="tv-label text-slate-500">{t("calc.sectionInstrument")}</span>
             </div>
 
             {mode === "forex" ? (
@@ -415,7 +406,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div className="relative inline-block text-white tv-figure text-6xl">
                   {forex.lots.toFixed(2)}
                 </div>
-                <div className="relative mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">
+                <div className="tv-label relative mt-1 text-cyan-400">
                   {t("calc.standardLots")} · {pair.label}
                 </div>
               </div>
@@ -438,9 +429,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div className="relative inline-block text-white tv-figure text-6xl">
                   {futures.contracts}
                 </div>
-                <div className="relative mt-1 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold">
-                  {t("calc.contracts")}
-                </div>
+                <div className="tv-label relative mt-1 text-cyan-400">{t("calc.contracts")}</div>
               </div>
               <ResultRow label={t("calc.stopPoints")} value={stopPoints} />
               <ResultRow label={t("calc.pointValue")} value={`$${parseFloat(pointValue) || 0}`} />
@@ -455,10 +444,8 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
           {hasResult && (
             <>
               <div className="flex items-center justify-between rounded-xl bg-white/[0.02] border border-white/[0.06] px-3 py-2 mt-3">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider">
-                  {t("calc.riskBudget")}
-                </span>
-                <span className="text-xs font-bold text-cyan-300 tabular-nums">
+                <span className="tv-label text-slate-500">{t("calc.riskBudget")}</span>
+                <span className="tv-figure text-xs text-cyan-300">
                   ${riskDollar.toFixed(2)} · {riskPctNum || 0}% {t("calc.riskOfAccount")}
                 </span>
               </div>
@@ -488,12 +475,7 @@ function ResultRow({ label, value, accent }: { label: string; value: string; acc
   return (
     <div className="flex items-center justify-between h-9 px-3 rounded-xl odd:bg-white/[0.02]">
       <span className="text-[11px] text-slate-500">{label}</span>
-      <span
-        className={cn(
-          "text-sm font-bold tabular-nums",
-          accent ? "text-cyan-300" : "text-slate-200",
-        )}
-      >
+      <span className={cn("tv-figure text-sm", accent ? "text-cyan-300" : "text-slate-200")}>
         {value}
       </span>
     </div>

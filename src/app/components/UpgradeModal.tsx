@@ -154,10 +154,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                     <Icon className="h-4 w-4" />
                   </span>
                   <span
-                    className={cn(
-                      "text-[11px] font-bold uppercase tracking-[.15em]",
-                      tier === "pro" ? "text-cyan-300" : "text-slate-400",
-                    )}
+                    className={cn("tv-label", tier === "pro" ? "text-cyan-300" : "text-slate-400")}
                   >
                     {def.name[fr ? "fr" : "en"]}
                   </span>

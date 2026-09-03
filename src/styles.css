@@ -1722,22 +1722,33 @@ a:focus-visible,
      tienne dans la même case qu'avant. */
   letter-spacing: -0.03em;
   /* 600, pas 800 : en chasse fixe, un chiffre gras devient un pavé. La
-     présence vient de la taille et de l'alignement, pas de l'encre. */
+     présence vient de la taille et de l'alignement, pas de l'encre.
+     Comme `.tv-label`, la classe ne fixe pas de couleur : la teinte d'un
+     chiffre porte son SIGNE (vert gagné, rouge perdu), et cela se décide au
+     point d'appel. */
   font-weight: 600;
 }
 
 /* ══ LE LIBELLÉ ══
  *
- * Petites capitales espacées, gris sourd : le vocabulaire d'étiquetage de
- * Topstep (« BAL: », « MLL: », « RPNL: ») et de Lucid (« START », « TARGET »,
- * « EOD DRAWDOWN »). Un libellé n'est pas une phrase — il nomme la case, et
- * doit pouvoir être ignoré une fois qu'on sait ce qu'il y a dedans. */
+ * Petites capitales espacées : le vocabulaire d'étiquetage de Topstep
+ * (« BAL: », « MLL: », « RPNL: ») et de Lucid (« START », « TARGET »,
+ * « EOD DRAWDOWN »). Un libellé n'est pas une phrase — il NOMME la case, et
+ * doit pouvoir être ignoré une fois qu'on sait ce qu'il y a dedans.
+ *
+ * Les valeurs viennent de la page Calculatrice de lot, qui est la référence
+ * typographique du produit : 10px, 600, capitales, `tracking-wider`. Elles y
+ * étaient recopiées à la main sur chaque libellé ; elles sont ici une fois.
+ *
+ * La classe ne fixe VOLONTAIREMENT pas de couleur. Un libellé est sourd par
+ * défaut, mais certains portent un état (ambre pour un avertissement, vert
+ * pour un objectif atteint) : la couleur reste au point d'appel, sinon la
+ * classe l'écraserait silencieusement. */
 .tv-label {
   font-size: var(--tv-t-micro);
   font-weight: 600;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--tv-text-muted);
 }
 
 /* ══════════════════════════════════════════════════════════════════════

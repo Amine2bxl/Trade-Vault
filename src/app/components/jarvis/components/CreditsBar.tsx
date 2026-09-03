@@ -76,7 +76,7 @@ export default function CreditsBar() {
               {t("credits.remaining")}
             </span>
           </div>
-          <div className="mt-0.5 text-[11px] uppercase tracking-[0.16em] text-slate-600 font-bold">
+          <div className="tv-label mt-0.5 text-slate-600">
             {t("credits.title")} · {unlimited ? "∞" : `${limit}/j`}
           </div>
         </div>

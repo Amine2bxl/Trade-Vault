@@ -119,7 +119,7 @@ export default function CommandPalette({
                   </span>
                   <span
                     className={cn(
-                      "ml-auto text-xs font-bold tabular-nums",
+                      "tv-figure ml-auto text-xs",
                       tr.direction === "be"
                         ? "text-slate-300"
                         : tr.pnl >= 0

@@ -45,9 +45,7 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
 
         {/* Table of contents */}
         <nav className="glass rounded-2xl p-4 md:p-5 mb-8">
-          <div className="text-[11px] uppercase tracking-wider text-cyan-400 font-bold mb-3">
-            {chrome.toc}
-          </div>
+          <div className="tv-label text-cyan-400 mb-3">{chrome.toc}</div>
           <ol className="space-y-1.5">
             {doc.blocks.map((b, i) => (
               <li key={b.h}>
@@ -73,7 +71,7 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
               className="glass-strong rounded-2xl p-4 md:p-5 scroll-mt-6"
             >
               <h2 className="text-base md:text-lg font-bold text-white mb-2.5 flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 text-cyan-400 text-xs font-bold flex items-center justify-center shrink-0 tabular-nums">
+                <span className="tv-figure w-6 h-6 rounded-lg bg-cyan-500/10 text-cyan-400 text-xs flex items-center justify-center shrink-0">
                   {i + 1}
                 </span>
                 {b.h}

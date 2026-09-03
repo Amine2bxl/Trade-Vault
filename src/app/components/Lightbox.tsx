@@ -80,7 +80,7 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
           >
             <ChevronRight className="w-5 h-5" />
           </button>
-          <div className="absolute bottom-5 md:bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full glass-strong border border-white/10 text-[11px] font-semibold text-slate-300 tabular-nums z-10">
+          <div className="tv-figure absolute bottom-5 md:bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full glass-strong border border-white/10 text-[11px] text-slate-300 z-10">
             {index + 1} / {images.length}
           </div>
         </>

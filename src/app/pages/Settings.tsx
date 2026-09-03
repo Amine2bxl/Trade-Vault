@@ -300,7 +300,7 @@ export default function Settings({
               />
 
               <label className="block">
-                <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
                   </span>
@@ -320,7 +320,7 @@ export default function Settings({
               </label>
 
               <label className="block">
-                <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
                   </span>
@@ -480,7 +480,7 @@ function DeleteAccountModal({
         <h2 className="text-lg font-bold text-white mb-1.5">{t("settings.deleteAccountTitle")}</h2>
         <p className="text-sm text-slate-400 mb-5">{t("settings.deleteAccountBody")}</p>
 
-        <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+        <label className="tv-label block text-slate-500 mb-1.5">
           {t("settings.deleteAccountConfirm")}
         </label>
         <input

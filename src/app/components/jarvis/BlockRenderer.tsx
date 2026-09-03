@@ -115,7 +115,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
               <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
               <div
                 className={
-                  "text-sm font-bold tabular-nums " +
+                  "tv-figure text-sm" +
                   (m.tone === "up"
                     ? "text-emerald-400"
                     : m.tone === "down"
@@ -151,9 +151,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
 function MissionView({ block, onTool }: { block: JarvisMissionBlock; onTool?: BlockToolHandler }) {
   return (
     <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.05] p-3.5 space-y-2.5">
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300">
-        {block.title}
-      </div>
+      <div className="tv-label text-cyan-300">{block.title}</div>
       <ul className="space-y-1.5">
         {block.items.map((item, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-slate-200 leading-snug">

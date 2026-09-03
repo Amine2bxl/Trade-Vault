@@ -241,7 +241,7 @@ export function GoalPicker({
                     {cur !== null && (
                       <>
                         {" · "}
-                        <span className="text-slate-300 font-semibold tabular-nums">
+                        <span className="tv-figure text-slate-300">
                           {tr("actuel", "current")}: {m.unit === "$" ? "$" : ""}
                           {cur.toFixed(k === "capital" ? 0 : 2)}
                           {m.unit && m.unit !== "$" ? m.unit : ""}
@@ -318,7 +318,7 @@ export function GoalPicker({
                       placeholder={m.ph}
                       className="w-full h-11 bg-white/[0.05] border border-white/[0.1] rounded-xl px-3.5 pr-16 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                    <span className="tv-label absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
                       {tr("cible 6 mois", "6-mo target")}
                     </span>
                   </div>
@@ -570,13 +570,13 @@ export function PlanView({
                     >
                       {tr("Mois", "Month")} {i + 1} · {monthLabel(monthOf(plan, i))}
                       {i === cur && (
-                        <span className="ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+                        <span className="tv-label ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-cyan-300">
                           {tr("en cours", "current")}
                         </span>
                       )}
                     </span>
                     {!locked && (
-                      <span className="text-[11px] font-bold tabular-nums text-slate-400 shrink-0">
+                      <span className="tv-figure text-[11px] text-slate-400 shrink-0">
                         {Math.round(taskCompletion * 100)}% {tr("tâches", "tasks")}
                       </span>
                     )}
@@ -646,7 +646,7 @@ export function PlanView({
                             </div>
                             <span
                               className={cn(
-                                "text-[10px] font-bold tabular-nums w-9 text-right",
+                                "tv-figure text-[10px] w-9 text-right",
                                 reached ? "text-emerald-400" : "text-slate-400",
                               )}
                             >
@@ -662,7 +662,7 @@ export function PlanView({
                   <div>
                     <div className="flex items-center gap-1.5 mb-2">
                       <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
-                      <span className="text-[10px] uppercase tracking-[0.15em] text-cyan-300 font-bold">
+                      <span className="tv-label text-cyan-300">
                         {tr("Actions du mois", "This month's actions")}
                       </span>
                     </div>
@@ -745,7 +745,7 @@ function ManualValueInput({
       onBlur={commit}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
       aria-label={fr ? "Valeur actuelle" : "Current value"}
-      className="w-20 h-9 shrink-0 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 text-xs font-bold text-white text-right tabular-nums focus:outline-none focus:border-cyan-500/40"
+      className="tv-figure w-20 h-9 shrink-0 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 text-xs text-white text-right focus:outline-none focus:border-cyan-500/40"
     />
   );
 }

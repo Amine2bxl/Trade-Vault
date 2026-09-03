@@ -360,27 +360,21 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
             <div className="flex items-center gap-3 md:gap-5 flex-wrap">
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  {t("analytics.profits")}
-                </div>
+                <div className="tv-label text-slate-500">{t("analytics.profits")}</div>
                 <div className="tv-figure text-base md:text-lg text-emerald-400">
                   {formatPnl(profitFactorData.totalProfits)}
                 </div>
               </div>
               <div className="text-base text-slate-600 font-light">÷</div>
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  {t("analytics.losses")}
-                </div>
+                <div className="tv-label text-slate-500">{t("analytics.losses")}</div>
                 <div className="tv-figure text-base md:text-lg text-red-400">
                   {formatPnl(-profitFactorData.totalLosses)}
                 </div>
               </div>
               <div className="text-base text-slate-600 font-light">=</div>
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  {t("analytics.factor")}
-                </div>
+                <div className="tv-label text-slate-500">{t("analytics.factor")}</div>
                 <div
                   className={cn(
                     "tv-figure text-lg md:text-xl",
@@ -422,13 +416,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
           {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
           <Card hover className="md:hidden group relative p-3.5">
             <div className="flex items-center gap-1 mb-1.5">
-              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
-                {t("analytics.profitFactor")}
-              </span>
+              <span className="tv-label text-slate-500">{t("analytics.profitFactor")}</span>
             </div>
             <div
               className={cn(
-                "text-base font-bold tabular-nums",
+                "tv-figure text-base",
                 profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
               )}
             >
@@ -508,9 +500,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           ].map((m, i) => (
             <div key={i} className="group relative glass rounded-2xl p-3.5 card-premium">
               <div className="flex items-center gap-1 mb-1.5">
-                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
-                  {m.label}
-                </span>
+                <span className="tv-label text-slate-500">{m.label}</span>
                 {"info" in m && m.info && <InfoTip text={m.info} />}
               </div>
               <div
@@ -550,7 +540,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     <th
                       key={i}
                       className={cn(
-                        "px-4 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider",
+                        "tv-label px-4 py-2.5 text-slate-500",
                         i === 0 ? "text-left" : "text-right",
                       )}
                     >
@@ -590,7 +580,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {formatPnl(row.expectancy)}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-right tabular-nums text-slate-300 font-semibold">
+                    <td className="tv-figure px-4 py-2.5 text-xs text-right text-slate-300">
                       {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
                           mieux qu'affirmer sur trois trades. */}
                       {row.profitFactor === null
@@ -1133,37 +1123,31 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                Meilleur mois
-              </span>
+              <span className="tv-label text-slate-500">Meilleur mois</span>
             </div>
             <div className="font-display text-base font-extrabold text-white">
               {best ? best.month : "—"}
             </div>
-            <div className="text-[11px] text-emerald-400 font-semibold tabular-nums mt-0.5">
+            <div className="tv-figure text-[11px] text-emerald-400 mt-0.5">
               {best ? formatPnl(best.pnl) : "—"}
             </div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                Pire mois
-              </span>
+              <span className="tv-label text-slate-500">Pire mois</span>
             </div>
             <div className="font-display text-base font-extrabold text-white">
               {worst ? worst.month : "—"}
             </div>
-            <div className="text-[11px] text-red-400 font-semibold tabular-nums mt-0.5">
+            <div className="tv-figure text-[11px] text-red-400 mt-0.5">
               {worst ? formatPnl(worst.pnl) : "—"}
             </div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <CalendarDays className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                Mois tradés
-              </span>
+              <span className="tv-label text-slate-500">Mois tradés</span>
             </div>
             <div className="tv-figure text-base text-white">{tradedMonths}/12</div>
             <div className="text-[11px] text-slate-500 mt-0.5">{totalTrades} trades</div>
@@ -1171,9 +1155,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                Années
-              </span>
+              <span className="tv-label text-slate-500">Années</span>
             </div>
             <div className="tv-figure text-base text-white">{years.length}</div>
             <div className="text-[11px] text-slate-500 mt-0.5">de données</div>
@@ -1183,11 +1165,9 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
         {/* Yearly heatmap */}
         {years.length > 0 && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
-              Heatmap annuel
-            </div>
+            <div className="tv-label text-slate-500 mb-2">Heatmap annuel</div>
             <div className="flex flex-col gap-0.5 w-full">
-              <div className="grid grid-cols-12 gap-0.5 text-[10px] font-bold uppercase text-slate-600 pl-9">
+              <div className="tv-label grid grid-cols-12 gap-0.5 text-slate-600 pl-9">
                 {monthly.map((m, i) => (
                   <div key={i} className="text-center">
                     {m.month}
@@ -1207,7 +1187,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
                       return (
                         <div
                           key={i}
-                          className="h-7 rounded flex items-center justify-center text-[10px] font-bold tabular-nums"
+                          className="tv-figure h-7 rounded flex items-center justify-center text-[10px]"
                           style={{
                             background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`,
                             color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b",

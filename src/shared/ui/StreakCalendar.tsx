@@ -46,7 +46,7 @@ export function StreakCalendar({
         <div key={c.iso} className="flex flex-1 flex-col items-center gap-1.5">
           <span
             className={cn(
-              "text-[10px] uppercase tracking-wide",
+              "tv-label",
               c.isToday ? "text-amber-300 font-semibold" : "text-slate-500",
             )}
           >

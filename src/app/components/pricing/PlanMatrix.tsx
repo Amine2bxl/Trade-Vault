@@ -71,12 +71,7 @@ export default function PlanMatrix() {
                   {fr ? "Le plus choisi" : "Most chosen"}
                 </span>
               )}
-              <span
-                className={cn(
-                  "text-[11px] font-bold uppercase tracking-wider",
-                  featured ? "text-cyan-300" : "text-slate-400",
-                )}
-              >
+              <span className={cn("tv-label", featured ? "text-cyan-300" : "text-slate-400")}>
                 {tr(t.name)}
               </span>
               <span
@@ -97,7 +92,7 @@ export default function PlanMatrix() {
         {/* Lignes, groupées par palier qui ajoute. */}
         {groups.map(({ tier: g, rows }) => (
           <Fragment key={g.id}>
-            <div className="col-span-4 mt-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="tv-label col-span-4 mt-3 text-slate-500">
               {fr
                 ? `Dans l'offre ${g.name.fr.toLowerCase()}`
                 : `Included in ${g.name.en.toLowerCase()}`}

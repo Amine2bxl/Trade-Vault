@@ -227,9 +227,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
         {/* ── Colonne des paramètres ─────────────────────────────────────── */}
         <Card>
           <CardBody className="space-y-3">
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">
-              {t("sim.rulesTitle")}
-            </p>
+            <p className="tv-label text-slate-500">{t("sim.rulesTitle")}</p>
             {/* Le rappel n'est pas décoratif : il dit au trader d'où viennent
                 les chiffres qu'il saisit, et que TradeVault ne les connaît pas. */}
             <p className="text-[11px] text-slate-500 flex gap-1.5">
@@ -287,9 +285,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
 
             {saved.length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  {t("sim.savedTitle")}
-                </p>
+                <p className="tv-label text-slate-500">{t("sim.savedTitle")}</p>
                 {saved.slice(0, 5).map((s) => (
                   <div
                     key={s.id}
@@ -351,9 +347,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
               <Card>
                 <CardBody className="space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                      {t("sim.resultsTitle")}
-                    </p>
+                    <p className="tv-label text-slate-500">{t("sim.resultsTitle")}</p>
                     {/* La qualification de l'échantillon est collée au chiffre,
                         jamais reléguée en bas de page : un 92 % sur 8 trades
                         ne se lit pas comme un 92 % sur 400. */}
@@ -411,9 +405,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
 
               <Card>
                 <CardBody className="space-y-2">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                    {t("sim.pnlTitle")}
-                  </p>
+                  <p className="tv-label text-slate-500">{t("sim.pnlTitle")}</p>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-sm tabular-nums">
                     {(
                       [
@@ -438,9 +430,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
               {comparison && (
                 <Card>
                   <CardBody className="space-y-2">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                      {t("sim.compareTitle")}
-                    </p>
+                    <p className="tv-label text-slate-500">{t("sim.compareTitle")}</p>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm tabular-nums">
                         <thead>
@@ -498,9 +488,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
               {sensitivity && (
                 <Card>
                   <CardBody className="space-y-2">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                      {t("sim.leversTitle")}
-                    </p>
+                    <p className="tv-label text-slate-500">{t("sim.leversTitle")}</p>
                     <div className="space-y-1.5">
                       {sensitivity.rows.map((row) => (
                         <div

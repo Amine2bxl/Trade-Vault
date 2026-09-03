@@ -221,9 +221,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
           <div className="pt-1">
             <div className="flex items-center gap-2 mb-2.5 md:mb-3">
               <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">
-                {t("tradeDetail.chartScreenshots")}
-              </span>
+              <span className="tv-label text-slate-500">{t("tradeDetail.chartScreenshots")}</span>
               <span className="text-[10px] text-slate-700 font-semibold">· {shots.length}</span>
             </div>
             <ScreenshotsView paths={shots} size="lg" />

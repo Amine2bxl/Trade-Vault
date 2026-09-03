@@ -726,9 +726,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     <div className="flex flex-col flex-1 min-h-0">
       {/* Toolbar du workspace */}
       <div className="flex items-center gap-2 px-4 md:px-6 py-2 border-b border-white/[0.04] shrink-0">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-600">
-          {t("jarvis.conversation")}
-        </span>
+        <span className="tv-label text-slate-600">{t("jarvis.conversation")}</span>
         {messages.length > 0 && (
           <button
             onClick={clearChat}
@@ -788,9 +786,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
             {suggestions.length > 0 && (
               <div className="mt-5 space-y-2">
-                <p className="text-[11px] uppercase tracking-[0.16em] font-semibold text-slate-500">
-                  {t("jarvisHome.suggestions")}
-                </p>
+                <p className="tv-label text-slate-500">{t("jarvisHome.suggestions")}</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {suggestions.map((s) => (
                     <button
@@ -827,9 +823,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
                     <Bot className="w-3.5 h-3.5" />
                   </span>
-                  <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
-                    {t("assistant.title")}
-                  </span>
+                  <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
                 </div>
                 {m.role === "assistant" ? (
                   <BlockList blocks={m.blocks} onTool={handleTool} />
@@ -866,9 +860,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
                 <Bot className="w-3.5 h-3.5" />
               </span>
-              <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
-                {t("assistant.title")}
-              </span>
+              <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
               <span className="flex items-center gap-1">
                 <span className="thinking-dot" />
                 <span className="thinking-dot" style={{ animationDelay: "0.15s" }} />

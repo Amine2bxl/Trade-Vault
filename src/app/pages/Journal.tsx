@@ -384,7 +384,7 @@ export default function Journal({
                 {opt.label}
                 <span
                   className={cn(
-                    "tabular-nums text-[10px] font-bold",
+                    "tv-figure text-[10px]",
                     resultFilter === opt.v ? "opacity-70" : "text-slate-600",
                   )}
                 >
@@ -577,7 +577,7 @@ export default function Journal({
                   <th
                     key={key}
                     onClick={() => handleSort(key)}
-                    className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-300 transition-colors select-none"
+                    className="tv-label px-4 py-2 text-left text-slate-500 cursor-pointer hover:text-slate-300 transition-colors select-none"
                   >
                     <span className="flex items-center gap-1.5">
                       {key === "pnl"
@@ -593,13 +593,9 @@ export default function Journal({
                     </span>
                   </th>
                 ))}
-                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {t("common.side")}
-                </th>
-                <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {t("common.risk")}
-                </th>
-                <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th className="tv-label px-4 py-2 text-left text-slate-500">{t("common.side")}</th>
+                <th className="tv-label px-4 py-2 text-left text-slate-500">{t("common.risk")}</th>
+                <th className="tv-label px-4 py-2 text-right text-slate-500">
                   {t("common.actions")}
                 </th>
               </tr>
@@ -693,7 +689,7 @@ export default function Journal({
                           disabled={!onQuickEdit}
                           onCommit={(v) => onQuickEdit?.(trade.id, { riskAmount: v })}
                           title={t("journal.quickEditRisk")}
-                          className="text-sm font-semibold text-slate-300 tabular-nums"
+                          className="tv-figure text-sm text-slate-300"
                         />
                       </td>
                       <td className="px-4 py-1.5">
@@ -785,14 +781,8 @@ function SummaryTile({
   return (
     <div className="stat-card px-3 py-2.5">
       <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-          {label}
-        </span>
-        {hint && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 shrink-0">
-            {hint}
-          </span>
-        )}
+        <span className="tv-label text-slate-500 truncate">{label}</span>
+        {hint && <span className="tv-label text-slate-600 shrink-0">{hint}</span>}
       </div>
       <div
         className={cn(
@@ -876,7 +866,7 @@ function QuickEditCell({
         }}
         className={cn(
           "w-20 bg-white/[0.06] border border-cyan-500/50 rounded-md px-1.5 py-0.5",
-          "text-sm font-bold text-white tabular-nums focus:outline-none",
+          "tv-figure text-sm text-white focus:outline-none",
         )}
       />
     );

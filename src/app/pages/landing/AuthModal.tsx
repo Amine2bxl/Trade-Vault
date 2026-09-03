@@ -237,9 +237,7 @@ export function AuthModal({
 
             <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-white/[.07]" />
-              <span className="text-[11px] uppercase tracking-wider text-slate-600">
-                ou par e-mail
-              </span>
+              <span className="tv-label text-slate-600">ou par e-mail</span>
               <div className="h-px flex-1 bg-white/[.07]" />
             </div>
 

@@ -265,9 +265,7 @@ export default function Inbox() {
           {groups.map(({ label, items }) => (
             <div key={label}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">
-                  {label}
-                </span>
+                <span className="tv-label text-slate-500">{label}</span>
                 <span className="flex-1 h-px bg-white/[0.04]" />
                 <span className="text-[10px] text-slate-600 font-semibold">{items.length}</span>
               </div>
