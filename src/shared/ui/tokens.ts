@@ -1,9 +1,9 @@
 /**
  * Design tokens — the TradeVault visual identity, centralized.
  *
- * Ils codifient l'identité « Vault » : Inter pour la parole, chasse fixe pour
- * le chiffre, un accent vert unique et rare, des plaques opaques sur un noir
- * neutre, une seule échelle de mouvement. C'est la référence typée et
+ * Ils codifient l'identité « Vault » : UNE seule police (Inter) pour la parole
+ * comme pour le chiffre, un accent vert unique et rare, des plaques opaques sur
+ * un noir neutre, une seule échelle de mouvement. C'est la référence typée et
  * documentée sur laquelle chaque primitive et chaque nouvel écran s'appuient.
  *
  * Les trois règles que ce fichier fait tenir :
@@ -11,8 +11,9 @@
  *      le signe du P&L. Une surface qui n'est ni l'un ni l'autre est grise.
  *   2. La profondeur vient de la VALEUR, pas de la lumière — une plaque plus
  *      claire est devant. Rien ne rayonne, rien ne flotte sans raison.
- *   3. Le chiffre a sa propre voix — chasse fixe, tabulaire, et seulement
- *      pour les montants de tête.
+ *   3. Le chiffre a sa propre GRAISSE, pas sa propre police — Inter en 800,
+ *      chiffres tabulaires. C'est le « Capital » de la Calculatrice de lot,
+ *      et c'est la référence de toute donnée chiffrée du produit.
  *
  * IMPORTANT: this does not restyle anything. The visual source of truth is the
  * CSS in `src/styles.css` (custom properties + utility classes); these tokens
@@ -172,11 +173,9 @@ export const type = {
   label: "tv-label",
   /** Chrome dense : badges, unités, méta de cellule. Le plancher — rien en dessous. */
   micro: "text-[10px]",
-  /** LE CHIFFRE — chasse fixe, tabulaire. Réservé aux montants de tête
-   *  (P&L, solde, drawdown, cible) : c'est la signature typographique de la
-   *  refonte, et elle ne vaut que si elle reste rare. Les nombres au fil du
-   *  texte et dans les tableaux denses gardent Inter + `tabular-nums`. */
-  fin: "tv-figure text-base tracking-[-0.03em]",
+  /** LE CHIFFRE — Inter 800, chiffres tabulaires. Le « Capital » de la
+   *  Calculatrice de lot, appliqué à TOUTE donnée chiffrée du produit. */
+  fin: "tv-figure text-base",
   /** Le même chiffre, taille de tuile KPI. */
   figure: "tv-figure text-xl md:text-[26px] leading-none",
   /** Le même chiffre, taille héros (P&L du mois, solde du compte). */
@@ -262,7 +261,7 @@ export const zIndex = {
 
 /** Signature interaction/animation classes from `styles.css`. */
 export const behavior = {
-  /** Un chiffre de tête (chasse fixe, tabulaire). */
+  /** Une donnée chiffrée (Inter 800, tabulaire). */
   figure: "tv-figure",
   /** Un libellé de case (petites capitales espacées). */
   label: "tv-label",

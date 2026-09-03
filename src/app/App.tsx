@@ -723,7 +723,7 @@ function AppContent() {
           page, et c'est cet écart — pas une bordure — qui sépare la navigation
           du produit. Sur mobile le cadre disparaît : l'écran est trop étroit
           pour s'offrir une marge, le contenu va d'un bord à l'autre. */}
-      <main className="app-main app-frame relative my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-3">
+      <main className="app-main app-frame relative z-0 my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-3">
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :

@@ -976,10 +976,10 @@ input[type="number"] {
   }
 }
 .metric-display {
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  letter-spacing: -0.03em;
+  font-feature-settings: "tnum";
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--tv-text-primary);
   line-height: 1;
 }
@@ -1566,11 +1566,81 @@ a:focus-visible,
 }
 /* L'ACTIF : pilule blanche pleine, texte vert très foncé. Aucun autre état
    de l'application n'utilise du blanc plein — c'est ce qui rend celui-ci
-   immédiatement lisible. */
+   immédiatement lisible.
+
+   Et surtout : elle DÉBORDE. La pilule active sort du rail par la droite,
+   traverse l'écart et vient toucher la fenêtre de contenu. Son bord droit
+   s'aplatit à cet endroit — elle ne se referme pas, elle se prolonge.
+
+   Ce n'est pas un ornement : c'est la seule chose qui relie visuellement la
+   navigation à la page. Sans ça, le rail et la fenêtre sont deux objets qui
+   flottent côte à côte sans qu'on sache lequel commande l'autre. Avec, on
+   voit d'un coup d'œil quelle entrée a produit ce qui est affiché à droite —
+   comme un onglet de classeur planté dans son intercalaire. */
 .rail-item-active,
 .rail-item-active:hover {
   background: #ffffff;
   color: var(--tv-rail-bot);
+  /* C'est la LARGEUR qui s'allonge, pas une marge négative : l'entrée porte
+     `w-full` (`width: 100%`), et sur une boîte dont la largeur est fixée, une
+     marge négative ne l'élargit pas — elle ne fait que décaler ce qui suit.
+     La pilule restait sagement dans le rail.
+     Le padding rend au libellé la place que l'allongement lui prend : le texte
+     ne bouge PAS quand l'entrée devient active, seule la pilule s'étire. */
+  width: calc(100% + var(--rail-bridge));
+  padding-right: calc(var(--rail-bridge) + 0.75rem);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  /* Elle passe devant la fenêtre de contenu, jamais dessous. */
+  position: relative;
+  z-index: 1;
+}
+/* Pliée, la pilule est un disque : elle déborde tout autant, mais sans
+   libellé à replacer. */
+.rail-collapsed .rail-item-active {
+  /* Le DISQUE reste centré sur le rail — c'est lui qu'on lit comme l'entrée
+     active — et seule la queue s'allonge vers la droite. Une marge `auto`
+     aurait recentré l'ensemble disque+queue, donc décalé le disque. */
+  margin-left: calc((100% - 2.5rem) / 2);
+  width: calc(2.5rem + var(--rail-bridge));
+  padding-right: 0;
+}
+
+/* La longueur du débordement, calculée et non devinée :
+     10px  la gouttière interne du rail (`px-2.5` sur la nav)
+   + 12px  l'écart entre le rail et la fenêtre
+   + 20px  ce qu'il faut pour MORDRE dans la fenêtre — sans ça la pilule
+           s'arrête dans le vide et ne relie rien.
+   Déclarée ici, une seule fois. */
+.rail {
+  --rail-bridge: 42px;
+}
+/* Le rail ne CLIPPE plus : une pilule qui doit sortir ne peut pas vivre dans
+   une boîte qui coupe. Le repli continue de fonctionner — c'est la largeur du
+   rail qui s'anime, et les libellés disparaissent du DOM, ils ne sont pas
+   masqués par un rognage. */
+.rail,
+.rail > div,
+.rail nav {
+  overflow: visible;
+}
+/* Sauf sur un écran très bas, où la liste doit pouvoir défiler. Le lien
+   visuel se perd alors — c'est le bon arbitrage : à cette hauteur, atteindre
+   ses entrées compte plus que voir laquelle est reliée à la page. */
+@media (max-height: 620px) {
+  .rail nav {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .rail-item-active {
+    width: 100%;
+    padding-right: 0.75rem;
+    border-radius: 9999px;
+  }
+  .rail-collapsed .rail-item-active {
+    width: 2.5rem;
+    margin-inline: auto;
+  }
 }
 .rail-item-active .rail-icon {
   color: var(--tv-rail-bot);
@@ -1764,31 +1834,32 @@ a:focus-visible,
 
 /* ══ LE CHIFFRE ══
  *
- * Les chiffres de tête — le P&L du jour, le solde, le drawdown, la cible —
- * passent en CHASSE FIXE. C'est le signe distinctif des plateformes que le
- * trader prend au sérieux (Topstep, Lucid, un terminal Bloomberg) et ce
- * n'est pas une coquetterie : une chasse fixe donne à chaque chiffre la
- * même largeur, donc à chaque montant la même longueur pour un même nombre
- * de chiffres. Deux colonnes de montants s'alignent d'elles-mêmes, et un
- * total qui passe de 999 à 1 000 ne fait plus glisser la ligne.
+ * C'est le « Capital » de la page Calculatrice de lot, mot pour mot :
  *
- * C'est réservé aux chiffres de tête : le texte courant, les libellés et
- * les tableaux denses restent en Inter, qui tient plus de mots sur la même
- * largeur. Une interface entièrement en chasse fixe est un déguisement.
+ *     text-2xl md:text-3xl font-extrabold tabular-nums text-white
+ *
+ * Autrement dit : Inter — la police du produit, pas une seconde famille —
+ * en graisse 800, avec les chiffres TABULAIRES.
+ *
+ * Le tabulaire est le seul point qui compte vraiment, et il ne se voit pas
+ * tant qu'on ne l'enlève pas : il donne à chaque chiffre la même largeur.
+ * Deux montants alignés en colonne le restent, et un total qui passe de 999
+ * à 1 000 ne fait plus glisser sa ligne. La graisse 800, elle, est ce qui
+ * fait qu'on lit le nombre AVANT son libellé.
+ *
+ * Une parenthèse fermée : le produit est passé un temps en chasse fixe pour
+ * ses chiffres. C'était une autre police, donc une seconde voix dans une
+ * interface qui n'en veut qu'une. Inter tabulaire fait le même travail
+ * d'alignement en restant la même écriture que le reste.
+ *
+ * La classe ne fixe pas de COULEUR : la teinte d'un chiffre porte son signe
+ * (vert gagné, rouge perdu), et cela se décide au point d'appel.
  */
 .tv-figure {
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  /* La chasse fixe est large : on la resserre pour qu'un « -$1 284,50 »
-     tienne dans la même case qu'avant. */
-  letter-spacing: -0.03em;
-  /* 600, pas 800 : en chasse fixe, un chiffre gras devient un pavé. La
-     présence vient de la taille et de l'alignement, pas de l'encre.
-     Comme `.tv-label`, la classe ne fixe pas de couleur : la teinte d'un
-     chiffre porte son SIGNE (vert gagné, rouge perdu), et cela se décide au
-     point d'appel. */
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 /* ══ LE LIBELLÉ ══

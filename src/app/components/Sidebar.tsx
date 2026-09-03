@@ -96,7 +96,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "rail relative z-30 hidden shrink-0 flex-col overflow-hidden rounded-[28px] md:flex",
+        "rail relative z-30 hidden shrink-0 flex-col rounded-[28px] md:flex",
         // Une capsule qui FLOTTE : elle ne touche aucun bord. La hauteur se
         // calcule sur le viewport moins ses propres marges, pour que le fond de
         // la page passe au-dessus ET en dessous d'elle.
@@ -104,7 +104,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         collapsed ? "rail-collapsed w-[68px]" : "w-[212px]",
       )}
     >
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex h-full min-h-0 flex-col">
         {/* ── MARQUE + PLI ──
             Déplié : disque blanc + nom à gauche, chevron à droite.
             Plié : le disque seul, centré. Le chevron descend sous la marque,
@@ -142,7 +142,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         </div>
 
         {/* ── NAVIGATION ── */}
-        <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-3">
+        <nav className="min-h-0 flex-1 px-2.5 py-3">
           <div className="space-y-1">
             {SECTIONS.filter((section) => section.id !== "settings").map((section) => {
               const { labelKey, icon: Icon } = SECTION_META[section.id];
