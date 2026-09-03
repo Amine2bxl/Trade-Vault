@@ -24,19 +24,29 @@ export const EQUITY_ANIMATION = {
   animationEasing: "cubic-bezier(0.33,1,0.68,1)" as unknown as "ease-out",
 };
 
-// Shared equity-line look so Dashboard + Analytics curves match: a precise
-// 2px stroke, no glow, no drop-shadow. Legibility of the path IS the styling.
+// Le trait d'equity, partagé par le tableau de bord et Analytics : épais,
+// bouts ronds, aucun halo. Il passe de 2 à 3px — sur une courbe très lissée,
+// un trait fin se lit comme un fil de fer ; c'est l'épaisseur qui donne la
+// sensation de fluide.
 export const EQUITY_LINE = {
-  strokeWidth: 2,
+  strokeWidth: 3,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };
 
-// `monotone` never overshoots between points, so the curve stays faithful to
-// the equity it plots — `natural` (a cubic spline) invents wobbles and bumps
-// that do not exist in the data, which is exactly what made the old curve look
-// decorative rather than professional.
-export const EQUITY_CURVE_TYPE = "monotone" as const;
+// `natural` — une spline cubique, la courbe RONDE et fluide des tableaux de
+// bord de prop firm.
+//
+// À dire clairement, parce que c'est un arbitrage et pas un détail : une
+// spline cubique passe par tous les points mais peut DÉPASSER entre deux —
+// un sommet peut apparaître légèrement plus haut que la valeur réelle. C'est
+// le prix de la rondeur, et c'est celui que paie la référence.
+//
+// Ce qui rend le compromis acceptable ici : la courbe d'equity sert à lire une
+// FORME (est-ce que ça monte, où était le creux), pas à relever une valeur au
+// pixel. La valeur exacte, elle, se lit à l'infobulle, qui affiche la donnée
+// brute et n'est pas interpolée.
+export const EQUITY_CURVE_TYPE = "natural" as const;
 
 // Horizontal-only grid, whisper-faint. Gives the eye a baseline to read levels
 // against without drawing attention to itself.
@@ -44,6 +54,16 @@ export const EQUITY_GRID = {
   stroke: "rgba(148,163,184,0.08)",
   strokeDasharray: "0",
   vertical: false,
+} as const;
+
+// La ligne « minimum » : le solde de départ, en tirets saumon. C'est la
+// référence contre laquelle toute la courbe se lit — au-dessus on gagne, en
+// dessous on perd — et le pointillé dit qu'il s'agit d'un repère, pas d'une
+// mesure.
+export const EQUITY_FLOOR = {
+  stroke: "#f87171",
+  strokeWidth: 2,
+  strokeDasharray: "7 7",
 } as const;
 
 // Axis ticks — one muted slate, one size, everywhere. `--tv-text-muted` is the
@@ -115,6 +135,69 @@ export function glowActiveDot(color: string) {
 export function equityYDomain([dataMin, dataMax]: [number, number]): [number, number] {
   const pad = Math.max((dataMax - dataMin) * 0.12, 20);
   return [Math.floor(dataMin - pad), Math.ceil(dataMax + pad)];
+}
+
+/**
+ * Une échelle d'ordonnée à PALIERS RONDS.
+ *
+ * `equityYDomain` bornait l'axe sur les données plus une marge, et recharts
+ * découpait cet intervalle en parts égales : on lisait « $58,877 », « $54,159 »,
+ * « $51,659 ». Des montants exacts, mais qui ne veulent rien dire — personne ne
+ * situe un solde par rapport à 51 659. La référence affiche $58,000, $56,000,
+ * $54,000 : des paliers qu'on peut tenir en tête.
+ *
+ * La méthode est celle des axes de tout outil de graphe : on cherche un pas
+ * « rond » (1, 2, 2.5 ou 5 fois une puissance de dix) qui donne à peu près le
+ * nombre de graduations voulu, puis on élargit le domaine aux multiples de ce
+ * pas. L'axe déborde donc légèrement des données — c'est le but : la courbe ne
+ * touche jamais le haut ni le bas du cadre.
+ */
+export function niceEquityScale(
+  values: number[],
+  targetTicks = 5,
+): { domain: [number, number]; ticks: number[] } {
+  if (values.length === 0) return { domain: [0, 1], ticks: [0, 1] };
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
+  if (hi === lo) {
+    // Un compte parfaitement plat : on ouvre une fenêtre autour de la valeur,
+    // sinon l'axe n'a aucune hauteur et la courbe se colle au bord.
+    const span = Math.max(Math.abs(hi) * 0.02, 10);
+    lo -= span;
+    hi += span;
+  } else {
+    const pad = (hi - lo) * 0.12;
+    lo -= pad;
+    hi += pad;
+  }
+  const raw = (hi - lo) / Math.max(1, targetTicks - 1);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+  const start = Math.floor(lo / step) * step;
+  const end = Math.ceil(hi / step) * step;
+  const ticks: number[] = [];
+  // La tolérance absorbe l'erreur du flottant : sans elle, un pas de 0.1
+  // laisse tomber la dernière graduation une fois sur deux.
+  for (let v = start; v <= end + step * 1e-9; v += step) ticks.push(Math.round(v * 1e6) / 1e6);
+  return { domain: [start, end], ticks };
+}
+
+/**
+ * La date en abscisse : « 2 août », pas « 02/08/26 ».
+ *
+ * Un axe se survole, il ne se déchiffre pas. Le jour et le mois abrégé se
+ * lisent d'un coup d'œil là où une date à trois nombres demande de décoder
+ * quel champ est lequel — et l'ordre de ces champs change avec la langue.
+ * `toLocaleDateString` s'en charge selon la langue du navigateur.
+ */
+export function formatAxisDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 export const EQUITY_X_PADDING = { left: 16, right: 16 };
