@@ -1,13 +1,5 @@
 import { useEffect, useMemo, useState, lazy, Suspense } from "react";
-import {
-  Plus,
-  BarChart3,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Sparkles,
-  LineChart,
-} from "lucide-react";
+import { Plus, BarChart3, ArrowUpRight, ArrowDownRight, Minus, LineChart } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
   computeStats,
@@ -33,7 +25,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { PageContainer, Metric, Card, Button, StreakCard } from "@/shared/ui";
+import { PageContainer, Metric, Card, Button, StreakCard, density } from "@/shared/ui";
 import type { StreakPeriod } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 import CopilotBlock from "./dashboard/CopilotBlock";
@@ -276,30 +268,11 @@ export default function Dashboard({
     return { currentPct: base > 0 ? monthPnl / base : 0, targetPct: monthlyTarget };
   }, [trades, startingBalance, monthlyTarget]);
 
-  const getGreeting = () => {
-    const h = new Date().getHours();
-    if (h < 5) return t("dashboard.greetingStillUp");
-    if (h < 12) return t("dashboard.greetingMorning");
-    if (h < 18) return t("dashboard.greetingAfternoon");
-    return t("dashboard.greetingEvening");
-  };
-
   const gain = stats.totalPnl >= 0;
-  const streakLabel = `${stats.currentStreak}${
-    stats.currentStreakType === "win"
-      ? "W"
-      : stats.currentStreakType === "loss"
-        ? "L"
-        : stats.currentStreakType === "be"
-          ? "BE"
-          : ""
-  }`;
-  const streakColor =
-    stats.currentStreakType === "win"
-      ? "text-emerald-400"
-      : stats.currentStreakType === "loss"
-        ? "text-red-400"
-        : "text-slate-300";
+  /* `streakLabel` / `streakColor` ont été supprimés : la série s'affichait en
+     pied de tuile, dans la grille de détail ET dans la carte de série — trois
+     fois sur le même écran. Elle ne vit plus que dans la carte qui lui est
+     consacrée. */
 
   const headerActions = useMemo(
     () => (
@@ -319,120 +292,51 @@ export default function Dashboard({
 
   return (
     <PageContainer>
-      <div className="flex items-center gap-2 text-[11px] md:text-xs font-semibold text-cyan-400/80 mb-4 md:mb-5">
-        <Sparkles className="w-3.5 h-3.5" />
-        <span>{getGreeting()}</span>
-      </div>
-
+      {/* Le « Bonjour » horodaté a été retiré. C'était la PREMIÈRE chose que
+          l'œil rencontrait sur la page la plus consultée du produit, et il ne
+          portait aucune information : ni un chiffre, ni un état, ni une action.
+          Le premier objet de la page est désormais le seul qui compte à
+          l'ouverture — le P&L. */}
       {/* Frame paints instantly; data sections show a skeleton only while the
           first trades load. The skeleton is deferred (>320 ms) so it never
           flashes for the 50 ms it takes the React Query cache to re-read. */}
       {tradesLoading ? (
         <DeferredFallback reserve="min-h-[420px]">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="stat-card p-4 h-24 skeleton" />
-              ))}
-            </div>
-            <div className="stat-card rounded-3xl p-5 h-64 skeleton" />
+          {/* Le squelette suit la MÊME hiérarchie que la page : le hero
+              d'abord, les quatre tuiles ensuite. Il annonçait l'ordre inverse
+              — c'est-à-dire qu'il promettait une mise en page qui n'existe
+              plus, et le contenu réel sautait par-dessus en arrivant. */}
+          <div className={cn(density.sectionGap)}>
+            <div className="stat-card h-72 skeleton md:h-80" />
+          </div>
+          <div className={cn("grid grid-cols-2 md:grid-cols-4", density.gridGap)}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="stat-card h-28 skeleton" />
+            ))}
           </div>
         </DeferredFallback>
       ) : (
         <>
-          {/* ── Headline KPIs ── */}
-          {trades.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 md:mb-5">
-              <Metric
-                title={t("stats.totalPnl")}
-                value={formatPnl(stats.totalPnl)}
-                subtitle={`Today ${formatPnl(0)}`}
-                trend={stats.totalPnl >= 0 ? "up" : "down"}
-                delay={0}
-              />
-              <Metric
-                title={t("stats.winRate")}
-                value={formatPct(stats.winRate)}
-                valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
-                visual={{
-                  kind: "radial",
-                  pct: stats.winRate,
-                  color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
-                  center: `${stats.wins}/${stats.losses}`,
-                }}
-                footer={{
-                  label: t("dashboard.currentStreak"),
-                  value: streakLabel,
-                  className: streakColor,
-                }}
-                delay={40}
-              />
-              <Metric
-                title={t("dashboard.avgRR")}
-                value={`${stats.avgRR.toFixed(2)}`}
-                subtitle={`Avg Win / Loss`}
-                valueClass={stats.avgRR >= 1 ? "text-emerald-400" : "text-white"}
-                visual={{
-                  kind: "bar",
-                  pct: Math.min(stats.avgRR / 3, 1),
-                  color:
-                    stats.avgRR >= 1.5
-                      ? "#10b981"
-                      : stats.avgRR >= 1
-                        ? "var(--tv-highlight)"
-                        : "#ef4444",
-                }}
-                footer={{
-                  label: t("dashboard.bestWorst"),
-                  value: `${stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"} / ${stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}`,
-                }}
-                delay={80}
-              />
-              <Metric
-                title={t("stats.trades")}
-                value={String(stats.totalTrades)}
-                subtitle={`${insight.tradingDays} trading days`}
-                delay={120}
-              />
-            </div>
-          )}
+          {/* ══════════════════════════════════════════════════════════════
+              LA HIÉRARCHIE DE LA PAGE — quatre niveaux, dans cet ordre.
 
-          {/* Copilot block + série de checklist — le focus du jour + la discipline
-              dans la durée, côte à côte. */}
-          {trades.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr] gap-4 md:gap-5 mb-4 md:mb-6">
-              <CopilotBlock
-                edge={edge}
-                edgeDelta={edgeDelta}
-                edgeTrend={edgeTrend}
-                edgeScores={edgeHistory.map((p) => p.score)}
-                rule={dailyRule}
-                checklist={chkStatus}
-                objective={objective}
-                onOpenChecklist={onOpenChecklist}
-              />
-              <StreakCard
-                streak={streakPeriods}
-                currentStreak={streak.current}
-                longestStreak={streak.longest}
-                total={streak.total}
-                title={t("streak.title")}
-                daysLabel={t("streak.days")}
-                longestLabel={t("streak.longest")}
-                totalLabel={t("streak.total")}
-                actionLabel={t("streak.viewChecklist")}
-                onActionClick={onOpenChecklist}
-                howItWorksTitle={t("streak.howItWorks")}
-                howItWorksItems={[
-                  t("streak.howItWorks.i1"),
-                  t("streak.howItWorks.i2"),
-                  t("streak.howItWorks.i3"),
-                ]}
-                className="animate-fade-in-up stagger-1"
-              />
-            </div>
-          )}
+              Avant, la page ouvrait sur un « Bonjour » puis quatre tuiles, et
+              le P&L du mois — la seule chose qu'un trader vient vérifier en
+              ouvrant son journal — apparaissait DEUX FOIS : en petit dans la
+              première tuile, puis en grand au tiers de la page. Le win rate y
+              était aussi deux fois, le R:R deux fois, la série trois fois. Une
+              vingtaine de chiffres se disputaient le même rang.
 
+                1. LE CHIFFRE — le P&L de la période et sa courbe, pleine
+                   largeur, seul en haut. Rien ne le concurrence.
+                2. LES QUATRE AUTRES — ce que le hero ne dit PAS : win rate,
+                   profit factor, R:R, drawdown max. Un chiffre par tuile, et
+                   aucun qui soit déjà affiché ailleurs.
+                3. LA DISCIPLINE — le focus du jour et la série. C'est de la
+                   conduite, pas de la performance : ça vient après.
+                4. LE DÉTAIL — les statistiques secondaires et les derniers
+                   trades. On y descend quand on cherche, pas quand on ouvre.
+              ══════════════════════════════════════════════════════════════ */}
           {trades.length === 0 ? (
             /* ── Empty state: first-run experience ── */
             <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium  relative overflow-hidden">
@@ -505,14 +409,14 @@ export default function Dashboard({
             </div>
           ) : (
             <>
-              {/* ── Performance + Statistics ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4 md:gap-5 mb-4 md:mb-6">
+              {/* ── 1. LE CHIFFRE ── */}
+              <div className={cn(density.sectionGap)}>
                 {/* Performance */}
                 <div className="relative stat-card-elevated card-premium overflow-hidden p-4 md:p-5">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div>
                       <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1">
-                        <LineChart className="w-3.5 h-3.5 text-cyan-400/70" />
+                        <LineChart className="w-3.5 h-3.5 text-slate-500" />
                         {t("dashboard.equityCurve")}
                       </div>
                       <div className="flex items-baseline gap-3 flex-wrap">
@@ -539,16 +443,18 @@ export default function Dashboard({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+                    {/* Le sélecteur de période emprunte le contrôle segmenté du
+                        produit (`.section-tabs`) au lieu de re-dériver le sien :
+                        une seule grammaire pour « je choisis UNE vue parmi N »,
+                        du haut de page jusqu'ici. */}
+                    <div className="section-tabs shrink-0">
                       {PERIODS.map((p) => (
                         <button
                           key={p}
                           onClick={() => changePeriod(p)}
                           className={cn(
-                            "px-2.5 md:px-3.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold uppercase transition",
-                            period === p
-                              ? "bg-cyan-500/15 text-cyan-300"
-                              : "text-slate-500 hover:text-slate-300",
+                            "section-tab px-2.5 text-[11px] uppercase md:px-3.5 md:text-xs",
+                            period === p ? "section-tab-active" : "section-tab-idle",
                           )}
                         >
                           {p === "7d"
@@ -578,46 +484,134 @@ export default function Dashboard({
                     </div>
                   )}
                 </div>
+              </div>
 
+              {/* ── 2. LES QUATRE AUTRES ──
+                  Chacune de ces tuiles porte UN chiffre qui n'existe nulle part
+                  ailleurs sur la page. Ce qui a sauté :
+                    • « P&L total » — le hero l'affiche déjà, en quatre fois
+                      plus gros, juste au-dessus.
+                    • « Trades » — la grille de détail le donne, et le nombre
+                      brut de trades ne se lit pas au réveil.
+                  Ce qui les remplace : profit factor et drawdown max, les deux
+                  chiffres qu'une prop firm regarde et que la page cachait au
+                  fond d'une grille de huit lignes.
+
+                  Les sous-titres ont sauté aussi. « Today $0.00 » était codé en
+                  dur — il affichait un zéro quoi qu'il arrive, donc un faux
+                  chiffre. « Avg Win / Loss » et « N trading days » étaient de
+                  l'anglais en dur dans une application traduite en douze
+                  langues, et ne décrivaient même pas la valeur au-dessus. */}
+              <div
+                className={cn(
+                  "grid grid-cols-2 md:grid-cols-4",
+                  density.gridGap,
+                  density.sectionGap,
+                )}
+              >
+                <Metric
+                  title={t("stats.winRate")}
+                  value={formatPct(stats.winRate)}
+                  valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
+                  visual={{
+                    kind: "radial",
+                    pct: stats.winRate,
+                    color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
+                    center: `${stats.wins}/${stats.losses}`,
+                  }}
+                  delay={0}
+                />
+                <Metric
+                  title={t("dashboard.profitFactor")}
+                  value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
+                  valueClass={
+                    stats.profitFactor >= 1.5
+                      ? "text-emerald-400"
+                      : stats.profitFactor < 1
+                        ? "text-red-400"
+                        : undefined
+                  }
+                  visual={{
+                    kind: "bar",
+                    pct: Math.min(stats.profitFactor / 3, 1),
+                    color: stats.profitFactor >= 1 ? "#10b981" : "#ef4444",
+                  }}
+                  delay={40}
+                />
+                <Metric
+                  title={t("dashboard.avgRR")}
+                  value={stats.avgRR.toFixed(2)}
+                  valueClass={stats.avgRR >= 1 ? "text-emerald-400" : undefined}
+                  visual={{
+                    kind: "bar",
+                    pct: Math.min(stats.avgRR / 3, 1),
+                    color: stats.avgRR >= 1 ? "#10b981" : "#ef4444",
+                  }}
+                  delay={80}
+                />
+                <Metric
+                  title={t("dashboard.maxDrawdown")}
+                  value={formatPnl(-stats.maxDrawdown)}
+                  valueClass="text-red-400"
+                  delay={120}
+                />
+              </div>
+
+              {/* ── 3. LA DISCIPLINE ── */}
+              {/* Copilot block + série de checklist — le focus du jour + la discipline
+                dans la durée, côte à côte. */}
+              <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr] gap-4 md:gap-5 mb-4 md:mb-6">
+                <CopilotBlock
+                  edge={edge}
+                  edgeDelta={edgeDelta}
+                  edgeTrend={edgeTrend}
+                  edgeScores={edgeHistory.map((p) => p.score)}
+                  rule={dailyRule}
+                  checklist={chkStatus}
+                  objective={objective}
+                  onOpenChecklist={onOpenChecklist}
+                />
+                <StreakCard
+                  streak={streakPeriods}
+                  currentStreak={streak.current}
+                  longestStreak={streak.longest}
+                  total={streak.total}
+                  title={t("streak.title")}
+                  daysLabel={t("streak.days")}
+                  longestLabel={t("streak.longest")}
+                  totalLabel={t("streak.total")}
+                  actionLabel={t("streak.viewChecklist")}
+                  onActionClick={onOpenChecklist}
+                  howItWorksTitle={t("streak.howItWorks")}
+                  howItWorksItems={[
+                    t("streak.howItWorks.i1"),
+                    t("streak.howItWorks.i2"),
+                    t("streak.howItWorks.i3"),
+                  ]}
+                  className="animate-fade-in-up stagger-1"
+                />
+              </div>
+
+              {/* ── 4. LE DÉTAIL ── */}
+              <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-[0.9fr_1.1fr]">
                 {/* Statistics */}
                 <div className="stat-card overflow-hidden">
-                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06] flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-cyan-400/70" />
+                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-slate-500" />
                     <h3 className="text-sm md:text-[15px] font-bold text-white">
                       {t("stats.performance")}
                     </h3>
                   </div>
                   <div className="p-3 md:p-4 grid grid-cols-2 gap-x-4 gap-y-3">
-                    <StatRow
-                      label={t("stats.winRate")}
-                      value={formatPct(stats.winRate)}
-                      valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
-                    />
-                    <StatRow
-                      label={t("dashboard.profitFactor")}
-                      value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
-                      valueClass={
-                        stats.profitFactor >= 1.5
-                          ? "text-emerald-400"
-                          : stats.profitFactor < 1
-                            ? "text-red-400"
-                            : "text-white"
-                      }
-                    />
+                    {/* Win rate, profit factor, R:R et drawdown max ne sont plus
+                        ici : ils ont leur tuile, en haut. Une statistique
+                        affichée deux fois sur le même écran n'est pas
+                        « rassurante », elle fait douter qu'il s'agisse de la
+                        même. La grille garde ce qui est réellement secondaire. */}
                     <StatRow
                       label={t("quant.expectancy")}
                       value={formatPnl(quant.expectancy)}
                       valueClass={quant.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
-                    />
-                    <StatRow
-                      label={t("dashboard.maxDrawdown")}
-                      value={formatPnl(-stats.maxDrawdown)}
-                      valueClass="text-red-400"
-                    />
-                    <StatRow
-                      label={t("dashboard.avgRR")}
-                      value={stats.avgRR.toFixed(2)}
-                      valueClass={stats.avgRR >= 1 ? "text-emerald-400" : "text-white"}
                     />
                     <StatRow
                       label={t("quant.cleanTrades")}
@@ -625,9 +619,15 @@ export default function Dashboard({
                       valueClass={quant.cleanTrades >= 0.8 ? "text-emerald-400" : "text-amber-400"}
                     />
                     <StatRow
-                      label={t("dashboard.currentStreak")}
-                      value={streakLabel}
-                      valueClass={streakColor}
+                      label={t("stats.trades")}
+                      value={String(stats.totalTrades)}
+                      sub={`${insight.tradingDays} ${t("dashboard.tradingDays").toLowerCase()}`}
+                    />
+                    <StatRow
+                      label={t("dashboard.bestWorst")}
+                      value={stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"}
+                      sub={stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}
+                      valueClass="text-emerald-400"
                     />
                     <StatRow
                       label={t("dashboard.longShort")}
@@ -640,25 +640,22 @@ export default function Dashboard({
                     />
                   </div>
                 </div>
-              </div>
-
-              <div>
                 {/* Recent Trades */}
                 <Card variant="solid" hover className="overflow-hidden">
-                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/[0.06] flex items-center justify-between gap-3">
+                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center justify-between gap-3">
                     <h3 className="text-sm md:text-[15px] font-bold text-white">
                       {t("dashboard.recentTrades")}
                     </h3>
                     {onOpenJournal && trades.length > recentTrades.length && (
                       <button
                         onClick={onOpenJournal}
-                        className="text-xs font-semibold text-cyan-400/90 hover:text-cyan-300 transition-colors shrink-0"
+                        className="text-xs font-semibold text-[var(--tv-highlight)] hover:text-white transition-colors shrink-0"
                       >
                         {t("common.viewAll")}
                       </button>
                     )}
                   </div>
-                  <div className="divide-y divide-white/[0.04]">
+                  <div className="divide-y divide-[var(--tv-border)]">
                     {recentTrades.length === 0 ? (
                       <div className="px-4 py-10 text-center text-slate-600 text-sm">
                         {t("dashboard.noTradesInPeriod")}
