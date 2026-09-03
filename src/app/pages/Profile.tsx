@@ -56,11 +56,11 @@ export default function Profile({ trades, setPage }: ProfileProps) {
       <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.45),rgba(7,14,24,.9)_60%)] p-4 sm:p-5 animate-fade-in-up">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
         <div className="relative flex items-center gap-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl tv-accent-fill text-lg font-bold">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl tv-accent-fill text-sm font-bold">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <h1 className="font-display truncate text-xl font-extrabold tracking-tight text-white">
+            <h1 className="font-display truncate text-sm font-extrabold tracking-tight text-white">
               {user.name}
             </h1>
             <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-slate-400">

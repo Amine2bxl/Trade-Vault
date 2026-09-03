@@ -659,7 +659,7 @@ function MissedEditor({
             <Target className="w-4 h-4 text-white" />
           </span>
           <div className="min-w-0">
-            <h2 id="missed-editor-title" className="text-base font-bold text-white leading-tight">
+            <h2 id="missed-editor-title" className="text-sm font-bold text-white leading-tight">
               {t("missed.modalTitle")}
             </h2>
             <p className="text-[11px] text-slate-500 truncate">

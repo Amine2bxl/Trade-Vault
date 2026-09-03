@@ -151,7 +151,7 @@ export default function TradeDetailModal({
         <div className="px-4 md:px-6 pt-2 md:p-6 pb-3 md:pb-6 border-b border-white/[0.06]">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white">{dateStr}</h2>
+              <h2 className="text-sm font-bold text-white">{dateStr}</h2>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm text-slate-400">
                   {trades.length}{" "}
@@ -187,7 +187,7 @@ export default function TradeDetailModal({
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   {positionLabel && (
-                    <span className="text-[10px] text-slate-500 tabular-nums min-w-[36px] text-center">
+                    <span className="tv-figure text-[10px] text-slate-500 min-w-[36px] text-center">
                       {positionLabel}
                     </span>
                   )}
@@ -280,7 +280,7 @@ export default function TradeDetailModal({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-white">{trade.symbol}</span>
+                        <span className="text-sm font-bold text-white">{trade.symbol}</span>
                         <span
                           className={cn(
                             "text-[10px] font-bold px-2 py-0.5 rounded-md",

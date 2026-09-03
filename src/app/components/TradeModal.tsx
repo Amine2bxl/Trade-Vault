@@ -545,7 +545,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               </span>
             </span>
             <div className="min-w-0">
-              <h2 className="text-base font-bold text-white leading-tight">
+              <h2 className="text-sm font-bold text-white leading-tight">
                 {trade ? t("trade.editTitle") : t("trade.newTitle")}
               </h2>
               <p className="text-[11px] text-slate-500 truncate">

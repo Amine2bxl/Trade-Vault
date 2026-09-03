@@ -429,7 +429,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
             )}
           </div>
         </div>
-        <span className="text-cyan-400 text-lg shrink-0">→</span>
+        <span className="text-cyan-400 text-sm shrink-0">→</span>
       </button>
     </div>
   );

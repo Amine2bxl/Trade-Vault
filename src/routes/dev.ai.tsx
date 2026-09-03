@@ -85,7 +85,7 @@ function DevAiPage() {
             J
           </span>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">AI Runtime — Diagnostic</h1>
+            <h1 className="text-sm font-bold text-white">AI Runtime — Diagnostic</h1>
             <p className="text-xs text-slate-500">
               Réservé au développement · aucune clé exposée · bouton « Tester » = mini appel IA réel
             </p>
@@ -137,7 +137,7 @@ function DevAiPage() {
                     >
                       <div className="text-[11px] text-slate-500">{m.label}</div>
                       <div
-                        className={`text-lg font-bold tabular-nums ${m.warn ? "text-amber-400" : "text-white"}`}
+                        className={`tv-figure text-lg ${m.warn ? "text-amber-400" : "text-white"}`}
                       >
                         {m.value}
                       </div>
@@ -157,13 +157,13 @@ function DevAiPage() {
                     </span>
                     <span>
                       Tokens in{" "}
-                      <b className="text-slate-200 tabular-nums">
+                      <b className="tv-figure text-slate-200">
                         {telemetry.totalInputTokens.toLocaleString("fr-FR")}
                       </b>
                     </span>
                     <span>
                       out{" "}
-                      <b className="text-slate-200 tabular-nums">
+                      <b className="tv-figure text-slate-200">
                         {telemetry.totalOutputTokens.toLocaleString("fr-FR")}
                       </b>
                     </span>
@@ -179,13 +179,11 @@ function DevAiPage() {
                         <span className="font-semibold text-slate-200 flex-1 truncate">
                           {m.model}
                         </span>
-                        <span className="text-slate-500 tabular-nums shrink-0">
-                          {m.runs} appels
-                        </span>
-                        <span className="text-slate-400 tabular-nums shrink-0">
+                        <span className="tv-figure text-slate-500 shrink-0">{m.runs} appels</span>
+                        <span className="tv-figure text-slate-400 shrink-0">
                           {m.medianMs} / {m.p95Ms} ms
                         </span>
-                        <span className="text-slate-500 tabular-nums shrink-0 hidden md:inline">
+                        <span className="tv-figure text-slate-500 shrink-0 hidden md:inline">
                           {m.avgInputTokens}→{m.avgOutputTokens} tk
                         </span>
                       </div>
@@ -222,7 +220,7 @@ function DevAiPage() {
                       {CIRCUIT_LABEL[p.state] ?? p.state}
                       {p.cooldownMsLeft > 0 && ` · ${(p.cooldownMsLeft / 1000).toFixed(0)}s`}
                     </span>
-                    <span className="text-[11px] text-slate-600 tabular-nums">
+                    <span className="tv-figure text-[11px] text-slate-600">
                       {p.metric.count} req · {(p.metric.avgMs / 1000).toFixed(2)}s
                     </span>
                     <button
@@ -278,7 +276,7 @@ function DevAiPage() {
             <h2 className="tv-label mt-8 text-slate-500">Runtime</h2>
             <div className="mt-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               <span className="text-slate-500">Requêtes</span>
-              <span className="text-white tabular-nums">{status.runtime.requests}</span>
+              <span className="tv-figure text-white">{status.runtime.requests}</span>
               <span className="text-slate-500">Dernier provider utilisé</span>
               <span className="text-white">{status.runtime.lastUsedProvider ?? "—"}</span>
               <span className="text-slate-500">Dernier fallback</span>

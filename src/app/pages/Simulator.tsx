@@ -305,7 +305,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                         {t(`sim.dd.${s.rules.drawdownType ?? "static"}` as never)}
                       </span>
                       {s.lastRiskOfRuin !== null && (
-                        <span className="block text-[11px] text-slate-500 tabular-nums">
+                        <span className="tv-figure block text-[11px] text-slate-500">
                           {t("sim.ruinShort")} {pct(s.lastRiskOfRuin)}
                           {s.lastSampleSize !== null && ` · n=${s.lastSampleSize}`}
                         </span>
@@ -406,7 +406,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
               <Card>
                 <CardBody className="space-y-2">
                   <p className="tv-label text-slate-500">{t("sim.pnlTitle")}</p>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-sm tabular-nums">
+                  <div className="tv-figure grid grid-cols-3 sm:grid-cols-5 gap-2 text-sm">
                     {(
                       [
                         ["P5", result.pnl.p5],
@@ -432,7 +432,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                   <CardBody className="space-y-2">
                     <p className="tv-label text-slate-500">{t("sim.compareTitle")}</p>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm tabular-nums">
+                      <table className="tv-figure w-full text-sm">
                         <thead>
                           <tr className="text-[11px] text-slate-500 text-left">
                             <th className="font-normal pb-1 pr-3">{t("sim.compareScenario")}</th>
@@ -498,7 +498,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                           <span className="text-slate-300">
                             {t(`sim.lever.${row.lever.id}` as never)}
                           </span>
-                          <span className="tabular-nums text-slate-400">
+                          <span className="tv-figure text-slate-400">
                             {t("sim.ruinShort")}{" "}
                             <span
                               className={row.deltaRuin <= 0 ? "text-emerald-400" : "text-red-400"}
@@ -571,7 +571,7 @@ function Stat({
         {label}
       </div>
       <p className="text-xl tv-figure mt-1">{value}</p>
-      <p className="text-[11px] text-slate-500 tabular-nums">{hint}</p>
+      <p className="tv-figure text-[11px] text-slate-500">{hint}</p>
     </div>
   );
 }

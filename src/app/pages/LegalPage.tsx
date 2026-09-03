@@ -53,7 +53,7 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
                   href={`#sec-${i}`}
                   className="text-sm text-slate-400 hover:text-white transition-colors inline-flex items-baseline gap-2"
                 >
-                  <span className="text-cyan-500/70 tabular-nums text-xs">
+                  <span className="tv-figure text-cyan-500/70 text-xs">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   {b.h}

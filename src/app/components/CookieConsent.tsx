@@ -42,7 +42,7 @@ export function CookieConsent() {
                 <ShieldCheck className="w-4 h-4" />
               </span>
             </span>
-            <h2 className="text-base font-bold text-white">Protection de tes données</h2>
+            <h2 className="text-sm font-bold text-white">Protection de tes données</h2>
           </div>
           <p className="text-sm leading-6 text-slate-300">
             TradeVault utilise des cookies et le stockage local pour assurer le fonctionnement de

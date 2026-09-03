@@ -184,7 +184,7 @@ export default function ThemeStudioModal({
                     {tr(sw.hintFr, sw.hintEn)}
                   </div>
                 </div>
-                <code className="text-[11px] text-slate-500 tabular-nums shrink-0">{value}</code>
+                <code className="tv-figure text-[11px] text-slate-500 shrink-0">{value}</code>
               </div>
             );
           })}

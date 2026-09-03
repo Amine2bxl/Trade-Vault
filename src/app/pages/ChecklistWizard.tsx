@@ -451,7 +451,7 @@ export default function ChecklistWizard({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <Icon className="w-5 h-5 text-cyan-400" />
-                  <h2 className="text-lg font-bold text-white">{q.title}</h2>
+                  <h2 className="text-sm font-bold text-white">{q.title}</h2>
                 </div>
                 <p className="text-sm text-slate-400 mb-5">{q.sub}</p>
                 <div className="grid gap-2.5">
@@ -511,7 +511,7 @@ export default function ChecklistWizard({
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Clock className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-sm font-bold text-white">
                 {tr("Quand commence ta session ?", "When does your session start?")}
               </h2>
             </div>

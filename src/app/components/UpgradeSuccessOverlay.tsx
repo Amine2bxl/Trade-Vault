@@ -95,7 +95,7 @@ export default function UpgradeSuccessOverlay({
 
         <button
           onClick={onExplore}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-[15px] font-bold transition"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-sm font-bold transition"
         >
           <Sparkles className="h-4 w-4" />
           {fr ? "Voir mes analyses" : "See my analytics"}

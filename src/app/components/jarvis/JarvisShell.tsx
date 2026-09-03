@@ -91,7 +91,7 @@ export default function JarvisShell({
           <div className="flex items-center gap-2">
             <h2
               id="jarvis-shell-title"
-              className="text-base font-bold text-white tracking-tight truncate"
+              className="text-sm font-bold text-white tracking-tight truncate"
             >
               {t("assistant.title")}
             </h2>

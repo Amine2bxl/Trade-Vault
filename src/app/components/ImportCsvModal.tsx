@@ -149,7 +149,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       className="md:max-w-2xl max-h-[96vh] md:max-h-[90vh] overflow-hidden"
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <h2 className="text-sm font-bold text-white flex items-center gap-2">
           <Upload className="w-4 h-4 text-cyan-400" />
           {t("import.title")}
         </h2>
@@ -196,7 +196,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 <AlertCircle className="w-7 h-7 text-red-400" />
               )}
             </div>
-            <div className="text-xl font-bold text-white mb-1">
+            <div className="text-sm font-bold text-white mb-1">
               {result.imported} {t("import.imported")}
             </div>
             <div className="text-xs text-slate-500">

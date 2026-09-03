@@ -342,7 +342,7 @@ export default function PromoCodeSection() {
                                 ? "Invite"
                                 : `-${p.discount_percent ?? 0}%`}
                           </span>
-                          <span className="text-[10px] tabular-nums text-slate-600">
+                          <span className="tv-figure text-[10px] text-slate-600">
                             {new Date(r.created_at).toLocaleDateString()}
                           </span>
                           <button

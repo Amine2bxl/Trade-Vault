@@ -233,7 +233,7 @@ function EquityCurves({
                     style={{ background: "rgba(10,15,30,0.97)" }}
                   >
                     <p className="tv-label text-slate-500 mb-0.5">Equity Distribution</p>
-                    <div className="space-y-0.5 text-[10px] tabular-nums">
+                    <div className="tv-figure space-y-0.5 text-[10px]">
                       <p className="text-emerald-400">P95: {formatMoney(d.p95)}</p>
                       <p className="text-cyan-300">P75: {formatMoney(d.p75)}</p>
                       <p className="text-white font-bold">Median: {formatMoney(d.p50)}</p>
@@ -420,7 +420,7 @@ export default function MonteCarloPage({ trades }: Props) {
       <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BarChart3 className="w-12 h-12 text-cyan-400/30 mb-5" />
-          <h3 className="text-base font-bold text-white mb-1.5">
+          <h3 className="text-sm font-bold text-white mb-1.5">
             Ton Monte Carlo commence avec tes données
           </h3>
           <p className="text-sm text-slate-500 max-w-sm">
@@ -708,7 +708,7 @@ export default function MonteCarloPage({ trades }: Props) {
                     const h = range > 0 ? ((v - minV) / range) * 100 : 50;
                     return (
                       <div key={k} className="flex-1 flex flex-col items-center gap-1">
-                        <span className="text-[10px] text-slate-500 tabular-nums">
+                        <span className="tv-figure text-[10px] text-slate-500">
                           {formatMoney(v)}
                         </span>
                         <div

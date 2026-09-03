@@ -245,7 +245,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                     <span className="tv-figure block text-sm">{p}%</span>
                     <span
                       className={cn(
-                        "block text-[10px] font-medium tabular-nums mt-0.5",
+                        "tv-figure block text-[10px] mt-0.5",
                         active ? "text-cyan-300" : "text-slate-500",
                       )}
                     >
@@ -260,7 +260,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
             <div className="mt-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <span className="tv-label text-slate-500">{t("calc.riskBudget")}</span>
-                <span className="text-[10px] text-slate-500 tabular-nums">{riskPctNum}%</span>
+                <span className="tv-figure text-[10px] text-slate-500">{riskPctNum}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                 <div
@@ -325,7 +325,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                     value={stopPips}
                     onChange={(e) => setStopPipsPersisted(e.target.value)}
                     placeholder="20"
-                    className={cn(inputClass, "tabular-nums")}
+                    className={cn(inputClass, "tv-figure")}
                   />
                 </div>
               </div>
@@ -361,7 +361,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                     value={stopPoints}
                     onChange={(e) => setStopPointsPersisted(e.target.value)}
                     placeholder="10"
-                    className={cn(inputClass, "tabular-nums")}
+                    className={cn(inputClass, "tv-figure")}
                   />
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div className="relative inline-block text-white tv-figure text-6xl">
                   {forex.lots.toFixed(2)}
                 </div>
-                <div className="tv-label relative mt-1 text-cyan-400">
+                <div className="tv-label-wide relative mt-1 text-[var(--tv-highlight)]">
                   {t("calc.standardLots")} · {pair.label}
                 </div>
               </div>
@@ -429,7 +429,9 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div className="relative inline-block text-white tv-figure text-6xl">
                   {futures.contracts}
                 </div>
-                <div className="tv-label relative mt-1 text-cyan-400">{t("calc.contracts")}</div>
+                <div className="tv-label-wide relative mt-1 text-[var(--tv-highlight)]">
+                  {t("calc.contracts")}
+                </div>
               </div>
               <ResultRow label={t("calc.stopPoints")} value={stopPoints} />
               <ResultRow label={t("calc.pointValue")} value={`$${parseFloat(pointValue) || 0}`} />

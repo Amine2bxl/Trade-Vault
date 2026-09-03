@@ -470,7 +470,7 @@ export default function EconomicNews() {
               >
                 <span className={cn("w-1.5 h-1.5 rounded-full", st.dot)} />
                 {IMPACT_LABELS[i]}
-                <span className="text-[10px] opacity-60 tabular-nums">{weekCounts[i]}</span>
+                <span className="tv-figure text-[10px] opacity-60">{weekCounts[i]}</span>
               </button>
             );
           })}
@@ -499,7 +499,7 @@ export default function EconomicNews() {
                 )}
               >
                 <span>{shortDayFmt.format(date)}</span>
-                <span className="tabular-nums text-[11px] opacity-60">{all.length}</span>
+                <span className="tv-figure text-[11px] opacity-60">{all.length}</span>
               </button>
             );
           })}

@@ -120,7 +120,7 @@ export default function Subscription() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="font-display text-xl font-extrabold tracking-tight text-white">
+              <h2 className="font-display text-sm font-extrabold tracking-tight text-white">
                 {loading ? "TradeVault" : planLabel}
               </h2>
               {!loading && sub && <StatusChip sub={sub} t={t} />}

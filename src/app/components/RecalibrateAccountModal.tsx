@@ -85,7 +85,7 @@ export default function RecalibrateAccountModal({
             <Scale className="w-4 h-4" />
           </span>
           <div className="min-w-0">
-            <h2 className="font-display text-base font-bold text-white leading-tight">
+            <h2 className="font-display text-sm font-bold text-white leading-tight">
               {t("recal.title")}
             </h2>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">{t("recal.subtitle")}</p>
@@ -117,7 +117,7 @@ export default function RecalibrateAccountModal({
             value={target}
             onChange={(e) => setTarget(e.target.value)}
             autoFocus
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white tabular-nums focus:outline-none focus:border-cyan-500/50"
+            className="tv-figure w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50"
           />
           {valid && !noChange && (
             <p className="tv-figure mt-2 text-[11px] text-cyan-400">
@@ -229,7 +229,7 @@ function PreviewLine({
         </>
       ) : (
         <>
-          <span className="text-slate-500 tabular-nums">{fmt(row.before)}</span>
+          <span className="tv-figure text-slate-500">{fmt(row.before)}</span>
           <ArrowRight className="w-3 h-3 text-slate-600 shrink-0" />
           <span className={cn("tv-figure", row.after >= 0 ? "text-cyan-300" : "text-amber-300")}>
             {fmt(row.after)}

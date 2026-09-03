@@ -260,9 +260,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   {card.icon}
                   <span className="text-[11px] text-slate-500 truncate">{card.label}</span>
                 </div>
-                <div className={cn("text-base md:text-lg font-bold leading-none", card.color)}>
-                  {card.value}
-                </div>
+                <div className={cn("text-sm font-bold leading-none", card.color)}>{card.value}</div>
                 <div className="text-[11px] text-slate-600 mt-1 truncate">{card.sub}</div>
               </div>
             ))}

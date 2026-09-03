@@ -150,7 +150,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
               <Target className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base md:text-xl font-bold text-white tracking-tight truncate leading-tight">
+              <h2 className="text-sm font-bold text-white tracking-tight truncate leading-tight">
                 {missed.symbol || t("tradeDetail.missedSetup")}
               </h2>
               <p className="text-[11px] md:text-xs text-slate-500 mt-0.5 truncate">{dateStr}</p>
@@ -201,7 +201,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
           big
           empty={!missed.lessonLearned}
         >
-          <p className="text-sm md:text-[15px] text-slate-100 leading-relaxed whitespace-pre-wrap font-medium">
+          <p className="text-sm text-slate-100 leading-relaxed whitespace-pre-wrap font-medium">
             {missed.lessonLearned || (
               <span className="text-slate-600 italic font-normal">{t("missed.nothingNoted")}</span>
             )}

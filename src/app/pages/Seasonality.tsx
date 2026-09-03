@@ -482,7 +482,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         <div className="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
           <CalendarRange className="w-7 h-7 text-cyan-400" />
         </div>
-        <h3 className="text-base font-bold text-white mb-1.5">{t("seasonality.empty")}</h3>
+        <h3 className="text-sm font-bold text-white mb-1.5">{t("seasonality.empty")}</h3>
         <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("seasonality.emptySub")}</p>
       </div>
     );
@@ -733,7 +733,7 @@ function HighlightCard({
         <span className={positive ? "text-emerald-400" : "text-red-400"}>{icon}</span>
         {label}
       </div>
-      <div className="text-lg md:text-xl font-bold text-white font-display truncate">{value}</div>
+      <div className="text-sm font-bold text-white font-display truncate">{value}</div>
       {sub && (
         <div
           className={cn(

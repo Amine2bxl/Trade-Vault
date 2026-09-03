@@ -120,7 +120,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
               <img src={logoSrc} alt="TradeVault" width={36} height={36} />
             </div>
             {!collapsed && (
-              <span className="truncate text-[15px] font-bold tracking-[-0.02em] text-white">
+              <span className="truncate text-sm font-bold tracking-[-0.02em] text-white">
                 TradeVault
               </span>
             )}
@@ -252,7 +252,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           className="md:max-w-xs"
         >
           <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[rgb(var(--tv-accent-rgb)/0.14)] text-[15px] font-bold text-[var(--tv-highlight)]">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[rgb(var(--tv-accent-rgb)/0.14)] text-sm font-bold text-[var(--tv-highlight)]">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">

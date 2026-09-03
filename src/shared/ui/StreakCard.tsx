@@ -78,7 +78,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
       <header className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Flame className="h-5 w-5 text-amber-300" aria-hidden="true" />
-          <h3 className="text-sm md:text-[15px] font-bold text-white">{title}</h3>
+          <h3 className="text-sm font-bold text-white">{title}</h3>
         </div>
         {onActionClick && (
           <button
@@ -93,7 +93,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
 
       <p className="mb-4 font-display text-4xl leading-none font-bold tracking-tight text-white">
         {currentStreak}
-        <span className="ml-2 text-lg font-medium text-slate-500">{daysLabel}</span>
+        <span className="ml-2 text-sm font-medium text-slate-500">{daysLabel}</span>
       </p>
 
       <StreakCalendar streak={streak} />
@@ -106,7 +106,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
           <p className="text-xs text-slate-500">{longestLabel}</p>
           <p className="mt-0.5 font-display text-2xl font-bold text-white">
             {longestStreak}
-            <span className="ml-1 text-base font-medium text-slate-500">{daysLabel}</span>
+            <span className="ml-1 text-sm font-medium text-slate-500">{daysLabel}</span>
           </p>
         </div>
         <div className="text-right">

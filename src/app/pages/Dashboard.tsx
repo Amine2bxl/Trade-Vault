@@ -366,7 +366,7 @@ export default function Dashboard({
                 />
                 <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" />
               </svg>
-              <h2 className="text-lg md:text-xl font-bold text-white mb-2">{t("empty.title")}</h2>
+              <h2 className="text-sm font-bold text-white mb-2">{t("empty.title")}</h2>
               <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
               <Button variant="accent" onClick={onAddTrade}>
                 <Plus className="w-4 h-4" /> {t("empty.cta")}
@@ -596,9 +596,7 @@ export default function Dashboard({
                 <div className="stat-card overflow-hidden">
                   <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-slate-500" />
-                    <h3 className="text-sm md:text-[15px] font-bold text-white">
-                      {t("stats.performance")}
-                    </h3>
+                    <h3 className="text-sm font-bold text-white">{t("stats.performance")}</h3>
                   </div>
                   <div className="p-3 md:p-4 grid grid-cols-2 gap-x-4 gap-y-3">
                     {/* Win rate, profit factor, R:R et drawdown max ne sont plus
@@ -641,9 +639,7 @@ export default function Dashboard({
                 {/* Recent Trades */}
                 <Card variant="solid" hover className="overflow-hidden">
                   <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center justify-between gap-3">
-                    <h3 className="text-sm md:text-[15px] font-bold text-white">
-                      {t("dashboard.recentTrades")}
-                    </h3>
+                    <h3 className="text-sm font-bold text-white">{t("dashboard.recentTrades")}</h3>
                     {onOpenJournal && trades.length > recentTrades.length && (
                       <button
                         onClick={onOpenJournal}
@@ -699,9 +695,7 @@ export default function Dashboard({
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm md:text-[15px] font-bold text-white">
-                                  {trade.symbol}
-                                </span>
+                                <span className="text-sm font-bold text-white">{trade.symbol}</span>
                                 <span
                                   className={cn(
                                     "text-[11px] font-bold px-1.5 py-0.5 rounded",
@@ -767,7 +761,7 @@ function StatRow({
       <div className={cn("tv-figure text-sm md:text-base truncate mt-0.5", valueClass)}>
         {value}
       </div>
-      {sub && <div className="text-[10px] text-slate-600 tabular-nums truncate">{sub}</div>}
+      {sub && <div className="tv-figure text-[10px] text-slate-600 truncate">{sub}</div>}
     </div>
   );
 }

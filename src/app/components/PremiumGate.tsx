@@ -118,7 +118,7 @@ export function PreviewWall({
         <div className="w-full max-w-2xl rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-3.5 shadow-[var(--tv-elev-3)] sm:p-4">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-[15px] font-bold leading-snug text-white">
+              <p className="line-clamp-2 text-sm font-bold leading-snug text-white">
                 {benefit ?? (fr ? "Cette page, avec tes trades." : "This page, with your trades.")}
               </p>
               <p className="mt-1 text-[11.5px] font-medium text-slate-400">

@@ -167,7 +167,7 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
             </div>
             <div>
               {t("jarvisSettings.memorySeen")}{" "}
-              <span className="text-slate-200 tabular-nums">{memory.seenCount}</span>
+              <span className="tv-figure text-slate-200">{memory.seenCount}</span>
             </div>
             <div>
               {t("jarvisSettings.memoryIgnored")}{" "}

@@ -258,7 +258,7 @@ function PlanColumn({
             onClick={() => plan && onChoose && onChoose(plan)}
             disabled={busy != null || current}
             className={cn(
-              "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[15px] font-bold transition disabled:opacity-60",
+              "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold transition disabled:opacity-60",
               isPro
                 ? "tv-accent-fill"
                 : "border border-white/[0.12] bg-white/[0.04] text-white hover:bg-white/[0.08]",

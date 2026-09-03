@@ -92,7 +92,7 @@ export default function JarvisProfileModal({
             </div>
           </div>
           <div className="min-w-0">
-            <h2 id="jarvis-profile-title" className="text-lg font-bold text-white leading-tight">
+            <h2 id="jarvis-profile-title" className="text-sm font-bold text-white leading-tight">
               {t("jarvisProfile.title")}
             </h2>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">

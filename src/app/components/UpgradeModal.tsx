@@ -72,7 +72,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
       <div className="p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-display text-lg font-bold tracking-tight text-white">
+            <h2 className="font-display text-sm font-bold tracking-tight text-white">
               {fr ? "Débloque TradeVault" : "Unlock TradeVault"}
             </h2>
             <p className="mt-0.5 text-[12.5px] text-slate-500">

@@ -98,7 +98,7 @@ function ScreenShell({
       <div className="flex justify-center">
         <IconBadge icon={icon} />
       </div>
-      <h2 className="text-2xl md:text-[28px] font-bold text-white tracking-tight mb-2">{title}</h2>
+      <h2 className="text-2xl font-bold text-white tracking-tight mb-2">{title}</h2>
       {subtitle && (
         <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">{subtitle}</p>
       )}
@@ -360,7 +360,7 @@ export default function Onboarding({
           </div>
         </div>
 
-        <span className="tv-label tv-figure shrink-0 text-slate-600">
+        <span className="tv-figure shrink-0 text-[10px] text-slate-600">
           {stepNum}/{steps.length}
         </span>
       </div>
@@ -391,7 +391,7 @@ export default function Onboarding({
                   <UserRound className="w-4 h-4 text-cyan-300" />
                 </div>
               </div>
-              <h1 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
+              <h1 className="text-sm font-bold text-white tracking-tight mb-1.5">
                 {t("onb.nameTitle")}
               </h1>
               <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">{t("onb.nameSub")}</p>
@@ -403,7 +403,7 @@ export default function Onboarding({
                 onKeyDown={(e) => e.key === "Enter" && next()}
                 placeholder={t("onb.namePlaceholder")}
                 maxLength={40}
-                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-base font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition"
+                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 text-center text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition"
               />
 
               <div className="mt-6 mb-1">
@@ -587,7 +587,7 @@ export default function Onboarding({
                       placeholder="3"
                       className="tv-figure w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06]"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
                       %
                     </span>
                   </div>
@@ -596,7 +596,7 @@ export default function Onboarding({
                   <Wallet className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
                   <div className="tv-label text-slate-400 mb-2">Capital de départ</div>
                   <div className="relative max-w-[140px] mx-auto">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
                       $
                     </span>
                     <input
@@ -664,7 +664,7 @@ export default function Onboarding({
                   </div>
                 </div>
               </div>
-              <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1">
+              <h2 className="text-sm font-bold text-white tracking-tight mb-1">
                 {t("onb.notifyTitle")}
               </h2>
               <p className="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">
@@ -708,7 +708,7 @@ export default function Onboarding({
                     </div>
                   </div>
                 </div>
-                <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-1.5">
+                <h2 className="text-sm font-bold text-white tracking-tight mb-1.5">
                   {c.startTitle}
                 </h2>
                 <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">{c.startSub}</p>

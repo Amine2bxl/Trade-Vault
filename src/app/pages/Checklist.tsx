@@ -1351,7 +1351,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         {/* ══ HEADER ══ */}
         <div className="flex flex-col gap-3 animate-fade-in-up">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-slate-400 tabular-nums">
+            <span className="tv-figure inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] text-slate-400">
               {dateStr} · {clockStr}
             </span>
             <span
@@ -1912,7 +1912,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                           : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:border-white/[0.16]",
                       )}
                     >
-                      <div className="text-base leading-none mb-1">{FOMO_ICONS[i]}</div>
+                      <div className="text-sm leading-none mb-1">{FOMO_ICONS[i]}</div>
                       <div className="tv-label">
                         <Ed
                           value={f.label}
@@ -2122,7 +2122,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <Lock className="w-8 h-8" />
               </div>
             </div>
-            <div className="text-lg font-bold text-white mb-3">Edge Locked</div>
+            <div className="text-sm font-bold text-white mb-3">Edge Locked</div>
             <div className="space-y-1 text-xs text-cyan-300 mb-4">
               <div className="flex items-center justify-center gap-1.5">
                 <Check className="w-3.5 h-3.5" strokeWidth={3} /> EDGE CONFIRMED

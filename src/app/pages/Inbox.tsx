@@ -174,7 +174,7 @@ export default function Inbox() {
             <Bell className="w-4 h-4" />
           </span>
           <div>
-            <h1 className="text-lg font-bold text-white">{t("inbox.title")}</h1>
+            <h1 className="text-sm font-bold text-white">{t("inbox.title")}</h1>
             <p className="text-xs text-slate-500">
               {unreadTotal > 0
                 ? `${unreadTotal} non ${unreadTotal > 1 ? "lues" : "lue"}`
@@ -315,7 +315,7 @@ export default function Inbox() {
                           >
                             {n.title}
                           </p>
-                          <span className="text-[10px] text-slate-600 font-medium shrink-0 tabular-nums">
+                          <span className="tv-figure text-[10px] text-slate-600 shrink-0">
                             {timeStr}
                           </span>
                         </div>

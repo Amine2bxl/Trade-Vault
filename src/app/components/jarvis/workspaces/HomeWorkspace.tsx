@@ -364,9 +364,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
               <span className="card-header-icon text-cyan-300">
                 <TrendingUp className="w-4 h-4" />
               </span>
-              <h3 className="card-header-title text-sm md:text-[15px]">
-                {t("jarvisWeekly.title")}
-              </h3>
+              <h3 className="card-header-title text-sm">{t("jarvisWeekly.title")}</h3>
             </div>
             <button
               type="button"
@@ -394,7 +392,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
               <span className="card-header-icon text-cyan-300">
                 <ClipboardList className="w-4 h-4" />
               </span>
-              <h3 className="card-header-title text-sm md:text-[15px]">{t("jarvisBrief.title")}</h3>
+              <h3 className="card-header-title text-sm">{t("jarvisBrief.title")}</h3>
             </div>
             <button
               type="button"
@@ -419,9 +417,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
               <span className="card-header-icon text-cyan-300">
                 <ClipboardCheck className="w-4 h-4" />
               </span>
-              <h3 className="card-header-title text-sm md:text-[15px]">
-                {t("jarvisReview.title")}
-              </h3>
+              <h3 className="card-header-title text-sm">{t("jarvisReview.title")}</h3>
             </div>
             <button
               type="button"

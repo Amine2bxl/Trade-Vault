@@ -458,7 +458,7 @@ export function PlanView({
                     <div className="text-[13px] font-semibold text-white truncate">
                       {g.kind === "custom" ? g.label : fr ? meta.fr : meta.en}
                     </div>
-                    <div className="text-[11px] text-slate-500 tabular-nums">
+                    <div className="tv-figure text-[11px] text-slate-500">
                       {fmtVal(g, g.startValue)} →{" "}
                       <span className="text-cyan-300 font-bold">{fmtVal(g, g.targetValue)}</span>
                       {" · "}
@@ -492,7 +492,7 @@ export function PlanView({
                     objectif de win rate ou de discipline, et en fabriquer un
                     pourcentage serait inventer un chiffre. */}
                 {g.kind === "capital" && !finalReached && forecast && (
-                  <p className="mt-2 text-[11px] text-slate-400 tabular-nums">
+                  <p className="tv-figure mt-2 text-[11px] text-slate-400">
                     {tr(
                       `${Math.round(forecast.probability * 100)} % de chances d'y arriver au rythme actuel`,
                       `${Math.round(forecast.probability * 100)}% chance at your current pace`,
@@ -585,7 +585,7 @@ export function PlanView({
                   {!locked && (
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                       {plan.goals.map((g) => (
-                        <span key={g.id} className="text-[10px] text-slate-500 tabular-nums">
+                        <span key={g.id} className="tv-figure text-[10px] text-slate-500">
                           {g.kind === "custom"
                             ? g.label
                             : fr

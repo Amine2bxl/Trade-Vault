@@ -149,14 +149,21 @@ export const type = {
   display: "font-display text-[30px] md:text-[34px] font-bold tracking-[-0.025em]",
   /** Page title — calm, not massive. */
   h1: "text-[26px] md:text-[30px] font-bold tracking-[-0.02em]",
-  /** Section title. */
-  h2: "text-base md:text-lg font-semibold tracking-[-0.01em]",
-  /** Card title. */
-  h3: "text-sm md:text-[15px] font-semibold",
-  /** Body copy. */
-  body: "text-[15px] leading-relaxed",
-  /** Secondary/meta copy. */
-  caption: "text-xs",
+  /** Titre de section — même rôle que le titre de carte. Le produit n'a plus
+   *  qu'UN titre : la calculatrice n'en tient qu'un, à 14px, et ça suffit. */
+  h2: "tv-title",
+  /** Titre de carte. */
+  h3: "tv-title",
+  /** Prose : explication, état vide, phrase d'aide. 12px, interligne ouvert. */
+  body: "tv-prose",
+  /** Mention secondaire. */
+  caption: "tv-prose",
+  /** Mention fine, sourde par définition (sous un titre, sous un champ). */
+  hint: "tv-hint",
+  /** Libellé de ligne, en face d'un chiffre. */
+  rowLabel: "tv-row-label",
+  /** Le libellé LARGE — la légende sous un chiffre héros. */
+  labelWide: "tv-label-wide",
   /** Libellé de case — petites capitales espacées. C'est LE rôle d'étiquetage
    *  du produit : il nomme une case, il ne la décrit pas. Toute étiquette de
    *  KPI, de colonne ou de champ le porte. Les valeurs viennent de la page

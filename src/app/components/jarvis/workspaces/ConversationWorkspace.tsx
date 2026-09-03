@@ -773,7 +773,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                   </span>
                 </span>
                 <div className="min-w-0">
-                  <p className="text-base font-bold text-white tracking-tight">
+                  <p className="text-sm font-bold text-white tracking-tight">
                     {t("assistant.title")}
                   </p>
                   <p className="text-xs text-slate-400">{t("jarvis.copilot")}</p>

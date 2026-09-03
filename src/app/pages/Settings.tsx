@@ -477,7 +477,7 @@ function DeleteAccountModal({
         <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">
           <AlertTriangle className="w-6 h-6 text-red-400" />
         </div>
-        <h2 className="text-lg font-bold text-white mb-1.5">{t("settings.deleteAccountTitle")}</h2>
+        <h2 className="text-sm font-bold text-white mb-1.5">{t("settings.deleteAccountTitle")}</h2>
         <p className="text-sm text-slate-400 mb-5">{t("settings.deleteAccountBody")}</p>
 
         <label className="tv-label block text-slate-500 mb-1.5">

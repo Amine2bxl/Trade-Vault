@@ -323,7 +323,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <h3 className="text-lg md:text-xl font-bold text-white tracking-tight">
+            <h3 className="text-sm font-bold text-white tracking-tight">
               {MONTHS[month]} '{String(year).slice(-2)}
             </h3>
             <button
@@ -513,7 +513,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       : `${week.pnl >= 0 ? "+" : "−"}${Math.abs(week.pnl).toFixed(0)}`}
                   </div>
                   {week.days > 0 && (
-                    <div className="text-[11px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
+                    <div className="tv-figure text-[11px] md:text-[10px] text-slate-500 mt-0.5">
                       {week.days} {week.days === 1 ? t("calendar.day") : t("calendar.days")}
                     </div>
                   )}

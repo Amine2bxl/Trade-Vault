@@ -1676,6 +1676,68 @@ a:focus-visible,
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+ * LA VOIX DU TEXTE
+ *
+ * Elle est relevée telle quelle sur la page Calculatrice de lot, qui est la
+ * seule du produit à tenir un système complet. Trois partis pris s'y lisent :
+ *
+ *   1. TOUT est petit. Le plus gros TEXTE de la page fait 14px — c'est son
+ *      titre de carte. Rien au-dessus. Ce qui est gros, ce sont les CHIFFRES,
+ *      et eux seuls : c'est ce qui fait qu'on lit d'abord la donnée.
+ *   2. TOUT est sourd. Le blanc est réservé aux titres et aux valeurs ; la
+ *      prose vit en slate-500/600. Un écran où tout est blanc n'a pas de
+ *      hiérarchie, il a du bruit.
+ *   3. QUATRE tailles, pas une de plus : 10 · 11 · 12 · 14.
+ *
+ * Les classes ci-dessous nomment ces rôles. Comme `.tv-label` et `.tv-figure`,
+ * elles ne fixent pas de couleur quand celle-ci porte un sens (un titre est
+ * blanc, une prose d'avertissement est ambre) — sauf pour les rôles dont la
+ * teinte EST la définition (`.tv-hint` est sourde par nature).
+ * ══════════════════════════════════════════════════════════════════════ */
+
+/* 14px — le titre. C'est le plafond du texte dans le produit. */
+.tv-title {
+  font-size: var(--tv-t-body);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--tv-text-primary);
+}
+
+/* 12px — la prose. Une explication, une phrase d'aide, un état vide.
+   `leading-relaxed` n'est pas décoratif : c'est ce qui rend trois lignes de
+   12px lisibles d'un coup d'œil plutôt qu'un pavé. */
+.tv-prose {
+  font-size: var(--tv-t-caption);
+  line-height: 1.6;
+}
+
+/* 10px — la mention. Sous un titre, sous un champ : le détail qu'on lit une
+   fois puis qu'on ignore. Sourde par définition. */
+.tv-hint {
+  font-size: var(--tv-t-micro);
+  line-height: 1.55;
+  color: var(--tv-text-muted);
+}
+
+/* 11px — le libellé de ligne. La colonne de gauche d'une liste clé/valeur,
+   en face d'un `.tv-figure`. */
+.tv-row-label {
+  font-size: 11px;
+  color: var(--tv-text-muted);
+}
+
+/* Le libellé LARGE — la légende posée sous un chiffre héros (« LOTS »,
+   « CONTRATS »). Son approche très ouverte n'est pas un caprice : sous un
+   nombre de 60px, un libellé serré se lit comme une rature. */
+.tv-label-wide {
+  font-size: var(--tv-t-micro);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
 /* ══ LA SURFACE D'ACCENT ══
  *
  * Un à-plat vert avec du texte quasi noir dessus. C'est la seule surface

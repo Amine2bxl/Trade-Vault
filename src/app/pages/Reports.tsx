@@ -202,7 +202,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                     <span className="font-display text-[13px] font-semibold text-slate-200 capitalize flex-1 min-w-0 truncate">
                       {monthLabel(month, locale)}
                     </span>
-                    <span className="text-[11px] text-slate-500 tabular-nums shrink-0">
+                    <span className="tv-figure text-[11px] text-slate-500 shrink-0">
                       {tradesByMonth.get(month) ?? 0} {t("common.trades")}
                     </span>
                     <Button
@@ -225,7 +225,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
               <div className="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4">
                 <FileText className="w-6 h-6 text-cyan-400" />
               </div>
-              <h2 className="text-base font-bold text-white mb-1.5">{t("reports.empty")}</h2>
+              <h2 className="text-sm font-bold text-white mb-1.5">{t("reports.empty")}</h2>
               <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("reports.emptySub")}</p>
             </div>
           ) : (
@@ -323,7 +323,7 @@ function ReportCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="tv-label text-slate-600">{t("reports.docLabel")}</div>
-          <div className="font-display text-base md:text-lg font-bold text-white capitalize leading-tight">
+          <div className="font-display text-sm font-bold text-white capitalize leading-tight">
             {monthLabel(row.month, locale)}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
@@ -445,7 +445,7 @@ function ReportCard({
                   const win = w.pnl >= 0;
                   return (
                     <div key={w.week} className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-500 w-16 shrink-0 tabular-nums">
+                      <span className="tv-figure text-[10px] text-slate-500 w-16 shrink-0">
                         {t("reports.week")} {w.week}
                       </span>
                       <div className="flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">

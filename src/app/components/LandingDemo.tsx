@@ -171,7 +171,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               {slide.tagline}
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <h2 className="text-sm sm:text-2xl font-bold text-white tracking-tight">
               {slide.title}
             </h2>
             <p className="text-[13px] text-slate-400 leading-relaxed mt-1.5 mb-5">{slide.desc}</p>
@@ -181,7 +181,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06]">
-          <div className="text-[11px] text-slate-600 tabular-nums">
+          <div className="tv-figure text-[11px] text-slate-600">
             {idx + 1} / {total}
           </div>
           {mode === "guide" ? (
@@ -287,7 +287,7 @@ function JournalMock() {
             </div>
             <div
               className={cn(
-                "text-[10px] tabular-nums",
+                "tv-figure text-[10px]",
                 r.win ? "text-emerald-300/80" : "text-red-300/80",
               )}
             >

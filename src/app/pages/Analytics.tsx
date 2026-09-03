@@ -365,14 +365,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   {formatPnl(profitFactorData.totalProfits)}
                 </div>
               </div>
-              <div className="text-base text-slate-600 font-light">÷</div>
+              <div className="text-sm text-slate-600 font-light">÷</div>
               <div className="text-center">
                 <div className="tv-label text-slate-500">{t("analytics.losses")}</div>
                 <div className="tv-figure text-base md:text-lg text-red-400">
                   {formatPnl(-profitFactorData.totalLosses)}
                 </div>
               </div>
-              <div className="text-base text-slate-600 font-light">=</div>
+              <div className="text-sm text-slate-600 font-light">=</div>
               <div className="text-center">
                 <div className="tv-label text-slate-500">{t("analytics.factor")}</div>
                 <div
@@ -553,10 +553,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 {setupTable.map((row) => (
                   <tr key={row.strategy} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-2.5 text-xs font-bold text-white">{row.strategy}</td>
-                    <td className="px-4 py-2.5 text-xs text-slate-400 text-right tabular-nums">
+                    <td className="tv-figure px-4 py-2.5 text-xs text-slate-400 text-right">
                       {row.count}
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-right tabular-nums">
+                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
                       <span
                         className={cn(
                           "font-semibold",
@@ -570,7 +570,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {row.winRate === null ? "—" : formatPct(row.winRate)}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-right tabular-nums">
+                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
                       <span
                         className={cn(
                           "font-semibold",
@@ -589,7 +589,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           ? "99+"
                           : row.profitFactor.toFixed(2)}
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-right tabular-nums">
+                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
                       {row.avgR === null ? (
                         <span className="text-slate-600">—</span>
                       ) : (
@@ -604,7 +604,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-right tabular-nums">
+                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
                       <span
                         className={cn(
                           "font-bold",
@@ -1125,7 +1125,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
               <span className="tv-label text-slate-500">Meilleur mois</span>
             </div>
-            <div className="font-display text-base font-extrabold text-white">
+            <div className="font-display text-sm font-extrabold text-white">
               {best ? best.month : "—"}
             </div>
             <div className="tv-figure text-[11px] text-emerald-400 mt-0.5">
@@ -1137,7 +1137,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
               <TrendingDown className="w-3.5 h-3.5 text-red-400" />
               <span className="tv-label text-slate-500">Pire mois</span>
             </div>
-            <div className="font-display text-base font-extrabold text-white">
+            <div className="font-display text-sm font-extrabold text-white">
               {worst ? worst.month : "—"}
             </div>
             <div className="tv-figure text-[11px] text-red-400 mt-0.5">

@@ -563,7 +563,7 @@ export default function AccountSwitcher({
                 <Pencil className="w-3 h-3" />
               </button>
             </span>
-            <span className="block text-[10px] text-slate-500 truncate tabular-nums">
+            <span className="tv-figure block text-[10px] text-slate-500 truncate">
               {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
             </span>
           </span>
@@ -641,7 +641,7 @@ function DeleteAccountModal({
           </div>
         </div>
 
-        <h2 className="text-lg font-bold text-white text-center mb-1">
+        <h2 className="text-sm font-bold text-white text-center mb-1">
           {step === 1 ? t("account.deleteTitle") : t("account.deleteTitle2")}
         </h2>
 
@@ -775,7 +775,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
         <h2
           id="create-account-title"
-          className="text-lg font-bold text-white flex items-center gap-2.5"
+          className="text-sm font-bold text-white flex items-center gap-2.5"
         >
           <Layers className="w-4.5 h-4.5 text-cyan-400 shrink-0" />
           {edit ? t("account.editTitle") : t("account.new")}
