@@ -1553,16 +1553,92 @@ a:focus-visible,
   background: rgb(255 255 255 / 0.06);
   transition:
     background-color var(--tv-dur-2) var(--tv-ease),
-    color var(--tv-dur-2) var(--tv-ease);
+    color var(--tv-dur-2) var(--tv-ease),
+    transform var(--tv-dur-2) var(--tv-ease);
 }
+.rail-icon {
+  transition: transform var(--tv-dur-2) var(--tv-ease);
+}
+
+/* ══ LA LOUPE DU DOCK ══
+ *
+ * Au survol, l'entrée grossit un peu et ses DEUX VOISINES la suivent, moins
+ * fort — la magnification du dock de macOS. C'est ce qui fait qu'une colonne
+ * d'icônes répond au pointeur comme une matière souple au lieu d'une grille
+ * de boutons.
+ *
+ * Trois règles la tiennent « bien cadrée » :
+ *
+ *   1. Elle ne déplace RIEN. `transform: scale` ne participe pas à la
+ *      disposition : les voisines grossissent sur place, la liste ne se
+ *      repousse pas. Le dock de macOS, lui, écarte ses icônes — sur une liste
+ *      de sept entrées qu'on parcourt à la souris, ce décalage ferait
+ *      « fuir » la cible sous le curseur.
+ *   2. Elle est PETITE. 3 % sur la pilule, 15 % sur l'icône, 1 % sur les
+ *      voisines. Sur une pilule de 192px, 3 % font 3px de chaque côté — dans
+ *      la gouttière de 10px du rail. Rien ne sort jamais de la capsule.
+ *   3. Elle ÉPARGNE L'ENTRÉE ACTIVE. Celle-ci est soudée à la fenêtre de
+ *      contenu ; l'agrandir de 3 % décalerait son bord droit de quelques
+ *      pixels et rouvrirait la couture qu'on a passé du temps à fermer.
+ *
+ * `:has()` sert à atteindre la voisine du DESSUS — CSS ne sait pas remonter
+ * autrement. Sur un navigateur qui ne le connaît pas, seule celle du dessous
+ * réagit : l'effet est asymétrique, jamais cassé.
+ */
 @media (hover: hover) {
   .rail-item:hover {
     background: rgb(255 255 255 / 0.13);
     color: #fff;
   }
+  .rail-item:hover:not(.rail-item-active) {
+    transform: scale(1.03);
+    /* La pilule agrandie passe au-dessus de ses voisines, jamais dessous. */
+    z-index: 2;
+  }
+  .rail-item:hover .rail-icon {
+    transform: scale(1.15);
+  }
+  /* Les deux voisines — celle du dessous, puis celle du dessus. */
+  .rail-item:hover + .rail-item:not(.rail-item-active),
+  .rail-item:not(.rail-item-active):has(+ .rail-item:hover) {
+    transform: scale(1.012);
+  }
+  .rail-item:hover + .rail-item .rail-icon,
+  .rail-item:has(+ .rail-item:hover) .rail-icon {
+    transform: scale(1.06);
+  }
+
+  /* PLIÉ, il n'y a plus que des disques : c'est là que la loupe se voit le
+     mieux, et elle peut donc être un cran plus franche. */
+  .rail-collapsed .rail-item:hover:not(.rail-item-active) {
+    transform: scale(1.09);
+  }
+  .rail-collapsed .rail-item:hover + .rail-item:not(.rail-item-active),
+  .rail-collapsed .rail-item:not(.rail-item-active):has(+ .rail-item:hover) {
+    transform: scale(1.035);
+  }
 }
-.rail-item:active {
+/* L'appui reprend la main sur la loupe : on doit sentir qu'on enfonce, même
+   en plein survol. */
+.rail-item:active,
+.rail-item:hover:active {
   transform: scale(0.97);
+}
+/* Mouvement réduit : la loupe disparaît entièrement. Le survol reste lisible
+   par le seul changement de fond — l'information ne dépend jamais du geste. */
+@media (prefers-reduced-motion: reduce) {
+  .rail-item,
+  .rail-item .rail-icon {
+    transition: none;
+  }
+  .rail-item:hover,
+  .rail-item:hover .rail-icon,
+  .rail-item:hover + .rail-item,
+  .rail-item:has(+ .rail-item:hover),
+  .rail-item:hover + .rail-item .rail-icon,
+  .rail-item:has(+ .rail-item:hover) .rail-icon {
+    transform: none;
+  }
 }
 /* L'ACTIF : ce n'est plus une pilule POSÉE sur le rail, c'est un MORCEAU DE
    LA PAGE découpé dedans.
