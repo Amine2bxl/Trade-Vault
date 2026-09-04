@@ -126,6 +126,24 @@
   --color-loss: #ef4444;
 
   /* ----------------------------------------------------------------
+   * LE VERT ET LE ROUGE DE LA DONNÉE, en utilitaires Tailwind.
+   *
+   * 136 `text-emerald-400` et 123 `text-red-400` écrivent des P&L dans le
+   * produit. Ils rendaient déjà EXACTEMENT `--tv-chart-green` et
+   * `--tv-chart-red` — mais par coïncidence de valeur, pas par construction :
+   * retoucher le vert des graphes aurait laissé deux cent soixante chiffres
+   * derrière, et un P&L en tuile n'aurait plus eu la couleur de la courbe
+   * juste en dessous.
+   *
+   * Les deux familles sont donc branchées sur la même source. Rien ne change
+   * à l'écran aujourd'hui ; elles ne peuvent simplement plus diverger. Comme
+   * les tokens qu'elles suivent, elles ne bougent avec AUCUN thème : la donnée
+   * garde ses couleurs quand l'interface change les siennes.
+   * ---------------------------------------------------------------- */
+  --color-emerald-400: var(--tv-chart-green);
+  --color-red-400: var(--tv-chart-red);
+
+  /* ----------------------------------------------------------------
    * Themeable accent ramps.
    *
    * The whole app styles its accents with Tailwind's `cyan-*` (primary)
@@ -977,11 +995,17 @@ input[type="number"] {
   background: var(--tv-plate-2);
   color: var(--tv-accent);
 }
+/* Le titre d'un en-tête de carte : c'est `.tv-title`, plus la troncature.
+   Il portait ses propres valeurs (1.2 d'interligne, `#fff` en dur, aucun
+   crénage) : le MÊME rôle rendu de deux façons selon qu'un titre vivait dans
+   un en-tête de carte ou dans le corps. Il reprend maintenant, à l'identique,
+   celles du rôle nommé. */
 .card-header-title {
-  font-size: 0.875rem;
+  font-size: var(--tv-t-body);
   font-weight: 700;
-  color: #fff;
-  line-height: 1.2;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--tv-text-primary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1167,7 +1191,10 @@ input[type="range"]::-webkit-slider-thumb {
   background: transparent;
 }
 .bottom-nav-shell {
-  border-radius: 28px;
+  /* Le rayon de coque, partagé avec le rail et la fenêtre : les trois pièces
+     de navigation du produit ont la même courbure, sur téléphone comme sur
+     bureau. */
+  border-radius: var(--tv-shell-radius);
   /* C'est LE RAIL, couché. Même dégradé vert, même grammaire de pastille :
      sur téléphone la navigation doit être reconnaissable comme la même pièce
      que sur desktop, pas comme un autre composant. Elle flotte réellement

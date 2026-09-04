@@ -285,7 +285,7 @@ function PlanColumn({
           </button>
 
           {isPro && (
-            <p className="mt-2.5 text-center text-[11px] text-slate-500">
+            <p className="mt-2.5 text-center tv-row-label">
               {fr
                 ? "Sans engagement · Annulation en 1 clic"
                 : "No commitment · Cancel in one click"}

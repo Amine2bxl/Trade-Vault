@@ -89,10 +89,7 @@ export default function JarvisShell({
         {/* Identité copilote */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2
-              id="jarvis-shell-title"
-              className="text-sm font-bold text-white tracking-tight truncate"
-            >
+            <h2 id="jarvis-shell-title" className="tv-title tracking-tight truncate">
               {t("assistant.title")}
             </h2>
             <span className="tv-label hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
@@ -103,7 +100,7 @@ export default function JarvisShell({
               {t("assistant.dockStatus")}
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 truncate">{t("jarvis.copilot")}</p>
+          <p className="tv-row-label truncate">{t("jarvis.copilot")}</p>
         </div>
         {/* Actions globales */}
         {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}

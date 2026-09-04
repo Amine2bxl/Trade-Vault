@@ -108,7 +108,7 @@ export default function TrustpilotPrompt({
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-white">{t("trustpilot.title")}</div>
-          <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{t("trustpilot.body")}</p>
+          <p className="tv-prose text-slate-400 mt-0.5">{t("trustpilot.body")}</p>
         </div>
         <button
           onClick={() => close("dismissed")}

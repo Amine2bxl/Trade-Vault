@@ -185,10 +185,8 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                   <History className="w-3.5 h-3.5 text-amber-400" />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="font-display text-sm font-bold text-white leading-tight">
-                    {t("reports.available")}
-                  </h2>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <h2 className="font-display tv-title leading-tight">{t("reports.available")}</h2>
+                  <p className="tv-row-label mt-0.5">
                     {t("reports.availableSub").replace("{n}", String(missing.length))}
                   </p>
                 </div>
@@ -225,7 +223,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
               <div className="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4">
                 <FileText className="w-6 h-6 text-cyan-400" />
               </div>
-              <h2 className="text-sm font-bold text-white mb-1.5">{t("reports.empty")}</h2>
+              <h2 className="tv-title mb-1.5">{t("reports.empty")}</h2>
               <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("reports.emptySub")}</p>
             </div>
           ) : (
@@ -241,7 +239,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 />
               ))}
               {missing.length === 0 && (
-                <p className="flex items-center justify-center gap-1.5 text-[11px] text-slate-600 pt-1">
+                <p className="flex items-center justify-center gap-1.5 tv-row-label pt-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/70" />
                   {t("reports.upToDate")}
                 </p>

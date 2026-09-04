@@ -125,7 +125,7 @@ export default function Jarvis() {
                 {fr ? "En ligne" : "Online"}
               </span>
             </div>
-            <p className="truncate text-[11px] text-slate-500">
+            <p className="truncate tv-row-label">
               {fr
                 ? "Tu écrits ou tu lui parles — il a déjà lu ton journal."
                 : "Type or speak — he has already read your journal."}

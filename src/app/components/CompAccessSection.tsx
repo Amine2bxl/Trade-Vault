@@ -124,10 +124,8 @@ export default function CompAccessSection() {
           <Gift className="h-4 w-4 text-white" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-white">
-            {fr ? "Accès offert" : "Complimentary access"}
-          </h2>
-          <p className="text-[11px] text-slate-500">
+          <h2 className="tv-title">{fr ? "Accès offert" : "Complimentary access"}</h2>
+          <p className="tv-row-label">
             {fr
               ? "Premium gratuit pour une adresse e-mail, avec ou sans compte existant."
               : "Free premium for an email address, with or without an existing account."}

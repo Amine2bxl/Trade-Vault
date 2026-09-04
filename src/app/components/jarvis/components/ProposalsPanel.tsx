@@ -89,19 +89,19 @@ export default function ProposalsPanel({ userId }: { userId: string }) {
         >
           <div className="flex items-center gap-2 mb-2">
             <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0" />
-            <h3 className="text-sm font-bold text-white">{t("proposal.title")}</h3>
+            <h3 className="tv-title">{t("proposal.title")}</h3>
           </div>
 
           <p className="text-sm text-white/90">{proposal.text}</p>
           <p className="mt-1.5 text-sm text-slate-400">{proposal.rationale}</p>
 
           {/* La base chiffrée, toujours visible, jamais repliée. */}
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 tv-prose text-slate-500">
             {t("proposal.basis")
               .replace("{n}", String(proposal.evidence?.n ?? 0))
               .replace("{c}", String(proposal.evidence?.comparisons ?? 0))}
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">{t("proposal.association")}</p>
+          <p className="mt-0.5 tv-prose text-slate-500">{t("proposal.association")}</p>
 
           <div className="mt-3 flex items-center gap-2">
             <button
@@ -124,7 +124,7 @@ export default function ProposalsPanel({ userId }: { userId: string }) {
             </button>
           </div>
 
-          <p className="mt-2 text-[11px] text-slate-600">
+          <p className="mt-2 tv-row-label">
             {t("proposal.expires").replace(
               "{date}",
               new Date(proposal.expiresAt).toLocaleDateString(lang === "fr" ? "fr-FR" : undefined),

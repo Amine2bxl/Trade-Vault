@@ -92,12 +92,10 @@ export default function JarvisProfileModal({
             </div>
           </div>
           <div className="min-w-0">
-            <h2 id="jarvis-profile-title" className="text-sm font-bold text-white leading-tight">
+            <h2 id="jarvis-profile-title" className="tv-title leading-tight">
               {t("jarvisProfile.title")}
             </h2>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              {t("jarvisProfile.subtitle")}
-            </p>
+            <p className="tv-prose text-slate-500 mt-1">{t("jarvisProfile.subtitle")}</p>
           </div>
         </div>
 
@@ -157,7 +155,7 @@ export default function JarvisProfileModal({
           </div>
         </div>
 
-        {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+        {error && <p className="mt-3 tv-prose text-red-400">{error}</p>}
 
         {/* Actions */}
         <div className="mt-6 flex items-center justify-end gap-2">

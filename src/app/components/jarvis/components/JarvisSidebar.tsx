@@ -89,9 +89,7 @@ export default function JarvisSidebar({
           </div>
 
           {conversations.length === 0 && (
-            <p className="px-3 pt-2 text-[11px] text-slate-600 leading-relaxed">
-              {t("jarvisConv.empty")}
-            </p>
+            <p className="px-3 pt-2 tv-row-label leading-relaxed">{t("jarvisConv.empty")}</p>
           )}
 
           {conversations.slice(0, 12).map((c) => {

@@ -177,7 +177,7 @@ export default function ThemeSettings() {
           <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
             {t("appearance.title")}
           </h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">{t("appearance.subtitle")}</p>
+          <p className="tv-row-label mt-0.5">{t("appearance.subtitle")}</p>
         </div>
       </div>
 

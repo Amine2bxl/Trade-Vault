@@ -605,7 +605,7 @@ export default function Journal({
                 <tr>
                   <td colSpan={8} className="px-5 py-10 text-center">
                     <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-                    <p className="text-xs text-slate-500 mb-3">{t("empty.subtitle")}</p>
+                    <p className="tv-prose text-slate-500 mb-3">{t("empty.subtitle")}</p>
                     <Button variant="accent" size="sm" onClick={onAdd}>
                       <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
                     </Button>

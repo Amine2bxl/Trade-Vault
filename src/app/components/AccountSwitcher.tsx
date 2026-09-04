@@ -126,8 +126,8 @@ export default function AccountSwitcher({
       <div className="px-5 py-4 border-b border-white/[0.06]">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-white">{t("account.title")}</h2>
-            <p className="text-[11px] text-slate-500">{t("account.subtitle")}</p>
+            <h2 className="tv-title">{t("account.title")}</h2>
+            <p className="tv-row-label">{t("account.subtitle")}</p>
           </div>
           <button
             onClick={onClose}
@@ -233,31 +233,41 @@ export default function AccountSwitcher({
     const ActiveIcon = getAccountIcon(activeAccount);
     return (
       <>
-        {/* Pilule mobile : la MÊME surface ET la MÊME forme que la nav bar
-            (.float-shell + rounded-full). Badge teinte compte bien arrondi,
-            texte légèrement décalé à droite pour respirer des bords. */}
+        {/* La pilule mobile dit EXACTEMENT ce que dit celle du rail : le disque
+            de couleur, le nom, le solde, le chevron. C'est le même sélecteur,
+            posé sur un autre écran — pas un composant cousin.
+
+            Ce qui a sauté, et pourquoi :
+              • le HALO COLORÉ sous le disque (`0 0 14px` de la teinte du
+                compte). La version desktop n'en a jamais eu, et un halo n'est
+                pas une information ;
+              • le `max-w-[96px]` sur le nom. Quatre-vingt-seize pixels coupent
+                « Compte principal » au milieu : la pilule s'étire maintenant
+                jusqu'aux deux tiers de l'écran et ne tronque qu'au-delà ;
+              • le libellé « COMPTE » au-dessus du nom, qui volait la ligne où
+                le SOLDE devait s'écrire. Le disque et le chevron disent déjà
+                qu'on est sur un sélecteur de compte. */}
         <button
           onClick={() => setOpen(true)}
-          aria-label={t("account.switch")}
-          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 pl-1.5 pr-3.5 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
+          aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
+          className="md:hidden fixed z-40 left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
         >
           <span
-            className="relative grid h-8 w-8 shrink-0 place-items-center rounded-[14px] border shadow-sm"
+            className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border"
             style={{
-              background: `${activeAccount.color}20`,
+              background: `${activeAccount.color}1f`,
               color: activeAccount.color,
-              borderColor: `${activeAccount.color}45`,
-              boxShadow: `0 0 14px -3px ${activeAccount.color}55`,
+              borderColor: `${activeAccount.color}44`,
             }}
           >
             <ActiveIcon className="w-4 h-4" />
           </span>
-          <span className="min-w-0 max-w-[96px] text-left">
-            <span className="tv-label block text-slate-500 leading-none mb-0.5">
-              {t("account.fabLabel")}
-            </span>
-            <span className="block text-[13px] font-bold text-white truncate leading-tight">
+          <span className="min-w-0 flex-1 text-left">
+            <span className="block truncate text-[13px] font-semibold leading-tight text-white">
               {activeAccount.name}
+            </span>
+            <span className="tv-figure block text-[13px] leading-tight text-slate-400">
+              {fmtBalance}
             </span>
           </span>
           <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
@@ -274,8 +284,8 @@ export default function AccountSwitcher({
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
                 <div>
-                  <h2 className="text-sm font-bold text-white">{t("account.title")}</h2>
-                  <p className="text-[11px] text-slate-500">{t("account.subtitle")}</p>
+                  <h2 className="tv-title">{t("account.title")}</h2>
+                  <p className="tv-row-label">{t("account.subtitle")}</p>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
@@ -666,7 +676,7 @@ function DeleteAccountModal({
           </div>
         </div>
 
-        <h2 className="text-sm font-bold text-white text-center mb-1">
+        <h2 className="tv-title text-center mb-1">
           {step === 1 ? t("account.deleteTitle") : t("account.deleteTitle2")}
         </h2>
 
@@ -798,10 +808,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
       wrapperClassName="z-[100]"
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-        <h2
-          id="create-account-title"
-          className="text-sm font-bold text-white flex items-center gap-2.5"
-        >
+        <h2 id="create-account-title" className="tv-title flex items-center gap-2.5">
           <Layers className="w-4.5 h-4.5 text-cyan-400 shrink-0" />
           {edit ? t("account.editTitle") : t("account.new")}
         </h2>

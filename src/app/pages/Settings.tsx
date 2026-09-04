@@ -341,9 +341,7 @@ export default function Settings({
                     className={cn(FIELD_BASE, "h-11 pl-7")}
                   />
                 </div>
-                <p className="text-[10px] text-slate-600 mt-1.5">
-                  {t("profile.startingEquityHint")}
-                </p>
+                <p className="tv-hint mt-1.5">{t("profile.startingEquityHint")}</p>
               </label>
             </div>
           )}
@@ -477,7 +475,7 @@ function DeleteAccountModal({
         <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">
           <AlertTriangle className="w-6 h-6 text-red-400" />
         </div>
-        <h2 className="text-sm font-bold text-white mb-1.5">{t("settings.deleteAccountTitle")}</h2>
+        <h2 className="tv-title mb-1.5">{t("settings.deleteAccountTitle")}</h2>
         <p className="text-sm text-slate-400 mb-5">{t("settings.deleteAccountBody")}</p>
 
         <label className="tv-label block text-slate-500 mb-1.5">
@@ -492,7 +490,7 @@ function DeleteAccountModal({
           className={cn(FIELD_BASE, "h-11 mb-4 focus:border-red-500/40 focus:ring-red-500/20")}
         />
 
-        {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+        {error && <p className="tv-prose text-red-400 mb-3">{error}</p>}
 
         <div className="flex gap-2.5">
           <Button variant="subtle" onClick={onClose} disabled={busy} className="flex-1">

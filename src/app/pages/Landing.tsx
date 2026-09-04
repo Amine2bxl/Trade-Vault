@@ -282,7 +282,7 @@ function AIConversation() {
             <Icon n="brain" cls="h-4.5 w-4.5 text-[#03131b]" />
           </div>
           <div>
-            <p className="text-xs font-bold text-white">{t("ai.c.title")}</p>
+            <p className="tv-prose font-bold text-white">{t("ai.c.title")}</p>
             <p className="text-[11px] text-emerald-400">{t("ai.c.sub")}</p>
           </div>
         </div>
@@ -293,18 +293,18 @@ function AIConversation() {
       <div className="space-y-3 px-5 py-5">
         <div className="flex justify-end">
           <div className="max-w-[80%] rounded-xl rounded-tr-sm border border-white/[.08] bg-white/[.05] px-4 py-2.5">
-            <p className="text-xs leading-5 text-slate-200">{t("ai.c.q")}</p>
+            <p className="tv-prose text-slate-200">{t("ai.c.q")}</p>
           </div>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-cyan-400/20 bg-cyan-400/[.05] p-3.5">
-          <p className="text-xs leading-5 text-slate-200">{t("ai.c.a")}</p>
+          <p className="tv-prose text-slate-200">{t("ai.c.a")}</p>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-3.5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
             <span className="tv-label text-emerald-400">{t("ai.c.plan")}</span>
           </div>
-          <p className="text-xs leading-5 text-slate-200">{t("ai.c.plan.d")}</p>
+          <p className="tv-prose text-slate-200">{t("ai.c.plan.d")}</p>
         </div>
       </div>
     </div>

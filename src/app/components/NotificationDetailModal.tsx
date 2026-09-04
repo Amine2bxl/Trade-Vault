@@ -117,7 +117,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-white tracking-tight truncate">Jarvis</h2>
+            <h2 className="tv-title tracking-tight truncate">Jarvis</h2>
             <span
               className={cn(
                 "tv-label shrink-0 px-2 py-0.5 rounded-full",
@@ -132,9 +132,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
               {catLabel}
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 truncate">
-            {new Date(n.createdAt).toLocaleString()}
-          </p>
+          <p className="tv-row-label truncate">{new Date(n.createdAt).toLocaleString()}</p>
         </div>
         <button
           onClick={onClose}
@@ -148,7 +146,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
       <div className="px-5 py-4 space-y-4 max-h-[52vh] overflow-y-auto">
         {/* Résumé */}
         <div>
-          <h3 className="text-sm font-bold text-white leading-snug">{n.title}</h3>
+          <h3 className="tv-title leading-snug">{n.title}</h3>
           <p className="text-[13.5px] text-slate-300 leading-relaxed mt-1.5">{n.body}</p>
         </div>
 

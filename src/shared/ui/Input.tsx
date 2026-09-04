@@ -125,7 +125,7 @@ export function Field({
     <div className={cn("space-y-1.5", className)}>
       {label != null && <Label htmlFor={htmlFor}>{label}</Label>}
       {children}
-      {error != null && <p className="text-xs text-red-400">{error}</p>}
+      {error != null && <p className="tv-prose text-red-400">{error}</p>}
     </div>
   );
 }

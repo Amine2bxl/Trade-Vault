@@ -391,10 +391,8 @@ export default function Onboarding({
                   <UserRound className="w-4 h-4 text-cyan-300" />
                 </div>
               </div>
-              <h1 className="text-sm font-bold text-white tracking-tight mb-1.5">
-                {t("onb.nameTitle")}
-              </h1>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">{t("onb.nameSub")}</p>
+              <h1 className="tv-title tracking-tight mb-1.5">{t("onb.nameTitle")}</h1>
+              <p className="tv-prose text-slate-400 max-w-sm mx-auto mb-4">{t("onb.nameSub")}</p>
 
               <input
                 type="text"
@@ -611,16 +609,16 @@ export default function Onboarding({
                   </div>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-500 text-center mb-8 -mt-2">
+              <p className="tv-row-label text-center mb-8 -mt-2">
                 Modifiable à tout moment depuis tes paramètres
               </p>
 
               {/* Thème */}
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Palette className="w-4 h-4 text-cyan-300" />
-                <h3 className="text-sm font-bold text-white">{t("onb.appearance")}</h3>
+                <h3 className="tv-title">{t("onb.appearance")}</h3>
               </div>
-              <p className="text-xs text-slate-400 text-center mb-4">{t("onb.appearanceSub")}</p>
+              <p className="tv-prose text-slate-400 text-center mb-4">{t("onb.appearanceSub")}</p>
               <div className="max-w-full overflow-visible mb-3">
                 <ThemeSettings />
               </div>
@@ -664,12 +662,8 @@ export default function Onboarding({
                   </div>
                 </div>
               </div>
-              <h2 className="text-sm font-bold text-white tracking-tight mb-1">
-                {t("onb.notifyTitle")}
-              </h2>
-              <p className="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">
-                {t("onb.notifySub")}
-              </p>
+              <h2 className="tv-title tracking-tight mb-1">{t("onb.notifyTitle")}</h2>
+              <p className="tv-prose text-slate-400 max-w-md mx-auto mb-4">{t("onb.notifySub")}</p>
 
               <div className="onb-in">
                 <button
@@ -692,7 +686,7 @@ export default function Onboarding({
                   <BellOff className="w-3.5 h-3.5" /> {t("onb.notifyLater")}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-600 mt-3">{t("onb.notifySettings")}</p>
+              <p className="tv-row-label mt-3">{t("onb.notifySettings")}</p>
             </div>
           )}
 
@@ -708,10 +702,8 @@ export default function Onboarding({
                     </div>
                   </div>
                 </div>
-                <h2 className="text-sm font-bold text-white tracking-tight mb-1.5">
-                  {c.startTitle}
-                </h2>
-                <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">{c.startSub}</p>
+                <h2 className="tv-title tracking-tight mb-1.5">{c.startTitle}</h2>
+                <p className="tv-prose text-slate-400 max-w-md mx-auto mb-4">{c.startSub}</p>
               </div>
 
               {saveError && (

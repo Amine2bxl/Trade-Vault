@@ -545,10 +545,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               </span>
             </span>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-white leading-tight">
+              <h2 className="tv-title leading-tight">
                 {trade ? t("trade.editTitle") : t("trade.newTitle")}
               </h2>
-              <p className="text-[11px] text-slate-500 truncate">
+              <p className="tv-row-label truncate">
                 {form.symbol ? `${form.symbol} · ` : ""}
                 {form.direction === "long"
                   ? "Long"
@@ -1447,8 +1447,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         </div>
         {(timeError || rMultipleError) && (
           <div className="px-4 md:px-6 pb-2 space-y-1">
-            {timeError && <p className="text-xs text-red-400">{timeError}</p>}
-            {rMultipleError && <p className="text-xs text-red-400">{rMultipleError}</p>}
+            {timeError && <p className="tv-prose text-red-400">{timeError}</p>}
+            {rMultipleError && <p className="tv-prose text-red-400">{rMultipleError}</p>}
           </div>
         )}
         <div className="sticky bottom-0 bg-[var(--tv-plate-1)] border-t border-white/[.06] px-4 md:px-6 py-3 md:py-4 flex items-center justify-end gap-2 z-10">

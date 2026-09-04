@@ -132,8 +132,8 @@ export default function ThemeStudioModal({
           <Palette className="w-4 h-4 text-[var(--tv-accent)]" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-white">{tr("Studio de thème", "Theme studio")}</h2>
-          <p className="text-[11px] text-slate-500">
+          <h2 className="tv-title">{tr("Studio de thème", "Theme studio")}</h2>
+          <p className="tv-row-label">
             {tr(
               "Chaque changement s'applique et se sauvegarde aussitôt.",
               "Every change applies and saves instantly.",
@@ -202,7 +202,7 @@ export default function ThemeStudioModal({
               <span key={i} className="w-6 h-6 rounded-lg" style={{ background: c }} />
             ))}
           </div>
-          <p className="text-xs" style={{ color: theme.text ?? DEFAULT_TEXT }}>
+          <p className="tv-prose" style={{ color: theme.text ?? DEFAULT_TEXT }}>
             {tr(
               "Aperçu du texte sur le fond choisi.",
               "Preview of body text on the chosen background.",

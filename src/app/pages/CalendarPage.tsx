@@ -323,7 +323,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-white tracking-tight">
+            <h3 className="tv-title tracking-tight">
               {MONTHS[month]} '{String(year).slice(-2)}
             </h3>
             <button

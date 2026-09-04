@@ -23,6 +23,7 @@ import {
   EQUITY_X_PADDING,
 } from "../utils/chartTheme";
 import { formatShortDate } from "../utils/tradeCalcs";
+import { useT } from "../i18n/LanguageContext";
 
 type EquityPoint = { date: string; equity: number };
 
@@ -46,6 +47,7 @@ type EquityPoint = { date: string; equity: number };
  *     qu'affiche la référence, et un solde de compte se lit en entier.
  */
 function EquityChart({ data }: { data: EquityPoint[] }) {
+  const { t } = useT();
   const breakEven = data.length > 0 ? data[0].equity : 0;
   // Le vert de la DONNÉE, pas l'accent du thème : une courbe qui monte est
   // verte sur Amber comme sur Steel. Voir `CHART_GREEN`.
@@ -73,7 +75,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
             style={{ background: accent }}
             aria-hidden="true"
           />
-          <span className="text-[11px] text-slate-400">Balance</span>
+          <span className="text-[11px] text-slate-400">{t("chart.balance")}</span>
         </span>
         <span className="flex items-center gap-1.5">
           <span
@@ -81,7 +83,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
             style={{ background: EQUITY_FLOOR.stroke }}
             aria-hidden="true"
           />
-          <span className="text-[11px] text-slate-400">Départ</span>
+          <span className="text-[11px] text-slate-400">{t("chart.breakEven")}</span>
         </span>
       </div>
 

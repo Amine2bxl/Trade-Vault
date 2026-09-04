@@ -74,7 +74,7 @@ const SEV_STYLE: Record<Severity, { text: string; bg: string; bar: string; dot: 
   high: {
     text: "text-red-400",
     bg: "bg-red-500/10 border-red-500/25",
-    bar: "bg-red-500/60",
+    bar: "bg-red-400/70",
     dot: "bg-red-400",
   },
   medium: {
@@ -226,9 +226,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="text-xs font-bold text-white">{t("mistakes.discipline")}</span>
               </div>
-              <p className="text-[10px] text-slate-500 leading-snug">
-                {t("mistakes.disciplineSub")}
-              </p>
+              <p className="tv-hint leading-snug">{t("mistakes.disciplineSub")}</p>
               <div className="mt-1.5 text-[10px] text-slate-400">
                 {b.cleanTrades}/{trades.length} {t("mistakes.cleanSuffix")}
               </div>
@@ -304,7 +302,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Severity distribution */}
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
-            <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.severity")}</h3>
+            <h3 className="tv-title mb-3">{t("mistakes.severity")}</h3>
             {severityTotal > 0 ? (
               <div className="space-y-3">
                 {(["high", "medium", "low"] as Severity[]).map((sev) => {
@@ -332,7 +330,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                     </div>
                   );
                 })}
-                <p className="text-[10px] text-slate-600 pt-1">{t("mistakes.severityHint")}</p>
+                <p className="tv-hint pt-1">{t("mistakes.severityHint")}</p>
               </div>
             ) : (
               <div className="h-32 flex items-center justify-center text-slate-600 text-sm text-center">
@@ -346,7 +344,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
 
           {/* Cost per mistake type */}
           <Card hover className="md:col-span-2 p-4 md:p-5 animate-fade-in-up stagger-4">
-            <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.costAnalysis")}</h3>
+            <h3 className="tv-title mb-3">{t("mistakes.costAnalysis")}</h3>
             {b.rows.length > 0 ? (
               <div className="h-56 md:h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -400,8 +398,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             éprouvées — une section vide vaudrait mieux qu'un 100 % inventé. */}
         {adherence.length > 0 && (
           <Card className="p-4 md:p-5 mb-4 md:mb-6">
-            <h3 className="text-sm font-semibold text-white mb-1">{t("mistakes.adherence")}</h3>
-            <p className="text-[11px] text-slate-600 mb-3">
+            <h3 className="tv-title mb-1">{t("mistakes.adherence")}</h3>
+            <p className="tv-row-label mb-3">
               {t("mistakes.adherenceSub").replace("{n}", String(ADHERENCE_WINDOW_DAYS))}
             </p>
             <div className="space-y-2.5">
@@ -446,8 +444,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Weekly trend */}
             <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-5">
-              <h3 className="text-sm font-semibold text-white mb-1">{t("mistakes.weeklyTrend")}</h3>
-              <p className="text-[10px] text-slate-600 mb-3">{t("mistakes.weeklyTrendSub")}</p>
+              <h3 className="tv-title mb-1">{t("mistakes.weeklyTrend")}</h3>
+              <p className="tv-hint mb-3">{t("mistakes.weeklyTrendSub")}</p>
               {b.weeklyTrend.length > 0 ? (
                 <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
@@ -497,7 +495,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             {/* Session + day distribution */}
             <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
               <div>
-                <h3 className="text-sm font-semibold text-white mb-2">{t("mistakes.bySession")}</h3>
+                <h3 className="tv-title mb-2">{t("mistakes.bySession")}</h3>
                 <div className="space-y-2">
                   {sessionData.map((s) => (
                     <div key={s.session} className="flex items-center gap-2">
@@ -516,7 +514,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white mb-2">{t("mistakes.byDay")}</h3>
+                <h3 className="tv-title mb-2">{t("mistakes.byDay")}</h3>
                 <div className="h-28">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dayData}>
@@ -545,7 +543,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
         <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-7">
           <div className="flex items-center gap-2 mb-3 md:mb-4">
             <Lightbulb className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-semibold text-white">{t("mistakes.improvementTips")}</h3>
+            <h3 className="tv-title">{t("mistakes.improvementTips")}</h3>
           </div>
           {topMistakes.length > 0 ? (
             <>
@@ -582,7 +580,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                         {m.mistake}
                       </span>
                     </div>
-                    <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">
+                    <p className="text-[10px] md:tv-prose text-slate-400">
                       {MISTAKE_TIP_KEYS[m.mistake]
                         ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
                         : t("mistakes.defaultTip")}

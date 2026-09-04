@@ -199,7 +199,7 @@ export function GoalPicker({
       <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-1.5">
         {tr("Choisis tes objectifs", "Pick your goals")}
       </h2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="tv-prose text-slate-500 mb-3">
         {tr(
           "Sélectionnes-en autant que tu veux — le plan les combine en 6 étapes mensuelles.",
           "Select as many as you want — the plan combines them into 6 monthly steps.",
@@ -347,7 +347,7 @@ export function GoalPicker({
               )
             : tr("Générer mon plan d'action", "Generate my action plan")}
       </button>
-      <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
+      <p className="mt-3 flex items-center justify-center gap-1.5 tv-row-label">
         <Bell className="w-3 h-3" />
         {tr(
           "Tu recevras des rappels push pour les actions importantes.",

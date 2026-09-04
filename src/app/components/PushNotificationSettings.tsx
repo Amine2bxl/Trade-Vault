@@ -133,8 +133,8 @@ export function PushNotificationSettings() {
           </span>
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-white tracking-tight">{t("push.title")}</h2>
-          <p className="text-[11px] text-slate-500">{t("push.subtitle")}</p>
+          <h2 className="tv-title tracking-tight">{t("push.title")}</h2>
+          <p className="tv-row-label">{t("push.subtitle")}</p>
         </div>
       </div>
 

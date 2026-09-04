@@ -158,8 +158,8 @@ export default function SessionPanel({
             <Activity className="w-4 h-4" />
           </span>
           <div>
-            <h3 className="text-sm font-bold text-white">{t("session.title")}</h3>
-            <p className="text-[11px] text-slate-500">
+            <h3 className="tv-title">{t("session.title")}</h3>
+            <p className="tv-row-label">
               {session ? (closed ? t("session.closed") : t("session.open")) : t("session.notOpen")}
             </p>
           </div>
@@ -172,7 +172,7 @@ export default function SessionPanel({
             {session?.readinessScore ?? preview.score ?? "—"}
             <span className="text-xs font-bold text-slate-500">/100</span>
           </div>
-          <p className="text-[10px] text-slate-500">
+          <p className="tv-hint">
             {t("session.readiness")} · {checklistDone}/{checklistTotal} ·{" "}
             {t("session.rulesShort").replace("{n}", String(ruleCount))}
           </p>
@@ -215,7 +215,7 @@ export default function SessionPanel({
       {session && (
         <>
           {session.dailyObjective && (
-            <p className="text-xs text-slate-400">
+            <p className="tv-prose text-slate-400">
               <span className="text-slate-500">{t("session.objective")} : </span>
               {session.dailyObjective}
             </p>
@@ -247,7 +247,7 @@ export default function SessionPanel({
           )}
 
           {closed && session.reviewNote && (
-            <p className="text-xs text-slate-400">
+            <p className="tv-prose text-slate-400">
               <span className="text-slate-500">{t("session.review")} : </span>
               {session.reviewNote}
             </p>

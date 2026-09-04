@@ -451,7 +451,7 @@ export default function ChecklistWizard({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <Icon className="w-5 h-5 text-cyan-400" />
-                  <h2 className="text-sm font-bold text-white">{q.title}</h2>
+                  <h2 className="tv-title">{q.title}</h2>
                 </div>
                 <p className="text-sm text-slate-400 mb-5">{q.sub}</p>
                 <div className="grid gap-2.5">
@@ -511,11 +511,11 @@ export default function ChecklistWizard({
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Clock className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="tv-title">
                 {tr("Quand commence ta session ?", "When does your session start?")}
               </h2>
             </div>
-            <p className="text-xs text-slate-500 mb-5">
+            <p className="tv-prose text-slate-500 mb-5">
               {tr(
                 "On s'en sert pour verrouiller la checklist avant l'ouverture et t'alerter au départ.",
                 "We use it to lock the checklist before the open and alert you at the start.",

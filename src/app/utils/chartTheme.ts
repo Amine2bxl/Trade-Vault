@@ -72,12 +72,17 @@ export const EQUITY_GRID = {
   vertical: false,
 } as const;
 
-// La ligne « minimum » : le solde de départ, en tirets saumon. C'est la
-// référence contre laquelle toute la courbe se lit — au-dessus on gagne, en
-// dessous on perd — et le pointillé dit qu'il s'agit d'un repère, pas d'une
-// mesure.
+// La ligne « minimum » : le solde de départ, en tirets. C'est la référence
+// contre laquelle toute la courbe se lit — au-dessus on gagne, en dessous on
+// perd — et le pointillé dit qu'il s'agit d'un repère, pas d'une mesure.
+//
+// Elle est NEUTRE, et c'est le point important : elle était saumon, ce qui
+// marche tant que la courbe monte. Dès que le compte perd, la courbe devient
+// rouge elle aussi et la légende affiche deux pastilles rouges identiques —
+// on ne distingue plus le solde du repère. Le rouge, dans ce produit, veut
+// dire PERTE ; un repère n'est ni un gain ni une perte.
 export const EQUITY_FLOOR = {
-  stroke: "var(--tv-chart-red)",
+  stroke: "rgb(148 163 184 / 0.5)",
   strokeWidth: 2,
   strokeDasharray: "7 7",
 } as const;
@@ -133,12 +138,19 @@ export const TREND_STROKE = "var(--tv-text-secondary)";
  *
  * Les dégradés SVG sont en coordonnées relatives à la boîte de chaque
  * rectangle : chaque barre reçoit donc son propre dégradé, quelle que soit sa
- * hauteur. Les identifiants sont volontairement globaux et stables — plusieurs
- * graphes d'une même page déclarent les mêmes, à l'identique, et le premier
- * sert pour tous.
+ * hauteur. Les identifiants sont volontairement globaux et stables — ils sont
+ * déclarés une fois dans la coque (`ChartDefs`) et servent tous les graphes.
+ *
+ * LE SECOND TERME EST UN REPLI, et il n'est pas décoratif. La syntaxe de
+ * peinture SVG accepte `<url> <couleur>` : si la référence ne résout pas, le
+ * navigateur peint la couleur. Sans lui, un graphe rendu hors de la coque
+ * (une route qui ne monte pas `ChartDefs`, un aperçu isolé) ne dessine
+ * simplement AUCUNE barre — vérifié : le rectangle n'est pas peint du tout,
+ * il n'y a pas de couleur par défaut. Le repli transforme une panne muette en
+ * simple perte du dégradé.
  */
-export const BAR_FILL_GREEN = "url(#tvBarGreen)";
-export const BAR_FILL_RED = "url(#tvBarRed)";
+export const BAR_FILL_GREEN = "url(#tvBarGreen) var(--tv-chart-green)";
+export const BAR_FILL_RED = "url(#tvBarRed) var(--tv-chart-red)";
 
 /**
  * UNE ÉCHELLE MONÉTAIRE À PALIERS RONDS, prête à poser sur un `<YAxis>`.

@@ -1431,8 +1431,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <SlidersHorizontal className="w-4 h-4" />
               </span>
               <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white">{t("chk.customize")}</h3>
-                <p className="text-[11px] text-slate-500 leading-relaxed">{t("chk.cfgIntro")}</p>
+                <h3 className="tv-title">{t("chk.customize")}</h3>
+                <p className="tv-row-label leading-relaxed">{t("chk.cfgIntro")}</p>
               </div>
             </div>
 
@@ -1514,7 +1514,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             {cfgTab === "models" && (
               <div className="space-y-2">
                 <div className="tv-label text-slate-500">{t("chk.cfgTemplates")}</div>
-                <p className="text-[11px] text-slate-500">{t("chk.cfgTemplatesHint")}</p>
+                <p className="tv-row-label">{t("chk.cfgTemplatesHint")}</p>
                 <div className="flex flex-wrap gap-2">
                   {templates.map((tp) => (
                     <button

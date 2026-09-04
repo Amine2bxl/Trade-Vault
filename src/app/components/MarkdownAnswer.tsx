@@ -14,9 +14,7 @@ export default function MarkdownAnswer({ content }: { content: string }) {
               {children}
             </h2>
           ),
-          h3: ({ children }) => (
-            <h3 className="text-sm font-semibold text-white mt-3">{children}</h3>
-          ),
+          h3: ({ children }) => <h3 className="tv-title mt-3">{children}</h3>,
           p: ({ children }) => <p className="text-slate-300">{children}</p>,
           strong: ({ children }) => (
             <strong className="text-white font-semibold">{children}</strong>

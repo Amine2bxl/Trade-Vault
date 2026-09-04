@@ -41,7 +41,7 @@ const TONES = {
     bg: "bg-red-500/[0.04]",
     text: "text-red-400",
     iconBg: "bg-red-500/10",
-    bar: "bg-red-500/60",
+    bar: "bg-red-400/70",
   },
   amber: {
     border: "border-amber-500/15",
@@ -62,7 +62,7 @@ const TONES = {
     bg: "bg-emerald-500/[0.04]",
     text: "text-emerald-400",
     iconBg: "bg-emerald-500/10",
-    bar: "bg-emerald-500/60",
+    bar: "bg-emerald-400/70",
   },
 } as const;
 
@@ -150,10 +150,10 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
               <Target className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-white tracking-tight truncate leading-tight">
+              <h2 className="tv-title tracking-tight truncate leading-tight">
                 {missed.symbol || t("tradeDetail.missedSetup")}
               </h2>
-              <p className="text-[11px] md:text-xs text-slate-500 mt-0.5 truncate">{dateStr}</p>
+              <p className="text-[11px] md:tv-prose text-slate-500 mt-0.5 truncate">{dateStr}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

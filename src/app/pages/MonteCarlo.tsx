@@ -445,9 +445,7 @@ export default function MonteCarloPage({ trades }: Props) {
       <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <BarChart3 className="w-12 h-12 text-cyan-400/30 mb-5" />
-          <h3 className="text-sm font-bold text-white mb-1.5">
-            Ton Monte Carlo commence avec tes données
-          </h3>
+          <h3 className="tv-title mb-1.5">Ton Monte Carlo commence avec tes données</h3>
           <p className="text-sm text-slate-500 max-w-sm">
             Ajoute au moins 5 trades dans ton journal pour lancer ta première simulation.
           </p>
@@ -490,7 +488,7 @@ export default function MonteCarloPage({ trades }: Props) {
                 </option>
               ))}
             </select>
-            <p className="text-[10px] text-slate-500 mt-2 italic">
+            <p className="tv-hint mt-2 italic">
               Selecting a preset fills the parameters below — you can override any value.
             </p>
           </div>

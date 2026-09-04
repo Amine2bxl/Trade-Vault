@@ -174,8 +174,8 @@ export default function Inbox() {
             <Bell className="w-4 h-4" />
           </span>
           <div>
-            <h1 className="text-sm font-bold text-white">{t("inbox.title")}</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="tv-title">{t("inbox.title")}</h1>
+            <p className="tv-prose text-slate-500">
               {unreadTotal > 0
                 ? `${unreadTotal} non ${unreadTotal > 1 ? "lues" : "lue"}`
                 : "Tout lu"}
@@ -320,9 +320,7 @@ export default function Inbox() {
                           </span>
                         </div>
                         {n.body && (
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
-                            {n.body}
-                          </p>
+                          <p className="tv-prose text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
                         )}
                       </div>
                       {unread && (

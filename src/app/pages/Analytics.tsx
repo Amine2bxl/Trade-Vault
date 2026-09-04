@@ -357,10 +357,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-white mb-0.5">
-                {t("analytics.profitFactor")}
-              </h3>
-              <p className="text-[10px] text-slate-500">{t("analytics.profitsOverLosses")}</p>
+              <h3 className="tv-title mb-0.5">{t("analytics.profitFactor")}</h3>
+              <p className="tv-hint">{t("analytics.profitsOverLosses")}</p>
             </div>
             <div className="flex items-center gap-3 md:gap-5 flex-wrap">
               <div className="text-center">
@@ -408,7 +406,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <div
               className={cn(
                 "h-full rounded-full",
-                profitFactorData.isProfitable ? "bg-emerald-500/60" : "bg-red-500/60",
+                profitFactorData.isProfitable ? "bg-emerald-400/70" : "bg-red-400/70",
               )}
               style={{ width: `${Math.min((profitFactorData.profitFactor / 3) * 100, 100)}%` }}
             />
@@ -526,7 +524,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Performance by setup */}
         <Card hover className="overflow-hidden animate-fade-in-up stagger-2">
           <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
-            <h3 className="text-sm font-semibold text-white">{t("analytics.setupTable")}</h3>
+            <h3 className="tv-title">{t("analytics.setupTable")}</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px]">
@@ -628,8 +626,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Session × weekday heatmap + win rate by hour */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-2">
-            <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.heatmap")}</h3>
-            <p className="text-[10px] text-slate-600 mb-3">{t("analytics.heatmapSub")}</p>
+            <h3 className="tv-title mb-1">{t("analytics.heatmap")}</h3>
+            <p className="tv-hint mb-3">{t("analytics.heatmapSub")}</p>
             <div className="grid gap-1" style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}>
               <div />
               {[1, 2, 3, 4, 5].map((d) => (
@@ -681,8 +679,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
           </Card>
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
-            <h3 className="text-sm font-semibold text-white mb-1">{t("analytics.byHour")}</h3>
-            <p className="text-[10px] text-slate-600 mb-3">{t("analytics.byHourSub")}</p>
+            <h3 className="tv-title mb-1">{t("analytics.byHour")}</h3>
+            <p className="tv-hint mb-3">{t("analytics.byHourSub")}</p>
             {hourData.length > 0 ? (
               <div className="h-48 md:h-56">
                 <ResponsiveContainer width="100%" height="100%">
@@ -736,13 +734,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Equity + Pie */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
-            <h3 className="text-sm font-semibold text-white mb-4">{t("analytics.equityCurve")}</h3>
+            <h3 className="tv-title mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-draw">
               <EquityChart data={stats.equityCurve} />
             </div>
           </div>
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
-            <h3 className="text-sm font-semibold text-white mb-3">{t("analytics.winLoss")}</h3>
+            <h3 className="tv-title mb-3">{t("analytics.winLoss")}</h3>
             <div className="h-40 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -794,10 +792,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
         {/* Monthly Performance */}
         <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-4">
-          <h3 className="text-sm font-semibold text-white mb-1">
-            {t("analytics.monthlyPerformance")}
-          </h3>
-          <p className="text-[10px] text-slate-600 mb-3">{t("analytics.monthlyPerformanceSub")}</p>
+          <h3 className="tv-title mb-1">{t("analytics.monthlyPerformance")}</h3>
+          <p className="tv-hint mb-3">{t("analytics.monthlyPerformanceSub")}</p>
           {monthlyData.length > 0 ? (
             <div className="h-52 md:h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -856,7 +852,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
               <div className="flex items-center justify-center gap-4 mt-1">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded bg-emerald-500/50" />
+                  <span className="w-2 h-2 rounded bg-emerald-400/70" />
                   <span className="text-[11px] text-slate-500">{t("journal.colPnl")}</span>
                 </span>
                 <span className="flex items-center gap-1">
@@ -879,9 +875,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Day of Week + Strategy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-5">
-            <h3 className="text-sm font-semibold text-white mb-3">
-              {t("analytics.pnlWinRateByDay")}
-            </h3>
+            <h3 className="tv-title mb-3">{t("analytics.pnlWinRateByDay")}</h3>
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={dayOfWeekData}>
@@ -925,9 +919,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
           </Card>
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6">
-            <h3 className="text-sm font-semibold text-white mb-3">
-              {t("analytics.pnlByStrategy")}
-            </h3>
+            <h3 className="tv-title mb-3">{t("analytics.pnlByStrategy")}</h3>
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={strategyData} layout="vertical">
@@ -967,9 +959,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Distribution + Symbol */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-7">
-            <h3 className="text-sm font-semibold text-white mb-3">
-              {t("analytics.pnlDistribution")}
-            </h3>
+            <h3 className="tv-title mb-3">{t("analytics.pnlDistribution")}</h3>
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={pnlDistribution}>
@@ -995,9 +985,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
           </Card>
           <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-8">
-            <h3 className="text-sm font-semibold text-white mb-3">
-              {t("analytics.symbolPerformance")}
-            </h3>
+            <h3 className="tv-title mb-3">{t("analytics.symbolPerformance")}</h3>
             <div className="space-y-1.5 max-h-48 md:max-h-64 overflow-y-auto">
               {symbolData.map((s) => (
                 <div key={s.symbol} className="flex items-center gap-2 py-1.5 px-1.5 rounded-lg">
@@ -1006,7 +994,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     <div
                       className={cn(
                         "h-full rounded-full",
-                        s.pnl >= 0 ? "bg-emerald-500/50" : "bg-red-500/50",
+                        s.pnl >= 0 ? "bg-emerald-400/70" : "bg-red-400/70",
                       )}
                       style={{
                         width: `${Math.min((Math.abs(s.pnl) / Math.max(...symbolData.map((x) => Math.abs(x.pnl)), 1)) * 100, 100)}%`,
@@ -1032,6 +1020,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 }
 
 function SeasonalitySection({ trades }: { trades: Trade[] }) {
+  const { t } = useT();
   const { lang } = useT();
   const locale = LOCALE_MAP[lang] || "en-US";
   const monthLabel = (m: number) =>
@@ -1075,7 +1064,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
   return (
     <Card className="animate-fade-in-up stagger-2">
       <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
-        <h3 className="text-sm font-semibold text-white">Tendances</h3>
+        <h3 className="tv-title">{t("trends.title")}</h3>
       </div>
       <div className="p-4 md:p-5 space-y-4">
         {/* Highlights */}
@@ -1083,7 +1072,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="tv-label text-slate-500">Meilleur mois</span>
+              <span className="tv-label text-slate-500">{t("trends.bestMonth")}</span>
             </div>
             <div className="font-display text-sm font-extrabold text-white">
               {best ? best.month : "—"}
@@ -1095,7 +1084,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-              <span className="tv-label text-slate-500">Pire mois</span>
+              <span className="tv-label text-slate-500">{t("trends.worstMonth")}</span>
             </div>
             <div className="font-display text-sm font-extrabold text-white">
               {worst ? worst.month : "—"}
@@ -1107,25 +1096,25 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <CalendarDays className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="tv-label text-slate-500">Mois tradés</span>
+              <span className="tv-label text-slate-500">{t("trends.monthsTraded")}</span>
             </div>
             <div className="tv-figure text-base text-white">{tradedMonths}/12</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">{totalTrades} trades</div>
+            <div className="tv-row-label mt-0.5">{totalTrades} trades</div>
           </div>
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="tv-label text-slate-500">Années</span>
+              <span className="tv-label text-slate-500">{t("trends.years")}</span>
             </div>
             <div className="tv-figure text-base text-white">{years.length}</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">de données</div>
+            <div className="tv-row-label mt-0.5">{t("trends.ofData")}</div>
           </div>
         </div>
 
         {/* Yearly heatmap */}
         {years.length > 0 && (
           <div>
-            <div className="tv-label text-slate-500 mb-2">Heatmap annuel</div>
+            <div className="tv-label text-slate-500 mb-2">{t("trends.yearlyHeatmap")}</div>
             <div className="flex flex-col gap-0.5 w-full">
               <div className="tv-label grid grid-cols-12 gap-0.5 text-slate-600 pl-9">
                 {monthly.map((m, i) => (

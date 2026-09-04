@@ -172,8 +172,8 @@ export default function PromoCodeSection() {
           <Tag className="h-4 w-4 text-white" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-white">{fr ? "Codes promo" : "Promo codes"}</h2>
-          <p className="text-[11px] text-slate-500">
+          <h2 className="tv-title">{fr ? "Codes promo" : "Promo codes"}</h2>
+          <p className="tv-row-label">
             {fr
               ? "Un code = accès permanent pour un influenceur + réduction pour sa communauté."
               : "One code = lifetime access for an influencer + a discount for their community."}

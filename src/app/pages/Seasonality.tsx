@@ -184,10 +184,10 @@ function AssetSeasonality() {
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">
+            <h3 className="tv-title mb-0.5">
               {asset.name} — {t("seasonality.monthlyBias")}
             </h3>
-            <p className="text-[10px] text-slate-500">{t("seasonality.monthlyBiasSub")}</p>
+            <p className="tv-hint">{t("seasonality.monthlyBiasSub")}</p>
           </div>
           <span className="tv-figure text-[10px] text-slate-500 shrink-0">
             {asset.years} {t("seasonality.years")}
@@ -264,10 +264,10 @@ function AssetSeasonality() {
         <div className="flex items-center gap-2 mb-4">
           <Layers className="w-4 h-4 text-cyan-400/70" />
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="tv-title">
               {CATEGORY_LABELS[category]} — {t("seasonality.heatmapAll")}
             </h3>
-            <p className="text-[10px] text-slate-500">{t("seasonality.heatmapAllSub")}</p>
+            <p className="tv-hint">{t("seasonality.heatmapAllSub")}</p>
           </div>
         </div>
         <div className="overflow-x-auto -mx-1 px-1">
@@ -494,7 +494,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         <div className="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
           <CalendarRange className="w-7 h-7 text-cyan-400" />
         </div>
-        <h3 className="text-sm font-bold text-white mb-1.5">{t("seasonality.empty")}</h3>
+        <h3 className="tv-title mb-1.5">{t("seasonality.empty")}</h3>
         <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("seasonality.emptySub")}</p>
       </div>
     );
@@ -536,8 +536,8 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       </div>
 
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
-        <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.monthly")}</h3>
-        <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.monthlySub")}</p>
+        <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
+        <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
         <div className="h-56 md:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -582,8 +582,8 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       </div>
 
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
-        <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.heatmap")}</h3>
-        <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.heatmapSub")}</p>
+        <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
+        <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
         <div className="overflow-x-auto -mx-1 px-1">
           <div className="min-w-[560px]">
             <div
@@ -606,8 +606,8 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
 
       <div className="grid md:grid-cols-2 gap-5">
         <div className="glass rounded-3xl p-4 md:p-5 card-premium">
-          <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.weekday")}</h3>
-          <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.weekdaySub")}</p>
+          <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
+          <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekdays} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -635,8 +635,8 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         </div>
 
         <div className="glass rounded-3xl p-4 md:p-5 card-premium">
-          <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.hourly")}</h3>
-          <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.hourlySub")}</p>
+          <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
+          <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hours} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>

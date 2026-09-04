@@ -129,9 +129,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
           ))}
         </div>
       )}
-      {block.impact && (
-        <p className="text-xs text-slate-300 font-semibold leading-relaxed">{block.impact}</p>
-      )}
+      {block.impact && <p className="tv-prose text-slate-300 font-semibold">{block.impact}</p>}
       {/* Claim → evidence : le lien vers les données qui ont servi à conclure. */}
       {showButton && (
         <button

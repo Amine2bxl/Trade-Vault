@@ -125,7 +125,7 @@ export default function Subscription() {
               </h2>
               {!loading && sub && <StatusChip sub={sub} t={t} />}
             </div>
-            <p className="text-xs text-slate-400 mt-1.5">
+            <p className="tv-prose text-slate-400 mt-1.5">
               {loading
                 ? tr("Chargement de ton statut…", "Loading your status…")
                 : accessLine(sub, t, tr, dateFmt)}

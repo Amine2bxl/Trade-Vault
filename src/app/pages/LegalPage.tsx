@@ -37,7 +37,7 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
 
         <header className="mt-6 mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{doc.title}</h1>
-          <p className="text-xs text-slate-500 mb-4">{doc.updated}</p>
+          <p className="tv-prose text-slate-500 mb-4">{doc.updated}</p>
           <p className="text-sm md:text-base text-slate-400 leading-relaxed max-w-2xl">
             {doc.intro}
           </p>

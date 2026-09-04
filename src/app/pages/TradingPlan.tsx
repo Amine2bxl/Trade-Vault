@@ -301,7 +301,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           )}
 
           {plan.setups.length >= MAX_SETUPS && (
-            <p className="text-center text-[11px] text-slate-600">
+            <p className="text-center tv-row-label">
               {tr(
                 `Limite de ${MAX_SETUPS} setups atteinte. Supprime un setup pour en ajouter un autre.`,
                 `${MAX_SETUPS}-setup limit reached. Remove one to add another.`,
@@ -466,10 +466,10 @@ function Section({
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-white">{title}</h2>
+            <h2 className="tv-title">{title}</h2>
             {action}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+          <p className="tv-row-label mt-0.5">{sub}</p>
         </div>
       </div>
       <div className="space-y-3">{children}</div>

@@ -85,11 +85,9 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
       <div className={section}>
         <div className="flex items-center gap-2">
           <User className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-sm font-bold text-white">{t("jarvisSettings.profileTitle")}</h3>
+          <h3 className="tv-title">{t("jarvisSettings.profileTitle")}</h3>
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          {t("jarvisSettings.profileSubtitle")}
-        </p>
+        <p className="tv-prose text-slate-500">{t("jarvisSettings.profileSubtitle")}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {(
             [
@@ -128,7 +126,7 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
       <div className={section + " mt-4"}>
         <div className="flex items-center gap-2">
           <Languages className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-sm font-bold text-white">{t("jarvisSettings.prefTitle")}</h3>
+          <h3 className="tv-title">{t("jarvisSettings.prefTitle")}</h3>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400 shrink-0">
@@ -154,11 +152,9 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
       <div className={section + " mt-4"}>
         <div className="flex items-center gap-2">
           <Brain className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-sm font-bold text-white">{t("jarvisSettings.memoryTitle")}</h3>
+          <h3 className="tv-title">{t("jarvisSettings.memoryTitle")}</h3>
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          {t("jarvisSettings.memorySubtitle")}
-        </p>
+        <p className="tv-prose text-slate-500">{t("jarvisSettings.memorySubtitle")}</p>
         {memory && (
           <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5 text-xs text-slate-400 space-y-1">
             <div>

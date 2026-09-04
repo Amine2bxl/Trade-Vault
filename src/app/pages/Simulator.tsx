@@ -230,7 +230,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
             <p className="tv-label text-slate-500">{t("sim.rulesTitle")}</p>
             {/* Le rappel n'est pas décoratif : il dit au trader d'où viennent
                 les chiffres qu'il saisit, et que TradeVault ne les connaît pas. */}
-            <p className="text-[11px] text-slate-500 flex gap-1.5">
+            <p className="tv-row-label flex gap-1.5">
               <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
               {t("sim.rulesHint")}
             </p>
@@ -377,7 +377,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                     />
                   </div>
 
-                  <p className="text-[11px] text-slate-500">
+                  <p className="tv-row-label">
                     {t("sim.disclaimer")} · {result.engineVersion}
                   </p>
 
@@ -417,7 +417,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                       ] as const
                     ).map(([label, v]) => (
                       <div key={label}>
-                        <p className="text-[11px] text-slate-500">{label}</p>
+                        <p className="tv-row-label">{label}</p>
                         <p className={v >= 0 ? "text-emerald-400" : "text-red-400"}>
                           {money.format(v)}
                         </p>
@@ -480,7 +480,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-[11px] text-slate-500">{t("sim.compareHint")}</p>
+                    <p className="tv-row-label">{t("sim.compareHint")}</p>
                   </CardBody>
                 </Card>
               )}

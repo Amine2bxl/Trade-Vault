@@ -82,7 +82,7 @@ export default function ContactPage() {
             <Clock className="w-4 h-4" />
           </span>
           <div>
-            <h2 className="text-sm font-bold text-white mb-1">{doc.responseTitle}</h2>
+            <h2 className="tv-title mb-1">{doc.responseTitle}</h2>
             <p className="text-sm text-slate-400 leading-relaxed">{doc.responseBody}</p>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function ContactPage() {
                 <span className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-3">
                   <Icon className="w-4 h-4" />
                 </span>
-                <h3 className="text-sm font-bold text-white mb-1.5 group-hover:text-cyan-200 transition-colors">
+                <h3 className="tv-title mb-1.5 group-hover:text-cyan-200 transition-colors">
                   {c.title}
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">{c.body}</p>
@@ -110,7 +110,7 @@ export default function ContactPage() {
         </div>
 
         <section className="glass rounded-2xl p-4 md:p-5 mb-8">
-          <h2 className="text-sm font-bold text-white mb-3">{doc.includeTitle}</h2>
+          <h2 className="tv-title mb-3">{doc.includeTitle}</h2>
           <ul className="space-y-1.5">
             {doc.include.map((li) => (
               <li
@@ -124,7 +124,7 @@ export default function ContactPage() {
           </ul>
         </section>
 
-        <p className="text-xs text-slate-600 leading-relaxed">{doc.legalNote}</p>
+        <p className="tv-prose text-slate-600">{doc.legalNote}</p>
 
         <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
           <a href="/privacy" className="hover:text-slate-300 transition-colors">

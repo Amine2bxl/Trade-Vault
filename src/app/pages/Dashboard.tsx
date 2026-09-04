@@ -366,7 +366,7 @@ export default function Dashboard({
                 />
                 <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" />
               </svg>
-              <h2 className="text-sm font-bold text-white mb-2">{t("empty.title")}</h2>
+              <h2 className="tv-title mb-2">{t("empty.title")}</h2>
               <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
               <Button variant="accent" onClick={onAddTrade}>
                 <Plus className="w-4 h-4" /> {t("empty.cta")}
@@ -596,7 +596,7 @@ export default function Dashboard({
                 <div className="stat-card overflow-hidden">
                   <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-slate-500" />
-                    <h3 className="text-sm font-bold text-white">{t("stats.performance")}</h3>
+                    <h3 className="tv-title">{t("stats.performance")}</h3>
                   </div>
                   <div className="p-3 md:p-4 grid grid-cols-2 gap-x-4 gap-y-3">
                     {/* Win rate, profit factor, R:R et drawdown max ne sont plus
@@ -639,7 +639,7 @@ export default function Dashboard({
                 {/* Recent Trades */}
                 <Card variant="solid" hover className="overflow-hidden">
                   <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-bold text-white">{t("dashboard.recentTrades")}</h3>
+                    <h3 className="tv-title">{t("dashboard.recentTrades")}</h3>
                     {onOpenJournal && trades.length > recentTrades.length && (
                       <button
                         onClick={onOpenJournal}

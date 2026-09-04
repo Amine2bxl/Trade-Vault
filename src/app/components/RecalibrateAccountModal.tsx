@@ -85,10 +85,8 @@ export default function RecalibrateAccountModal({
             <Scale className="w-4 h-4" />
           </span>
           <div className="min-w-0">
-            <h2 className="font-display text-sm font-bold text-white leading-tight">
-              {t("recal.title")}
-            </h2>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">{t("recal.subtitle")}</p>
+            <h2 className="font-display tv-title leading-tight">{t("recal.title")}</h2>
+            <p className="tv-prose text-slate-500 mt-1">{t("recal.subtitle")}</p>
           </div>
         </header>
 
