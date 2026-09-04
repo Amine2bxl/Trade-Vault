@@ -521,7 +521,7 @@ export default function MonteCarloPage({ trades }: Props) {
                 <button
                   onClick={() => setTrailingDD(!trailingDD)}
                   className={cn(
-                    "px-3 py-1 rounded-lg text-[10px] font-bold transition border",
+                    "flex h-9 items-center rounded-lg border px-3 text-[11px] font-bold transition",
                     trailingDD
                       ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"
                       : "bg-white/[0.04] text-slate-500 border-white/[0.08]",
@@ -569,7 +569,7 @@ export default function MonteCarloPage({ trades }: Props) {
               <button
                 onClick={() => setUseManual(!useManual)}
                 className={cn(
-                  "text-[10px] font-bold px-2 py-0.5 rounded-lg border transition",
+                  "flex h-8 items-center rounded-lg border px-2.5 text-[11px] font-bold transition",
                   useManual
                     ? "bg-amber-500/10 text-amber-300 border-amber-500/25"
                     : "bg-cyan-500/10 text-cyan-300 border-cyan-500/25",

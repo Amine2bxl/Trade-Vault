@@ -328,7 +328,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             </h3>
             <button
               onClick={goToday}
-              className="text-[10px] md:text-xs text-cyan-400 hover:text-cyan-300 font-semibold px-2 md:px-3 py-1 rounded-lg hover:bg-cyan-500/10 transition active:scale-95"
+              className="flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-cyan-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 active:scale-95"
             >
               {t("calendar.today")}
             </button>

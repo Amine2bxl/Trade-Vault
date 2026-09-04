@@ -1944,8 +1944,11 @@ a:focus-visible,
 .rail-toggle {
   display: grid;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  /* 32px et non 24 : mesuré, c'était la seule cible sous le seuil sur TOUTES
+     les pages. Le chevron dessiné garde sa taille — c'est la zone qui grandit,
+     pas le trait. */
+  width: 2rem;
+  height: 2rem;
   flex-shrink: 0;
   border-radius: 9999px;
   color: rgb(255 255 255 / 0.6);
