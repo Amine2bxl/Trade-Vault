@@ -144,6 +144,27 @@
   --color-red-400: var(--tv-chart-red);
 
   /* ----------------------------------------------------------------
+   * LE VERT DES ACTIONS — celui des boutons pleins, et lui seul.
+   *
+   * Le bouton principal portait l'accent avec du texte QUASI NOIR. C'était
+   * lisible (7,2:1) mais ça se lit comme une pastille de statut, pas comme un
+   * bouton : dans une application financière, le blanc sur couleur est la
+   * grammaire de l'action, le noir sur couleur celle de l'étiquette.
+   *
+   * On ne peut pas simplement écrire en blanc sur l'accent : mesuré, ça donne
+   * 2,6:1 — sous le minimum de 4,5. La teinte d'action est donc l'accent
+   * RAMENÉ À UNE LUMINOSITÉ FIXE, assez basse pour que le blanc passe :
+   *   • la TEINTE et la SATURATION viennent du thème (mêmes variables que les
+   *     rampes), donc le bouton change avec lui ;
+   *   • la LUMINOSITÉ est verrouillée, donc le contraste est garanti quel que
+   *     soit le thème choisi — y compris un thème clair ou pastel, où l'accent
+   *     seul aurait rendu le bouton illisible.
+   * ---------------------------------------------------------------- */
+  --tv-cta: oklch(0.52 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+  --tv-cta-hover: oklch(0.58 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+  --tv-cta-active: oklch(0.46 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+
+  /* ----------------------------------------------------------------
    * Themeable accent ramps.
    *
    * The whole app styles its accents with Tailwind's `cyan-*` (primary)
@@ -1307,8 +1328,11 @@ input[type="range"]::-webkit-slider-thumb {
      un dégradé cerclé d'un liseré clair et posé sur un halo de 22px : trois
      effets pour dire « appuie ici », là où la taille, la position centrale et
      la seule couleur saturée de l'écran le disaient déjà. */
-  background: var(--tv-accent);
-  color: #04140d;
+  /* La teinte d'ACTION, comme tout bouton plein du produit : le « + » est
+     l'action principale de l'écran mobile, il doit porter exactement le même
+     vert et le même blanc que le bouton principal du bureau. */
+  background: var(--tv-cta);
+  color: #ffffff;
   border: none;
   transition: transform var(--tv-dur-2) var(--tv-ease);
 }
@@ -1445,17 +1469,17 @@ svg.lucide {
      dernier vestige de l'ancienne identité, et il était codé EN DUR : le
      bouton principal restait cyan même quand tout le reste changeait de
      thème. Il suit désormais l'accent. */
-  background: var(--tv-accent);
-  color: #04140d;
+  background: var(--tv-cta);
+  color: #ffffff;
   transition:
     background-color 0.16s ease,
     opacity 0.16s ease;
 }
 .btn-primary:hover {
-  background: var(--tv-highlight);
+  background: var(--tv-cta-hover);
 }
 .btn-primary:active {
-  background: var(--tv-accent-2);
+  background: var(--tv-cta-active);
 }
 .btn-primary:disabled {
   opacity: 0.45;
@@ -1630,7 +1654,7 @@ a:focus-visible,
    centré dans le rail — c'est la forme de la maquette, et une pilule de 48×40
    posée sur un rail de 68 ne se lit pas comme un bouton d'icône. */
 .rail-collapsed .rail-item {
-  width: 2.5rem;
+  width: var(--rail-disc);
   margin-inline: auto;
 }
 .rail-item {
@@ -1638,7 +1662,7 @@ a:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  height: 2.5rem;
+  height: var(--rail-disc);
   border-radius: 9999px;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -1704,84 +1728,94 @@ a:focus-visible,
     transform: none;
   }
 }
-/* L'ACTIF : ce n'est plus une pilule POSÉE sur le rail, c'est un MORCEAU DE
-   LA PAGE découpé dedans.
-
-   Le lien précédent était un dégradé blanc qui s'éteignait dans le vide : deux
-   surfaces distinctes avec un fondu entre elles, donc toujours deux surfaces.
-   Ici l'entrée active prend la couleur EXACTE de la fenêtre de contenu et va
-   la toucher. Là où elle entre dans la fenêtre, il n'y a plus rien à voir :
-   même couleur, aucune bordure entre les deux, elles sont littéralement
-   continues. C'est ce que fait la maquette — sa pilule active et son panneau
-   sont la même surface blanche — et c'est ce qui fait la connexion physique.
-
-   Ce qui reste visible, c'est le COULOIR : les deux liserés qui filent du rail
-   jusque dans la fenêtre, en haut et en bas de l'entrée. Ce sont eux qui
-   donnent à lire « la page se prolonge jusqu'ici », et ils ne coupent jamais
-   la surface — le liseré de droite est absent, sinon il y aurait une paroi au
-   milieu du couloir. */
-.rail-item-active,
-.rail-item-active:hover {
-  background: var(--tv-plate-0);
-  color: var(--tv-text-primary);
-  border: 1px solid var(--tv-border);
-  border-right: 0;
-  /* C'est la LARGEUR qui s'allonge, pas une marge négative : l'entrée porte
-     `w-full` (`width: 100%`), et sur une boîte dont la largeur est fixée, une
-     marge négative ne l'élargit pas — elle ne fait que décaler ce qui suit.
-     `box-sizing: border-box` est l'état par défaut ici : ajouter le liseré ne
-     change donc ni la hauteur de la pilule ni sa largeur utile. */
-  width: calc(100% + var(--rail-bridge));
-  padding-right: calc(var(--rail-bridge) + 0.75rem);
+/* ══ LA LANGUETTE ══
+ *
+ * Une SEULE pièce, qui GLISSE d'une entrée à l'autre.
+ *
+ * Avant, chaque entrée savait se peindre en actif : la languette n'existait
+ * pas comme objet, elle changeait de propriétaire à chaque clic. Rien ne
+ * pouvait donc se déplacer — l'état sautait d'une ligne à l'autre, et c'est
+ * précisément ce qui donnait l'impression sèche. Ici la languette est un objet
+ * unique, posé dans la nav, qui se translate vers l'entrée choisie. On voit la
+ * page se déplacer vers l'onglet qu'on vient de désigner.
+ *
+ * Ce qu'elle est : un MORCEAU DE LA PAGE découpé dans le rail. Elle prend la
+ * couleur EXACTE de la fenêtre de contenu et va la toucher — même couleur,
+ * aucune bordure entre les deux, littéralement continues. Le liseré de droite
+ * est absent, sinon il y aurait une paroi au milieu du couloir.
+ *
+ * Sa position et sa hauteur sont mesurées en JavaScript (voir `Sidebar`) parce
+ * que la nav contient deux groupes séparés par un trait : aucune expression
+ * CSS ne donne l'ordonnée de la n-ième entrée à travers un séparateur.
+ */
+.rail-tab {
+  position: absolute;
+  left: 0.625rem;
+  top: 0;
+  width: calc(100% - 1.25rem + var(--rail-bridge));
+  border-radius: 9999px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
-  /* Elle passe DEVANT la fenêtre — et devant son liseré gauche, qu'elle
-     enterre sur sa hauteur. Sans ça, une paroi d'un pixel resterait en travers
-     du couloir, exactement à l'endroit où l'on veut ne rien voir. */
-  position: relative;
+  background: var(--tv-plate-0);
+  border: 1px solid var(--tv-border);
+  border-right: 0;
+  /* Elle passe DEVANT le liseré gauche de la fenêtre, qu'elle enterre sur sa
+     hauteur : sans ça une paroi d'un pixel resterait en travers du couloir. */
   z-index: 1;
+  pointer-events: none;
 }
-.rail-item-active .rail-icon {
-  color: var(--tv-accent);
+/* Pliée : la languette se referme sur le disque, centré, et seul le couloir
+   continue vers la fenêtre. */
+.rail-collapsed .rail-tab {
+  left: calc(0.625rem + (100% - 1.25rem - var(--rail-disc)) / 2);
+  /* Pliée, la languette part plus à droite que dépliée — de la marge qui
+     centre le disque dans la gouttière. Son couloir doit donc être plus long
+     d'autant pour finir au MÊME endroit, deux pixels à l'intérieur de la
+     fenêtre. D'où le terme de centrage repris tel quel dans la largeur, plutôt
+     qu'une seconde valeur à tenir à jour. */
+  width: calc(var(--rail-disc) + var(--rail-bridge) + (100% - 1.25rem - var(--rail-disc)) / 2);
 }
+/* Le déplacement. `transform` et `height` seulement : rien qui reprenne la
+   mise en page. La largeur, elle, suit le pli du rail sur sa propre durée. */
+.rail-tab-ready {
+  transition:
+    transform var(--tv-dur-3) var(--tv-ease),
+    height var(--tv-dur-3) var(--tv-ease),
+    left var(--tv-dur-4) var(--tv-ease),
+    width var(--tv-dur-4) var(--tv-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail-tab-ready {
+    transition: none;
+  }
+}
+
 /* ══ LES CONGÉS ══
  *
  * Un CONGÉ (en anglais *fillet*, ou *inverted corner radius*) est le raccord
- * CONCAVE entre deux surfaces perpendiculaires. C'est la pièce qui manquait,
- * et c'est elle qui fait toute la différence entre « une planche posée en
- * travers d'un vide » et « une languette moulée dans la fenêtre ».
+ * CONCAVE entre deux surfaces perpendiculaires. C'est lui qui fait la
+ * différence entre « une planche posée en travers d'un vide » et « une
+ * languette moulée dans la fenêtre ».
  *
  * Sans congé, l'arête haute de la languette rencontre l'arête gauche de la
  * fenêtre à angle droit : deux droites qui se croisent, donc deux objets qui
  * se touchent. Avec, la surface passe de l'une à l'autre par un arc, sans
- * jamais casser — comme une pièce moulée d'un seul tenant. C'est exactement la
- * construction d'un onglet de navigateur qui rejoint sa barre d'outils.
+ * jamais casser — la construction d'un onglet de navigateur qui rejoint sa
+ * barre d'outils.
  *
- * COMMENT C'EST DESSINÉ. Chaque congé est un carré de `--rail-fillet` posé
- * juste au-dessus (et au-dessous) de la languette, collé à son extrémité
- * droite, peint d'un dégradé radial centré sur son coin INTÉRIEUR :
+ * Chaque congé est un carré posé juste au-dessus (et au-dessous) de
+ * l'extrémité droite, peint d'un dégradé radial centré sur son coin
+ * INTÉRIEUR : transparent jusqu'au rayon, liseré sur 1px, surface au-delà. Le
+ * trait de la languette se prolonge donc dans l'arc au lieu de s'arrêter net.
  *
- *     transparent jusqu'au rayon → liseré sur 1px → surface au-delà
- *
- * Ce qui reste plein, c'est le petit triangle curviligne près de la fenêtre :
- * son bord est un arc qui part du dessus de la languette et remonte vers
- * l'arête de la fenêtre. La languette s'ÉVASE en approchant du contenu.
- *
- * Le décalage d'1px sur `top`/`bottom` compense le liseré de la languette :
- * les offsets d'un élément absolu se comptent depuis la boîte de PADDING, qui
- * commence sous la bordure. Sans ce pixel, l'arc ne se raccorde pas au trait
- * qu'il prolonge.
+ * Le rayon vaut 14px et non 10 : mesuré, à 10 la masse du congé tombait à
+ * droite du bord de la fenêtre — donc sur une surface de la même couleur,
+ * donc invisible ; seul l'arc du liseré se voyait. Le décalage d'1px sur
+ * `top`/`bottom` compense le liseré, les offsets d'un absolu se comptant
+ * depuis la boîte de padding.
  */
-.rail {
-  /* 14px : le congé doit MORDRE la couture, pas se poser sur la fenêtre.
-     À 10px sa masse tombait presque entièrement à droite du bord de la
-     fenêtre — donc sur une surface de la même couleur, donc invisible ; seul
-     l'arc du liseré se voyait. À 14, il comble une douzaine de pixels de
-     couture et l'évasement se lit. */
-  --rail-fillet: 14px;
-}
-.rail-item-active::before,
-.rail-item-active::after {
+.rail-tab::before,
+.rail-tab::after {
   content: "";
   position: absolute;
   right: 0;
@@ -1789,7 +1823,7 @@ a:focus-visible,
   height: var(--rail-fillet);
   pointer-events: none;
 }
-.rail-item-active::before {
+.rail-tab::before {
   top: calc(-1 * var(--rail-fillet) - 1px);
   background: radial-gradient(
     circle at 0 0,
@@ -1799,7 +1833,7 @@ a:focus-visible,
     var(--tv-plate-0) var(--rail-fillet)
   );
 }
-.rail-item-active::after {
+.rail-tab::after {
   bottom: calc(-1 * var(--rail-fillet) - 1px);
   background: radial-gradient(
     circle at 0 100%,
@@ -1810,34 +1844,18 @@ a:focus-visible,
   );
 }
 
-/* Pliée, l'entrée garde exactement la même matière et le même couloir : le
-   DISQUE reste centré sur le rail — c'est lui qu'on lit comme l'entrée active
-   — et seul le couloir s'allonge vers la droite. Une marge `auto` aurait
-   recentré l'ensemble disque+couloir, donc décalé le disque. */
-.rail-collapsed .rail-item-active {
-  margin-left: calc((100% - 2.5rem) / 2);
-  /* L'ICÔNE RESTE SUR L'AXE DES AUTRES. C'est le point le plus important de
-     cette règle.
-     La boîte active mesure 64px (40 de disque + 20 de couloir + 4 de
-     centrage) alors que les autres en mesurent 40. Le bouton porte
-     `justify-center` : l'icône se centrait donc sur les 64, pas sur les 40 —
-     mesuré au navigateur, elle tombait 12,5px à droite de la colonne. On la
-     cale au DÉBUT de la boîte, avec la demi-marge du disque, pour qu'elle
-     retrouve exactement le centre du rail :
-         (2.5rem − 1.125rem) / 2 − 1px = (40 − 18) / 2 − 1 = 10px
-     Le « −1px » est le LISERÉ de la languette : elle en porte un, pas les
-     autres entrées, et il pousse son contenu d'autant. Sans lui la colonne
-     reste fausse d'un pixel — mesurable, et visible sur une colonne de sept.
-     Le couloir, lui, continue de s'allonger derrière l'icône sans la pousser. */
-  justify-content: flex-start;
-  padding-left: calc((2.5rem - 1.125rem) / 2 - 1px);
-  /* Pliée, l'entrée part 4px plus à droite que dépliée (la marge qui centre le
-     disque dans la gouttière) : le couloir doit donc être plus long d'autant
-     pour finir au MÊME endroit — sur le liseré de la fenêtre. D'où le terme
-     de centrage, repris tel quel dans la largeur au lieu d'une seconde valeur
-     à tenir à jour. */
-  width: calc(2.5rem + var(--rail-bridge) + (100% - 2.5rem) / 2);
-  padding-right: 0;
+/* L'ENTRÉE ACTIVE ne porte plus aucune surface : la languette est derrière
+   elle. Il ne lui reste que ce qui est à elle — la couleur de son texte et
+   l'accent de son icône. Elle passe au-dessus de la languette pour rester
+   lisible, et son fond de survol est neutralisé (sinon il repeindrait par
+   dessus la surface qu'on vient de faire glisser). */
+.rail-item-active,
+.rail-item-active:hover {
+  background: transparent;
+  color: var(--tv-text-primary);
+}
+.rail-item-active .rail-icon {
+  color: var(--tv-accent);
 }
 
 /* La longueur du couloir, calculée et non devinée, depuis le bord DROIT de
@@ -1851,6 +1869,16 @@ a:focus-visible,
    Déclarée ici, une seule fois ; l'état plié la reprend telle quelle. */
 .rail {
   --rail-bridge: 20px;
+  /* LA TAILLE DU DISQUE — la zone tactile d'une entrée pliée, et la hauteur
+     d'une entrée dépliée. 44px et non 40 : c'est le minimum tactile d'Apple et
+     d'Android, et surtout la languette cessait d'exister par rapport à son
+     icône. Déclarée UNE fois ; le centrage, le couloir et les congés s'y
+     réfèrent au lieu de répéter la valeur. */
+  --rail-disc: 2.75rem;
+  /* LE RAYON DU CONGÉ. 14px et non 10 : mesuré, à 10 la masse du congé tombe
+     à droite du bord de la fenêtre — donc sur une surface de la même couleur,
+     donc invisible ; seul l'arc du liseré se voyait. */
+  --rail-fillet: 14px;
 }
 /* Le rail ne CLIPPE plus : une entrée qui doit sortir ne peut pas vivre dans
    une boîte qui coupe. Le repli continue de fonctionner — c'est la largeur du
@@ -1869,26 +1897,19 @@ a:focus-visible,
     overflow-y: auto;
     overflow-x: hidden;
   }
-  .rail-item-active,
-  .rail-collapsed .rail-item-active {
-    width: 100%;
-    margin-left: 0;
-    padding-right: 0.75rem;
+  /* La languette rentre dans le rail : plus de couloir, donc plus de congés —
+     ils raccordaient à la fenêtre, et il n'y a plus de raccord à faire. Elle
+     redevient une pilule ordinaire, qui glisse toujours. */
+  .rail-tab {
+    width: calc(100% - 1.25rem);
     border: 0;
     border-radius: 9999px;
-    background: var(--tv-plate-0);
   }
-  .rail-collapsed .rail-item-active {
-    width: 2.5rem;
-    margin-inline: auto;
-    justify-content: center;
-    padding-left: 0;
+  .rail-collapsed .rail-tab {
+    width: var(--rail-disc);
   }
-  /* Plus de couloir ici, donc plus de congés : ils raccordaient la languette
-     à la fenêtre, et il n'y a plus de raccord à faire. Laissés en place, ils
-     flotteraient dans le vide, à droite d'une pilule qui ne sort plus. */
-  .rail-item-active::before,
-  .rail-item-active::after {
+  .rail-tab::before,
+  .rail-tab::after {
     display: none;
   }
 }
@@ -2114,13 +2135,17 @@ a:focus-visible,
  *     important du produit était le texte le moins lisible de l'écran. Le
  *     texte quasi noir sur le même vert donne 8,4:1.
  */
+/* La surface d'action : même vert, même blanc que `.btn-primary`. Toute pièce
+   pleine qui déclenche quelque chose la porte — bouton, pastille de
+   confirmation, bascule engagée. C'est ce qui fait que le vert PLEIN veut dire
+   « ceci agit », et rien d'autre. */
 .tv-accent-fill {
-  background: var(--tv-accent);
-  color: #04140d;
+  background: var(--tv-cta);
+  color: #ffffff;
 }
 @media (hover: hover) {
   .tv-accent-fill:hover {
-    background: var(--tv-highlight);
+    background: var(--tv-cta-hover);
   }
 }
 
@@ -2277,14 +2302,24 @@ a:focus-visible,
  * barre latérale, qui pose déjà des lignes actives, ça faisait deux grammaires
  * d'« actif » sur le même écran. Un segment se lit d'un coup d'œil et dit
  * clairement qu'on choisit UNE vue parmi N. */
+/* Le contrôle segmenté n'existe QU'À PARTIR DE md. Sous ce seuil, c'est le
+   sélecteur (`.section-picker`) qui prend le relais. La bascule vit ici et non
+   en utilitaire : `display` déclaré dans une règle non calquée bat un
+   `hidden` de Tailwind, qui vit dans une couche — la rangée restait donc
+   visible sous le sélecteur. */
 .section-tabs {
-  display: inline-flex;
+  display: none;
   max-width: 100%;
   padding: 0.3rem;
   border-radius: 9999px;
   background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
   box-shadow: none;
+}
+@media (min-width: 768px) {
+  .section-tabs {
+    display: inline-flex;
+  }
 }
 .section-tabs-row {
   display: flex;
@@ -2344,6 +2379,47 @@ a:focus-visible,
   outline-offset: -2px;
 }
 
+/* ══ LE TRACÉ D'UNE COURBE ══
+ *
+ * La courbe se DESSINE, de gauche à droite, en suivant son propre tracé. Elle
+ * ne se métamorphose pas.
+ *
+ * La différence n'est pas cosmétique. L'animation par défaut d'un graphe
+ * interpole les VALEURS : entre deux périodes, chaque point glisse vers sa
+ * nouvelle hauteur et la courbe se tord d'une forme à l'autre. On lit une
+ * déformation, c'est-à-dire une information fausse — un mouvement qui n'a
+ * jamais eu lieu dans le compte. Ici la géométrie finale est posée d'emblée et
+ * seule sa RÉVÉLATION bouge : ce qu'on voit avancer, c'est un stylo.
+ *
+ * `scaleX` sur un rectangle de masque, et rien d'autre : c'est une propriété
+ * que le compositeur prend en charge, donc aucune reprise de mise en page,
+ * aucun recalcul de chemin à chaque frame. 780ms sur une décélération franche
+ * — assez pour qu'on voie le geste, assez court pour ne jamais attendre.
+ */
+.eq-draw {
+  transform-box: fill-box;
+  transform-origin: left center;
+  /* easeOutCubic, pas une décélération violente. Mesuré, `(0.22,1,0.36,1)`
+     posait 80 % du trait en 217ms : on ne voyait pas un stylo avancer, on
+     voyait la courbe apparaître puis un reste traîner. Ici la progression
+     reste lisible sur toute la durée. */
+  animation: eq-draw 760ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+@keyframes eq-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+/* Mouvement réduit : la courbe est là, entière, tout de suite. */
+@media (prefers-reduced-motion: reduce) {
+  .eq-draw {
+    animation: none;
+  }
+}
+
 /* ══ LE DÉFILEMENT HORIZONTAL, QUI SE VOIT ══
  *
  * Une table de sept colonnes fait 640px : sur un téléphone de 390, elle
@@ -2379,6 +2455,67 @@ a:focus-visible,
     18px 100%,
     18px 100%;
   background-attachment: local, local, scroll, scroll;
+}
+
+/* ══ LE SÉLECTEUR DE VUE (MOBILE) ══
+ *
+ * Il remplace la rangée d'onglets sous `md`. Une rangée de six pastilles
+ * icône-seule qui défile, c'est six cibles ambiguës dont la moitié sort de
+ * l'écran ; le sélecteur dit où l'on est, en toutes lettres, et ouvre la liste
+ * complète d'un appui. Il a la hauteur d'une cible tactile pleine et la même
+ * matière que les cartes du produit — ce n'est pas un contrôle à part, c'est
+ * une ligne de la page.
+ */
+.section-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 0.875rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--tv-text-primary);
+  transition:
+    background-color var(--tv-dur-2) var(--tv-ease),
+    border-color var(--tv-dur-2) var(--tv-ease);
+}
+.section-picker:active {
+  background: var(--tv-plate-2);
+}
+.section-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--tv-text-secondary);
+  transition: background-color var(--tv-dur-2) var(--tv-ease);
+}
+.section-picker-row:active {
+  background: var(--tv-plate-2);
+}
+.section-picker-row-active {
+  background: var(--tv-plate-2);
+  font-weight: 600;
+  color: var(--tv-text-primary);
+}
+/* Le sélecteur n'existe QUE sous md — au-dessus, c'est le contrôle segmenté.
+   La bascule vit ici, APRÈS la règle de base : à spécificité égale c'est la
+   dernière déclarée qui gagne. Et elle vit en CSS plutôt qu'en `md:hidden`
+   parce qu'un `display` déclaré hors couche bat un utilitaire Tailwind, qui
+   vit dans une couche. */
+@media (min-width: 768px) {
+  .section-picker {
+    display: none;
+  }
 }
 
 /* ── Mobile : onglets en icônes seules (le texte, illisible à six onglets sur

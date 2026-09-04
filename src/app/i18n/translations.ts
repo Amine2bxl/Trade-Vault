@@ -565,6 +565,7 @@ const en = {
   "dashboard.longShort": "Long / Short",
   "dashboard.equityCurve": "Equity Curve",
   "chart.balance": "Balance",
+  "nav.sectionViews": "Go to",
   "trends.title": "Trends",
   "trends.bestMonth": "Best month",
   "trends.worstMonth": "Worst month",

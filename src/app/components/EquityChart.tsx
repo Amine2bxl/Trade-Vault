@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useId, useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import {
   AXIS_TICK,
-  EQUITY_ANIMATION,
   EQUITY_CURVE_TYPE,
   EQUITY_FLOOR,
   EQUITY_GRID,
@@ -100,6 +99,31 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticks, narrow]);
 
+  // Deux identifiants SVG par INSTANCE. Ils étaient constants (`eqGrad`), et
+  // deux `<defs>` portant le même id dans un document, c'est le second qui est
+  // ignoré : la seconde courbe de la page reprenait le dégradé — et désormais
+  // le masque — de la première.
+  const uid = useId().replace(/:/g, "");
+  const gradId = `eqGrad-${uid}`;
+  const clipId = `eqDraw-${uid}`;
+
+  // LA SIGNATURE DES DONNÉES relance le tracé.
+  //
+  // Une animation CSS ne rejoue pas parce qu'un attribut change : il faut que
+  // l'élément soit REMONTÉ. En la posant en `key`, un changement de période
+  // (ou de compte) détruit le masque et le recrée — le trait se redessine.
+  // Sans elle, la courbe changerait de forme sous nos yeux : exactement le
+  // morphing qu'on ne veut pas.
+  const drawKey = useMemo(() => {
+    const last = data[data.length - 1];
+    // Longueur + premier jour + dernier jour + DERNIÈRE VALEUR. Les trois
+    // premiers ne suffisent pas : changer de sous-compte, ou saisir un trade
+    // dans la période affichée, garde la même fenêtre de dates et la même
+    // longueur — la clé n'aurait pas bougé, et la nouvelle courbe serait
+    // apparue d'un coup, sans être tracée.
+    return `${data.length}|${data[0]?.date ?? ""}|${last?.date ?? ""}|${last?.equity ?? ""}`;
+  }, [data]);
+
   if (data.length === 0) return null;
 
   return (
@@ -128,11 +152,20 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
             <defs>
-              <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={accent} stopOpacity={0.3} />
                 <stop offset="55%" stopColor={accent} stopOpacity={0.1} />
                 <stop offset="100%" stopColor={accent} stopOpacity={0} />
               </linearGradient>
+              {/* LE MASQUE DE TRACÉ. Un rectangle plein largeur, écrasé à zéro,
+                  qui se déploie de gauche à droite. Le trait et sa masse
+                  apparaissent donc DANS L'ORDRE DE LA COURBE, en suivant
+                  réellement son tracé — un stylo qui avance, pas une forme qui
+                  se transforme. C'est un `scaleX` : le compositeur le prend en
+                  charge, rien n'est recalculé à chaque frame. */}
+              <clipPath id={clipId}>
+                <rect key={drawKey} className="eq-draw" x="0" y="0" width="100%" height="100%" />
+              </clipPath>
             </defs>
             <CartesianGrid {...EQUITY_GRID} />
             <XAxis
@@ -193,7 +226,13 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
               dataKey="equity"
               stroke={accent}
               {...EQUITY_LINE}
-              fill="url(#eqGrad)"
+              fill={`url(#${gradId})`}
+              /* Le masque porte l'animation ; recharts n'anime plus rien. Sa
+                 propre animation interpole les VALEURS, donc la courbe se
+                 déforme d'une forme à l'autre — le morphing. Ici la géométrie
+                 finale est posée d'emblée et seule sa révélation bouge. */
+              clipPath={`url(#${clipId})`}
+              isAnimationActive={false}
               dot={false}
               activeDot={{
                 r: 5,
@@ -201,7 +240,6 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                 stroke: "var(--tv-plate-1)",
                 fill: accent,
               }}
-              {...EQUITY_ANIMATION}
             />
           </AreaChart>
         </ResponsiveContainer>

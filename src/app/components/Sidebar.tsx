@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   Bell,
@@ -34,6 +34,44 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   const unread = useUnreadCount(user?.id);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  /* ── LA LANGUETTE ──
+   * Une seule pièce, posée dans la nav, qui GLISSE vers l'entrée choisie. Sa
+   * position se mesure ici et pas en CSS : la nav contient deux groupes
+   * séparés par un trait, et aucune expression CSS ne donne l'ordonnée de la
+   * n-ième entrée à travers un séparateur.
+   *
+   * `useLayoutEffect` et non `useEffect` : la mesure doit être posée AVANT la
+   * peinture, sinon la languette apparaît une frame à sa position précédente
+   * puis saute.
+   *
+   * `ready` retient la transition au premier rendu. Sans lui, la languette
+   * arriverait en glissant depuis le haut du rail à chaque chargement de page
+   * — une animation qui ne raconte rien puisqu'il n'y a pas eu de clic. */
+  const navRef = useRef<HTMLElement | null>(null);
+  const [tab, setTab] = useState<{ top: number; height: number } | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const place = () => {
+      const el = nav.querySelector<HTMLElement>('[data-rail-active="true"]');
+      if (!el) return setTab(null);
+      setTab({ top: el.offsetTop, height: el.offsetHeight });
+    };
+    place();
+    // Le pli change la largeur du rail, donc la hauteur d'une entrée peut
+    // bouger avec elle ; la traduction aussi (un libellé plus long passe sur
+    // une autre ligne dans une autre langue).
+    const ro = new ResizeObserver(place);
+    ro.observe(nav);
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(id);
+    };
+  }, [page, collapsed, unread]);
 
   // Infobulle de la barre repliée, rendue en PORTAL (position fixe) : la barre
   // repliée est `overflow-hidden` pour un repli/dépli animé sans débordement de
@@ -76,8 +114,9 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
       onMouseLeave={collapsed ? hideTip : undefined}
       aria-label={label}
       aria-current={active ? "page" : undefined}
+      data-rail-active={active ? "true" : undefined}
       className={cn(
-        "rail-item w-full",
+        "rail-item relative z-[2] w-full",
         collapsed ? "justify-center px-0" : "px-3",
         active && "rail-item-active",
       )}
@@ -147,7 +186,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         </div>
 
         {/* ── NAVIGATION ── */}
-        <nav className="min-h-0 flex-1 px-2.5 py-3">
+        <nav ref={navRef} className="relative min-h-0 flex-1 px-2.5 py-3">
+          {/* La languette, DERRIÈRE les entrées (z-index 1 contre 2) : c'est
+              une surface, pas un cadre autour du texte. */}
+          {tab && (
+            <span
+              aria-hidden="true"
+              className={cn("rail-tab", ready && "rail-tab-ready")}
+              style={{ transform: `translateY(${tab.top}px)`, height: tab.height }}
+            />
+          )}
           <div className="space-y-1">
             {SECTIONS.filter((section) => section.id !== "settings").map((section) => {
               const { labelKey, icon: Icon } = SECTION_META[section.id];

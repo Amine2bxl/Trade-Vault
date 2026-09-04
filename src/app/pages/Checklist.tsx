@@ -1780,7 +1780,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                           className={cn(
                             "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition",
                             checked[i]
-                              ? "border-cyan-400 bg-cyan-400 text-[#04141b]"
+                              ? "border-[var(--tv-accent)] bg-[var(--tv-accent)] text-[#04141b]"
                               : "border-white/25",
                           )}
                         >
@@ -1976,7 +1976,9 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   <span
                     className={cn(
                       "w-5 h-5 rounded-md border flex items-center justify-center shrink-0",
-                      day.assume ? "border-cyan-400 bg-cyan-400 text-[#04141b]" : "border-white/25",
+                      day.assume
+                        ? "border-[var(--tv-accent)] bg-[var(--tv-accent)] text-[#04141b]"
+                        : "border-white/25",
                     )}
                   >
                     {day.assume && <Check className="w-3.5 h-3.5" strokeWidth={3} />}

@@ -517,6 +517,7 @@ const fr: Dict = {
   "dashboard.peakToTrough": "Sommet-creux",
   "dashboard.equityCurve": "Courbe d'équité",
   "chart.balance": "Solde",
+  "nav.sectionViews": "Aller à",
   "trends.title": "Tendances",
   "trends.bestMonth": "Meilleur mois",
   "trends.worstMonth": "Pire mois",
