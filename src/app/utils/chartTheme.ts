@@ -34,6 +34,22 @@ export const EQUITY_LINE = {
   strokeLinejoin: "round" as const,
 };
 
+/**
+ * LE TRAIT SECONDAIRE — la petite sœur d'`EQUITY_LINE`.
+ *
+ * Une série de tendance posée SUR un histogramme (taux de réussite, R:R moyen)
+ * ne peut pas prendre les 3px de la courbe d'equity : elle écraserait les
+ * barres qu'elle commente. Elle en garde en revanche les deux traits de
+ * caractère — les bouts ronds, et surtout AUCUNE PASTILLE AU REPOS. Les points
+ * semés le long du tracé le hachaient en une suite d'évènements ; le point
+ * n'existe qu'au survol, là où il sert à lire une valeur.
+ */
+export const TREND_LINE = {
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
 // `natural` — une spline cubique, la courbe RONDE et fluide des tableaux de
 // bord de prop firm.
 //
@@ -61,10 +77,107 @@ export const EQUITY_GRID = {
 // dessous on perd — et le pointillé dit qu'il s'agit d'un repère, pas d'une
 // mesure.
 export const EQUITY_FLOOR = {
-  stroke: "#f87171",
+  stroke: "var(--tv-chart-red)",
   strokeWidth: 2,
   strokeDasharray: "7 7",
 } as const;
+
+/**
+ * LE VERT DE LA DONNÉE — fixe sur tous les thèmes.
+ *
+ * L'accent habille l'interface et change avec le thème ; la donnée non. Une
+ * courbe d'equity qui monte est verte, sur Amber comme sur Steel. Si elle
+ * suivait l'accent, le trader lirait une couleur qui ne veut plus rien dire.
+ *
+ * Toute série qui porte un GAIN utilise ceci, jamais `--tv-accent`.
+ */
+export const CHART_GREEN = "var(--tv-chart-green)";
+export const CHART_RED = "var(--tv-chart-red)";
+
+/**
+ * Le dégradé sous une courbe — les trois paliers de la courbe d'equity, qui
+ * est la référence visuelle du produit. 30 % au contact du trait, 10 % à
+ * mi-hauteur, zéro en bas : la masse pèse assez pour que la montée se lise de
+ * loin, et s'efface assez pour ne pas devenir un bloc.
+ *
+ * `id` doit être unique par graphe rendu — deux `<defs>` portant le même id
+ * dans un même document, et le second est ignoré.
+ */
+export function areaGradientStops(color: string) {
+  return [
+    { offset: "0%", opacity: 0.3 },
+    { offset: "55%", opacity: 0.1 },
+    { offset: "100%", opacity: 0 },
+  ].map((s) => ({ ...s, color }));
+}
+
+/**
+ * LA COULEUR D'UNE SÉRIE DE TENDANCE.
+ *
+ * Un taux de réussite tracé sur un histogramme de P&L ne peut pas être vert :
+ * dans ce produit le vert VEUT DIRE gain, et une ligne verte posée sur des
+ * barres vertes et rouges se lit comme un troisième P&L. La tendance est du
+ * contexte, pas de la donnée monétaire — elle prend donc le gris du texte
+ * secondaire, le même que les graduations, et laisse la couleur aux barres.
+ */
+export const TREND_STROKE = "var(--tv-text-secondary)";
+
+/**
+ * LES DÉGRADÉS DE BARRE — le principe de la courbe d'equity, appliqué aux
+ * histogrammes.
+ *
+ * Sous la courbe, la masse est dense au contact du trait et s'efface vers le
+ * bas. Une barre fait la même chose : pleine à son extrémité, effacée vers la
+ * ligne du zéro. Un aplat à 55 % d'opacité, lui, donnait un vert olive qui
+ * n'appartenait à aucune autre pièce de l'interface.
+ *
+ * Les dégradés SVG sont en coordonnées relatives à la boîte de chaque
+ * rectangle : chaque barre reçoit donc son propre dégradé, quelle que soit sa
+ * hauteur. Les identifiants sont volontairement globaux et stables — plusieurs
+ * graphes d'une même page déclarent les mêmes, à l'identique, et le premier
+ * sert pour tous.
+ */
+export const BAR_FILL_GREEN = "url(#tvBarGreen)";
+export const BAR_FILL_RED = "url(#tvBarRed)";
+
+/**
+ * UNE ÉCHELLE MONÉTAIRE À PALIERS RONDS, prête à poser sur un `<YAxis>`.
+ *
+ * C'est `niceEquityScale` — l'échelle de la courbe d'equity — offerte aux
+ * histogrammes, avec le formatage et le dépouillement (pas d'axe, pas de
+ * tirets) qui vont avec. Sans elle, recharts découpe l'intervalle des données
+ * en parts égales et affiche « $1700 / $850 / $-850 » : des montants exacts
+ * que personne ne peut situer.
+ */
+export function moneyAxisProps(values: number[]) {
+  const { domain, ticks } = niceEquityScale(values, 5);
+  const widest = ticks.reduce((m, t) => Math.max(m, Math.abs(t)), 0);
+  return {
+    domain,
+    ticks,
+    tick: AXIS_TICK,
+    tickFormatter: (v: number) => formatAxisMoney(v),
+    axisLine: false as const,
+    tickLine: false as const,
+    // La largeur suit la longueur du plus grand montant : une largeur fixe
+    // rogne « $12.5k » ou laisse un trou devant « $80 ».
+    width: 26 + formatAxisMoney(widest).length * 7,
+  };
+}
+
+/**
+ * LE RAYON DES BARRES — une seule valeur pour tout le produit.
+ *
+ * On trouvait 3, 4 et 6 selon la page : trois grammaires de coin dans un même
+ * produit, qu'on ne remarque pas isolément mais qui empêchent l'ensemble de se
+ * lire comme une seule main. 6px est la valeur de la langue « bubble » du
+ * reste de l'interface (l'échelle `--radius-*` démarre à 8 sur les surfaces).
+ *
+ * Deux formes seulement : la barre VERTICALE s'arrondit en haut, l'HORIZONTALE
+ * à droite — du côté où elle finit, jamais du côté de l'axe.
+ */
+export const BAR_RADIUS: [number, number, number, number] = [6, 6, 0, 0];
+export const BAR_RADIUS_H: [number, number, number, number] = [0, 6, 6, 0];
 
 // Axis ticks — one muted slate, one size, everywhere. `--tv-text-muted` is the
 // same token the rest of the UI uses for de-emphasised text, so an axis label

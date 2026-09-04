@@ -35,6 +35,11 @@
   --radius-2xl: 18px;
   --radius-3xl: 24px;
   --radius-4xl: 32px;
+  /* Le rayon de COQUE : celui du rail et celui de la fenêtre de contenu, une
+     seule valeur pour les deux. Deux plaques posées côte à côte sur la même
+     hauteur avec des courbures différentes se lisent comme deux objets
+     étrangers ; avec la même, comme deux panneaux d'une même pièce. */
+  --tv-shell-radius: 28px;
 }
 
 @layer base {
@@ -321,6 +326,26 @@
   --tv-accent-rgb: 16 185 129;
   --tv-accent-2-rgb: 5 150 105;
   --tv-highlight-rgb: 52 211 153;
+
+  /* ── LE VERT DE LA DONNÉE ──
+   *
+   * Ce vert n'est PAS l'accent du thème, et c'est délibéré.
+   *
+   * L'accent habille l'interface : il change avec le thème choisi, c'est son
+   * rôle. La donnée, elle, ne change pas de sens parce qu'on a choisi Amber :
+   * une courbe d'equity qui monte est verte, un P&L positif est vert. Si la
+   * courbe suivait l'accent, elle deviendrait ambre sur le thème Amber et
+   * bleue sur Steel — et le trader lirait une couleur qui ne veut plus rien
+   * dire. Un thème repeint le décor, jamais le chiffre.
+   *
+   * `--tv-chart-green` est donc fixe, sur tous les thèmes, et c'est la source
+   * unique de la courbe, de son dégradé, de sa légende et de ses pastilles.
+   * `--tv-chart-red` en est le pendant pour la perte et pour le repère de
+   * plancher. */
+  --tv-chart-green: #34d399;
+  --tv-chart-green-rgb: 52 211 153;
+  --tv-chart-red: #f87171;
+  --tv-chart-red-rgb: 248 113 113;
 
   /* ── L'ÉCHELLE DE PROFONDEUR ──
    *
@@ -1507,6 +1532,7 @@ a:focus-visible,
  *      devient un disque blanc. Rien d'autre ne change.
  * ══════════════════════════════════════════════════════════════════════ */
 .rail {
+  border-radius: var(--tv-shell-radius);
   /* La lumière tombe DU HAUT et s'éteint vite : vert franc sur le premier
      quart, presque noir aux deux tiers. Un dégradé qui descend lentement sur
      toute la hauteur donne une colonne verte uniforme — exactement ce qu'on
@@ -1686,19 +1712,26 @@ a:focus-visible,
    recentré l'ensemble disque+couloir, donc décalé le disque. */
 .rail-collapsed .rail-item-active {
   margin-left: calc((100% - 2.5rem) / 2);
-  width: calc(2.5rem + var(--rail-bridge));
+  /* Pliée, l'entrée part 4px plus à droite que dépliée (la marge qui centre le
+     disque dans la gouttière) : le couloir doit donc être plus long d'autant
+     pour finir au MÊME endroit — sur le liseré de la fenêtre. D'où le terme
+     de centrage, repris tel quel dans la largeur au lieu d'une seconde valeur
+     à tenir à jour. */
+  width: calc(2.5rem + var(--rail-bridge) + (100% - 2.5rem) / 2);
   padding-right: 0;
 }
 
-/* La longueur du couloir, calculée et non devinée :
+/* La longueur du couloir, calculée et non devinée, depuis le bord DROIT de
+   l'entrée dépliée :
      10px  la gouttière interne du rail (`px-2.5` sur la nav)
    + 12px  l'écart entre le rail et la fenêtre
-   +  3px  de quoi enterrer le liseré gauche de la fenêtre (1px) et son
-           anticrénelage. Pas un pixel de plus : l'entrée ne doit pas se poser
-           SUR la page, elle doit la REJOINDRE.
-   Déclarée ici, une seule fois. */
+   +  1px  le liseré de la fenêtre, qui est désormais un `inset` : il se peint
+           À L'INTÉRIEUR, il faut donc le franchir et non s'arrêter dessus.
+   +  1px  l'anticrénelage. Pas un de plus : l'entrée ne doit pas se poser SUR
+           la page, elle doit la REJOINDRE.
+   Déclarée ici, une seule fois ; l'état plié la reprend telle quelle. */
 .rail {
-  --rail-bridge: 25px;
+  --rail-bridge: 24px;
 }
 /* Le rail ne CLIPPE plus : une entrée qui doit sortir ne peut pas vivre dans
    une boîte qui coupe. Le repli continue de fonctionner — c'est la largeur du
@@ -1743,22 +1776,17 @@ a:focus-visible,
   color: inherit;
 }
 
-/* La marque : un disque blanc, le seul autre élément blanc du rail. */
-.rail-brand {
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+/* La marque. Le sigle est posé DIRECTEMENT sur le rail, sans disque blanc :
+   le disque le rapetissait d'un tiers pour ne rien ajouter, et il n'avait pas
+   la même forme que les pilules en dessous — deux grammaires de rond dans les
+   quarante premiers pixels du produit. */
+.rail-brand-mark {
+  display: block;
+  width: 2.125rem;
+  height: 2.125rem;
   flex-shrink: 0;
-  border-radius: 9999px;
-  background: #ffffff;
-  overflow: hidden;
-}
-.rail-brand svg {
-  /* Le tracé est optiquement décalé d'un demi-pixel vers la droite dans son
-     carré (la barre du T pèse à gauche) : on le recale pour qu'il paraisse
-     centré dans le disque, pas pour qu'il le soit mathématiquement. */
-  margin-left: -0.5px;
+  border-radius: var(--radius-lg);
+  object-fit: contain;
 }
 
 /* Le bouton plier/déplier — un petit disque translucide DANS le rail (et non
@@ -1818,6 +1846,29 @@ a:focus-visible,
   color: #fecaca;
 }
 
+/* La pastille de chevron du sélecteur de compte, quand le rail est plié.
+   Elle mord sur l'angle du disque et porte un anneau de la couleur du rail à
+   cet endroit — c'est ce qui la détache du disque sans dessiner de bordure. */
+.acc-caret {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 0.9375rem;
+  height: 0.9375rem;
+  border-radius: 9999px;
+  color: rgb(255 255 255 / 0.75);
+  background: var(--tv-plate-3);
+  box-shadow: 0 0 0 2px var(--tv-rail-bot);
+  transition: color var(--tv-dur-2) var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-interactive:hover > .acc-caret {
+    color: #fff;
+  }
+}
+
 /* ══ LA FENÊTRE DE CONTENU ══
  *
  * Le pendant du rail : une plaque neutre, elle aussi arrondie et détachée.
@@ -1827,9 +1878,35 @@ a:focus-visible,
  * marge, le contenu va d'un bord à l'autre. */
 @media (min-width: 768px) {
   .app-frame {
-    background: var(--tv-plate-0);
-    border: 1px solid var(--tv-border);
-    border-radius: var(--radius-4xl);
+    /* La fenêtre n'est plus un à-plat. Elle reçoit la MÊME lumière que le
+       rail — tombant du haut et éteinte vite — parce que deux surfaces
+       éclairées différemment se lisent toujours comme deux objets posés l'un
+       à côté de l'autre.
+
+       Deux précautions :
+         • la nuance est un VOILE BLANC de 3 %, pas une teinte : le contenu
+           ne doit être coloré par rien.
+         • la chute se mesure en PIXELS (150) et non en pourcentage. En
+           pourcentage, la lumière s'étirerait sur toute la hauteur de la
+           fenêtre — sur une page longue, un bandeau clair de 300px en haut,
+           qu'on lit comme un en-tête et non comme un éclairage. */
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.03) 0px, rgb(255 255 255 / 0) 150px),
+      var(--tv-plate-0);
+    border: 0;
+    border-radius: var(--tv-shell-radius);
+    /* Le liseré devient un liseré INTERNE, comme celui du rail, avec le même
+       reflet sur l'arête haute et la même ombre portée. Trois raisons :
+         • une `border` déplace la boîte, un `inset` non — la fenêtre et le
+           rail gardent exactement la même hauteur utile ;
+         • l'arête haute éclairée est ce qui fait qu'une plaque a une
+           épaisseur plutôt qu'un contour ;
+         • l'entrée active du rail enterre ce liseré sur sa hauteur (elle
+           passe devant), et un inset se laisse recouvrir proprement. */
+    box-shadow:
+      inset 0 0 0 1px var(--tv-border),
+      inset 0 1px 0 rgb(255 255 255 / 0.05),
+      0 18px 50px -24px rgb(0 0 0 / 0.8);
   }
 }
 
@@ -2108,11 +2185,18 @@ a:focus-visible,
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
+  /* La MÊME motion que les entrées du rail : même durée, même courbe. Un
+     onglet de section et une entrée de navigation sont deux fois le même
+     geste ; deux durées différentes se remarquent au passage de l'un à
+     l'autre, même sans savoir dire pourquoi. */
   transition-property: color, background-color, box-shadow;
-  transition-duration: 200ms;
+  transition-duration: var(--tv-dur-2);
+  transition-timing-function: var(--tv-ease);
 }
 .section-tab-idle {
-  color: rgb(148 163 184);
+  /* Le gris du texte secondaire, pas un slate en dur : un onglet au repos est
+     du texte de second plan, et il doit suivre le même token que lui. */
+  color: var(--tv-text-secondary);
 }
 .section-tab-idle:hover {
   color: var(--tv-text-primary);

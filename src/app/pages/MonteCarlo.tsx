@@ -42,7 +42,14 @@ import {
   ReferenceLine,
   ComposedChart,
 } from "recharts";
-import { AXIS_TICK } from "../utils/chartTheme";
+import {
+  AXIS_TICK,
+  CHART_GREEN,
+  CHART_RED,
+  EQUITY_CURVE_TYPE,
+  EQUITY_GRID,
+  EQUITY_LINE,
+} from "../utils/chartTheme";
 
 interface Props {
   trades: Trade[];
@@ -177,12 +184,16 @@ function EquityCurves({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 20, right: 10, bottom: 20, left: 0 }}>
             <defs>
+              {/* La même masse dégradée que la courbe d'equity — même vert,
+                  même chute vers zéro — mais deux fois plus légère : ici elle
+                  porte une PLAGE de probabilité, pas une trajectoire. */}
               <linearGradient id="mcBand" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity={0.08} />
-                <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity={0} />
+                <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.14} />
+                <stop offset="55%" stopColor={CHART_GREEN} stopOpacity={0.05} />
+                <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="rgba(148,163,184,0.06)" strokeDasharray="4 8" vertical={false} />
+            <CartesianGrid {...EQUITY_GRID} />
             <XAxis dataKey="step" tick={false} axisLine={false} tickLine={false} />
             <YAxis
               tick={AXIS_TICK}
@@ -192,34 +203,48 @@ function EquityCurves({
               width={55}
               domain={["dataMin - 500", "dataMax + 500"]}
             />
-            <ReferenceLine y={targetVal} stroke="#10b981" strokeWidth={1} strokeDasharray="6 4" />
-            <ReferenceLine y={ddVal} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" />
+            <ReferenceLine
+              y={targetVal}
+              stroke={CHART_GREEN}
+              strokeWidth={1}
+              strokeDasharray="6 4"
+            />
+            <ReferenceLine y={ddVal} stroke={CHART_RED} strokeWidth={1} strokeDasharray="4 4" />
 
             {/* P5-P95 band */}
-            <Area type="monotone" dataKey="p95" stroke="none" fill="url(#mcBand)" fillOpacity={1} />
+            <Area
+              type={EQUITY_CURVE_TYPE}
+              dataKey="p95"
+              stroke="none"
+              fill="url(#mcBand)"
+              fillOpacity={1}
+            />
 
             {/* P25-P75 band */}
             <Area
-              type="monotone"
+              type={EQUITY_CURVE_TYPE}
               dataKey="p25"
               stroke="none"
-              fill="rgba(34,211,238,0.04)"
+              fill="rgb(var(--tv-chart-green-rgb) / 0.05)"
               fillOpacity={1}
             />
             <Area
-              type="monotone"
+              type={EQUITY_CURVE_TYPE}
               dataKey="p75"
               stroke="none"
-              fill="rgba(34,211,238,0.04)"
+              fill="rgb(var(--tv-chart-green-rgb) / 0.05)"
               fillOpacity={1}
             />
 
             {/* Median line */}
+            {/* La médiane EST une courbe d'equity — projetée, mais une courbe
+                d'equity. Elle porte donc le trait de la référence et son vert,
+                qui ne suit pas le thème. */}
             <Line
-              type="monotone"
+              type={EQUITY_CURVE_TYPE}
               dataKey="p50"
-              stroke="var(--tv-highlight)"
-              strokeWidth={1.5}
+              stroke={CHART_GREEN}
+              {...EQUITY_LINE}
               dot={false}
             />
 

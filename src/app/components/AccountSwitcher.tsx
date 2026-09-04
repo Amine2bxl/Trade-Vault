@@ -72,10 +72,13 @@ function getAccountIcon(a: Account) {
 }
 
 export default function AccountSwitcher({
-  compact,
+  compact = false,
   variant = "bar",
   balance: balanceProp,
 }: {
+  /** Version resserrée. Sur la variante `bar` elle réduit les marges ; sur la
+   *  variante `card` (le rail), elle réduit le sélecteur au seul disque de
+   *  couleur du compte — l'état du rail plié. */
   compact?: boolean;
   variant?: "bar" | "fab" | "card";
   balance?: number;
@@ -426,58 +429,80 @@ export default function AccountSwitcher({
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
     return (
-      <div className="relative w-full">
+      /* Plié, le conteneur se réduit LUI AUSSI au disque et se centre. Un
+         bouton de 40px laissé dans une boîte de 48px se colle à gauche : le
+         disque tombait 4px à gauche de l'axe des icônes du rail. */
+      <div className={cn("relative", compact ? "mx-auto w-10" : "w-full")}>
+        {/* ── LE SÉLECTEUR DE COMPTE ──
+            Une pilule qui se lit d'un coup, et qui existe DANS LES DEUX ÉTATS
+            du rail — plié, elle se réduit au disque de couleur du compte, on
+            n'a jamais à déplier la barre pour changer de compte.
+
+            Ce qui a sauté, et pourquoi :
+              • la COLONNE DE DROITE (solde + pastille « changer »). Elle se
+                battait avec le nom pour 192px de large : le nom était coupé
+                dans la moitié des cas. Le solde passe SOUS le nom, sur toute
+                la largeur, où il a la place de s'écrire en entier.
+              • la pastille « CHANGER ». Le chevron dit déjà que ça s'ouvre ;
+                elle ne faisait que voler de la place au nom.
+              • le CRAYON qui n'apparaissait qu'au survol. Une commande
+                invisible tant qu'on ne passe pas dessus n'est pas une
+                commande — l'édition vit dans la feuille qui s'ouvre. */}
         <button
           onClick={() => setOpen((v) => !v)}
-          title={t("account.switch")}
+          /* Plié, l'infobulle porte AUSSI le solde : c'est la seule chose que
+             le disque ne peut pas dire, et on ne doit pas avoir à déplier la
+             barre pour la lire. */
+          title={
+            compact
+              ? `${activeAccount.name} · ${fmtBalance} — ${t("account.switch")}`
+              : `${activeAccount.name} — ${t("account.switch")}`
+          }
+          aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
           className={cn(
-            "relative w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 transition overflow-hidden text-left",
-            "bg-[var(--tv-plate-2)]",
-            "border border-white/[0.08] hover:border-cyan-500/30 hover:from-[#122038] hover:to-[#0c182a]",
-            "shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.04)]",
-            "group/acc",
+            "tv-interactive group/acc flex items-center rounded-2xl text-left",
+            "border border-[var(--tv-border)] bg-[var(--tv-plate-2)]",
+            "hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)]",
+            compact ? "relative h-10 w-10 justify-center p-0" : "w-full gap-2.5 px-2.5 py-2",
           )}
         >
-          {/* Teinte compte */}
           <span
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-sm"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-xl border"
             style={{
-              background: `${activeAccount.color}18`,
+              background: `${activeAccount.color}1f`,
               color: activeAccount.color,
-              borderColor: `${activeAccount.color}40`,
-              boxShadow: `0 0 16px -4px ${activeAccount.color}40`,
+              borderColor: `${activeAccount.color}44`,
             }}
           >
-            <ActiveIcon className="w-[18px] h-[18px]" />
+            <ActiveIcon className="h-[15px] w-[15px]" />
           </span>
-
-          <span className="flex-1 min-w-0">
-            <span className="tv-label block text-slate-500">{t("account.active")}</span>
-            <span className="flex items-center gap-1.5 mt-0.5">
-              <span className="block text-[14px] font-bold text-white truncate leading-tight">
-                {activeAccount.name}
+          {/* Plié, le chevron ne disparaît pas — il se pose en pastille sur
+              l'angle du disque. Sans lui, le disque se lit comme un badge
+              décoratif et non comme une commande : rien n'indiquerait qu'on
+              peut changer de compte sans déplier la barre. */}
+          {compact && (
+            <span className="acc-caret" aria-hidden="true">
+              <ChevronDown className="h-2.5 w-2.5" />
+            </span>
+          )}
+          {!compact && (
+            <>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-semibold leading-tight text-white">
+                  {activeAccount.name}
+                </span>
+                <span className="tv-figure block text-[13px] leading-tight text-slate-400">
+                  {fmtBalance}
+                </span>
               </span>
-              <Pencil
-                className="w-3 h-3 text-slate-600 opacity-0 group-hover/acc:opacity-100 hover:text-white transition shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingModalAccount(activeAccount);
-                }}
-              />
-            </span>
-          </span>
-
-          <span className="text-right shrink-0">
-            <span className="block tv-figure text-[15px] text-white leading-tight">
-              {fmtBalance}
-            </span>
-            <span className="tv-label mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-500/12 px-2 py-0.5 text-cyan-300 border border-cyan-500/20">
-              {t("account.switchShort")}
               <ChevronDown
-                className={cn("w-2.5 h-2.5 transition-transform", open && "rotate-180")}
+                className={cn(
+                  "h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform",
+                  open && "rotate-180",
+                )}
               />
-            </span>
-          </span>
+            </>
+          )}
         </button>
         <AccountSheet open={open} onClose={() => setOpen(false)} />
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}

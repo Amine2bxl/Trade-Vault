@@ -33,17 +33,21 @@ import {
 import { useT } from "../i18n/LanguageContext";
 import { EmptyState, PageContainer, Card } from "@/shared/ui";
 import {
+  CHART_GREEN,
+  CHART_RED,
   AXIS_TICK,
+  BAR_FILL_GREEN,
+  BAR_FILL_RED,
+  BAR_RADIUS,
+  BAR_RADIUS_H,
   CHART_ANIMATION,
-  EQUITY_ANIMATION,
   EQUITY_CURVE_TYPE,
   EQUITY_GRID,
-  EQUITY_LINE,
-  formatAxisMoney,
+  TREND_LINE,
+  TREND_STROKE,
+  moneyAxisProps,
   tooltipStyle,
   glowActiveDot,
-  equityYDomain,
-  EQUITY_X_PADDING,
 } from "../utils/chartTheme";
 import EquityChart from "../components/EquityChart";
 
@@ -148,8 +152,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
   );
   const winLossData = useMemo(() => {
     const arr = [
-      { name: t("common.win"), value: stats.wins, color: "#10b981" },
-      { name: t("common.loss"), value: stats.losses, color: "#ef4444" },
+      { name: t("common.win"), value: stats.wins, color: CHART_GREEN },
+      { name: t("common.loss"), value: stats.losses, color: CHART_RED },
     ];
     if (stats.breakEven > 0)
       arr.push({ name: t("common.be"), value: stats.breakEven, color: "#f59e0b" });
@@ -157,8 +161,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
   }, [stats.wins, stats.losses, stats.breakEven, t]);
   const pnlDistribution = useMemo(() => {
     const b = [
-      { range: "< -$500", count: 0, fill: "#ef4444" },
-      { range: "-$500~-$200", count: 0, fill: "#f87171" },
+      { range: "< -$500", count: 0, fill: CHART_RED },
+      { range: "-$500~-$200", count: 0, fill: CHART_RED },
       { range: "-$200~$0", count: 0, fill: "#fca5a5" },
       { range: t("common.be"), count: 0, fill: "#f59e0b" },
       { range: "$0~$200", count: 0, fill: "#86efac" },
@@ -683,24 +687,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <div className="h-48 md:h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={hourData}>
-                    <XAxis
-                      dataKey="hour"
-                      tick={{ fill: "#475569", fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      yAxisId="left"
-                      tick={{ fill: "#475569", fontSize: 10 }}
-                      tickFormatter={(v) => `$${v}`}
-                      axisLine={false}
-                      tickLine={false}
-                      width={45}
-                    />
+                    <CartesianGrid {...EQUITY_GRID} />
+                    <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="left" {...moneyAxisProps(hourData.map((d) => d.pnl))} />
                     <YAxis
                       yAxisId="right"
                       orientation="right"
-                      tick={{ fill: "#475569", fontSize: 10 }}
+                      tick={AXIS_TICK}
                       tickFormatter={(v) => `${v}%`}
                       axisLine={false}
                       tickLine={false}
@@ -714,23 +707,19 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                       ]}
                     />
-                    <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>
+                    <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                       {hourData.map((e, i) => (
-                        <Cell
-                          key={i}
-                          fill={e.pnl >= 0 ? "#10b981" : "#ef4444"}
-                          fillOpacity={0.55}
-                        />
+                        <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                       ))}
                     </Bar>
                     <Line
                       yAxisId="right"
-                      type="monotone"
+                      type={EQUITY_CURVE_TYPE}
                       dataKey="winRate"
-                      stroke="var(--tv-highlight)"
-                      strokeWidth={2}
-                      dot={{ fill: "var(--tv-highlight)", r: 3, strokeWidth: 0 }}
-                      activeDot={glowActiveDot("var(--tv-highlight)")}
+                      stroke={TREND_STROKE}
+                      {...TREND_LINE}
+                      dot={false}
+                      activeDot={glowActiveDot(TREND_STROKE)}
                       {...CHART_ANIMATION}
                     />
                   </ComposedChart>
@@ -813,24 +802,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <div className="h-52 md:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={monthlyData}>
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: "#475569", fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    tick={{ fill: "#475569", fontSize: 10 }}
-                    tickFormatter={(v) => `$${v}`}
-                    axisLine={false}
-                    tickLine={false}
-                    width={50}
-                  />
+                  <CartesianGrid {...EQUITY_GRID} />
+                  <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" {...moneyAxisProps(monthlyData.map((d) => d.pnl))} />
                   <YAxis
                     yAxisId="right"
                     orientation="right"
-                    tick={{ fill: "#475569", fontSize: 10 }}
+                    tick={AXIS_TICK}
                     tickFormatter={(v) => `${v}%`}
                     axisLine={false}
                     tickLine={false}
@@ -845,30 +823,31 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       return [`$${Number(value).toFixed(2)}`, t("journal.colPnl")];
                     }}
                   />
-                  <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>
+                  <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                     {monthlyData.map((e, i) => (
-                      <Cell key={i} fill={e.pnl >= 0 ? "#10b981" : "#ef4444"} fillOpacity={0.55} />
+                      <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                     ))}
                   </Bar>
                   <Line
                     yAxisId="right"
-                    type="monotone"
+                    type={EQUITY_CURVE_TYPE}
                     dataKey="winRate"
-                    stroke="var(--tv-accent)"
-                    strokeWidth={2}
-                    dot={{ fill: "var(--tv-accent)", r: 3, strokeWidth: 0 }}
-                    activeDot={glowActiveDot("var(--tv-accent)")}
+                    stroke={TREND_STROKE}
+                    {...TREND_LINE}
+                    dot={false}
+                    activeDot={glowActiveDot(TREND_STROKE)}
                     name="winRate"
                     {...CHART_ANIMATION}
                   />
                   <Line
                     yAxisId="right"
-                    type="monotone"
+                    type={EQUITY_CURVE_TYPE}
                     dataKey="avgRR"
                     stroke="#f59e0b"
+                    {...TREND_LINE}
                     strokeWidth={1.5}
                     strokeDasharray="4 4"
-                    dot={{ fill: "#f59e0b", r: 2, strokeWidth: 0 }}
+                    dot={false}
                     activeDot={glowActiveDot("#f59e0b")}
                     name="avgRR"
                     {...CHART_ANIMATION}
@@ -906,24 +885,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={dayOfWeekData}>
-                  <XAxis
-                    dataKey="day"
-                    tick={{ fill: "#475569", fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    tick={{ fill: "#475569", fontSize: 10 }}
-                    tickFormatter={(v) => `$${v}`}
-                    axisLine={false}
-                    tickLine={false}
-                    width={50}
-                  />
+                  <CartesianGrid {...EQUITY_GRID} />
+                  <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" {...moneyAxisProps(dayOfWeekData.map((d) => d.pnl))} />
                   <YAxis
                     yAxisId="right"
                     orientation="right"
-                    tick={{ fill: "#475569", fontSize: 10 }}
+                    tick={AXIS_TICK}
                     tickFormatter={(v) => `${v}%`}
                     axisLine={false}
                     tickLine={false}
@@ -937,19 +905,19 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                     ]}
                   />
-                  <Bar yAxisId="left" dataKey="pnl" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>
+                  <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                     {dayOfWeekData.map((e, i) => (
-                      <Cell key={i} fill={e.pnl >= 0 ? "#10b981" : "#ef4444"} fillOpacity={0.6} />
+                      <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                     ))}
                   </Bar>
                   <Line
                     yAxisId="right"
-                    type="monotone"
+                    type={EQUITY_CURVE_TYPE}
                     dataKey="winRate"
-                    stroke="var(--tv-accent)"
-                    strokeWidth={2}
-                    dot={{ fill: "var(--tv-accent)", r: 3, strokeWidth: 0 }}
-                    activeDot={glowActiveDot("var(--tv-accent)")}
+                    stroke={TREND_STROKE}
+                    {...TREND_LINE}
+                    dot={false}
+                    activeDot={glowActiveDot(TREND_STROKE)}
                     {...CHART_ANIMATION}
                   />
                 </ComposedChart>
@@ -965,7 +933,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 <BarChart data={strategyData} layout="vertical">
                   <XAxis
                     type="number"
-                    tick={{ fill: "#475569", fontSize: 10 }}
+                    tick={AXIS_TICK}
                     tickFormatter={(v) => `$${v}`}
                     axisLine={false}
                     tickLine={false}
@@ -973,7 +941,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <YAxis
                     dataKey="strategy"
                     type="category"
-                    tick={{ fill: "#94a3b8", fontSize: 10 }}
+                    tick={AXIS_TICK}
                     axisLine={false}
                     tickLine={false}
                     width={85}
@@ -985,13 +953,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       t("journal.colPnl"),
                     ]}
                   />
-                  <Bar dataKey="pnl" radius={[0, 4, 4, 0]} {...CHART_ANIMATION}>
+                  <Bar dataKey="pnl" radius={BAR_RADIUS_H} {...CHART_ANIMATION}>
                     {strategyData.map((e, i) => (
-                      <Cell
-                        key={i}
-                        fill={e.pnl >= 0 ? "var(--tv-accent)" : "#ef4444"}
-                        fillOpacity={0.7}
-                      />
+                      <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -1009,23 +973,19 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={pnlDistribution}>
+                  <CartesianGrid {...EQUITY_GRID} />
                   <XAxis
                     dataKey="range"
-                    tick={{ fill: "#475569", fontSize: 9 }}
+                    tick={AXIS_TICK}
                     axisLine={false}
                     tickLine={false}
                     angle={-20}
                     textAnchor="end"
                     height={35}
                   />
-                  <YAxis
-                    tick={{ fill: "#475569", fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    allowDecimals={false}
-                  />
+                  <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]} {...CHART_ANIMATION}>
+                  <Bar dataKey="count" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                     {pnlDistribution.map((e, i) => (
                       <Cell key={i} fill={e.fill} fillOpacity={0.7} />
                     ))}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { BrandMark } from "@/shared/ui";
 import { Bot, Shield, BarChart3, BookOpen, ArrowRight, ChevronDown } from "lucide-react";
+import logoSrc from "@/assets/tradevault-logo.webp";
 import { useLandingT, type LandingLang } from "./i18n";
 
 /**
@@ -73,7 +73,13 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
       >
         {/* Logo */}
         <a href="#" className="flex items-center gap-2.5 shrink-0">
-          <BrandMark size={30} className="text-[var(--tv-highlight)]" />
+          <img
+            src={logoSrc}
+            alt="TradeVault"
+            width={30}
+            height={30}
+            className="h-8 w-8 object-contain"
+          />
           <span className="font-display font-bold tracking-[-0.02em] text-white leading-none hidden sm:block text-[1.15rem]">
             TradeVault
           </span>

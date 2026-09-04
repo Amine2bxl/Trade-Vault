@@ -1,5 +1,4 @@
 import { useCallback, useState, type ReactNode } from "react";
-import { BrandMark } from "@/shared/ui";
 import {
   ArrowLeft,
   ArrowRight,
@@ -30,6 +29,7 @@ import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, saveAccountBalance, type OnboardingData } from "../store";
 import ThemeSettings from "../components/ThemeSettings";
 import { oc } from "./onboardingCopy";
+import logoSrc from "@/assets/tradevault-logo.webp";
 
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;
@@ -375,12 +375,15 @@ export default function Onboarding({
           {step === "identity" && (
             <div className="text-center">
               <div className="flex justify-center mb-5">
-                <span
-                  className="grid h-16 w-16 place-items-center rounded-3xl tv-accent-fill"
-                  aria-label="TradeVault"
-                >
-                  <BrandMark size={34} />
-                </span>
+                <div className="relative">
+                  <img
+                    src={logoSrc}
+                    alt="TradeVault"
+                    width={64}
+                    height={64}
+                    className="relative w-16 h-16 rounded-2xl"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-center mb-3">

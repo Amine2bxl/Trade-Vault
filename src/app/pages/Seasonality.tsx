@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Cell,
   ReferenceLine,
+  CartesianGrid,
 } from "recharts";
 import {
   CalendarRange,
@@ -22,7 +23,18 @@ import {
 import { Trade } from "../types";
 import { formatPnl } from "../utils/tradeCalcs";
 import { MIN_BUCKET_SAMPLE } from "../utils/quantStats";
-import { CHART_ANIMATION, tooltipStyle } from "../utils/chartTheme";
+import {
+  AXIS_TICK,
+  BAR_FILL_GREEN,
+  BAR_FILL_RED,
+  BAR_RADIUS,
+  CHART_GREEN,
+  CHART_RED,
+  CHART_ANIMATION,
+  EQUITY_GRID,
+  moneyAxisProps,
+  tooltipStyle,
+} from "../utils/chartTheme";
 import {
   ASSET_SEASONALITY,
   CATEGORY_LABELS,
@@ -184,15 +196,16 @@ function AssetSeasonality() {
         <div className="h-60 md:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+              <CartesianGrid {...EQUITY_GRID} />
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#64748b", fontSize: 10 }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 interval={0}
               />
               <YAxis
-                tick={{ fill: "#64748b", fontSize: 10 }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 width={40}
@@ -211,12 +224,11 @@ function AssetSeasonality() {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="avg" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+              <Bar dataKey="avg" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                 {chartData.map((d, i) => (
                   <Cell
                     key={i}
-                    fill={d.avg >= 0 ? "var(--tv-accent)" : "#ef4444"}
-                    fillOpacity={d.current ? 1 : 0.7}
+                    fill={d.avg >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED}
                     stroke={d.current ? "var(--tv-highlight)" : "transparent"}
                     strokeWidth={d.current ? 1.5 : 0}
                   />
@@ -529,20 +541,15 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         <div className="h-56 md:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+              <CartesianGrid {...EQUITY_GRID} />
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#64748b", fontSize: 10 }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 interval={0}
               />
-              <YAxis
-                tick={{ fill: "#64748b", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                width={52}
-                tickFormatter={(v: number) => `$${v}`}
-              />
+              <YAxis {...moneyAxisProps(monthly.map((d) => d.pnl))} />
               <Tooltip
                 {...tooltipStyle}
                 formatter={
@@ -553,18 +560,19 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="pnl" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+              <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                 {monthly.map((m, i) => (
                   <Cell
                     key={i}
+                    /* Le vert de la DONNÉE, pas l'accent du thème : un mois
+                       gagnant est vert sur Amber comme sur Steel. */
                     fill={
                       m.count === 0
                         ? "rgba(100,116,139,0.15)"
                         : m.pnl >= 0
-                          ? "var(--tv-accent)"
-                          : "#ef4444"
+                          ? BAR_FILL_GREEN
+                          : BAR_FILL_RED
                     }
-                    fillOpacity={m.count === 0 ? 1 : 0.85}
                   />
                 ))}
               </Bar>
@@ -603,19 +611,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekdays} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                <XAxis
-                  dataKey="day"
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={52}
-                  tickFormatter={(v: number) => `$${v}`}
-                />
+                <CartesianGrid {...EQUITY_GRID} />
+                <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis {...moneyAxisProps(weekdays.map((d) => d.pnl))} />
                 <Tooltip
                   {...tooltipStyle}
                   formatter={
@@ -626,13 +624,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                   {weekdays.map((d, i) => (
-                    <Cell
-                      key={i}
-                      fill={d.pnl >= 0 ? "var(--tv-accent-2)" : "#ef4444"}
-                      fillOpacity={0.85}
-                    />
+                    <Cell key={i} fill={d.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
                 </Bar>
               </BarChart>
@@ -646,19 +640,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hours} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                <XAxis
-                  dataKey="hour"
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={52}
-                  tickFormatter={(v: number) => `$${v}`}
-                />
+                <CartesianGrid {...EQUITY_GRID} />
+                <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis {...moneyAxisProps(hours.map((d) => d.pnl))} />
                 <Tooltip
                   {...tooltipStyle}
                   formatter={
@@ -669,13 +653,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                   {hours.map((h, i) => (
-                    <Cell
-                      key={i}
-                      fill={h.pnl >= 0 ? "var(--tv-highlight)" : "#ef4444"}
-                      fillOpacity={0.85}
-                    />
+                    <Cell key={i} fill={h.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
                 </Bar>
               </BarChart>

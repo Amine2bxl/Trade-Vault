@@ -74,4 +74,4 @@ export { StreakCard } from "./StreakCard";
 export type { StreakCardProps } from "./StreakCard";
 export { StreakCalendar } from "./StreakCalendar";
 export type { StreakPeriod } from "./StreakCalendar";
-export { Brand, BrandMark, BrandWord } from "./Brand";
+export { BrandWord } from "./Brand";

@@ -27,9 +27,25 @@ import {
   Cell,
   ComposedChart,
   Line,
+  CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from "../utils/chartTheme";
+import {
+  AXIS_TICK,
+  BAR_FILL_GREEN,
+  BAR_FILL_RED,
+  TREND_STROKE,
+  BAR_RADIUS,
+  BAR_RADIUS_H,
+  CHART_GREEN,
+  CHART_RED,
+  CHART_ANIMATION,
+  EQUITY_CURVE_TYPE,
+  EQUITY_GRID,
+  TREND_LINE,
+  tooltipStyle,
+  glowActiveDot,
+} from "../utils/chartTheme";
 import { EmptyState, Card } from "@/shared/ui";
 
 interface MistakesProps {
@@ -340,7 +356,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   >
                     <XAxis
                       type="number"
-                      tick={{ fill: "#475569", fontSize: 10 }}
+                      tick={AXIS_TICK}
                       tickFormatter={(v) => `$${v}`}
                       axisLine={false}
                       tickLine={false}
@@ -348,7 +364,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                     <YAxis
                       dataKey="mistake"
                       type="category"
-                      tick={{ fill: "#94a3b8", fontSize: 9 }}
+                      tick={AXIS_TICK}
                       axisLine={false}
                       tickLine={false}
                       width={104}
@@ -357,15 +373,11 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       {...tooltipStyle}
                       formatter={(value: any) => [`$${Number(value).toFixed(2)}`]}
                     />
-                    <Bar dataKey="totalPnl" radius={[0, 4, 4, 0]} {...CHART_ANIMATION}>
+                    <Bar dataKey="totalPnl" radius={BAR_RADIUS_H} {...CHART_ANIMATION}>
                       {[...b.rows]
                         .sort((x, y) => x.totalPnl - y.totalPnl)
                         .map((e, i) => (
-                          <Cell
-                            key={i}
-                            fill={e.totalPnl >= 0 ? "#10b981" : "#ef4444"}
-                            fillOpacity={0.7}
-                          />
+                          <Cell key={i} fill={e.totalPnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                         ))}
                     </Bar>
                   </BarChart>
@@ -440,14 +452,10 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={b.weeklyTrend}>
-                      <XAxis
-                        dataKey="week"
-                        tick={{ fill: "#475569", fontSize: 9 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
+                      <CartesianGrid {...EQUITY_GRID} />
+                      <XAxis dataKey="week" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                       <YAxis
-                        tick={{ fill: "#475569", fontSize: 10 }}
+                        tick={AXIS_TICK}
                         axisLine={false}
                         tickLine={false}
                         allowDecimals={false}
@@ -462,17 +470,17 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       />
                       <Bar
                         dataKey="count"
-                        radius={[4, 4, 0, 0]}
+                        radius={BAR_RADIUS}
                         fill="#f59e0b"
                         fillOpacity={0.5}
                         {...CHART_ANIMATION}
                       />
                       <Line
-                        type="monotone"
+                        type={EQUITY_CURVE_TYPE}
                         dataKey="count"
                         stroke="#f59e0b"
-                        strokeWidth={2}
-                        dot={{ fill: "#f59e0b", r: 2, strokeWidth: 0 }}
+                        {...TREND_LINE}
+                        dot={false}
                         activeDot={glowActiveDot("#f59e0b")}
                         {...CHART_ANIMATION}
                       />
@@ -512,12 +520,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 <div className="h-28">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dayData}>
-                      <XAxis
-                        dataKey="day"
-                        tick={{ fill: "#475569", fontSize: 9 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
+                      <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                       <YAxis hide allowDecimals={false} />
                       <Tooltip
                         {...tooltipStyle}
@@ -525,7 +528,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       />
                       <Bar
                         dataKey="count"
-                        radius={[3, 3, 0, 0]}
+                        radius={BAR_RADIUS}
                         fill="#f59e0b"
                         fillOpacity={0.5}
                         {...CHART_ANIMATION}

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { CHART_GREEN, CHART_RED } from "../../utils/chartTheme";
 import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag, Bot } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useT } from "../../i18n/LanguageContext";
@@ -110,7 +111,7 @@ function EdgeSparkline({ scores, positive }: { scores: number[]; positive: boole
       <path
         d={d}
         fill="none"
-        stroke={positive ? "#10b981" : "#ef4444"}
+        stroke={positive ? CHART_GREEN : CHART_RED}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -120,7 +121,7 @@ function EdgeSparkline({ scores, positive }: { scores: number[]; positive: boole
         cx={(scores.length - 1) * step}
         cy={H - ((scores[scores.length - 1] - min) / span) * H}
         r="2"
-        fill={positive ? "#10b981" : "#ef4444"}
+        fill={positive ? CHART_GREEN : CHART_RED}
       />
     </svg>
   );

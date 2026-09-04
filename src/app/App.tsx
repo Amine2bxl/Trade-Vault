@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransiti
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
+import ChartDefs from "./components/ChartDefs";
 import MobileNav from "./components/MobileNav";
 import MobileActions from "./components/MobileActions";
 import SectionTabs from "./components/SectionTabs";
@@ -714,6 +715,8 @@ function AppContent() {
     // scrolls inside <main>, so the sidebar rail never moves on any page.
     <div className="relative flex h-dvh text-white overflow-hidden">
       <FirstSessionWelcome />
+      {/* Les dégradés des histogrammes, montés une fois pour toute l'app. */}
+      <ChartDefs />
       {/* Le halo qui suivait le curseur et les deux orbes cyan/teal d'ambiance
           ont été retirés : de la lumière décorative, repeinte en permanence,
           qui teintait chaque carte posée devant elle. Le fond est un à-plat. */}

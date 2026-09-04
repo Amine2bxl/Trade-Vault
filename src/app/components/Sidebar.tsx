@@ -17,7 +17,8 @@ import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useUnreadCount } from "../hooks/useUnreadCount";
-import { Modal, BrandMark, BrandWord } from "@/shared/ui";
+import logoSrc from "@/assets/tradevault-logo.webp";
+import { Modal, BrandWord } from "@/shared/ui";
 import AccountSwitcher from "./AccountSwitcher";
 
 interface SidebarProps {
@@ -95,7 +96,9 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "rail relative z-30 hidden shrink-0 flex-col rounded-[28px] md:flex",
+        // Le rayon vit dans `.rail` (token `--tv-shell-radius`), partagé
+        // avec la fenêtre de contenu : une seule valeur pour les deux coques.
+        "rail relative z-30 hidden shrink-0 flex-col md:flex",
         // Une capsule qui FLOTTE : elle ne touche aucun bord. La hauteur se
         // calcule sur le viewport moins ses propres marges, pour que le fond de
         // la page passe au-dessus ET en dessous d'elle.
@@ -115,9 +118,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           )}
         >
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="rail-brand" aria-label="TradeVault">
-              <BrandMark size={19} className="text-[var(--tv-rail-bot)]" />
-            </div>
+            {/* L'ancien sigle, restauré : c'est l'identité de la marque, elle
+                ne se remplace pas à la faveur d'un thème. Le disque blanc qui
+                le portait a sauté — le sigle a son propre fond et se suffit. */}
+            <img
+              className="rail-brand-mark"
+              src={logoSrc}
+              alt="TradeVault"
+              width={34}
+              height={34}
+            />
             {!collapsed && <BrandWord className="truncate text-[15px] text-white" />}
           </div>
           {/* Le chevron n'existe en haut que DÉPLIÉ. Plié, la tête du rail est
@@ -188,51 +198,57 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
           </div>
         </nav>
 
-        {/* ── COMPTE ACTIF ── */}
-        {user && !collapsed && (
+        {/* ── LE PIED : COMPTE, RÉGLAGES, SORTIE ──
+            Le sélecteur de compte existe dans LES DEUX états du rail. Il
+            n'était rendu que déplié : pour changer de compte, il fallait
+            déplier la barre, changer, replier. Plié, il se réduit au disque de
+            couleur du compte — un objet de 40px, à la même place, qui ouvre la
+            même feuille. */}
+        {user && (
           <div className="shrink-0 px-2.5 pb-3">
             <div className="rail-divider mb-3" />
-            <AccountSwitcher
-              variant="card"
-              balance={(activeAccount?.startingBalance ?? 0) + totalPnl}
-            />
-            <div className="mt-2 flex items-center gap-1.5">
-              <button onClick={() => setPage(settingsTarget)} className="rail-chip flex-1">
-                <SettingsIcon className="h-3.5 w-3.5" />
-                {t("nav.settings")}
-              </button>
-              <button
-                onClick={() => setMenuOpen(true)}
-                aria-label={t("common.signOut")}
-                title={t("common.signOut")}
-                className="rail-chip rail-chip-danger w-8 shrink-0"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-        {user && collapsed && (
-          <div className="shrink-0 px-2.5 pb-3">
-            <div className="rail-divider mb-3" />
-            <div className="space-y-1.5">
-              <button
-                onClick={() => setMenuOpen(true)}
-                aria-label={t("nav.myAccount")}
-                title={t("nav.myAccount")}
-                className="rail-chip mx-auto h-10 w-10"
-              >
-                <User className="h-4 w-4" />
-              </button>
-              <button
-                onClick={toggleCollapsed}
-                aria-expanded={false}
-                aria-label={t("nav.expandSidebar")}
-                title={t("nav.expandSidebar")}
-                className="rail-chip mx-auto h-10 w-10"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            <div className={cn(collapsed ? "space-y-1.5" : "space-y-2")}>
+              <AccountSwitcher
+                variant="card"
+                compact={collapsed}
+                balance={(activeAccount?.startingBalance ?? 0) + totalPnl}
+              />
+              {collapsed ? (
+                <>
+                  <button
+                    onClick={() => setMenuOpen(true)}
+                    aria-label={t("nav.myAccount")}
+                    title={t("nav.myAccount")}
+                    className="rail-chip mx-auto h-10 w-10"
+                  >
+                    <User className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={toggleCollapsed}
+                    aria-expanded={false}
+                    aria-label={t("nav.expandSidebar")}
+                    title={t("nav.expandSidebar")}
+                    className="rail-chip mx-auto h-10 w-10"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setPage(settingsTarget)} className="rail-chip flex-1">
+                    <SettingsIcon className="h-3.5 w-3.5" />
+                    {t("nav.settings")}
+                  </button>
+                  <button
+                    onClick={() => setMenuOpen(true)}
+                    aria-label={t("common.signOut")}
+                    title={t("common.signOut")}
+                    className="rail-chip rail-chip-danger w-8 shrink-0"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

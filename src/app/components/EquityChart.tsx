@@ -16,6 +16,8 @@ import {
   EQUITY_FLOOR,
   EQUITY_GRID,
   EQUITY_LINE,
+  CHART_GREEN,
+  CHART_RED,
   formatAxisDate,
   niceEquityScale,
   EQUITY_X_PADDING,
@@ -45,8 +47,10 @@ type EquityPoint = { date: string; equity: number };
  */
 function EquityChart({ data }: { data: EquityPoint[] }) {
   const breakEven = data.length > 0 ? data[0].equity : 0;
+  // Le vert de la DONNÉE, pas l'accent du thème : une courbe qui monte est
+  // verte sur Amber comme sur Steel. Voir `CHART_GREEN`.
   const gain = data.length > 0 && data[data.length - 1].equity >= breakEven;
-  const accent = gain ? "var(--tv-accent)" : "#ef4444";
+  const accent = gain ? CHART_GREEN : CHART_RED;
 
   // Des paliers RONDS, et une largeur d'axe qui suit la longueur réelle du
   // plus grand montant : une largeur fixe rognait « $158,000 » et laissait un
