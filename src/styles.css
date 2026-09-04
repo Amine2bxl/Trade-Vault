@@ -1657,58 +1657,39 @@ a:focus-visible,
 
 /* ══ LE FOCUS DU SURVOL ══
  *
- * L'entrée survolée se détache, et ELLE SEULE. La version précédente
- * entraînait ses deux voisines dans la loupe, comme le dock de macOS : sur une
- * colonne de sept entrées parcourue à la souris, trois pilules qui bougent en
- * même temps donnent une matière qui frémit, pas une cible qu'on désigne. On
- * ne sait plus laquelle on vise.
+ * UNE SEULE CHOSE BOUGE, ET C'EST L'ICÔNE.
  *
- * Ce qui reste tient en trois règles :
+ * La pilule ne s'agrandit plus du tout. C'est la différence entre une
+ * navigation qui frémit et une navigation qui désigne : quand la pilule
+ * grossit, c'est un rectangle de 192px qui se déforme sous le curseur, et
+ * l'œil suit le rectangle. Quand seule l'icône grossit, l'œil va exactement là
+ * où le pointeur est. Le fond, lui, monte d'un cran — c'est ce qui dit
+ * « survolé », et il ne déplace rien puisqu'il ne change aucune dimension.
  *
- *   1. UNE SEULE entrée réagit — celle sous le pointeur. Aucune voisine, donc
- *      plus de `:has()`, plus d'asymétrie sur les navigateurs qui l'ignorent.
- *   2. DÉPLIÉE, la pilule respire de 2 % et son icône de 8 %. Rien ne bouge de
- *      place : `transform: scale` ne participe pas à la disposition, et 2 %
- *      sur 192px tiennent dans la gouttière de 10px du rail.
- *   3. PLIÉE, RIEN NE BOUGE. Sur 68px de large, un disque de 40px qui grossit
- *      de 9 % se décale visiblement sous le curseur — l'icône « glisse » au
- *      moment précis où on essaie de la viser. Le survol s'y lit autrement :
- *      le voile blanc monte franchement et l'icône passe au blanc pur. Même
- *      information, zéro déplacement.
+ * L'échelle de l'icône est CENTRÉE sur elle-même : son centre ne bouge pas
+ * d'un pixel, elle grandit sur place. C'est pour ça qu'elle est autorisée même
+ * quand le rail est plié, où tout déplacement ferait « glisser » la cible.
  *
- * L'entrée ACTIVE est épargnée dans les deux états : elle est soudée à la
- * fenêtre de contenu, et l'agrandir rouvrirait la couture.
+ * La LANGUETTE (l'entrée active) est épargnée : elle est soudée à la fenêtre
+ * de contenu, et la moindre échelle rouvrirait le raccord.
  */
 @media (hover: hover) {
   .rail-item:hover {
     background: rgb(255 255 255 / 0.13);
     color: #fff;
   }
-  .rail-item:hover:not(.rail-item-active) {
-    transform: scale(1.02);
-    /* La pilule agrandie passe au-dessus de ses voisines, jamais dessous. */
-    z-index: 2;
-  }
-  .rail-item:hover .rail-icon {
-    transform: scale(1.08);
-  }
-
-  /* PLIÉ : aucune échelle, ni sur la pilule ni sur l'icône. Le contraste seul
-     porte le survol. */
   .rail-collapsed .rail-item:hover:not(.rail-item-active) {
-    transform: none;
     background: rgb(255 255 255 / 0.18);
   }
-  .rail-collapsed .rail-item:hover .rail-icon {
-    transform: none;
+  .rail-item:hover .rail-icon {
+    transform: scale(1.12);
   }
 }
-/* L'appui reprend la main : on doit sentir qu'on enfonce, même en plein
-   survol. Plié, l'appui est le SEUL mouvement autorisé — il est bref, il
-   répond à un geste volontaire, et il ne fausse pas la visée puisqu'on a déjà
-   cliqué. */
-.rail-item:active,
-.rail-item:hover:active {
+/* L'appui : le seul moment où la pilule elle-même bouge. Il répond à un geste
+   volontaire, il est bref, et il ne fausse pas la visée puisqu'on a déjà
+   cliqué. La languette en est exclue — enfoncer un onglet déjà ouvert
+   n'apprend rien et décollerait son raccord. */
+.rail-item:active:not(.rail-item-active) {
   transform: scale(0.97);
 }
 /* Mouvement réduit : plus aucune échelle. Le survol reste lisible par le seul
@@ -1718,10 +1699,8 @@ a:focus-visible,
   .rail-item .rail-icon {
     transition: none;
   }
-  .rail-item:hover,
   .rail-item:hover .rail-icon,
-  .rail-item:active,
-  .rail-item:hover:active {
+  .rail-item:active:not(.rail-item-active) {
     transform: none;
   }
 }
@@ -1765,12 +1744,93 @@ a:focus-visible,
 .rail-item-active .rail-icon {
   color: var(--tv-accent);
 }
+/* ══ LES CONGÉS ══
+ *
+ * Un CONGÉ (en anglais *fillet*, ou *inverted corner radius*) est le raccord
+ * CONCAVE entre deux surfaces perpendiculaires. C'est la pièce qui manquait,
+ * et c'est elle qui fait toute la différence entre « une planche posée en
+ * travers d'un vide » et « une languette moulée dans la fenêtre ».
+ *
+ * Sans congé, l'arête haute de la languette rencontre l'arête gauche de la
+ * fenêtre à angle droit : deux droites qui se croisent, donc deux objets qui
+ * se touchent. Avec, la surface passe de l'une à l'autre par un arc, sans
+ * jamais casser — comme une pièce moulée d'un seul tenant. C'est exactement la
+ * construction d'un onglet de navigateur qui rejoint sa barre d'outils.
+ *
+ * COMMENT C'EST DESSINÉ. Chaque congé est un carré de `--rail-fillet` posé
+ * juste au-dessus (et au-dessous) de la languette, collé à son extrémité
+ * droite, peint d'un dégradé radial centré sur son coin INTÉRIEUR :
+ *
+ *     transparent jusqu'au rayon → liseré sur 1px → surface au-delà
+ *
+ * Ce qui reste plein, c'est le petit triangle curviligne près de la fenêtre :
+ * son bord est un arc qui part du dessus de la languette et remonte vers
+ * l'arête de la fenêtre. La languette s'ÉVASE en approchant du contenu.
+ *
+ * Le décalage d'1px sur `top`/`bottom` compense le liseré de la languette :
+ * les offsets d'un élément absolu se comptent depuis la boîte de PADDING, qui
+ * commence sous la bordure. Sans ce pixel, l'arc ne se raccorde pas au trait
+ * qu'il prolonge.
+ */
+.rail {
+  /* 14px : le congé doit MORDRE la couture, pas se poser sur la fenêtre.
+     À 10px sa masse tombait presque entièrement à droite du bord de la
+     fenêtre — donc sur une surface de la même couleur, donc invisible ; seul
+     l'arc du liseré se voyait. À 14, il comble une douzaine de pixels de
+     couture et l'évasement se lit. */
+  --rail-fillet: 14px;
+}
+.rail-item-active::before,
+.rail-item-active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: var(--rail-fillet);
+  height: var(--rail-fillet);
+  pointer-events: none;
+}
+.rail-item-active::before {
+  top: calc(-1 * var(--rail-fillet) - 1px);
+  background: radial-gradient(
+    circle at 0 0,
+    transparent calc(var(--rail-fillet) - 1px),
+    var(--tv-border) calc(var(--rail-fillet) - 1px),
+    var(--tv-border) var(--rail-fillet),
+    var(--tv-plate-0) var(--rail-fillet)
+  );
+}
+.rail-item-active::after {
+  bottom: calc(-1 * var(--rail-fillet) - 1px);
+  background: radial-gradient(
+    circle at 0 100%,
+    transparent calc(var(--rail-fillet) - 1px),
+    var(--tv-border) calc(var(--rail-fillet) - 1px),
+    var(--tv-border) var(--rail-fillet),
+    var(--tv-plate-0) var(--rail-fillet)
+  );
+}
+
 /* Pliée, l'entrée garde exactement la même matière et le même couloir : le
    DISQUE reste centré sur le rail — c'est lui qu'on lit comme l'entrée active
    — et seul le couloir s'allonge vers la droite. Une marge `auto` aurait
    recentré l'ensemble disque+couloir, donc décalé le disque. */
 .rail-collapsed .rail-item-active {
   margin-left: calc((100% - 2.5rem) / 2);
+  /* L'ICÔNE RESTE SUR L'AXE DES AUTRES. C'est le point le plus important de
+     cette règle.
+     La boîte active mesure 64px (40 de disque + 20 de couloir + 4 de
+     centrage) alors que les autres en mesurent 40. Le bouton porte
+     `justify-center` : l'icône se centrait donc sur les 64, pas sur les 40 —
+     mesuré au navigateur, elle tombait 12,5px à droite de la colonne. On la
+     cale au DÉBUT de la boîte, avec la demi-marge du disque, pour qu'elle
+     retrouve exactement le centre du rail :
+         (2.5rem − 1.125rem) / 2 − 1px = (40 − 18) / 2 − 1 = 10px
+     Le « −1px » est le LISERÉ de la languette : elle en porte un, pas les
+     autres entrées, et il pousse son contenu d'autant. Sans lui la colonne
+     reste fausse d'un pixel — mesurable, et visible sur une colonne de sept.
+     Le couloir, lui, continue de s'allonger derrière l'icône sans la pousser. */
+  justify-content: flex-start;
+  padding-left: calc((2.5rem - 1.125rem) / 2 - 1px);
   /* Pliée, l'entrée part 4px plus à droite que dépliée (la marge qui centre le
      disque dans la gouttière) : le couloir doit donc être plus long d'autant
      pour finir au MÊME endroit — sur le liseré de la fenêtre. D'où le terme
@@ -1821,6 +1881,15 @@ a:focus-visible,
   .rail-collapsed .rail-item-active {
     width: 2.5rem;
     margin-inline: auto;
+    justify-content: center;
+    padding-left: 0;
+  }
+  /* Plus de couloir ici, donc plus de congés : ils raccordaient la languette
+     à la fenêtre, et il n'y a plus de raccord à faire. Laissés en place, ils
+     flotteraient dans le vide, à droite d'une pilule qui ne sort plus. */
+  .rail-item-active::before,
+  .rail-item-active::after {
+    display: none;
   }
 }
 
