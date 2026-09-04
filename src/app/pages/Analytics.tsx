@@ -501,8 +501,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
             },
           ].map((m, i) => (
             <div key={i} className="group relative glass rounded-2xl p-3.5 card-premium">
-              <div className="flex items-center gap-1 mb-1.5">
-                <span className="tv-label text-slate-500">{m.label}</span>
+              {/* `min-w-0` sur la ligne ET sur le libellé : sans lui, un
+                  élément flex refuse de descendre sous sa largeur de contenu et
+                  pousse l'infobulle hors de la tuile. Mesuré à 390px : 159px de
+                  contenu dans 141px disponibles. */}
+              <div className="flex min-w-0 items-center gap-1 mb-1.5">
+                <span className="tv-label min-w-0 truncate text-slate-500">{m.label}</span>
                 {"info" in m && m.info && <InfoTip text={m.info} />}
               </div>
               <div
@@ -513,7 +517,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
               >
                 {m.value}
               </div>
-              <div className="text-[11px] text-slate-600 mt-0.5 truncate">{m.sub}</div>
+              {/* La légende PASSE À LA LIGNE au lieu d'être coupée. « avg planned
+                  reward-to-… » ne dit rien ; deux lignes de onze pixels, si.
+                  Les tuiles vivent dans une grille : elles s'égalisent. */}
+              <div className="tv-row-label mt-0.5 leading-snug">{m.sub}</div>
             </div>
           ))}
         </div>
@@ -526,7 +533,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
             <h3 className="tv-title">{t("analytics.setupTable")}</h3>
           </div>
-          <div className="overflow-x-auto">
+          <div className="tv-scroll-x">
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-white/[0.06]">
@@ -856,7 +863,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <span className="text-[11px] text-slate-500">{t("journal.colPnl")}</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-4 h-0.5 bg-cyan-500" />
+                  {/* Le témoin suit le TRAIT : la courbe de taux de réussite
+                      est passée au gris (elle ne porte pas de P&L), la pastille
+                      annonçait encore du vert. */}
+                  <span className="w-4 h-0.5 bg-[var(--tv-text-secondary)]" />
                   <span className="text-[11px] text-slate-500">WR%</span>
                 </span>
                 <span className="flex items-center gap-1">

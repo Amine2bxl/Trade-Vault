@@ -46,6 +46,29 @@ const TYPE_LABEL_KEY = {
   live: "account.typeLive",
 } as const;
 
+/**
+ * LA TEINTE D'UN COMPTE — celle du THÈME, pas une couleur figée.
+ *
+ * Chaque compte porte un champ `color` en base, dont la valeur par défaut est
+ * `#22d3ee` : un cyan hérité de l'ancienne identité néon. Comme aucun écran du
+ * produit ne permet d'en choisir une autre, TOUS les comptes portaient ce
+ * cyan — sur le thème émeraude comme sur n'importe quel autre. Le disque du
+ * sélecteur était donc, littéralement, la seule pièce de l'interface qui
+ * ignorait le thème.
+ *
+ * La teinte vient maintenant de l'accent. Le champ reste en base et n'est plus
+ * lu à l'affichage : il ne portait aucune intention de l'utilisateur, faute
+ * d'un endroit où l'exprimer. Le jour où un sélecteur de couleur existera,
+ * c'est ici, et ici seulement, qu'il se branchera.
+ */
+const ACCOUNT_TINT = {
+  fg: "var(--tv-accent)",
+  bg: "rgb(var(--tv-accent-rgb) / 0.14)",
+  bgSoft: "rgb(var(--tv-accent-rgb) / 0.10)",
+  border: "rgb(var(--tv-accent-rgb) / 0.30)",
+  ring: "rgb(var(--tv-accent-rgb) / 0.22)",
+};
+
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   User,
   Building2,
@@ -159,7 +182,7 @@ export default function AccountSwitcher({
               >
                 <span
                   className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${a.color}22`, color: a.color }}
+                  style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </span>
@@ -255,9 +278,9 @@ export default function AccountSwitcher({
           <span
             className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border"
             style={{
-              background: `${activeAccount.color}1f`,
-              color: activeAccount.color,
-              borderColor: `${activeAccount.color}44`,
+              background: ACCOUNT_TINT.bg,
+              color: ACCOUNT_TINT.fg,
+              borderColor: ACCOUNT_TINT.border,
             }}
           >
             <ActiveIcon className="w-4 h-4" />
@@ -310,7 +333,10 @@ export default function AccountSwitcher({
                       )}
                       style={
                         active
-                          ? { borderColor: `${a.color}80`, boxShadow: `0 0 0 1px ${a.color}40` }
+                          ? {
+                              borderColor: ACCOUNT_TINT.border,
+                              boxShadow: `0 0 0 1px ${ACCOUNT_TINT.ring}`,
+                            }
                           : undefined
                       }
                     >
@@ -323,7 +349,7 @@ export default function AccountSwitcher({
                       >
                         <span
                           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: `${a.color}22`, color: a.color }}
+                          style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
                         >
                           <Icon className="w-4.5 h-4.5" />
                         </span>
@@ -361,11 +387,8 @@ export default function AccountSwitcher({
                       </div>
 
                       {active && (
-                        <span
-                          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
-                          style={{ background: a.color }}
-                        >
-                          <Check className="w-3 h-3 text-[#04140d]" strokeWidth={3} />
+                        <span className="tv-accent-fill absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3" strokeWidth={3} />
                         </span>
                       )}
                     </div>
@@ -479,9 +502,9 @@ export default function AccountSwitcher({
           <span
             className="grid h-7 w-7 shrink-0 place-items-center rounded-xl border"
             style={{
-              background: `${activeAccount.color}1f`,
-              color: activeAccount.color,
-              borderColor: `${activeAccount.color}44`,
+              background: ACCOUNT_TINT.bg,
+              color: ACCOUNT_TINT.fg,
+              borderColor: ACCOUNT_TINT.border,
             }}
           >
             <ActiveIcon className="h-[15px] w-[15px]" />
@@ -577,7 +600,7 @@ export default function AccountSwitcher({
         >
           <span
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: `${activeAccount.color}22`, color: activeAccount.color }}
+            style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
           >
             <ActiveIcon className="w-4 h-4" />
           </span>
@@ -683,7 +706,7 @@ function DeleteAccountModal({
         <div className="flex items-center justify-center gap-2 my-3">
           <span
             className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: `${account.color}22`, color: account.color }}
+            style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
           >
             <Icon className="w-3.5 h-3.5" />
           </span>

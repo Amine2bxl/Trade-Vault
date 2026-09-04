@@ -431,7 +431,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                 <Card>
                   <CardBody className="space-y-2">
                     <p className="tv-label text-slate-500">{t("sim.compareTitle")}</p>
-                    <div className="overflow-x-auto">
+                    <div className="tv-scroll-x">
                       <table className="tv-figure w-full text-sm">
                         <thead>
                           <tr className="text-[11px] text-slate-500 text-left">

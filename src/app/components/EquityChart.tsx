@@ -17,12 +17,13 @@ import {
   EQUITY_GRID,
   EQUITY_LINE,
   CHART_GREEN,
-  CHART_RED,
   formatAxisDate,
+  formatAxisMoney,
   niceEquityScale,
   EQUITY_X_PADDING,
 } from "../utils/chartTheme";
 import { formatShortDate } from "../utils/tradeCalcs";
+import { useIsNarrow } from "../hooks/useIsNarrow";
 import { useT } from "../i18n/LanguageContext";
 
 type EquityPoint = { date: string; equity: number };
@@ -37,8 +38,11 @@ type EquityPoint = { date: string; equity: number };
  *   • UNE MASSE SOUS LA COURBE. Le dégradé descend de 30 % à zéro : assez
  *     dense pour que la zone sous le trait pèse et que la montée se lise de
  *     loin, assez transparent pour ne pas devenir un bloc.
- *   • UN REPÈRE EN TIRETS. Le solde de départ, en saumon : au-dessus on gagne,
- *     en dessous on perd. Le pointillé dit « repère », pas « mesure ».
+ *   • ELLE EST VERTE, toujours. Le vert est l'identité du graphe, pas un
+ *     verdict sur la semaine.
+ *   • UN REPÈRE EN TIRETS ROUGES, AU ZÉRO. C'est lui qui dit qui gagne :
+ *     au-dessus on est en profit, en dessous en perte. Le pointillé dit
+ *     « repère », pas « mesure ».
  *   • AUCUN POINT SUR LE TRACÉ. Les pastilles posées sur le meilleur et le
  *     pire point cassaient la ligne en trois morceaux et donnaient à lire des
  *     évènements là où il n'y a qu'une trajectoire. Le point n'apparaît qu'au
@@ -48,20 +52,53 @@ type EquityPoint = { date: string; equity: number };
  */
 function EquityChart({ data }: { data: EquityPoint[] }) {
   const { t } = useT();
-  const breakEven = data.length > 0 ? data[0].equity : 0;
-  // Le vert de la DONNÉE, pas l'accent du thème : une courbe qui monte est
-  // verte sur Amber comme sur Steel. Voir `CHART_GREEN`.
-  const gain = data.length > 0 && data[data.length - 1].equity >= breakEven;
-  const accent = gain ? CHART_GREEN : CHART_RED;
+
+  // LE ZÉRO — toujours zéro, jamais la valeur du premier jour.
+  //
+  // La courbe trace un CUMUL de P&L qui part de zéro. Le repère était posé sur
+  // `data[0].equity`, c'est-à-dire sur le cumul du PREMIER JOUR TRADÉ : si ce
+  // jour-là perdait $200, la ligne « départ » s'installait à -$200 et toute la
+  // courbe se lisait par rapport à une perte déjà encaissée.
+  const breakEven = 0;
+
+  // LA COURBE EST VERTE. Toujours.
+  //
+  // Elle virait au rouge dès que le cumul passait sous zéro. Deux raisons de
+  // ne plus le faire :
+  //   • la couleur portait alors la MÊME information que la position de la
+  //     courbe par rapport au zéro — qui est déjà tracé, en rouge, juste
+  //     dessous. Une redondance qui coûte l'identité du graphe ;
+  //   • un tableau de bord dont la pièce maîtresse change de couleur selon la
+  //     semaine n'a pas d'identité. La référence garde son vert quoi qu'il
+  //     arrive, et laisse le zéro dire qui gagne.
+  const accent = CHART_GREEN;
 
   // Des paliers RONDS, et une largeur d'axe qui suit la longueur réelle du
   // plus grand montant : une largeur fixe rognait « $158,000 » et laissait un
   // trou devant « $940 ».
-  const { domain, ticks } = useMemo(() => niceEquityScale(data.map((p) => p.equity)), [data]);
+  //
+  // Le zéro est INJECTÉ dans les valeurs : sur un compte qui n'est jamais
+  // repassé sous son plus haut, l'échelle se serait fermée au-dessus de zéro
+  // et le repère serait tombé hors du cadre.
+  const { domain, ticks } = useMemo(
+    () => niceEquityScale([0, ...data.map((p) => p.equity)]),
+    [data],
+  );
+  // Sur téléphone, les montants passent en COMPACT — « $15k », pas « $15,000 ».
+  // Un axe de 78px sur une carte de 350 mange 22 % de la largeur : la courbe,
+  // qui est le sujet, se retrouve comprimée pour que l'axe respire. Sur
+  // desktop les montants restent entiers, comme la référence l'exige.
+  const narrow = useIsNarrow();
+  const fmtTick = (v: number) =>
+    narrow ? formatAxisMoney(v) : `$${Math.round(v).toLocaleString("en-US")}`;
   const axisWidth = useMemo(() => {
     const widest = ticks.reduce((m, t) => Math.max(m, Math.abs(t)), 0);
-    return 22 + `${Math.round(widest).toLocaleString("en-US")}`.length * 8;
-  }, [ticks]);
+    const longest = Math.max(...ticks.map((t) => fmtTick(t).length), 1);
+    return narrow
+      ? 12 + longest * 7
+      : 22 + `${Math.round(widest).toLocaleString("en-US")}`.length * 8;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticks, narrow]);
 
   if (data.length === 0) return null;
 
@@ -112,7 +149,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
               domain={domain}
               ticks={ticks}
               tick={AXIS_TICK}
-              tickFormatter={(v) => `$${Math.round(v as number).toLocaleString("en-US")}`}
+              tickFormatter={(v) => fmtTick(v as number)}
               axisLine={false}
               tickLine={false}
               width={axisWidth}

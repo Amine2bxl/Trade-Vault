@@ -107,6 +107,11 @@ export function computeThemeVars(theme: ThemeDef): ThemeVars {
     "--tv-accent-2-rgb": rgbStr(theme.secondary),
     "--tv-highlight-rgb": rgbStr(theme.highlight),
     "--tv-bg": theme.background ?? DEFAULT_BACKGROUND,
+    // Le fond en TRIPLET, pour les dégradés qui doivent s'y éteindre : une
+    // rampe vers `transparent` s'éteint en noir transparent, ce qui pose un
+    // voile gris dès que le fond n'est pas noir. Il doit suivre le thème,
+    // sinon la barre de navigation mobile s'estompe vers l'ancien fond.
+    "--tv-bg-rgb": rgbStr(theme.background ?? DEFAULT_BACKGROUND),
     "--tv-text": theme.text ?? DEFAULT_TEXT,
   };
 }

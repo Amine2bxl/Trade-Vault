@@ -330,6 +330,11 @@
    * compatibilité, mais vaut `none` (voir le bloc élévation plus bas).
    * ──────────────────────────────────────────────────────────────── */
   --tv-bg: #07090a;
+  /* Le même noir, en triplet : un dégradé qui doit s'ÉTEINDRE dans le fond a
+     besoin de la couleur avec alpha 0, et `transparent` vaut du noir
+     transparent — ce qui donne un voile gris sur toute couleur de fond qui
+     n'est pas noire. */
+  --tv-bg-rgb: 7 9 10;
   --tv-text: #e6e8ea;
   /* Émeraude #10b981 (H 162.5). La chroma est volontairement rentrée sous
      sa valeur nominale (1.065 → 0.95) : le vert doit se lire comme une
@@ -384,6 +389,7 @@
    * superposition, et deux cartes côte à côte ne se ressemblent plus. */
   --tv-plate-0: #0c0e10;
   --tv-plate-1: #16191c;
+  --tv-plate-1-rgb: 22 25 28;
   --tv-plate-2: #1d2125;
   --tv-plate-3: #23282d;
 
@@ -1188,7 +1194,21 @@ input[type="range"]::-webkit-slider-thumb {
  * full-width edge bar. Horizontal margin + big radius + layered shadow. */
 .bottom-nav {
   padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
-  background: transparent;
+  /* Le fond n'est plus transparent. La capsule flotte à 10px du bord bas, et
+     ces 10px laissaient voir le contenu DÉFILER SOUS ELLE, en une bande hachée
+     tout en bas de l'écran. Le contenu se dissout maintenant dans la couleur
+     de la page avant de l'atteindre : la capsule flotte toujours, mais sur du
+     vide et non sur du texte tronqué. */
+  background: linear-gradient(
+    to top,
+    var(--tv-bg) 0%,
+    var(--tv-bg) 62%,
+    rgb(var(--tv-bg-rgb) / 0) 100%
+  );
+  pointer-events: none;
+}
+.bottom-nav-shell {
+  pointer-events: auto;
 }
 .bottom-nav-shell {
   /* Le rayon de coque, partagé avec le rail et la fenêtre : les trois pièces
@@ -1254,9 +1274,17 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 9999px;
   transition: background-color var(--tv-dur-2) var(--tv-ease);
 }
+/* L'ONGLET ACTIF, MOBILE — la même grammaire que le rail de bureau.
+   C'était une pastille BLANCHE PLEINE : le seul aplat blanc du produit, posé
+   au milieu d'une barre verte, et une deuxième façon de dire « actif » alors
+   que le rail en a déjà une. Elle prend maintenant la couleur de la FENÊTRE DE
+   CONTENU avec l'icône à l'accent, exactement comme `.rail-item-active` : sur
+   les deux écrans, l'onglet actif est un morceau de la page découpé dans la
+   navigation. */
 .bottom-nav-icon-active {
-  background: #ffffff;
-  color: var(--tv-rail-bot);
+  background: var(--tv-plate-0);
+  color: var(--tv-accent);
+  box-shadow: inset 0 0 0 1px var(--tv-border);
 }
 
 /* The "add trade" FAB.
@@ -1564,18 +1592,32 @@ a:focus-visible,
      quart, presque noir aux deux tiers. Un dégradé qui descend lentement sur
      toute la hauteur donne une colonne verte uniforme — exactement ce qu'on
      ne veut pas. Ici la couleur est un éclairage, pas un aplat. */
-  background: linear-gradient(
-    180deg,
-    var(--tv-rail-top) 0%,
-    var(--tv-rail-mid) 26%,
-    var(--tv-rail-bot) 68%,
-    var(--tv-rail-bot) 100%
-  );
+  background:
+    /* … et elle tombe aussi DE BIAIS. Cette seconde couche assombrit le tiers
+       droit du rail : la capsule « tourne » vers la fenêtre au lieu de finir
+       sur un bord franc. C'est ce qui fait l'harmonie entre les deux zones —
+       pas un trait qui les relie, mais un vert qui s'éteint en approchant du
+       contenu, si bien que les deux plaques se rencontrent au lieu de se
+       heurter. Sans elle, un vert franc butait sur un presque-noir : la
+       rupture la plus dure de tout l'écran. */
+    linear-gradient(90deg, rgb(0 0 0 / 0) 48%, rgb(0 0 0 / 0.3) 100%),
+    linear-gradient(
+      180deg,
+      var(--tv-rail-top) 0%,
+      var(--tv-rail-mid) 26%,
+      var(--tv-rail-bot) 68%,
+      var(--tv-rail-bot) 100%
+    );
   /* Un liseré interne complet (l'épaisseur de la capsule) + un reflet plus
      marqué sur l'arête haute, là où la lumière frappe. */
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.06),
     inset 0 1px 0 rgb(255 255 255 / 0.12),
+    /* L'arête qui FAIT FACE à la fenêtre s'éclaire comme celle du haut. La
+       fenêtre porte déjà la sienne, à 8px de là : deux arêtes claires en
+       vis-à-vis se lisent comme la fente d'un même objet, là où une arête
+       seule au bord d'un vide noir se lit comme la fin d'un objet. */
+    inset -1px 0 0 rgb(255 255 255 / 0.1),
     0 18px 50px -24px rgb(0 0 0 / 0.8);
   /* La largeur est la SEULE chose qui s'anime au pli/dépli. */
   transition: width var(--tv-dur-4) var(--tv-ease);
@@ -1613,30 +1655,29 @@ a:focus-visible,
   transition: transform var(--tv-dur-2) var(--tv-ease);
 }
 
-/* ══ LA LOUPE DU DOCK ══
+/* ══ LE FOCUS DU SURVOL ══
  *
- * Au survol, l'entrée grossit un peu et ses DEUX VOISINES la suivent, moins
- * fort — la magnification du dock de macOS. C'est ce qui fait qu'une colonne
- * d'icônes répond au pointeur comme une matière souple au lieu d'une grille
- * de boutons.
+ * L'entrée survolée se détache, et ELLE SEULE. La version précédente
+ * entraînait ses deux voisines dans la loupe, comme le dock de macOS : sur une
+ * colonne de sept entrées parcourue à la souris, trois pilules qui bougent en
+ * même temps donnent une matière qui frémit, pas une cible qu'on désigne. On
+ * ne sait plus laquelle on vise.
  *
- * Trois règles la tiennent « bien cadrée » :
+ * Ce qui reste tient en trois règles :
  *
- *   1. Elle ne déplace RIEN. `transform: scale` ne participe pas à la
- *      disposition : les voisines grossissent sur place, la liste ne se
- *      repousse pas. Le dock de macOS, lui, écarte ses icônes — sur une liste
- *      de sept entrées qu'on parcourt à la souris, ce décalage ferait
- *      « fuir » la cible sous le curseur.
- *   2. Elle est PETITE. 3 % sur la pilule, 15 % sur l'icône, 1 % sur les
- *      voisines. Sur une pilule de 192px, 3 % font 3px de chaque côté — dans
- *      la gouttière de 10px du rail. Rien ne sort jamais de la capsule.
- *   3. Elle ÉPARGNE L'ENTRÉE ACTIVE. Celle-ci est soudée à la fenêtre de
- *      contenu ; l'agrandir de 3 % décalerait son bord droit de quelques
- *      pixels et rouvrirait la couture qu'on a passé du temps à fermer.
+ *   1. UNE SEULE entrée réagit — celle sous le pointeur. Aucune voisine, donc
+ *      plus de `:has()`, plus d'asymétrie sur les navigateurs qui l'ignorent.
+ *   2. DÉPLIÉE, la pilule respire de 2 % et son icône de 8 %. Rien ne bouge de
+ *      place : `transform: scale` ne participe pas à la disposition, et 2 %
+ *      sur 192px tiennent dans la gouttière de 10px du rail.
+ *   3. PLIÉE, RIEN NE BOUGE. Sur 68px de large, un disque de 40px qui grossit
+ *      de 9 % se décale visiblement sous le curseur — l'icône « glisse » au
+ *      moment précis où on essaie de la viser. Le survol s'y lit autrement :
+ *      le voile blanc monte franchement et l'icône passe au blanc pur. Même
+ *      information, zéro déplacement.
  *
- * `:has()` sert à atteindre la voisine du DESSUS — CSS ne sait pas remonter
- * autrement. Sur un navigateur qui ne le connaît pas, seule celle du dessous
- * réagit : l'effet est asymétrique, jamais cassé.
+ * L'entrée ACTIVE est épargnée dans les deux états : elle est soudée à la
+ * fenêtre de contenu, et l'agrandir rouvrirait la couture.
  */
 @media (hover: hover) {
   .rail-item:hover {
@@ -1644,41 +1685,34 @@ a:focus-visible,
     color: #fff;
   }
   .rail-item:hover:not(.rail-item-active) {
-    transform: scale(1.03);
+    transform: scale(1.02);
     /* La pilule agrandie passe au-dessus de ses voisines, jamais dessous. */
     z-index: 2;
   }
   .rail-item:hover .rail-icon {
-    transform: scale(1.15);
-  }
-  /* Les deux voisines — celle du dessous, puis celle du dessus. */
-  .rail-item:hover + .rail-item:not(.rail-item-active),
-  .rail-item:not(.rail-item-active):has(+ .rail-item:hover) {
-    transform: scale(1.012);
-  }
-  .rail-item:hover + .rail-item .rail-icon,
-  .rail-item:has(+ .rail-item:hover) .rail-icon {
-    transform: scale(1.06);
+    transform: scale(1.08);
   }
 
-  /* PLIÉ, il n'y a plus que des disques : c'est là que la loupe se voit le
-     mieux, et elle peut donc être un cran plus franche. */
+  /* PLIÉ : aucune échelle, ni sur la pilule ni sur l'icône. Le contraste seul
+     porte le survol. */
   .rail-collapsed .rail-item:hover:not(.rail-item-active) {
-    transform: scale(1.09);
+    transform: none;
+    background: rgb(255 255 255 / 0.18);
   }
-  .rail-collapsed .rail-item:hover + .rail-item:not(.rail-item-active),
-  .rail-collapsed .rail-item:not(.rail-item-active):has(+ .rail-item:hover) {
-    transform: scale(1.035);
+  .rail-collapsed .rail-item:hover .rail-icon {
+    transform: none;
   }
 }
-/* L'appui reprend la main sur la loupe : on doit sentir qu'on enfonce, même
-   en plein survol. */
+/* L'appui reprend la main : on doit sentir qu'on enfonce, même en plein
+   survol. Plié, l'appui est le SEUL mouvement autorisé — il est bref, il
+   répond à un geste volontaire, et il ne fausse pas la visée puisqu'on a déjà
+   cliqué. */
 .rail-item:active,
 .rail-item:hover:active {
   transform: scale(0.97);
 }
-/* Mouvement réduit : la loupe disparaît entièrement. Le survol reste lisible
-   par le seul changement de fond — l'information ne dépend jamais du geste. */
+/* Mouvement réduit : plus aucune échelle. Le survol reste lisible par le seul
+   changement de fond — l'information ne dépend jamais du geste. */
 @media (prefers-reduced-motion: reduce) {
   .rail-item,
   .rail-item .rail-icon {
@@ -1686,10 +1720,8 @@ a:focus-visible,
   }
   .rail-item:hover,
   .rail-item:hover .rail-icon,
-  .rail-item:hover + .rail-item,
-  .rail-item:has(+ .rail-item:hover),
-  .rail-item:hover + .rail-item .rail-icon,
-  .rail-item:has(+ .rail-item:hover) .rail-icon {
+  .rail-item:active,
+  .rail-item:hover:active {
     transform: none;
   }
 }
@@ -1751,14 +1783,14 @@ a:focus-visible,
 /* La longueur du couloir, calculée et non devinée, depuis le bord DROIT de
    l'entrée dépliée :
      10px  la gouttière interne du rail (`px-2.5` sur la nav)
-   + 12px  l'écart entre le rail et la fenêtre
+   +  8px  la couture entre le rail et la fenêtre
    +  1px  le liseré de la fenêtre, qui est désormais un `inset` : il se peint
            À L'INTÉRIEUR, il faut donc le franchir et non s'arrêter dessus.
    +  1px  l'anticrénelage. Pas un de plus : l'entrée ne doit pas se poser SUR
            la page, elle doit la REJOINDRE.
    Déclarée ici, une seule fois ; l'état plié la reprend telle quelle. */
 .rail {
-  --rail-bridge: 24px;
+  --rail-bridge: 20px;
 }
 /* Le rail ne CLIPPE plus : une entrée qui doit sortir ne peut pas vivre dans
    une boîte qui coupe. Le repli continue de fonctionner — c'est la largeur du
@@ -2241,6 +2273,43 @@ a:focus-visible,
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
+}
+
+/* ══ LE DÉFILEMENT HORIZONTAL, QUI SE VOIT ══
+ *
+ * Une table de sept colonnes fait 640px : sur un téléphone de 390, elle
+ * défile dans sa boîte. C'est le bon comportement — mais RIEN ne le disait.
+ * La table était coupée net au bord droit de la carte, ce qui se lit comme
+ * une mise en page cassée, pas comme « il y a la suite ».
+ *
+ * L'ombre de défilement ci-dessous est la recette classique à quatre couches,
+ * et son astuce tient dans `background-attachment` :
+ *
+ *   • les deux VOILES sont en `scroll` — ils restent collés aux bords de la
+ *     boîte, quel que soit le défilement ;
+ *   • les deux MASQUES sont en `local` — ils défilent AVEC le contenu.
+ *
+ * Au repos à gauche, le masque de gauche est posé sur le voile de gauche et
+ * l'efface ; dès qu'on défile, il part avec le contenu et découvre le voile.
+ * L'indice n'apparaît donc que lorsqu'il reste quelque chose à voir, et il
+ * disparaît exactement au bout. Aucun JavaScript, aucun écouteur de scroll.
+ */
+.tv-scroll-x {
+  overflow-x: auto;
+  background:
+    /* les masques, solidaires du contenu */
+    linear-gradient(to right, var(--tv-plate-1) 30%, rgb(var(--tv-plate-1-rgb) / 0)) left center,
+    linear-gradient(to left, var(--tv-plate-1) 30%, rgb(var(--tv-plate-1-rgb) / 0)) right center,
+    /* les voiles, solidaires de la boîte */
+    linear-gradient(to right, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0)) left center,
+    linear-gradient(to left, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0)) right center;
+  background-repeat: no-repeat;
+  background-size:
+    32px 100%,
+    32px 100%,
+    18px 100%,
+    18px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 /* ── Mobile : onglets en icônes seules (le texte, illisible à six onglets sur

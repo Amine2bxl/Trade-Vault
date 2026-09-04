@@ -72,17 +72,18 @@ export const EQUITY_GRID = {
   vertical: false,
 } as const;
 
-// La ligne « minimum » : le solde de départ, en tirets. C'est la référence
-// contre laquelle toute la courbe se lit — au-dessus on gagne, en dessous on
-// perd — et le pointillé dit qu'il s'agit d'un repère, pas d'une mesure.
+// LE ZÉRO, en tirets rouges.
 //
-// Elle est NEUTRE, et c'est le point important : elle était saumon, ce qui
-// marche tant que la courbe monte. Dès que le compte perd, la courbe devient
-// rouge elle aussi et la légende affiche deux pastilles rouges identiques —
-// on ne distingue plus le solde du repère. Le rouge, dans ce produit, veut
-// dire PERTE ; un repère n'est ni un gain ni une perte.
+// La courbe d'equity trace un CUMUL de P&L qui part de zéro (voir
+// `tradeCalcs`) : le repère est donc le zéro lui-même, pas la valeur du
+// premier jour. Au-dessus on est en profit, en dessous en perte — et c'est
+// tout ce que la ligne dit. Le pointillé dit « repère », pas « mesure ».
+//
+// Elle peut être rouge sans ambiguïté parce que la COURBE, elle, est toujours
+// verte (voir `EquityChart`) : les deux pastilles de la légende ne peuvent
+// plus se confondre comme lorsque la courbe virait au rouge en perte.
 export const EQUITY_FLOOR = {
-  stroke: "rgb(148 163 184 / 0.5)",
+  stroke: "var(--tv-chart-red)",
   strokeWidth: 2,
   strokeDasharray: "7 7",
 } as const;
