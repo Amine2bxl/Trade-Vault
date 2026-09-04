@@ -125,7 +125,9 @@ export default function Jarvis() {
                 {fr ? "En ligne" : "Online"}
               </span>
             </div>
-            <p className="truncate tv-row-label">
+            {/* Elle passe à la ligne sous md au lieu d'être coupée : c'est une
+                phrase, pas un nom. Mesurée à 390px, elle perdait « journal ». */}
+            <p className="tv-row-label md:truncate">
               {fr
                 ? "Tu écrits ou tu lui parles — il a déjà lu ton journal."
                 : "Type or speak — he has already read your journal."}

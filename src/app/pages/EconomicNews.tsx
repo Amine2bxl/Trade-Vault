@@ -646,7 +646,11 @@ export default function EconomicNews() {
                             </span>
                             <span
                               className={cn(
-                                "flex-1 min-w-0 text-sm font-medium truncate",
+                                /* Le nom de l'événement passe à la ligne sur
+                                   téléphone. « Euro Area Unemployment Rate »
+                                   coupé à 175px ne désigne plus rien ; la
+                                   rangée peut grandir, l'information non. */
+                                "flex-1 min-w-0 text-sm font-medium leading-snug md:truncate",
                                 status === "past" ? "text-slate-600" : "text-white",
                               )}
                             >

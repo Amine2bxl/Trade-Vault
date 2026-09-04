@@ -18,6 +18,7 @@ import { loadNotifications, markNotificationRead } from "@/modules/notifications
 import type { AppNotification, NotificationCategory } from "@/modules/notifications/types";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
+import type { TKey } from "../i18n/translations";
 import { PageContainer } from "@/shared/ui/PageContainer";
 import { cn } from "../utils/cn";
 
@@ -176,9 +177,11 @@ export default function Inbox() {
           <div>
             <h1 className="tv-title">{t("inbox.title")}</h1>
             <p className="tv-prose text-slate-500">
+              {/* Le compte et son état étaient écrits en français en dur, dans
+                  une interface traduite en douze langues. */}
               {unreadTotal > 0
-                ? `${unreadTotal} non ${unreadTotal > 1 ? "lues" : "lue"}`
-                : "Tout lu"}
+                ? t("inbox.unreadCount").replace("{n}", String(unreadTotal))
+                : t("inbox.allRead")}
             </p>
           </div>
         </div>
@@ -191,7 +194,10 @@ export default function Inbox() {
       </div>
 
       {/* Filter tabs with category counts */}
-      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+      {/* Elle passe à la ligne au lieu de défiler : sept pastilles sur 390px,
+          la dernière était coupée par le bord et rien ne disait qu'il y en
+          avait d'autres. Deux rangées ne coupent rien. */}
+      <div className="mb-4 flex flex-wrap items-center gap-1.5">
         {FILTER_KINDS.map((k) => {
           const count = k === "all" ? notifs.length : (countByCategory[k] ?? 0);
           const unread =
@@ -201,13 +207,18 @@ export default function Inbox() {
               key={k}
               onClick={() => setFilter(k)}
               className={cn(
-                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition border",
+                "flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition",
                 filter === k
                   ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-300"
                   : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
               )}
             >
-              {k === "all" ? "Toutes" : t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}`)}
+              {/* La clé se construit depuis le nom du filtre. Deux d'entre eux
+                  — `jarvis` et `activity` — n'en avaient AUCUNE : leurs boutons
+                  se rendaient vides, 26px de large sur 14 de haut, deux cibles
+                  sans libellé dans la barre. Et « Toutes » était écrit en
+                  français en dur dans une interface traduite. */}
+              {t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}` as TKey)}
               {unread > 0 && (
                 <span
                   className={cn(
@@ -226,10 +237,10 @@ export default function Inbox() {
         {hasUnreadFiltered && (
           <button
             onClick={markAllRead}
-            className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition"
+            className="ml-auto flex h-9 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-medium text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300"
           >
             <CheckCheck className="w-3.5 h-3.5" />
-            Tout lu
+            {t("inbox.markAllRead")}
           </button>
         )}
       </div>

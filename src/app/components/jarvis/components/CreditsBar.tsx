@@ -107,7 +107,10 @@ export default function CreditsBar() {
         </span>
         <button
           onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-          className="shrink-0 inline-flex items-center gap-0.5 text-cyan-400 font-bold hover:text-cyan-300 transition-colors"
+          /* Une cible de 15px de haut, mesurée : le lien vivait dans une
+             ligne de 11px sans hauteur propre. Le texte garde sa taille, c'est
+             la zone qui s'ouvre. */
+          className="-my-1.5 inline-flex h-8 shrink-0 items-center gap-0.5 px-1 font-bold text-cyan-400 transition-colors hover:text-cyan-300"
         >
           {t("credits.upgrade")}
           <ArrowUpRight className="w-2.5 h-2.5" />
