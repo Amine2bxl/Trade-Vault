@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Eraser, Mic, MicOff, Zap } from "lucide-react";
-import MorphingInput from "../MorphingInput";
+import Composer from "../Composer";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
@@ -810,7 +810,13 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               /* L'utilisateur garde la bulle : l'asymétrie devient le repère de
                  tour, sans enfermer le contenu analytique de Jarvis. */
               <div key={m.id} className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl rounded-br-md tv-accent-fill px-4 py-2.5 text-sm font-medium">
+                {/* LA BULLE N'EST PLUS VERTE. Chaque question du trader
+                    s'affichait en vert plein : dans une conversation de dix
+                    messages, la couleur d'action du produit se retrouvait
+                    répétée cinq fois, et elle ne désignait plus rien. La bulle
+                    est une plaque neutre — l'asymétrie suffit à dire qui
+                    parle, et le vert reste à Jarvis et aux boutons. */}
+                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md border border-white/[0.07] bg-[var(--tv-plate-3)] px-4 py-2.5 text-sm text-white">
                   {textOf(m) || ""}
                 </div>
               </div>
@@ -900,37 +906,20 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             </button>
           </div>
         )}
-        {listening && (
-          <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-semibold mb-2 px-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />{" "}
-            {t("assistant.listening")}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {SpeechRecognitionCtor && (
-            <button
-              type="button"
-              onClick={toggleMic}
-              aria-label={t("common.voiceInput")}
-              className={cn(
-                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                listening
-                  ? "bg-red-500/15 text-red-400"
-                  : "bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]",
-              )}
-            >
-              {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </button>
-          )}
-          <div className="flex-1 min-w-0">
-            <MorphingInput
-              value={question}
-              onChange={setQuestion}
-              onSubmit={() => ask(question)}
-              disabled={loading}
-            />
-          </div>
-        </div>
+        {/* LE MICRO ET LE CHAMP NE FONT PLUS DEUX BLOCS. Le micro vivait à
+            GAUCHE du champ, dans sa propre boîte, et le champ avait en plus un
+            bouton qui faisait tourner un placeholder animé : trois contrôles
+            sur une ligne pour écrire une phrase. Tout est dans le compositeur
+            maintenant, à sa place — micro à gauche, envoi à droite. */}
+        <Composer
+          value={question}
+          onChange={setQuestion}
+          onSubmit={() => ask(question)}
+          disabled={loading}
+          listening={listening}
+          onMic={toggleMic}
+          micAvailable={!!SpeechRecognitionCtor}
+        />
       </div>
     </div>
   );

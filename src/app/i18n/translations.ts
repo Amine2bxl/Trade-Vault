@@ -522,6 +522,9 @@ const en = {
   "jarvis.pageLead": "Type or speak — he has already read your journal.",
   "jarvis.newConversation": "New conversation",
   "jarvis.waking": "Jarvis is waking up…",
+  "jarvis.composerPlaceholder": "Ask Jarvis about your trading…",
+  "jarvis.composerHint": "Enter to send · Shift+Enter for a new line",
+  "jarvis.send": "Send",
   "jarvis.copilot": "Your AI trading copilot",
   "assistant.placeholder": "Ask Jarvis…",
   "assistant.empty":
