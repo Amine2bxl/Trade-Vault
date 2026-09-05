@@ -28,8 +28,6 @@ import {
 import { usePageLead } from "../contexts/PageActionsContext";
 import SubscriptionSection from "../components/SubscriptionSection";
 import PlanMatrix from "../components/pricing/PlanMatrix";
-import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
-import PromoCodeSection from "../components/PromoCodeSection";
 
 type TFn = (k: TKey) => string;
 
@@ -52,7 +50,6 @@ export default function Subscription() {
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
   const { sub, loading } = useSubscription();
-  const isAdmin = useIsAdmin();
 
   const currentTier = tierOf(sub?.plan);
 
@@ -206,15 +203,6 @@ export default function Subscription() {
       <div className="animate-fade-in-up stagger-3">
         <SubscriptionSection />
       </div>
-
-      {/* Panneaux propriétaires : n'apparaissent que pour une adresse listée
-          dans `ADMIN_EMAILS`, et chaque action est revérifiée côté serveur. */}
-      {isAdmin && (
-        <div className="space-y-4">
-          <CompAccessSection />
-          <PromoCodeSection />
-        </div>
-      )}
 
       {/* ── Reassurance rail, straight from the landing ── */}
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">

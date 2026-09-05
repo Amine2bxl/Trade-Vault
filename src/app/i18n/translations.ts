@@ -1689,6 +1689,7 @@ const en = {
   "proposal.failed": "Nothing was changed",
   "proposal.expires": "Expires on {date}",
   "settings.paneAccount": "Accounts",
+  "settings.admin": "Admin",
   "settings.paneAccountSub": "Switch between your trading accounts.",
   "nav.collapseSidebar": "Collapse the sidebar",
   "nav.expandSidebar": "Expand the sidebar",

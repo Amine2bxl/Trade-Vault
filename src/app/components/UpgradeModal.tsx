@@ -10,6 +10,8 @@ import {
   monthsFree,
   planId,
   yearlyPerMonth,
+  PAGE_VALUE,
+  pagesOfTier,
   type Interval,
   type PaidPlan,
   type PaidTier,
@@ -179,20 +181,37 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                 </p>
 
                 <div className="mt-3 space-y-1.5">
-                  {def.features.slice(0, 3).map((f) => (
-                    <p
-                      key={f.en}
-                      className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
-                    >
-                      <Check
-                        className={cn(
-                          "mt-0.5 h-3.5 w-3.5 shrink-0",
-                          tier === "pro" ? "text-cyan-300" : "text-emerald-400/80",
-                        )}
-                      />
-                      {f[fr ? "fr" : "en"]}
+                  {tier === "pro"
+                    ? pagesOfTier("pro")
+                        .slice(0, 3)
+                        .map((page) => {
+                          const v = PAGE_VALUE[page];
+                          if (!v) return null;
+                          return (
+                            <p
+                              key={page}
+                              className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
+                            >
+                              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
+                              {v.title[fr ? "fr" : "en"]}
+                            </p>
+                          );
+                        })
+                    : def.features.slice(0, 3).map((f) => (
+                        <p
+                          key={f.en}
+                          className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
+                        >
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400/80" />
+                          {f[fr ? "fr" : "en"]}
+                        </p>
+                      ))}
+                  {tier === "pro" && (
+                    <p className="pt-0.5 text-[11px] font-semibold text-cyan-300/80">
+                      + {pagesOfTier("pro").length - 3}{" "}
+                      {fr ? "autres pages Premium" : "more Premium pages"}
                     </p>
-                  ))}
+                  )}
                 </div>
 
                 <button

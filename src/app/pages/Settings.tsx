@@ -16,6 +16,7 @@ import {
   UserX,
   AlertTriangle,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
@@ -31,6 +32,8 @@ import AccountSwitcher from "../components/AccountSwitcher";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
+import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
+import PromoCodeSection from "../components/PromoCodeSection";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -51,7 +54,7 @@ import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
  * contenu : la même structure, sans imposer une colonne de 240 px à un écran
  * qui en fait 390.
  */
-type PaneId = "general" | "account" | "notifications" | "data" | "danger";
+type PaneId = "general" | "account" | "notifications" | "data" | "danger" | "admin";
 
 /** Rubrique du rail : son icône, sa clé de libellé, sa clé de recherche. */
 const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: LucideIcon }[] = [
@@ -60,6 +63,8 @@ const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: 
   { id: "notifications", section: "notifs", labelKey: "push.title", icon: Bell },
   { id: "data", section: "data", labelKey: "settings.data", icon: Database },
   { id: "danger", section: "danger", labelKey: "settings.dangerZone", icon: AlertTriangle },
+  // Réservé au propriétaire (`ADMIN_EMAILS`) — n'apparaît jamais pour le public.
+  { id: "admin", section: "admin", labelKey: "settings.admin", icon: ShieldCheck },
 ];
 
 interface SearchSections {
@@ -68,6 +73,7 @@ interface SearchSections {
   notifs: boolean;
   data: boolean;
   danger: boolean;
+  admin: boolean;
 }
 
 interface SettingsProps {
@@ -84,6 +90,7 @@ export default function Settings({
   onOpenReports,
 }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
+  const isAdmin = useIsAdmin();
   const { activeId, activeAccount } = useAccounts();
   const [recalOpen, setRecalOpen] = useState(false);
   const { t, setLang } = useT();
@@ -130,12 +137,15 @@ export default function Settings({
         "account",
         "compte",
       ),
+      admin: match(t("settings.admin"), "admin", "codes promo", "accès offert", "comp"),
     };
   }, [query, t]);
-  /** Les volets visibles après recherche, dans l'ordre du rail. */
+  /** Les volets visibles après recherche, dans l'ordre du rail. Le volet
+   *  propriétaire n'apparaît jamais hors d'une adresse `ADMIN_EMAILS`. */
   const visiblePanes = useMemo(
-    () => PANES.filter((p) => sections[p.section]).map((p) => p.id),
-    [sections],
+    () =>
+      PANES.filter((p) => (p.id !== "admin" || isAdmin) && sections[p.section]).map((p) => p.id),
+    [sections, isAdmin],
   );
   const anyVisible = visiblePanes.length > 0;
 
@@ -348,6 +358,19 @@ export default function Settings({
 
           {/* Notifications */}
           {pane === "notifications" && sections.notifs && <PushNotificationSettings />}
+
+          {/* Propriétaire (`ADMIN_EMAILS`) : panneaux d'accès offert + codes
+              promo. Jamais rendu pour le grand public. */}
+          {isAdmin && pane === "admin" && sections.admin && (
+            <div className="space-y-4">
+              <SectionHeading
+                icon={<ShieldCheck className="w-4 h-4" />}
+                title={t("settings.admin")}
+              />
+              <CompAccessSection />
+              <PromoCodeSection />
+            </div>
+          )}
 
           {/* Data */}
           {pane === "data" && sections.data && (
