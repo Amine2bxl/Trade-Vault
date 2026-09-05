@@ -55,9 +55,24 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
     pages.findIndex((p) => p === page),
   );
 
-  // L'onglet actif reste visible quand la rangée défile (mobile, 6 onglets).
+  /* L'onglet actif reste visible quand la RANGÉE défile — et rien d'autre ne
+     bouge.
+     `scrollIntoView` faisait défiler TOUS les ancêtres scrollables, y compris
+     la fenêtre de contenu. Comme la rangée d'onglets est en haut de la page,
+     cliquer sur un onglet depuis le milieu du Journal ramenait la fenêtre tout
+     en haut : on perdait sa position à chaque changement de vue. Ici on ne
+     touche qu'au défilement HORIZONTAL de la rangée, calculé à la main. */
+  const rowRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    tabRefs.current[activeIndex]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const row = rowRef.current;
+    const tab = tabRefs.current[activeIndex];
+    if (!row || !tab) return;
+    if (row.scrollWidth <= row.clientWidth) return; // rien à faire, tout tient
+    const marge = 12;
+    const gauche = tab.offsetLeft - marge;
+    const droite = tab.offsetLeft + tab.offsetWidth + marge;
+    if (gauche < row.scrollLeft) row.scrollLeft = gauche;
+    else if (droite > row.scrollLeft + row.clientWidth) row.scrollLeft = droite - row.clientWidth;
   }, [activeIndex]);
 
   const go = useCallback(
@@ -161,7 +176,7 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
         aria-orientation="horizontal"
         onKeyDown={onKeyDown}
       >
-        <div className="section-tabs-row">
+        <div ref={rowRef} className="section-tabs-row">
           {pages.map((p, i) => {
             const { labelKey, icon: Icon } = PAGE_META[p];
             const active = p === page;

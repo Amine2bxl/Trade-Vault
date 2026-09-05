@@ -7,6 +7,7 @@ import MobileNav from "./components/MobileNav";
 import MobileActions from "./components/MobileActions";
 import SectionTabs from "./components/SectionTabs";
 import { pagesOfSection, sectionForPage } from "./navigation";
+import { cn } from "./utils/cn";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
 import Dashboard from "./pages/Dashboard";
@@ -367,6 +368,9 @@ function AppContent() {
   // La section courante est celle qui contient la page courante — dérivée, pas
   // stockée : un second état aurait divergé au premier retour arrière.
   const currentSection = sectionForPage(page);
+  /* La section a-t-elle plusieurs vues ? C'est ce qui décide si la barre de
+     tête a un contenu à gauche — et donc si elle mérite sa propre bande. */
+  const hasSectionTabs = !!currentSection && pagesOfSection(currentSection).length > 1;
 
   // Optimistic writes: the UI updates instantly and rolls back to the previous
   // snapshot if the request fails, so saving never blocks the workflow.
@@ -733,10 +737,25 @@ function AppContent() {
             un bandeau collé par-dessus le produit. Voir `MobileActions`.
             `pb-3` : un écart vertical unique et identique entre la barre
             d'onglets et le contenu, sur toutes les pages. */}
-        <div className="flex items-center gap-3 px-4 pt-3 pb-3 md:px-6">
+        {/* LA BARRE DE TÊTE — et le trou qu'elle laissait.
+            Quand la section n'a qu'une vue (le Tableau de bord, Jarvis…), la
+            moitié gauche est vide : il ne reste qu'un bouton à droite, posé sur
+            sa propre bande de 64px, à laquelle s'ajoutent les 24px de marge
+            haute de la page. Cent pixels avant la première carte, dont les deux
+            tiers ne portent rien.
+            Dans ce cas la barre se REPLIE DANS la marge de la page au lieu de
+            s'y ajouter : le bouton occupe l'espace qui existait déjà. Quand il
+            y a des onglets, rien ne change — la bande a alors un contenu qui
+            justifie sa hauteur. */}
+        <div
+          className={cn(
+            "flex items-center gap-3 px-4 md:px-6",
+            hasSectionTabs ? "pt-3 pb-3" : "pt-3 pb-0 md:-mb-6 md:pt-4",
+          )}
+        >
           <div className="min-w-0 flex-1">
-            {currentSection && pagesOfSection(currentSection).length > 1 && (
-              <SectionTabs section={currentSection} page={page} setPage={setPage} />
+            {hasSectionTabs && (
+              <SectionTabs section={currentSection!} page={page} setPage={setPage} />
             )}
           </div>
           {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
