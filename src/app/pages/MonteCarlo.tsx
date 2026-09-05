@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Loader2, Shuffle, RotateCcw } from "lucide-react";
+import { Loader2, Shuffle, RotateCcw, BookOpen, SlidersHorizontal, Upload, X } from "lucide-react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -25,9 +25,14 @@ import {
   runMonteCarlo,
   computeStatistics,
   monteCarloSE,
+  generateSamples,
+  computeExpectancy,
+  computeProfitFactor,
   type MonteCarloParams,
   type MonteCarloResult,
+  type RMultipleSample,
 } from "../utils/monteCarlo";
+import { parseCsv, guessMapping, mapRowsToTrades, rejectFile } from "../utils/csvImport";
 import { formatMoney } from "../utils/propFirms";
 import {
   AXIS_TICK,
@@ -46,6 +51,9 @@ interface Props {
 /** Un seul nombre de tirages. Deux mille suffisent, et personne n'a envie de
  *  choisir entre 100 et 10 000 avant de savoir ce que la page va lui dire. */
 const TIRAGES = 2000;
+
+/** D'où viennent les trades rejoués. */
+type Source = "journal" | "manual" | "csv";
 
 /**
  * MONTE-CARLO — « où va mon compte, si je continue comme ça ? »
@@ -91,8 +99,116 @@ export default function MonteCarloPage({ trades }: Props) {
   const { t } = useT();
   const { activeAccount } = useAccounts();
 
-  const samples = useMemo(() => extractRSamples(trades), [trades]);
+  /* ══ D'OÙ VIENNENT LES TRADES ══════════════════════════════════════════
+     La page ne savait lire qu'une source : le journal du compte actif. Un
+     trader qui veut éprouver une stratégie qu'il n'a PAS journalisée ici — un
+     backtest sorti d'un autre outil, une idée qu'il n'a que sur le papier —
+     n'avait aucun moyen d'entrer ses chiffres. Trois sources, donc, et la même
+     page derrière :
+
+       • LE JOURNAL — ses trades, rejoués tels quels. C'est le défaut, et c'est
+         la meilleure source : elle porte la vraie forme de ses gains et de ses
+         pertes, pas une moyenne.
+       • LA SAISIE — win rate, gain moyen, perte moyenne, part de neutres. Le
+         moteur en tire un échantillon de 500 trades synthétiques. Moins fidèle
+         qu'un historique, mais c'est la seule façon d'éprouver une stratégie
+         qu'on n'a pas encore tradée.
+       • UN CSV — n'importe quel export. La lecture passe par le module
+         d'import du produit (`csvImport`), déjà testé et déjà capable de
+         deviner les colonnes de la plupart des brokers : aucune seconde
+         définition de « lire un CSV » n'a été écrite ici.
+
+     `sourceSamples` est le SEUL point où les trois se rejoignent ; tout ce qui
+     suit — statistiques, défauts, simulation — ne sait pas d'où viennent les
+     tirages. */
+  const [source, setSource] = useState<Source>("journal");
+
+  // Saisie manuelle
+  const [wr, setWr] = useState(50);
+  const [avgWin, setAvgWin] = useState(1.5);
+  const [avgLoss, setAvgLoss] = useState(1);
+  const [beRate, setBeRate] = useState(0);
+
+  // CSV
+  const [csvSamples, setCsvSamples] = useState<RMultipleSample[] | null>(null);
+  const [csvNom, setCsvNom] = useState<string | null>(null);
+  const [csvErreur, setCsvErreur] = useState<string | null>(null);
+
+  const journalSamples = useMemo(() => extractRSamples(trades), [trades]);
+
+  const samples = useMemo(() => {
+    if (source === "manual") {
+      if (avgWin <= 0 || avgLoss <= 0) return [];
+      return generateSamples(
+        { winRate: wr / 100, avgWinR: avgWin, avgLossR: avgLoss, breakEvenRate: beRate / 100 },
+        500,
+      );
+    }
+    if (source === "csv") return csvSamples ?? [];
+    return journalSamples;
+  }, [source, journalSamples, csvSamples, wr, avgWin, avgLoss, beRate]);
+
   const stats = useMemo(() => computeStatistics(samples), [samples]);
+
+  /* LES DÉFAUTS SE LISENT TOUJOURS DANS LE JOURNAL, JAMAIS DANS LA SOURCE.
+     Mesuré : en saisie manuelle, `stats` décrit des trades SYNTHÉTIQUES dont
+     le « P&L » vaut le multiple R lui-même (−1.0, +1.5). Le risque par trade
+     par défaut, tiré de la perte moyenne, tombait donc à 1 $ — et une cible de
+     1 000 $ devenait inatteignable : 0 % de réussite, quels que soient les
+     réglages. Le risque doit venir de ce que le trader risque VRAIMENT. */
+  const journalStats = useMemo(() => computeStatistics(journalSamples), [journalSamples]);
+
+  /** Lecture d'un fichier — le module d'import fait tout le travail. */
+  const lireCsv = useCallback(
+    async (file: File) => {
+      setCsvErreur(null);
+      const refus = rejectFile({ name: file.name, size: file.size, type: file.type });
+      if (refus) {
+        setCsvErreur(t(`mc.csv_${refus}` as never));
+        return;
+      }
+      try {
+        const texte = await file.text();
+        const { headers, rows } = parseCsv(texte);
+        const { valid } = mapRowsToTrades(rows, guessMapping(headers));
+        if (valid.length < 5) {
+          setCsvErreur(t("mc.csv_tooFew").replace("{n}", String(valid.length)));
+          return;
+        }
+        /* UN CSV NE PORTE PRESQUE JAMAIS DE MULTIPLE R.
+           La plupart des exports de broker n'ont qu'un P&L ; `rMultiple`
+           retombe alors à 0 pour chaque ligne, et une simulation nourrie de
+           zéros ne bouge pas — soixante trades lus, une courbe plate, 0 % de
+           réussite. Mesuré.
+
+           On dérive donc l'unité de risque du fichier lui-même : la PERTE
+           MÉDIANE. C'est ce qu'un trader risque typiquement par trade, c'est
+           robuste aux quelques pertes énormes qui fausseraient une moyenne, et
+           ça rend le R du fichier comparable à celui du journal. */
+        const aDesR = valid.some((tr) => tr.rMultiple !== 0);
+        let normalises = valid;
+        if (!aDesR) {
+          const pertes = valid
+            .filter((tr) => tr.pnl < 0)
+            .map((tr) => Math.abs(tr.pnl))
+            .sort((a, b) => a - b);
+          const unite = pertes.length > 0 ? pertes[Math.floor(pertes.length / 2)] : 0;
+          if (unite > 0) {
+            normalises = valid.map((tr) => ({
+              ...tr,
+              rMultiple: Math.round((tr.pnl / unite) * 100) / 100,
+            }));
+          }
+        }
+        setCsvSamples(extractRSamples(normalises));
+        setCsvNom(`${file.name} · ${valid.length}`);
+        setSource("csv");
+      } catch {
+        setCsvErreur(t("mc.csv_unreadable"));
+      }
+    },
+    [t],
+  );
 
   /* ── LES DÉFAUTS VIENNENT DU TRADER ────────────────────────────────────
      Pas d'un challenge Apex 50k. Le solde est celui de son compte actif ; le
@@ -100,12 +216,12 @@ export default function MonteCarloPage({ trades }: Props) {
      lit dans son journal. */
   const defauts = useMemo(() => {
     const solde = Math.max(1000, Math.round(activeAccount?.startingBalance || 10000));
-    const risque = Math.max(1, Math.round(stats.avgLossPnl || solde * 0.01));
+    const risque = Math.max(1, Math.round(journalStats.avgLossPnl || solde * 0.01));
     // La cadence RÉELLE : nombre de trades ÷ nombre de journées tradées.
     const jours = new Set(trades.map((tr) => tr.date)).size;
     const parJour = jours > 0 ? Math.min(10, Math.max(1, Math.round(trades.length / jours))) : 3;
     return { solde, risque, parJour };
-  }, [activeAccount?.startingBalance, stats.avgLossPnl, trades]);
+  }, [activeAccount?.startingBalance, journalStats.avgLossPnl, trades]);
 
   const [solde, setSolde] = useState(defauts.solde);
   const [risque, setRisque] = useState(defauts.risque);
@@ -180,90 +296,215 @@ export default function MonteCarloPage({ trades }: Props) {
   );
   usePageActions(actions);
 
-  if (samples.length < 5) {
-    return (
-      <div className="mx-auto max-w-[1100px] p-4 md:p-5">
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Shuffle className="mb-5 h-12 w-12 text-[var(--tv-highlight)] opacity-40" />
-          <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
-          <p className="max-w-sm text-sm text-slate-500">{t("mc.emptyBody")}</p>
-        </div>
-      </div>
-    );
-  }
-
   const se = result ? monteCarloSE(result.passRate, result.runs.length) : 0;
 
   return (
     <div className="mx-auto max-w-[1100px] space-y-3 p-4 md:p-5">
-      {/* ══ LES CINQ RÉGLAGES ═══════════════════════════════════════════ */}
-      <section className="glass animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
-        <div className="mc-params">
-          <Reglage
-            label={t("mc.balance")}
-            value={solde}
-            onChange={(v) => {
-              touche.current = true;
-              setSolde(v);
-            }}
-            min={1000}
-            max={500000}
-            step={1000}
-            format={(v) => formatMoney(v)}
-          />
-          <Reglage
-            label={t("mc.risk")}
-            value={risque}
-            onChange={(v) => {
-              touche.current = true;
-              setRisque(v);
-            }}
-            min={1}
-            max={Math.max(50, Math.round(solde * 0.1))}
-            step={Math.max(1, Math.round(solde * 0.001))}
-            format={(v) => formatMoney(v)}
-            hint={`${((risque / solde) * 100).toFixed(2)}%`}
-          />
-          <Reglage
-            label={t("mc.horizon")}
-            value={horizon}
-            onChange={setHorizon}
-            min={5}
-            max={120}
-            step={1}
-            format={(v) => `${v} ${t("mc.days")}`}
-          />
-          <Reglage
-            label={t("mc.target")}
-            value={objectifPct}
-            onChange={setObjectifPct}
-            min={1}
-            max={50}
-            step={1}
-            format={(v) => `+${v}%`}
-            hint={formatMoney(Math.round((solde * objectifPct) / 100))}
-          />
-          <Reglage
-            label={t("mc.limit")}
-            value={limitePct}
-            onChange={setLimitePct}
-            min={1}
-            max={50}
-            step={1}
-            format={(v) => `-${v}%`}
-            hint={formatMoney(Math.round((solde * limitePct) / 100))}
-          />
+      {/* ══ LA SOURCE DES TRADES ════════════════════════════════════════ */}
+      <section className="glass animate-fade-in-up overflow-hidden rounded-3xl">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-white/[0.05] px-4 py-3 sm:px-5">
+          <span className="tv-label shrink-0 text-slate-500">{t("mc.source")}</span>
+          <div className="section-tabs">
+            {(
+              [
+                { v: "journal", icon: BookOpen, l: t("mc.srcJournal") },
+                { v: "manual", icon: SlidersHorizontal, l: t("mc.srcManual") },
+                { v: "csv", icon: Upload, l: t("mc.srcCsv") },
+              ] as { v: Source; icon: typeof BookOpen; l: string }[]
+            ).map((o) => (
+              <button
+                key={o.v}
+                onClick={() => setSource(o.v)}
+                className={cn(
+                  "tv-label section-tab gap-1.5 px-3 md:text-xs",
+                  source === o.v ? "section-tab-active" : "section-tab-idle",
+                )}
+              >
+                <o.icon className="h-3.5 w-3.5" />
+                {o.l}
+              </button>
+            ))}
+          </div>
+          {samples.length >= 5 && (
+            <span className="tv-row-label ml-auto shrink-0">
+              {t("mc.sampleCount").replace("{n}", String(stats.totalSamples))}
+            </span>
+          )}
         </div>
 
-        {/* CE QUE LA PAGE SAIT DÉJÀ — et ne demande donc pas. */}
-        <p className="tv-hint mt-3 border-t border-white/[0.05] pt-3">
-          {t("mc.derivedFrom")
-            .replace("{n}", String(stats.totalSamples))
-            .replace("{pace}", String(defauts.parJour))}
-        </p>
+        {/* Ce que la source demande — rien pour le journal, quatre nombres
+            pour la saisie, un fichier pour le CSV. */}
+        {source === "manual" && (
+          <div className="border-b border-white/[0.05] px-4 py-4 sm:px-5">
+            <div className="mc-params">
+              <Reglage
+                label={t("stats.winRate")}
+                value={wr}
+                onChange={setWr}
+                min={1}
+                max={99}
+                step={1}
+                unite="%"
+                format={(v) => `${v}%`}
+              />
+              <Reglage
+                label={t("mc.avgWin")}
+                value={avgWin}
+                onChange={setAvgWin}
+                min={0.1}
+                max={10}
+                step={0.1}
+                decimals={1}
+                unite="R"
+                format={(v) => `+${v.toFixed(1)}R`}
+              />
+              <Reglage
+                label={t("mc.avgLoss")}
+                value={avgLoss}
+                onChange={setAvgLoss}
+                min={0.1}
+                max={10}
+                step={0.1}
+                decimals={1}
+                unite="R"
+                format={(v) => `-${v.toFixed(1)}R`}
+              />
+              <Reglage
+                label={t("mc.beRate")}
+                value={beRate}
+                onChange={setBeRate}
+                min={0}
+                max={50}
+                step={1}
+                unite="%"
+                format={(v) => `${v}%`}
+              />
+              {/* Ce que ces quatre nombres VALENT, tout de suite. Sans ça, on
+                  règle un win rate sans savoir s'il rend la stratégie
+                  gagnante — et c'est toute la question. */}
+              <div className="min-w-0 self-end">
+                <div className="tv-label truncate text-slate-500">{t("quant.expectancy")}</div>
+                <div
+                  className={cn(
+                    "tv-figure mt-1 text-base leading-none",
+                    computeExpectancy(wr / 100, avgWin, avgLoss) >= 0 ? "rp-pos" : "rp-neg",
+                  )}
+                >
+                  {computeExpectancy(wr / 100, avgWin, avgLoss) >= 0 ? "+" : ""}
+                  {computeExpectancy(wr / 100, avgWin, avgLoss).toFixed(2)}R
+                </div>
+                <div className="tv-row-label mt-1 truncate">
+                  {t("reports.profitFactor")}{" "}
+                  {computeProfitFactor(wr / 100, avgWin, avgLoss) >= 99
+                    ? "99+"
+                    : computeProfitFactor(wr / 100, avgWin, avgLoss).toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {source === "csv" && (
+          <div className="border-b border-white/[0.05] px-4 py-4 sm:px-5">
+            <DepotCsv
+              nom={csvNom}
+              erreur={csvErreur}
+              onFichier={lireCsv}
+              onVider={() => {
+                setCsvSamples(null);
+                setCsvNom(null);
+                setCsvErreur(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* ══ LES CINQ RÉGLAGES ═══════════════════════════════════════════ */}
+        <div className="px-4 py-4 sm:px-5">
+          <div className="mc-params">
+            <Reglage
+              label={t("mc.balance")}
+              value={solde}
+              onChange={(v) => {
+                touche.current = true;
+                setSolde(v);
+              }}
+              min={1000}
+              max={500000}
+              step={1000}
+              format={(v) => formatMoney(v)}
+            />
+            <Reglage
+              label={t("mc.risk")}
+              value={risque}
+              onChange={(v) => {
+                touche.current = true;
+                setRisque(v);
+              }}
+              min={1}
+              max={Math.max(50, Math.round(solde * 0.1))}
+              step={Math.max(1, Math.round(solde * 0.001))}
+              format={(v) => formatMoney(v)}
+              hint={`${((risque / solde) * 100).toFixed(2)}%`}
+            />
+            <Reglage
+              label={t("mc.horizon")}
+              value={horizon}
+              onChange={setHorizon}
+              min={5}
+              max={120}
+              step={1}
+              format={(v) => `${v} ${t("mc.days")}`}
+            />
+            <Reglage
+              label={t("mc.target")}
+              value={objectifPct}
+              onChange={setObjectifPct}
+              min={1}
+              max={50}
+              step={1}
+              format={(v) => `+${v}%`}
+              hint={formatMoney(Math.round((solde * objectifPct) / 100))}
+            />
+            <Reglage
+              label={t("mc.limit")}
+              value={limitePct}
+              onChange={setLimitePct}
+              min={1}
+              max={50}
+              step={1}
+              format={(v) => `-${v}%`}
+              hint={formatMoney(Math.round((solde * limitePct) / 100))}
+            />
+          </div>
+
+          {/* CE QUE LA PAGE SAIT DÉJÀ — et ne demande donc pas. */}
+          {source === "journal" && (
+            <p className="tv-hint mt-3 border-t border-white/[0.05] pt-3">
+              {t("mc.derivedFrom")
+                .replace("{n}", String(stats.totalSamples))
+                .replace("{pace}", String(defauts.parJour))}
+            </p>
+          )}
+        </div>
       </section>
 
-      {!result ? (
+      {samples.length < 5 ? (
+        /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
+           lui, un trader sans journal ne pouvait pas même atteindre la saisie
+           manuelle — la seule qui lui permette d'éprouver sa stratégie. */
+        <div className="glass flex flex-col items-center justify-center rounded-3xl py-16 text-center">
+          <Shuffle className="mb-4 h-10 w-10 text-[var(--tv-highlight)] opacity-40" />
+          <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
+          <p className="max-w-sm px-6 text-sm text-slate-500">
+            {source === "csv"
+              ? t("mc.emptyCsv")
+              : source === "manual"
+                ? t("mc.emptyManual")
+                : t("mc.emptyBody")}
+          </p>
+        </div>
+      ) : !result ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
         </div>
@@ -660,6 +901,8 @@ function Reglage({
   step,
   format,
   hint,
+  unite,
+  decimals = 0,
 }: {
   label: string;
   value: number;
@@ -669,24 +912,157 @@ function Reglage({
   step: number;
   format: (v: number) => string;
   hint?: string;
+  /** Suffixe affiché dans le champ de saisie ($, %, R…). */
+  unite?: string;
+  decimals?: number;
 }) {
+  /* LE CHAMP EST UN BROUILLON TANT QU'ON TAPE.
+     Écrire directement dans `value` à chaque frappe rend la saisie
+     impossible : effacer « 10000 » pour taper « 25000 » passe par la chaîne
+     vide, que `Number("")` transforme en 0 — et le curseur saute au minimum
+     sous les doigts. Le brouillon garde ce qui est tapé ; la valeur ne remonte
+     que si elle est lisible, et elle est bornée à la sortie du champ. */
+  const [brouillon, setBrouillon] = useState<string | null>(null);
+  const affiche = brouillon ?? (decimals > 0 ? value.toFixed(decimals) : String(value));
+
+  const poser = (brut: string) => {
+    setBrouillon(brut);
+    const n = Number(brut.replace(",", "."));
+    if (brut.trim() !== "" && Number.isFinite(n)) onChange(n);
+  };
+  const fermer = () => {
+    setBrouillon(null);
+    const n = Number(affiche.replace(",", "."));
+    onChange(Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : min);
+  };
+
   return (
     <div className="min-w-0">
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <span className="tv-label truncate text-slate-500">{label}</span>
         {hint && <span className="tv-figure shrink-0 text-[10px] text-slate-600">{hint}</span>}
       </div>
-      <div className="tv-figure mb-1.5 text-base leading-none text-white">{format(value)}</div>
+
+      {/* LA VALEUR EXACTE SE TAPE.
+          Le curseur seul donne l'ordre de grandeur, jamais le nombre : régler
+          un solde à 47 500 $ au pas de 1 000 est impossible, et régler un gain
+          moyen à 1,7R au pixel près relève de la chance. Le champ porte la
+          valeur, le curseur la déplace — les deux écrivent au même endroit. */}
+      <div className="mc-num mb-1.5">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={affiche}
+          onChange={(e) => poser(e.target.value)}
+          onBlur={fermer}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+          aria-label={label}
+          /* `h-full` : sans lui le champ ne fait que la hauteur de sa ligne
+             de texte — 18px mesures — et cliquer dans le rembourrage de la
+             boite ne le met pas au foyer. Il occupe maintenant les 36px. */
+          className="tv-figure h-full min-w-0 flex-1 bg-transparent text-base leading-none text-white outline-none"
+        />
+        {unite && <span className="tv-figure shrink-0 text-xs text-slate-500">{unite}</span>}
+      </div>
+
       <input
         type="range"
         min={min}
         max={max}
         step={step}
         value={Math.min(max, Math.max(min, value))}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => {
+          setBrouillon(null);
+          onChange(Number(e.target.value));
+        }}
         aria-label={label}
         className="w-full"
       />
+      <div className="tv-row-label mt-1 truncate">{format(value)}</div>
+    </div>
+  );
+}
+
+/**
+ * LE DÉPÔT DE FICHIER.
+ *
+ * Il ne relit rien lui-même : `csvImport` — le module d'import du produit,
+ * déjà testé, déjà capable de deviner les colonnes de la plupart des brokers —
+ * fait tout le travail. Écrire ici une seconde façon de lire un CSV aurait
+ * donné deux comportements pour un même fichier.
+ */
+function DepotCsv({
+  nom,
+  erreur,
+  onFichier,
+  onVider,
+}: {
+  nom: string | null;
+  erreur: string | null;
+  onFichier: (f: File) => void;
+  onVider: () => void;
+}) {
+  const { t } = useT();
+  const [survol, setSurvol] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  if (nom) {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.06)] px-3.5 py-3">
+        <Upload className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{nom}</span>
+        <button
+          onClick={onVider}
+          aria-label={t("common.reset")}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setSurvol(true);
+        }}
+        onDragLeave={() => setSurvol(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setSurvol(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f) onFichier(f);
+        }}
+        className={cn(
+          "flex w-full flex-col items-center gap-1.5 rounded-2xl border border-dashed px-4 py-6 text-center transition",
+          survol
+            ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.08)]"
+            : "border-white/[0.12] hover:border-white/[0.2] hover:bg-white/[0.02]",
+        )}
+      >
+        <Upload className="h-5 w-5 text-slate-500" />
+        <span className="text-sm font-semibold text-white">{t("mc.csvDrop")}</span>
+        <span className="tv-row-label">{t("mc.csvHint")}</span>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,text/csv"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFichier(f);
+          e.target.value = "";
+        }}
+      />
+      {erreur && <p className="rp-neg mt-2 text-xs">{erreur}</p>}
     </div>
   );
 }

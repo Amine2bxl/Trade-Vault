@@ -270,6 +270,26 @@ const fr: Dict = {
   "appearance.subtitle": "Choisis un thème ou crée le tien. Appliqué partout, instantanément.",
 
   // Inbox notifications
+  "mc.source": "Données",
+  "mc.srcJournal": "Journal",
+  "mc.srcManual": "Saisie",
+  "mc.srcCsv": "CSV",
+  "mc.sampleCount": "{n} trades rejoués",
+  "mc.avgWin": "Gain moyen",
+  "mc.avgLoss": "Perte moyenne",
+  "mc.beRate": "Part de neutres",
+  "mc.csvDrop": "Dépose un CSV, ou clique pour en choisir un",
+  "mc.csvHint":
+    "N'importe quel export de broker. Les colonnes sont détectées toutes seules ; seuls la date, le symbole et le P&L sont nécessaires.",
+  "mc.csv_tooLarge": "Fichier trop lourd (10 Mo maximum).",
+  "mc.csv_notCsv": "Ce fichier n'est pas un CSV.",
+  "mc.csv_empty": "Ce fichier est vide.",
+  "mc.csv_noHeaders": "Aucune ligne d'en-tête trouvée.",
+  "mc.csv_tooFew": "Seulement {n} trades lisibles — il en faut au moins 5.",
+  "mc.csv_unreadable": "Ce fichier n'a pas pu être lu.",
+  "mc.emptyCsv": "Dépose un CSV au-dessus, la simulation part toute seule.",
+  "mc.emptyManual":
+    "Renseigne un win rate, un gain moyen et une perte moyenne au-dessus — la simulation part toute seule.",
   "mc.emptyTitle": "Ton Monte-Carlo commence avec tes données",
   "mc.emptyBody":
     "Saisis au moins 5 trades : cette page les rejouera des milliers de fois pour montrer où ton compte peut atterrir.",

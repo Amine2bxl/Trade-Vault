@@ -311,6 +311,26 @@ const en = {
   "appearance.subtitle": "Pick a theme or craft your own. Applies everywhere, instantly.",
 
   // Inbox notifications
+  "mc.source": "Data",
+  "mc.srcJournal": "Journal",
+  "mc.srcManual": "Manual",
+  "mc.srcCsv": "CSV",
+  "mc.sampleCount": "{n} trades replayed",
+  "mc.avgWin": "Average win",
+  "mc.avgLoss": "Average loss",
+  "mc.beRate": "Break-even rate",
+  "mc.csvDrop": "Drop a CSV, or click to choose one",
+  "mc.csvHint":
+    "Any broker export. Columns are detected automatically; only date, symbol and P&L are needed.",
+  "mc.csv_tooLarge": "File too large (10 MB max).",
+  "mc.csv_notCsv": "This file is not a CSV.",
+  "mc.csv_empty": "This file is empty.",
+  "mc.csv_noHeaders": "No header row found.",
+  "mc.csv_tooFew": "Only {n} readable trades — at least 5 are needed.",
+  "mc.csv_unreadable": "This file could not be read.",
+  "mc.emptyCsv": "Drop a CSV above and the simulation starts on its own.",
+  "mc.emptyManual":
+    "Set a win rate, an average win and an average loss above — the simulation starts on its own.",
   "mc.emptyTitle": "Your Monte Carlo starts with your data",
   "mc.emptyBody":
     "Log at least 5 trades and this page will replay them thousands of times to show you where your account can land.",

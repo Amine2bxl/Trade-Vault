@@ -3212,3 +3212,25 @@ a:focus-visible,
   background: var(--tv-accent);
   color: #fff;
 }
+
+/* Le champ numérique d'un réglage Monte-Carlo — la valeur EXACTE se tape.
+ * Le curseur seul donne l'ordre de grandeur, jamais le nombre : régler un
+ * solde à 47 500 $ au pas de 1 000 est impossible, et viser 1,7R au pixel
+ * près relève de la chance. */
+.mc-num {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.25rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.7rem;
+  background: var(--tv-plate-2);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+.mc-num:focus-within {
+  border-color: var(--tv-border-accent);
+  box-shadow: 0 0 0 2px rgb(var(--tv-accent-rgb) / 0.18);
+}
