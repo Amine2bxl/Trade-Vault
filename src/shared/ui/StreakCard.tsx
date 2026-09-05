@@ -23,6 +23,9 @@ interface StreakCardProps extends React.HTMLAttributes<HTMLDivElement> {
   total: number;
   /** Titre de la carte. */
   title?: string;
+  /** Ce que la carte mesure, en une ligne (ex. « les jours où ta checklist
+   *  est verrouillée »). */
+  subtitle?: string;
   /** Libellé de l'unité ("jours"). */
   daysLabel?: string;
   /** Libellé du record. */
@@ -75,20 +78,23 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
       className={cn("stat-card rounded-2xl p-4 md:p-5", className)}
       {...props}
     >
-      <header className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-amber-300" aria-hidden="true" />
-          <h3 className="tv-title">{title}</h3>
+      <header className="mb-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Flame className="h-5 w-5 text-amber-300" aria-hidden="true" />
+            <h3 className="tv-title">{title}</h3>
+          </div>
+          {onActionClick && (
+            <button
+              type="button"
+              onClick={onActionClick}
+              className="inline-flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-cyan-300"
+            >
+              {actionLabel}
+            </button>
+          )}
         </div>
-        {onActionClick && (
-          <button
-            type="button"
-            onClick={onActionClick}
-            className="inline-flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-cyan-300"
-          >
-            {actionLabel}
-          </button>
-        )}
+        {subtitle && <p className="mt-1 text-[12px] leading-relaxed text-slate-400">{subtitle}</p>}
       </header>
 
       <p className="mb-4 font-display text-4xl leading-none font-bold tracking-tight text-white">

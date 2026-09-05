@@ -777,7 +777,7 @@ function AppContent() {
         <div
           className={cn(
             "flex items-center gap-3 px-4 md:px-6",
-            hasSectionTabs ? "pt-3 pb-3" : "pt-3 pb-0 md:-mb-6 md:pt-4",
+            hasSectionTabs ? "pt-3 pb-3" : "pt-3 pb-0 md:-mb-4 md:pt-4",
           )}
         >
           <div className="min-w-0 flex-1">

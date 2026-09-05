@@ -225,10 +225,12 @@ function CopilotBlock({
 
   return (
     <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden">
-      <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-4">
+      <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-2">
         <Sparkles className="w-3.5 h-3.5" />
         <span>{t("copilot.title")}</span>
       </div>
+      {/* Le « en une ligne » : on dit d'abord quoi c'est, avant les chiffres. */}
+      <p className="mb-4 text-[12.5px] leading-relaxed text-slate-400">{t("copilot.intro")}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-5 md:gap-7 items-center">
         {/* Left — Edge dial + clean-days bar */}
@@ -260,6 +262,13 @@ function CopilotBlock({
                 />
               </div>
             </div>
+          )}
+          {/* Le « c'est quoi ce chiffre » — c'est ce qui manquait pour lire
+              le score comme une information plutôt que comme un jauge. */}
+          {hasScore && (
+            <p className="tv-caption mt-1 max-w-[170px] text-center text-[10.5px] leading-relaxed text-slate-600">
+              {t("copilot.explain")}
+            </p>
           )}
         </div>
 

@@ -71,6 +71,13 @@ const LOCALE_MAP: Record<string, string> = {
 
 type AnalyticsPeriod = "all" | "7d" | "30d" | "90d" | "1y";
 
+/* La même grammaire de pilules que la rangée de filtres du Journal — une
+   seule apparence de filtre dans le produit. */
+const FILTER_PILL =
+  "appearance-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-400 outline-none transition-colors hover:text-slate-200";
+const FILTER_PILL_ACTIVE =
+  "border-[color:var(--tv-accent)]/40 bg-[color:var(--tv-accent)]/10 text-[color:var(--tv-accent)]";
+
 export default function Analytics({ trades }: AnalyticsProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
@@ -372,14 +379,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
           décide si on arrête de trader un jour. Le jour s'ajoute donc en
           second axe, et il s'applique en amont de tous les calculs. */}
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="section-tabs">
+        <div className="flex items-center gap-1.5">
           {(["all", "7d", "30d", "90d", "1y"] as AnalyticsPeriod[]).map((p) => (
             <button
               key={p}
               onClick={() => setAnalyticsPeriod(p)}
               className={cn(
-                "tv-label section-tab px-3 md:text-xs",
-                analyticsPeriod === p ? "section-tab-active" : "section-tab-idle",
+                "tv-label " + FILTER_PILL + " px-3",
+                analyticsPeriod === p && FILTER_PILL_ACTIVE,
               )}
             >
               {p === "all" ? t("common.all") : t(`common.${p}`)}
@@ -393,12 +400,15 @@ export default function Analytics({ trades }: AnalyticsProps) {
             de son conteneur (mesure). Le voile de defilement de
             `tv-scroll-x` se suffit a lui-meme. */}
         <div className="tv-scroll-x min-w-0 flex-1 rounded-xl">
-          <div className="flex w-max items-center gap-1 py-0.5">
+          <div className="flex w-max items-center gap-1.5 py-0.5">
             <span className="tv-label shrink-0 pr-1 text-slate-500">{t("journal.filterDay")}</span>
             <button
               onClick={() => setDayFilter("all")}
               aria-pressed={dayFilter === "all"}
-              className={cn("rp-chip", dayFilter === "all" && "rp-chip-active")}
+              className={cn(
+                "tv-label " + FILTER_PILL + " px-3",
+                dayFilter === "all" && FILTER_PILL_ACTIVE,
+              )}
             >
               {t("common.all")}
             </button>
@@ -414,8 +424,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   aria-pressed={dayFilter === String(d)}
                   disabled={n === 0 && dayFilter !== String(d)}
                   className={cn(
-                    "rp-chip disabled:opacity-35",
-                    dayFilter === String(d) && "rp-chip-active",
+                    "tv-label " + FILTER_PILL + " px-3 disabled:opacity-35",
+                    dayFilter === String(d) && FILTER_PILL_ACTIVE,
                   )}
                 >
                   <span className="capitalize">{jours[d]}</span>
