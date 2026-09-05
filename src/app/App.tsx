@@ -613,6 +613,9 @@ function AppContent() {
     setModalOpen(false);
     setEditingTrade(null);
   }, []);
+  // Stable : une arrow inline ici recréée à chaque rendu ferait boucler
+  // `usePageActions` du Journal (deps du headerActions) → gel de navigation.
+  const handleOpenMissed = useCallback(() => setPage("missed"), []);
 
   // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
   // seeds three example trades so Dashboard/Analytics light up instantly.
@@ -792,7 +795,7 @@ function AppContent() {
                         onDelete={handleDelete}
                         onDeleteAll={handleDeleteAll}
                         onAdd={handleAdd}
-                        onOpenMissed={() => setPage("missed")}
+                        onOpenMissed={handleOpenMissed}
                       />
                     )}
                     {page === "checklist" && (

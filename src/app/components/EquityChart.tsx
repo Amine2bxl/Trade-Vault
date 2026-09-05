@@ -28,6 +28,9 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
       return { min: 0, max: 0, breakEven: 0, keyDots: {} as Record<number, boolean> };
     let lo = data[0].equity;
     let hi = data[0].equity;
+    // Points d'intérêt : premier, dernier, meilleur et pire… MAIS aussi chaque
+    // sommet/creux local — les retournements sont ce qu'un trader veut lire.
+    // Plus de points, donc plus fins et plus petits (voir rendu des dots).
     let bestIdx = 0;
     let worstIdx = 0;
     for (let i = 1; i < data.length; i++) {
@@ -45,6 +48,13 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
       keyDots[0] = true;
       keyDots[data.length - 1] = true;
     }
+    for (let i = 1; i < data.length - 1; i++) {
+      const prev = data[i - 1].equity;
+      const cur = data[i].equity;
+      const next = data[i + 1].equity;
+      const isTurn = (cur > prev && cur >= next) || (cur < prev && cur <= next);
+      if (isTurn) keyDots[i] = true;
+    }
     if (bestIdx > 0 && bestIdx < data.length - 1) keyDots[bestIdx] = true;
     if (worstIdx > 0 && worstIdx < data.length - 1 && worstIdx !== bestIdx)
       keyDots[worstIdx] = true;
@@ -61,11 +71,13 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
       <AreaChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={accent} stopOpacity={0.18} />
-            <stop offset="100%" stopColor={accent} stopOpacity={0} />
+            {/* Plus présent et plus saturé « sur le bas » : le bas reste teinté
+                au lieu de s'effacer à 0 %. */}
+            <stop offset="0%" stopColor={accent} stopOpacity={0.3} />
+            <stop offset="100%" stopColor={accent} stopOpacity={0.14} />
           </linearGradient>
           <filter id="dotGlow">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.5)" />
+            <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="rgba(0,0,0,0.45)" />
           </filter>
         </defs>
         <CartesianGrid stroke="rgba(148,163,184,0.07)" strokeDasharray="4 12" vertical={false} />
@@ -147,8 +159,8 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
           fill="url(#eqGrad)"
           dot={false}
           activeDot={{
-            r: 5,
-            strokeWidth: 2.5,
+            r: 4,
+            strokeWidth: 1.5,
             stroke: "#0a0f1e",
             fill: accent,
             filter: "url(#dotGlow)",
@@ -161,16 +173,18 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
           stroke="transparent"
           dot={(props: { cx: number; cy: number; index: number }) => {
             if (!keyDots[props.index]) return <g key={`dot-${props.index}`} />;
-            const isPositive = data[props.index].equity >= breakEven;
+            // Points plus petits et plus fins — les creux sont en rouge, les
+            // sommets dans la couleur d'accent.
+            const below = data[props.index].equity < breakEven;
             return (
               <circle
                 key={`dot-${props.index}`}
                 cx={props.cx}
                 cy={props.cy}
-                r={6}
-                fill={isPositive ? accent : "#ef4444"}
+                r={3.5}
+                fill={below ? "#ef4444" : accent}
                 stroke="#0a0f1e"
-                strokeWidth={2.5}
+                strokeWidth={1}
                 filter="url(#dotGlow)"
               />
             );
