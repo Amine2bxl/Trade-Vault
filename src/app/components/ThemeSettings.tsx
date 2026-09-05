@@ -244,7 +244,10 @@ function Section({
       <button
         onClick={onToggle}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 mb-2 group"
+        /* 36px de hauteur : l'en-tête d'accordéon n'en faisait que 16, la
+           hauteur de son texte. C'est une ligne qu'on touche pour ouvrir et
+           fermer une section — elle a besoin d'une zone, pas d'une ligne. */
+        className="group -mx-1 mb-1 flex h-9 w-full items-center gap-2 px-1"
       >
         <span className="tv-label text-slate-500 group-hover:text-slate-300 transition-colors">
           {title}
@@ -292,7 +295,9 @@ function IconBtn({
       title={title}
       onClick={onClick}
       className={cn(
-        "w-7 h-7 rounded-lg flex items-center justify-center transition",
+        /* 32px et non 28 : douze pastilles de thème alignées, chacune sous le
+           seuil du pouce. L'icône garde sa taille. */
+        "flex h-8 w-8 items-center justify-center rounded-lg transition",
         active
           ? "text-amber-400"
           : danger

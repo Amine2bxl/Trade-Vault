@@ -142,7 +142,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
               <button
                 key={l}
                 onClick={() => setLang(l)}
-                className={`rounded-md px-2 py-1 text-[11px] font-semibold uppercase transition-colors ${
+                className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-[11px] font-semibold uppercase transition-colors ${
                   lang === l ? "bg-white/[.08] text-white" : "text-slate-500 hover:text-slate-300"
                 }`}
               >
