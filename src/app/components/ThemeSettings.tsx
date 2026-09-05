@@ -71,8 +71,11 @@ export default function ThemeSettings() {
     createTheme,
     duplicateTheme,
     deleteTheme,
+    active,
   } = useTheme();
   const [editingId, setEditingId] = useState<string | null>(null);
+  /** Le thème tout juste créé — c'est lui, et lui seul, qu'annuler supprime. */
+  const [justCreated, setJustCreated] = useState<string | null>(null);
   const [openPresets, setOpenPresets] = useState(true);
   const [openCustom, setOpenCustom] = useState(false);
 
@@ -80,13 +83,21 @@ export default function ThemeSettings() {
   const custom = themes.filter((th) => !th.builtin);
   const editing = themes.find((th) => th.id === editingId && !th.builtin);
 
+  /* La carte « nouveau thème » partait d'un VIOLET codé en dur, sans rapport
+     avec ce que le trader a sous les yeux : personnaliser, c'est ajuster son
+     identité actuelle, pas défaire un thème inconnu. Elle part de l'actif,
+     comme le bouton de la barre de tête. Et elle marque le thème comme
+     BROUILLON : annuler le supprime. */
   const startNew = () => {
     const id = createTheme({
       name: t("appearance.namePlaceholder"),
-      primary: "#8b5cf6",
-      secondary: "#ec4899",
-      highlight: "#c4b5fd",
+      primary: active.primary,
+      secondary: active.secondary,
+      highlight: active.highlight,
+      background: active.background,
+      text: active.text,
     });
+    setJustCreated(id);
     setEditingId(id);
   };
 
@@ -168,19 +179,11 @@ export default function ThemeSettings() {
   };
 
   return (
-    <div className="glass-strong rounded-3xl p-5 space-y-4">
-      <div className="flex items-start gap-2">
-        <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-          <Palette className="w-4 h-4" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
-            {t("appearance.title")}
-          </h2>
-          <p className="tv-row-label mt-0.5">{t("appearance.subtitle")}</p>
-        </div>
-      </div>
-
+    /* L'EN-TÊTE DE CARTE A SAUTÉ. Le mot « Apparence » était écrit TROIS fois
+       sur le même écran : dans l'onglet de section, dans le titre de page, et
+       ici. Il ne l'est plus qu'une fois, dans la barre de tête, avec la phrase
+       qui explique à quoi sert la page. */
+    <div className="glass-strong space-y-4 rounded-3xl p-5">
       <Section
         title={t("appearance.presets")}
         count={presets.length}
@@ -219,7 +222,16 @@ export default function ThemeSettings() {
           trois couleurs d'accent. Le conserver à côté du studio aurait fait
           deux éditeurs pour une même chose — et deux endroits à tenir à jour
           chaque fois qu'un réglage s'ajoute. */}
-      {editing && <ThemeStudioModal themeId={editing.id} onClose={() => setEditingId(null)} />}
+      {editing && (
+        <ThemeStudioModal
+          themeId={editing.id}
+          draft={editing.id === justCreated}
+          onClose={() => {
+            setEditingId(null);
+            setJustCreated(null);
+          }}
+        />
+      )}
     </div>
   );
 }

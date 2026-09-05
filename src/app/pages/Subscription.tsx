@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import {
   Crown,
   Clock,
@@ -25,7 +25,7 @@ import {
   TIER_BY_ID,
   type PaidPlan,
 } from "../utils/pricing";
-import { PageHeader } from "@/shared/ui";
+import { usePageLead } from "../contexts/PageActionsContext";
 import SubscriptionSection from "../components/SubscriptionSection";
 import PlanMatrix from "../components/pricing/PlanMatrix";
 import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
@@ -72,93 +72,76 @@ export default function Subscription() {
   const dateFmt = (d: Date) =>
     d.toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric" });
 
-  return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
-      <PageHeader
-        className="mb-1 md:mb-1"
-        icon={
-          <span
-            className={cn(
-              "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-              isActivePaid ? "bg-emerald-500" : "tv-accent-fill",
-            )}
-          >
-            <Crown className="w-4 h-4 text-white" />
-          </span>
-        }
-        title={tr("Abonnement", "Subscription")}
-      />
-
-      {/* ── Status hero — VERT quand l'abonnement est actif, cyan quand il
-          reste à souscrire (comme la carte de confirmation d'achat). */}
-      <div
-        className={cn(
-          "relative rounded-3xl p-6 md:p-7 overflow-hidden border animate-fade-in-up stagger-1",
-          isActivePaid
-            ? "border-emerald-400/25 bg-[linear-gradient(160deg,rgba(12,84,62,.5),rgba(6,24,20,.94)_60%)]"
-            : "border-cyan-500/15 bg-[linear-gradient(160deg,rgba(14,58,82,.5),rgba(7,14,24,.9)_60%)]",
-        )}
-      >
-        <div
+  /* L'EN-TÊTE MONTE DANS LA BARRE DE TÊTE — comme Réglages et Profil.
+     La page ouvrait sur un titre « Abonnement » de pleine largeur avec sa
+     couronne, PUIS sur une bande de statut de 140px pour dire « offre
+     gratuite, 0 € ». Deux cents pixels avant la première information utile,
+     dans une section dont la barre d'onglets porte déjà le mot « Abonnement ».
+     Le statut tient maintenant sur une ligne, comme la carte d'identité du
+     profil. */
+  const lead = useMemo(
+    () => (
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span
           className={cn(
-            "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-60% to-transparent",
-            isActivePaid ? "via-emerald-400/70" : "via-cyan-400/60",
+            "grid h-6 w-6 shrink-0 place-items-center rounded-lg",
+            isActivePaid ? "bg-emerald-500 text-white" : "tv-accent-fill",
           )}
-        />
-        <div className="relative flex items-start gap-4 flex-wrap">
-          <div
-            className={cn(
-              "relative grid h-12 w-12 place-items-center rounded-xl shrink-0",
-              isActivePaid ? "bg-gradient-to-br from-emerald-400 to-teal-500" : "tv-accent-fill",
-            )}
-          >
-            {isActivePaid ? (
-              <CheckCircle2 className="w-6 h-6 text-[#03140e]" strokeWidth={2.5} />
-            ) : (
-              <Crown className="w-6 h-6 text-white" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="font-display text-sm font-extrabold tracking-tight text-white">
-                {loading ? "TradeVault" : planLabel}
-              </h2>
-              {!loading && sub && <StatusChip sub={sub} t={t} />}
-            </div>
-            <p className="tv-prose text-slate-400 mt-1.5">
-              {loading
-                ? tr("Chargement de ton statut…", "Loading your status…")
-                : accessLine(sub, t, tr, dateFmt)}
-            </p>
-          </div>
+        >
+          <Crown className="h-3.5 w-3.5" />
+        </span>
+        <span className="font-display shrink-0 text-sm font-bold tracking-tight text-white">
+          {loading ? "TradeVault" : planLabel}
+        </span>
+        {!loading && sub && <StatusChip sub={sub} t={t} />}
+      </div>
+    ),
+    [isActivePaid, loading, planLabel, sub, t],
+  );
+  usePageLead(lead);
 
-          {/* The price of what they are on right now — not a sales price. */}
-          {!loading && (
-            <div className="text-right shrink-0">
-              <div
-                className={cn(
-                  "tv-figure text-3xl leading-none",
-                  isActivePaid ? "text-emerald-300" : "text-white",
-                )}
-              >
-                {paid && sub ? eur(planPrice(sub.plan as PaidPlan)) : "0 €"}
-              </div>
-              <div className="text-[11px] text-slate-500 mt-1">
-                {paid
-                  ? intervalOf(sub?.plan ?? "free") === "yearly"
-                    ? `${t("billing.perYear")} · ${eur(
-                        Math.round(yearlyPerMonth(currentTier) * 100) / 100,
-                      )}${t("billing.perMonth")}`
-                    : t("billing.perMonth")
-                  : tr("/ toujours", "/ forever")}
-              </div>
-            </div>
-          )}
+  return (
+    <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
+      {/* ── LE STATUT, SUR UNE LIGNE ─────────────────────────────────── */}
+      <section className="glass animate-fade-in-up flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl px-4 py-4 sm:px-5">
+        <div className="min-w-0 flex-1 basis-[240px]">
+          <div className="tv-label text-slate-500">{tr("Ta formule", "Your plan")}</div>
+          <div className="font-display mt-0.5 text-base font-extrabold tracking-tight text-white">
+            {loading ? "…" : planLabel}
+          </div>
+          <p className="tv-row-label mt-1">
+            {loading
+              ? tr("Chargement de ton statut…", "Loading your status…")
+              : accessLine(sub, t, tr, dateFmt)}
+          </p>
         </div>
+        {!loading && (
+          <div className="shrink-0 text-right">
+            <div
+              className={cn(
+                "tv-figure text-2xl leading-none",
+                isActivePaid ? "rp-pos" : "text-white",
+              )}
+            >
+              {paid && sub ? eur(planPrice(sub.plan as PaidPlan)) : "0 €"}
+            </div>
+            <div className="tv-row-label mt-1">
+              {paid
+                ? intervalOf(sub?.plan ?? "free") === "yearly"
+                  ? `${t("billing.perYear")} · ${eur(
+                      Math.round(yearlyPerMonth(currentTier) * 100) / 100,
+                    )}${t("billing.perMonth")}`
+                  : t("billing.perMonth")
+                : tr("/ toujours", "/ forever")}
+            </div>
+          </div>
+        )}
+      </section>
 
-        {/* ── The facts, in one scannable grid ── */}
-        {!loading && sub && (
-          <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-6">
+      {/* ── LES FAITS, quand il y a un abonnement à décrire ── */}
+      {!loading && sub && paid && (
+        <section className="glass animate-fade-in-up stagger-1 rounded-3xl px-4 py-4 sm:px-5">
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
             <Fact
               icon={<Receipt className="w-3.5 h-3.5" />}
               label={tr("Formule", "Plan")}
@@ -207,17 +190,17 @@ export default function Subscription() {
               tone={sub.cancelAtPeriodEnd ? "warn" : undefined}
             />
           </div>
-        )}
-      </div>
+        </section>
+      )}
 
       {/* ── Tout ce que contient chaque offre ──
           Une matrice, pas une liste : chaque fonctionnalité n'apparaît
           qu'une fois, dans le palier qui l'ajoute, et sa coche se propage aux
           offres supérieures. La valeur de chaque abonnement se lit en une
           colonne, et Pro — l'offre qu'on veut voir choisir — est en avant. */}
-      <div className="glass animate-fade-in-up stagger-2 rounded-2xl p-4">
+      <section className="glass animate-fade-in-up stagger-2 overflow-hidden rounded-3xl">
         <PlanMatrix />
-      </div>
+      </section>
 
       {/* ── Plans & payment. Untouched: this is the existing billing block. ── */}
       <div className="animate-fade-in-up stagger-3">
