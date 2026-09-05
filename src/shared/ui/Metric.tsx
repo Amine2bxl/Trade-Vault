@@ -79,7 +79,11 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
 function ProgressBar({ pct, color }: { pct: number; color?: string }) {
   const p = Math.max(0, Math.min(1, pct));
   return (
-    <div className="w-16 shrink-0 self-center">
+    /* `hidden sm:block` — sur un téléphone, la tuile fait 170px de large ; les
+       64px de la jauge laissaient 76px au libellé, et « Profit Factor » y était
+       coupé. La jauge est un APPUI de lecture (elle situe la valeur sur son
+       échelle), le libellé est la valeur elle-même : c'est la jauge qui cède. */
+    <div className="hidden w-16 shrink-0 self-center sm:block">
       <div className="metric-bar">
         <div
           className="metric-bar-fill"

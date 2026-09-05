@@ -84,7 +84,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
           <button
             type="button"
             onClick={onActionClick}
-            className="text-xs font-medium text-slate-500 transition-colors hover:text-cyan-300"
+            className="inline-flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-cyan-300"
           >
             {actionLabel}
           </button>

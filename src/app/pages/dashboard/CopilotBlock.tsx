@@ -2,6 +2,7 @@ import { memo } from "react";
 import { CHART_GREEN, CHART_RED } from "../../utils/chartTheme";
 import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag, Bot } from "lucide-react";
 import { cn } from "../../utils/cn";
+import { formatPnl } from "../../utils/tradeCalcs";
 import { useT } from "../../i18n/LanguageContext";
 import type { EdgeResult, DailyRule } from "../../utils/edgeScore";
 
@@ -192,6 +193,29 @@ function CopilotBlock({
       </span>
     ) : null;
 
+  /* LA RÈGLE DU JOUR ÉTAIT UNE ÉTIQUETTE, PAS UNE RÈGLE.
+     `deriveDailyRule` désigne la fuite la plus coûteuse et renvoie son NOM —
+     « FOMO entry ». La carte l'affichait tel quel sous le titre « règle du
+     jour » : un substantif là où on attend une consigne, et le trader devait
+     faire lui-même la traduction en action.
+
+     La logique ne bouge pas (c'est elle qui sait quelle fuite coûte le plus) ;
+     c'est l'affichage qui construit la phrase, et qui pose SOUS elle la preuve
+     que le produit a déjà calculée : combien de fois, pour combien.
+
+     `leak` a la forme « nom · N× · montant » — on ne garde que ce qui suit le
+     nom, sinon la preuve répète la consigne. */
+  const consigne = rule ? t("copilot.ruleImperative").replace("{leak}", rule.text) : null;
+  const preuve = (() => {
+    if (!rule?.leak) return null;
+    // « nom · N× · montant » — le montant est un nombre brut côté logique ;
+    // c'est ici qu'il devient une somme d'argent, comme partout ailleurs.
+    const parts = rule.leak.split(" · ");
+    if (parts.length < 3) return parts.slice(1).join(" · ") || null;
+    const n = Number(parts[2]);
+    return `${parts[1]} · ${Number.isFinite(n) ? formatPnl(n) : parts[2]}`;
+  })();
+
   const cleanPct = edge.tradedDays > 0 ? Math.round((edge.cleanDays / edge.tradedDays) * 100) : 0;
 
   const objPct =
@@ -255,23 +279,27 @@ function CopilotBlock({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* LE PANNEAU — un seul cadre, deux colonnes, un filet entre elles.
+              Avant : une boîte bordée DANS une boîte bordée DANS la carte, et
+              ce troisième niveau d'encadrement est exactement ce qui fait
+              « empilement de composants » plutôt que produit dessiné. */}
+          <div className="grid grid-cols-1 divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
             {/* Rule of the day */}
-            <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] px-3.5 py-3">
-              <div className="tv-label flex items-center gap-1.5 text-amber-400/80 mb-1.5">
+            <div className="min-w-0 px-3.5 py-3">
+              <div className="tv-label mb-1.5 flex items-center gap-1.5 text-amber-400/80">
                 <Flag className="w-3 h-3" /> {t("copilot.ruleTitle")}
               </div>
-              <div className="text-sm font-semibold text-white truncate">
-                {rule ? rule.text : t("copilot.ruleNone")}
+              <div className="text-sm font-semibold leading-snug text-white">
+                {consigne ?? t("copilot.ruleNone")}
               </div>
-              <div className="text-[10px] text-slate-600 truncate mt-0.5">
-                {rule ? t("copilot.ruleFrom") : t("copilot.ruleNoneHint")}
+              <div className="tv-figure mt-1 truncate text-[10px] text-slate-600">
+                {preuve ?? (rule ? t("copilot.ruleFrom") : t("copilot.ruleNoneHint"))}
               </div>
             </div>
 
             {/* Monthly objective */}
-            <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] px-3.5 py-3">
-              <div className="tv-label flex items-center gap-1.5 text-cyan-400/80 mb-1.5">
+            <div className="min-w-0 px-3.5 py-3">
+              <div className="tv-label mb-1.5 flex items-center gap-1.5 text-cyan-400/80">
                 <Target className="w-3 h-3" /> {t("copilot.objTitle")}
               </div>
               {objective.targetPct && objective.targetPct > 0 ? (
