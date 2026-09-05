@@ -303,7 +303,7 @@ export default function Dashboard({
 
   const headerActions = useMemo(
     () => (
-      <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
+      <Button variant="accent" size="sm" onClick={onAddTrade} className="relative hidden md:flex">
         <Plus className="w-4 h-4" /> {t("common.addTrade")}
         {hasDraft && (
           <span className="flex items-center gap-1 ml-1 pl-2 border-l border-white/25 text-[10px] font-bold uppercase tracking-wide">
@@ -412,6 +412,7 @@ export default function Dashboard({
                 longestStreak={streak.longest}
                 total={streak.total}
                 title={t("streak.title")}
+                subtitle={t("streak.subtitle")}
                 daysLabel={t("streak.days")}
                 longestLabel={t("streak.longest")}
                 totalLabel={t("streak.total")}

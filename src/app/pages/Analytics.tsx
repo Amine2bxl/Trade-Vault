@@ -330,10 +330,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
             key={p}
             onClick={() => setAnalyticsPeriod(p)}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition",
+              "rounded-xl border px-3 py-1.5 text-xs font-semibold transition",
               analyticsPeriod === p
-                ? "bg-cyan-500/15 text-cyan-400"
-                : "text-slate-500 hover:text-slate-300",
+                ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-400"
+                : "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:text-slate-200",
             )}
           >
             {p === "all" ? t("common.all") : t(`common.${p}`)}

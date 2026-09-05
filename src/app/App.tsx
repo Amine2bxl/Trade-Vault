@@ -738,7 +738,7 @@ function AppContent() {
             un bandeau collé par-dessus le produit. Voir `MobileActions`.
             `pb-3` : un écart vertical unique et identique entre la barre
             d'onglets et le contenu, sur toutes les pages. */}
-        <div className="flex items-center gap-3 px-4 pt-3 pb-3 md:px-6">
+        <div className="flex items-center gap-3 px-4 pt-3 pb-3 md:gap-4 md:px-6">
           <div className="min-w-0 flex-1">
             {currentSection && pagesOfSection(currentSection).length > 1 && (
               <SectionTabs section={currentSection} page={page} setPage={setPage} />

@@ -1192,6 +1192,7 @@ const en = {
 
   // Streak card (dashboard)
   "streak.title": "Checklist streak",
+  "streak.subtitle": "The days your pre-market checklist was locked — discipline you can see, not performance you hope for.",
   "streak.days": "days",
   "streak.longest": "Longest streak",
   "streak.total": "Days completed",
