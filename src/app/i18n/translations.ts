@@ -738,6 +738,8 @@ const en = {
   "mistakes.subtitle": "Identify and eliminate costly errors",
   "mistakes.noTrades": "Add trades to track mistakes",
   "mistakes.totalMistakes": "Total Mistakes",
+  "mistakes.flaggedPnl": "P&L on trades you flagged",
+  "mistakes.leaks": "Your leaks, ranked",
   "mistakes.totalCost": "Total Cost",
   "mistakes.cleanWr": "Clean WR",
   "mistakes.mistakeWr": "Mistake WR",

@@ -687,6 +687,8 @@ const fr: Dict = {
   "mistakes.subtitle": "Identifiez et éliminez les erreurs coûteuses",
   "mistakes.noTrades": "Ajoutez des trades pour suivre les erreurs",
   "mistakes.totalMistakes": "Total des erreurs",
+  "mistakes.flaggedPnl": "P&L des trades où tu as coché une erreur",
+  "mistakes.leaks": "Tes fuites, classées",
   "mistakes.totalCost": "Coût total",
   "mistakes.cleanWr": "TR sans erreur",
   "mistakes.mistakeWr": "TR avec erreur",

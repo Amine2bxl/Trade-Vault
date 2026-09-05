@@ -25,12 +25,20 @@ const VARIANT: Record<ButtonVariant, string> = {
   danger:
     "inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 " +
     "bg-transparent font-medium text-red-400/90 transition hover:bg-red-500/10 hover:text-red-300",
-  // Same toolbar shape as `subtle` (Export CSV / Delete all) but tinted with the
-  // product accent so the primary action stands out while staying in the family.
+  /* LE BARREAU DU MILIEU.
+     Entre `subtle` (filet gris, texte gris) et `primary` (vert plein, texte
+     blanc), il manquait la marche : un bouton qui se lit comme l'action
+     principale de SA page sans être le bloc vert du produit. `accent` la tenait
+     déjà par la couleur, mais avec un fond transparent il ressemblait à un
+     contour posé à côté de vrais boutons — il se fondait trop.
+     Il a maintenant un fond, faible mais présent : la même forme et le même
+     poids que `subtle`, la teinte de l'accent en plus. Un écran peut donc
+     porter un seul vert plein (l'action du produit) et plusieurs actions de
+     page identifiées, sans que trois verts se disputent. */
   accent:
     "inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--tv-border-accent)] " +
-    "bg-transparent font-medium text-[var(--tv-highlight)] transition " +
-    "hover:bg-[rgb(var(--tv-accent-rgb)/0.12)]",
+    "bg-[rgb(var(--tv-accent-rgb)/0.10)] font-semibold text-[var(--tv-highlight)] transition " +
+    "hover:border-[rgb(var(--tv-accent-rgb)/0.55)] hover:bg-[rgb(var(--tv-accent-rgb)/0.18)]",
 };
 
 // Composed variants get Tailwind sizing; the CSS-class variants (`.btn-*`)

@@ -216,7 +216,11 @@ export default function MissedOpportunities() {
             <span className="hidden sm:inline">{t("missed.exportCsv")}</span>
           </Button>
         )}
-        <Button size="sm" onClick={() => setEditing(emptyMissed())}>
+        {/* `accent` et non le vert plein : cette page a sa propre action, elle
+            n'a pas à emprunter le bloc vert du tableau de bord. Même forme et
+            même poids que « exporter » juste à côté, la teinte de l'accent en
+            plus — elle se fond dans la famille sans se perdre. */}
+        <Button variant="accent" size="sm" onClick={() => setEditing(emptyMissed())}>
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">{t("missed.log")}</span>
           <span className="sm:hidden">{t("missed.logShort")}</span>
