@@ -50,6 +50,7 @@ import { BlockList } from "../BlockRenderer";
 import { historyTextOf } from "../history";
 import type { JarvisMessage, JarvisToolBlock } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 /**
  * ConversationWorkspace — le module CHAT de Jarvis (multi-conversations).
@@ -408,7 +409,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         void remember(
           userId,
           "decision",
-          `A accepté la règle « ${ruleText} » le ${new Date().toISOString().slice(0, 10)}.`,
+          `A accepté la règle « ${ruleText} » le ${todayLocalDate()}.`,
           {
             // Clé dérivée du texte : ré-accepter la même règle rafraîchit la
             // date au lieu de créer un doublon.

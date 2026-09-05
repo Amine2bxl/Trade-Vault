@@ -5,12 +5,12 @@ import {
   ACCOUNT_LIMIT,
   CAPABILITY_TIER,
   tierAtLeast,
-  tierOf,
   type Capability,
   type PaidPlan,
   type Plan,
   type Tier,
 } from "@/domain/plans";
+import { effectiveTier, isEntitled, type SubSource, type SubStatus } from "@/domain/entitlement";
 
 // Subscription state + billing actions for the signed-in user.
 //
@@ -20,12 +20,16 @@ import {
 // Commerce hosted pages.
 
 export type { Plan, PaidPlan, Tier } from "@/domain/plans";
-export type SubStatus = "trialing" | "active" | "past_due" | "canceled" | "expired";
+// Le statut et la source sont décrits par `domain/entitlement`, qui est aussi
+// ce que lit le serveur : deux définitions de « qui a accès » se seraient
+// séparées à la première évolution — et `source` avait DÉJÀ divergé, la valeur
+// `promo` étant écrite en base sans exister dans ce type.
+export type { SubStatus, SubSource } from "@/domain/entitlement";
 
 export interface Subscription {
   plan: Plan;
   status: SubStatus;
-  source: "signup" | "trial" | "stripe" | "crypto" | "comp";
+  source: SubSource;
   trialEndsAt: Date | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
@@ -109,7 +113,7 @@ export function useSubscription(): UseSubscription {
     return {
       plan: data.plan as Plan,
       status: data.status as SubStatus,
-      source: data.source as Subscription["source"],
+      source: data.source as SubSource,
       trialEndsAt: data.trial_ends_at ? new Date(data.trial_ends_at) : null,
       currentPeriodEnd: data.current_period_end ? new Date(data.current_period_end) : null,
       cancelAtPeriodEnd: !!data.cancel_at_period_end,
@@ -150,15 +154,24 @@ export function useSubscription(): UseSubscription {
     await hydrate();
   }, [hydrate]);
 
-  const isPro =
-    !!sub &&
-    (sub.status === "active" ||
-      (sub.status === "trialing" && (sub.trialEndsAt?.getTime() ?? 0) > Date.now()));
+  // L'ACCÈS est décidé par `domain/entitlement`, le même module que celui
+  // qu'exécute `backend/require-pro.ts`. Le calcul local d'avant ne regardait
+  // que `status` : une charge crypto d'un mois, ou un accès offert avec une
+  // date de fin, restait `active` pour toujours et ouvrait donc l'accès pour
+  // toujours. `currentPeriodEnd` participe maintenant réellement à la décision.
+  const entitlementRow = sub && {
+    plan: sub.plan,
+    status: sub.status,
+    source: sub.source,
+    trial_ends_at: sub.trialEndsAt,
+    current_period_end: sub.currentPeriodEnd,
+  };
+  const isPro = isEntitled(entitlementRow);
 
   // Un abonnement expiré ou impayé garde le nom de son plan en base (utile pour
   // proposer la reprise) mais ne donne plus rien : le palier effectif retombe
   // donc à `free` dès que l'accès n'est plus valide.
-  const tier: Tier = isPro ? tierOf(sub?.plan) : "free";
+  const tier: Tier = effectiveTier(entitlementRow);
 
   const redirect = async (path: string, body?: unknown): Promise<string | null> => {
     const { url, error } = await callBilling(path, body);

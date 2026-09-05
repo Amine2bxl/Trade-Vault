@@ -15,6 +15,7 @@
  * `/` and is client-rendered, so it inherits the root defaults.
  */
 import { SITE_URL } from "./site";
+import { SSR_LANG } from "./lang";
 
 export const SITE_NAME = "TradeVault";
 
@@ -123,7 +124,11 @@ export function pageSeo(seo: PageSeo) {
       { property: "og:description", content: seo.description },
       { property: "og:url", content: url },
       { property: "og:image", content: image },
-      { property: "og:locale", content: "fr_FR" },
+      // Aligné sur `SSR_LANG` : `og:locale` annonçait `fr_FR` pour un corps
+      // rendu en anglais. Les quatre déclarations de langue du document
+      // (`<html lang>`, le corps servi, le titre et celle-ci) doivent dire la
+      // même chose — voir `shared/lang.ts`.
+      { property: "og:locale", content: SSR_LANG === "fr" ? "fr_FR" : "en_US" },
 
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: seo.title },

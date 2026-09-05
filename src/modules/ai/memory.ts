@@ -157,13 +157,31 @@ export async function remember(
  * matière première de la remise en question (PR-3).
  */
 export async function adjustConfidence(userId: string, id: string, delta: number): Promise<void> {
-  const { data, error } = await supabase
+  // ATOMIQUE — l'ajustement se fait EN BASE, dans une seule instruction.
+  //
+  // La version précédente lisait `confidence`, calculait la nouvelle valeur en
+  // JavaScript, puis l'écrivait. Deux ajustements concurrents (le détecteur de
+  // patterns et une conversation, typiquement) lisaient la même valeur de
+  // départ et le second écrasait le premier : une CONTRADICTION pouvait ainsi
+  // être effacée par une confirmation arrivée en même temps, et Jarvis
+  // continuait de s'appuyer sur un souvenir que les données démentaient. C'est
+  // exactement le mécanisme d'auto-correction que ce chemin existe pour servir.
+  const { error } = await supabase.rpc("adjust_memory_confidence", {
+    p_id: id,
+    p_delta: delta,
+  });
+  if (!error) return;
+
+  // Repli tant que la migration n'est pas appliquée. Il garde la course qu'il a
+  // toujours eue — mais il est nommé, borné dans le temps, et il journalise.
+  console.warn("[memory] adjust_memory_confidence unavailable, falling back", error);
+  const { data, error: readError } = await supabase
     .from("ai_memory")
     .select("confidence")
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();
-  if (error) throw error;
+  if (readError) throw readError;
   if (!data) return;
   const current = (data as { confidence: number | null }).confidence ?? 0.6;
   const next = Math.max(0, Math.min(1, current + delta));

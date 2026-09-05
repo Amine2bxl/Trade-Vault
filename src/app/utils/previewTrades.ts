@@ -1,4 +1,5 @@
 import type { MissedOpportunity, Trade } from "../types";
+import { localDateOf } from "@/shared/calendar-date";
 
 /**
  * Le jeu de données de DÉMONSTRATION des pages verrouillées.
@@ -103,7 +104,7 @@ export function previewTrades({ count = 140, seed = 20260827 }: PreviewOptions =
 
     trades.push({
       id: `preview-${i}`,
-      date: day.toISOString().slice(0, 10),
+      date: localDateOf(day),
       symbol: SYMBOLS[Math.floor(r() * SYMBOLS.length)],
       direction,
       pnl: Math.round(riskAmount * rMultiple * 100) / 100,
@@ -144,7 +145,7 @@ export function previewMissed(fr: boolean): MissedOpportunity[] {
   const day = (back: number) => {
     const d = new Date();
     d.setDate(d.getDate() - back);
-    return d.toISOString().slice(0, 10);
+    return localDateOf(d);
   };
   const rows: [string, string, string, string, string, number][] = fr
     ? [

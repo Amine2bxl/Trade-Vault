@@ -6,7 +6,12 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  // `.vercel` est LA sortie de build de ce projet (`nitro.preset = "vercel"`,
+  // voir vite.config.ts) — elle manquait à cette liste. En CI le lint passe
+  // avant le build, donc personne ne l'a vu ; en local, `bun run build` puis
+  // `bun run lint` fait parcourir des milliers de fichiers générés et le lint
+  // ne rend jamais la main.
+  { ignores: ["dist", ".output", ".vinxi", ".vercel", "node_modules"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

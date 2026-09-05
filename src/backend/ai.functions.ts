@@ -3,6 +3,16 @@ import { z } from "zod";
 import { requireProAccess } from "@/backend/require-pro";
 import { resolveProvider, type AIMessage } from "@/modules/ai-provider";
 import { contextBlocks, languageName } from "@/modules/ai/context";
+import {
+  ConversationSchema,
+  GoalsSchema,
+  MemorySchema,
+  RulesSchema,
+  StatsSchema,
+  TradeSummarySchema,
+  TradesSchema,
+  withGlobalByteCeiling,
+} from "./ai-payload";
 
 /**
  * AI Core service catalogue — every AI feature in the product calls one
@@ -15,50 +25,38 @@ import { contextBlocks, languageName } from "@/modules/ai/context";
  */
 
 // ── Shared schemas ───────────────────────────────────────────────────────────
+//
+// Les briques et leurs plafonds vivent dans `backend/ai-payload.ts` : ce
+// fichier et `coach.functions.ts` décrivaient chacun le même `TradeSummary`,
+// avec les mêmes bornes recopiées. Deux copies d'une règle de COÛT, c'est une
+// copie qui ne sera pas resserrée le jour où l'autre le sera.
 
-const TradeSummary = z.object({
-  date: z.string().max(10),
-  symbol: z.string().max(20),
-  direction: z.string().max(10),
-  pnl: z.number(),
-  rMultiple: z.number(),
-  strategy: z.string().max(50),
-  mistakes: z.array(z.string().max(100)).max(20),
-  setupQuality: z.number(),
-  confluences: z.array(z.string().max(100)).max(30),
-  notes: z.string().max(10000).optional(),
-});
+const TradeSummary = TradeSummarySchema;
 
-const UserContext = z.object({
-  trades: z.array(TradeSummary).max(500).optional(),
-  stats: z.record(z.string(), z.union([z.number(), z.string(), z.null()])).optional(),
-  goals: z
-    .array(z.object({ kind: z.string().max(40), target: z.number(), current: z.number() }))
-    .max(10)
-    .optional(),
-  rules: z
-    .array(z.object({ kind: z.string().max(40), text: z.string().max(300), enabled: z.boolean() }))
-    .max(30)
-    .optional(),
-  memory: z
-    .array(z.object({ kind: z.string().max(20), content: z.string().max(2000) }))
-    .max(60)
-    .optional(),
-  conversation: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
-    .max(20)
-    .optional(),
+const UserContextShape = z.object({
+  trades: TradesSchema.optional(),
+  stats: StatsSchema.optional(),
+  goals: GoalsSchema.optional(),
+  rules: RulesSchema.optional(),
+  memory: MemorySchema.optional(),
+  conversation: ConversationSchema.optional(),
   language: z.string().min(2).max(8).optional(),
 });
+
+/**
+ * Le contexte, plafonds par champ ET plafond global d'octets.
+ *
+ * Le second n'est pas redondant : les premiers se multiplient (cinq cents
+ * trades fois la taille d'un trade), et chacun peut sembler raisonnable alors
+ * que leur produit ne l'est pas. Voir `withGlobalByteCeiling`.
+ */
+const UserContext = withGlobalByteCeiling(UserContextShape);
+type UserContextValue = z.infer<typeof UserContextShape>;
 
 const COACH_IDENTITY = (lang: string) =>
   `You are TradeVault's resident trading performance coach — an elite quant mentor who KNOWS this trader (their memory, rules and goals are provided). Every claim MUST cite specific numbers from the provided data. Never invent numbers. Be candid, concrete and kind-but-firm. Write the ENTIRE response in ${lang}.`;
 
-function buildMessages(
-  ctx: z.infer<typeof UserContext>,
-  task: string,
-  userTurn: string,
-): AIMessage[] {
+function buildMessages(ctx: UserContextValue, task: string, userTurn: string): AIMessage[] {
   const messages: AIMessage[] = [
     { role: "system", content: `${COACH_IDENTITY(languageName(ctx.language))}\n\n${task}` },
   ];

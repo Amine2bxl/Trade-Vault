@@ -469,7 +469,7 @@ function DeleteAccountModal({
       open
       onClose={onClose}
       className="md:max-w-md p-5 border border-red-500/20"
-      wrapperClassName="z-[100]"
+      wrapperClassName="z-[var(--tv-z-modal-nested)]"
     >
       <div>
         <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">
@@ -542,7 +542,11 @@ function ActionRow({
 }: {
   icon: React.ReactNode;
   label: string;
-  sub: string;
+  /** Sous-titre facultatif. Quatre appels l'omettaient déjà : le type le
+   *  déclarait obligatoire, TypeScript le signalait, et comme `tsc` ne tournait
+   *  pas en CI, ces quatre lignes rendaient une div vide de onze pixels sous le
+   *  libellé — un décalage vertical inexpliqué entre les rangées d'action. */
+  sub?: string;
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -571,7 +575,7 @@ function ActionRow({
         <div className={cn("text-sm font-semibold", disabled ? "text-slate-500" : "text-white")}>
           {label}
         </div>
-        <div className="text-[11px] text-slate-500 truncate">{sub}</div>
+        {sub && <div className="text-[11px] text-slate-500 truncate">{sub}</div>}
       </div>
       <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
     </button>

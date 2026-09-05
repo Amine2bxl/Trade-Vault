@@ -1,5 +1,6 @@
 import { Trade } from "../types";
 import { generateId } from "../store";
+import { localDateOf } from "@/shared/calendar-date";
 
 /** Most recent weekday strictly before `from`. */
 function prevWeekday(from: Date): Date {
@@ -10,7 +11,7 @@ function prevWeekday(from: Date): Date {
   return d;
 }
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const iso = (d: Date) => localDateOf(d);
 
 /**
  * Three realistic, fully editable sample trades (2 wins, 1 loss — a believable

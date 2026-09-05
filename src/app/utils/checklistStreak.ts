@@ -14,7 +14,16 @@
  * l'Edge Score du Dashboard. La série est une LECTURE de cet historique — ce
  * qui évite une table, une migration, et surtout un second endroit où la
  * vérité pourrait diverger.
+ *
+ * TOUT EST DATÉ DANS LE FUSEAU DU TRADER. La clé de stockage
+ * (`tv-chk-{userId}-{ISO}`) est écrite par la page Checklist à partir de la
+ * date locale : la série doit donc la relire de la même façon, sinon elle
+ * cherche les jours d'à côté. La détection du week-end suit la même règle —
+ * elle utilisait `getUTCDay()`, ce qui, pour un trader à Auckland (UTC+13),
+ * appelait « dimanche » un lundi matin de travail, et « vendredi » un samedi.
  */
+
+import { localDateOf } from "@/shared/calendar-date";
 
 /** Contrat de stockage minimal — `localStorage` le satisfait tel quel. */
 export interface ChecklistStore {
@@ -32,12 +41,13 @@ export function checklistKey(userId: string, iso: string): string {
 }
 
 function isoOf(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return localDateOf(d);
 }
 
-/** Samedi ou dimanche — marchés fermés. */
+/** Samedi ou dimanche — marchés fermés. Dans le fuseau du trader, comme le
+ *  reste de ce module. */
 function isWeekend(d: Date): boolean {
-  const day = d.getUTCDay();
+  const day = d.getDay();
   return day === 0 || day === 6;
 }
 

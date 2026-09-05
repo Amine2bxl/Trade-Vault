@@ -30,6 +30,7 @@ const GOOGLE_FONTS_URL =
 
 import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../app/components/ErrorScreen";
+import { SSR_LANG } from "@/shared/lang";
 
 function NotFoundComponent() {
   return (
@@ -93,7 +94,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { property: "og:url", content: absoluteUrl("/") },
       { property: "og:image", content: DEFAULT_OG_IMAGE },
-      { property: "og:locale", content: "fr_FR" },
+      // Aligné sur `SSR_LANG`, comme celui de `shared/seo.ts` : il y avait DEUX
+      // déclarations de `og:locale` en dur, celle-ci pour l'application et
+      // l'autre pour les routes publiques. Deux copies d'une même vérité.
+      { property: "og:locale", content: SSR_LANG === "fr" ? "fr_FR" : "en_US" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: ROOT_TITLE },
       { name: "twitter:description", content: ROOT_DESCRIPTION },
@@ -137,10 +141,15 @@ function RootShell({ children }: { children: ReactNode }) {
     // "Jarvis" palette lives in the CSS :root, so the first paint is already
     // themed for default-theme users with no flash and no hydration divergence.
     //
-    // lang="fr" for now: the public site is written in French and og:locale
-    // says fr_FR. When i18n lands for SSR this should read the user's
-    // preference from cookie/session.
-    <html lang="fr">
+    // La langue du HTML SERVI. Elle doit rester alignée sur `SSR_LANG`
+    // (`shared/lang.ts`), sur la langue des métadonnées (`routes/index.tsx`) et
+    // sur `og:locale` : c'est ce quatuor que voit un
+    // moteur de recherche, et il était incohérent — `lang="fr"` et un titre
+    // français pour un corps rendu en anglais.
+    //
+    // Après hydratation, `LandingLangProvider` remplace cet attribut par la
+    // langue réelle du visiteur, avant la première peinture.
+    <html lang={SSR_LANG}>
       <head>
         <HeadContent />
         {/* schema.org identity for the brand + application. Rendered here rather

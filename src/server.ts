@@ -11,12 +11,26 @@ import { logger } from "./shared/logger";
 const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/contact"] as const;
 
 /**
- * `robots.txt` and `sitemap.xml`, generated rather than shipped as static
- * files so they follow `SITE_URL` — connecting a custom domain needs no edit.
+ * `robots.txt` et `sitemap.xml`, GÉNÉRÉS plutôt que livrés en fichiers
+ * statiques : ils suivent ainsi `SITE_URL`, et brancher un domaine
+ * personnalisé ne demande aucune modification.
  *
- * Preview deployments answer on a different host and are deliberately served a
- * blanket `Disallow: /`: a preview must never compete with production in the
- * index, nor leak an unfinished page into search results.
+ * Les déploiements de préversion répondent sur un autre hôte et reçoivent
+ * délibérément un `Disallow: /` intégral : une préversion ne doit jamais
+ * concurrencer la production dans l'index, ni y laisser fuir une page
+ * inachevée.
+ *
+ * ── CE CODE ÉTAIT MORT ──────────────────────────────────────────────────────
+ *
+ * `public/robots.txt` et `public/sitemap.xml` existaient AUSSI en fichiers
+ * statiques. Sur Vercel, le CDN sert `public/` avant d'atteindre la fonction :
+ * ces deux gestionnaires n'étaient donc jamais appelés, et la protection des
+ * préversions ne s'est jamais appliquée — chaque déploiement de préversion
+ * était indexable avec `Allow: /`. Le sitemap statique, tenu à la main, avait
+ * en plus divergé de `PUBLIC_ROUTES` (il ignorait `/contact`).
+ *
+ * Les deux fichiers statiques ont été supprimés. Ce qui suit est désormais ce
+ * qui répond réellement.
  */
 function isCanonicalHost(request: Request): boolean {
   try {
@@ -39,6 +53,9 @@ function robotsTxt(request: Request): Response {
 }
 
 function sitemapXml(): Response {
+  // UTC est ICI le bon choix, contrairement au reste du produit : `lastmod`
+  // d'un sitemap n'appartient à personne en particulier, et le serveur n'a
+  // aucun fuseau « local » qui voudrait dire quelque chose.
   const today = new Date().toISOString().slice(0, 10);
   const urls = PUBLIC_ROUTES.map((path) => {
     const loc = path === "/" ? `${SITE_URL}/` : `${SITE_URL}${path}`;

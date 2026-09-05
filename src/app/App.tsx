@@ -99,7 +99,7 @@ import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
-import { PageGate, usePageLock } from "./components/PremiumGate";
+import { PageGate, usePageLockState } from "./components/PremiumGate";
 import UpgradeModal from "./components/UpgradeModal";
 import UpgradeSuccessOverlay from "./components/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -237,7 +237,13 @@ function AppContent() {
   // Page verrouillée : elle est rendue avec un historique de DÉMONSTRATION, pas
   // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
   // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
-  const pageLocked = usePageLock(page);
+  //
+  // `gateResolved` conditionne le RENDU de la zone de contenu (plus bas) : tant
+  // qu'on ne sait pas si la page est verrouillée, on peint le squelette. Sans
+  // lui, un compte gratuit ouvrant Analytics voyait ses VRAIS chiffres, puis
+  // les voyait remplacés par des données de démonstration une fois l'abonnement
+  // résolu — ses propres nombres, changés sous ses yeux.
+  const { locked: pageLocked, resolved: gateResolved } = usePageLockState(page);
   const { tier } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
 
@@ -677,9 +683,9 @@ function AppContent() {
     async (
       imported: Trade[],
       onProgress?: (done: number, total: number) => void,
-    ): Promise<{ saved: number; failed: number }> => {
+    ): Promise<{ saved: number; failed: number; planLimitReached?: boolean }> => {
       if (!user) return { saved: 0, failed: imported.length };
-      const { saved, failed } = await importTrades(user.id, imported, onProgress);
+      const { saved, failed, planLimitReached } = await importTrades(user.id, imported, onProgress);
       if (saved.length > 0) {
         setTrades((prev) => [...saved, ...prev]);
         // Backfill: a multi-month CSV history should come with its monthly
@@ -712,13 +718,13 @@ function AppContent() {
           }
         })();
       }
-      return { saved: saved.length, failed };
+      return { saved: saved.length, failed, planLimitReached };
     },
     [user, generateReport, t, toast],
   );
 
   if (loading) {
-    return <LoadingScreen message="Vérification de ton compte…" />;
+    return <LoadingScreen message={t("app.checkingAccount")} />;
   }
 
   // Signed-out visitors get the public landing page (its CTAs open the auth
@@ -730,7 +736,7 @@ function AppContent() {
   // as auth resolves; data streams in behind the already-painted frame).
   if (onboarding === "needed" && user) {
     return (
-      <Suspense fallback={<LoadingScreen message="Chargement de l'onboarding…" />}>
+      <Suspense fallback={<LoadingScreen message={t("app.loadingOnboarding")} />}>
         <Onboarding userId={user.id} onDone={handleOnboardingDone} />
       </Suspense>
     );
@@ -790,8 +796,13 @@ function AppContent() {
           {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
           <MobileActions page={page} setPage={setPage} />
         </div>
+<<<<<<< HEAD
         <PageActionsProvider setActions={setHeaderSlot}>
           {accountsReady ? (
+=======
+        <PageActionsProvider setActions={setPageActions}>
+          {accountsReady && gateResolved ? (
+>>>>>>> origin/claude/minimal-tokens-caveman-skill-l3dmgc
             <PageErrorBoundary resetKey={page}>
               {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
@@ -879,8 +890,10 @@ function AppContent() {
               </Suspense>
             </PageErrorBoundary>
           ) : (
-            /* Comptes en chargement : le shell est peint, la page répond avec
-               son squelette contextuel — pas de porte plein écran. */
+            /* Comptes OU abonnement en chargement : le shell est peint, la
+               page répond avec son squelette contextuel — pas de porte plein
+               écran, et surtout aucune donnée peinte avant de savoir LESQUELLES
+               peindre (réelles ou démonstration). */
             <div className="p-4 md:p-5">
               <SkeletonForPage page={page} />
             </div>

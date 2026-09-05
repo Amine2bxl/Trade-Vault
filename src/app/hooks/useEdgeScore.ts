@@ -3,6 +3,7 @@ import { computeEdgeScore, EDGE_WINDOW_DAYS, type EdgeResult } from "../utils/ed
 import { loadStartingBalance } from "../store";
 import { loadTradingPlan } from "../utils/tradingPlan";
 import type { Trade } from "../types";
+import { localDateOf } from "@/shared/calendar-date";
 
 /**
  * Edge Score — hook PARTAGÉ, sur le modèle de `useGoalProgress`.
@@ -36,7 +37,7 @@ export function readChecklistByDay(
   for (let i = 0; i < EDGE_WINDOW_DAYS; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = localDateOf(d);
     try {
       const raw = localStorage.getItem(`tv-chk-${userId}-${iso}`);
       if (!raw) continue;

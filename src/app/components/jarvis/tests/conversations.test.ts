@@ -149,3 +149,131 @@ describe("ConversationStore — persistance entre sessions", () => {
     expect(await store.list()).toHaveLength(0);
   });
 });
+
+/**
+ * UN STOCKAGE QUI DIT NON.
+ *
+ * `localStorage` plafonne autour de cinq mégaoctets par origine. Rien ne
+ * bornait la taille de l'historique Jarvis : passé le plafond, chaque écriture
+ * levait `QuotaExceededError` — que l'ancien `write()` avalait sans rien
+ * rendre. Un vrai navigateur se comporte comme ce mock ; le mock partagé
+ * ci-dessus, lui, accepte tout et ne peut donc rien prouver.
+ */
+function installBudgetedStorage(budgetBytes: number) {
+  const data = new Map<string, string>();
+  const used = () => {
+    let n = 0;
+    for (const [k, v] of data) n += k.length + v.length;
+    return n;
+  };
+  const api = {
+    getItem: (k: string) => data.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      const previous = data.get(k);
+      data.delete(k);
+      if (used() + k.length + v.length > budgetBytes) {
+        if (previous !== undefined) data.set(k, previous);
+        const err = new Error("QuotaExceededError");
+        err.name = "QuotaExceededError";
+        throw err;
+      }
+      data.set(k, v);
+    },
+    removeItem: (k: string) => void data.delete(k),
+    clear: () => data.clear(),
+  } as Storage;
+  (globalThis as Record<string, unknown>).localStorage = api;
+  (globalThis as Record<string, unknown>).sessionStorage = api;
+  return { data, used };
+}
+
+/** Un message d'environ `bytes` octets, pour remplir le quota de façon prévisible. */
+function bulky(bytes: number): JarvisMessage {
+  return msg("user", "x".repeat(bytes));
+}
+
+describe("ConversationStore — le quota du navigateur", () => {
+  it("n'ANNONCE jamais un enregistrement qui n'a pas eu lieu", async () => {
+    // C'était le défaut le plus vicieux : le corps (volumineux) échouait, mais
+    // l'index (quelques centaines d'octets) passait encore. L'historique
+    // datait donc la conversation d'un enregistrement fictif — « dernière
+    // activité il y a une minute » pour des messages jamais écrits.
+    installBudgetedStorage(1_500);
+    const store = new JarvisConversationStore("u1");
+    const conv = await store.create();
+    await store.saveMessages(conv.id, [msg("user", "petite question")]);
+    const savedAt = (await store.list())[0].updatedAt;
+
+    // L'horodatage se compte en millisecondes : sans cette attente, les deux
+    // enregistrements porteraient la même date et le test ne prouverait rien.
+    await new Promise((r) => setTimeout(r, 5));
+    // Ce corps ne tiendra jamais, même après avoir tout évincé.
+    await store.saveMessages(conv.id, [bulky(50_000)]);
+
+    // Le corps sur le disque est toujours l'ancien…
+    expect((await store.get(conv.id))?.messages).toHaveLength(1);
+    // …et l'index le dit.
+    expect((await store.list())[0].updatedAt).toBe(savedAt);
+  });
+
+  it("FAIT DE LA PLACE en évinçant la plus ancienne plutôt que de perdre la courante", async () => {
+    // Le comportement qui compte pour le trader : la discussion qu'il est en
+    // train d'avoir doit survivre. C'est la plus ancienne qui cède.
+    const { data } = installBudgetedStorage(4_000);
+    const store = new JarvisConversationStore("u1");
+
+    const first = await store.create();
+    await store.saveMessages(first.id, [bulky(800)]);
+    const second = await store.create();
+    await store.saveMessages(second.id, [bulky(800)]);
+
+    const current = await store.create();
+    await store.saveMessages(current.id, [bulky(1_500)]);
+
+    // La courante est bien sur le disque…
+    expect(data.has(`tv:jarvis:conv:u1:${current.id}`)).toBe(true);
+    expect((await store.get(current.id))?.messages).toHaveLength(1);
+    // …et la plus ancienne a réellement libéré sa place, corps compris.
+    expect(data.has(`tv:jarvis:conv:u1:${first.id}`)).toBe(false);
+    const ids = (await store.list()).map((c) => c.id);
+    expect(ids).toContain(current.id);
+    expect(ids).not.toContain(first.id);
+  });
+
+  it("n'évince JAMAIS une conversation épinglée", async () => {
+    // Épingler, c'est l'acte par lequel le trader dit « celle-là, je la
+    // garde ». Une éviction automatique qui l'ignore trahit ce geste.
+    const { data } = installBudgetedStorage(4_000);
+    const store = new JarvisConversationStore("u1");
+
+    const pinned = await store.create();
+    await store.saveMessages(pinned.id, [bulky(800)]);
+    await store.togglePin(pinned.id);
+    const other = await store.create();
+    await store.saveMessages(other.id, [bulky(800)]);
+
+    const current = await store.create();
+    await store.saveMessages(current.id, [bulky(1_500)]);
+
+    expect(data.has(`tv:jarvis:conv:u1:${pinned.id}`)).toBe(true);
+    expect((await store.list()).map((c) => c.id)).toContain(pinned.id);
+    // C'est la non-épinglée qui a payé.
+    expect(data.has(`tv:jarvis:conv:u1:${other.id}`)).toBe(false);
+  });
+
+  it("plafonne le NOMBRE de conversations conservées", async () => {
+    // Sans plafond, l'éviction sous quota finit par devenir le fonctionnement
+    // normal — c'est-à-dire un historique qui se dégrade à chaque message.
+    installBudgetedStorage(50_000_000);
+    const store = new JarvisConversationStore("u1");
+    for (let i = 0; i < 70; i += 1) {
+      const c = await store.create();
+      await store.saveMessages(c.id, [msg("user", `question ${i}`)]);
+    }
+    const list = await store.list();
+    expect(list.length).toBeLessThanOrEqual(60);
+    // Ce sont les plus récentes qui restent.
+    expect(list.some((c) => c.title.includes("question 69"))).toBe(true);
+    expect(list.some((c) => c.title.includes("question 0"))).toBe(false);
+  });
+});

@@ -32,6 +32,7 @@ import {
 // monthly tasks, checkable and persisted, with push reminders.
 
 import { GoalPicker, PlanView } from "./goals/views";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 export default function Goals({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
@@ -94,7 +95,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
       setBusy(true);
       const p: GoalPlan = {
         goals,
-        startedAt: new Date().toISOString().slice(0, 10),
+        startedAt: todayLocalDate(),
         horizonMonths: HORIZON,
         tasksDone: {},
       };

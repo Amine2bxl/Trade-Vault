@@ -46,6 +46,7 @@ import ProposalsPanel from "../components/ProposalsPanel";
 import type { JarvisBlock } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
 import { cn } from "../../../utils/cn";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 /**
  * HomeWorkspace — l'ACCUEIL intelligent de Jarvis (Phase 1, Étape 5).
@@ -129,7 +130,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       setBlocks(built);
 
       // Anti-répétition : maj mémoire (premier open du jour fige le pattern).
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayLocalDate();
       const isNewDay = memory.lastShownDate !== today;
       const next: JarvisMemory = {
         ...memory,
@@ -189,7 +190,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   // Bilan de la dernière journée TRADÉE, affiché seulement quand elle est
   // terminée (pas un résumé à chaud d'une journée encore en cours).
   const reviewBlocks = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalDate();
     const latest = data.trades.reduce(
       (a, t) => (t.date > a ? t.date : a),
       data.trades[0]?.date ?? "",

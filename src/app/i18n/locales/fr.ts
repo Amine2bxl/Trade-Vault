@@ -1,6 +1,8 @@
 import type { Dict } from "../translations";
 
 const fr: Dict = {
+  "app.checkingAccount": "Vérification de ton compte…",
+  "app.loadingOnboarding": "Chargement de l'onboarding…",
   "nav.dashboard": "Tableau de bord",
   "error.pageTitle": "Cette section a rencontré un souci",
   "error.pageBody": "Le chargement de cette page a échoué. Tes données sont intactes.",
@@ -970,6 +972,8 @@ const fr: Dict = {
   "import.confirmBtn": "Confirmer l'import",
   "import.failedRows":
     "{n} trades n'ont pas pu être enregistrés. Ton journal existant est intact — tu peux relancer avec le même fichier, les doublons seront ignorés.",
+  "import.planLimit":
+    "Ton offre gratuite est limitée à 10 trades par mois : le reste de l'import n'a pas été enregistré. Passe à Pro pour importer tout ton historique d'un coup.",
   "import.errTooLarge":
     "Ce fichier est trop volumineux (10 Mo maximum). Découpe ton export en plusieurs fichiers.",
   "import.errNotCsv":

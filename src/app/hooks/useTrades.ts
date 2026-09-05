@@ -16,6 +16,21 @@ import type { Trade } from "../types";
 
 const EMPTY: Trade[] = [];
 
+/**
+ * Taille maximale du miroir de session, en caractères.
+ *
+ * `sessionStorage` plafonne autour de 5 Mo par origine, partagés avec tout le
+ * reste. Deux mégaoctets laissent de la marge et couvrent très largement un
+ * historique ordinaire.
+ *
+ * POURQUOI ON NE TRONQUE PAS L'HISTORIQUE POUR LE FAIRE ENTRER. Le miroir sert
+ * d'`initialData` : il est peint tel quel, et TOUT ce que le produit calcule —
+ * win rate, expectancy, drawdown, Monte-Carlo — le serait sur cet échantillon.
+ * Afficher un instant des chiffres faux est pire que d'afficher un squelette
+ * une seconde de plus. Au-delà du seuil, on ne miroite donc RIEN.
+ */
+const MIRROR_MAX_CHARS = 2_000_000;
+
 /** sessionStorage persistence: on F5 the in-memory React Query cache is gone
  * and the dashboard waits ~3s for a cold Supabase round-trip. Persisting the
  * last successful fetch and feeding it back as `initialData` makes the page
@@ -97,24 +112,72 @@ export function useTrades(
 
   const query = useQuery({
     queryKey: tradesQueryKey(userId, accountId),
-    // loadUserTrades scopes to the active account via module state; the
-    // accountId in the key is what makes a switch refetch.
-    queryFn: () => loadUserTrades(userId as string),
+    // Le compte est passé EXPLICITEMENT, depuis la clé.
+    //
+    // La requête lisait l'état de module `getActiveAccountId()`. Tant que le
+    // rendu et la lecture se suivent, les deux coïncident — mais React Query
+    // relance aussi une requête HORS du cycle de rendu (reconnexion réseau,
+    // nouvelle tentative après échec). Ce refetch-là s'exécutait avec le compte
+    // COURANT et écrivait son résultat sous la clé d'un AUTRE compte : les
+    // trades du compte B apparaissaient dans la vue du compte A.
+    queryFn: () => loadUserTrades(userId as string, { accountId }),
     enabled: isOn,
     staleTime: 30_000,
     initialData,
+    // SANS CETTE LIGNE, `initialData` est considérée comme fraîche à l'instant
+    // du montage : combinée à `staleTime`, elle empêchait TOUT rafraîchissement
+    // pendant trente secondes après un F5. Le commentaire ci-dessus promettait
+    // « un refetch d'arrière-plan met silencieusement à jour » ; ce refetch ne
+    // partait jamais, et l'écran restait sur la copie de session — y compris
+    // après une écriture faite sur un autre appareil.
+    //
+    // `0` déclare la donnée comme datant de l'époque Unix : elle est donc
+    // périmée d'entrée, peinte immédiatement, et rafraîchie aussitôt.
+    initialDataUpdatedAt: 0,
   });
 
   // Persist to sessionStorage on every successful fetch so the next F5
   // restores the data instantly — once scoped to the active account, and once
   // as a userId-level mirror for the pre-account window.
+  //
+  // L'ÉCHEC DU MIROIR N'EST PLUS SILENCIEUX. `setItem` levait dès que
+  // l'historique dépassait le quota, le `catch` l'avalait, et la « peinture
+  // instantanée » cessait de fonctionner précisément pour les comptes les plus
+  // fournis — sans que rien ne le dise, et en laissant en place une version
+  // PÉRIMÉE qui resservait d'`initialData` au F5 suivant.
   useEffect(() => {
     if (!userId || !query.data) return;
+
+    const drop = () => {
+      try {
+        sessionStorage.removeItem(sKey);
+        if (userLevelKey !== sKey) sessionStorage.removeItem(userLevelKey);
+      } catch {
+        /* stockage indisponible — le refetch corrigera l'affichage */
+      }
+    };
+
+    let payload: string;
     try {
-      sessionStorage.setItem(sKey, JSON.stringify(query.data));
-      sessionStorage.setItem(userLevelKey, JSON.stringify(query.data));
+      payload = JSON.stringify(query.data);
     } catch {
-      /* quota exceeded — non-critical */
+      drop();
+      return;
+    }
+
+    if (payload.length > MIRROR_MAX_CHARS) {
+      // Trop gros : pas de miroir du tout, et surtout pas de miroir PARTIEL —
+      // il serait peint comme s'il était l'historique complet.
+      drop();
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(sKey, payload);
+      // Compte nul : les deux clés sont la MÊME chaîne, inutile d'écrire deux fois.
+      if (userLevelKey !== sKey) sessionStorage.setItem(userLevelKey, payload);
+    } catch {
+      drop();
     }
   }, [query.data, sKey, userLevelKey, userId]);
 

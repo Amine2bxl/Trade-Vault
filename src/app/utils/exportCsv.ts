@@ -1,4 +1,5 @@
 import { Trade } from "../types";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 function csvEscape(v: unknown): string {
   const s = v == null ? "" : String(v);
@@ -54,7 +55,7 @@ export function exportTradesCSV(trades: Trade[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `tradevault-journal-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `tradevault-journal-${todayLocalDate()}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

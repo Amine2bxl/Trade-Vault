@@ -4,11 +4,20 @@ import logoSrc from "@/assets/tradevault-logo.webp";
  * Le repli SSR des écrans AUTHENTIFIÉS (`/journal`, `/settings`, …).
  *
  * POURQUOI IL EXISTE. `$page.tsx` importait `Landing.tsx` pour ce repli — en
- * STATIQUE. Conséquence mesurée dans le build : « Landing.tsx is dynamically
- * imported by App.tsx but also statically imported by $page.tsx », donc le
- * `lazy()` d'`App.tsx` ne servait à rien et les 279 Ko de la page de vente
- * partaient dans le chargement initial de CHAQUE trader connecté, qui ne la
- * verra jamais.
+ * STATIQUE. Le `lazy()` d'`App.tsx` ne servait alors à rien sur ces routes, et
+ * la page de vente partait dans le chargement initial de CHAQUE trader
+ * connecté, qui ne la verra jamais.
+ *
+ * CHIFFRE CORRIGÉ : ce chunk pèse ~80 Ko, pas 279. Le 279 datait d'une mesure
+ * antérieure au découpage et il est resté ici, trois fois et demie trop gros —
+ * un commentaire qui donne un ordre de grandeur faux oriente mal la prochaine
+ * décision de performance. Vérifiable à chaque build :
+ * `.vercel/output/static/assets/Landing-*.js`.
+ *
+ * La route `/`, elle, importe Landing en STATIQUE — et c'est NÉCESSAIRE : elle
+ * la rend côté serveur, ce qui est toute la stratégie de référencement (voir
+ * `routes/index.tsx`). L'absence de découpage y est donc volontaire, pas un
+ * oubli.
  *
  * Ce composant coûte quelques centaines d'octets et tient le même rôle : la
  * première image d'un visiteur non connecté qui ouvre `/journal`, le temps que

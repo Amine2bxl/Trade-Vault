@@ -4,7 +4,7 @@ import { cn } from "./cn";
 
 /**
  * Modal — the single dialog primitive. Replaces the hand-rolled
- * `fixed inset-0 z-50` overlays scattered across the app, each of which
+ * `fixed inset-0` avec un z-index deviné overlays scattered across the app, each of which
  * re-implemented (or skipped) the accessibility plumbing.
  *
  * Defaults reproduce the app's house modal style exactly: a bottom-sheet on
@@ -92,7 +92,7 @@ export function Modal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-end justify-center p-0 md:items-center md:p-4",
+        "fixed inset-0 z-[var(--tv-z-nav)] flex items-end justify-center p-0 md:items-center md:p-4",
         wrapperClassName,
       )}
     >

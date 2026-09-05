@@ -21,8 +21,66 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # LA PORTE QUI MANQUAIT. La charte du projet exige quatre vérifications
+      # avant tout push — `tsc --noEmit`, `lint`, `build`, `test` — mais seules
+      # trois tournaient ici. Le typecheck produisait 188 erreurs (types
+      # Supabase générés en retard sur les migrations, `bun:test` sans
+      # déclarations) : il était donc infranchissable, et personne ne l'avait
+      # remis en état. C'est ce trou qui a laissé un appel à
+      # `.onConflict().ignore()` — une méthode qui n'existe pas — casser tous
+      # les checkouts avec code promo en production.
+      - run: bun run typecheck
+
       - run: bun run lint
 
       - run: bun run build
 
       - run: bun test
+
+      # LA SUITE, SOUS D'AUTRES FUSEAUX.
+      #
+      # Les dates métier du produit (série de discipline, compteur du jour,
+      # fenêtres de période) sont celles du TRADER, pas celles de Greenwich.
+      # Une suite qui ne tourne qu'en UTC ne peut pas voir la différence — et
+      # c'est ce qui a laissé passer vingt-quatre `toISOString().slice(0, 10)`
+      # qui décalaient la journée d'un cran pour tout le continent américain.
+      #
+      # Deux fuseaux extrêmes suffisent : l'un derrière UTC, l'autre devant,
+      # de part et d'autre de la ligne de date.
+      - run: TZ=America/New_York bun test
+      - run: TZ=Pacific/Auckland bun test
+
+  # Les garanties de facturation et de quota vivent dans du SQL : un verrou de
+  # ligne sur `promo_codes`, un `on conflict … where` sur `subscriptions`, deux
+  # déclencheurs `before insert`. Aucun test TypeScript ne peut les observer —
+  # il faut un vrai Postgres, et pour la concurrence, deux vraies sessions.
+  #
+  # Job SÉPARÉ pour que son échec se lise comme ce qu'il est : une régression de
+  # la base, pas un test unitaire cassé.
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # Même famille majeure que Supabase. Un conteneur de service plutôt que
+        # le serveur du runner : sa présence est garantie et sa version est
+        # explicite, donc le jour où un test échoue on sait contre quoi.
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tradevault_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: tradevault_test
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/test-sql.sh

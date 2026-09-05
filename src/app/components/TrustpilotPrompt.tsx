@@ -97,7 +97,7 @@ export default function TrustpilotPrompt({
       role="dialog"
       aria-label={t("trustpilot.title")}
       className={cn(
-        "fixed z-[80] left-4 right-4 md:left-auto md:right-6 md:w-[360px]",
+        "fixed z-[var(--tv-z-modal)] left-4 right-4 md:left-auto md:right-6 md:w-[360px]",
         "bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] md:bottom-6",
         "glass-strong rounded-2xl border border-emerald-500/20 shadow-2xl shadow-black/50 p-4 animate-slide-up",
       )}

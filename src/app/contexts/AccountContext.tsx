@@ -65,7 +65,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const { tier } = useSubscription();
+  const { tier, loading: subLoading } = useSubscription();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -95,11 +95,24 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (cached) setActiveAccountId(cached);
 
       const list = await loadAccounts(uid);
-      // Restore icons from localStorage
+      // REPRISE DE L'ANCIEN STOCKAGE LOCAL. L'icône vivait uniquement dans le
+      // `localStorage` du navigateur courant : elle disparaissait sur un autre
+      // appareil, en navigation privée et à chaque vidage du cache, alors que
+      // tout le reste du compte est en base. Elle a maintenant sa colonne.
+      //
+      // Tant que la colonne est vide pour un compte, on relit la valeur locale
+      // — et on la REMONTE en base, une fois, pour que la personne ne perde
+      // pas la personnalisation qu'elle avait déjà faite.
       for (const a of list) {
+        if (a.icon) continue;
         try {
           const icon = localStorage.getItem(`tv.accountIcon.${a.id}`);
-          if (icon) a.icon = icon;
+          if (!icon) continue;
+          a.icon = icon;
+          void updateAccount(uid, a.id, { icon }).catch(() => {
+            /* Migration best-effort : l'icône reste affichée depuis le stockage
+               local si la remontée échoue. */
+          });
         } catch {
           /* localStorage indisponible (navigation privée, quota) — l'icône
              est un confort, jamais un prérequis. */
@@ -148,30 +161,32 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const addAccount = useCallback(
     async (input: { name: string; type: AccountType; icon?: string; startingBalance: number }) => {
       if (!user) throw new Error("not authenticated");
-      // Limite de comptes du palier. Refusée ICI, à la seule porte d'entrée :
-      // masquer le bouton ailleurs laisserait passer tout appel direct, et la
-      // limite ferait partie de la promesse sans être tenue.
-      if (accounts.length >= ACCOUNT_LIMIT[tier]) throw new PlanLimitError("accounts");
+      // Limite de comptes du palier — contrôle d'INTERFACE.
+      //
+      // La vraie barrière est en base (déclencheur `enforce_account_quota`) :
+      // le navigateur parle directement à PostgREST avec son propre jeton, donc
+      // un `insert` direct passait à côté de ce test. Celui-ci existe pour
+      // afficher l'offre au lieu d'une erreur SQL, pas pour protéger.
+      //
+      // Il n'est appliqué QUE lorsque le palier est connu : pendant le
+      // chargement de l'abonnement, `tier` vaut `free`, et un abonné Pro se
+      // voyait refuser un second compte auquel il a droit. En cas de doute, on
+      // laisse passer — la base tranchera, elle, en connaissance de cause.
+      if (!subLoading && accounts.length >= ACCOUNT_LIMIT[tier]) {
+        throw new PlanLimitError("accounts");
+      }
       const acc = await createAccount(user.id, {
         name: input.name,
         type: input.type,
         startingBalance: input.startingBalance,
+        icon: input.icon,
       });
-      if (input.icon) {
-        try {
-          localStorage.setItem(`tv.accountIcon.${acc.id}`, input.icon);
-        } catch {
-          /* localStorage indisponible (navigation privée, quota) — l'icône
-             est un confort, jamais un prérequis. */
-        }
-        acc.icon = input.icon;
-      }
       setAccounts((prev) => [...prev, acc]);
       apply(user.id, acc.id);
       saveActiveAccountId(user.id, acc.id).catch(() => {});
       return acc;
     },
-    [user, apply, accounts.length, tier],
+    [user, apply, accounts.length, tier, subLoading],
   );
 
   const editAccount = useCallback(
@@ -180,20 +195,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       patch: Partial<{ name: string; type: AccountType; icon: string; startingBalance: number }>,
     ) => {
       if (!user) return;
-      const { icon, ...dbPatch } = patch;
-      await updateAccount(
-        user.id,
-        id,
-        dbPatch as Partial<{ name: string; type: AccountType; startingBalance: number }>,
-      );
-      if (icon !== undefined) {
-        try {
-          localStorage.setItem(`tv.accountIcon.${id}`, icon);
-        } catch {
-          /* localStorage indisponible (navigation privée, quota) — l'icône
-             est un confort, jamais un prérequis. */
-        }
-      }
+      // L'icône part en base avec le reste : plus de chemin séparé vers le
+      // stockage local, donc plus de personnalisation qui reste sur un seul
+      // navigateur.
+      await updateAccount(user.id, id, patch);
       setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
     },
     [user],

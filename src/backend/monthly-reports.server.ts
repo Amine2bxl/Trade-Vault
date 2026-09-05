@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { chainNextInvocation, cursorFrom, runUserBatch } from "./cron-batch";
 import type { Trade } from "@/app/types";
 import {
   buildMonthlyReport,
@@ -281,44 +282,46 @@ export async function handleMonthlyReportsCron(request: Request): Promise<Respon
   const month = prevMonthOf(
     `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`,
   );
-  const { start, end } = monthRange(month);
+  // Seule la borne BASSE sert au balayage : `runUserBatch` cherche les comptes
+  // actifs depuis le début du mois, et `generateReportForUser` re-borne lui-même
+  // sur le mois complet.
+  const { start } = monthRange(month);
 
-  const { data: rows, error } = await sb
-    .from("trades")
-    .select("user_id")
-    .gte("trade_date", start)
-    .lte("trade_date", end);
-  if (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
-  }
+  // Reprise : le curseur voyage dans l'URL, posé par le maillon précédent.
+  const after = cursorFrom(request);
+  const startedAt = Date.now();
 
-  const userIds = [...new Set((rows ?? []).map((r: { user_id: string }) => r.user_id))];
-  let generated = 0;
-  let failed = 0;
-
-  for (const userId of userIds) {
-    try {
-      const report = await generateReportForUser(sb, userId, month);
-      if (report) {
-        generated++;
-        const { data: prof } = await sb
-          .from("profiles")
-          .select("language")
-          .eq("id", userId)
-          .maybeSingle();
-        await notifyUser(sb, userId, month, (prof?.language as string | undefined) || "en");
-      }
-    } catch (e) {
-      failed++;
-      console.error("[monthly-report] generation failed for", userId, e);
-    }
-  }
-
-  return new Response(JSON.stringify({ month, users: userIds.length, generated, failed }), {
-    status: 200,
-    headers: { "content-type": "application/json" },
+  const batch = await runUserBatch(sb, { since: start, after, startedAt }, async (userId) => {
+    const report = await generateReportForUser(sb, userId, month);
+    if (!report) return;
+    const { data: prof } = await sb
+      .from("profiles")
+      .select("language")
+      .eq("id", userId)
+      .maybeSingle();
+    await notifyUser(sb, userId, month, (prof?.language as string | undefined) || "en");
   });
+
+  // Budget épuisé : on relance la suite plutôt que de laisser la plateforme
+  // couper au milieu. Sans ce chaînage, tout ce qui suivait la coupure était
+  // perdu jusqu'au mois suivant.
+  let chained = false;
+  if (batch.hasMore && batch.lastUserId) {
+    chained = await chainNextInvocation(request, { after: batch.lastUserId });
+  }
+
+  return new Response(
+    JSON.stringify({
+      month,
+      processed: batch.processed,
+      failed: batch.failed,
+      hasMore: batch.hasMore,
+      chained,
+      resumeAfter: batch.hasMore ? batch.lastUserId : null,
+    }),
+    {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    },
+  );
 }

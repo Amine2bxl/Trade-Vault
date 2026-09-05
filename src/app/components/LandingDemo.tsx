@@ -98,7 +98,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
   }, [mode, idx]);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6">
+    <div className="fixed inset-0 z-[var(--tv-z-overlay)] flex items-center justify-center p-3 sm:p-6">
       {/* Backdrop flouté */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-md animate-fade-in"

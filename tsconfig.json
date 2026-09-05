@@ -1,5 +1,16 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "vite.config.ts", "eslint.config.js"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    // Déclarations ambiantes maison — `bun:test` et `import.meta.dir`. Sans
+    // elles, `tsc --noEmit` produisait ~95 erreurs sur les fichiers de test et
+    // la porte de typecheck ne pouvait pas être franchie. Voir l'en-tête de
+    // `types/bun-test.d.ts`.
+    "types/**/*.d.ts",
+    "vite.config.ts",
+    "eslint.config.js"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",

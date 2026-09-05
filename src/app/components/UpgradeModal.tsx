@@ -68,7 +68,12 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
     );
 
   return (
-    <Modal open={open} onClose={onClose} wrapperClassName="z-[110]" className="md:max-w-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      wrapperClassName="z-[var(--tv-z-modal-top)]"
+      className="md:max-w-2xl"
+    >
       <div className="p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>

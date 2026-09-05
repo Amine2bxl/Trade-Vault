@@ -23,7 +23,19 @@ import type { DetectedPattern, SessionLike, TradeLike } from "./detectors";
  */
 export const WINDOW_DAYS = 90;
 
-/** Début de fenêtre au format `YYYY-MM-DD`. Pur — l'horloge est injectée. */
+/**
+ * Début de fenêtre au format `YYYY-MM-DD`. Pur — l'horloge est injectée.
+ *
+ * EN UTC, DÉLIBÉRÉMENT — et c'est l'exception au reste du produit, qui date
+ * tout dans le fuseau du trader. Cette fonction n'a qu'un appelant :
+ * `handlePatternScanCron`, qui tourne sur le serveur. Il n'y a là aucun
+ * « fuseau local » qui voudrait dire quelque chose (celui de Vercel est UTC),
+ * et une borne de fenêtre qui dépendrait du fuseau de la machine rendrait le
+ * balayage non reproductible d'un environnement à l'autre.
+ *
+ * L'arithmétique en millisecondes est sûre ici pour la même raison : UTC ne
+ * connaît pas de changement d'heure, donc un jour y fait toujours 24 heures.
+ */
 export function windowStart(now: Date, days = WINDOW_DAYS): string {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }

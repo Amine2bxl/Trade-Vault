@@ -190,7 +190,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
-          "group fixed z-40 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
+          "group fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
           "flex items-center justify-center md:gap-2.5",
           // Mobile : pilule float-shell 44px, badge bien arrondi.
           "h-11 w-11 rounded-full float-shell",

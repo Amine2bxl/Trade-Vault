@@ -12,6 +12,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import type { AccountRules } from "@/modules/probability/rules";
 import type { Horizon } from "@/modules/probability/scenario";
 
@@ -123,7 +124,9 @@ function draftToRow(d: ScenarioDraft, userId: string) {
     user_id: userId,
     account_id: d.accountId,
     name: d.name,
-    rules: d.rules as unknown as Record<string, unknown>,
+    // Colonne `jsonb` : le schéma généré la type `Json`, un type récursif que
+    // TypeScript ne déduit pas d'une interface applicative.
+    rules: d.rules as unknown as Json,
     horizon_unit: d.horizon.unit,
     horizon_value: Math.max(1, Math.round(d.horizon.value)),
     risk_multiplier: d.riskMultiplier,

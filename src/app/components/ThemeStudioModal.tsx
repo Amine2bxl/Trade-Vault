@@ -153,7 +153,11 @@ export default function ThemeStudioModal({
   };
 
   return (
+<<<<<<< HEAD
     <Modal open onClose={annuler} className="md:max-w-lg" wrapperClassName="z-[80]">
+=======
+    <Modal open onClose={onClose} className="md:max-w-lg" wrapperClassName="z-[var(--tv-z-modal)]">
+>>>>>>> origin/claude/minimal-tokens-caveman-skill-l3dmgc
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-2.5">
         <span className="w-8 h-8 rounded-xl bg-[var(--tv-accent)]/15 flex items-center justify-center">
           <Palette className="w-4 h-4 text-[var(--tv-accent)]" />

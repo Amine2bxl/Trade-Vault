@@ -55,7 +55,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 ${
+      className={`fixed inset-x-0 top-0 z-[var(--tv-z-nav)] border-b transition-colors duration-300 ${
         y > 10
           ? "border-white/[.07] bg-[var(--tv-bg)]/90 backdrop-blur-[12px]"
           : "border-transparent bg-transparent"

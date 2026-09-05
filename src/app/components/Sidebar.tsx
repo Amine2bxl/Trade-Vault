@@ -135,6 +135,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   return (
     <aside
       className={cn(
+<<<<<<< HEAD
         // Le rayon vit dans `.rail` (token `--tv-shell-radius`), partagé
         // avec la fenêtre de contenu : une seule valeur pour les deux coques.
         "rail relative z-30 hidden shrink-0 flex-col md:flex",
@@ -143,6 +144,15 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         // la page passe au-dessus ET en dessous d'elle.
         "sticky top-3 my-3 ml-3 h-[calc(100dvh-1.5rem)]",
         collapsed ? "rail-collapsed w-[68px]" : "w-[212px]",
+=======
+        "relative hidden md:flex h-dvh sticky top-0 z-[var(--tv-z-rail)] shrink-0 flex-col bg-[#08111e] border-r border-white/[0.05]",
+        // Largeur animée, contenu clippé par le wrapper interne : au dépli, les
+        // étiquettes et la carte de compte se révèlent au lieu de déborder ; au
+        // repli, la barre rétrécit sans texte orphelin. 300 ms, easing fluide
+        // (jamais agressif).
+        "transition-[width] duration-500 ease-[var(--tv-ease-out)]",
+        collapsed ? "w-[72px]" : "w-[248px]",
+>>>>>>> origin/claude/minimal-tokens-caveman-skill-l3dmgc
       )}
     >
       <div className="flex h-full min-h-0 flex-col">
@@ -307,7 +317,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         <Modal
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          wrapperClassName="z-[80] md:items-center md:justify-center"
+          wrapperClassName="z-[var(--tv-z-modal)] md:items-center md:justify-center"
           className="md:max-w-xs"
         >
           <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3">

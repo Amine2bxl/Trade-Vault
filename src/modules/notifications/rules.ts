@@ -12,6 +12,7 @@
  */
 
 import type { NotificationInput } from "./types";
+import { localDateOf, todayLocalDate } from "@/shared/calendar-date";
 
 export interface RuleContext {
   trades: Array<{ date: string; pnl: number; mistakes: string[] }>;
@@ -82,7 +83,7 @@ function jarvis(partial: NotificationInput): NotificationInput {
 export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   const fr = isFr();
   const rules: CodedRule[] = [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalDate();
 
   const sorted = [...ctx.trades].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -185,7 +186,7 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   monday.setDate(week.getDate() - ((week.getDay() + 6) % 7));
   if (week.getDay() === 1 && ctx.stats.tradeCount >= 5) {
     rules.push({
-      key: `weekly_review:${monday.toISOString().slice(0, 10)}`,
+      key: `weekly_review:${localDateOf(monday)}`,
       input: jarvis({
         kind: "weekly_review",
         title: fr ? "Ta revue de la semaine" : "Your weekly review",
@@ -343,7 +344,7 @@ export async function dispatchCodedNotifications(
   const candidates = evaluateNotificationRules(ctx);
   if (candidates.length === 0) return 0;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalDate();
   let log: { date: string; keys: string[] } = { date: today, keys: [] };
   try {
     const raw = localStorage.getItem(LOG_KEY);

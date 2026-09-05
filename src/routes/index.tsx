@@ -9,9 +9,14 @@ import Landing from "@/app/pages/Landing";
 // The suffix stays because a bare one-word title loses the SEO keywords, and it
 // is what the page actually is.
 const SEO_TITLE = "TradeVault — Journal de trading et coach IA pour traders";
-// French: the landing page it describes is French, and a description in another
-// language than the page is a mismatch both for search engines and for a
-// reviewer comparing the site against the consent screen. ≤ 155 caractères.
+// FRANÇAIS, et c'est désormais vrai. La description était en français alors que
+// le corps de la page était rendu en ANGLAIS côté serveur — la détection de
+// langue s'exécutant dans un initialiseur d'état, elle rendait « en » sur le
+// serveur. Un moteur de recherche lisait donc `lang="fr"`, `og:locale=fr_FR`,
+// un titre français… et un document anglais.
+//
+// La langue servie est maintenant `SSR_LANG` (`shared/lang.ts`), à laquelle ces
+// deux chaînes doivent rester alignées. ≤ 155 caractères.
 const SEO_DESCRIPTION =
   "Journal de trading et coach IA : analyse tes performances, suis ton plan et gagne en discipline. Analytics, calendrier économique et checklist pré-market.";
 

@@ -49,7 +49,7 @@ export default function UpgradeSuccessOverlay({
   );
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[var(--tv-z-overlay)] flex items-center justify-center p-4">
       {/* Pluie de confettis — pointer-events none, ne gêne jamais le geste. */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         {pieces.map((p, i) => (
