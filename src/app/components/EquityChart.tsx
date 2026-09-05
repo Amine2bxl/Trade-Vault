@@ -2,6 +2,7 @@ import { memo, useId, useMemo } from "react";
 import {
   AreaChart,
   Area,
+  Line,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -107,6 +108,23 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
   const gradId = `eqGrad-${uid}`;
   const clipId = `eqDraw-${uid}`;
 
+  // Points d'intérêt : premier, dernier et CHAQUE sommet/creux local. Le trader
+  // lit les retournements — des points plus nombreux, donc petits et fins.
+  const keyDots = useMemo(() => {
+    const flags: Record<number, boolean> = {};
+    if (data.length >= 2) {
+      flags[0] = true;
+      flags[data.length - 1] = true;
+    }
+    for (let i = 1; i < data.length - 1; i++) {
+      const prev = data[i - 1].equity;
+      const cur = data[i].equity;
+      const next = data[i + 1].equity;
+      if ((cur > prev && cur >= next) || (cur < prev && cur <= next)) flags[i] = true;
+    }
+    return flags;
+  }, [data]);
+
   // LA SIGNATURE DES DONNÉES relance le tracé.
   //
   // Une animation CSS ne rejoue pas parce qu'un attribut change : il faut que
@@ -153,9 +171,11 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
           <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={accent} stopOpacity={0.3} />
-                <stop offset="55%" stopColor={accent} stopOpacity={0.1} />
-                <stop offset="100%" stopColor={accent} stopOpacity={0} />
+                <stop offset="0%" stopColor={accent} stopOpacity={0.32} />
+                <stop offset="60%" stopColor={accent} stopOpacity={0.18} />
+                {/* Saturé « sur le bas » : la zone reste teintée jusqu'en
+                    bas, au lieu de s'effacer à 0 %. */}
+                <stop offset="100%" stopColor={accent} stopOpacity={0.08} />
               </linearGradient>
               {/* LE MASQUE DE TRACÉ. Un rectangle plein largeur, écrasé à zéro,
                   qui se déploie de gauche à droite. Le trait et sa masse
@@ -235,11 +255,36 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
               isAnimationActive={false}
               dot={false}
               activeDot={{
-                r: 5,
-                strokeWidth: 3,
+                r: 4,
+                strokeWidth: 1.5,
                 stroke: "var(--tv-plate-1)",
                 fill: accent,
               }}
+            />
+            {/* Points de retournement — REDONDANTS AVEC LES VALEURS, jamais
+                porteurs d'information à eux seuls. Petits et fins : les creux
+                (sous zéro) en rouge, les sommets dans la couleur de la
+                courbe. */}
+            <Line
+              type={EQUITY_CURVE_TYPE}
+              dataKey="equity"
+              stroke="transparent"
+              dot={(props: { cx: number; cy: number; index: number }) => {
+                if (!keyDots[props.index]) return <g key={`eqd-${props.index}`} />;
+                const below = data[props.index].equity < breakEven;
+                return (
+                  <circle
+                    key={`eqd-${props.index}`}
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={3.5}
+                    fill={below ? "#ef4444" : accent}
+                    stroke="var(--tv-plate-1)"
+                    strokeWidth={1}
+                  />
+                );
+              }}
+              isAnimationActive={false}
             />
           </AreaChart>
         </ResponsiveContainer>
