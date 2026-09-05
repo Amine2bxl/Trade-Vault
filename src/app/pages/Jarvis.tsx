@@ -10,6 +10,7 @@ import { loadJarvisProfile, type JarvisProfile } from "../store";
 import { jarvisConversationStore } from "../components/jarvis/conversations";
 import type { JarvisContext } from "../components/jarvis/context";
 import CreditsBar from "../components/jarvis/components/CreditsBar";
+import ProposalsPanel from "../components/jarvis/components/ProposalsPanel";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 
 const ConversationWorkspace = lazy(
@@ -200,6 +201,20 @@ export default function Jarvis() {
   return (
     <div ref={boxRef} className="p-3 md:p-4" style={{ height: hauteur }}>
       <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/[0.06] bg-white/[0.015]">
+        {/* ── LES CONSEILS DE JARVIS ─────────────────────────────────────
+            Ils existaient déjà, adossés à des motifs mesurés sur les trades du
+            trader (une proposition sans preuve chiffrée ne s'affiche PAS) —
+            mais ils vivaient dans l'espace « accueil » du panneau flottant,
+            que rien n'ouvre depuis la page Jarvis. Le trader n'a jamais vu le
+            seul endroit du produit où son coach lui propose quelque chose.
+            Ils sont ici, au-dessus de la conversation, plafonnés à dix par
+            mois calendaire. */}
+        {user?.id && (
+          <div className="max-h-[45%] shrink-0 overflow-y-auto px-4 pt-4 md:px-6">
+            <ProposalsPanel userId={user.id} />
+          </div>
+        )}
+
         {/* La conversation, plein cadre — l'en-tête vit dans la barre de tête. */}
         <div className="min-h-0 flex-1">
           <Suspense fallback={spinner}>

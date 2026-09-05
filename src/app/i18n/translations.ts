@@ -1642,6 +1642,7 @@ const en = {
   "session.reviewPlaceholder": "A word on how it went (optional)",
   "session.closeCta": "Close the session",
   "session.review": "Review",
+  "proposal.sectionTitle": "Jarvis suggests",
   "proposal.title": "Jarvis suggests",
   "proposal.basis": "Observed on {n} data points, across {c} slices compared",
   "proposal.association": "An observed association, not a cause.",

@@ -30,6 +30,9 @@ import {
  * ne servirait plus à rien puisque personne ne trouverait le bouton.
  */
 
+/** Le plafond mensuel de conseils. Voir le commentaire au point d'usage. */
+const MAX_PAR_MOIS = 10;
+
 export default function ProposalsPanel({ userId }: { userId: string }) {
   const { t, lang } = useT();
   const { toast } = useToast();
@@ -77,23 +80,43 @@ export default function ProposalsPanel({ userId }: { userId: string }) {
     toast(t("proposal.dismissed"), "success");
   };
 
-  const visible = proposals.filter((p) => p.evidence && p.text);
+  /* ── DIX CONSEILS PAR MOIS, PAS UN DE PLUS ────────────────────────────
+     Un coach qui propose sans fin n'est pas écouté : chaque conseil qui
+     s'ajoute dévalue les précédents, et un trader qui en reçoit trente en
+     ignore trente. Le plafond est CIVIL — mois calendaire — et il se compte
+     sur la date de CRÉATION, pas sur ce qui reste affiché : refuser un conseil
+     ne rend pas un jeton, sinon le plafond ne plafonnerait rien.
+
+     Le compteur est écrit à côté de la liste. Sans lui, la limite serait
+     invisible : le trader croirait simplement que Jarvis n'a rien vu ce
+     mois-ci. */
+  const moisCourant = new Date().toISOString().slice(0, 7);
+  const duMois = proposals.filter((p) => p.createdAt.slice(0, 7) === moisCourant);
+  const visible = duMois.filter((p) => p.evidence && p.text).slice(0, MAX_PAR_MOIS);
   if (visible.length === 0) return null;
 
   return (
     <section className="mb-6 space-y-3" aria-label={t("proposal.title")}>
+      <div className="flex items-center gap-2">
+        <span className="tv-label shrink-0 text-slate-400">{t("proposal.sectionTitle")}</span>
+        <span aria-hidden className="rp-rule h-px flex-1" />
+        <span className="tv-figure shrink-0 text-[10px] text-slate-600">
+          {duMois.length}/{MAX_PAR_MOIS}
+        </span>
+      </div>
       {visible.map((proposal) => (
         <article
           key={proposal.id}
           className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0" />
-            <h3 className="tv-title">{t("proposal.title")}</h3>
+          {/* Le titre de la carte répétait « Proposition de Jarvis » sur
+              chaque carte, sous un titre de section qui le dit déjà. L'icône
+              suffit à signer, et la place revient au conseil lui-même. */}
+          <div className="flex items-start gap-2.5">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
+            <p className="min-w-0 flex-1 text-sm font-semibold text-white">{proposal.text}</p>
           </div>
-
-          <p className="text-sm text-white/90">{proposal.text}</p>
-          <p className="mt-1.5 text-sm text-slate-400">{proposal.rationale}</p>
+          <p className="mt-1.5 pl-[26px] text-sm text-slate-400">{proposal.rationale}</p>
 
           {/* La base chiffrée, toujours visible, jamais repliée. */}
           <p className="mt-2 tv-prose text-slate-500">

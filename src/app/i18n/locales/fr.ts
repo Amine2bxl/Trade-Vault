@@ -1561,6 +1561,7 @@ const fr: Dict = {
   "session.reviewPlaceholder": "Un mot sur la journée (facultatif)",
   "session.closeCta": "Clôturer la séance",
   "session.review": "Revue",
+  "proposal.sectionTitle": "Jarvis propose",
   "proposal.title": "Jarvis propose",
   "proposal.basis": "Observé sur {n} données, parmi {c} tranches comparées",
   "proposal.association": "Une association observée, pas une cause.",
