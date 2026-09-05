@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Bell,
   BellOff,
-  BellRing,
   Check,
   CheckCheck,
   Loader2,
@@ -10,7 +9,6 @@ import {
   TrendingDown,
   Brain,
   Calendar,
-  Bot,
   ShieldAlert,
   Clock,
 } from "lucide-react";
@@ -19,10 +17,12 @@ import type { AppNotification, NotificationCategory } from "@/modules/notificati
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
-import { PageContainer } from "@/shared/ui/PageContainer";
+import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
+import { Button } from "@/shared/ui";
 import { cn } from "../utils/cn";
 
-type FilterKind = NotificationCategory | "all";
+/** « Toutes », « non lues », ou une catégorie. */
+type FilterKind = NotificationCategory | "all" | "unread";
 
 const CATEGORY_ICON: Record<NotificationCategory, typeof Bell> = {
   discipline: ShieldAlert,
@@ -34,41 +34,62 @@ const CATEGORY_ICON: Record<NotificationCategory, typeof Bell> = {
   system: Bell,
 };
 
-const CATEGORY_ACCENT: Record<NotificationCategory, string> = {
-  discipline: "text-cyan-300 bg-cyan-500/10",
-  goals: "text-emerald-300 bg-emerald-500/10",
-  risk: "text-red-300 bg-red-500/10",
-  jarvis: "text-violet-300 bg-violet-500/10",
-  economic: "text-amber-300 bg-amber-500/10",
-  activity: "text-slate-300 bg-slate-500/10",
-  system: "text-slate-300 bg-slate-500/10",
+/** Le libellé de chaque catégorie — le mot que la ligne portait pas. */
+const CATEGORY_LABEL: Record<NotificationCategory, TKey> = {
+  discipline: "inbox.filterDiscipline",
+  goals: "inbox.filterGoals",
+  risk: "inbox.filterRisk",
+  jarvis: "inbox.filterJarvis",
+  economic: "inbox.filterEconomic",
+  activity: "inbox.filterActivity",
+  system: "inbox.filterAll",
 };
 
-const FILTER_KINDS: FilterKind[] = [
-  "all",
-  "discipline",
-  "risk",
-  "goals",
-  "jarvis",
-  "activity",
-  "economic",
-];
+/**
+ * LA COULEUR DIT L'URGENCE, PAS LE SUJET.
+ *
+ * Chacune des sept catégories avait sa teinte — cyan, émeraude, rouge, violet,
+ * ambre, ardoise. Six couleurs dans une liste verticale, c'est un confetti :
+ * l'œil trie des teintes au lieu de lire des lignes, et le rouge de « risque »
+ * hurlait aussi fort pour une notification anodine que pour une vraie alerte.
+ *
+ * La couleur suit maintenant la SÉVÉRITÉ, qui est le seul axe sur lequel une
+ * notification demande une action différente. Le sujet, lui, est écrit : la
+ * ligne porte son nom de catégorie en toutes lettres — ce qu'aucune pastille
+ * colorée n'a jamais réussi à dire.
+ */
+const SEVERITY: Record<AppNotification["severity"], { rail: string; icon: string }> = {
+  info: { rail: "bg-white/20", icon: "text-slate-300 bg-white/[0.06]" },
+  success: {
+    rail: "bg-[var(--tv-chart-green)]",
+    icon: "text-[var(--tv-chart-green)] bg-[rgb(var(--tv-chart-green-rgb)/0.1)]",
+  },
+  warning: { rail: "bg-amber-400", icon: "text-amber-300 bg-amber-500/10" },
+  error: {
+    rail: "bg-[var(--tv-chart-red)]",
+    icon: "text-[var(--tv-chart-red)] bg-[rgb(var(--tv-chart-red-rgb)/0.1)]",
+  },
+};
 
-/** Groupe une date sous un libellé naturel. */
-function groupLabel(date: Date): string {
+/** Les cinq tranches de temps, dans l'ordre où elles s'affichent. */
+const GROUPS = [
+  { key: "today", max: 0, label: "inbox.groupToday" },
+  { key: "yesterday", max: 1, label: "inbox.groupYesterday" },
+  { key: "week", max: 6, label: "inbox.groupThisWeek" },
+  { key: "month", max: 29, label: "inbox.groupThisMonth" },
+  { key: "older", max: Infinity, label: "inbox.groupOlder" },
+] as const satisfies readonly { key: string; max: number; label: TKey }[];
+
+/** Le groupe d'une date — un index dans `GROUPS`, plus une chaîne française. */
+function groupIndex(date: Date): number {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.floor((today.getTime() - target.getTime()) / 86_400_000);
-
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 7) return "Cette semaine";
-  if (diffDays < 30) return "Ce mois-ci";
-  return "Plus ancien";
+  const jours = Math.floor((today.getTime() - target.getTime()) / 86_400_000);
+  return GROUPS.findIndex((g) => jours <= g.max);
 }
 
-/** Premier-login badge : localStorage stocke la date de dernière visite. */
+/** Premier passage du jour : `localStorage` garde la date de dernière visite. */
 function useFirstLoginToday(): boolean {
   return useMemo(() => {
     try {
@@ -85,6 +106,29 @@ function useFirstLoginToday(): boolean {
   }, []);
 }
 
+/**
+ * LE CENTRE DE NOTIFICATIONS.
+ *
+ * Trois choses le rendaient illisible, et aucune ne tenait au moteur — qui
+ * produit huit règles nourries par les vraies données du trader (série de
+ * pertes, fuite la plus coûteuse, cinq jours sans session, revue de la
+ * semaine, bilan de la veille, fuite qui recule, règle qui échappe, discipline
+ * armée). C'était la PAGE qui ne les servait pas.
+ *
+ *   1. LE SUJET N'ÉTAIT NULLE PART ÉCRIT. Une notification n'avait qu'une
+ *      pastille colorée pour dire de quoi elle parlait. Chaque ligne porte
+ *      maintenant le nom de sa catégorie.
+ *   2. SEPT FILTRES, TOUJOURS LES SEPT. Ils s'affichaient même vides — une
+ *      barre de boutons à zéro. Seules les catégories PRÉSENTES paraissent, et
+ *      un filtre « non lues » les précède, parce que c'est la seule question
+ *      qu'on se pose vraiment en ouvrant sa boîte.
+ *   3. DU FRANÇAIS EN DUR dans une application traduite en douze langues :
+ *      les cinq intitulés de période, la bannière du premier passage et
+ *      l'infobulle du bouton « lu ».
+ *
+ * Et le bouton « marquer comme lu » n'apparaissait qu'AU SURVOL : sur un
+ * téléphone, il n'existait pas.
+ */
 export default function Inbox() {
   const { t } = useT();
   const { user } = useAuth();
@@ -98,23 +142,48 @@ export default function Inbox() {
     if (!user?.id) return;
     setLoading(true);
     loadNotifications(user.id)
-      .then((list) => {
-        // Marque les non lues comme "nouvelles aujourd'hui" au premier chargement
-        setNotifs(list);
-      })
+      .then(setNotifs)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user?.id]);
 
+  const unreadTotal = notifs.filter((n) => !n.readAt).length;
+
   const filtered = useMemo(() => {
     if (filter === "all") return notifs;
+    if (filter === "unread") return notifs.filter((n) => !n.readAt);
     return notifs.filter((n) => n.category === filter);
   }, [notifs, filter]);
 
-  // Compte les non lues du filtre courant
-  const unreadTotal = notifs.filter((n) => !n.readAt).length;
-  const unreadFiltered = filtered.filter((n) => !n.readAt).length;
-  const hasUnreadFiltered = unreadFiltered > 0;
+  const hasUnreadFiltered = filtered.some((n) => !n.readAt);
+
+  /* LES FILTRES SONT DÉRIVÉS DE CE QU'IL Y A. Une catégorie sans notification
+     n'a pas de bouton : la barre ne montre jamais un chemin qui ne mène nulle
+     part. */
+  const filtres = useMemo(() => {
+    const parCategorie = new Map<NotificationCategory, { total: number; nonLues: number }>();
+    for (const n of notifs) {
+      const e = parCategorie.get(n.category) ?? { total: 0, nonLues: 0 };
+      e.total++;
+      if (!n.readAt) e.nonLues++;
+      parCategorie.set(n.category, e);
+    }
+    const list: { kind: FilterKind; label: string; total: number; nonLues: number }[] = [
+      { kind: "all", label: t("inbox.filterAll"), total: notifs.length, nonLues: unreadTotal },
+    ];
+    if (unreadTotal > 0) {
+      list.push({
+        kind: "unread",
+        label: t("inbox.filterUnread"),
+        total: unreadTotal,
+        nonLues: 0,
+      });
+    }
+    for (const [cat, e] of parCategorie) {
+      list.push({ kind: cat, label: t(CATEGORY_LABEL[cat]), total: e.total, nonLues: e.nonLues });
+    }
+    return list;
+  }, [notifs, unreadTotal, t]);
 
   const handleMarkRead = useCallback(
     async (id: string) => {
@@ -144,216 +213,212 @@ export default function Inbox() {
     window.dispatchEvent(new CustomEvent("tv:open-notification", { detail: { notification: n } }));
   }, []);
 
-  // Regroupe les notifs par période
-  const groups = useMemo(() => {
-    const map = new Map<string, AppNotification[]>();
-    for (const n of filtered) {
-      const label = groupLabel(new Date(n.createdAt));
-      const existing = map.get(label) ?? [];
-      existing.push(n);
-      map.set(label, existing);
-    }
-    // Ordre : plus récent d'abord (Aujourd'hui → Hier → ...)
-    const order = ["Aujourd'hui", "Hier", "Cette semaine", "Ce mois-ci", "Plus ancien"];
-    return order.filter((l) => map.has(l)).map((l) => ({ label: l, items: map.get(l)! }));
-  }, [filtered]);
+  /* L'EN-TÊTE DE PAGE MONTE DANS LA BARRE DE TÊTE. La boîte de réception
+     n'appartient à aucune section : la moitié gauche de la barre est vide, et
+     un bandeau de titre en pleine page sous une barre vide, c'est deux fois la
+     même chose et cent pixels de moins pour les notifications. */
+  const lead = useMemo(
+    () => (
+      <div className="flex min-w-0 items-center gap-2.5">
+        <Bell className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+        <span className="tv-label shrink-0 text-slate-400">{t("inbox.title")}</span>
+        <span aria-hidden className="h-3.5 w-px shrink-0 bg-white/[0.12]" />
+        <span
+          className={cn(
+            "tv-row-label truncate",
+            unreadTotal > 0 && "text-[var(--tv-highlight)] font-semibold",
+          )}
+        >
+          {unreadTotal > 0
+            ? t("inbox.unreadCount").replace("{n}", String(unreadTotal))
+            : t("inbox.allRead")}
+        </span>
+      </div>
+    ),
+    [unreadTotal, t],
+  );
+  usePageLead(lead);
 
-  const countByCategory = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const n of notifs) {
-      counts[n.category] = (counts[n.category] ?? 0) + 1;
+  const actions = useMemo(
+    () =>
+      hasUnreadFiltered ? (
+        <Button variant="subtle" size="sm" onClick={markAllRead} className="shrink-0">
+          <CheckCheck className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{t("inbox.markAllRead")}</span>
+        </Button>
+      ) : null,
+    [hasUnreadFiltered, markAllRead, t],
+  );
+  usePageActions(actions);
+
+  const groupes = useMemo(() => {
+    const buckets = new Map<number, AppNotification[]>();
+    for (const n of filtered) {
+      const i = groupIndex(new Date(n.createdAt));
+      (buckets.get(i) ?? buckets.set(i, []).get(i)!).push(n);
     }
-    return counts;
-  }, [notifs]);
+    return [...buckets.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([i, items]) => ({ label: t(GROUPS[i].label), key: GROUPS[i].key, items }));
+  }, [filtered, t]);
 
   return (
-    <PageContainer>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
-            <Bell className="w-4 h-4" />
-          </span>
-          <div>
-            <h1 className="tv-title">{t("inbox.title")}</h1>
-            <p className="tv-prose text-slate-500">
-              {/* Le compte et son état étaient écrits en français en dur, dans
-                  une interface traduite en douze langues. */}
-              {unreadTotal > 0
-                ? t("inbox.unreadCount").replace("{n}", String(unreadTotal))
-                : t("inbox.allRead")}
-            </p>
-          </div>
-        </div>
-        {unreadTotal > 0 && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-300">
-            <BellRing className="w-3.5 h-3.5" />
-            {unreadTotal}
-          </span>
-        )}
-      </div>
-
-      {/* Filter tabs with category counts */}
-      {/* Elle passe à la ligne au lieu de défiler : sept pastilles sur 390px,
-          la dernière était coupée par le bord et rien ne disait qu'il y en
-          avait d'autres. Deux rangées ne coupent rien. */}
-      <div className="mb-4 flex flex-wrap items-center gap-1.5">
-        {FILTER_KINDS.map((k) => {
-          const count = k === "all" ? notifs.length : (countByCategory[k] ?? 0);
-          const unread =
-            k === "all" ? unreadTotal : notifs.filter((n) => n.category === k && !n.readAt).length;
-          return (
+    <div className="mx-auto max-w-3xl p-4 md:p-5">
+      {/* ── LES FILTRES ─────────────────────────────────────────────────── */}
+      {notifs.length > 0 && (
+        <div className="animate-fade-in-up mb-3 flex flex-wrap items-center gap-1.5">
+          {filtres.map((f) => (
             <button
-              key={k}
-              onClick={() => setFilter(k)}
-              className={cn(
-                "flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition",
-                filter === k
-                  ? "bg-cyan-500/10 border-cyan-500/25 text-cyan-300"
-                  : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
-              )}
+              key={f.kind}
+              onClick={() => setFilter(f.kind)}
+              aria-pressed={filter === f.kind}
+              className={cn("rp-chip", filter === f.kind && "rp-chip-active")}
             >
-              {/* La clé se construit depuis le nom du filtre. Deux d'entre eux
-                  — `jarvis` et `activity` — n'en avaient AUCUNE : leurs boutons
-                  se rendaient vides, 26px de large sur 14 de haut, deux cibles
-                  sans libellé dans la barre. Et « Toutes » était écrit en
-                  français en dur dans une interface traduite. */}
-              {t(`inbox.filter${k.charAt(0).toUpperCase() + k.slice(1)}` as TKey)}
-              {unread > 0 && (
-                <span
-                  className={cn(
-                    "min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold",
-                    filter === k
-                      ? "bg-cyan-500/20 text-cyan-300"
-                      : "bg-white/[0.08] text-slate-400",
-                  )}
-                >
-                  {unread}
-                </span>
-              )}
+              <span>{f.label}</span>
+              <span
+                className={cn(
+                  "tv-figure text-[10px]",
+                  f.nonLues > 0 ? "text-[var(--tv-highlight)]" : "text-slate-600",
+                )}
+              >
+                {f.total}
+              </span>
             </button>
-          );
-        })}
-        {hasUnreadFiltered && (
-          <button
-            onClick={markAllRead}
-            className="ml-auto flex h-9 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-medium text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300"
-          >
-            <CheckCheck className="w-3.5 h-3.5" />
-            {t("inbox.markAllRead")}
-          </button>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* New today banner */}
+      {/* ── LA BANNIÈRE DU PREMIER PASSAGE ──────────────────────────────── */}
       {isFirstVisitToday && unreadTotal > 0 && (
-        <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-cyan-500/[0.06] border border-cyan-500/15 px-3.5 py-2.5">
-          <span className="relative flex h-2.5 w-2.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400" />
+        <div className="animate-fade-in-up mb-3 flex items-center gap-2.5 rounded-xl border border-cyan-500/15 bg-cyan-500/[0.06] px-3.5 py-2.5">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
           </span>
-          <span className="text-xs text-cyan-200/90 font-medium">
-            {unreadTotal} nouvelle{unreadTotal > 1 ? "s" : ""} notification
-            {unreadTotal > 1 ? "s" : ""} depuis ta dernière visite
+          <span className="text-xs font-medium text-cyan-200/90">
+            {t("inbox.newSinceLastVisit").replace("{n}", String(unreadTotal))}
           </span>
         </div>
       )}
 
-      {/* Notification list grouped by period */}
+      {/* ── LA LISTE ────────────────────────────────────────────────────── */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <BellOff className="w-10 h-10 text-slate-600 mb-3" />
-          <p className="text-sm text-slate-500">
+          <BellOff className="mb-3 h-10 w-10 text-slate-600" />
+          <p className="max-w-sm text-sm text-slate-500">
             {filter === "all" ? t("inbox.empty") : t("inbox.emptyFiltered")}
           </p>
         </div>
       ) : (
         <div className="space-y-5">
-          {groups.map(({ label, items }) => (
-            <div key={label}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="tv-label text-slate-500">{label}</span>
-                <span className="flex-1 h-px bg-white/[0.04]" />
-                <span className="text-[10px] text-slate-600 font-semibold">{items.length}</span>
+          {groupes.map(({ label, key, items }) => (
+            <section key={key}>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="tv-label shrink-0 text-slate-500">{label}</span>
+                <span aria-hidden className="rp-rule h-px flex-1" />
+                <span className="tv-figure shrink-0 text-[10px] text-slate-600">
+                  {items.length}
+                </span>
               </div>
-              <div className="space-y-1">
-                {items.map((n) => {
-                  const Icon = CATEGORY_ICON[n.category] ?? Bell;
-                  const unread = !n.readAt;
-                  const time = new Date(n.createdAt);
-                  const timeStr = time.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-
-                  return (
-                    <div
+              <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+                <div className="divide-y divide-white/[0.04]">
+                  {items.map((n) => (
+                    <Ligne
                       key={n.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openNotification(n)}
-                      onKeyDown={(e) => e.key === "Enter" && openNotification(n)}
-                      className={cn(
-                        "group relative w-full text-left rounded-xl border transition cursor-pointer flex items-start gap-3 px-3 py-2.5",
-                        unread
-                          ? "border-cyan-500/10 bg-cyan-500/[0.03] hover:border-cyan-500/25"
-                          : "border-white/[0.04] bg-transparent hover:bg-white/[0.02]",
-                      )}
-                    >
-                      {unread && (
-                        <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-cyan-400" />
-                      )}
-                      {/* Category icon */}
-                      <span
-                        className={cn(
-                          "grid h-7 w-7 shrink-0 place-items-center rounded-lg mt-0.5",
-                          CATEGORY_ACCENT[n.category] ?? "text-slate-400 bg-slate-500/10",
-                        )}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                      </span>
-                      <div className="flex-1 min-w-0 pr-4">
-                        <div className="flex items-center gap-2">
-                          <p
-                            className={cn(
-                              "text-sm truncate flex-1",
-                              unread ? "text-white font-semibold" : "text-slate-400",
-                            )}
-                          >
-                            {n.title}
-                          </p>
-                          <span className="tv-figure text-[10px] text-slate-600 shrink-0">
-                            {timeStr}
-                          </span>
-                        </div>
-                        {n.body && (
-                          <p className="tv-prose text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
-                        )}
-                      </div>
-                      {unread && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkRead(n.id);
-                          }}
-                          className="absolute bottom-2 right-2.5 grid h-6 w-6 place-items-center rounded-md bg-white/[0.04] hover:bg-white/[0.08] transition text-slate-400 opacity-0 group-hover:opacity-100"
-                          title="Marquer comme lu"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                      n={n}
+                      onOpen={() => openNotification(n)}
+                      onRead={() => handleMarkRead(n.id)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            </section>
           ))}
         </div>
       )}
-    </PageContainer>
+    </div>
+  );
+}
+
+/**
+ * UNE LIGNE DE NOTIFICATION.
+ *
+ * Trois signaux disaient « non lue » en même temps — une pastille en haut à
+ * droite, un fond teinté et une bordure teintée. Il n'en reste qu'UN, mais il
+ * est structurel : un liseré vertical à gauche, à la couleur de la sévérité.
+ * Le titre en blanc gras contre gris fait le reste.
+ */
+function Ligne({
+  n,
+  onOpen,
+  onRead,
+}: {
+  n: AppNotification;
+  onOpen: () => void;
+  onRead: () => void;
+}) {
+  const { t } = useT();
+  const Icon = CATEGORY_ICON[n.category] ?? Bell;
+  const nonLue = !n.readAt;
+  const ton = SEVERITY[n.severity] ?? SEVERITY.info;
+  const heure = new Date(n.createdAt).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      className="group relative flex w-full cursor-pointer items-start gap-3 py-3 pl-4 pr-3 text-left transition hover:bg-white/[0.03]"
+    >
+      {/* Le liseré — l'unique marque de « non lue ». */}
+      {nonLue && (
+        <span aria-hidden className={cn("absolute inset-y-2 left-0 w-[3px] rounded-r", ton.rail)} />
+      )}
+
+      <span className={cn("mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg", ton.icon)}>
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <p
+            className={cn(
+              "min-w-0 flex-1 text-sm leading-snug",
+              nonLue ? "font-semibold text-white" : "text-slate-400",
+            )}
+          >
+            {n.title}
+          </p>
+          <span className="tv-figure shrink-0 text-[10px] text-slate-600">{heure}</span>
+        </div>
+        {/* LE SUJET, ÉCRIT. C'est la ligne qui manquait. */}
+        <div className="tv-label mt-1 text-slate-600">{t(CATEGORY_LABEL[n.category])}</div>
+        {n.body && <p className="tv-prose mt-1 line-clamp-2 text-slate-500">{n.body}</p>}
+      </div>
+
+      {nonLue && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRead();
+          }}
+          title={t("inbox.markRead")}
+          aria-label={t("inbox.markRead")}
+          /* TOUJOURS VISIBLE. Il n'apparaissait qu'au survol : sur un écran
+             tactile, il n'existait pas. */
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 opacity-70 transition hover:bg-white/[0.08] hover:text-white group-hover:opacity-100"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
   );
 }
