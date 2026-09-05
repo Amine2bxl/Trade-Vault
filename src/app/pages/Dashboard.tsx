@@ -319,7 +319,7 @@ export default function Dashboard({
          Le Journal garde ses actions en `subtle` — il a déjà son propre bouton
          d'ajout dans sa liste, et deux verts pleins sur une même barre se
          disputeraient l'attention. */
-      <Button variant="primary" onClick={onAddTrade} className="relative hidden md:flex">
+      <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
         <Plus className="w-4 h-4" /> {t("common.addTrade")}
         {hasDraft && (
           <span className="tv-label flex items-center gap-1 ml-1 pl-2 border-l border-white/25">
