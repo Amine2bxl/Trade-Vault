@@ -25,7 +25,7 @@ interface ImportCsvModalProps {
   onImport: (
     trades: Trade[],
     onProgress?: (done: number, total: number) => void,
-  ) => Promise<{ saved: number; failed: number; planLimitReached?: boolean }>;
+  ) => Promise<{ saved: number; failed: number }>;
 }
 
 /** Chaque refus a son message : « il ne s'est rien passé » n'est pas une
@@ -57,11 +57,6 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     duplicates: number;
     invalid: number;
     failed: number;
-    /** Les lignes refusées le sont par la LIMITE DE L'OFFRE, pas par une panne.
-     *  Sans cette distinction, un compte gratuit important 500 trades lisait
-     *  « 490 lignes ont échoué » — un message d'incident pour ce qui est une
-     *  décision commerciale. */
-    planLimitReached?: boolean;
   } | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -120,7 +115,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     setConfirming(false);
     setProgress({ done: 0, total: plan.fresh.length });
     try {
-      const { saved, failed, planLimitReached } = await onImport(plan.fresh, (done, total) =>
+      const { saved, failed } = await onImport(plan.fresh, (done, total) =>
         setProgress({ done, total }),
       );
       setResult({
@@ -128,7 +123,6 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
         duplicates: plan.duplicates,
         invalid: mappedTrades.invalid,
         failed,
-        planLimitReached,
       });
     } catch (e) {
       console.error("Import failed", e);
@@ -218,16 +212,8 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
               )}
             </div>
             {/* Un échec silencieux ferait croire que tout est passé. */}
-<<<<<<< HEAD
             {result.failed > 0 && (
               <p className="mt-3 tv-prose text-red-400">
-=======
-            {result.planLimitReached && (
-              <p className="text-[13px] text-amber-300">{t("import.planLimit")}</p>
-            )}
-            {result.failed > 0 && !result.planLimitReached && (
-              <p className="mt-3 text-xs text-red-400">
->>>>>>> origin/claude/minimal-tokens-caveman-skill-l3dmgc
                 {t("import.failedRows").replace("{n}", String(result.failed))}
               </p>
             )}

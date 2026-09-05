@@ -796,13 +796,8 @@ function AppContent() {
           {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
           <MobileActions page={page} setPage={setPage} />
         </div>
-<<<<<<< HEAD
         <PageActionsProvider setActions={setHeaderSlot}>
-          {accountsReady ? (
-=======
-        <PageActionsProvider setActions={setPageActions}>
           {accountsReady && gateResolved ? (
->>>>>>> origin/claude/minimal-tokens-caveman-skill-l3dmgc
             <PageErrorBoundary resetKey={page}>
               {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.

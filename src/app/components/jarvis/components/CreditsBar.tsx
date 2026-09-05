@@ -58,11 +58,7 @@ export default function CreditsBar() {
             <defs>
               <linearGradient id="creditsGrad" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="var(--tv-highlight)" />
-<<<<<<< HEAD
                 <stop offset="100%" stopColor="#2dd4bf" />
-=======
-                <stop offset="100%" stopColor="var(--tv-accent-2)" />
->>>>>>> origin/claude/minimal-tokens-caveman-skill-l3dmgc
               </linearGradient>
             </defs>
           </svg>
