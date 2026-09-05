@@ -160,6 +160,7 @@ const fr: Dict = {
   "profile.startingEquity": "Capital de départ",
   "profile.startingEquityHint":
     "Utilisé comme base pour votre courbe d'équité et la croissance du compte.",
+  "profile.accountActions": "Compte",
   "profile.getInTouch": "Contact",
   "profile.support": "Support",
   "profile.supportSub": "Bugs & questions",

@@ -853,7 +853,7 @@ function AppContent() {
                     {page === "subscription" && <Subscription />}
                     {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
                     {page === "inbox" && <Inbox />}
-                    {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                    {page === "profile" && <Profile trades={trades} />}
                   </PageGate>
                 </PageTransition>
               </Suspense>

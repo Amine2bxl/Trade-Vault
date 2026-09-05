@@ -195,6 +195,7 @@ const en = {
   "profile.language": "Language",
   "profile.startingEquity": "Starting Account Equity",
   "profile.startingEquityHint": "Used as the baseline for your equity curve and account growth.",
+  "profile.accountActions": "Account",
   "profile.getInTouch": "Get in touch",
   "profile.support": "Support",
   "profile.supportSub": "Bug reports & questions",
