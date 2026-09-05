@@ -15,9 +15,7 @@ export function PlatformsStrip() {
   const items: LandingKey[] = ["platforms.i1", "platforms.i2", "platforms.i3", "platforms.i4"];
   return (
     <div className="reveal rounded-2xl border border-white/[.07] bg-white/[.02] px-6 py-6 backdrop-blur-md">
-      <p className="text-center text-[10px] font-bold uppercase tracking-[.18em] text-slate-500">
-        {t("platforms.label")}
-      </p>
+      <p className="tv-label text-center text-slate-500">{t("platforms.label")}</p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
         {items.map((k) => (
           <span

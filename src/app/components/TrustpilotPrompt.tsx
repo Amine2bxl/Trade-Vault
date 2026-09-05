@@ -97,7 +97,7 @@ export default function TrustpilotPrompt({
       role="dialog"
       aria-label={t("trustpilot.title")}
       className={cn(
-        "fixed z-[80] left-4 right-4 md:left-auto md:right-6 md:w-[360px]",
+        "fixed z-[var(--tv-z-modal)] left-4 right-4 md:left-auto md:right-6 md:w-[360px]",
         "bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] md:bottom-6",
         "glass-strong rounded-2xl border border-emerald-500/20 shadow-2xl shadow-black/50 p-4 animate-slide-up",
       )}
@@ -108,7 +108,7 @@ export default function TrustpilotPrompt({
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-white">{t("trustpilot.title")}</div>
-          <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{t("trustpilot.body")}</p>
+          <p className="tv-prose text-slate-400 mt-0.5">{t("trustpilot.body")}</p>
         </div>
         <button
           onClick={() => close("dismissed")}
@@ -121,7 +121,7 @@ export default function TrustpilotPrompt({
       <div className="flex items-center gap-2 mt-3">
         <button
           onClick={rate}
-          className="flex-1 h-11 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/20 transition"
+          className="flex-1 h-11 rounded-xl text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-400 transition"
         >
           {t("trustpilot.cta")}
         </button>

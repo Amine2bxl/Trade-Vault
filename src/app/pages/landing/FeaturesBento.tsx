@@ -40,13 +40,11 @@ export function FeaturesBento() {
               <span className="font-bold text-red-300">{t("bento.jarvis.pattern")}</span>{" "}
               {t("bento.jarvis.msg")}
             </div>
-            <div className="ml-auto max-w-[70%] rounded-xl rounded-br-md bg-gradient-to-r from-cyan-500 to-teal-500 px-3.5 py-2.5 text-[11px] font-medium text-white">
+            <div className="ml-auto max-w-[70%] rounded-xl rounded-br-md tv-accent-fill px-3.5 py-2.5 text-[11px] font-medium">
               {t("bento.jarvis.q")}
             </div>
             <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] px-3.5 py-2.5">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                {t("bento.jarvis.mission")}
-              </div>
+              <div className="tv-label text-emerald-400">{t("bento.jarvis.mission")}</div>
               <div className="mt-0.5 text-[11px] text-slate-200">{t("bento.jarvis.mission.d")}</div>
             </div>
           </div>
@@ -76,7 +74,7 @@ export function FeaturesBento() {
                   </div>
                 </div>
                 <div className="ml-3 shrink-0 text-right">
-                  <div className="text-[11px] font-bold tabular-nums text-red-400">{m.cost}</div>
+                  <div className="tv-figure text-[11px] text-red-400">{m.cost}</div>
                   <div className="mt-1 h-1 w-16 overflow-hidden rounded-full bg-white/[0.05]">
                     <div
                       className="h-full rounded-full bg-red-500/60"
@@ -115,12 +113,11 @@ export function FeaturesBento() {
                 cy="60"
                 r="52"
                 fill="none"
-                stroke="#22d3ee"
+                stroke="var(--tv-highlight)"
                 strokeWidth="10"
                 strokeLinecap="round"
                 strokeDasharray="326"
                 strokeDashoffset={326 - 326 * 0.78}
-                style={{ filter: "drop-shadow(0 0 6px rgba(34,211,238,0.4))" }}
               />
             </svg>
             <span className="absolute font-display text-2xl font-bold text-cyan-300">78</span>
@@ -147,12 +144,8 @@ export function FeaturesBento() {
                 key={s.l}
                 className="rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2.5 text-center"
               >
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  {s.l}
-                </div>
-                <div className="mt-0.5 font-display text-sm font-bold tabular-nums text-cyan-300">
-                  {s.v}
-                </div>
+                <div className="tv-label text-slate-500">{s.l}</div>
+                <div className="mt-0.5 tv-figure text-sm text-cyan-300">{s.v}</div>
               </div>
             ))}
           </div>
@@ -171,16 +164,14 @@ export function FeaturesBento() {
           <p className="mt-2.5 text-[13px] leading-6 text-slate-400">{t("bento.progress.d")}</p>
           <div className="mt-5">
             <div className="flex items-baseline gap-2">
-              <span className="font-display text-xl font-bold tabular-nums text-emerald-400">
-                +$4,218.50
-              </span>
+              <span className="tv-figure text-xl text-emerald-400">+$4,218.50</span>
               <span className="text-[11px] font-bold text-emerald-400/70">+16.9%</span>
             </div>
             <svg viewBox="0 0 320 80" className="mt-3 h-16 w-full" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="featEq" x1="0" y1="0" x2="0" y2="1">
-                  <stop stopColor="#22d3ee" stopOpacity="0.18" />
-                  <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+                  <stop stopColor="var(--tv-highlight)" stopOpacity="0.18" />
+                  <stop offset="1" stopColor="var(--tv-highlight)" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <polygon
@@ -190,7 +181,7 @@ export function FeaturesBento() {
               <polyline
                 points="0,70 40,56 80,62 120,40 160,50 200,28 240,38 280,18 320,10"
                 fill="none"
-                stroke="#22d3ee"
+                stroke="var(--tv-highlight)"
                 strokeWidth="2"
               />
             </svg>

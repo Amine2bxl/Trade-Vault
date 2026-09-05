@@ -199,7 +199,7 @@ export function GoalPicker({
       <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-1.5">
         {tr("Choisis tes objectifs", "Pick your goals")}
       </h2>
-      <p className="text-xs text-slate-500 mb-3">
+      <p className="tv-prose text-slate-500 mb-3">
         {tr(
           "Sélectionnes-en autant que tu veux — le plan les combine en 6 étapes mensuelles.",
           "Select as many as you want — the plan combines them into 6 monthly steps.",
@@ -241,7 +241,7 @@ export function GoalPicker({
                     {cur !== null && (
                       <>
                         {" · "}
-                        <span className="text-slate-300 font-semibold tabular-nums">
+                        <span className="tv-figure text-slate-300">
                           {tr("actuel", "current")}: {m.unit === "$" ? "$" : ""}
                           {cur.toFixed(k === "capital" ? 0 : 2)}
                           {m.unit && m.unit !== "$" ? m.unit : ""}
@@ -318,7 +318,7 @@ export function GoalPicker({
                       placeholder={m.ph}
                       className="w-full h-11 bg-white/[0.05] border border-white/[0.1] rounded-xl px-3.5 pr-16 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                    <span className="tv-label absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
                       {tr("cible 6 mois", "6-mo target")}
                     </span>
                   </div>
@@ -334,9 +334,7 @@ export function GoalPicker({
         disabled={busy || !goals}
         className={cn(
           "w-full h-12 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2",
-          goals && !busy
-            ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:brightness-110"
-            : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
+          goals && !busy ? "tv-accent-fill" : "bg-white/[0.04] text-slate-600 cursor-not-allowed",
         )}
       >
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -349,7 +347,7 @@ export function GoalPicker({
               )
             : tr("Générer mon plan d'action", "Generate my action plan")}
       </button>
-      <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
+      <p className="mt-3 flex items-center justify-center gap-1.5 tv-row-label">
         <Bell className="w-3 h-3" />
         {tr(
           "Tu recevras des rappels push pour les actions importantes.",
@@ -460,7 +458,7 @@ export function PlanView({
                     <div className="text-[13px] font-semibold text-white truncate">
                       {g.kind === "custom" ? g.label : fr ? meta.fr : meta.en}
                     </div>
-                    <div className="text-[11px] text-slate-500 tabular-nums">
+                    <div className="tv-figure text-[11px] text-slate-500">
                       {fmtVal(g, g.startValue)} →{" "}
                       <span className="text-cyan-300 font-bold">{fmtVal(g, g.targetValue)}</span>
                       {" · "}
@@ -481,9 +479,7 @@ export function PlanView({
                   <div
                     className={cn(
                       "h-full rounded-full transition duration-250",
-                      finalReached
-                        ? "bg-emerald-400/80"
-                        : "bg-gradient-to-r from-cyan-500 to-teal-400",
+                      finalReached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
                     )}
                     style={{
                       width: `${Math.round((goalDirection(g) === "down" ? (finalReached ? 1 : overall === 0 && current <= g.startValue ? Math.max(0, Math.min(1, (g.startValue - current) / (g.startValue - g.targetValue || 1))) : overall) : overall) * 100)}%`,
@@ -496,7 +492,7 @@ export function PlanView({
                     objectif de win rate ou de discipline, et en fabriquer un
                     pourcentage serait inventer un chiffre. */}
                 {g.kind === "capital" && !finalReached && forecast && (
-                  <p className="mt-2 text-[11px] text-slate-400 tabular-nums">
+                  <p className="tv-figure mt-2 text-[11px] text-slate-400">
                     {tr(
                       `${Math.round(forecast.probability * 100)} % de chances d'y arriver au rythme actuel`,
                       `${Math.round(forecast.probability * 100)}% chance at your current pace`,
@@ -574,13 +570,13 @@ export function PlanView({
                     >
                       {tr("Mois", "Month")} {i + 1} · {monthLabel(monthOf(plan, i))}
                       {i === cur && (
-                        <span className="ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+                        <span className="tv-label ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-cyan-300">
                           {tr("en cours", "current")}
                         </span>
                       )}
                     </span>
                     {!locked && (
-                      <span className="text-[11px] font-bold tabular-nums text-slate-400 shrink-0">
+                      <span className="tv-figure text-[11px] text-slate-400 shrink-0">
                         {Math.round(taskCompletion * 100)}% {tr("tâches", "tasks")}
                       </span>
                     )}
@@ -589,7 +585,7 @@ export function PlanView({
                   {!locked && (
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                       {plan.goals.map((g) => (
-                        <span key={g.id} className="text-[10px] text-slate-500 tabular-nums">
+                        <span key={g.id} className="tv-figure text-[10px] text-slate-500">
                           {g.kind === "custom"
                             ? g.label
                             : fr
@@ -643,16 +639,14 @@ export function PlanView({
                               <div
                                 className={cn(
                                   "h-full rounded-full transition duration-250",
-                                  reached
-                                    ? "bg-emerald-400/80"
-                                    : "bg-gradient-to-r from-cyan-500 to-teal-400",
+                                  reached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
                                 )}
                                 style={{ width: `${Math.round(prog * 100)}%` }}
                               />
                             </div>
                             <span
                               className={cn(
-                                "text-[10px] font-bold tabular-nums w-9 text-right",
+                                "tv-figure text-[10px] w-9 text-right",
                                 reached ? "text-emerald-400" : "text-slate-400",
                               )}
                             >
@@ -668,7 +662,7 @@ export function PlanView({
                   <div>
                     <div className="flex items-center gap-1.5 mb-2">
                       <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
-                      <span className="text-[10px] uppercase tracking-[0.15em] text-cyan-300 font-bold">
+                      <span className="tv-label text-cyan-300">
                         {tr("Actions du mois", "This month's actions")}
                       </span>
                     </div>
@@ -751,7 +745,7 @@ function ManualValueInput({
       onBlur={commit}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
       aria-label={fr ? "Valeur actuelle" : "Current value"}
-      className="w-20 h-9 shrink-0 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 text-xs font-bold text-white text-right tabular-nums focus:outline-none focus:border-cyan-500/40"
+      className="tv-figure w-20 h-9 shrink-0 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 text-xs text-white text-right focus:outline-none focus:border-cyan-500/40"
     />
   );
 }

@@ -53,7 +53,7 @@ export function TH({
   return (
     <th
       className={cn(
-        "px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500",
+        "tv-label px-5 py-3 text-slate-500",
         align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left",
         className,
       )}

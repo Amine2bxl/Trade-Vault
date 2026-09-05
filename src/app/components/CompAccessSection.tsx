@@ -120,14 +120,12 @@ export default function CompAccessSection() {
   return (
     <div className="glass-strong space-y-4 rounded-3xl p-5">
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-600">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-500">
           <Gift className="h-4 w-4 text-white" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-white">
-            {fr ? "Accès offert" : "Complimentary access"}
-          </h2>
-          <p className="text-[11px] text-slate-500">
+          <h2 className="tv-title">{fr ? "Accès offert" : "Complimentary access"}</h2>
+          <p className="tv-row-label">
             {fr
               ? "Premium gratuit pour une adresse e-mail, avec ou sans compte existant."
               : "Free premium for an email address, with or without an existing account."}

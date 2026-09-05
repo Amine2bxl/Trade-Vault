@@ -306,17 +306,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
               `stagger-${card.delay}`,
             )}
           >
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">
-              {card.label}
-            </div>
-            <div
-              className={cn(
-                "font-display text-base md:text-xl font-extrabold tabular-nums",
-                card.color,
-              )}
-            >
-              {card.value}
-            </div>
+            <div className="tv-label text-slate-500 mb-1">{card.label}</div>
+            <div className={cn("tv-figure text-base md:text-xl", card.color)}>{card.value}</div>
           </div>
         ))}
       </div>
@@ -332,12 +323,12 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <h3 className="text-lg md:text-xl font-bold text-white tracking-tight">
+            <h3 className="tv-title tracking-tight">
               {MONTHS[month]} '{String(year).slice(-2)}
             </h3>
             <button
               onClick={goToday}
-              className="text-[10px] md:text-xs text-cyan-400 hover:text-cyan-300 font-semibold px-2 md:px-3 py-1 rounded-lg hover:bg-cyan-500/10 transition active:scale-95"
+              className="flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-cyan-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 active:scale-95"
             >
               {t("calendar.today")}
             </button>
@@ -357,14 +348,14 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <div
               key={d + i}
               className={cn(
-                "py-1.5 md:py-3 text-center text-[11px] md:text-xs font-bold uppercase tracking-widest",
+                "tv-label py-1.5 md:py-3 text-center md:text-xs",
                 i >= 5 ? "text-slate-700" : "text-slate-500",
               )}
             >
               {d}
             </div>
           ))}
-          <div className="hidden md:block py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-600 border-l border-white/[0.06]">
+          <div className="tv-label hidden md:block py-3 text-center text-slate-600 border-l border-white/[0.06]">
             {t("calendar.week")}
           </div>
         </div>
@@ -431,7 +422,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       <div className="flex items-center justify-between">
                         <span
                           className={cn(
-                            "text-xs md:text-sm font-semibold tabular-nums",
+                            "tv-figure text-xs md:text-sm",
                             isToday
                               ? "text-cyan-300"
                               : data
@@ -459,7 +450,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                         <div className="flex-1 flex flex-col justify-center">
                           <div
                             className={cn(
-                              "font-display text-sm md:text-lg font-extrabold tabular-nums leading-none",
+                              "tv-figure text-sm md:text-lg leading-none",
                               isAllBE
                                 ? "text-slate-300"
                                 : isWin
@@ -478,7 +469,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
 
                       {/* Footer: trade count + RR */}
                       {data && (
-                        <div className="flex items-center gap-1.5 text-[11px] font-semibold tabular-nums">
+                        <div className="tv-figure flex items-center gap-1.5 text-[11px]">
                           <span className="text-slate-400">
                             {data.count}{" "}
                             {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
@@ -502,12 +493,12 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                     week.days === 0 && "opacity-40",
                   )}
                 >
-                  <div className="text-[11px] md:text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">
+                  <div className="tv-label text-slate-600 mb-0.5">
                     {t("calendar.week")} {rowIdx + 1}
                   </div>
                   <div
                     className={cn(
-                      "font-display text-[13px] md:text-sm font-extrabold tabular-nums leading-none",
+                      "tv-figure text-[13px] md:text-sm leading-none",
                       week.days === 0
                         ? "text-slate-600"
                         : week.pnl > 0
@@ -522,7 +513,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       : `${week.pnl >= 0 ? "+" : "−"}${Math.abs(week.pnl).toFixed(0)}`}
                   </div>
                   {week.days > 0 && (
-                    <div className="text-[11px] md:text-[10px] text-slate-500 tabular-nums mt-0.5">
+                    <div className="tv-figure text-[11px] md:text-[10px] text-slate-500 mt-0.5">
                       {week.days} {week.days === 1 ? t("calendar.day") : t("calendar.days")}
                     </div>
                   )}

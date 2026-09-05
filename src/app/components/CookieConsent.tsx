@@ -28,7 +28,7 @@ export function CookieConsent() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Préférences de cookies"
-        className="fixed bottom-4 left-4 z-[200] flex items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-slate-500 backdrop-blur-md transition hover:border-cyan-500/30 hover:bg-white/[.06] hover:text-slate-200"
+        className="fixed bottom-4 left-4 z-[var(--tv-z-top)] flex items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-slate-500 backdrop-blur-md transition hover:border-cyan-500/30 hover:bg-white/[.06] hover:text-slate-200"
       >
         <Cookie className="w-3.5 h-3.5" /> Cookies
       </button>
@@ -38,11 +38,11 @@ export function CookieConsent() {
           <div className="flex items-center gap-2.5 mb-1.5">
             <span className="relative shrink-0">
               <span className="absolute -inset-0.5 rounded-lg bg-cyan-500/30 blur-sm" />
-              <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-                <ShieldCheck className="w-4 h-4 text-white" />
+              <span className="relative grid h-8 w-8 place-items-center rounded-xl tv-accent-fill">
+                <ShieldCheck className="w-4 h-4" />
               </span>
             </span>
-            <h2 className="text-base font-bold text-white">Protection de tes données</h2>
+            <h2 className="tv-title">Protection de tes données</h2>
           </div>
           <p className="text-sm leading-6 text-slate-300">
             TradeVault utilise des cookies et le stockage local pour assurer le fonctionnement de
@@ -63,7 +63,7 @@ export function CookieConsent() {
           </a>
           <button
             onClick={accept}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+            className="inline-flex items-center gap-1.5 rounded-xl tv-accent-fill px-5 py-2.5 text-sm font-bold transition"
           >
             J'accepte
           </button>

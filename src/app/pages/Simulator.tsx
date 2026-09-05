@@ -227,12 +227,10 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
         {/* ── Colonne des paramètres ─────────────────────────────────────── */}
         <Card>
           <CardBody className="space-y-3">
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">
-              {t("sim.rulesTitle")}
-            </p>
+            <p className="tv-label text-slate-500">{t("sim.rulesTitle")}</p>
             {/* Le rappel n'est pas décoratif : il dit au trader d'où viennent
                 les chiffres qu'il saisit, et que TradeVault ne les connaît pas. */}
-            <p className="text-[11px] text-slate-500 flex gap-1.5">
+            <p className="tv-row-label flex gap-1.5">
               <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
               {t("sim.rulesHint")}
             </p>
@@ -287,9 +285,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
 
             {saved.length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  {t("sim.savedTitle")}
-                </p>
+                <p className="tv-label text-slate-500">{t("sim.savedTitle")}</p>
                 {saved.slice(0, 5).map((s) => (
                   <div
                     key={s.id}
@@ -309,7 +305,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                         {t(`sim.dd.${s.rules.drawdownType ?? "static"}` as never)}
                       </span>
                       {s.lastRiskOfRuin !== null && (
-                        <span className="block text-[11px] text-slate-500 tabular-nums">
+                        <span className="tv-figure block text-[11px] text-slate-500">
                           {t("sim.ruinShort")} {pct(s.lastRiskOfRuin)}
                           {s.lastSampleSize !== null && ` · n=${s.lastSampleSize}`}
                         </span>
@@ -351,9 +347,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
               <Card>
                 <CardBody className="space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                      {t("sim.resultsTitle")}
-                    </p>
+                    <p className="tv-label text-slate-500">{t("sim.resultsTitle")}</p>
                     {/* La qualification de l'échantillon est collée au chiffre,
                         jamais reléguée en bas de page : un 92 % sur 8 trades
                         ne se lit pas comme un 92 % sur 400. */}
@@ -383,7 +377,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                     />
                   </div>
 
-                  <p className="text-[11px] text-slate-500">
+                  <p className="tv-row-label">
                     {t("sim.disclaimer")} · {result.engineVersion}
                   </p>
 
@@ -411,10 +405,8 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
 
               <Card>
                 <CardBody className="space-y-2">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                    {t("sim.pnlTitle")}
-                  </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-sm tabular-nums">
+                  <p className="tv-label text-slate-500">{t("sim.pnlTitle")}</p>
+                  <div className="tv-figure grid grid-cols-3 sm:grid-cols-5 gap-2 text-sm">
                     {(
                       [
                         ["P5", result.pnl.p5],
@@ -425,7 +417,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                       ] as const
                     ).map(([label, v]) => (
                       <div key={label}>
-                        <p className="text-[11px] text-slate-500">{label}</p>
+                        <p className="tv-row-label">{label}</p>
                         <p className={v >= 0 ? "text-emerald-400" : "text-red-400"}>
                           {money.format(v)}
                         </p>
@@ -438,11 +430,9 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
               {comparison && (
                 <Card>
                   <CardBody className="space-y-2">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                      {t("sim.compareTitle")}
-                    </p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm tabular-nums">
+                    <p className="tv-label text-slate-500">{t("sim.compareTitle")}</p>
+                    <div className="tv-scroll-x">
+                      <table className="tv-figure w-full text-sm">
                         <thead>
                           <tr className="text-[11px] text-slate-500 text-left">
                             <th className="font-normal pb-1 pr-3">{t("sim.compareScenario")}</th>
@@ -490,7 +480,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-[11px] text-slate-500">{t("sim.compareHint")}</p>
+                    <p className="tv-row-label">{t("sim.compareHint")}</p>
                   </CardBody>
                 </Card>
               )}
@@ -498,9 +488,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
               {sensitivity && (
                 <Card>
                   <CardBody className="space-y-2">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                      {t("sim.leversTitle")}
-                    </p>
+                    <p className="tv-label text-slate-500">{t("sim.leversTitle")}</p>
                     <div className="space-y-1.5">
                       {sensitivity.rows.map((row) => (
                         <div
@@ -510,7 +498,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                           <span className="text-slate-300">
                             {t(`sim.lever.${row.lever.id}` as never)}
                           </span>
-                          <span className="tabular-nums text-slate-400">
+                          <span className="tv-figure text-slate-400">
                             {t("sim.ruinShort")}{" "}
                             <span
                               className={row.deltaRuin <= 0 ? "text-emerald-400" : "text-red-400"}
@@ -582,8 +570,8 @@ function Stat({
         {icon}
         {label}
       </div>
-      <p className="text-xl font-display tabular-nums mt-1">{value}</p>
-      <p className="text-[11px] text-slate-500 tabular-nums">{hint}</p>
+      <p className="text-xl tv-figure mt-1">{value}</p>
+      <p className="tv-figure text-[11px] text-slate-500">{hint}</p>
     </div>
   );
 }

@@ -136,7 +136,7 @@ export default function TradingRulesSection() {
           </button>
         )}
       </div>
-      <p className="text-[11px] text-slate-500 leading-relaxed -mt-1">{t("rules.hint")}</p>
+      <p className="tv-row-label leading-relaxed -mt-1">{t("rules.hint")}</p>
 
       {/* Existing rules */}
       {loaded && rules.length === 0 && !adding && (

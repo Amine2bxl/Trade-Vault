@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Cell,
   ReferenceLine,
+  CartesianGrid,
 } from "recharts";
 import {
   CalendarRange,
@@ -22,7 +23,18 @@ import {
 import { Trade } from "../types";
 import { formatPnl } from "../utils/tradeCalcs";
 import { MIN_BUCKET_SAMPLE } from "../utils/quantStats";
-import { CHART_ANIMATION, tooltipStyle } from "../utils/chartTheme";
+import {
+  AXIS_TICK,
+  BAR_FILL_GREEN,
+  BAR_FILL_RED,
+  BAR_RADIUS,
+  CHART_GREEN,
+  CHART_RED,
+  CHART_ANIMATION,
+  EQUITY_GRID,
+  moneyAxisProps,
+  tooltipStyle,
+} from "../utils/chartTheme";
 import {
   ASSET_SEASONALITY,
   CATEGORY_LABELS,
@@ -172,27 +184,28 @@ function AssetSeasonality() {
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">
+            <h3 className="tv-title mb-0.5">
               {asset.name} — {t("seasonality.monthlyBias")}
             </h3>
-            <p className="text-[10px] text-slate-500">{t("seasonality.monthlyBiasSub")}</p>
+            <p className="tv-hint">{t("seasonality.monthlyBiasSub")}</p>
           </div>
-          <span className="text-[10px] font-bold text-slate-500 tabular-nums shrink-0">
+          <span className="tv-figure text-[10px] text-slate-500 shrink-0">
             {asset.years} {t("seasonality.years")}
           </span>
         </div>
         <div className="h-60 md:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+              <CartesianGrid {...EQUITY_GRID} />
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#64748b", fontSize: 10 }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 interval={0}
               />
               <YAxis
-                tick={{ fill: "#64748b", fontSize: 10 }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 width={40}
@@ -211,12 +224,11 @@ function AssetSeasonality() {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="avg" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+              <Bar dataKey="avg" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                 {chartData.map((d, i) => (
                   <Cell
                     key={i}
-                    fill={d.avg >= 0 ? "var(--tv-accent)" : "#ef4444"}
-                    fillOpacity={d.current ? 1 : 0.7}
+                    fill={d.avg >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED}
                     stroke={d.current ? "var(--tv-highlight)" : "transparent"}
                     strokeWidth={d.current ? 1.5 : 0}
                   />
@@ -232,7 +244,7 @@ function AssetSeasonality() {
               <div className="text-[11px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
               <div
                 className={cn(
-                  "text-[11px] font-bold tabular-nums",
+                  "tv-figure text-[11px]",
                   d.win >= 60
                     ? "text-emerald-400"
                     : d.win >= 50
@@ -252,10 +264,10 @@ function AssetSeasonality() {
         <div className="flex items-center gap-2 mb-4">
           <Layers className="w-4 h-4 text-cyan-400/70" />
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="tv-title">
               {CATEGORY_LABELS[category]} — {t("seasonality.heatmapAll")}
             </h3>
-            <p className="text-[10px] text-slate-500">{t("seasonality.heatmapAllSub")}</p>
+            <p className="tv-hint">{t("seasonality.heatmapAllSub")}</p>
           </div>
         </div>
         <div className="overflow-x-auto -mx-1 px-1">
@@ -269,7 +281,7 @@ function AssetSeasonality() {
                 <div
                   key={m}
                   className={cn(
-                    "text-center text-[11px] font-bold uppercase tracking-wide pb-1",
+                    "tv-label text-center pb-1",
                     i === currentMonth ? "text-cyan-300" : "text-slate-500",
                   )}
                 >
@@ -318,7 +330,7 @@ function AssetHeatRow({
       <button
         onClick={onSelect}
         className={cn(
-          "flex items-center text-[10px] font-bold tabular-nums truncate pr-1 transition-colors",
+          "tv-figure flex items-center text-[10px] truncate pr-1 transition-colors",
           selected ? "text-cyan-300" : "text-slate-400 hover:text-white",
         )}
       >
@@ -335,7 +347,7 @@ function AssetHeatRow({
             key={i}
             title={`${asset.symbol} ${MONTHS_SHORT[i]}: ${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
             className={cn(
-              "h-8 rounded-md flex items-center justify-center text-[11px] font-bold tabular-nums cursor-default transition-transform hover:scale-[1.08]",
+              "tv-figure h-8 rounded-md flex items-center justify-center text-[11px] cursor-default transition-transform hover:scale-[1.08]",
               i === currentMonth && "ring-1 ring-cyan-400/50",
             )}
             style={{ background: bg, color: "#f1f5f9" }}
@@ -482,7 +494,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         <div className="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
           <CalendarRange className="w-7 h-7 text-cyan-400" />
         </div>
-        <h3 className="text-base font-bold text-white mb-1.5">{t("seasonality.empty")}</h3>
+        <h3 className="tv-title mb-1.5">{t("seasonality.empty")}</h3>
         <p className="text-sm text-slate-500 max-w-sm mx-auto">{t("seasonality.emptySub")}</p>
       </div>
     );
@@ -524,25 +536,20 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       </div>
 
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
-        <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.monthly")}</h3>
-        <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.monthlySub")}</p>
+        <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
+        <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
         <div className="h-56 md:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+              <CartesianGrid {...EQUITY_GRID} />
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#64748b", fontSize: 10 }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 interval={0}
               />
-              <YAxis
-                tick={{ fill: "#64748b", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                width={52}
-                tickFormatter={(v: number) => `$${v}`}
-              />
+              <YAxis {...moneyAxisProps(monthly.map((d) => d.pnl))} />
               <Tooltip
                 {...tooltipStyle}
                 formatter={
@@ -553,18 +560,19 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="pnl" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+              <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                 {monthly.map((m, i) => (
                   <Cell
                     key={i}
+                    /* Le vert de la DONNÉE, pas l'accent du thème : un mois
+                       gagnant est vert sur Amber comme sur Steel. */
                     fill={
                       m.count === 0
                         ? "rgba(100,116,139,0.15)"
                         : m.pnl >= 0
-                          ? "var(--tv-accent)"
-                          : "#ef4444"
+                          ? BAR_FILL_GREEN
+                          : BAR_FILL_RED
                     }
-                    fillOpacity={m.count === 0 ? 1 : 0.85}
                   />
                 ))}
               </Bar>
@@ -574,8 +582,8 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       </div>
 
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
-        <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.heatmap")}</h3>
-        <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.heatmapSub")}</p>
+        <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
+        <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
         <div className="overflow-x-auto -mx-1 px-1">
           <div className="min-w-[560px]">
             <div
@@ -584,10 +592,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
             >
               <div />
               {monthly.map((m) => (
-                <div
-                  key={m.key}
-                  className="text-center text-[11px] font-bold uppercase tracking-wide text-slate-500 pb-1"
-                >
+                <div key={m.key} className="tv-label text-center text-slate-500 pb-1">
                   {m.month}
                 </div>
               ))}
@@ -601,24 +606,14 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
 
       <div className="grid md:grid-cols-2 gap-5">
         <div className="glass rounded-3xl p-4 md:p-5 card-premium">
-          <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.weekday")}</h3>
-          <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.weekdaySub")}</p>
+          <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
+          <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekdays} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                <XAxis
-                  dataKey="day"
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={52}
-                  tickFormatter={(v: number) => `$${v}`}
-                />
+                <CartesianGrid {...EQUITY_GRID} />
+                <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis {...moneyAxisProps(weekdays.map((d) => d.pnl))} />
                 <Tooltip
                   {...tooltipStyle}
                   formatter={
@@ -629,13 +624,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                   {weekdays.map((d, i) => (
-                    <Cell
-                      key={i}
-                      fill={d.pnl >= 0 ? "var(--tv-accent-2)" : "#ef4444"}
-                      fillOpacity={0.85}
-                    />
+                    <Cell key={i} fill={d.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
                 </Bar>
               </BarChart>
@@ -644,24 +635,14 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         </div>
 
         <div className="glass rounded-3xl p-4 md:p-5 card-premium">
-          <h3 className="text-sm font-semibold text-white mb-0.5">{t("seasonality.hourly")}</h3>
-          <p className="text-[10px] text-slate-500 mb-4">{t("seasonality.hourlySub")}</p>
+          <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
+          <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hours} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                <XAxis
-                  dataKey="hour"
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={52}
-                  tickFormatter={(v: number) => `$${v}`}
-                />
+                <CartesianGrid {...EQUITY_GRID} />
+                <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis {...moneyAxisProps(hours.map((d) => d.pnl))} />
                 <Tooltip
                   {...tooltipStyle}
                   formatter={
@@ -672,13 +653,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={[6, 6, 0, 0]} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
                   {hours.map((h, i) => (
-                    <Cell
-                      key={i}
-                      fill={h.pnl >= 0 ? "var(--tv-highlight)" : "#ef4444"}
-                      fillOpacity={0.85}
-                    />
+                    <Cell key={i} fill={h.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
                 </Bar>
               </BarChart>
@@ -693,9 +670,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
 function YearRow({ year, values, heatMax }: { year: number; values: number[]; heatMax: number }) {
   return (
     <>
-      <div className="flex items-center text-[10px] font-bold text-slate-400 tabular-nums">
-        {year}
-      </div>
+      <div className="tv-figure flex items-center text-[10px] text-slate-400">{year}</div>
       {values.map((v, i) => {
         const intensity = Math.min(Math.abs(v) / heatMax, 1);
         const bg =
@@ -708,7 +683,7 @@ function YearRow({ year, values, heatMax }: { year: number; values: number[]; he
           <div
             key={i}
             title={v === 0 ? "—" : `$${v.toFixed(2)}`}
-            className="h-9 rounded-lg flex items-center justify-center text-[11px] font-bold tabular-nums transition-transform hover:scale-[1.06] cursor-default"
+            className="tv-figure h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >
             {v === 0 ? "" : `${v > 0 ? "+" : ""}${Math.round(v)}`}
@@ -734,15 +709,15 @@ function HighlightCard({
 }) {
   return (
     <Card hover className="p-3.5 md:p-4 min-w-0">
-      <div className="flex items-center gap-1.5 text-[11px] md:text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 truncate">
+      <div className="tv-label flex items-center gap-1.5 text-slate-500 mb-2 truncate">
         <span className={positive ? "text-emerald-400" : "text-red-400"}>{icon}</span>
         {label}
       </div>
-      <div className="text-lg md:text-xl font-bold text-white font-display truncate">{value}</div>
+      <div className="text-sm font-bold text-white font-display truncate">{value}</div>
       {sub && (
         <div
           className={cn(
-            "text-[11px] font-bold tabular-nums mt-0.5",
+            "tv-figure text-[11px] mt-0.5",
             positive ? "text-emerald-400" : "text-red-400",
           )}
         >

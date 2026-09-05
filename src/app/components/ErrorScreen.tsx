@@ -22,23 +22,13 @@ export default function ErrorScreen({
     <div
       className="relative h-dvh w-full overflow-hidden flex items-center justify-center px-6"
       style={{
-        background:
-          "radial-gradient(1000px 700px at 80% -10%, rgba(34,211,238,.08), transparent 60%), linear-gradient(160deg,#05070a 0%,#0a0f1e 55%,#05080c 100%)",
+        background: "var(--tv-bg)",
       }}
     >
-      <div
-        className="auth-orb w-[460px] h-[460px] bg-cyan-600 -top-40 -left-36"
-        style={{ animationDelay: "0s" }}
-      />
-      <div
-        className="auth-orb w-[380px] h-[380px] bg-teal-600 -bottom-36 -right-32"
-        style={{ animationDelay: "-6s" }}
-      />
-
       <div className="relative z-10 text-center max-w-lg w-full animate-fade-in-up">
         <div className="flex items-center justify-center gap-2 mb-8 opacity-85">
-          <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-cyan-400 to-teal-400 shadow-[0_0_12px_rgba(34,211,238,.6)]" />
-          <span className="text-[0.95rem] font-bold text-white tracking-tight">TradeVault</span>
+          <span className="w-2.5 h-2.5 rounded-full tv-accent-fill" />
+          <span className="text-[0.95rem] font-bold tracking-tight">TradeVault</span>
         </div>
 
         <div className="err-code" aria-hidden="true" data-code={code}>
@@ -55,8 +45,8 @@ export default function ErrorScreen({
           />
           <defs>
             <linearGradient id="errlg" x1="0" y1="0" x2="200" y2="0">
-              <stop stopColor="#22d3ee" />
-              <stop offset="1" stopColor="#14b8a6" />
+              <stop stopColor="var(--tv-highlight)" />
+              <stop offset="1" stopColor="var(--tv-accent-2)" />
             </linearGradient>
           </defs>
         </svg>

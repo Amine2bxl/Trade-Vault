@@ -57,7 +57,8 @@ import {
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
-import { Button } from "@/shared/ui";
+import { Button, TimeField } from "@/shared/ui";
+import { intlLocale } from "../i18n/locale";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -1351,7 +1352,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         {/* ══ HEADER ══ */}
         <div className="flex flex-col gap-3 animate-fade-in-up">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-slate-400 tabular-nums">
+            <span className="tv-figure inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] text-slate-400">
               {dateStr} · {clockStr}
             </span>
             <span
@@ -1366,7 +1367,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             </span>
             <span
               className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide",
+                "tv-label inline-flex items-center rounded-full border px-2.5 py-1",
                 allGates || day.locked
                   ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                   : "border-white/[0.08] bg-white/[0.03] text-slate-400",
@@ -1431,8 +1432,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <SlidersHorizontal className="w-4 h-4" />
               </span>
               <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white">{t("chk.customize")}</h3>
-                <p className="text-[11px] text-slate-500 leading-relaxed">{t("chk.cfgIntro")}</p>
+                <h3 className="tv-title">{t("chk.customize")}</h3>
+                <p className="tv-row-label leading-relaxed">{t("chk.cfgIntro")}</p>
               </div>
             </div>
 
@@ -1470,16 +1471,17 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "session" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgSession")}
-                </div>
+                <div className="tv-label text-slate-500">{t("chk.cfgSession")}</div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                   <label>{t("chk.cfgStart")}</label>
-                  <input
-                    type="time"
-                    className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                  {/* Plus `<input type="time">` : le minuteur natif est blanc
+                      et hors du thème. Voir `TimeField`. */}
+                  <TimeField
                     value={config.startTime}
-                    onChange={(e) => e.target.value && patch({ startTime: e.target.value })}
+                    onChange={(v) => v && patch({ startTime: v })}
+                    locale={intlLocale(lang)}
+                    aria-label={t("chk.cfgStart")}
+                    className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />
                   <label>{t("chk.cfgTz")}</label>
                   <select
@@ -1488,7 +1490,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                     onChange={(e) => patch({ timeZone: e.target.value })}
                   >
                     {tzOptions.map((z) => (
-                      <option key={z} value={z} className="bg-[#0a0f1e]">
+                      <option key={z} value={z} className="bg-[var(--tv-plate-2)]">
                         {z}
                       </option>
                     ))}
@@ -1515,10 +1517,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "models" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgTemplates")}
-                </div>
-                <p className="text-[11px] text-slate-500">{t("chk.cfgTemplatesHint")}</p>
+                <div className="tv-label text-slate-500">{t("chk.cfgTemplates")}</div>
+                <p className="tv-row-label">{t("chk.cfgTemplatesHint")}</p>
                 <div className="flex flex-wrap gap-2">
                   {templates.map((tp) => (
                     <button
@@ -1543,9 +1543,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/[0.06] to-teal-500/[0.06] p-3">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80">
-                        {t("chk.recommended")}
-                      </span>
+                      <span className="tv-label text-cyan-400/80">{t("chk.recommended")}</span>
                     </div>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed mb-2.5">
                       {t("chk.recommendedSub")}
@@ -1571,14 +1569,14 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                         }));
                         void syncWizardRules(user?.id, generated.items);
                       }}
-                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 transition"
+                      className="w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold tv-accent-fill transition"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> {t("chk.applyRecommended")}
                     </button>
                   </div>
                 )}
 
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
+                <div className="tv-label text-slate-500">
                   {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
                 </div>
                 <div className="text-[11px] text-slate-500">{t("chk.cfgDragHint")}</div>
@@ -1666,9 +1664,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "advanced" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgMotivs")}
-                </div>
+                <div className="tv-label text-slate-500">{t("chk.cfgMotivs")}</div>
                 <div className="text-[11px] text-slate-500">{t("chk.cfgMotivHint")}</div>
                 {config.motivs.map((m, i) => (
                   <div
@@ -1725,9 +1721,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
             {cfgTab === "advanced" && (
               <div className="space-y-2">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-                  {t("chk.cfgStates")}
-                </div>
+                <div className="tv-label text-slate-500">{t("chk.cfgStates")}</div>
                 {config.fomo.map((f, i) => (
                   <div className="flex items-center gap-2" key={i}>
                     <input
@@ -1765,9 +1759,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   1
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepPrep")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepPrep")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <div className="glass rounded-2xl p-3 md:p-3.5">
@@ -1792,7 +1784,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                           className={cn(
                             "w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition",
                             checked[i]
-                              ? "border-cyan-400 bg-cyan-400 text-[#04141b]"
+                              ? "border-[var(--tv-accent)] bg-[var(--tv-accent)] text-[#04141b]"
                               : "border-white/25",
                           )}
                         >
@@ -1816,22 +1808,20 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   2
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepValidation")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepValidation")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <div className="glass rounded-2xl p-3.5 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="text-slate-400 font-semibold">{t("chk.gateChecklist")}</span>
-                    <span className="tabular-nums text-white font-bold">
+                    <span className="tv-figure text-white">
                       {nChecked}/{nActive}
                     </span>
                   </div>
                   <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition duration-250"
+                      className="h-full rounded-full bg-[var(--tv-accent)] transition duration-250"
                       style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
                     />
                   </div>
@@ -1855,9 +1845,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   3
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepMental")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepMental")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
 
@@ -1928,8 +1916,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                           : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:border-white/[0.16]",
                       )}
                     >
-                      <div className="text-base leading-none mb-1">{FOMO_ICONS[i]}</div>
-                      <div className="text-[10px] font-bold uppercase tracking-wide">
+                      <div className="text-sm leading-none mb-1">{FOMO_ICONS[i]}</div>
+                      <div className="tv-label">
                         <Ed
                           value={f.label}
                           editable={editMode}
@@ -1966,9 +1954,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   4
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepLock")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepLock")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <div className="glass rounded-2xl p-3.5 space-y-3">
@@ -1994,7 +1980,9 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   <span
                     className={cn(
                       "w-5 h-5 rounded-md border flex items-center justify-center shrink-0",
-                      day.assume ? "border-cyan-400 bg-cyan-400 text-[#04141b]" : "border-white/25",
+                      day.assume
+                        ? "border-[var(--tv-accent)] bg-[var(--tv-accent)] text-[#04141b]"
+                        : "border-white/25",
                     )}
                   >
                     {day.assume && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
@@ -2017,9 +2005,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
                   5
                 </span>
-                <h2 className="text-[11px] uppercase tracking-[0.18em] font-bold text-slate-400">
-                  {t("chk.stepTrade")}
-                </h2>
+                <h2 className="tv-label text-slate-400">{t("chk.stepTrade")}</h2>
                 <span className="flex-1 h-px bg-white/[0.06]" />
               </div>
               <Button
@@ -2029,7 +2015,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   "w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wide transition",
                   !allGates || day.locked
                     ? "bg-white/[0.04] border border-white/[0.08] text-slate-600 cursor-not-allowed"
-                    : "bg-gradient-to-r from-cyan-500 to-teal-500 text-white hover:from-cyan-400 hover:to-teal-400 hover:scale-[1.01] active:scale-95",
+                    : "tv-accent-fill hover:scale-[1.01] active:scale-95",
                 )}
               >
                 {day.locked ? t("chk.lockedBtn") : t("chk.initiate")}
@@ -2053,13 +2039,13 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       </div>
 
       {/* ══ VOICE WIDGET — Jarvis speaking indicator ══
-          z-[60] + bottom-28 on mobile keeps it clear of (and above) the bottom
+          `--tv-z-fab` + bottom-28 on mobile keeps it clear of (and above) the bottom
           nav and the FAB; a floating pill, never hidden. */}
       {voice.show && (
-        <div className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
+        <div className="fixed z-[var(--tv-z-fab)] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
           <div className="relative flex items-center gap-3 rounded-2xl border border-cyan-400/25 glass-strong px-3.5 py-3">
-            <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/20 via-transparent to-teal-500/20 opacity-60" />
-            <span className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
+            <div className="pointer-events-none absolute -inset-px rounded-2xl tv-accent-fill opacity-60" />
+            <span className="relative flex items-center justify-center w-8 h-8 rounded-lg tv-accent-fill shrink-0">
               {voice.speaking && (
                 <span className="absolute -inset-1 rounded-xl bg-cyan-500/40 blur-md animate-pulse" />
               )}
@@ -2067,9 +2053,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             </span>
             <div className="relative min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-cyan-300 font-bold">
-                  Jarvis
-                </span>
+                <span className="tv-label text-cyan-300">Jarvis</span>
                 <span className={cn("tvchk-wave", voice.speaking && "on")}>
                   <span />
                   <span />
@@ -2087,7 +2071,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ COUNTDOWN OVERLAY ══ */}
       {countdownVal !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
           <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in">
             <div className="text-sm font-bold text-white">{t("chk.cdTitle")}</div>
             <div className="text-xs text-slate-400 mb-5">{t("chk.cdSub")}</div>
@@ -2110,7 +2094,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   cy="100"
                   r="80"
                   fill="none"
-                  stroke="#22d3ee"
+                  stroke="var(--tv-highlight)"
                   strokeWidth="8"
                   strokeLinecap="round"
                   pathLength="100"
@@ -2118,11 +2102,10 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   strokeDashoffset={((config.countdown - countdownVal) / config.countdown) * 100}
                   style={{
                     transition: "stroke-dashoffset 1s linear",
-                    filter: "drop-shadow(0 0 8px rgba(34,211,238,0.5))",
                   }}
                 />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-4xl font-extrabold text-white tabular-nums">
+              <div className="tv-figure absolute inset-0 flex items-center justify-center text-4xl text-white">
                 {countdownVal}
               </div>
             </div>
@@ -2138,14 +2121,14 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ EDGE LOCKED OVERLAY ══ */}
       {lockOverlay && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-cyan-500/20">
             <div className="relative w-20 h-20 mx-auto mb-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-                <Lock className="w-8 h-8 text-white" />
+              <div className="w-20 h-20 rounded-full tv-accent-fill flex items-center justify-center">
+                <Lock className="w-8 h-8" />
               </div>
             </div>
-            <div className="text-lg font-bold text-white mb-3">Edge Locked</div>
+            <div className="text-sm font-bold text-white mb-3">Edge Locked</div>
             <div className="space-y-1 text-xs text-cyan-300 mb-4">
               <div className="flex items-center justify-center gap-1.5">
                 <Check className="w-3.5 h-3.5" strokeWidth={3} /> EDGE CONFIRMED

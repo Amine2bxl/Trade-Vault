@@ -57,7 +57,7 @@ export default function CreditsBar() {
             />
             <defs>
               <linearGradient id="creditsGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#22d3ee" />
+                <stop offset="0%" stopColor="var(--tv-highlight)" />
                 <stop offset="100%" stopColor="#2dd4bf" />
               </linearGradient>
             </defs>
@@ -69,14 +69,14 @@ export default function CreditsBar() {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-sm font-extrabold text-white tabular-nums leading-none">
+            <span className="tv-figure text-sm text-white leading-none">
               {unlimited ? "∞" : remaining}
             </span>
             <span className="text-[11px] text-slate-500 leading-none">
               {t("credits.remaining")}
             </span>
           </div>
-          <div className="mt-0.5 text-[11px] uppercase tracking-[0.16em] text-slate-600 font-bold">
+          <div className="tv-label mt-0.5 text-slate-600">
             {t("credits.title")} · {unlimited ? "∞" : `${limit}/j`}
           </div>
         </div>
@@ -107,7 +107,10 @@ export default function CreditsBar() {
         </span>
         <button
           onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-          className="shrink-0 inline-flex items-center gap-0.5 text-cyan-400 font-bold hover:text-cyan-300 transition-colors"
+          /* Une cible de 15px de haut, mesurée : le lien vivait dans une
+             ligne de 11px sans hauteur propre. Le texte garde sa taille, c'est
+             la zone qui s'ouvre. */
+          className="-my-1.5 inline-flex h-8 shrink-0 items-center gap-0.5 px-1 font-bold text-cyan-400 transition-colors hover:text-cyan-300"
         >
           {t("credits.upgrade")}
           <ArrowUpRight className="w-2.5 h-2.5" />

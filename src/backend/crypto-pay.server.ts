@@ -1,5 +1,6 @@
 import { json } from "../shared/response";
 import {
+  applySubscriptionEvent,
   markWebhookProcessed,
   serviceClient,
   timingSafeEqualHex,
@@ -108,6 +109,24 @@ async function verifyCommerceSignature(payload: string, header: string | null): 
   return timingSafeEqualHex(expected, header);
 }
 
+/**
+ * La FORME de la charge Coinbase Commerce que nous lisons.
+ *
+ * Même raison que côté Stripe : ces champs étaient traversés depuis un
+ * `Record<string, unknown>`, donc chaque accès était une erreur de type que
+ * personne ne voyait — sur le chemin qui décide d'ouvrir un accès payant.
+ */
+interface CommerceCharge {
+  id?: string;
+  metadata?: { user_id?: string; plan?: string };
+}
+
+interface CommerceEvent {
+  id?: string;
+  type?: string;
+  data?: CommerceCharge;
+}
+
 export async function handleCryptoWebhook(request: Request): Promise<Response> {
   const payload = await request.text();
   const ok = await verifyCommerceSignature(payload, request.headers.get("x-cc-webhook-signature"));
@@ -115,9 +134,9 @@ export async function handleCryptoWebhook(request: Request): Promise<Response> {
   const sb = serviceClient();
   if (!sb) return json({ error: "server misconfigured" }, 500);
 
-  let event: Record<string, unknown> | undefined;
+  let event: CommerceEvent | undefined;
   try {
-    event = JSON.parse(payload).event;
+    event = (JSON.parse(payload) as { event?: CommerceEvent }).event;
   } catch {
     return json({ error: "invalid payload" }, 400);
   }
@@ -128,39 +147,63 @@ export async function handleCryptoWebhook(request: Request): Promise<Response> {
     return json({ received: true, deduped: true });
   }
 
-  const charge = event.data;
-  const userId: string | undefined = charge?.metadata?.user_id;
-  const plan = charge?.metadata?.plan as PaidPlan;
+  const charge: CommerceCharge = event.data ?? {};
+  const userId = charge.metadata?.user_id;
+  const plan = charge.metadata?.plan as PaidPlan;
   const pricing = cryptoPricing(plan);
   if (!userId || !pricing) return json({ received: true, skipped: "missing metadata" });
 
   // Extend from the later of (now, existing paid period end) so renewing
   // early never loses days.
+  //
+  // CETTE PROLONGATION N'EST PAS IDEMPOTENTE par nature : la rejouer ajoute un
+  // mois de plus. La table `processed_webhook_events` couvre le cas normal,
+  // mais elle échoue OUVERT sur incident d'infrastructure — et deux
+  // prolongations pour une seule charge, c'est un abonnement offert.
+  // `crypto_charge_id` est la clé d'idempotence naturelle : une charge déjà
+  // portée par la ligne a déjà été créditée, quoi qu'en dise le dédoublonnage.
   const { data: sub } = await sb
     .from("subscriptions")
-    .select("current_period_end")
+    .select("current_period_end, crypto_charge_id")
     .eq("user_id", userId)
     .maybeSingle();
+
+  if (charge.id && sub?.crypto_charge_id === charge.id) {
+    return json({ received: true, deduped: "charge already credited" });
+  }
+
   const base =
     sub?.current_period_end && new Date(sub.current_period_end) > new Date()
       ? new Date(sub.current_period_end)
       : new Date();
   const periodEnd = new Date(base.getTime() + pricing.days * 24 * 3600 * 1000);
 
-  const { error } = await sb
-    .from("subscriptions")
-    .update({
+  try {
+    // Passe par `apply_subscription_event` : la ligne est CRÉÉE si elle manque
+    // (un `update` sans ligne cible répondait 200 en perdant le paiement).
+    await applySubscriptionEvent(sb, {
+      userId,
       plan,
       status: "active",
       source: "crypto",
-      crypto_charge_id: charge.id,
-      current_period_end: periodEnd.toISOString(),
-      cancel_at_period_end: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", userId);
-  if (error) {
-    console.error("crypto activation failed", error);
+      cryptoChargeId: charge.id ?? null,
+      currentPeriodEnd: periodEnd.toISOString(),
+      cancelAtPeriodEnd: false,
+      eventAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    // Le traitement critique a échoué : on RETIRE la marque d'idempotence pour
+    // que la nouvelle tentative de Coinbase ne soit pas dédoublonnée comme
+    // « déjà traitée », puis on répond 500 pour la déclencher.
+    console.error("crypto activation failed", e);
+    const eventId = event.id ?? null;
+    if (eventId) {
+      await sb
+        .from("processed_webhook_events")
+        .delete()
+        .eq("provider", "coinbase")
+        .eq("event_id", eventId);
+    }
     return json({ error: "activation failed" }, 500);
   }
   return json({ received: true });

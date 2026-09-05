@@ -78,27 +78,23 @@ export default function JarvisProfileModal({
   };
 
   const inputClass = cn(FIELD_BASE, "h-11 text-sm");
-  const labelClass =
-    "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+  const labelClass = "tv-label block text-slate-400 mb-1.5";
 
   return (
     <Modal open={open} onClose={onClose} className="md:max-w-lg" labelledBy="jarvis-profile-title">
       <div className="relative px-6 pt-6 pb-5">
         {/* Header */}
         <div className="flex items-start gap-3 mb-5">
-          <div className="relative shrink-0">
-            <div className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md" />
-            <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+          {/* Le halo flouté derrière la pastille a sauté : la surface d'action
+              se voit très bien sans qu'on l'éclaire par-derrière. */}
+          <div className="tv-accent-fill flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl">
+            <Sparkles className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <h2 id="jarvis-profile-title" className="text-lg font-bold text-white leading-tight">
+            <h2 id="jarvis-profile-title" className="tv-title leading-tight">
               {t("jarvisProfile.title")}
             </h2>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              {t("jarvisProfile.subtitle")}
-            </p>
+            <p className="tv-prose text-slate-500 mt-1">{t("jarvisProfile.subtitle")}</p>
           </div>
         </div>
 
@@ -158,7 +154,7 @@ export default function JarvisProfileModal({
           </div>
         </div>
 
-        {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+        {error && <p className="mt-3 tv-prose text-red-400">{error}</p>}
 
         {/* Actions */}
         <div className="mt-6 flex items-center justify-end gap-2">
@@ -174,7 +170,7 @@ export default function JarvisProfileModal({
             className={cn(
               "px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2",
               canSave && !saving
-                ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white"
+                ? "tv-accent-fill"
                 : "bg-slate-800 text-slate-500 cursor-not-allowed",
             )}
           >

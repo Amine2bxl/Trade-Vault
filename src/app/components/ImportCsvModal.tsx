@@ -149,7 +149,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       className="md:max-w-2xl max-h-[96vh] md:max-h-[90vh] overflow-hidden"
     >
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <h2 className="tv-title flex items-center gap-2">
           <Upload className="w-4 h-4 text-cyan-400" />
           {t("import.title")}
         </h2>
@@ -174,13 +174,13 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
             </div>
             <div className="h-1.5 w-full max-w-xs mx-auto rounded-full bg-white/[0.06] overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 transition-[width] duration-300"
+                className="h-full rounded-full bg-[var(--tv-accent)] transition-[width] duration-300"
                 style={{
                   width: `${progress.total ? Math.round((progress.done / progress.total) * 100) : 0}%`,
                 }}
               />
             </div>
-            <p className="text-[11px] text-slate-500 mt-3">{t("import.dontClose")}</p>
+            <p className="tv-row-label mt-3">{t("import.dontClose")}</p>
           </div>
         ) : result ? (
           <div className="text-center py-8">
@@ -196,7 +196,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 <AlertCircle className="w-7 h-7 text-red-400" />
               )}
             </div>
-            <div className="text-xl font-bold text-white mb-1">
+            <div className="text-sm font-bold text-white mb-1">
               {result.imported} {t("import.imported")}
             </div>
             <div className="text-xs text-slate-500">
@@ -213,7 +213,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
             </div>
             {/* Un échec silencieux ferait croire que tout est passé. */}
             {result.failed > 0 && (
-              <p className="mt-3 text-xs text-red-400">
+              <p className="mt-3 tv-prose text-red-400">
                 {t("import.failedRows").replace("{n}", String(result.failed))}
               </p>
             )}
@@ -228,7 +228,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
             {error && (
               <div className="flex items-start gap-2.5 rounded-xl bg-red-500/[0.07] border border-red-500/20 px-3.5 py-3">
                 <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-red-300 leading-relaxed">{t(ERROR_KEY[error])}</p>
+                <p className="tv-prose text-red-300">{t(ERROR_KEY[error])}</p>
               </div>
             )}
             <div
@@ -291,9 +291,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
 
             {/* Column mapping */}
             <div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                {t("import.mapColumns")}
-              </div>
+              <div className="tv-label text-slate-400 mb-2">{t("import.mapColumns")}</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                 {FIELDS.map((f) => (
                   <div key={f}>
@@ -345,7 +343,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
 
             {/* Preview */}
             <div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <div className="tv-label text-slate-400 mb-2">
                 {t("import.preview")} · {mappedTrades.valid.length} {t("import.validRows")}
                 {mappedTrades.invalid > 0
                   ? ` · ${mappedTrades.invalid} ${t("import.invalidSkipped")}`
@@ -356,13 +354,13 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                   <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
                     <span className="text-slate-500 w-20 shrink-0">{tr.date}</span>
                     <span className="font-bold text-white w-16 truncate">{tr.symbol}</span>
-                    <span className="text-slate-500 uppercase text-[10px]">{tr.direction}</span>
+                    <span className="tv-label text-slate-500">{tr.direction}</span>
                     {tr.entryTime && (
                       <span className="text-slate-600 text-[10px]">{tr.entryTime}</span>
                     )}
                     <span
                       className={cn(
-                        "ml-auto font-bold tabular-nums",
+                        "tv-figure ml-auto",
                         tr.pnl >= 0 ? "text-emerald-400" : "text-red-400",
                       )}
                     >
@@ -385,29 +383,23 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 <p className="text-sm font-semibold text-white">{t("import.confirmTitle")}</p>
                 <ul className="text-xs text-slate-400 space-y-1">
                   <li>
-                    <span className="font-bold text-emerald-400 tabular-nums">
-                      {plan.fresh.length}
-                    </span>{" "}
+                    <span className="tv-figure text-emerald-400">{plan.fresh.length}</span>{" "}
                     {t("import.willAdd")}
                   </li>
                   {plan.duplicates > 0 && (
                     <li>
-                      <span className="font-bold text-slate-300 tabular-nums">
-                        {plan.duplicates}
-                      </span>{" "}
+                      <span className="tv-figure text-slate-300">{plan.duplicates}</span>{" "}
                       {t("import.duplicatesSkipped")}
                     </li>
                   )}
                   {mappedTrades.invalid > 0 && (
                     <li>
-                      <span className="font-bold text-slate-300 tabular-nums">
-                        {mappedTrades.invalid}
-                      </span>{" "}
+                      <span className="tv-figure text-slate-300">{mappedTrades.invalid}</span>{" "}
                       {t("import.invalidSkipped")}
                     </li>
                   )}
                 </ul>
-                <p className="text-[11px] text-slate-500">{t("import.confirmSafe")}</p>
+                <p className="tv-row-label">{t("import.confirmSafe")}</p>
                 <div className="flex gap-2">
                   <Button variant="ghost" onClick={() => setConfirming(false)} className="flex-1">
                     {t("common.cancel")}
@@ -424,9 +416,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 disabled={!canImport}
                 className={cn(
                   "w-full py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2",
-                  canImport
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white"
-                    : "bg-slate-800 text-slate-500 cursor-not-allowed",
+                  canImport ? "tv-accent-fill" : "bg-slate-800 text-slate-500 cursor-not-allowed",
                 )}
               >
                 <Upload className="w-4 h-4" />

@@ -1,13 +1,14 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Palette } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import ThemeSettings from "../components/ThemeSettings";
 import ThemeStudioModal from "../components/ThemeStudioModal";
-import { PageHeader } from "@/shared/ui";
+import { Button } from "@/shared/ui";
+import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 
 export default function Appearance() {
-  const { lang } = useT();
+  const { t, lang } = useT();
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
   const { createTheme, active } = useTheme();
@@ -33,30 +34,42 @@ export default function Appearance() {
     setStudioId(id);
   };
 
+  /* MÊME TRAITEMENT QUE RÉGLAGES, PROFIL ET ABONNEMENT : le titre et l'action
+     de la page vivent dans la barre de tête, pas dans un bandeau de pleine
+     largeur au-dessus d'une carte qui répète le même mot. */
+  const lead = useMemo(
+    () => (
+      <div className="flex min-w-0 items-center gap-2.5">
+        <Palette className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+        <span className="tv-label shrink-0 text-slate-400">{t("appearance.title")}</span>
+        <span aria-hidden className="hidden h-3.5 w-px shrink-0 bg-white/[0.12] md:block" />
+        <span className="tv-row-label hidden truncate md:block">{t("appearance.subtitle")}</span>
+      </div>
+    ),
+    [t],
+  );
+  usePageLead(lead);
+
+  const actions = useMemo(
+    () => (
+      <Button variant="accent" size="sm" onClick={handleCreateTheme} className="shrink-0">
+        <Palette className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">{tr("Créer un thème", "Create theme")}</span>
+      </Button>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tr],
+  );
+  usePageActions(actions);
+
   return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
-      <PageHeader
-        className="mb-2 md:mb-2"
-        title={tr("Apparence", "Appearance")}
-        icon={
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Palette className="w-4 h-4 text-white" />
-          </span>
-        }
-        actions={
-          <button
-            onClick={handleCreateTheme}
-            className="inline-flex items-center gap-1.5 shrink-0 h-9 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition hover:brightness-110 active:scale-[0.99]"
-          >
-            <Palette className="w-3.5 h-3.5" />
-            {tr("Créer un thème", "Create theme")}
-          </button>
-        }
-      />
+    <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
       <div className="animate-fade-in-up stagger-1">
         <ThemeSettings />
       </div>
-      {studioId && <ThemeStudioModal themeId={studioId} onClose={() => setStudioId(null)} />}
+      {/* `draft` : ouvert depuis « créer un thème », donc annulable pour de
+          vrai — la fenêtre supprime le thème si le trader renonce. */}
+      {studioId && <ThemeStudioModal themeId={studioId} draft onClose={() => setStudioId(null)} />}
     </div>
   );
 }

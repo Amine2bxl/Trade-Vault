@@ -16,6 +16,7 @@ import {
   UserX,
   AlertTriangle,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
@@ -31,6 +32,8 @@ import AccountSwitcher from "../components/AccountSwitcher";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
+import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
+import PromoCodeSection from "../components/PromoCodeSection";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -51,7 +54,7 @@ import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
  * contenu : la même structure, sans imposer une colonne de 240 px à un écran
  * qui en fait 390.
  */
-type PaneId = "general" | "account" | "notifications" | "data" | "danger";
+type PaneId = "general" | "account" | "notifications" | "data" | "danger" | "admin";
 
 /** Rubrique du rail : son icône, sa clé de libellé, sa clé de recherche. */
 const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: LucideIcon }[] = [
@@ -60,6 +63,8 @@ const PANES: { id: PaneId; section: keyof SearchSections; labelKey: TKey; icon: 
   { id: "notifications", section: "notifs", labelKey: "push.title", icon: Bell },
   { id: "data", section: "data", labelKey: "settings.data", icon: Database },
   { id: "danger", section: "danger", labelKey: "settings.dangerZone", icon: AlertTriangle },
+  // Réservé au propriétaire (`ADMIN_EMAILS`) — n'apparaît jamais pour le public.
+  { id: "admin", section: "admin", labelKey: "settings.admin", icon: ShieldCheck },
 ];
 
 interface SearchSections {
@@ -68,6 +73,7 @@ interface SearchSections {
   notifs: boolean;
   data: boolean;
   danger: boolean;
+  admin: boolean;
 }
 
 interface SettingsProps {
@@ -84,6 +90,7 @@ export default function Settings({
   onOpenReports,
 }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
+  const isAdmin = useIsAdmin();
   const { activeId, activeAccount } = useAccounts();
   const [recalOpen, setRecalOpen] = useState(false);
   const { t, setLang } = useT();
@@ -130,12 +137,15 @@ export default function Settings({
         "account",
         "compte",
       ),
+      admin: match(t("settings.admin"), "admin", "codes promo", "accès offert", "comp"),
     };
   }, [query, t]);
-  /** Les volets visibles après recherche, dans l'ordre du rail. */
+  /** Les volets visibles après recherche, dans l'ordre du rail. Le volet
+   *  propriétaire n'apparaît jamais hors d'une adresse `ADMIN_EMAILS`. */
   const visiblePanes = useMemo(
-    () => PANES.filter((p) => sections[p.section]).map((p) => p.id),
-    [sections],
+    () =>
+      PANES.filter((p) => (p.id !== "admin" || isAdmin) && sections[p.section]).map((p) => p.id),
+    [sections, isAdmin],
   );
   const anyVisible = visiblePanes.length > 0;
 
@@ -300,7 +310,7 @@ export default function Settings({
               />
 
               <label className="block">
-                <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
                   </span>
@@ -312,7 +322,7 @@ export default function Settings({
                   className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
                 >
                   {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code} className="bg-[#0a0f1e]">
+                    <option key={l.code} value={l.code} className="bg-[var(--tv-plate-2)]">
                       {l.label}
                     </option>
                   ))}
@@ -320,7 +330,7 @@ export default function Settings({
               </label>
 
               <label className="block">
-                <span className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
                   </span>
@@ -341,15 +351,26 @@ export default function Settings({
                     className={cn(FIELD_BASE, "h-11 pl-7")}
                   />
                 </div>
-                <p className="text-[10px] text-slate-600 mt-1.5">
-                  {t("profile.startingEquityHint")}
-                </p>
+                <p className="tv-hint mt-1.5">{t("profile.startingEquityHint")}</p>
               </label>
             </div>
           )}
 
           {/* Notifications */}
           {pane === "notifications" && sections.notifs && <PushNotificationSettings />}
+
+          {/* Propriétaire (`ADMIN_EMAILS`) : panneaux d'accès offert + codes
+              promo. Jamais rendu pour le grand public. */}
+          {isAdmin && pane === "admin" && sections.admin && (
+            <div className="space-y-4">
+              <SectionHeading
+                icon={<ShieldCheck className="w-4 h-4" />}
+                title={t("settings.admin")}
+              />
+              <CompAccessSection />
+              <PromoCodeSection />
+            </div>
+          )}
 
           {/* Data */}
           {pane === "data" && sections.data && (
@@ -471,16 +492,16 @@ function DeleteAccountModal({
       open
       onClose={onClose}
       className="md:max-w-md p-5 border border-red-500/20"
-      wrapperClassName="z-[100]"
+      wrapperClassName="z-[var(--tv-z-modal-nested)]"
     >
       <div>
         <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center mb-4">
           <AlertTriangle className="w-6 h-6 text-red-400" />
         </div>
-        <h2 className="text-lg font-bold text-white mb-1.5">{t("settings.deleteAccountTitle")}</h2>
+        <h2 className="tv-title mb-1.5">{t("settings.deleteAccountTitle")}</h2>
         <p className="text-sm text-slate-400 mb-5">{t("settings.deleteAccountBody")}</p>
 
-        <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+        <label className="tv-label block text-slate-500 mb-1.5">
           {t("settings.deleteAccountConfirm")}
         </label>
         <input
@@ -492,7 +513,7 @@ function DeleteAccountModal({
           className={cn(FIELD_BASE, "h-11 mb-4 focus:border-red-500/40 focus:ring-red-500/20")}
         />
 
-        {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+        {error && <p className="tv-prose text-red-400 mb-3">{error}</p>}
 
         <div className="flex gap-2.5">
           <Button variant="subtle" onClick={onClose} disabled={busy} className="flex-1">
@@ -519,8 +540,8 @@ function DeleteAccountModal({
 function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-        <span className="text-white">{icon}</span>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+        <span className="">{icon}</span>
       </span>
       <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
     </div>
@@ -544,7 +565,11 @@ function ActionRow({
 }: {
   icon: React.ReactNode;
   label: string;
-  sub: string;
+  /** Sous-titre facultatif. Quatre appels l'omettaient déjà : le type le
+   *  déclarait obligatoire, TypeScript le signalait, et comme `tsc` ne tournait
+   *  pas en CI, ces quatre lignes rendaient une div vide de onze pixels sous le
+   *  libellé — un décalage vertical inexpliqué entre les rangées d'action. */
+  sub?: string;
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -573,7 +598,7 @@ function ActionRow({
         <div className={cn("text-sm font-semibold", disabled ? "text-slate-500" : "text-white")}>
           {label}
         </div>
-        <div className="text-[11px] text-slate-500 truncate">{sub}</div>
+        {sub && <div className="text-[11px] text-slate-500 truncate">{sub}</div>}
       </div>
       <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
     </button>

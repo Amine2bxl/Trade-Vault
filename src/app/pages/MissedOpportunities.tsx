@@ -37,15 +37,26 @@ import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useRealtimeTable } from "../hooks/useRealtimeTable";
 import { usePreviewMode } from "../components/PremiumGate";
 import { previewMissed } from "../utils/previewTrades";
-import { Card, PageContainer, Button, EmptyState, Modal, Textarea, FIELD_BASE } from "@/shared/ui";
+import {
+  Card,
+  PageContainer,
+  Button,
+  EmptyState,
+  Modal,
+  Textarea,
+  FIELD_BASE,
+  DateField,
+} from "@/shared/ui";
+import { intlLocale } from "../i18n/locale";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { nsKey, readJSON, removeKey } from "../utils/persistence";
 import { usePageActions } from "../contexts/PageActionsContext";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 function emptyMissed(): MissedOpportunity {
   return {
     id: generateId(),
-    date: new Date().toISOString().slice(0, 10),
+    date: todayLocalDate(),
     symbol: "",
     reasonNotTaken: "",
     whatHappened: "",
@@ -112,7 +123,7 @@ export default function MissedOpportunities() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `missed-setups-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `missed-setups-${todayLocalDate()}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -206,14 +217,18 @@ export default function MissedOpportunities() {
             <span className="hidden sm:inline">{t("missed.exportCsv")}</span>
           </Button>
         )}
-        <Button size="sm" onClick={() => setEditing(emptyMissed())}>
+        {/* `accent` et non le vert plein : cette page a sa propre action, elle
+            n'a pas à emprunter le bloc vert du tableau de bord. Même forme et
+            même poids que « exporter » juste à côté, la teinte de l'accent en
+            plus — elle se fond dans la famille sans se perdre. */}
+        <Button variant="accent" size="sm" onClick={() => setEditing(emptyMissed())}>
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">{t("missed.log")}</span>
           <span className="sm:hidden">{t("missed.logShort")}</span>
         </Button>
       </div>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [items.length, exportCsv, t],
   );
   usePageActions(headerActions);
@@ -361,12 +376,10 @@ export default function MissedOpportunities() {
 function MissedTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-      <div className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
-        {label}
-      </div>
+      <div className="tv-label md:text-xs text-slate-500 truncate">{label}</div>
       <div
         className={cn(
-          "mt-0.5 font-display text-[15px] md:text-base font-extrabold tabular-nums tracking-tight",
+          "mt-0.5 tv-figure text-[15px] md:text-base",
           accent ? "text-amber-300" : "text-white",
         )}
       >
@@ -393,9 +406,7 @@ function Field({
   };
   return (
     <div className={cn("rounded-lg bg-white/[0.02] border px-2.5 py-2", tones[tone])}>
-      <div className="text-[11px] uppercase tracking-wider font-bold mb-0.5 opacity-80">
-        {label}
-      </div>
+      <div className="tv-label mb-0.5 opacity-80">{label}</div>
       <div className="text-slate-200 text-xs md:text-sm whitespace-pre-wrap">
         {value || <span className="text-slate-600 italic">—</span>}
       </div>
@@ -658,16 +669,15 @@ function MissedEditor({
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
       {/* Header premium — même architecture que New Trade */}
       <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-amber-500/10 blur-2xl" />
         <div className="relative flex items-center gap-2.5 min-w-0">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
             <Target className="w-4 h-4 text-white" />
           </span>
           <div className="min-w-0">
-            <h2 id="missed-editor-title" className="text-base font-bold text-white leading-tight">
+            <h2 id="missed-editor-title" className="tv-title leading-tight">
               {t("missed.modalTitle")}
             </h2>
-            <p className="text-[11px] text-slate-500 truncate">
+            <p className="tv-row-label truncate">
               {m.symbol ? `${m.symbol} · ` : ""}
               {t("missed.editorHint")}
             </p>
@@ -800,8 +810,7 @@ function MissedEditor({
 
 // Both editors share one label style and one field skin (`FIELD_BASE`), so a
 // field in Missed Setup is pixel-identical to the same field in Add Trade.
-const EDITOR_LABEL =
-  "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+const EDITOR_LABEL = "tv-label block text-slate-400 mb-1.5";
 
 function FieldInput({
   label,
@@ -858,8 +867,8 @@ function FieldArea({
   );
 }
 
-/** Date en BULLES (présélections) + date précise via un picker natif — pas de
- *  case à remplir : un tap suffit pour le cas le plus fréquent. */
+/** Date en BULLES (présélections) + date précise via le sélecteur DU PRODUIT —
+ *  pas de case à remplir : un tap suffit pour le cas le plus fréquent. */
 function DateBubbles({
   label,
   value,
@@ -869,7 +878,7 @@ function DateBubbles({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const iso = (offset: number) => {
     const d = new Date();
     d.setDate(d.getDate() - offset);
@@ -901,14 +910,14 @@ function DateBubbles({
             {p.label}
           </button>
         ))}
-        <input
-          type="date"
+        {/* Plus `<input type="date">` : le sélecteur natif ouvre un calendrier
+            blanc, hors document, insensible au thème. Voir `DateField`. */}
+        <DateField
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={cn(
-            FIELD_BASE,
-            "h-9 px-2.5 text-xs sm:text-sm w-auto min-w-[140px] flex-1 sm:flex-none",
-          )}
+          onChange={onChange}
+          locale={intlLocale(lang)}
+          todayLabel={t("common.today")}
+          className="h-9 w-auto min-w-[150px] flex-1 px-2.5 text-xs sm:flex-none sm:text-sm"
         />
       </div>
     </label>

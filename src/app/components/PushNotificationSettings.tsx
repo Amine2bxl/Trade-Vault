@@ -18,6 +18,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { sendPushToSelf } from "@/backend/push.functions";
 import { useT } from "../i18n/LanguageContext";
+import type { TKey } from "../i18n/translations";
 import { useSubscription } from "../hooks/useSubscription";
 import { tierAtLeast } from "../utils/pricing";
 import { cn } from "../utils/cn";
@@ -26,7 +27,10 @@ type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
 
 const CATEGORIES: {
   key: NotifCategory;
-  labelKey: string;
+  /** Clé i18n. Typée par le dictionnaire plutôt que `string` : une clé
+   *  inexistante devient une erreur de compilation au lieu d'un libellé
+   *  affiché brut à l'écran. */
+  labelKey: TKey;
   icon: ComponentType<{ className?: string }>;
 }[] = [
   { key: "discipline", labelKey: "push.catDiscipline", icon: ShieldAlert },
@@ -67,7 +71,7 @@ function Switch({ on }: { on: boolean }) {
     <span
       className={cn(
         "relative h-5 w-9 shrink-0 rounded-full p-0.5 transition-colors",
-        on ? "bg-gradient-to-r from-cyan-500 to-teal-500" : "bg-white/10",
+        on ? "tv-accent-fill" : "bg-white/10",
       )}
     >
       <span
@@ -128,13 +132,13 @@ export function PushNotificationSettings() {
       <div className="flex items-center gap-2.5">
         <span className="relative shrink-0">
           <span className="absolute -inset-1 rounded-lg bg-cyan-500/30 blur-md" />
-          <span className="relative grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Bell className="w-4 h-4 text-white" />
+          <span className="relative grid h-8 w-8 place-items-center rounded-xl tv-accent-fill">
+            <Bell className="w-4 h-4" />
           </span>
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-white tracking-tight">{t("push.title")}</h2>
-          <p className="text-[11px] text-slate-500">{t("push.subtitle")}</p>
+          <h2 className="tv-title tracking-tight">{t("push.title")}</h2>
+          <p className="tv-row-label">{t("push.subtitle")}</p>
         </div>
       </div>
 
@@ -161,7 +165,7 @@ export function PushNotificationSettings() {
           </div>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-4 py-2.5 text-[13px] font-bold text-[#04101a] shadow-lg shadow-cyan-500/20 hover:brightness-110 transition"
+            className="inline-flex items-center justify-center gap-2 rounded-xl tv-accent-fill px-4 py-2.5 text-[13px] font-bold transition"
           >
             <Lock className="h-3.5 w-3.5" />
             {lang === "fr" ? "Passer à Elite" : "Go Elite"}
@@ -241,9 +245,7 @@ export function PushNotificationSettings() {
 
           {/* Notification category preferences */}
           <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
-            <p className="px-1 pt-1 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              {t("push.categories")}
-            </p>
+            <p className="tv-label px-1 pt-1 pb-1 text-slate-500">{t("push.categories")}</p>
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               return (

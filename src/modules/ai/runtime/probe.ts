@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireAdminAccess } from "@/backend/require-admin";
 import { resolveProviders } from "@/modules/ai-provider";
 import { routeCompletion } from "./router";
 import { normalizeError } from "./errors";
@@ -8,9 +9,15 @@ import { normalizeError } from "./errors";
  *
  * Lance un mini appel IA contre le provider demandé et renvoie le résultat ou
  * l'erreur normalisée. Aucune clé, aucun secret, aucun contenu sensible.
+ *
+ * RÉSERVÉ AUX ADMINISTRATEURS. Cette fonction déclenche un APPEL MODÈLE RÉEL,
+ * facturé, sur le fournisseur que l'appelant désigne. Elle n'avait aucune
+ * garde : n'importe qui, non authentifié, pouvait la boucler et faire monter
+ * la facture d'IA sans jamais créer de compte.
  */
 
 export const aiRuntimeProbe = createServerFn({ method: "POST" })
+  .middleware([requireAdminAccess])
   .inputValidator((input: unknown) => {
     const id = (input as { provider?: string })?.provider;
     if (typeof id !== "string" || !id) throw new Error("provider required");

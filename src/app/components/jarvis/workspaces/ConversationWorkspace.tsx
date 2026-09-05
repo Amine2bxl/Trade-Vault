@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Eraser, Mic, MicOff, Zap } from "lucide-react";
-import MorphingInput from "../MorphingInput";
+import Composer from "../Composer";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
@@ -50,6 +50,7 @@ import { BlockList } from "../BlockRenderer";
 import { historyTextOf } from "../history";
 import type { JarvisMessage, JarvisToolBlock } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 /**
  * ConversationWorkspace — le module CHAT de Jarvis (multi-conversations).
@@ -408,7 +409,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         void remember(
           userId,
           "decision",
-          `A accepté la règle « ${ruleText} » le ${new Date().toISOString().slice(0, 10)}.`,
+          `A accepté la règle « ${ruleText} » le ${todayLocalDate()}.`,
           {
             // Clé dérivée du texte : ré-accepter la même règle rafraîchit la
             // date au lieu de créer un doublon.
@@ -724,22 +725,23 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Toolbar du workspace */}
-      <div className="flex items-center gap-2 px-4 md:px-6 py-2 border-b border-white/[0.04] shrink-0">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-600">
-          {t("jarvis.conversation")}
-        </span>
-        {messages.length > 0 && (
+      {/* LA BANDE D'OUTILS N'EXISTE QUE QUAND ELLE PORTE QUELQUE CHOSE.
+          Elle occupait une hauteur pleine pour afficher le mot
+          « Conversation » — un titre qui répète ce que la page est déjà, sur
+          une bande qui prenait la place du dialogue. Il ne reste que le bouton
+          « effacer », et seulement quand il y a quelque chose à effacer. */}
+      {messages.length > 0 && (
+        <div className="flex shrink-0 items-center justify-end border-b border-white/[0.04] px-4 py-1.5 md:px-6">
           <button
             onClick={clearChat}
             aria-label={t("assistant.clear")}
             title={t("assistant.clear")}
-            className="ml-auto w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
           >
-            <Eraser className="w-4 h-4" />
+            <Eraser className="h-4 w-4" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Messages — rendus UNIQUEMENT via les blocs */}
       {/* `aria-live="polite"` : les réponses arrivent de façon asynchrone. Sans
@@ -767,19 +769,17 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
              quoi demander, à partir des données réelles du trader. */
           <div className="animate-fade-in-up">
             <div className="relative">
-              <div className="pointer-events-none absolute -top-8 left-0 h-24 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
               <div className="relative flex items-center gap-3">
-                <span className="relative shrink-0">
-                  <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/35 blur-md" />
-                  <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
-                    <Bot className="w-5 h-5 text-white" />
-                  </span>
+                {/* Le halo flou est parti : un carré de lumière cyan de 35%
+                    posé derrière un avatar, c'est de l'effet, pas du dessin. */}
+                <span className="tv-accent-fill grid h-11 w-11 shrink-0 place-items-center rounded-2xl">
+                  <Bot className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-base font-bold text-white tracking-tight">
+                  <p className="text-sm font-bold text-white tracking-tight">
                     {t("assistant.title")}
                   </p>
-                  <p className="text-xs text-slate-400">{t("jarvis.copilot")}</p>
+                  <p className="tv-prose text-slate-400">{t("jarvis.copilot")}</p>
                 </div>
               </div>
               <p className="relative mt-3 text-sm text-slate-300 leading-relaxed max-w-lg">
@@ -789,9 +789,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
             {suggestions.length > 0 && (
               <div className="mt-5 space-y-2">
-                <p className="text-[11px] uppercase tracking-[0.16em] font-semibold text-slate-500">
-                  {t("jarvisHome.suggestions")}
-                </p>
+                <p className="tv-label text-slate-500">{t("jarvisHome.suggestions")}</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {suggestions.map((s) => (
                     <button
@@ -813,7 +811,13 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               /* L'utilisateur garde la bulle : l'asymétrie devient le repère de
                  tour, sans enfermer le contenu analytique de Jarvis. */
               <div key={m.id} className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-medium text-white">
+                {/* LA BULLE N'EST PLUS VERTE. Chaque question du trader
+                    s'affichait en vert plein : dans une conversation de dix
+                    messages, la couleur d'action du produit se retrouvait
+                    répétée cinq fois, et elle ne désignait plus rien. La bulle
+                    est une plaque neutre — l'asymétrie suffit à dire qui
+                    parle, et le vert reste à Jarvis et aux boutons. */}
+                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md border border-white/[0.07] bg-[var(--tv-plate-3)] px-4 py-2.5 text-sm text-white">
                   {textOf(m) || ""}
                 </div>
               </div>
@@ -825,12 +829,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 className={cn("animate-fade-in-up", i > 0 && "border-t border-white/[0.05] pt-5")}
               >
                 <div className="flex items-center gap-2 mb-2.5">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-                    <Bot className="w-3.5 h-3.5 text-white" />
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
+                    <Bot className="w-3.5 h-3.5" />
                   </span>
-                  <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
-                    {t("assistant.title")}
-                  </span>
+                  <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
                 </div>
                 {m.role === "assistant" ? (
                   <BlockList blocks={m.blocks} onTool={handleTool} />
@@ -864,12 +866,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           /* Chargement informatif : on annonce ce que Jarvis lit réellement. */
           <div className="animate-fade-in border-t border-white/[0.05] pt-5">
             <div className="flex items-center gap-2 mb-2.5">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-                <Bot className="w-3.5 h-3.5 text-white" />
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
+                <Bot className="w-3.5 h-3.5" />
               </span>
-              <span className="text-[11px] uppercase tracking-[0.16em] font-bold text-cyan-400/80">
-                {t("assistant.title")}
-              </span>
+              <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
               <span className="flex items-center gap-1">
                 <span className="thinking-dot" />
                 <span className="thinking-dot" style={{ animationDelay: "0.15s" }} />
@@ -901,43 +901,26 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             </div>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-xs font-bold text-white hover:brightness-110 transition"
+              className="shrink-0 px-3 py-1.5 rounded-lg tv-accent-fill text-xs font-bold transition"
             >
               {t("credits.upgrade")}
             </button>
           </div>
         )}
-        {listening && (
-          <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-semibold mb-2 px-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />{" "}
-            {t("assistant.listening")}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {SpeechRecognitionCtor && (
-            <button
-              type="button"
-              onClick={toggleMic}
-              aria-label={t("common.voiceInput")}
-              className={cn(
-                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                listening
-                  ? "bg-red-500/15 text-red-400"
-                  : "bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]",
-              )}
-            >
-              {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </button>
-          )}
-          <div className="flex-1 min-w-0">
-            <MorphingInput
-              value={question}
-              onChange={setQuestion}
-              onSubmit={() => ask(question)}
-              disabled={loading}
-            />
-          </div>
-        </div>
+        {/* LE MICRO ET LE CHAMP NE FONT PLUS DEUX BLOCS. Le micro vivait à
+            GAUCHE du champ, dans sa propre boîte, et le champ avait en plus un
+            bouton qui faisait tourner un placeholder animé : trois contrôles
+            sur une ligne pour écrire une phrase. Tout est dans le compositeur
+            maintenant, à sa place — micro à gauche, envoi à droite. */}
+        <Composer
+          value={question}
+          onChange={setQuestion}
+          onSubmit={() => ask(question)}
+          disabled={loading}
+          listening={listening}
+          onMic={toggleMic}
+          micAvailable={!!SpeechRecognitionCtor}
+        />
       </div>
     </div>
   );

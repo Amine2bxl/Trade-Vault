@@ -112,7 +112,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   return (
     <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
       {/* Autosave indicator */}
-      <div className="h-4 -mt-2 text-right text-[10px] font-semibold uppercase tracking-wider">
+      <div className="tv-label h-4 -mt-2 text-right">
         {saveState === "saving" && (
           <span className="text-slate-500">{tr("Enregistrement…", "Saving…")}</span>
         )}
@@ -301,7 +301,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           )}
 
           {plan.setups.length >= MAX_SETUPS && (
-            <p className="text-center text-[11px] text-slate-600">
+            <p className="text-center tv-row-label">
               {tr(
                 `Limite de ${MAX_SETUPS} setups atteinte. Supprime un setup pour en ajouter un autre.`,
                 `${MAX_SETUPS}-setup limit reached. Remove one to add another.`,
@@ -429,7 +429,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
             )}
           </div>
         </div>
-        <span className="text-cyan-400 text-lg shrink-0">→</span>
+        <span className="text-cyan-400 text-sm shrink-0">→</span>
       </button>
     </div>
   );
@@ -461,15 +461,15 @@ function Section({
       style={{ animationDelay: `${delay * 70}ms` }}
     >
       <div className="flex items-start gap-3 mb-4">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-          <Icon className="w-4 h-4 text-white" />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+          <Icon className="w-4 h-4" />
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-white">{title}</h2>
+            <h2 className="tv-title">{title}</h2>
             {action}
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+          <p className="tv-row-label mt-0.5">{sub}</p>
         </div>
       </div>
       <div className="space-y-3">{children}</div>
@@ -480,9 +480,7 @@ function Section({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">
-        {label}
-      </span>
+      <span className="tv-label block text-slate-500 mb-1.5">{label}</span>
       {children}
     </label>
   );
@@ -503,9 +501,7 @@ function NumField({
 }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1.5 truncate">
-        {label}
-      </span>
+      <span className="tv-label block text-slate-500 mb-1.5 truncate">{label}</span>
       <div className="relative">
         <input
           type="number"
@@ -513,7 +509,7 @@ function NumField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={cn(inputCls, "pr-8 font-bold tabular-nums")}
+          className={cn(inputCls, "tv-figure pr-8")}
         />
         {unit && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold">
@@ -674,62 +670,46 @@ function SetupCard({
   );
 }
 
+/**
+ * LA JAUGE DE COMPLÉTION — horizontale, et non plus un anneau.
+ *
+ * L'anneau posait trois problèmes qu'une barre n'a pas :
+ *   • sur 64px de diamètre, il fallait loger le pourcentage ET son libellé au
+ *     centre, en 10 et 12px. On lisait mal les deux ;
+ *   • un arc ne se compare pas d'un coup d'œil. Une longueur, si — c'est tout
+ *     l'intérêt d'une jauge : voir « il m'en reste un quart » sans compter ;
+ *   • il portait une pointe lumineuse en dur (`#a5f3fc`, un cyan de l'ancienne
+ *     identité) qui ne suivait aucun thème.
+ *
+ * Le remplissage garde son dégradé — de l'accent vers le point clair — parce
+ * qu'ici il porte une DIRECTION : la barre se lit de gauche à droite, et la
+ * lumière l'accompagne. Le liseré de fin marque la tête de la progression sans
+ * pastille rapportée.
+ */
 function CompletionRing({ value, label }: { value: number; label: string }) {
   const pct = Math.round(value * 100);
-  const R = 25;
-  const C = 2 * Math.PI * R;
-  // La jauge démarre en haut et balaye vers la droite ; la pointe lumineuse
-  // suit l'extrémité de l'arc, comme l'aiguille d'un compteur.
-  const angle = 2 * Math.PI * value - Math.PI / 2;
-  const tipX = 30 + R * Math.cos(angle);
-  const tipY = 30 + R * Math.sin(angle);
   return (
-    <div className="relative w-16 h-16 shrink-0 animate-fade-in-up">
-      <svg viewBox="0 0 60 60" className="w-16 h-16 -rotate-90" style={{ overflow: "visible" }}>
-        {/* Piste : anneau neutre + liseré fin pour le volume. */}
-        <circle cx="30" cy="30" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
-        <circle
-          cx="30"
-          cy="30"
-          r={R + 4.5}
-          fill="none"
-          stroke="rgba(255,255,255,0.05)"
-          strokeWidth="1"
+    <div className="animate-fade-in-up w-full min-w-[168px] max-w-[260px] shrink-0 sm:w-auto">
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <span className="tv-label text-slate-500">{label}</span>
+        <span className="tv-figure text-sm leading-none text-white">{pct}%</span>
+      </div>
+      <div
+        className="h-2 w-full overflow-hidden rounded-full bg-white/[0.07]"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label}
+      >
+        <div
+          className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)]"
+          style={{
+            width: `${Math.max(value > 0 ? 4 : 0, pct)}%`,
+            background: "linear-gradient(90deg, var(--tv-accent) 0%, var(--tv-highlight) 100%)",
+            boxShadow: value > 0 ? "inset -1px 0 0 rgb(255 255 255 / 0.35)" : undefined,
+          }}
         />
-        {/* Arc de progression — halo, caps ronds, douce animation. */}
-        <circle
-          cx="30"
-          cy="30"
-          r={R}
-          fill="none"
-          stroke="url(#tpGrad)"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeDasharray={C}
-          strokeDashoffset={C * (1 - value)}
-          style={{ filter: "drop-shadow(0 0 5px rgba(34,211,238,.55))" }}
-          className="transition duration-250"
-        />
-        {/* La pointe de la jauge, visible dès qu'il y a une progression. */}
-        {value > 0 && (
-          <circle
-            cx={tipX}
-            cy={tipY}
-            r="3.2"
-            fill="#a5f3fc"
-            style={{ filter: "drop-shadow(0 0 4px rgba(34,211,238,.95))" }}
-          />
-        )}
-        <defs>
-          <linearGradient id="tpGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--tv-accent)" />
-            <stop offset="100%" stopColor="var(--tv-highlight)" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xs font-bold text-white tabular-nums leading-none">{pct}%</span>
-        <span className="text-[10px] uppercase tracking-wider text-slate-500 mt-0.5">{label}</span>
       </div>
     </div>
   );

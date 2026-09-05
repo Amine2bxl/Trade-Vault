@@ -68,8 +68,34 @@ test("unsupported action types return null rather than pretending to create", ()
 });
 
 test("the accept path is the only place that writes user objects", () => {
-  // Aucun autre appel d'écriture ne doit exister dans ce fichier en dehors de
-  // `applyAction` et de la mise à jour de la proposition elle-même.
-  const updates = [...SOURCE.matchAll(/\.update\(/g)].length;
-  expect(updates).toBe(5); // expired, accepted, rules, checklist, expiry sweep
+  // L'INVARIANT est : ce fichier n'écrit que dans la proposition elle-même
+  // (`agent_proposals`) et dans le profil, via `applyAction` — jamais ailleurs.
+  //
+  // Il était exprimé par un COMPTE d'appels à `.update(`, ce qui le rendait
+  // faux pour la mauvaise raison : rendre l'acceptation atomique a ajouté deux
+  // écritures sur `agent_proposals` (la réservation et son annulation en cas
+  // d'échec), sans ouvrir le moindre nouveau chemin d'écriture. Le compte
+  // cassait ; l'invariant, lui, tenait toujours. On énonce donc l'invariant.
+  const tables = new Set([...SOURCE.matchAll(/\.from\("([a-z_]+)"\)/g)].map((m) => m[1]));
+  expect([...tables].sort()).toEqual(["agent_proposals", "profiles"]);
+});
+
+test("accepting a proposal is a compare-and-swap, not a read-then-write", () => {
+  // Sans cela, deux clics — ou le même écran ouvert sur deux appareils —
+  // créaient DEUX règles de trading pour une seule proposition.
+  const accept = SOURCE.slice(SOURCE.indexOf("export const acceptProposal"));
+  const claim = accept.indexOf('.eq("status", "pending")');
+  const applyCall = accept.indexOf("await applyAction(");
+  expect(claim).toBeGreaterThan(-1);
+  // La réservation précède l'application : c'est tout ce qui empêche le doublon.
+  expect(claim).toBeLessThan(applyCall);
+});
+
+test("a proposal that could not be applied is handed back, never left dead", () => {
+  // `accepted` sans `applied_ref`, c'est une proposition ni appliquée ni
+  // réessayable : elle disparaît de la liste sans avoir rien produit.
+  const accept = SOURCE.slice(SOURCE.indexOf("export const acceptProposal"));
+  const failure = accept.slice(accept.indexOf("if (!appliedRef)"));
+  expect(failure).toContain('status: "pending"');
+  expect(failure).toContain("decided_at: null");
 });

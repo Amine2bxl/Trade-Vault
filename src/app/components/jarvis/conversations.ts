@@ -77,14 +77,42 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-function write(key: string, value: unknown): void {
-  if (typeof localStorage === "undefined") return;
+/**
+ * Écrit, et DIT si l'écriture a eu lieu.
+ *
+ * L'ancienne version avalait l'exception et ne rendait rien. `localStorage`
+ * plafonne autour de cinq mégaoctets par origine, et rien ici n'a jamais borné
+ * la taille de l'historique : passé le plafond, CHAQUE écriture échouait en
+ * silence. Jarvis continuait de répondre, l'interface affichait la
+ * conversation, et rien n'était conservé — le trader ne l'apprenait qu'au
+ * rechargement suivant.
+ *
+ * Pire, `saveMessages` écrivait le corps PUIS l'index. Le corps échouait, pas
+ * l'index (quelques centaines d'octets, souvent encore admis) : l'historique
+ * datait alors la conversation d'un enregistrement qui n'avait pas eu lieu —
+ * « dernière activité à l'instant » pour des messages jamais écrits.
+ */
+function write(key: string, value: unknown): boolean {
+  if (typeof localStorage === "undefined") return false;
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
-    /* best-effort */
+    return false;
   }
 }
+
+/**
+ * Combien de conversations un appareil conserve.
+ *
+ * Ce n'est pas une limite de produit, c'est la limite du support : au-delà,
+ * l'échec n'est pas « on garde moins », c'est « on ne garde plus rien ». Mieux
+ * vaut perdre la plus ancienne discussion, explicitement, que perdre la
+ * courante, en silence. Les conversations ÉPINGLÉES sont exclues de
+ * l'éviction : les épingler est précisément l'acte par lequel un trader dit
+ * qu'il veut les garder.
+ */
+const MAX_CONVERSATIONS = 60;
 
 function genId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -141,9 +169,42 @@ export class JarvisConversationStore implements ConversationStore {
     return conv;
   }
 
+  /** Efface le corps d'une conversation dans les deux magasins. */
+  private dropBody(id: string): void {
+    for (const store of [
+      typeof localStorage !== "undefined" ? localStorage : null,
+      typeof sessionStorage !== "undefined" ? sessionStorage : null,
+    ]) {
+      try {
+        store?.removeItem(convKey(this.userId, id));
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  /**
+   * Retire la plus ancienne conversation évinçable et libère sa place.
+   *
+   * Évinçable = ni épinglée, ni celle qu'on est en train d'enregistrer. Rend
+   * l'index amputé, ou `null` quand il n'y a plus rien à libérer — auquel cas
+   * l'appelant doit renoncer plutôt que de boucler.
+   */
+  private evictOldest(list: ConversationMeta[], keepId: string): ConversationMeta[] | null {
+    // `sortList` place les épinglées en tête puis les plus récentes : la
+    // dernière évinçable en partant de la fin est la plus ancienne.
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const c = list[i];
+      if (c.pinned || c.id === keepId) continue;
+      this.dropBody(c.id);
+      return list.filter((x) => x.id !== c.id);
+    }
+    return null;
+  }
+
   async saveMessages(id: string, messages: JarvisMessage[]): Promise<void> {
     const now = new Date().toISOString();
-    const list = await this.list();
+    let list = await this.list();
     const existing = list.find((c) => c.id === id);
     const meta: ConversationMeta = {
       id,
@@ -153,8 +214,32 @@ export class JarvisConversationStore implements ConversationStore {
       updatedAt: now,
       pinned: existing?.pinned,
     };
-    write(convKey(this.userId, id), messages);
-    write(indexKey(this.userId), sortList([meta, ...list.filter((c) => c.id !== id)]));
+
+    // LE CORPS D'ABORD, et on ne passe à l'index que s'il est réellement écrit.
+    // Tant que le quota refuse, on libère la plus ancienne conversation et on
+    // réessaie.
+    while (!write(convKey(this.userId, id), messages)) {
+      const pruned = this.evictOldest(list, id);
+      if (!pruned) {
+        // Plus rien à évincer : même seule, cette conversation ne tient pas.
+        // On renonce SANS toucher à l'index — il continue de décrire
+        // exactement ce qui est sur le disque, ce qui vaut mieux qu'une entrée
+        // pointant vers des messages inexistants.
+        notify();
+        return;
+      }
+      list = pruned;
+    }
+
+    let next = sortList([meta, ...list.filter((c) => c.id !== id)]);
+    // Plafond de garde : sans lui, l'historique ne cesse de croître jusqu'à ce
+    // que la boucle ci-dessus devienne le fonctionnement NORMAL.
+    while (next.length > MAX_CONVERSATIONS) {
+      const pruned = this.evictOldest(next, id);
+      if (!pruned) break; // toutes épinglées : le choix du trader l'emporte
+      next = pruned;
+    }
+    write(indexKey(this.userId), next);
     notify();
   }
 
@@ -182,16 +267,7 @@ export class JarvisConversationStore implements ConversationStore {
     // Les DEUX emplacements sont purgés. Ne nettoyer que l'ancien laisserait
     // les messages d'une conversation « supprimée » sur le disque : une fuite
     // silencieuse, et une promesse de suppression non tenue.
-    for (const store of [
-      typeof localStorage !== "undefined" ? localStorage : null,
-      typeof sessionStorage !== "undefined" ? sessionStorage : null,
-    ]) {
-      try {
-        store?.removeItem(convKey(this.userId, id));
-      } catch {
-        /* best-effort */
-      }
-    }
+    this.dropBody(id);
     write(
       indexKey(this.userId),
       (await this.list()).filter((c) => c.id !== id),

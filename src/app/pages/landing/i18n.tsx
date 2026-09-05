@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -19,7 +20,35 @@ import {
  * L'utilisateur peut basculer manuellement (persisté en localStorage) ; la
  * détection ne s'exécute qu'une fois, au premier rendu. Le contexte partage
  * l'état entre tous les composants de la landing (nav + sections).
+ *
+ * ── RENDU SERVEUR ET HYDRATATION ────────────────────────────────────────────
+ *
+ * La détection lisait `localStorage` et `navigator` DANS l'initialiseur d'état.
+ * Le serveur rendait donc l'anglais et le client, au premier rendu, la langue
+ * du visiteur : React détectait une divergence d'hydratation et repeignait
+ * l'arbre — un clignotement d'anglais pour tout visiteur francophone.
+ *
+ * Pire, le HTML servi était INCOHÉRENT avec lui-même : `<html lang="fr">`,
+ * `og:locale = fr_FR` et un titre français, pour un corps rendu en anglais.
+ * C'est ce que voient les moteurs de recherche, qui n'exécutent pas forcément
+ * le JavaScript.
+ *
+ * Désormais : le premier rendu — serveur ET client — utilise `SSR_LANG`, la
+ * même langue que celle déclarée dans `__root.tsx` et dans les métadonnées.
+ * L'hydratation ne peut plus diverger. La langue du visiteur est appliquée
+ * juste après, dans un effet de MISE EN PAGE : il s'exécute avant que le
+ * navigateur ne peigne, donc personne ne voit passer la langue par défaut.
  */
+
+// La langue servie vit dans `shared/lang.ts` — un module sans dépendance, pour
+// que `__root.tsx` puisse la lire sans traîner tout ce dictionnaire dans le
+// chunk d'entrée de chaque route. Réexportée ici par commodité.
+export { SSR_LANG } from "@/shared/lang";
+import { SSR_LANG } from "@/shared/lang";
+
+/** `useLayoutEffect` côté navigateur, `useEffect` côté serveur — où il ne
+ *  s'exécute de toute façon pas, mais où React avertirait à chaque rendu. */
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export type LandingLang = "en" | "fr";
 export type LandingKey = keyof typeof M;
@@ -34,8 +63,15 @@ function detectBrowserLang(): LandingLang {
   return "en";
 }
 
-function readInitial(): LandingLang {
-  if (typeof window === "undefined") return "en";
+/**
+ * La langue voulue par CE visiteur : son choix explicite s'il en a fait un,
+ * sinon celle de son navigateur.
+ *
+ * N'est PLUS appelée pendant le rendu — uniquement depuis l'effet de mise en
+ * page, donc côté navigateur uniquement.
+ */
+function preferredLang(): LandingLang {
+  if (typeof window === "undefined") return SSR_LANG;
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "fr" || stored === "en") return stored;
@@ -54,7 +90,17 @@ interface LandingLangCtx {
 const Ctx = createContext<LandingLangCtx | null>(null);
 
 export function LandingLangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<LandingLang>(readInitial);
+  // Premier rendu IDENTIQUE des deux côtés — c'est ce qui supprime la
+  // divergence d'hydratation.
+  const [lang, setLangState] = useState<LandingLang>(SSR_LANG);
+
+  // Avant la première peinture : on applique la langue du visiteur. Un
+  // `useEffect` ordinaire s'exécuterait APRÈS, et le clignotement serait
+  // simplement déplacé au lieu d'être supprimé.
+  useIsomorphicLayoutEffect(() => {
+    const wanted = preferredLang();
+    if (wanted !== SSR_LANG) setLangState(wanted);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -92,6 +138,71 @@ export interface Msg {
 
 const M: Record<string, Msg> = {
   /* nav */
+  // ── Modale d'authentification ───────────────────────────────────────────
+  //
+  // Elle était ENTIÈREMENT en français, sans passer par ce dictionnaire, alors
+  // que la landing s'ouvre en anglais pour tout navigateur non francophone : un
+  // visiteur anglophone traversait une page de vente anglaise et tombait sur un
+  // formulaire français au moment exact de la conversion.
+  "auth.brandTitle.signup": {
+    en: "Start understanding your trading.",
+    fr: "Commence à comprendre ton trading.",
+  },
+  "auth.brandTitle.login": { en: "Good to see you again.", fr: "Ravi de te revoir." },
+  "auth.brandSub": {
+    en: "Your AI coach reads your trades, spots your mistakes and helps you become the disciplined trader you want to be.",
+    fr: "Ton coach IA analyse tes trades, détecte tes erreurs et t'aide à devenir le trader discipliné que tu veux être.",
+  },
+  "auth.promise1": {
+    en: "Your trades analysed from day one",
+    fr: "Analyse de tes trades dès le premier jour",
+  },
+  "auth.promise2": {
+    en: "Your data stays exportable at any time",
+    fr: "Tes données restent exportables à tout moment",
+  },
+  "auth.trustpilot": { en: "Verified reviews on", fr: "Avis vérifiés sur" },
+  "auth.title.signup": { en: "Create your account", fr: "Créer ton compte" },
+  "auth.title.login": { en: "Sign in", fr: "Se connecter" },
+  "auth.sub.signup": {
+    en: "Free forever. Go Premium when you decide to.",
+    fr: "Gratuit pour toujours. Passe Premium quand tu le décides.",
+  },
+  "auth.sub.login": { en: "Pick up where you left off.", fr: "Reprends où tu t'es arrêté." },
+  "auth.google": { en: "Continue with Google", fr: "Continuer avec Google" },
+  "auth.orEmail": { en: "or with email", fr: "ou par e-mail" },
+  "auth.name": { en: "Username", fr: "Nom d'utilisateur" },
+  "auth.namePlaceholder": { en: "Alex Martin", fr: "Alex Martin" },
+  "auth.email": { en: "Email", fr: "E-mail" },
+  "auth.emailPlaceholder": { en: "name@example.com", fr: "nom@exemple.com" },
+  "auth.password": { en: "Password", fr: "Mot de passe" },
+  "auth.passwordPlaceholder": { en: "6+ characters", fr: "6+ caractères" },
+  "auth.forgot": { en: "Forgot?", fr: "Oublié ?" },
+  "auth.showPassword": { en: "Show password", fr: "Afficher le mot de passe" },
+  "auth.hidePassword": { en: "Hide password", fr: "Masquer le mot de passe" },
+  "auth.close": { en: "Close", fr: "Fermer" },
+  "auth.submitting": { en: "One moment…", fr: "Un instant…" },
+  "auth.submit.signup": { en: "Create my account", fr: "Créer mon compte" },
+  "auth.submit.login": { en: "Sign in", fr: "Se connecter" },
+  "auth.switch.toLogin": { en: "Already have an account?", fr: "Déjà un compte ?" },
+  "auth.switch.toSignup": { en: "No account yet?", fr: "Pas encore de compte ?" },
+  "auth.switchCta.login": { en: "Sign in", fr: "Se connecter" },
+  "auth.switchCta.signup": { en: "Create an account", fr: "Créer un compte" },
+  "auth.legal.prefix": {
+    en: "By continuing, you accept our",
+    fr: "En continuant, tu acceptes nos",
+  },
+  "auth.legal.terms": { en: "Terms", fr: "Conditions" },
+  "auth.legal.and": { en: "and our", fr: "et notre" },
+  "auth.legal.privacy": { en: "Privacy Policy", fr: "Politique de confidentialité" },
+  "auth.err.needEmail": {
+    en: "Enter your email to receive the reset link.",
+    fr: "Entre ton e-mail pour recevoir le lien de réinitialisation.",
+  },
+  "auth.info.resetSent": {
+    en: "Reset link sent. Check your inbox.",
+    fr: "Lien de réinitialisation envoyé. Vérifie ta boîte mail.",
+  },
   "nav.product": { en: "Product", fr: "Produit" },
   "nav.resources": { en: "Resources", fr: "Ressources" },
   "nav.problem": { en: "Problem", fr: "Problème" },

@@ -36,7 +36,7 @@ export function Display({ as, className, children, ...rest }: WithAs<HTMLAttribu
 
 const HEADING_ROLE: Record<1 | 2 | 3, string> = {
   1: "text-2xl font-extrabold tracking-[-0.03em]",
-  2: "text-lg font-bold tracking-[-0.02em]",
+  2: "text-sm font-bold tracking-[-0.02em]",
   3: "text-sm font-bold",
 };
 
@@ -100,13 +100,7 @@ export function Label({
 }: WithAs<LabelHTMLAttributes<HTMLLabelElement>>) {
   const Comp = as ?? "label";
   return (
-    <Comp
-      className={cn(
-        "block text-[10px] font-semibold uppercase tracking-wider text-slate-400",
-        className,
-      )}
-      {...rest}
-    >
+    <Comp className={cn("tv-label block text-slate-400", className)} {...rest}>
       {children}
     </Comp>
   );

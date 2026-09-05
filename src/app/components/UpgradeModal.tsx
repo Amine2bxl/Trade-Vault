@@ -10,6 +10,8 @@ import {
   monthsFree,
   planId,
   yearlyPerMonth,
+  PAGE_VALUE,
+  pagesOfTier,
   type Interval,
   type PaidPlan,
   type PaidTier,
@@ -68,11 +70,16 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
     );
 
   return (
-    <Modal open={open} onClose={onClose} wrapperClassName="z-[110]" className="md:max-w-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      wrapperClassName="z-[var(--tv-z-modal-top)]"
+      className="md:max-w-2xl"
+    >
       <div className="p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-display text-lg font-bold tracking-tight text-white">
+            <h2 className="font-display text-sm font-bold tracking-tight text-white">
               {fr ? "Débloque TradeVault" : "Unlock TradeVault"}
             </h2>
             <p className="mt-0.5 text-[12.5px] text-slate-500">
@@ -154,18 +161,13 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                     <Icon className="h-4 w-4" />
                   </span>
                   <span
-                    className={cn(
-                      "text-[11px] font-bold uppercase tracking-[.15em]",
-                      tier === "pro" ? "text-cyan-300" : "text-slate-400",
-                    )}
+                    className={cn("tv-label", tier === "pro" ? "text-cyan-300" : "text-slate-400")}
                   >
                     {def.name[fr ? "fr" : "en"]}
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="font-display text-3xl font-extrabold tabular-nums tracking-tight text-white">
-                    {perMonth(tier)}
-                  </span>
+                  <span className="tv-figure text-3xl text-white">{perMonth(tier)}</span>
                   <span className="text-sm text-slate-400">{fr ? "/mois" : "/mo"}</span>
                 </div>
                 <p className="mt-0.5 text-[11.5px] text-slate-500">
@@ -179,20 +181,37 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                 </p>
 
                 <div className="mt-3 space-y-1.5">
-                  {def.features.slice(0, 3).map((f) => (
-                    <p
-                      key={f.en}
-                      className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
-                    >
-                      <Check
-                        className={cn(
-                          "mt-0.5 h-3.5 w-3.5 shrink-0",
-                          tier === "pro" ? "text-cyan-300" : "text-emerald-400/80",
-                        )}
-                      />
-                      {f[fr ? "fr" : "en"]}
+                  {tier === "pro"
+                    ? pagesOfTier("pro")
+                        .slice(0, 3)
+                        .map((page) => {
+                          const v = PAGE_VALUE[page];
+                          if (!v) return null;
+                          return (
+                            <p
+                              key={page}
+                              className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
+                            >
+                              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
+                              {v.title[fr ? "fr" : "en"]}
+                            </p>
+                          );
+                        })
+                    : def.features.slice(0, 3).map((f) => (
+                        <p
+                          key={f.en}
+                          className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
+                        >
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400/80" />
+                          {f[fr ? "fr" : "en"]}
+                        </p>
+                      ))}
+                  {tier === "pro" && (
+                    <p className="pt-0.5 text-[11px] font-semibold text-cyan-300/80">
+                      + {pagesOfTier("pro").length - 3}{" "}
+                      {fr ? "autres pages Premium" : "more Premium pages"}
                     </p>
-                  ))}
+                  )}
                 </div>
 
                 <button
@@ -201,7 +220,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                   className={cn(
                     "mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-60",
                     tier === "pro"
-                      ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-[#04101a] shadow-lg shadow-cyan-500/20 hover:brightness-110"
+                      ? "tv-accent-fill"
                       : "border border-white/[0.12] bg-white/[0.04] text-white hover:bg-white/[0.08]",
                   )}
                 >

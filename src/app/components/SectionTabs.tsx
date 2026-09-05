@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Page, SectionId } from "../types";
-import { Lock } from "lucide-react";
+import { Check, ChevronDown, Lock } from "lucide-react";
 import { PAGE_META, pagesOfSection } from "../navigation";
 import { useSubscription } from "../hooks/useSubscription";
 import { canAccessPage } from "../utils/pricing";
@@ -8,6 +8,7 @@ import { preloadPage } from "../pageModules";
 import { pathForPage } from "../utils/pageUrl";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { Modal } from "@/shared/ui";
 
 interface SectionTabsProps {
   section: SectionId;
@@ -47,15 +48,31 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
   // n'apprend pas qu'une page est verrouillée en y arrivant.
   const { tier, loading: subLoading } = useSubscription();
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const activeIndex = Math.max(
     0,
     pages.findIndex((p) => p === page),
   );
 
-  // L'onglet actif reste visible quand la rangée défile (mobile, 6 onglets).
+  /* L'onglet actif reste visible quand la RANGÉE défile — et rien d'autre ne
+     bouge.
+     `scrollIntoView` faisait défiler TOUS les ancêtres scrollables, y compris
+     la fenêtre de contenu. Comme la rangée d'onglets est en haut de la page,
+     cliquer sur un onglet depuis le milieu du Journal ramenait la fenêtre tout
+     en haut : on perdait sa position à chaque changement de vue. Ici on ne
+     touche qu'au défilement HORIZONTAL de la rangée, calculé à la main. */
+  const rowRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    tabRefs.current[activeIndex]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const row = rowRef.current;
+    const tab = tabRefs.current[activeIndex];
+    if (!row || !tab) return;
+    if (row.scrollWidth <= row.clientWidth) return; // rien à faire, tout tient
+    const marge = 12;
+    const gauche = tab.offsetLeft - marge;
+    const droite = tab.offsetLeft + tab.offsetWidth + marge;
+    if (gauche < row.scrollLeft) row.scrollLeft = gauche;
+    else if (droite > row.scrollLeft + row.clientWidth) row.scrollLeft = droite - row.clientWidth;
   }, [activeIndex]);
 
   const go = useCallback(
@@ -84,51 +101,120 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
     setPage(pages[next]);
   };
 
+  const { icon: ActiveIcon, labelKey: activeLabelKey } = PAGE_META[pages[activeIndex]];
+
+  // Une seule vue dans la section : il n'y a rien à choisir, donc rien à
+  // afficher. La rangée occupait quand même sa ligne, vide de sens.
+  if (pages.length < 2) return null;
+
   return (
-    <div
-      className="section-tabs"
-      role="tablist"
-      aria-orientation="horizontal"
-      onKeyDown={onKeyDown}
-    >
-      <div className="section-tabs-row">
-        {pages.map((p, i) => {
-          const { labelKey, icon: Icon } = PAGE_META[p];
-          const active = p === page;
-          return (
-            <a
-              key={p}
-              ref={(el) => {
-                tabRefs.current[i] = el;
-              }}
-              href={pathForPage(p)}
-              role="tab"
-              aria-selected={active}
-              aria-label={t(labelKey)}
-              title={t(labelKey)}
-              tabIndex={active ? 0 : -1}
-              onClick={(e) => go(p, e)}
-              // Le chunk part au survol / focus / premier contact du doigt,
-              // soit 100 à 300 ms avant le clic.
-              onPointerEnter={() => preloadPage(p)}
-              onFocus={() => preloadPage(p)}
-              onTouchStart={() => preloadPage(p)}
-              className={cn("section-tab", active ? "section-tab-active" : "section-tab-idle")}
-            >
-              <Icon
-                className={cn("h-4 w-4 shrink-0", active ? "text-cyan-300" : "text-slate-500")}
-                strokeWidth={active ? 2.2 : 1.9}
-              />
-              {/* Mobile : icônes seules (le texte revient dès md) — un label sur
+    <>
+      {/* ── MOBILE : UN SÉLECTEUR, PAS UNE RANGÉE ──
+          Six pastilles icône-seule qui défilent horizontalement, c'est six
+          cibles ambiguës dont la moitié sort de l'écran : pour atteindre
+          Monte-Carlo depuis Analytics il fallait deviner un pictogramme, puis
+          faire défiler jusqu'à lui. Le sélecteur dit OÙ L'ON EST, en toutes
+          lettres, et ouvre la liste complète — noms compris — d'un seul appui
+          sur une cible de 44px. */}
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        aria-haspopup="dialog"
+        aria-label={t(activeLabelKey)}
+        className="section-picker"
+      >
+        <ActiveIcon className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" strokeWidth={2.1} />
+        <span className="min-w-0 flex-1 truncate text-left">{t(activeLabelKey)}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
+      </button>
+
+      <Modal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        wrapperClassName="z-[80] md:hidden"
+        className="md:max-w-sm"
+      >
+        <div className="px-5 pb-2 pt-4">
+          <h2 className="tv-title">{t("nav.sectionViews")}</h2>
+        </div>
+        <div className="space-y-1 p-3 pt-1">
+          {pages.map((p) => {
+            const { labelKey, icon: Icon } = PAGE_META[p];
+            const active = p === page;
+            const locked = !subLoading && !canAccessPage(tier, p);
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  setPickerOpen(false);
+                  setPage(p);
+                }}
+                onTouchStart={() => preloadPage(p)}
+                className={cn("section-picker-row", active && "section-picker-row-active")}
+              >
+                <Icon
+                  className={cn(
+                    "h-[18px] w-[18px] shrink-0",
+                    active ? "text-[var(--tv-accent)]" : "text-slate-500",
+                  )}
+                  strokeWidth={active ? 2.1 : 1.9}
+                />
+                <span className="min-w-0 flex-1 truncate text-left">{t(labelKey)}</span>
+                {locked && <Lock className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />}
+                {active && <Check className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" />}
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
+
+      {/* ── DESKTOP : le contrôle segmenté, inchangé ── */}
+      <div
+        className="section-tabs"
+        role="tablist"
+        aria-orientation="horizontal"
+        onKeyDown={onKeyDown}
+      >
+        <div ref={rowRef} className="section-tabs-row">
+          {pages.map((p, i) => {
+            const { labelKey, icon: Icon } = PAGE_META[p];
+            const active = p === page;
+            return (
+              <a
+                key={p}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                href={pathForPage(p)}
+                role="tab"
+                aria-selected={active}
+                aria-label={t(labelKey)}
+                title={t(labelKey)}
+                tabIndex={active ? 0 : -1}
+                onClick={(e) => go(p, e)}
+                // Le chunk part au survol / focus / premier contact du doigt,
+                // soit 100 à 300 ms avant le clic.
+                onPointerEnter={() => preloadPage(p)}
+                onFocus={() => preloadPage(p)}
+                onTouchStart={() => preloadPage(p)}
+                className={cn("section-tab", active ? "section-tab-active" : "section-tab-idle")}
+              >
+                <Icon
+                  className={cn("h-4 w-4 shrink-0", active ? "text-cyan-300" : "text-slate-500")}
+                  strokeWidth={active ? 2.2 : 1.9}
+                />
+                {/* Mobile : icônes seules (le texte revient dès md) — un label sur
                   une rangée de 6 onglets devenait illisible et dur à toucher. */}
-              <span className="hidden whitespace-nowrap md:inline">{t(labelKey)}</span>
-              {!subLoading && !canAccessPage(tier, p) && (
-                <Lock className="hidden h-3 w-3 shrink-0 text-slate-500 md:block" aria-hidden />
-              )}
-            </a>
-          );
-        })}
+                <span className="hidden whitespace-nowrap md:inline">{t(labelKey)}</span>
+                {!subLoading && !canAccessPage(tier, p) && (
+                  <Lock className="hidden h-3 w-3 shrink-0 text-slate-500 md:block" aria-hidden />
+                )}
+              </a>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

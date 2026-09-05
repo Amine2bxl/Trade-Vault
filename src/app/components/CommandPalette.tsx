@@ -65,7 +65,7 @@ export default function CommandPalette({
       onClose={onClose}
       // Command palettes sit near the top (pt-[12vh]), not dead-centre — keep
       // that convention via the wrapper override. The panel keeps its own shape.
-      wrapperClassName="z-[70] items-start justify-center pt-[12vh] px-4 md:items-start md:pt-[12vh]"
+      wrapperClassName="z-[var(--tv-z-sheet)] items-start justify-center pt-[12vh] px-4 md:items-start md:pt-[12vh]"
       focusPanel={false}
     >
       <Command
@@ -119,7 +119,7 @@ export default function CommandPalette({
                   </span>
                   <span
                     className={cn(
-                      "ml-auto text-xs font-bold tabular-nums",
+                      "tv-figure ml-auto text-xs",
                       tr.direction === "be"
                         ? "text-slate-300"
                         : tr.pnl >= 0

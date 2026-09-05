@@ -8,7 +8,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "node scripts/preview.mjs",
+    "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "test:sql": "bash scripts/test-sql.sh",
     "voices": "bun run scripts/voices/generate.ts",
     "lint": "eslint .",
     "format": "prettier --write ."

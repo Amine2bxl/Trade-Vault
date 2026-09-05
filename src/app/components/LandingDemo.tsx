@@ -98,16 +98,15 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
   }, [mode, idx]);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6">
+    <div className="fixed inset-0 z-[var(--tv-z-overlay)] flex items-center justify-center p-3 sm:p-6">
       {/* Backdrop flouté */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-md animate-fade-in"
         onClick={onClose}
       />
-      <div className="absolute -top-28 right-0 w-[420px] h-[420px] rounded-full bg-cyan-600/10 blur-3xl pointer-events-none" />
 
       {/* Panneau */}
-      <div className="relative w-full max-w-3xl max-h-[92dvh] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0a0f1e] shadow-[0_30px_80px_rgba(0,0,0,0.6)] animate-slide-in flex flex-col">
+      <div className="relative w-full max-w-3xl max-h-[92dvh] overflow-hidden rounded-3xl border border-white/[0.08] bg-[var(--tv-plate-2)] shadow-[0_30px_80px_rgba(0,0,0,0.6)] animate-slide-in flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
@@ -157,7 +156,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
           {SLIDES.map((s, i) => (
             <div key={s.id} className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
               {i === idx && playing && (
-                <div className="h-full bg-gradient-to-r from-cyan-500 to-teal-400 animate-[demoProgress_4.2s_linear_forwards]" />
+                <div className="h-full bg-[var(--tv-accent)] animate-[demoProgress_4.2s_linear_forwards]" />
               )}
               {i === idx && !playing && <div className="h-full bg-cyan-500/70" />}
               {i < idx && <div className="h-full bg-cyan-500/40" />}
@@ -168,11 +167,11 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
         {/* Contenu */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6">
           <div key={slide.id} className="animate-fade-in-up">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1.5">
+            <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               {slide.tagline}
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <h2 className="text-sm sm:text-2xl font-bold text-white tracking-tight">
               {slide.title}
             </h2>
             <p className="text-[13px] text-slate-400 leading-relaxed mt-1.5 mb-5">{slide.desc}</p>
@@ -182,7 +181,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06]">
-          <div className="text-[11px] text-slate-600 tabular-nums">
+          <div className="tv-figure text-[11px] text-slate-600">
             {idx + 1} / {total}
           </div>
           {mode === "guide" ? (
@@ -196,7 +195,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
               </button>
               <button
                 onClick={idx === total - 1 ? onClose : next}
-                className="h-10 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 transition-all inline-flex items-center gap-1.5"
+                className="h-10 px-4 rounded-xl text-sm font-bold tv-accent-fill transition-all inline-flex items-center gap-1.5"
               >
                 {idx === total - 1 ? "Terminer" : "Suivant"}
                 <ArrowRight className="w-4 h-4" />
@@ -205,7 +204,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
           ) : (
             <button
               onClick={onClose}
-              className="h-10 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 transition-all"
+              className="h-10 px-5 rounded-xl text-sm font-bold tv-accent-fill transition-all"
             >
               Essayer TradeVault
             </button>
@@ -221,8 +220,8 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-      <div className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
-      <div className={cn("font-display text-base font-extrabold tabular-nums", color)}>{value}</div>
+      <div className="tv-label text-slate-500">{label}</div>
+      <div className={cn("tv-figure text-base", color)}>{value}</div>
     </div>
   );
 }
@@ -241,7 +240,7 @@ function DashboardMock() {
           {[35, 48, 30, 55, 42, 62, 50, 72, 58, 80, 66, 92].map((h, i) => (
             <div
               key={i}
-              className="w-full rounded-t bg-gradient-to-t from-cyan-600/40 to-teal-400/80"
+              className="w-full rounded-t bg-[rgb(var(--tv-accent-rgb)/0.55)]"
               style={{ height: `${h}%`, animation: `demoBar 0.6s ${i * 0.05}s both` }}
             />
           ))}
@@ -254,7 +253,7 @@ function DashboardMock() {
           <span className="text-cyan-300 font-bold">+6.2% / +8%</span>
         </div>
         <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-          <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-cyan-500 to-teal-400" />
+          <div className="h-full w-[78%] rounded-full bg-[var(--tv-accent)]" />
         </div>
       </div>
     </div>
@@ -283,17 +282,12 @@ function JournalMock() {
             </div>
           </div>
           <div className="text-right">
-            <div
-              className={cn(
-                "text-xs font-bold tabular-nums",
-                r.win ? "text-emerald-400" : "text-red-400",
-              )}
-            >
+            <div className={cn("tv-figure text-xs", r.win ? "text-emerald-400" : "text-red-400")}>
               {r.r}
             </div>
             <div
               className={cn(
-                "text-[10px] tabular-nums",
+                "tv-figure text-[10px]",
                 r.win ? "text-emerald-300/80" : "text-red-300/80",
               )}
             >
@@ -317,9 +311,7 @@ function AnalyticsMock() {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-        <div className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-3">
-          Edge par jour de la semaine
-        </div>
+        <div className="tv-label text-slate-500 mb-3">Edge par jour de la semaine</div>
         <div className="flex items-end justify-between gap-2 h-20">
           {days.map((x, i) => (
             <div key={i} className="flex flex-col items-center gap-1 flex-1">
@@ -349,8 +341,8 @@ function JarvisMock() {
   return (
     <div className="space-y-2.5">
       <div className="flex items-end gap-2 justify-start">
-        <div className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 shrink-0">
-          <Bot className="w-3.5 h-3.5 text-white" />
+        <div className="grid h-7 w-7 place-items-center rounded-xl tv-accent-fill shrink-0">
+          <Bot className="w-3.5 h-3.5" />
         </div>
         <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-white/[0.04] border border-white/[0.08] px-3.5 py-2.5 text-[12px] text-slate-200 leading-relaxed">
           <b className="text-white">Série de pertes</b> : 3 pertes consécutives après une victoire.
@@ -358,14 +350,12 @@ function JarvisMock() {
         </div>
       </div>
       <div className="flex items-end gap-2 justify-end">
-        <div className="max-w-[70%] rounded-2xl rounded-br-md bg-gradient-to-r from-cyan-500 to-teal-500 px-3.5 py-2.5 text-[12px] text-white font-medium">
+        <div className="max-w-[70%] rounded-2xl rounded-br-md tv-accent-fill px-3.5 py-2.5 text-[12px] font-medium">
           Comment je stoppe ça demain ?
         </div>
       </div>
       <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.05] px-3.5 py-3">
-        <div className="text-[11px] uppercase tracking-wider text-cyan-400/80 font-bold mb-1">
-          Mission du jour
-        </div>
+        <div className="tv-label text-cyan-400/80 mb-1">Mission du jour</div>
         <div className="text-[12px] text-slate-200 leading-relaxed">
           Max 2 trades · taille fixe · stop après 1 perte. À revérifier ce soir.
         </div>
@@ -392,9 +382,7 @@ function ChecklistMock() {
           <span
             className={cn(
               "grid h-5 w-5 place-items-center rounded-md border shrink-0",
-              it.on
-                ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent"
-                : "border-white/15",
+              it.on ? "tv-accent-fill border-transparent" : "border-white/15",
             )}
           >
             {it.on && <CheckCircle2 className="w-3 h-3 text-white" />}

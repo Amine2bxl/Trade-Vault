@@ -11,11 +11,12 @@ import { cn } from "./cn";
 export type BadgeVariant = "neutral" | "profit" | "loss" | "warning" | "accent";
 
 const VARIANT: Record<BadgeVariant, string> = {
-  neutral: "bg-white/[0.06] border-white/10 text-slate-300",
+  neutral: "bg-[var(--tv-plate-2)] border-[var(--tv-border-strong)] text-slate-300",
   profit: "bg-emerald-500/15 border-emerald-500/25 text-emerald-400",
   loss: "bg-red-500/15 border-red-500/25 text-red-400",
   warning: "bg-amber-500/10 border-amber-500/25 text-amber-400",
-  accent: "bg-cyan-500/15 border-cyan-500/25 text-cyan-300",
+  accent:
+    "bg-[rgb(var(--tv-accent-rgb)/0.16)] border-[var(--tv-border-accent)] text-[var(--tv-highlight)]",
 };
 
 export function Badge({
@@ -27,7 +28,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
         VARIANT[variant],
         className,
       )}

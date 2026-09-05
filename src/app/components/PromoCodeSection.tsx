@@ -168,12 +168,12 @@ export default function PromoCodeSection() {
   return (
     <div className="glass-strong space-y-4 rounded-3xl p-5">
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-amber-500">
           <Tag className="h-4 w-4 text-white" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-white">{fr ? "Codes promo" : "Promo codes"}</h2>
-          <p className="text-[11px] text-slate-500">
+          <h2 className="tv-title">{fr ? "Codes promo" : "Promo codes"}</h2>
+          <p className="tv-row-label">
             {fr
               ? "Un code = accès permanent pour un influenceur + réduction pour sa communauté."
               : "One code = lifetime access for an influencer + a discount for their community."}
@@ -310,7 +310,7 @@ export default function PromoCodeSection() {
 
               {open === p.code && (
                 <div className="mt-2.5 space-y-1.5 border-t border-white/[0.05] pt-2.5">
-                  <div className="flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <div className="tv-label flex items-center gap-1.5 px-1 text-slate-500">
                     <ChevronDown className="h-3 w-3" />
                     {fr ? "Utilisations" : "Redemptions"}
                   </div>
@@ -342,7 +342,7 @@ export default function PromoCodeSection() {
                                 ? "Invite"
                                 : `-${p.discount_percent ?? 0}%`}
                           </span>
-                          <span className="text-[10px] tabular-nums text-slate-600">
+                          <span className="tv-figure text-[10px] text-slate-600">
                             {new Date(r.created_at).toLocaleDateString()}
                           </span>
                           <button

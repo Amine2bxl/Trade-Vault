@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { getActiveAccountId } from "./accounts";
 import { computeReadiness, isEmotionalState, type EmotionalState } from "../utils/readiness";
 import { todayLocalDate } from "../utils/sessionDate";
@@ -148,12 +149,17 @@ export async function openSession(
     activeRuleCount: input.activeRules.length,
   });
 
+  // Les trois champs `jsonb` sont typés `Json` par le schéma généré — un type
+  // récursif que TypeScript ne peut pas déduire d'une interface applicative.
+  // La conversion est explicite et LOCALE plutôt qu'un `as any` sur tout le
+  // payload : ce qui traverse reste nommé, et les autres champs restent
+  // vérifiés colonne par colonne.
   const payload = {
     emotional_state: input.emotionalState,
     readiness_score: readiness.score,
-    readiness_inputs: readiness.inputs,
-    checklist_snapshot: input.checklistSnapshot,
-    active_rules: input.activeRules,
+    readiness_inputs: readiness.inputs as unknown as Json,
+    checklist_snapshot: input.checklistSnapshot as unknown as Json,
+    active_rules: input.activeRules as unknown as Json,
     market_context: input.marketContext ?? null,
     daily_objective: input.dailyObjective ?? null,
     updated_at: new Date().toISOString(),

@@ -34,8 +34,14 @@ export interface MetricProps {
   delay?: number;
 }
 
+/* La couleur du chiffre est le SIGNE, rien d'autre. Sans tendance il reste
+   neutre : un montant qui ne gagne ni ne perd n'a pas à porter une teinte. */
 function trendClass(trend: MetricProps["trend"]) {
-  return trend === "up" ? "text-emerald-400" : trend === "down" ? "text-red-400" : "text-white";
+  return trend === "up"
+    ? "text-emerald-400"
+    : trend === "down"
+      ? "text-red-400"
+      : "text-[var(--tv-text-primary)]";
 }
 
 /** Radial progress dial (0..1). Pure SVG — no chart lib. */
@@ -46,7 +52,7 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
   return (
     <div className="relative w-16 h-16 shrink-0">
       <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-        <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
+        <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="6" />
         <circle
           cx="32"
           cy="32"
@@ -62,7 +68,7 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
       </svg>
       {center && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[11px] font-bold tabular-nums text-slate-300">{center}</span>
+          <span className="tv-figure text-[11px] text-slate-300">{center}</span>
         </div>
       )}
     </div>
@@ -73,7 +79,11 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
 function ProgressBar({ pct, color }: { pct: number; color?: string }) {
   const p = Math.max(0, Math.min(1, pct));
   return (
-    <div className="w-16 shrink-0 self-center">
+    /* `hidden sm:block` — sur un téléphone, la tuile fait 170px de large ; les
+       64px de la jauge laissaient 76px au libellé, et « Profit Factor » y était
+       coupé. La jauge est un APPUI de lecture (elle situe la valeur sur son
+       échelle), le libellé est la valeur elle-même : c'est la jauge qui cède. */
+    <div className="hidden w-16 shrink-0 self-center sm:block">
       <div className="metric-bar">
         <div
           className="metric-bar-fill"
@@ -139,21 +149,12 @@ export function Metric({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-1.5">
-            {icon && (
-              <span className={cn("shrink-0", trend ? trendClass(trend) : "text-cyan-400/70")}>
-                {icon}
-              </span>
-            )}
+            {icon && <span className="shrink-0 text-slate-500">{icon}</span>}
             <span className={cn(type.label, "text-slate-500 truncate")}>{title}</span>
           </div>
-          <div
-            className={cn(
-              "font-display text-xl md:text-[26px] font-extrabold tracking-tight tabular-nums leading-none",
-              valueClass ?? trendClass(trend),
-            )}
-          >
-            {value}
-          </div>
+          {/* LE CHIFFRE. Chasse fixe (voir `.tv-figure`) : c'est la tuile qui
+              porte la signature typographique du produit. */}
+          <div className={cn(type.figure, valueClass ?? trendClass(trend))}>{value}</div>
           {subtitle && (
             <p className={cn(type.caption, "text-slate-500 mt-1 truncate")}>{subtitle}</p>
           )}
@@ -165,11 +166,9 @@ export function Metric({
         {visual?.kind === "bar" && <ProgressBar pct={visual.pct} color={visual.color} />}
       </div>
       {footer && (
-        <div className="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between">
+        <div className="mt-3 pt-2.5 border-t border-[var(--tv-border)] flex items-center justify-between">
           <span className={cn(type.label, "text-slate-500")}>{footer.label}</span>
-          <span
-            className={cn("text-xs font-bold tabular-nums", footer.className ?? "text-slate-300")}
-          >
+          <span className={cn("tv-figure text-xs", footer.className ?? "text-slate-300")}>
             {footer.value}
           </span>
         </div>

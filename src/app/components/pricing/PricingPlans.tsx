@@ -7,6 +7,8 @@ import {
   monthsFree,
   planId,
   yearlyPerMonth,
+  PAGE_VALUE,
+  pagesOfTier,
   type Bi,
   type Interval,
   type PaidPlan,
@@ -183,7 +185,7 @@ function PlanColumn({
         <>
           {/* Liseré haut, le seul « chrome » — il oriente l'œil vers Pro. */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
-          <span className="absolute right-6 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#041018]">
+          <span className="tv-label absolute right-6 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400 px-2.5 py-1 text-[#041018]">
             <Sparkles className="h-3 w-3" />
             {fr ? "Recommandé" : "Recommended"}
           </span>
@@ -195,7 +197,7 @@ function PlanColumn({
         <Icon className={cn("h-4 w-4", isPro ? "text-cyan-300" : "text-slate-500")} />
         <span
           className={cn(
-            "inline-flex items-center text-[11px] font-bold uppercase tracking-[.16em]",
+            "tv-label inline-flex items-center",
             isPro ? "text-cyan-300" : "text-slate-400",
           )}
         >
@@ -210,14 +212,7 @@ function PlanColumn({
 
       {/* Prix — un seul chiffre à lire. */}
       <div className="mt-5 flex items-end gap-1.5">
-        <span
-          className={cn(
-            "font-display font-extrabold tracking-tight text-white tabular-nums",
-            isPro ? "text-5xl" : "text-4xl",
-          )}
-        >
-          {price}
-        </span>
+        <span className={cn("tv-figure text-white", isPro ? "text-5xl" : "text-4xl")}>{price}</span>
         <span className="mb-1.5 text-sm text-slate-400">
           {isFree ? (fr ? "/ pour toujours" : "/ forever") : fr ? "/mois" : "/month"}
         </span>
@@ -265,9 +260,9 @@ function PlanColumn({
             onClick={() => plan && onChoose && onChoose(plan)}
             disabled={busy != null || current}
             className={cn(
-              "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[15px] font-bold transition disabled:opacity-60",
+              "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold transition disabled:opacity-60",
               isPro
-                ? "bg-gradient-to-r from-cyan-400 to-teal-400 text-[#04101a] shadow-lg shadow-cyan-500/25 hover:brightness-110"
+                ? "tv-accent-fill"
                 : "border border-white/[0.12] bg-white/[0.04] text-white hover:bg-white/[0.08]",
             )}
           >
@@ -292,7 +287,7 @@ function PlanColumn({
           </button>
 
           {isPro && (
-            <p className="mt-2.5 text-center text-[11px] text-slate-500">
+            <p className="mt-2.5 text-center tv-row-label">
               {fr
                 ? "Sans engagement · Annulation en 1 clic"
                 : "No commitment · Cancel in one click"}
@@ -327,15 +322,30 @@ function PlanColumn({
                 </span>
               </div>
             ))}
-            <div className="grid gap-1.5 pt-1">
-              {[...tier.features.slice(0, 2), ...tier.features.slice(4)].map((f) => (
-                <p key={f.en} className="flex items-start gap-2 text-[13px] text-slate-300">
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-                  {tr(f)}
-                </p>
-              ))}
+            {/* Les 9 pages Premium — la liste concrète de ce qui se débloque. */}
+            <div className="pt-1">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/90">
+                {fr
+                  ? `${pagesOfTier("pro").length} pages Premium`
+                  : `${pagesOfTier("pro").length} Premium pages`}
+              </p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                {pagesOfTier("pro").map((page) => {
+                  const v = PAGE_VALUE[page];
+                  if (!v) return null;
+                  return (
+                    <p
+                      key={page}
+                      className="flex items-start gap-2 text-[12.5px] leading-snug text-slate-300"
+                    >
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                      <span>{v.title[fr ? "fr" : "en"]}</span>
+                    </p>
+                  );
+                })}
+              </div>
             </div>
-            <p className="pt-1 text-[12px] text-slate-500">
+            <p className="pt-2 text-[12px] text-slate-500">
               {fr
                 ? "+ tout le plan gratuit, sans aucune limite."
                 : "+ everything in Free, with no limits at all."}
@@ -344,7 +354,7 @@ function PlanColumn({
         ) : (
           <div className="space-y-2.5">
             {tier.id === "elite" && (
-              <p className="text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/90">
+              <p className="tv-label text-cyan-300/90">
                 {fr ? "Tout Pro, mais sans limites, plus :" : "All of Pro without limits, plus:"}
               </p>
             )}

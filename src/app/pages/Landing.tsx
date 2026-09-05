@@ -151,15 +151,15 @@ function Sparkline({ points, up = true }: { points: string; up?: boolean }) {
     <svg viewBox="0 0 96 32" className="h-8 w-full" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id={gid.current} x1="0" x2="0" y1="0" y2="1">
-          <stop stopColor={up ? "#22d3ee" : "#f87171"} stopOpacity=".25" />
-          <stop offset="1" stopColor={up ? "#22d3ee" : "#f87171"} stopOpacity="0" />
+          <stop stopColor={up ? "var(--tv-highlight)" : "#f87171"} stopOpacity=".25" />
+          <stop offset="1" stopColor={up ? "var(--tv-highlight)" : "#f87171"} stopOpacity="0" />
         </linearGradient>
       </defs>
       <polygon points={`${points} 96,32 0,32`} fill={`url(#${gid.current})`} />
       <polyline
         points={points}
         fill="none"
-        stroke={up ? "#22d3ee" : "#f87171"}
+        stroke={up ? "var(--tv-highlight)" : "#f87171"}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -170,64 +170,102 @@ function Sparkline({ points, up = true }: { points: string; up?: boolean }) {
   );
 }
 
+/**
+ * La spline de la courbe héros — même famille que le `natural` de recharts.
+ *
+ * Catmull-Rom passe par TOUS les points et se convertit exactement en cubiques
+ * de Bézier : c'est la façon standard d'obtenir, en SVG statique, la courbe que
+ * la bibliothèque de graphes dessine dans l'application. Calculée une fois au
+ * chargement du module, pas à chaque rendu.
+ */
+const HERO_PTS: [number, number][] = [
+  [0, 112],
+  [38, 96],
+  [76, 102],
+  [114, 74],
+  [152, 88],
+  [190, 56],
+  [228, 70],
+  [266, 36],
+  [304, 50],
+  [340, 20],
+];
+
+const HERO_D = (() => {
+  const p = HERO_PTS;
+  let d = `M${p[0][0]},${p[0][1]}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[i - 1] ?? p[i];
+    const p1 = p[i];
+    const p2 = p[i + 1];
+    const p3 = p[i + 2] ?? p2;
+    // Tension 1/6 : la conversion canonique Catmull-Rom → Bézier.
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+})();
+
 /* ─────────────────────────── HERO PRODUCT VISUAL ─────────────────────────── */
 function HeroProductVisual() {
   const { t } = useLandingT();
-  const pts = "0,112 38,96 76,102 114,74 152,88 190,56 228,70 266,36 304,50 340,20";
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-cyan-500/[.08] blur-3xl glow-pulse" />
-      <div className="relative rounded-2xl border border-white/10 bg-[#0a1625]/95 p-5 shadow-[0_30px_80px_rgba(0,0,0,.6)] backdrop-blur-xl">
-        <div className="flex items-start justify-between mb-4">
+      {/* ── LA CARTE HÉROS ──
+          C'est la vitrine du produit : elle doit être la MÊME pièce que la
+          courbe d'equity réelle, pas une illustration qui lui ressemble. Ce
+          qui a changé, et pourquoi :
+            • la surface passe du bleu marine (#0a1625, hérité de l'ancienne
+              identité) à la plaque des cartes du produit. Quelqu'un qui
+              s'inscrit après avoir vu la landing retrouve la même matière ;
+            • la courbe était une POLYLIGNE anguleuse ; c'est une spline,
+              comme dans l'application ;
+            • le dégradé sous le trait reprend les trois paliers de la
+              référence (30 % / 10 % / 0) au lieu de deux ;
+            • la grille passe du pointillé bleu au trait horizontal sourd ;
+            • le ZÉRO en tirets rouges apparaît — c'est lui qui dit qui gagne,
+              et il manquait ;
+            • la pastille cyan lumineuse au bout du tracé a sauté : la courbe
+              du produit ne porte aucun point au repos. */}
+      <div className="relative rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-5 shadow-[0_30px_80px_rgba(0,0,0,.6)]">
+        <div className="mb-4 flex items-start justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-slate-500">
-              {t("hero.eq")}
-            </p>
-            <p className="mt-1 font-display text-2xl font-bold text-emerald-400 tracking-tight">
-              +4 218,50 €
-            </p>
+            <p className="tv-label text-slate-500">{t("hero.eq")}</p>
+            <p className="tv-figure mt-1 text-2xl text-[var(--tv-chart-green)]">+4 218,50 €</p>
           </div>
-          <span className="mt-1 rounded-full bg-emerald-400/12 border border-emerald-400/20 px-2.5 py-1 text-[11px] font-bold text-emerald-400">
+          <span className="tv-figure mt-1 rounded-full border border-emerald-400/20 bg-emerald-400/12 px-2.5 py-1 text-[11px] text-emerald-400">
             +16.9%
           </span>
         </div>
         <div className="h-24 w-full">
-          <svg
-            viewBox="0 0 345 125"
-            className="h-full w-full overflow-visible"
-            preserveAspectRatio="none"
-          >
+          <svg viewBox="0 0 345 125" className="h-full w-full" preserveAspectRatio="none">
             <defs>
               <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1">
-                <stop stopColor="#22d3ee" stopOpacity=".25" />
-                <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+                <stop stopColor="var(--tv-chart-green)" stopOpacity=".3" />
+                <stop offset=".55" stopColor="var(--tv-chart-green)" stopOpacity=".1" />
+                <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
               </linearGradient>
             </defs>
             {[30, 65, 100].map((yy) => (
-              <path
-                key={yy}
-                d={`M0 ${yy}H345`}
-                stroke="rgba(148,163,184,.1)"
-                strokeDasharray="3 5"
-              />
+              <path key={yy} d={`M0 ${yy}H345`} stroke="rgba(148,163,184,.08)" />
             ))}
-            <polygon points={`${pts} 340,125 0,125`} fill="url(#hf)" />
-            <polyline
-              points={pts}
+            <path d={`${HERO_D} L340,125 L0,125 Z`} fill="url(#hf)" />
+            <path
+              d="M0 119H345"
+              stroke="var(--tv-chart-red)"
+              strokeWidth="2"
+              strokeDasharray="7 7"
+            />
+            <path
+              d={HERO_D}
               fill="none"
-              stroke="#22d3ee"
-              strokeWidth="2.5"
+              stroke="var(--tv-chart-green)"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
               className="chart-line"
-            />
-            <circle
-              cx="340"
-              cy="20"
-              r="4.5"
-              fill="#0a1625"
-              stroke="#67e8f9"
-              strokeWidth="2.2"
-              vectorEffect="non-scaling-stroke"
             />
           </svg>
         </div>
@@ -238,19 +276,20 @@ function HeroProductVisual() {
             [t("hero.sharpe"), "1.84"],
           ].map(([l, v]) => (
             <div key={l} className="text-center">
-              <p className="text-[11px] font-medium uppercase tracking-[.08em] text-slate-500">
-                {l}
-              </p>
+              <p className="tv-label text-slate-500">{l}</p>
               <p className="mt-1 font-display text-base font-bold text-cyan-300">{v}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="float-a absolute -bottom-10 -left-6 z-10 w-[230px] rounded-xl border border-cyan-400/25 bg-[#0b1a2b]/95 p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden sm:block">
+      <div className="float-a absolute -bottom-10 -left-6 z-10 w-[230px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-1)] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden sm:block">
         <div className="flex items-center gap-2 mb-2">
-          <div className="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-cyan-400 to-blue-500">
-            <Icon n="brain" cls="h-3.5 w-3.5 text-[#03131b]" />
+          {/* Le dégradé cyan→bleu était le dernier reste de l'ancienne identité
+              sur la landing, et il était codé en dur : il restait bleu quel que
+              soit le thème. C'est la surface d'action du produit. */}
+          <div className="tv-accent-fill grid h-6 w-6 place-items-center rounded-md">
+            <Icon n="brain" cls="h-3.5 w-3.5" />
           </div>
           <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
           <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-emerald-400">
@@ -263,7 +302,7 @@ function HeroProductVisual() {
         </p>
       </div>
 
-      <div className="float-b absolute -top-8 -right-5 z-10 w-[190px] rounded-xl border border-violet-400/25 bg-[#0b1a2b]/95 p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden md:block">
+      <div className="float-b absolute -top-8 -right-5 z-10 w-[190px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-1)] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden md:block">
         <div className="flex items-center gap-2 mb-1.5">
           <Icon n="radar" cls="h-3.5 w-3.5 text-violet-300" />
           <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
@@ -280,14 +319,14 @@ function HeroProductVisual() {
 function AIConversation() {
   const { t } = useLandingT();
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[.1] bg-[#0b1727]/90 shadow-[0_24px_64px_rgba(0,0,0,.5)] backdrop-blur-xl">
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] shadow-[0_24px_64px_rgba(0,0,0,.5)] backdrop-blur-xl">
       <div className="flex items-center justify-between border-b border-white/[.08] px-5 py-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500">
-            <Icon n="brain" cls="h-4.5 w-4.5 text-[#03131b]" />
+          <div className="tv-accent-fill grid h-9 w-9 place-items-center rounded-lg">
+            <Icon n="brain" cls="h-4.5 w-4.5" />
           </div>
           <div>
-            <p className="text-xs font-bold text-white">{t("ai.c.title")}</p>
+            <p className="tv-prose font-bold text-white">{t("ai.c.title")}</p>
             <p className="text-[11px] text-emerald-400">{t("ai.c.sub")}</p>
           </div>
         </div>
@@ -298,20 +337,18 @@ function AIConversation() {
       <div className="space-y-3 px-5 py-5">
         <div className="flex justify-end">
           <div className="max-w-[80%] rounded-xl rounded-tr-sm border border-white/[.08] bg-white/[.05] px-4 py-2.5">
-            <p className="text-xs leading-5 text-slate-200">{t("ai.c.q")}</p>
+            <p className="tv-prose text-slate-200">{t("ai.c.q")}</p>
           </div>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-cyan-400/20 bg-cyan-400/[.05] p-3.5">
-          <p className="text-xs leading-5 text-slate-200">{t("ai.c.a")}</p>
+          <p className="tv-prose text-slate-200">{t("ai.c.a")}</p>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-3.5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-              {t("ai.c.plan")}
-            </span>
+            <span className="tv-label text-emerald-400">{t("ai.c.plan")}</span>
           </div>
-          <p className="text-xs leading-5 text-slate-200">{t("ai.c.plan.d")}</p>
+          <p className="tv-prose text-slate-200">{t("ai.c.plan.d")}</p>
         </div>
       </div>
     </div>
@@ -483,7 +520,7 @@ function LandingPage() {
   };
 
   return (
-    <div className="landing-root min-h-screen overflow-x-clip bg-[#060d16] text-white selection:bg-cyan-400 selection:text-[#060d16]">
+    <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white selection:bg-cyan-400 selection:text-[var(--tv-bg)]">
       <CursorGlow />
       <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
 
@@ -504,7 +541,7 @@ function LandingPage() {
 
           <div className="relative mx-auto grid max-w-[1200px] items-center gap-12 px-5 lg:grid-cols-[1.02fr_.98fr] lg:gap-14 lg:px-8">
             <div className="text-center lg:text-left">
-              <div className="fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/[.08] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300">
+              <div className="tv-label fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/[.08] px-4 py-1.5 text-cyan-300">
                 <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />{" "}
                 {t("hero.eyebrow")}
               </div>
@@ -521,7 +558,7 @@ function LandingPage() {
                     <path
                       d="M4 14C40 6 70 18 105 12S190 4 226 12S280 16 296 8"
                       fill="none"
-                      stroke="#22d3ee"
+                      stroke="var(--tv-highlight)"
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
@@ -540,7 +577,7 @@ function LandingPage() {
                 </button>
                 <a
                   href="/demo-site"
-                  className="group inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-cyan-300 transition-colors"
+                  className="group -my-2 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-cyan-300"
                 >
                   <PlayCircle className="w-4 h-4" />
                   {t("hero.demo")}
@@ -833,7 +870,10 @@ function LandingPage() {
                 <ul className="space-y-2.5 text-sm">
                   {[t("footer.f1"), t("footer.f2"), t("footer.f3"), t("footer.f4")].map((l) => (
                     <li key={l}>
-                      <a href="#" className="text-slate-500 hover:text-cyan-300 transition">
+                      <a
+                        href="#"
+                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
+                      >
                         {l}
                       </a>
                     </li>
@@ -845,7 +885,10 @@ function LandingPage() {
                 <ul className="space-y-2.5 text-sm">
                   {[t("footer.r1"), t("footer.r2"), t("footer.r3"), t("footer.r4")].map((l) => (
                     <li key={l}>
-                      <a href="#" className="text-slate-500 hover:text-cyan-300 transition">
+                      <a
+                        href="#"
+                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
+                      >
                         {l}
                       </a>
                     </li>
@@ -857,7 +900,11 @@ function LandingPage() {
               <p className="text-sm text-slate-600">{t("footer.rights")}</p>
               <div className="flex items-center gap-6 text-sm">
                 {[t("footer.privacy"), t("footer.terms"), t("footer.cookies")].map((l) => (
-                  <a key={l} href="#" className="text-slate-600 hover:text-slate-400 transition">
+                  <a
+                    key={l}
+                    href="#"
+                    className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                  >
                     {l}
                   </a>
                 ))}

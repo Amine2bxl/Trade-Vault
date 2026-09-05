@@ -442,7 +442,7 @@ export default function EconomicNews() {
                 {preset !== "all" && (
                   <span
                     className={cn(
-                      "text-[10px] font-bold tabular-nums",
+                      "tv-figure text-[10px]",
                       active ? "text-cyan-300/70" : "text-slate-600",
                     )}
                   >
@@ -470,7 +470,7 @@ export default function EconomicNews() {
               >
                 <span className={cn("w-1.5 h-1.5 rounded-full", st.dot)} />
                 {IMPACT_LABELS[i]}
-                <span className="text-[10px] opacity-60 tabular-nums">{weekCounts[i]}</span>
+                <span className="tv-figure text-[10px] opacity-60">{weekCounts[i]}</span>
               </button>
             );
           })}
@@ -499,7 +499,7 @@ export default function EconomicNews() {
                 )}
               >
                 <span>{shortDayFmt.format(date)}</span>
-                <span className="tabular-nums text-[11px] opacity-60">{all.length}</span>
+                <span className="tv-figure text-[11px] opacity-60">{all.length}</span>
               </button>
             );
           })}
@@ -508,9 +508,7 @@ export default function EconomicNews() {
 
       {filtersOpen && (
         <Card className="p-3 mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mr-1">
-            Devises
-          </span>
+          <span className="tv-label text-slate-500 mr-1">Devises</span>
           {availableCurrencies.map((c) => {
             const on = currencyFilter.has(c);
             return (
@@ -558,9 +556,7 @@ export default function EconomicNews() {
             )}
           />
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-              Prochain event
-            </div>
+            <div className="tv-label text-slate-500">Prochain event</div>
             <div className="text-sm font-semibold text-white truncate mt-0.5">
               {flagOf(nextEvent.currency)} {nextEvent.title}
             </div>
@@ -569,7 +565,7 @@ export default function EconomicNews() {
             </div>
           </div>
           <div className="shrink-0 text-right">
-            <div className="font-display text-xl font-extrabold text-cyan-300 tabular-nums leading-none">
+            <div className="tv-figure text-xl text-cyan-300 leading-none">
               {formatCountdown(new Date(nextEvent.startsAt).getTime() - now)}
             </div>
           </div>
@@ -603,7 +599,7 @@ export default function EconomicNews() {
                     {dayFmt.format(date)}
                   </span>
                   {isToday && (
-                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                    <span className="tv-label px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
                       Aujourd'hui
                     </span>
                   )}
@@ -645,12 +641,16 @@ export default function EconomicNews() {
                             onClick={() => setExpanded(open ? null : e.id)}
                             className="flex-1 flex items-center gap-3 pl-3 pr-3 py-2.5 text-left hover:bg-white/[0.02] transition-colors min-w-0"
                           >
-                            <span className="w-12 shrink-0 text-right font-mono text-xs font-semibold tabular-nums text-slate-400">
+                            <span className="tv-figure w-12 shrink-0 text-right font-mono text-xs text-slate-400">
                               {e.allDay ? "—" : timeFmt.format(start)}
                             </span>
                             <span
                               className={cn(
-                                "flex-1 min-w-0 text-sm font-medium truncate",
+                                /* Le nom de l'événement passe à la ligne sur
+                                   téléphone. « Euro Area Unemployment Rate »
+                                   coupé à 175px ne désigne plus rien ; la
+                                   rangée peut grandir, l'information non. */
+                                "flex-1 min-w-0 text-sm font-medium leading-snug md:truncate",
                                 status === "past" ? "text-slate-600" : "text-white",
                               )}
                             >
@@ -667,7 +667,7 @@ export default function EconomicNews() {
                               {flagOf(e.currency)} {e.currency}
                             </span>
                             {status === "live" && (
-                              <span className="shrink-0 h-5 px-1.5 rounded text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 animate-pulse">
+                              <span className="tv-label shrink-0 h-5 px-1.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 animate-pulse">
                                 Live
                               </span>
                             )}
@@ -684,20 +684,16 @@ export default function EconomicNews() {
                             <div className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
                               {e.previous && (
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-[10px] uppercase text-slate-600 font-bold">
-                                    Précédent
-                                  </div>
-                                  <div className="text-sm font-semibold text-slate-300 tabular-nums">
+                                  <div className="tv-label text-slate-600">Précédent</div>
+                                  <div className="tv-figure text-sm text-slate-300">
                                     {e.previous}
                                   </div>
                                 </div>
                               )}
                               {e.forecast && (
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-[10px] uppercase text-slate-600 font-bold">
-                                    Prévision
-                                  </div>
-                                  <div className="text-sm font-semibold text-slate-300 tabular-nums">
+                                  <div className="tv-label text-slate-600">Prévision</div>
+                                  <div className="tv-figure text-sm text-slate-300">
                                     {e.forecast}
                                   </div>
                                 </div>

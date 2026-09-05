@@ -41,7 +41,7 @@ const TONES = {
     bg: "bg-red-500/[0.04]",
     text: "text-red-400",
     iconBg: "bg-red-500/10",
-    bar: "bg-red-500/60",
+    bar: "bg-red-400/70",
   },
   amber: {
     border: "border-amber-500/15",
@@ -62,7 +62,7 @@ const TONES = {
     bg: "bg-emerald-500/[0.04]",
     text: "text-emerald-400",
     iconBg: "bg-emerald-500/10",
-    bar: "bg-emerald-500/60",
+    bar: "bg-emerald-400/70",
   },
 } as const;
 
@@ -144,17 +144,16 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
 
       {/* Header */}
       <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden shrink-0">
-        <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl" />
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 md:gap-3.5 min-w-0">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl border border-amber-500/20 bg-amber-500/15 flex items-center justify-center shrink-0">
               <Target className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base md:text-xl font-bold text-white tracking-tight truncate leading-tight">
+              <h2 className="tv-title tracking-tight truncate leading-tight">
                 {missed.symbol || t("tradeDetail.missedSetup")}
               </h2>
-              <p className="text-[11px] md:text-xs text-slate-500 mt-0.5 truncate">{dateStr}</p>
+              <p className="text-[11px] md:tv-prose text-slate-500 mt-0.5 truncate">{dateStr}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -202,7 +201,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
           big
           empty={!missed.lessonLearned}
         >
-          <p className="text-sm md:text-[15px] text-slate-100 leading-relaxed whitespace-pre-wrap font-medium">
+          <p className="text-sm text-slate-100 leading-relaxed whitespace-pre-wrap font-medium">
             {missed.lessonLearned || (
               <span className="text-slate-600 italic font-normal">{t("missed.nothingNoted")}</span>
             )}
@@ -222,9 +221,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
           <div className="pt-1">
             <div className="flex items-center gap-2 mb-2.5 md:mb-3">
               <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-semibold">
-                {t("tradeDetail.chartScreenshots")}
-              </span>
+              <span className="tv-label text-slate-500">{t("tradeDetail.chartScreenshots")}</span>
               <span className="text-[10px] text-slate-700 font-semibold">· {shots.length}</span>
             </div>
             <ScreenshotsView paths={shots} size="lg" />

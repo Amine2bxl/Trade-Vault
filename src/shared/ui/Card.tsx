@@ -4,14 +4,16 @@ import { Heading } from "./Typography";
 import { density } from "./tokens";
 
 /**
- * Card — the surface primitive. Variants map to the existing glass classes so
- * output matches today's cards:
+ * Card — la primitive de surface. Depuis la refonte, les cinq variantes rendent
+ * la MÊME matière (une plaque opaque + un liseré) : ce qui les distingue est la
+ * VALEUR de la plaque, c'est-à-dire la profondeur.
  *
- *   glass        → `.glass` (deep-navy translucent panel)
- *   glass-strong → `.glass-strong` (opaque, for modals/menus)
- *   plain        → the recurring `rounded-2xl border border-white/[.06] bg-white/[.015]`
+ *   glass / plain / solid → plaque 1 — une carte posée sur la page
+ *   inset                 → plaque 2 — un bloc DANS une carte
+ *   glass-strong          → plaque 2 + ombre — ce qui flotte (modale, menu)
  *
- * `hover` adds the `.card-premium` lift (transition-safe, no layout impact).
+ * `hover` ajoute `.card-premium` : la carte s'ÉCLAIRCIT au survol, elle ne se
+ * soulève plus et ne s'allume plus.
  */
 
 export type CardVariant = "glass" | "glass-strong" | "plain" | "solid" | "inset";
@@ -19,9 +21,9 @@ export type CardVariant = "glass" | "glass-strong" | "plain" | "solid" | "inset"
 const VARIANT: Record<CardVariant, string> = {
   glass: "glass rounded-2xl",
   "glass-strong": "glass-strong rounded-2xl",
-  plain: "rounded-2xl border border-white/[0.06] bg-white/[0.015]",
+  plain: "rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]",
   solid: "stat-card",
-  inset: "bg-white/[0.02] border border-white/[0.05] rounded-xl",
+  inset: "bg-[var(--tv-plate-2)] border border-[var(--tv-border)] rounded-xl",
 };
 
 /** Inner padding steps, straight from the density scale. */

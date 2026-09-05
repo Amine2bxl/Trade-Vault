@@ -2,10 +2,12 @@ import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransiti
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
+import ChartDefs from "./components/ChartDefs";
 import MobileNav from "./components/MobileNav";
 import MobileActions from "./components/MobileActions";
 import SectionTabs from "./components/SectionTabs";
 import { pagesOfSection, sectionForPage } from "./navigation";
+import { cn } from "./utils/cn";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
 import Dashboard from "./pages/Dashboard";
@@ -92,13 +94,12 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import { PageActionsProvider } from "./contexts/PageActionsContext";
 const Landing = lazy(() => import("./pages/Landing"));
-import CursorGlow from "./components/CursorGlow";
 import AccountSwitcher from "./components/AccountSwitcher";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
-import { PageGate, usePageLock } from "./components/PremiumGate";
+import { PageGate, usePageLockState } from "./components/PremiumGate";
 import UpgradeModal from "./components/UpgradeModal";
 import UpgradeSuccessOverlay from "./components/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -236,7 +237,13 @@ function AppContent() {
   // Page verrouillée : elle est rendue avec un historique de DÉMONSTRATION, pas
   // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
   // aucun graphique — on ne s'abonne pas à un écran gris (voir `PreviewWall`).
-  const pageLocked = usePageLock(page);
+  //
+  // `gateResolved` conditionne le RENDU de la zone de contenu (plus bas) : tant
+  // qu'on ne sait pas si la page est verrouillée, on peint le squelette. Sans
+  // lui, un compte gratuit ouvrant Analytics voyait ses VRAIS chiffres, puis
+  // les voyait remplacés par des données de démonstration une fois l'abonnement
+  // résolu — ses propres nombres, changés sous ses yeux.
+  const { locked: pageLocked, resolved: gateResolved } = usePageLockState(page);
   const { tier } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
 
@@ -271,6 +278,13 @@ function AppContent() {
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   // Actions d'en-tête de la page courante, remontées dans la barre d'onglets.
   const [pageActions, setPageActions] = useState<React.ReactNode | null>(null);
+  /* Le résumé d'en-tête, posé par la page dans l'emplacement GAUCHE de la
+     barre — celui que les onglets occupent quand la section en a. */
+  const [pageLead, setPageLead] = useState<React.ReactNode | null>(null);
+  const setHeaderSlot = useCallback((slot: "actions" | "lead", node: React.ReactNode | null) => {
+    if (slot === "lead") setPageLead(node);
+    else setPageActions(node);
+  }, []);
   // Notification ouverte via tv:open-notification → popup centré (fond flouté).
   const [detailNotification, setDetailNotification] = useState<AppNotification | null>(null);
   useEffect(() => {
@@ -367,6 +381,9 @@ function AppContent() {
   // La section courante est celle qui contient la page courante — dérivée, pas
   // stockée : un second état aurait divergé au premier retour arrière.
   const currentSection = sectionForPage(page);
+  /* La section a-t-elle plusieurs vues ? C'est ce qui décide si la barre de
+     tête a un contenu à gauche — et donc si elle mérite sa propre bande. */
+  const hasSectionTabs = !!currentSection && pagesOfSection(currentSection).length > 1;
 
   // Optimistic writes: the UI updates instantly and rolls back to the previous
   // snapshot if the request fails, so saving never blocks the workflow.
@@ -381,7 +398,25 @@ function AppContent() {
     NotificationEngine.configure(user?.id ?? null, {
       toast: (message, type) => toast(message, type),
       push: (payload) => sendPush({ data: payload }),
-      persist: persistNotification,
+      persist: (n) => {
+        /* LES ALERTES GRAVES S'OUVRENT, ELLES N'ATTENDENT PAS.
+           Une série de pertes, une limite de risque franchie, un motif qui
+           vient d'être détecté : tout cela partait dans un toast de trois
+           secondes et dans une boîte de réception qu'on ouvre le lendemain.
+           Une notification de sévérité `error` ouvre maintenant le même popup
+           que si le trader avait cliqué dessus dans sa boîte — la surface
+           existait déjà (`tv:open-notification`), rien ne la déclenchait
+           toute seule.
+
+           SEULEMENT `error`. Étendre aux avertissements ferait un popup par
+           séance, et le popup ne voudrait plus rien dire. */
+        if (n.severity === "error") {
+          window.dispatchEvent(
+            new CustomEvent("tv:open-notification", { detail: { notification: n } }),
+          );
+        }
+        return persistNotification(n);
+      },
     });
   }, [user?.id, toast, sendPush]);
 
@@ -613,8 +648,7 @@ function AppContent() {
     setModalOpen(false);
     setEditingTrade(null);
   }, []);
-  // Stable : une arrow inline ici recréée à chaque rendu ferait boucler
-  // `usePageActions` du Journal (deps du headerActions) → gel de navigation.
+  // Stable — évite un nouveau nœud à chaque rendu (boucle `usePageActions`).
   const handleOpenMissed = useCallback(() => setPage("missed"), []);
 
   // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
@@ -649,9 +683,9 @@ function AppContent() {
     async (
       imported: Trade[],
       onProgress?: (done: number, total: number) => void,
-    ): Promise<{ saved: number; failed: number }> => {
+    ): Promise<{ saved: number; failed: number; planLimitReached?: boolean }> => {
       if (!user) return { saved: 0, failed: imported.length };
-      const { saved, failed } = await importTrades(user.id, imported, onProgress);
+      const { saved, failed, planLimitReached } = await importTrades(user.id, imported, onProgress);
       if (saved.length > 0) {
         setTrades((prev) => [...saved, ...prev]);
         // Backfill: a multi-month CSV history should come with its monthly
@@ -684,13 +718,13 @@ function AppContent() {
           }
         })();
       }
-      return { saved: saved.length, failed };
+      return { saved: saved.length, failed, planLimitReached };
     },
     [user, generateReport, t, toast],
   );
 
   if (loading) {
-    return <LoadingScreen message="Vérification de ton compte…" />;
+    return <LoadingScreen message={t("app.checkingAccount")} />;
   }
 
   // Signed-out visitors get the public landing page (its CTAs open the auth
@@ -702,7 +736,7 @@ function AppContent() {
   // as auth resolves; data streams in behind the already-painted frame).
   if (onboarding === "needed" && user) {
     return (
-      <Suspense fallback={<LoadingScreen message="Chargement de l'onboarding…" />}>
+      <Suspense fallback={<LoadingScreen message={t("app.loadingOnboarding")} />}>
         <Onboarding userId={user.id} onDone={handleOnboardingDone} />
       </Suspense>
     );
@@ -718,37 +752,52 @@ function AppContent() {
     // scrolls inside <main>, so the sidebar rail never moves on any page.
     <div className="relative flex h-dvh text-white overflow-hidden">
       <FirstSessionWelcome />
-      <CursorGlow />
-      {/* Ambient background glow */}
-      <div className="shell-bg-orbs pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          className="auth-orb w-[600px] h-[600px] bg-cyan-600 -top-64 -right-64"
-          style={{ animationDelay: "0s" }}
-        />
-        <div
-          className="auth-orb w-[500px] h-[500px] bg-teal-600 top-1/2 -left-64"
-          style={{ animationDelay: "-7s" }}
-        />
-      </div>
+      {/* Les dégradés des histogrammes, montés une fois pour toute l'app. */}
+      <ChartDefs />
+      {/* Le halo qui suivait le curseur et les deux orbes cyan/teal d'ambiance
+          ont été retirés : de la lumière décorative, repeinte en permanence,
+          qui teintait chaque carte posée devant elle. Le fond est un à-plat. */}
       <Sidebar page={page} setPage={setPage} totalPnl={stats.totalPnl} />
-      <main className="app-main relative flex-1 overflow-y-auto">
+      {/* La FENÊTRE de contenu. Sur desktop elle est, comme le rail, une plaque
+          arrondie et détachée : les deux flottent côte à côte sur le fond de la
+          page, et c'est cet écart — pas une bordure — qui sépare la navigation
+          du produit. Sur mobile le cadre disparaît : l'écran est trop étroit
+          pour s'offrir une marge, le contenu va d'un bord à l'autre. */}
+      <main className="app-main app-frame relative z-0 my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-2">
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :
             un bandeau collé par-dessus le produit. Voir `MobileActions`.
             `pb-3` : un écart vertical unique et identique entre la barre
             d'onglets et le contenu, sur toutes les pages. */}
-        <div className="flex items-center gap-3 px-4 pt-3 pb-3 md:gap-4 md:px-6">
+        {/* LA BARRE DE TÊTE — et le trou qu'elle laissait.
+            Quand la section n'a qu'une vue (le Tableau de bord, Jarvis…), la
+            moitié gauche est vide : il ne reste qu'un bouton à droite, posé sur
+            sa propre bande de 64px, à laquelle s'ajoutent les 24px de marge
+            haute de la page. Cent pixels avant la première carte, dont les deux
+            tiers ne portent rien.
+            Dans ce cas la barre se REPLIE DANS la marge de la page au lieu de
+            s'y ajouter : le bouton occupe l'espace qui existait déjà. Quand il
+            y a des onglets, rien ne change — la bande a alors un contenu qui
+            justifie sa hauteur. */}
+        <div
+          className={cn(
+            "flex items-center gap-3 px-4 md:px-6",
+            hasSectionTabs ? "pt-3 pb-3" : "pt-3 pb-0 md:-mb-4 md:pt-4",
+          )}
+        >
           <div className="min-w-0 flex-1">
-            {currentSection && pagesOfSection(currentSection).length > 1 && (
-              <SectionTabs section={currentSection} page={page} setPage={setPage} />
+            {hasSectionTabs ? (
+              <SectionTabs section={currentSection!} page={page} setPage={setPage} />
+            ) : (
+              pageLead
             )}
           </div>
           {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
           <MobileActions page={page} setPage={setPage} />
         </div>
-        <PageActionsProvider setActions={setPageActions}>
-          {accountsReady ? (
+        <PageActionsProvider setActions={setHeaderSlot}>
+          {accountsReady && gateResolved ? (
             <PageErrorBoundary resetKey={page}>
               {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
@@ -830,14 +879,16 @@ function AppContent() {
                     {page === "subscription" && <Subscription />}
                     {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
                     {page === "inbox" && <Inbox />}
-                    {page === "profile" && <Profile trades={trades} setPage={setPage} />}
+                    {page === "profile" && <Profile trades={trades} />}
                   </PageGate>
                 </PageTransition>
               </Suspense>
             </PageErrorBoundary>
           ) : (
-            /* Comptes en chargement : le shell est peint, la page répond avec
-               son squelette contextuel — pas de porte plein écran. */
+            /* Comptes OU abonnement en chargement : le shell est peint, la
+               page répond avec son squelette contextuel — pas de porte plein
+               écran, et surtout aucune donnée peinte avant de savoir LESQUELLES
+               peindre (réelles ou démonstration). */
             <div className="p-4 md:p-5">
               <SkeletonForPage page={page} />
             </div>

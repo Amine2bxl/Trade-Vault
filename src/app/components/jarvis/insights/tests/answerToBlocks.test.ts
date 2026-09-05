@@ -4,8 +4,12 @@ import type { BehaviorSignals } from "../../../../utils/behaviorSignals";
 
 const signals: BehaviorSignals = {
   byWeekday: [
-    { key: "Monday", trades: 12, winRatePct: 64, pnl: 1200, avgPnl: 100 },
-    { key: "Friday", trades: 8, winRatePct: 38, pnl: -640, avgPnl: -80 },
+    // `tradeIds` est ce qui permet de REMONTER du chiffre aux trades qui le
+    // produisent — c'est la promesse de traçabilité du produit. Le champ avait
+    // été ajouté au type `SignalBucket` sans que cette fixture suive, et
+    // `tsc` le signalait sans que personne ne le voie.
+    { key: "Monday", trades: 12, winRatePct: 64, pnl: 1200, avgPnl: 100, tradeIds: ["t1", "t2"] },
+    { key: "Friday", trades: 8, winRatePct: 38, pnl: -640, avgPnl: -80, tradeIds: ["t3"] },
   ],
   riskAfterLoss: {
     avgRiskNormal: 100,
@@ -13,6 +17,7 @@ const signals: BehaviorSignals = {
     driftPct: 42,
     tradesAfterLoss: 18,
     pnlAfterLoss: -900,
+    afterLossTradeIds: ["t3"],
   },
   overtrading: {
     medianTradesPerDay: 2,

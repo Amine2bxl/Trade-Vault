@@ -34,7 +34,7 @@ export default function ContactPage() {
   return (
     <div
       dir={dir}
-      className="relative min-h-dvh bg-[#060d16] text-slate-300 overflow-x-clip selection:bg-cyan-400 selection:text-slate-950"
+      className="relative min-h-dvh bg-[var(--tv-bg)] text-slate-300 overflow-x-clip selection:bg-cyan-400 selection:text-slate-950"
     >
       {/* Same ambient mesh as the landing and the legal pages. */}
       <div
@@ -44,13 +44,7 @@ export default function ContactPage() {
             "radial-gradient(ellipse 80% 55% at 60% -10%,rgba(6,182,212,.09),transparent 60%),radial-gradient(ellipse 55% 45% at 95% 55%,rgba(99,102,241,.07),transparent 55%)",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="auth-orb w-[420px] h-[420px] bg-cyan-600 -top-40 -right-32" />
-        <div
-          className="auth-orb w-[320px] h-[320px] bg-teal-600 bottom-10 -left-32"
-          style={{ animationDelay: "-7s" }}
-        />
-      </div>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden"></div>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 md:px-6 py-10 md:py-16 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)]">
         <Link
@@ -71,7 +65,7 @@ export default function ContactPage() {
         <div className="glass-strong rounded-2xl p-5 md:p-6 mb-4">
           <a
             href={mailto()}
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition"
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold tv-accent-fill transition"
           >
             <Mail className="w-4 h-4" /> {doc.emailLabel}
           </a>
@@ -88,7 +82,7 @@ export default function ContactPage() {
             <Clock className="w-4 h-4" />
           </span>
           <div>
-            <h2 className="text-sm font-bold text-white mb-1">{doc.responseTitle}</h2>
+            <h2 className="tv-title mb-1">{doc.responseTitle}</h2>
             <p className="text-sm text-slate-400 leading-relaxed">{doc.responseBody}</p>
           </div>
         </div>
@@ -106,7 +100,7 @@ export default function ContactPage() {
                 <span className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-3">
                   <Icon className="w-4 h-4" />
                 </span>
-                <h3 className="text-sm font-bold text-white mb-1.5 group-hover:text-cyan-200 transition-colors">
+                <h3 className="tv-title mb-1.5 group-hover:text-cyan-200 transition-colors">
                   {c.title}
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">{c.body}</p>
@@ -116,7 +110,7 @@ export default function ContactPage() {
         </div>
 
         <section className="glass rounded-2xl p-4 md:p-5 mb-8">
-          <h2 className="text-sm font-bold text-white mb-3">{doc.includeTitle}</h2>
+          <h2 className="tv-title mb-3">{doc.includeTitle}</h2>
           <ul className="space-y-1.5">
             {doc.include.map((li) => (
               <li
@@ -130,7 +124,7 @@ export default function ContactPage() {
           </ul>
         </section>
 
-        <p className="text-xs text-slate-600 leading-relaxed">{doc.legalNote}</p>
+        <p className="tv-prose text-slate-600">{doc.legalNote}</p>
 
         <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
           <a href="/privacy" className="hover:text-slate-300 transition-colors">

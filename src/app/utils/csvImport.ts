@@ -188,6 +188,17 @@ const GUESSES: Record<Field, string[]> = {
   direction: ["direction", "side", "market pos", "marketpos", "position", "sens", "type"],
   pnl: [
     "p&l",
+    /* « P/L » — l'une des orthographes les plus répandues chez les brokers —
+       n'était reconnue par AUCUNE entrée. `normalizeHeader` retire la barre
+       oblique, donc l'en-tête arrive ici sous la forme « pl » : il fallait
+       cette clé-là, et « p&l » (qui garde son esperluette) ne la couvrait pas.
+       Trouvé en important un export réel dans le Monte-Carlo : soixante lignes
+       lues, zéro trade reconnu. */
+    "pl",
+    "p/l",
+    "profitloss",
+    "profit/loss",
+    "netpl",
     "pnl",
     "profit",
     "net profit",

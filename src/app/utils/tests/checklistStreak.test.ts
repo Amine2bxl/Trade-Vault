@@ -24,10 +24,17 @@ function storeWith(doneDays: string[], extra: Record<string, string> = {}): Chec
   return { getItem: (k) => data[k] ?? null };
 }
 
-// Repères : 2026-08-05 est un MERCREDI.
-const WED = new Date("2026-08-05T12:00:00Z");
-// 2026-08-10 est un LUNDI ; 08-08 samedi, 08-09 dimanche.
-const MON = new Date("2026-08-10T12:00:00Z");
+// Repères : 2026-08-05 est un MERCREDI, 2026-08-10 un LUNDI (08-08 samedi,
+// 08-09 dimanche).
+//
+// CONSTRUITS EN HEURE LOCALE, pas en UTC. La série est datée dans le fuseau du
+// trader — c'est la même date que celle sous laquelle la page Checklist écrit
+// ses clés. Un repère écrit `"2026-08-05T12:00:00Z"` désigne, pour un trader à
+// Auckland (UTC+12), le 6 août à minuit : le test parlait alors d'un autre jour
+// et d'un autre jour de la semaine que celui annoncé par son propre nom.
+// `new Date(2026, 7, 5, 12)` est midi le 5 août PARTOUT.
+const WED = new Date(2026, 7, 5, 12);
+const MON = new Date(2026, 7, 10, 12);
 
 describe("règles de base", () => {
   it("compte les jours consécutifs complétés", () => {

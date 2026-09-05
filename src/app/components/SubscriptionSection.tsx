@@ -183,9 +183,7 @@ export default function SubscriptionSection() {
           <ExternalLink className="w-4 h-4 text-slate-500" />
         </button>
       )}
-      {isStripeActive && (
-        <p className="text-[11px] text-slate-500 leading-relaxed">{t("billing.portalHint")}</p>
-      )}
+      {isStripeActive && <p className="tv-row-label leading-relaxed">{t("billing.portalHint")}</p>}
 
       {/* Crypto subscribers renew manually — crypto has no auto-renewal. */}
       {sub.status === "active" && sub.source === "crypto" && (

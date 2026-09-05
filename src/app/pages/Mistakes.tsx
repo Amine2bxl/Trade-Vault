@@ -27,9 +27,25 @@ import {
   Cell,
   ComposedChart,
   Line,
+  CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { CHART_ANIMATION, tooltipStyle, glowActiveDot } from "../utils/chartTheme";
+import {
+  AXIS_TICK,
+  BAR_FILL_GREEN,
+  BAR_FILL_RED,
+  TREND_STROKE,
+  BAR_RADIUS,
+  BAR_RADIUS_H,
+  CHART_GREEN,
+  CHART_RED,
+  CHART_ANIMATION,
+  EQUITY_CURVE_TYPE,
+  EQUITY_GRID,
+  TREND_LINE,
+  tooltipStyle,
+  glowActiveDot,
+} from "../utils/chartTheme";
 import { EmptyState, Card } from "@/shared/ui";
 
 interface MistakesProps {
@@ -58,7 +74,7 @@ const SEV_STYLE: Record<Severity, { text: string; bg: string; bar: string; dot: 
   high: {
     text: "text-red-400",
     bg: "bg-red-500/10 border-red-500/25",
-    bar: "bg-red-500/60",
+    bar: "bg-red-400/70",
     dot: "bg-red-400",
   },
   medium: {
@@ -117,7 +133,13 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
       computeRuleAdherence(trades, rules, measureCtx.startingBalance + measureCtx.stats.totalPnl),
     [trades, rules, measureCtx.startingBalance, measureCtx.stats.totalPnl],
   );
-  const topMistakes = b.rows.slice(0, 3);
+  /* La plus grosse fuite en valeur absolue — l'échelle des barres de part.
+     Sans elle, chaque ligne aurait sa propre échelle et deux barres égales
+     désigneraient deux montants différents. */
+  const maxFuite = useMemo(
+    () => b.rows.reduce((m, r) => Math.max(m, Math.abs(r.totalPnl)), 0),
+    [b.rows],
+  );
 
   const dayData = useMemo(
     () =>
@@ -136,7 +158,6 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
     [b.bySession, t],
   );
   const maxSessionCount = Math.max(...sessionData.map((s) => s.count), 1);
-  const severityTotal = b.severityCounts.high + b.severityCounts.medium + b.severityCounts.low;
 
   if (trades.length === 0) {
     if (embedded) return null;
@@ -165,225 +186,152 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   return (
     <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
       <div className="space-y-4 md:space-y-6">
-        {/* ── Discipline score + summary KPIs ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Discipline dial */}
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-1 flex items-center gap-4">
-            <div className="relative shrink-0" style={{ width: 84, height: 84 }}>
-              <svg
-                width="84"
-                height="84"
-                viewBox="0 0 84 84"
-                className="-rotate-90"
-                style={{ overflow: "visible" }}
-              >
-                <circle
-                  cx="42"
-                  cy="42"
-                  r={R}
-                  fill="none"
-                  stroke="rgba(255,255,255,0.06)"
-                  strokeWidth="7"
-                />
-                <circle
-                  cx="42"
-                  cy="42"
-                  r={R}
-                  fill="none"
-                  stroke={discStroke}
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeDasharray={C}
-                  strokeDashoffset={C * (1 - disc / 100)}
-                  style={{
-                    transition: "stroke-dashoffset 900ms cubic-bezier(0.16,1,0.3,1)",
-                    filter: `drop-shadow(0 0 5px ${discStroke})`,
-                  }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={cn("text-xl font-bold tabular-nums", discColor)}>{disc}</span>
-                <span className="text-[11px] text-slate-500 uppercase tracking-wider">/ 100</span>
-              </div>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-xs font-bold text-white">{t("mistakes.discipline")}</span>
-              </div>
-              <p className="text-[10px] text-slate-500 leading-snug">
-                {t("mistakes.disciplineSub")}
-              </p>
-              <div className="mt-1.5 text-[10px] text-slate-400">
-                {b.cleanTrades}/{trades.length} {t("mistakes.cleanSuffix")}
-              </div>
-            </div>
-          </Card>
+        {/* ══ LE VERDICT ══════════════════════════════════════════════════
+            TROIS RANGÉES DE CHROME OUVRAIENT LA PAGE : un disque de score, une
+            grille de quatre tuiles, puis une bande « tes trades propres
+            gagnent X points de plus » — la seule phrase de la page qui dise
+            quelque chose, posée en troisième, en petit, entre deux blocs de
+            chiffres.
 
-          {/* KPIs (2×2) */}
-          <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-            {[
-              {
-                icon: <AlertTriangle className="w-3.5 h-3.5 text-red-400" />,
-                label: t("mistakes.totalMistakes"),
-                value: String(b.totalIncidents),
-                sub: `${b.tradesWithMistakes} ${t("mistakes.tradesSuffix")}`,
-                color: "text-white",
-              },
-              {
-                icon: <TrendingDown className="w-3.5 h-3.5 text-red-400" />,
-                label: t("mistakes.totalCost"),
-                value: formatPnl(b.totalCost),
-                sub: `${t("mistakes.avgPrefix")} ${formatPnl(b.totalIncidents > 0 ? b.totalCost / b.totalIncidents : 0)}`,
-                color: "text-red-400",
-              },
-              {
-                icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />,
-                label: t("mistakes.cleanWr"),
-                value: b.cleanWinRate !== null ? `${(b.cleanWinRate * 100).toFixed(0)}%` : "—",
-                sub: t("mistakes.cleanSuffix"),
-                color: "text-emerald-400",
-              },
-              {
-                icon: <AlertCircle className="w-3.5 h-3.5 text-amber-400" />,
-                label: t("mistakes.mistakeWr"),
-                value: b.mistakeWinRate !== null ? `${(b.mistakeWinRate * 100).toFixed(0)}%` : "—",
-                sub: t("mistakes.mistakeSuffix"),
-                color: "text-amber-400",
-              },
-            ].map((card, i) => (
+            Elle est maintenant la PREMIÈRE chose lue, avec le montant qu'elle
+            chiffre. Le score et les compteurs restent, mais en appui, sur la
+            même ligne : ils accompagnent le verdict, ils ne le précèdent
+            plus. */}
+        <section className="glass animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+            <div className="min-w-0 max-w-xl">
+              {/* « Coût total » avec un « +1 831,50 $ » en VERT se contredit
+                  tout seul : la valeur n'est pas un coût, c'est le P&L des
+                  trades où une erreur a été cochée. Le libellé dit maintenant
+                  ce que le chiffre est, et la couleur suit son signe — quand
+                  il est négatif, il se lit bien comme un coût. */}
+              <div className="tv-label flex items-center gap-1.5 text-slate-500">
+                <TrendingDown className="h-3.5 w-3.5" />
+                {t("mistakes.flaggedPnl")}
+              </div>
               <div
-                key={i}
-                className="glass rounded-xl p-3 card-premium animate-fade-in-up"
-                style={{ animationDelay: `${(i + 1) * 60}ms` }}
+                className={cn(
+                  "tv-figure mt-1 text-4xl leading-none md:text-5xl",
+                  b.totalCost < 0 ? "rp-neg" : "text-white",
+                )}
               >
-                <div className="flex items-center gap-1.5 mb-1">
-                  {card.icon}
-                  <span className="text-[11px] text-slate-500 truncate">{card.label}</span>
-                </div>
-                <div className={cn("text-base md:text-lg font-bold leading-none", card.color)}>
-                  {card.value}
-                </div>
-                <div className="text-[11px] text-slate-600 mt-1 truncate">{card.sub}</div>
+                {formatPnl(b.totalCost)}
               </div>
-            ))}
+              <p className="tv-prose mt-2 text-slate-400">
+                {b.cleanWinRate !== null && b.mistakeWinRate !== null ? (
+                  <>
+                    {t("mistakes.edgePrefix")}{" "}
+                    <span className="font-bold text-[var(--tv-chart-green)]">
+                      {((b.cleanWinRate - b.mistakeWinRate) * 100).toFixed(0)}{" "}
+                      {t("mistakes.edgePoints")}
+                    </span>{" "}
+                    {t("mistakes.edgeSuffix")}
+                  </>
+                ) : (
+                  t("mistakes.disciplineSub")
+                )}
+              </p>
+            </div>
+
+            <div className="mc-facts">
+              <FaitErreur
+                label={t("mistakes.discipline")}
+                value={`${disc}`}
+                hint="/ 100"
+                tone={disc >= 60 ? "pos" : disc >= 40 ? "warn" : "neg"}
+              />
+              <FaitErreur
+                label={t("mistakes.totalMistakes")}
+                value={String(b.totalIncidents)}
+                hint={`${b.tradesWithMistakes} ${t("mistakes.tradesSuffix")}`}
+              />
+              <FaitErreur
+                label={t("mistakes.cleanWr")}
+                value={b.cleanWinRate !== null ? `${(b.cleanWinRate * 100).toFixed(0)}%` : "—"}
+                hint={t("mistakes.cleanSuffix")}
+                tone="pos"
+              />
+              <FaitErreur
+                label={t("mistakes.mistakeWr")}
+                value={b.mistakeWinRate !== null ? `${(b.mistakeWinRate * 100).toFixed(0)}%` : "—"}
+                hint={t("mistakes.mistakeSuffix")}
+                tone="warn"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Clean vs mistake edge callout */}
-        {b.cleanWinRate !== null && b.mistakeWinRate !== null && (
-          <Card
-            hover
-            className="p-3.5 md:p-4 animate-fade-in-up stagger-2 flex items-center gap-3 text-xs"
-          >
-            <Target className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="text-slate-400">
-              {t("mistakes.edgePrefix")}{" "}
-              <span className="font-bold text-emerald-400">
-                {((b.cleanWinRate - b.mistakeWinRate) * 100).toFixed(0)} {t("mistakes.edgePoints")}
-              </span>{" "}
-              {t("mistakes.edgeSuffix")}
-            </span>
-          </Card>
+          {/* La part de journal propre — une barre, à la place du disque. */}
+          <div className="mt-4">
+            <div className="mb-1.5 flex items-baseline justify-between gap-3">
+              <span className="tv-label text-slate-500">{t("mistakes.cleanSuffix")}</span>
+              <span className="tv-figure text-xs text-slate-400">
+                {b.cleanTrades}/{trades.length}
+              </span>
+            </div>
+            <div className="rp-bartrack">
+              <span
+                className="rp-fill-pos"
+                style={{ width: `${(b.cleanTrades / Math.max(1, trades.length)) * 100}%` }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ══ LES FUITES, CLASSÉES ═════════════════════════════════════════
+            Elles vivaient TOUT EN BAS de la page — après le disque, les quatre
+            tuiles, la bande d'écart, une carte de sévérité dont deux barres sur
+            trois étaient à zéro, un histogramme à barre unique qui redessinait
+            ces mêmes lignes en moins lisible, la tenue des règles et trois
+            graphes de calendrier. Ce que le trader vient chercher arrivait en
+            neuvième position, et seulement pour les trois premières erreurs.
+
+            C'est maintenant le deuxième bloc, et il les montre TOUTES : le nom,
+            la gravité, la tendance (recule ou empire — la seule information de
+            cette page qui dise s'il PROGRESSE, et elle était calculée sans être
+            affichée hors du top 3), le nombre, le coût, sa part du total, et
+            la consigne qui va avec. */}
+        {b.rows.length > 0 ? (
+          <section className="glass animate-fade-in-up stagger-1 overflow-hidden rounded-3xl">
+            <header className="flex items-center gap-2 border-b border-white/[0.05] px-4 py-3 sm:px-5">
+              <Lightbulb className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+              <h2 className="tv-label text-slate-400">{t("mistakes.leaks")}</h2>
+            </header>
+            <div className="divide-y divide-white/[0.04]">
+              {b.rows.map((m, idx) => (
+                <LigneFuite
+                  key={m.mistake}
+                  m={m}
+                  premiere={idx === 0}
+                  part={Math.abs(m.totalPnl) / Math.max(1, maxFuite)}
+                  tip={
+                    MISTAKE_TIP_KEYS[m.mistake]
+                      ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
+                      : t("mistakes.defaultTip")
+                  }
+                />
+              ))}
+            </div>
+            {/* L'objectif de progression — il porte la première fuite. */}
+            <div className="flex items-start gap-3 border-t border-white/[0.05] px-4 py-3.5 sm:px-5">
+              <Target className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
+              <div className="text-xs leading-relaxed text-slate-300">
+                <span className="font-bold text-cyan-300">{t("mistakes.goal")}: </span>
+                {t("mistakes.goalIntro")}{" "}
+                <span className="font-bold text-white">{b.rows[0].mistake}</span>{" "}
+                {t("mistakes.goalMid")}{" "}
+                <span className="font-bold text-[var(--tv-chart-green)]">
+                  {Math.min(100, disc + 10)}/100
+                </span>{" "}
+                {t("mistakes.goalEnd")}
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="glass animate-fade-in-up stagger-1 rounded-3xl py-10 text-center">
+            <CheckCircle2 className="mx-auto mb-2 h-7 w-7 text-emerald-500" />
+            <p className="text-sm text-slate-400">{t("mistakes.noMistakesGreat")}</p>
+          </section>
         )}
-
-        {/* ── Behavioral breakdown: severity + cost ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Severity distribution */}
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
-            <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.severity")}</h3>
-            {severityTotal > 0 ? (
-              <div className="space-y-3">
-                {(["high", "medium", "low"] as Severity[]).map((sev) => {
-                  const cnt = b.severityCounts[sev];
-                  return (
-                    <div key={sev}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span
-                          className={cn(
-                            "flex items-center gap-1.5 text-xs font-semibold",
-                            SEV_STYLE[sev].text,
-                          )}
-                        >
-                          <span className={cn("w-1.5 h-1.5 rounded-full", SEV_STYLE[sev].dot)} />
-                          {t(`mistakes.sev_${sev}` as never)}
-                        </span>
-                        <span className="text-xs font-bold text-slate-400 tabular-nums">{cnt}</span>
-                      </div>
-                      <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className={cn("h-full rounded-full", SEV_STYLE[sev].bar)}
-                          style={{ width: `${(cnt / severityTotal) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-                <p className="text-[10px] text-slate-600 pt-1">{t("mistakes.severityHint")}</p>
-              </div>
-            ) : (
-              <div className="h-32 flex items-center justify-center text-slate-600 text-sm text-center">
-                <div>
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
-                  {t("mistakes.noMistakesShort")}
-                </div>
-              </div>
-            )}
-          </Card>
-
-          {/* Cost per mistake type */}
-          <Card hover className="md:col-span-2 p-4 md:p-5 animate-fade-in-up stagger-4">
-            <h3 className="text-sm font-semibold text-white mb-3">{t("mistakes.costAnalysis")}</h3>
-            {b.rows.length > 0 ? (
-              <div className="h-56 md:h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[...b.rows].sort((x, y) => x.totalPnl - y.totalPnl)}
-                    layout="vertical"
-                  >
-                    <XAxis
-                      type="number"
-                      tick={{ fill: "#475569", fontSize: 10 }}
-                      tickFormatter={(v) => `$${v}`}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      dataKey="mistake"
-                      type="category"
-                      tick={{ fill: "#94a3b8", fontSize: 9 }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={104}
-                    />
-                    <Tooltip
-                      {...tooltipStyle}
-                      formatter={(value: any) => [`$${Number(value).toFixed(2)}`]}
-                    />
-                    <Bar dataKey="totalPnl" radius={[0, 4, 4, 0]} {...CHART_ANIMATION}>
-                      {[...b.rows]
-                        .sort((x, y) => x.totalPnl - y.totalPnl)
-                        .map((e, i) => (
-                          <Cell
-                            key={i}
-                            fill={e.totalPnl >= 0 ? "#10b981" : "#ef4444"}
-                            fillOpacity={0.7}
-                          />
-                        ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="h-40 flex items-center justify-center text-slate-600 text-sm">
-                <div className="text-center">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
-                  {t("mistakes.noMistakesShort")}
-                </div>
-              </div>
-            )}
-          </Card>
-        </div>
 
         {/* ── Tenue des règles ──
             Le pendant POSITIF des erreurs : « tu l'as tenue 11 fois sur 12 ».
@@ -391,8 +339,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             éprouvées — une section vide vaudrait mieux qu'un 100 % inventé. */}
         {adherence.length > 0 && (
           <Card className="p-4 md:p-5 mb-4 md:mb-6">
-            <h3 className="text-sm font-semibold text-white mb-1">{t("mistakes.adherence")}</h3>
-            <p className="text-[11px] text-slate-600 mb-3">
+            <h3 className="tv-title mb-1">{t("mistakes.adherence")}</h3>
+            <p className="tv-row-label mb-3">
               {t("mistakes.adherenceSub").replace("{n}", String(ADHERENCE_WINDOW_DAYS))}
             </p>
             <div className="space-y-2.5">
@@ -416,7 +364,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   </div>
                   <span
                     className={cn(
-                      "text-[11px] font-bold tabular-nums shrink-0 w-16 text-right",
+                      "tv-figure text-[11px] shrink-0 w-16 text-right",
                       a.ratePct >= 80
                         ? "text-emerald-400"
                         : a.ratePct >= 50
@@ -437,20 +385,16 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Weekly trend */}
             <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-5">
-              <h3 className="text-sm font-semibold text-white mb-1">{t("mistakes.weeklyTrend")}</h3>
-              <p className="text-[10px] text-slate-600 mb-3">{t("mistakes.weeklyTrendSub")}</p>
+              <h3 className="tv-title mb-1">{t("mistakes.weeklyTrend")}</h3>
+              <p className="tv-hint mb-3">{t("mistakes.weeklyTrendSub")}</p>
               {b.weeklyTrend.length > 0 ? (
                 <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={b.weeklyTrend}>
-                      <XAxis
-                        dataKey="week"
-                        tick={{ fill: "#475569", fontSize: 9 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
+                      <CartesianGrid {...EQUITY_GRID} />
+                      <XAxis dataKey="week" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                       <YAxis
-                        tick={{ fill: "#475569", fontSize: 10 }}
+                        tick={AXIS_TICK}
                         axisLine={false}
                         tickLine={false}
                         allowDecimals={false}
@@ -465,17 +409,17 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       />
                       <Bar
                         dataKey="count"
-                        radius={[4, 4, 0, 0]}
+                        radius={BAR_RADIUS}
                         fill="#f59e0b"
                         fillOpacity={0.5}
                         {...CHART_ANIMATION}
                       />
                       <Line
-                        type="monotone"
+                        type={EQUITY_CURVE_TYPE}
                         dataKey="count"
                         stroke="#f59e0b"
-                        strokeWidth={2}
-                        dot={{ fill: "#f59e0b", r: 2, strokeWidth: 0 }}
+                        {...TREND_LINE}
+                        dot={false}
                         activeDot={glowActiveDot("#f59e0b")}
                         {...CHART_ANIMATION}
                       />
@@ -492,7 +436,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             {/* Session + day distribution */}
             <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
               <div>
-                <h3 className="text-sm font-semibold text-white mb-2">{t("mistakes.bySession")}</h3>
+                <h3 className="tv-title mb-2">{t("mistakes.bySession")}</h3>
                 <div className="space-y-2">
                   {sessionData.map((s) => (
                     <div key={s.session} className="flex items-center gap-2">
@@ -503,7 +447,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                           style={{ width: `${(s.count / maxSessionCount) * 100}%` }}
                         />
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400 w-6 text-right tabular-nums">
+                      <span className="tv-figure text-[10px] text-slate-400 w-6 text-right">
                         {s.count}
                       </span>
                     </div>
@@ -511,16 +455,11 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white mb-2">{t("mistakes.byDay")}</h3>
+                <h3 className="tv-title mb-2">{t("mistakes.byDay")}</h3>
                 <div className="h-28">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dayData}>
-                      <XAxis
-                        dataKey="day"
-                        tick={{ fill: "#475569", fontSize: 9 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
+                      <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                       <YAxis hide allowDecimals={false} />
                       <Tooltip
                         {...tooltipStyle}
@@ -528,7 +467,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       />
                       <Bar
                         dataKey="count"
-                        radius={[3, 3, 0, 0]}
+                        radius={BAR_RADIUS}
                         fill="#f59e0b"
                         fillOpacity={0.5}
                         {...CHART_ANIMATION}
@@ -540,110 +479,130 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             </Card>
           </div>
         )}
-
-        {/* ── Personalized recommendations + progression goal ── */}
-        <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-7">
-          <div className="flex items-center gap-2 mb-3 md:mb-4">
-            <Lightbulb className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-semibold text-white">{t("mistakes.improvementTips")}</h3>
-          </div>
-          {topMistakes.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                {topMistakes.map((m, idx) => (
-                  <div
-                    key={m.mistake}
-                    className={cn(
-                      "rounded-xl md:rounded-2xl p-3 md:p-4 border card-premium",
-                      idx === 0 ? SEV_STYLE[m.severity].bg : "bg-white/[0.03] border-white/[0.06]",
-                    )}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                      {idx === 0 && (
-                        <span className="text-[11px] font-bold px-1 py-0.5 rounded bg-red-500/20 text-red-400">
-                          {t("mistakes.priority")}
-                        </span>
-                      )}
-                      <span
-                        className={cn(
-                          "text-[11px] font-bold px-1 py-0.5 rounded uppercase",
-                          SEV_STYLE[m.severity].bg,
-                          SEV_STYLE[m.severity].text,
-                        )}
-                      >
-                        {t(`mistakes.sev_${m.severity}` as never)}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-[10px] md:text-xs font-bold",
-                          SEV_STYLE[m.severity].text,
-                        )}
-                      >
-                        {m.mistake}
-                      </span>
-                    </div>
-                    <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed">
-                      {MISTAKE_TIP_KEYS[m.mistake]
-                        ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
-                        : t("mistakes.defaultTip")}
-                    </p>
-                    {/* Tendance : la seule information de cette page qui dise au
-                        trader s'il PROGRESSE. Affichée uniquement quand elle
-                        repose sur une fenêtre de comparaison réelle. */}
-                    {m.trend && m.trend.deltaPct !== 0 && (
-                      <div
-                        className={cn(
-                          "mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold",
-                          m.trend.deltaPct < 0 ? "text-emerald-400" : "text-red-400",
-                        )}
-                      >
-                        {m.trend.deltaPct < 0 ? (
-                          <TrendingDown className="w-3 h-3" />
-                        ) : (
-                          <TrendingUp className="w-3 h-3" />
-                        )}
-                        {m.trend.deltaPct > 0 ? "+" : ""}
-                        {m.trend.deltaPct}% ·{" "}
-                        <span className="font-normal text-slate-500">
-                          {t("mistakes.trendWindow")}
-                        </span>
-                      </div>
-                    )}
-                    <div className="mt-1.5 text-[11px] text-slate-600">
-                      <span className="font-bold text-slate-400">{m.count}×</span> ·{" "}
-                      <span
-                        className={cn(
-                          "font-bold",
-                          m.totalPnl >= 0 ? "text-emerald-400" : "text-red-400",
-                        )}
-                      >
-                        {formatPnl(m.totalPnl)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Progression goal */}
-              <div className="mt-4 flex items-start gap-3 rounded-xl bg-cyan-500/[0.06] border border-cyan-500/15 p-3.5">
-                <Target className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-slate-300 leading-relaxed">
-                  <span className="font-bold text-cyan-300">{t("mistakes.goal")}: </span>
-                  {t("mistakes.goalIntro")}{" "}
-                  <span className="font-bold text-white">{topMistakes[0].mistake}</span>{" "}
-                  {t("mistakes.goalMid")}{" "}
-                  <span className="font-bold text-emerald-400">{Math.min(100, disc + 10)}/100</span>{" "}
-                  {t("mistakes.goalEnd")}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-6 text-slate-500 text-sm">
-              <CheckCircle2 className="w-7 h-7 text-emerald-500 mx-auto mb-2" />
-              {t("mistakes.noMistakesGreat")}
-            </div>
-          )}
-        </Card>
       </div>
     </div>
+  );
+}
+
+/**
+ * UN FAIT DU VERDICT — filet vertical, jamais de cadre. Le disque de score de
+ * 84px et les quatre tuiles encadrées faisaient trois rangées de chrome avant
+ * la première information ; ces quatre chiffres tiennent sur une ligne, à côté
+ * de la phrase qu'ils appuient.
+ */
+function FaitErreur({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "pos" | "neg" | "warn";
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="tv-label truncate text-slate-500">{label}</div>
+      <div
+        className={cn(
+          "tv-figure mt-1 truncate text-base leading-none",
+          tone === "pos"
+            ? "rp-pos"
+            : tone === "neg"
+              ? "rp-neg"
+              : tone === "warn"
+                ? "rp-warn"
+                : "text-white",
+        )}
+      >
+        {value}
+      </div>
+      {hint && <div className="tv-row-label mt-1 truncate">{hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * UNE FUITE — tout ce que le produit sait d'elle, sur une ligne.
+ *
+ * Elle était dessinée deux fois et mal : une fois en histogramme horizontal
+ * (le nom, le montant, rien d'autre) et une fois en carte de conseil, mais
+ * seulement pour les trois premières. La TENDANCE — recule ou empire — était
+ * calculée par `computeBehavioral` pour chaque erreur et n'apparaissait que
+ * dans ces trois cartes : la seule information de la page qui dise au trader
+ * s'il progresse restait invisible pour la quatrième erreur et les suivantes.
+ */
+function LigneFuite({
+  m,
+  premiere,
+  part,
+  tip,
+}: {
+  m: {
+    mistake: string;
+    severity: Severity;
+    count: number;
+    totalPnl: number;
+    trend: { deltaPct: number } | null;
+  };
+  premiere: boolean;
+  part: number;
+  tip: string;
+}) {
+  const { t } = useT();
+  return (
+    <article className="px-4 py-3 transition-colors hover:bg-white/[0.02] sm:px-5">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span
+          aria-hidden
+          className={cn("h-2 w-2 shrink-0 self-center rounded-full", SEV_STYLE[m.severity].dot)}
+        />
+        <span className="text-sm font-semibold text-white">{m.mistake}</span>
+        <span
+          className={cn(
+            "tv-label rounded px-1 py-0.5",
+            SEV_STYLE[m.severity].bg,
+            SEV_STYLE[m.severity].text,
+          )}
+        >
+          {t(`mistakes.sev_${m.severity}` as never)}
+        </span>
+        {premiere && (
+          <span className="tv-label rounded bg-red-500/20 px-1 py-0.5 text-red-400">
+            {t("mistakes.priority")}
+          </span>
+        )}
+        {/* La tendance, pour CHAQUE fuite — pas seulement les trois premières. */}
+        {m.trend && m.trend.deltaPct !== 0 && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-[11px] font-bold",
+              m.trend.deltaPct < 0 ? "rp-pos" : "rp-neg",
+            )}
+            title={t("mistakes.trendWindow")}
+          >
+            {m.trend.deltaPct < 0 ? (
+              <TrendingDown className="h-3 w-3" />
+            ) : (
+              <TrendingUp className="h-3 w-3" />
+            )}
+            {m.trend.deltaPct > 0 ? "+" : ""}
+            {m.trend.deltaPct}%
+          </span>
+        )}
+        <span className="tv-figure ml-auto shrink-0 text-xs text-slate-500">{m.count}×</span>
+        <span className={cn("tv-figure shrink-0 text-sm", m.totalPnl >= 0 ? "rp-pos" : "rp-neg")}>
+          {formatPnl(m.totalPnl)}
+        </span>
+      </div>
+      <div className="rp-bartrack mt-2">
+        <span
+          className={m.totalPnl >= 0 ? "rp-fill-pos" : "rp-fill-neg"}
+          style={{ width: `${Math.max(2, part * 100)}%` }}
+        />
+      </div>
+      <p className="tv-prose mt-2 text-slate-500">{tip}</p>
+    </article>
   );
 }

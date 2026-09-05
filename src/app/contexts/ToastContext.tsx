@@ -28,7 +28,7 @@ const ICONS: Record<ToastType, ReactNode> = {
   info: <Info className="w-4 h-4 text-cyan-400 shrink-0" />,
 };
 const ACCENT: Record<ToastType, string> = {
-  success: "border-emerald-500/20 shadow-emerald-500/10",
+  success: "border-emerald-500/20",
   error: "border-red-500/20 shadow-red-500/10",
   info: "border-cyan-500/20",
 };
@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      <div className="fixed z-[100] bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 flex flex-col gap-2 items-center md:items-end pointer-events-none px-4 md:px-0 w-full md:w-auto">
+      <div className="fixed z-[var(--tv-z-toast)] bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 flex flex-col gap-2 items-center md:items-end pointer-events-none px-4 md:px-0 w-full md:w-auto">
         {items.map((t) => (
           <div
             key={t.id}

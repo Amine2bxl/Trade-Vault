@@ -82,20 +82,17 @@ export default function JarvisShell({
         {/* Avatar Jarvis */}
         <div className="relative shrink-0">
           <span className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md" />
-          <div className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Bot className="w-4.5 h-4.5 md:w-5 md:h-5 text-white" />
+          <div className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl tv-accent-fill">
+            <Bot className="w-4.5 h-4.5 md:w-5 md:h-5" />
           </div>
         </div>
         {/* Identité copilote */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2
-              id="jarvis-shell-title"
-              className="text-base font-bold text-white tracking-tight truncate"
-            >
+            <h2 id="jarvis-shell-title" className="tv-title tracking-tight truncate">
               {t("assistant.title")}
             </h2>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+            <span className="tv-label hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -103,7 +100,7 @@ export default function JarvisShell({
               {t("assistant.dockStatus")}
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 truncate">{t("jarvis.copilot")}</p>
+          <p className="tv-row-label truncate">{t("jarvis.copilot")}</p>
         </div>
         {/* Actions globales */}
         {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
@@ -131,7 +128,7 @@ export default function JarvisShell({
                   className="md:hidden absolute inset-0 z-20 bg-black/60 backdrop-blur-sm"
                   onClick={() => setSidebarOpen(false)}
                 />
-                <aside className="md:hidden absolute inset-y-0 left-0 z-30 w-72 bg-[#0a1120] border-r border-white/[0.06] min-h-0">
+                <aside className="md:hidden absolute inset-y-0 left-0 z-[var(--tv-z-rail)] w-72 bg-[#0a1120] border-r border-white/[0.06] min-h-0">
                   {sidebar}
                 </aside>
               </>

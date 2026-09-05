@@ -3,6 +3,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { authRedirectTo } from "@/shared/site";
+import { purgeLocalSessionData } from "../utils/session-purge";
 
 interface AuthContextType {
   user: User | null;
@@ -133,12 +134,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return error.message ?? "Account deletion failed";
     if (data && (data as { error?: string }).error) return (data as { error: string }).error;
     await supabase.auth.signOut().catch(() => {});
+    // Le compte n'existe plus côté serveur : laisser ses conversations et ses
+    // checklists sur le disque ferait de « supprimer mon compte » une promesse
+    // à moitié tenue.
+    purgeLocalSessionData();
     setUser(null);
     return null;
   }, []);
 
+  // La déconnexion efface AUSSI les données locales de la session — historique
+  // Jarvis, réponses de checklist, brouillons, calculatrice de position. Voir
+  // `utils/session-purge.ts` pour la liste de ce qui survit et pourquoi.
+  //
+  // APRÈS `signOut()`, délibérément : la purge ne touche pas les clés `sb-*`,
+  // mais la faire d'abord la ferait courir contre la révocation du jeton pour
+  // aucun bénéfice. Avant `setUser(null)` : l'application se replie alors sur
+  // la vitrine avec un disque déjà propre.
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
+    purgeLocalSessionData();
     setUser(null);
   }, []);
 

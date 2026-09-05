@@ -115,15 +115,15 @@ export function PreviewWall({
       {/* L'appel à l'action — UNE barre basse, pas une fenêtre : la page reste
           lisible au-dessus. Ce qu'on voit, le prix, le geste — en une ligne. */}
       <div className="absolute inset-x-0 bottom-0 flex justify-center px-4 pb-5 sm:pb-6">
-        <div className="w-full max-w-2xl rounded-2xl border border-white/[0.12] bg-[#060f18]/92 p-3.5 shadow-[0_-16px_80px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl sm:p-4">
+        <div className="w-full max-w-2xl rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-3.5 shadow-[var(--tv-elev-3)] sm:p-4">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-[15px] font-bold leading-snug text-white">
+              <p className="line-clamp-2 text-sm font-bold leading-snug text-white">
                 {benefit ?? (fr ? "Cette page, avec tes trades." : "This page, with your trades.")}
               </p>
               <p className="mt-1 text-[11.5px] font-medium text-slate-400">
                 {tier.name[fr ? "fr" : "en"]} ·{" "}
-                <span className="font-bold text-white tabular-nums">{perMonth}</span>
+                <span className="tv-figure text-white">{perMonth}</span>
                 {fr ? "/mois" : "/month"}
                 {freeMonths > 0 && (
                   <span className="ml-1 text-emerald-400">
@@ -134,7 +134,7 @@ export function PreviewWall({
             </div>
             <button
               onClick={onUpgrade}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-5 py-3 text-sm font-bold text-[#04101a] shadow-lg shadow-cyan-500/25 transition hover:brightness-110"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-sm font-bold transition"
             >
               <Lock className="h-4 w-4" />
               {fr ? `Passer à ${tier.name.fr}` : `Go ${tier.name.en}`}
@@ -222,10 +222,27 @@ export function PageGate({
  * d'un compte vide ne montrerait rien du tout.
  */
 export function usePageLock(page: Page): boolean {
+  return usePageLockState(page).locked;
+}
+
+/**
+ * L'état COMPLET du verrou : verrouillé, et surtout — le sait-on déjà ?
+ *
+ * POURQUOI LA DEUXIÈME QUESTION EXISTE. `usePageLock` répond `false` tant que
+ * l'abonnement n'est pas chargé, ce qui est le bon choix pour le MUR (afficher
+ * un mur puis le retirer donnerait à un abonné l'impression d'avoir perdu son
+ * accès). Mais `App` s'en servait aussi pour choisir QUELLES DONNÉES passer à
+ * la page : `pageLocked ? previewTrades() : trades`. Pendant le chargement, un
+ * compte gratuit voyait donc ses VRAIS chiffres s'afficher sur la page
+ * Analytics… puis être remplacés sous ses yeux par des données de
+ * démonstration. Ses propres nombres, changés en direct.
+ *
+ * Avec `resolved`, l'appelant peut attendre de savoir avant de peindre — un
+ * squelette une demi-seconde, plutôt qu'une bascule de chiffres.
+ */
+export function usePageLockState(page: Page): { locked: boolean; resolved: boolean } {
   const { tier, loading } = useSubscription();
   const required = PAGE_TIER[page];
-  // Tant que l'abonnement n'est pas chargé on ne verrouille rien : montrer le
-  // mur puis le retirer donnerait à un abonné l'impression d'avoir perdu son
-  // accès.
-  return !!required && !loading && !tierAtLeast(tier, required);
+  if (!required) return { locked: false, resolved: true };
+  return { locked: !loading && !tierAtLeast(tier, required), resolved: !loading };
 }

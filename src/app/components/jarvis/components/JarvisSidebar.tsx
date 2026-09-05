@@ -83,15 +83,13 @@ export default function JarvisSidebar({
 
         {/* Historique — les conversations, épinglées en tête */}
         <div className="space-y-px mt-1">
-          <div className="flex items-center gap-1.5 px-3 pb-1 pt-3 text-[11px] uppercase tracking-[0.18em] text-slate-600 font-bold">
+          <div className="tv-label flex items-center gap-1.5 px-3 pb-1 pt-3 text-slate-600">
             <History className="w-3 h-3" />
             {t("jarvisSide.history")}
           </div>
 
           {conversations.length === 0 && (
-            <p className="px-3 pt-2 text-[11px] text-slate-600 leading-relaxed">
-              {t("jarvisConv.empty")}
-            </p>
+            <p className="px-3 pt-2 tv-row-label leading-relaxed">{t("jarvisConv.empty")}</p>
           )}
 
           {conversations.slice(0, 12).map((c) => {

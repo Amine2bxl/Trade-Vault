@@ -190,7 +190,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
-          "group fixed z-40 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
+          "group fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
           "flex items-center justify-center md:gap-2.5",
           // Mobile : pilule float-shell 44px, badge bien arrondi.
           "h-11 w-11 rounded-full float-shell",
@@ -211,7 +211,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           />
           <span
             className={cn(
-              "relative grid place-items-center bg-gradient-to-br from-cyan-500 to-teal-600",
+              "relative grid place-items-center tv-accent-fill",
               "h-7 w-7 rounded-2xl",
               "md:h-10 md:w-10 md:rounded-xl md:shadow-lg",
             )}
@@ -225,7 +225,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         </span>
         <span className="hidden md:block text-left leading-none">
           <span className="block text-[13px] font-bold text-white">{t("assistant.title")}</span>
-          <span className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80">
+          <span className="tv-label mt-1 flex items-center gap-1.5 text-cyan-300/80">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60 animate-ping" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />

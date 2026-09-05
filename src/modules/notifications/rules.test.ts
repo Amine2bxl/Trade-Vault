@@ -34,7 +34,9 @@ describe("coded notification rules", () => {
     const streak = rules.find((r) => r.key.startsWith("risk_loss_streak"));
     expect(streak).toBeDefined();
     expect(streak!.input.kind).toBe("risk_loss_streak");
-    expect(streak!.input.severity).toBe("warning");
+    // `error` et non `warning` : c'est la seule règle qui doive interrompre le
+    // trader à l'écran (popup), parce que c'est là qu'un compte se perd.
+    expect(streak!.input.severity).toBe("error");
     expect(streak!.input.category).toBe("risk");
   });
 

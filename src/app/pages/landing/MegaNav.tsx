@@ -55,9 +55,9 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 ${
+      className={`fixed inset-x-0 top-0 z-[var(--tv-z-nav)] border-b transition-colors duration-300 ${
         y > 10
-          ? "border-white/[.07] bg-[#060d16]/90 backdrop-blur-[12px]"
+          ? "border-white/[.07] bg-[var(--tv-bg)]/90 backdrop-blur-[12px]"
           : "border-transparent bg-transparent"
       }`}
       style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
@@ -99,7 +99,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
               />
             </button>
             {openMenu && (
-              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-white/[.08] bg-[#0a1220] p-1.5 shadow-[0_20px_50px_rgba(0,0,0,.45)]">
+              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-white/[.08] bg-[var(--tv-plate-1)] p-1.5 shadow-[0_20px_50px_rgba(0,0,0,.45)]">
                 {productItems.map((item) => (
                   <button
                     key={item.title}
@@ -142,7 +142,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
               <button
                 key={l}
                 onClick={() => setLang(l)}
-                className={`rounded-md px-2 py-1 text-[11px] font-semibold uppercase transition-colors ${
+                className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-[11px] font-semibold uppercase transition-colors ${
                   lang === l ? "bg-white/[.08] text-white" : "text-slate-500 hover:text-slate-300"
                 }`}
               >
@@ -193,9 +193,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
       {mobile && (
         <div className="lg:hidden border-t border-white/[.07] bg-[#070f1a] px-5 py-4">
           <div className="flex flex-col">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-2 px-1">
-              {t("nav.product")}
-            </p>
+            <p className="tv-label text-slate-600 mb-2 px-1">{t("nav.product")}</p>
             {productItems.map((item) => (
               <button
                 key={item.title}

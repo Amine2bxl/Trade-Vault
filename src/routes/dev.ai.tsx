@@ -5,9 +5,17 @@ import { aiRuntimeProbe } from "@/modules/ai/runtime/probe";
 import { aiTelemetryStats } from "@/modules/ai/runtime/telemetry-stats";
 
 /**
- * Page de diagnostic interne — réservée au développement, jamais liée depuis
- * l'app. Affiche l'état des providers IA (avec bouton « Tester » par clé),
- * les métriques runtime et la PRÉSENCE des clés (jamais leur contenu).
+ * Page de diagnostic interne — réservée aux administrateurs.
+ *
+ * CE QUI PROTÈGE CETTE PAGE N'EST PAS CETTE PAGE. Les trois server functions
+ * qu'elle appelle exigent chacune, côté serveur, une adresse listée dans
+ * `ADMIN_EMAILS` (`backend/require-admin.ts`). Un visiteur qui ouvre l'URL
+ * n'obtient donc rien, et un attaquant qui appelle directement les server
+ * functions n'obtient rien non plus — c'était le vrai trou : la page était
+ * seulement « non liée » et `noindex`, ce qui ne protège rien.
+ *
+ * L'écran ci-dessous ne fait que REFLÉTER ce refus proprement, au lieu
+ * d'afficher une pile d'erreurs techniques.
  */
 
 export const Route = createFileRoute("/dev/ai")({
@@ -16,6 +24,13 @@ export const Route = createFileRoute("/dev/ai")({
   }),
   component: DevAiPage,
 });
+
+/** Le refus renvoyé par `requireAdminAccess`, reconnu à son préfixe. Les
+ *  server functions sérialisent l'erreur : on n'a que son message. */
+function isForbidden(e: unknown): boolean {
+  const message = e instanceof Error ? e.message : String(e);
+  return message.includes("FORBIDDEN") || message.includes("Unauthorized");
+}
 
 type Status = Awaited<ReturnType<typeof aiRuntimeStatus>>;
 type ProbeResult = Awaited<ReturnType<typeof aiRuntimeProbe>>;
@@ -30,6 +45,7 @@ const CIRCUIT_LABEL: Record<string, string> = {
 function DevAiPage() {
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, ProbeResult>>({});
   // Télémétrie PERSISTANTE (ai_agent_runs), par opposition aux compteurs
@@ -39,8 +55,17 @@ function DevAiPage() {
 
   const load = () => {
     aiRuntimeStatus()
-      .then(setStatus)
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .then((s) => {
+        setStatus(s);
+        setForbidden(false);
+      })
+      .catch((e) => {
+        if (isForbidden(e)) {
+          setForbidden(true);
+          return;
+        }
+        setError(e instanceof Error ? e.message : String(e));
+      });
     // Best-effort : un diagnostic partiel vaut mieux qu'une page en erreur.
     aiTelemetryStats()
       .then(setTelemetry)
@@ -72,21 +97,36 @@ function DevAiPage() {
     }
   };
 
+  // Refus du serveur : un écran net, aucune donnée, aucun bouton d'action. On
+  // ne dit pas « connecte-toi avec la bonne adresse » — cette page ne doit pas
+  // renseigner sur l'existence d'une liste d'administrateurs.
+  if (forbidden) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#05070a] px-6 text-center">
+        <div>
+          <p className="text-sm font-semibold text-slate-300">Page indisponible</p>
+          <p className="mt-1.5 text-xs text-slate-500">
+            Ce diagnostic n'est pas accessible depuis ce compte.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen text-slate-200"
       style={{
-        background:
-          "radial-gradient(1000px 700px at 80% -10%, rgba(34,211,238,.08), transparent 60%), linear-gradient(160deg,#05070a 0%,#0a0f1e 55%,#05080c 100%)",
+        background: "var(--tv-bg)",
       }}
     >
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="flex items-center gap-3 mb-1">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 text-white font-bold text-sm">
+          <span className="grid h-9 w-9 place-items-center rounded-xl tv-accent-fill font-bold text-sm">
             J
           </span>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">AI Runtime — Diagnostic</h1>
+            <h1 className="text-sm font-bold text-white">AI Runtime — Diagnostic</h1>
             <p className="text-xs text-slate-500">
               Réservé au développement · aucune clé exposée · bouton « Tester » = mini appel IA réel
             </p>
@@ -107,7 +147,7 @@ function DevAiPage() {
 
         {telemetry && (
           <>
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
+            <h2 className="tv-label mt-8 text-slate-500">
               Télémétrie · {telemetry.days} derniers jours · compte connecté
             </h2>
             {!telemetry.available ? (
@@ -138,7 +178,7 @@ function DevAiPage() {
                     >
                       <div className="text-[11px] text-slate-500">{m.label}</div>
                       <div
-                        className={`text-lg font-bold tabular-nums ${m.warn ? "text-amber-400" : "text-white"}`}
+                        className={`tv-figure text-lg ${m.warn ? "text-amber-400" : "text-white"}`}
                       >
                         {m.value}
                       </div>
@@ -158,13 +198,13 @@ function DevAiPage() {
                     </span>
                     <span>
                       Tokens in{" "}
-                      <b className="text-slate-200 tabular-nums">
+                      <b className="tv-figure text-slate-200">
                         {telemetry.totalInputTokens.toLocaleString("fr-FR")}
                       </b>
                     </span>
                     <span>
                       out{" "}
-                      <b className="text-slate-200 tabular-nums">
+                      <b className="tv-figure text-slate-200">
                         {telemetry.totalOutputTokens.toLocaleString("fr-FR")}
                       </b>
                     </span>
@@ -180,13 +220,11 @@ function DevAiPage() {
                         <span className="font-semibold text-slate-200 flex-1 truncate">
                           {m.model}
                         </span>
-                        <span className="text-slate-500 tabular-nums shrink-0">
-                          {m.runs} appels
-                        </span>
-                        <span className="text-slate-400 tabular-nums shrink-0">
+                        <span className="tv-figure text-slate-500 shrink-0">{m.runs} appels</span>
+                        <span className="tv-figure text-slate-400 shrink-0">
                           {m.medianMs} / {m.p95Ms} ms
                         </span>
-                        <span className="text-slate-500 tabular-nums shrink-0 hidden md:inline">
+                        <span className="tv-figure text-slate-500 shrink-0 hidden md:inline">
                           {m.avgInputTokens}→{m.avgOutputTokens} tk
                         </span>
                       </div>
@@ -201,9 +239,7 @@ function DevAiPage() {
         {status && (
           <>
             {/* Providers configurés */}
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
-              Providers configurés
-            </h2>
+            <h2 className="tv-label mt-8 text-slate-500">Providers configurés</h2>
             <div className="mt-2 space-y-2">
               {status.providers
                 .filter((p) => p.configured)
@@ -215,9 +251,7 @@ function DevAiPage() {
                     <span
                       className={
                         "h-2 w-2 rounded-full " +
-                        (p.state === "closed"
-                          ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,.6)]"
-                          : "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,.6)]")
+                        (p.state === "closed" ? "bg-emerald-400" : "bg-amber-400")
                       }
                     />
                     <span className="flex-1 font-mono text-sm font-semibold text-white">
@@ -227,7 +261,7 @@ function DevAiPage() {
                       {CIRCUIT_LABEL[p.state] ?? p.state}
                       {p.cooldownMsLeft > 0 && ` · ${(p.cooldownMsLeft / 1000).toFixed(0)}s`}
                     </span>
-                    <span className="text-[11px] text-slate-600 tabular-nums">
+                    <span className="tv-figure text-[11px] text-slate-600">
                       {p.metric.count} req · {(p.metric.avgMs / 1000).toFixed(2)}s
                     </span>
                     <button
@@ -265,9 +299,7 @@ function DevAiPage() {
             ))}
 
             {/* Non configurés (facultatif) */}
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
-              Non configurés (facultatif)
-            </h2>
+            <h2 className="tv-label mt-8 text-slate-500">Non configurés (facultatif)</h2>
             <div className="mt-2 flex flex-wrap gap-2">
               {status.providers
                 .filter((p) => !p.configured)
@@ -282,12 +314,10 @@ function DevAiPage() {
             </div>
 
             {/* Runtime */}
-            <h2 className="mt-8 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
-              Runtime
-            </h2>
+            <h2 className="tv-label mt-8 text-slate-500">Runtime</h2>
             <div className="mt-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               <span className="text-slate-500">Requêtes</span>
-              <span className="text-white tabular-nums">{status.runtime.requests}</span>
+              <span className="tv-figure text-white">{status.runtime.requests}</span>
               <span className="text-slate-500">Dernier provider utilisé</span>
               <span className="text-white">{status.runtime.lastUsedProvider ?? "—"}</span>
               <span className="text-slate-500">Dernier fallback</span>

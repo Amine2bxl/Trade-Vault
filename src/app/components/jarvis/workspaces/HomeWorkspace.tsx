@@ -46,6 +46,7 @@ import ProposalsPanel from "../components/ProposalsPanel";
 import type { JarvisBlock } from "../blocks";
 import type { JarvisWorkspaceProps } from "../workspaces";
 import { cn } from "../../../utils/cn";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 /**
  * HomeWorkspace — l'ACCUEIL intelligent de Jarvis (Phase 1, Étape 5).
@@ -129,7 +130,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       setBlocks(built);
 
       // Anti-répétition : maj mémoire (premier open du jour fige le pattern).
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayLocalDate();
       const isNewDay = memory.lastShownDate !== today;
       const next: JarvisMemory = {
         ...memory,
@@ -189,7 +190,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
   // Bilan de la dernière journée TRADÉE, affiché seulement quand elle est
   // terminée (pas un résumé à chaud d'une journée encore en cours).
   const reviewBlocks = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalDate();
     const latest = data.trades.reduce(
       (a, t) => (t.date > a ? t.date : a),
       data.trades[0]?.date ?? "",
@@ -302,17 +303,16 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
     <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-5 md:py-7 max-w-[1100px] mx-auto w-full">
       {/* En-tête — le premier écran d'un assistant personnel, pas une page de stats. */}
       <div className="relative mb-6">
-        <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-32 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex items-center gap-4">
           {/* Avatar Jarvis — la voix clonée, la même identité partout */}
           <div className="relative shrink-0">
             <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/40 blur-md" />
-            <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600">
-              <Bot className="w-7 h-7 text-white" />
+            <div className="relative grid h-14 w-14 place-items-center rounded-2xl tv-accent-fill">
+              <Bot className="w-7 h-7" />
             </div>
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 mb-1">
+            <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-1">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -326,7 +326,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           </div>
         </div>
         {speaking && (
-          <div className="relative mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2.5 py-1">
+          <div className="tv-label relative mt-3 inline-flex items-center gap-1.5 text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2.5 py-1">
             <Volume2 className="w-3 h-3" /> {t("jarvisHome.speaking")}
           </div>
         )}
@@ -365,9 +365,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
               <span className="card-header-icon text-cyan-300">
                 <TrendingUp className="w-4 h-4" />
               </span>
-              <h3 className="card-header-title text-sm md:text-[15px]">
-                {t("jarvisWeekly.title")}
-              </h3>
+              <h3 className="card-header-title text-sm">{t("jarvisWeekly.title")}</h3>
             </div>
             <button
               type="button"
@@ -395,7 +393,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
               <span className="card-header-icon text-cyan-300">
                 <ClipboardList className="w-4 h-4" />
               </span>
-              <h3 className="card-header-title text-sm md:text-[15px]">{t("jarvisBrief.title")}</h3>
+              <h3 className="card-header-title text-sm">{t("jarvisBrief.title")}</h3>
             </div>
             <button
               type="button"
@@ -420,9 +418,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
               <span className="card-header-icon text-cyan-300">
                 <ClipboardCheck className="w-4 h-4" />
               </span>
-              <h3 className="card-header-title text-sm md:text-[15px]">
-                {t("jarvisReview.title")}
-              </h3>
+              <h3 className="card-header-title text-sm">{t("jarvisReview.title")}</h3>
             </div>
             <button
               type="button"
@@ -448,14 +444,12 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           <div className="flex items-start gap-3">
             <span className="relative shrink-0">
               <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-              <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-                <Sparkles className="w-4.5 h-4.5 text-white" />
+              <span className="relative grid h-10 w-10 place-items-center rounded-xl tv-accent-fill">
+                <Sparkles className="w-4.5 h-4.5" />
               </span>
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-1">
-                {t("jarvisHome.proposal")}
-              </div>
+              <div className="tv-label text-cyan-400/80 mb-1">{t("jarvisHome.proposal")}</div>
               <p className="text-[13px] text-slate-300 leading-relaxed">
                 {lang === "fr" ? (
                   <>
@@ -475,7 +469,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
                 disabled={ruleSaving}
                 className={cn(
                   "mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white",
-                  "bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110",
+                  "tv-accent-fill",
                   "transition disabled:opacity-60",
                 )}
               >
@@ -503,9 +497,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
       {suggestions.length > 0 && (
         <div className="mt-7">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              {t("jarvisHome.suggestions")}
-            </span>
+            <span className="tv-label text-slate-500">{t("jarvisHome.suggestions")}</span>
             <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
           </div>
           <div className="flex flex-wrap gap-2">

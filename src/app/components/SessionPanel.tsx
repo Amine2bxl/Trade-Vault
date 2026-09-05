@@ -154,12 +154,12 @@ export default function SessionPanel({
     <Card variant="glass-strong" pad="default" className="space-y-3 animate-fade-in-up">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Activity className="w-4 h-4 text-white" />
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
+            <Activity className="w-4 h-4" />
           </span>
           <div>
-            <h3 className="text-sm font-bold text-white">{t("session.title")}</h3>
-            <p className="text-[11px] text-slate-500">
+            <h3 className="tv-title">{t("session.title")}</h3>
+            <p className="tv-row-label">
               {session ? (closed ? t("session.closed") : t("session.open")) : t("session.notOpen")}
             </p>
           </div>
@@ -168,11 +168,11 @@ export default function SessionPanel({
         {/* Le score et, à côté, ce qui le compose : un chiffre sans ses
             entrées n'est pas interprétable. */}
         <div className="text-right">
-          <div className="font-display text-xl font-extrabold text-white tabular-nums">
+          <div className="tv-figure text-xl text-white">
             {session?.readinessScore ?? preview.score ?? "—"}
             <span className="text-xs font-bold text-slate-500">/100</span>
           </div>
-          <p className="text-[10px] text-slate-500">
+          <p className="tv-hint">
             {t("session.readiness")} · {checklistDone}/{checklistTotal} ·{" "}
             {t("session.rulesShort").replace("{n}", String(ruleCount))}
           </p>
@@ -182,9 +182,7 @@ export default function SessionPanel({
       {!session && (
         <>
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
-              {t("session.howDoYouFeel")}
-            </p>
+            <p className="tv-label text-slate-500 mb-1.5">{t("session.howDoYouFeel")}</p>
             <div className="flex flex-wrap gap-1.5">
               {EMOTIONAL_STATES.map((s) => (
                 <button
@@ -217,7 +215,7 @@ export default function SessionPanel({
       {session && (
         <>
           {session.dailyObjective && (
-            <p className="text-xs text-slate-400">
+            <p className="tv-prose text-slate-400">
               <span className="text-slate-500">{t("session.objective")} : </span>
               {session.dailyObjective}
             </p>
@@ -228,10 +226,7 @@ export default function SessionPanel({
               {t("session.tradesAttached").replace("{n}", String(dayTrades.length))}
             </span>
             <span
-              className={cn(
-                "font-display text-sm font-extrabold tabular-nums",
-                dayPnl >= 0 ? "text-emerald-400" : "text-red-400",
-              )}
+              className={cn("tv-figure text-sm", dayPnl >= 0 ? "text-emerald-400" : "text-red-400")}
             >
               {formatPnl(dayPnl)}
             </span>
@@ -252,7 +247,7 @@ export default function SessionPanel({
           )}
 
           {closed && session.reviewNote && (
-            <p className="text-xs text-slate-400">
+            <p className="tv-prose text-slate-400">
               <span className="text-slate-500">{t("session.review")} : </span>
               {session.reviewNote}
             </p>

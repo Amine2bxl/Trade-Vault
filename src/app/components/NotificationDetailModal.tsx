@@ -106,21 +106,23 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
   };
 
   return (
-    <Modal open onClose={onClose} wrapperClassName="z-[90]" className="md:max-w-md">
+    <Modal
+      open
+      onClose={onClose}
+      wrapperClassName="z-[var(--tv-z-modal-nested)]"
+      className="md:max-w-md"
+    >
       {/* En-tête Jarvis — la notification est signée, comme chaque message. */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
-        <div className="relative shrink-0">
-          <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-          <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
+        <div className="tv-accent-fill grid h-10 w-10 shrink-0 place-items-center rounded-xl">
+          <Bot className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-[15px] font-bold text-white tracking-tight truncate">Jarvis</h2>
+            <h2 className="tv-title tracking-tight truncate">Jarvis</h2>
             <span
               className={cn(
-                "shrink-0 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider",
+                "tv-label shrink-0 px-2 py-0.5 rounded-full",
                 n.severity === "success" &&
                   "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20",
                 n.severity === "warning" &&
@@ -132,9 +134,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
               {catLabel}
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 truncate">
-            {new Date(n.createdAt).toLocaleString()}
-          </p>
+          <p className="tv-row-label truncate">{new Date(n.createdAt).toLocaleString()}</p>
         </div>
         <button
           onClick={onClose}
@@ -148,7 +148,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
       <div className="px-5 py-4 space-y-4 max-h-[52vh] overflow-y-auto">
         {/* Résumé */}
         <div>
-          <h3 className="text-lg font-bold text-white leading-snug">{n.title}</h3>
+          <h3 className="tv-title leading-snug">{n.title}</h3>
           <p className="text-[13.5px] text-slate-300 leading-relaxed mt-1.5">{n.body}</p>
         </div>
 
@@ -158,7 +158,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
             {rows.map(([k, v]) => (
               <div key={k} className="flex items-center justify-between px-3.5 py-2">
                 <span className="text-[11.5px] text-slate-500">{k}</span>
-                <span className="text-[13px] font-bold text-white tabular-nums">{v}</span>
+                <span className="tv-figure text-[13px] text-white">{v}</span>
               </div>
             ))}
           </div>
@@ -168,9 +168,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
         <div className="flex items-start gap-2.5 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.05] px-3.5 py-3">
           <Lightbulb className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-400/80 mb-0.5">
-              {t("inbox.plan")}
-            </div>
+            <div className="tv-label text-cyan-400/80 mb-0.5">{t("inbox.plan")}</div>
             <p className="text-[12.5px] text-slate-300 leading-relaxed">{plan}</p>
           </div>
         </div>
@@ -180,7 +178,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
       <div className="flex items-center gap-2 px-5 py-4 border-t border-white/[0.06]">
         <button
           onClick={go}
-          className="flex-1 h-11 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 transition inline-flex items-center justify-center gap-1.5"
+          className="flex-1 h-11 rounded-xl text-sm font-bold tv-accent-fill transition inline-flex items-center justify-center gap-1.5"
         >
           {ctaLabel}
           <ArrowRight className="w-4 h-4" />

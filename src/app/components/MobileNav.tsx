@@ -68,13 +68,13 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       // part dès ce premier contact, ce qui suffit souvent à le rendre prêt.
       onTouchStart={() => preloadPage(target)}
       aria-current={active ? "page" : undefined}
-      className={cn("bottom-nav-item", active ? "text-cyan-300" : "text-slate-500")}
+      // Même grammaire que le rail : l'onglet actif est une PASTILLE BLANCHE
+      // pleine, tout le reste est un blanc voilé. Plus de trait lumineux, plus
+      // de pastille teintée — le contraste seul porte l'état.
+      className={cn("bottom-nav-item", active ? "text-white" : "text-white/55")}
     >
-      {/* Active top bar indicator */}
-      <span className={cn("bottom-nav-bar", active && "bottom-nav-bar-active")} />
-      {/* Icon on an active pill that lights up cyan */}
       <span className={cn("bottom-nav-icon", active && "bottom-nav-icon-active")}>
-        <Icon className="w-[21px] h-[21px]" strokeWidth={active ? 2.4 : 2} />
+        <Icon className="w-[21px] h-[21px]" strokeWidth={active ? 2.3 : 2} />
       </span>
       <span
         className={cn(
@@ -88,7 +88,7 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
   );
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-[var(--tv-z-float)] bottom-nav">
       <div className="bottom-nav-shell">
         {/* 2 + bouton d'ajout + 2 = cinq enfants, cinq colonnes. */}
         <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2 gap-1">
@@ -97,11 +97,11 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
             <button
               onClick={onAddTrade}
               aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
-              className="fab-button relative text-white -mt-7"
+              className="fab-button relative -mt-7"
             >
               <Plus className="w-6 h-6" strokeWidth={2.5} />
               {hasDraft && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#060d16] shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[var(--tv-bg)]" />
               )}
             </button>
           </div>

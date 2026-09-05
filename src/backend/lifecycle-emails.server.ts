@@ -1,4 +1,5 @@
 import { serviceClient, userFromRequest } from "./billing.server";
+import { needsExpiry } from "../domain/entitlement";
 import {
   welcomeEmail,
   trialEndingEmail,
@@ -62,6 +63,35 @@ async function claimEmail(sb: any, userId: string, key: string): Promise<boolean
   return !error; // conflict (already sent) or failure — don't send
 }
 
+/**
+ * Bascule en `expired` les lignes dont la période payée est écoulée.
+ *
+ * La DÉCISION revient au prédicat partagé `needsExpiry`, pas au filtre SQL : la
+ * requête n'est qu'une pré-sélection (elle évite de lire toute la table), la
+ * règle vit dans `domain/entitlement`. Les deux ne peuvent donc pas diverger.
+ */
+async function expireBatch(
+  sb: any,
+  rows: { user_id: string; current_period_end: string | null }[],
+  now: Date,
+): Promise<number> {
+  let expired = 0;
+  for (const row of rows) {
+    if (!needsExpiry(row)) continue;
+    const { error } = await sb
+      .from("subscriptions")
+      .update({ plan: "free", status: "expired", updated_at: now.toISOString() })
+      .eq("user_id", row.user_id)
+      // Garde de concurrence : si un paiement a rouvert l'accès entre la
+      // lecture et l'écriture, la ligne n'est plus `active` sur cette période
+      // et on ne doit surtout pas la refermer.
+      .eq("status", "active")
+      .eq("current_period_end", row.current_period_end);
+    if (!error) expired++;
+  }
+  return expired;
+}
+
 // ── J+0: welcome, fired from the client after onboarding ────────────────────
 export async function handleWelcomeEmail(request: Request): Promise<Response> {
   const user = await userFromRequest(request);
@@ -93,17 +123,63 @@ export async function handleLifecycleCron(request: Request): Promise<Response> {
 
   const site = siteUrl(request);
   const now = new Date();
+  // E-mails envoyés au maximum par passage. La fenêtre de chaque relance
+  // (48 h avant la fin, J+3 à J+10 après) dure plusieurs jours : ce qui déborde
+  // d'un passage part au suivant, sans risque de doublon grâce à `email_log`.
+  const EMAIL_BATCH = 200;
   const in48h = new Date(now.getTime() + 48 * 3600 * 1000);
   let trialEndingSent = 0;
   let winbackSent = 0;
 
-  // Sweep: trials past their end date fall back to free.
+  // Sweep 1 : les essais dépassés retombent en gratuit.
   await sb
     .from("subscriptions")
     .update({ plan: "free", status: "expired", updated_at: now.toISOString() })
     .eq("status", "trialing")
     .eq("source", "trial")
     .lt("trial_ends_at", now.toISOString());
+
+  // Sweep 2 : LES PÉRIODES PAYÉES ÉCOULÉES — le balayage qui manquait.
+  //
+  // Une charge crypto achète une période fixe (il n'existe aucune facturation
+  // récurrente en crypto) et un accès offert porte la date de fin décidée par
+  // l'administrateur. Les deux étaient écrits `status = 'active'` et RIEN, nulle
+  // part, ne les faisait jamais expirer : quinze euros payés une fois en USDT
+  // ouvraient l'accès à vie, et `comp_grants.expires_at` était décoratif.
+  //
+  // `domain/entitlement` ferme déjà l'accès en LECTURE dès la date passée ; ce
+  // balayage aligne la BASE sur cette décision, pour que les relances, les
+  // statistiques et le support ne lisent pas un `active` qui ment.
+  //
+  // Stripe est volontairement EXCLU : c'est lui qui pilote son cycle de vie et
+  // son webhook écrit `past_due` puis `canceled`. Réécrire ici créerait une
+  // seconde autorité sur la même donnée. Voir `needsExpiry`.
+  //
+  // PAGINÉ. Une requête sans `limit` est tronquée en silence par
+  // `db.max_rows` : au-delà du plafond, des abonnements échus resteraient
+  // `active` indéfiniment — exactement le défaut qu'on corrige.
+  const EXPIRY_PAGE = 500;
+  let expiredPaid = 0;
+  let scanned = 0;
+
+  for (let page = 0; page < 200; page++) {
+    const { data: lapsedPaid } = await sb
+      .from("subscriptions")
+      .select("user_id, plan, status, source, trial_ends_at, current_period_end")
+      .eq("status", "active")
+      .in("source", ["crypto", "comp", "promo"])
+      .not("current_period_end", "is", null)
+      .lt("current_period_end", now.toISOString())
+      .order("user_id", { ascending: true })
+      .range(scanned, scanned + EXPIRY_PAGE - 1);
+
+    const rows = lapsedPaid ?? [];
+    if (rows.length === 0) break;
+    scanned += rows.length;
+    expiredPaid += await expireBatch(sb, rows, now);
+    if (rows.length < EXPIRY_PAGE) break;
+  }
+  if (expiredPaid > 0) console.log("[lifecycle] expired paid periods", expiredPaid);
 
   // J+12 — trial ends within 48h, still trialing, not yet warned.
   const { data: ending } = await sb
@@ -112,7 +188,11 @@ export async function handleLifecycleCron(request: Request): Promise<Response> {
     .eq("status", "trialing")
     .eq("source", "trial")
     .gt("trial_ends_at", now.toISOString())
-    .lte("trial_ends_at", in48h.toISOString());
+    .lte("trial_ends_at", in48h.toISOString())
+    // Borne EXPLICITE : sans elle, PostgREST tronque à `db.max_rows` sans rien
+    // dire. Le reste part au prochain passage quotidien — `email_log` garantit
+    // qu'un e-mail n'est jamais envoyé deux fois.
+    .limit(EMAIL_BATCH);
 
   for (const row of ending ?? []) {
     if (!(await claimEmail(sb, row.user_id, "trial_ending"))) continue;
@@ -137,7 +217,8 @@ export async function handleLifecycleCron(request: Request): Promise<Response> {
     .eq("status", "expired")
     .eq("source", "trial")
     .lte("trial_ends_at", threeDaysAgo.toISOString())
-    .gte("trial_ends_at", tenDaysAgo.toISOString());
+    .gte("trial_ends_at", tenDaysAgo.toISOString())
+    .limit(EMAIL_BATCH);
 
   for (const row of lapsed ?? []) {
     if (!(await claimEmail(sb, row.user_id, "winback"))) continue;
@@ -151,5 +232,5 @@ export async function handleLifecycleCron(request: Request): Promise<Response> {
     if (await sendEmail(prof.email, subject, html)) winbackSent++;
   }
 
-  return json({ ok: true, trialEndingSent, winbackSent });
+  return json({ ok: true, trialEndingSent, winbackSent, expiredPaid });
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import MonthCelebration from "../components/MonthCelebration";
 import { Loader2, Flag } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "../contexts/AuthContext";
@@ -31,6 +32,7 @@ import {
 // monthly tasks, checkable and persisted, with push reminders.
 
 import { GoalPicker, PlanView } from "./goals/views";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 export default function Goals({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
@@ -93,7 +95,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
       setBusy(true);
       const p: GoalPlan = {
         goals,
-        startedAt: new Date().toISOString().slice(0, 10),
+        startedAt: todayLocalDate(),
         horizonMonths: HORIZON,
         tasksDone: {},
       };
@@ -168,13 +170,10 @@ export default function Goals({ trades }: { trades: Trade[] }) {
         // All tasks of the current month just completed → celebrate + push.
         const i = currentMonthIndex(optimistic);
         if (done && monthTaskCompletion(optimistic, i) === 1) {
-          toast(
-            tr(
-              "Toutes les tâches du mois validées — énorme ! 🔥",
-              "All of this month's tasks done — huge! 🔥",
-            ),
-            "success",
-          );
+          /* UNE ANIMATION, PAS UN TOAST DE PLUS. Le jalon se fêtait dans la
+             même bande grise que « trade enregistré » : un mois de travail et
+             un clic recevaient exactement le même accusé de réception. */
+          setFete({ mois: i + 1, total: optimistic.horizonMonths });
           sendPush({
             data: {
               title: tr("Mois validé 🔥", "Month complete 🔥"),
@@ -193,6 +192,8 @@ export default function Goals({ trades }: { trades: Trade[] }) {
     },
     [user, activeId, plan, toast, tr, sendPush],
   );
+
+  const [fete, setFete] = useState<{ mois: number; total: number } | null>(null);
 
   const updateManualValue = useCallback(
     async (goalId: string, value: number) => {
@@ -237,6 +238,10 @@ export default function Goals({ trades }: { trades: Trade[] }) {
           onManualValue={updateManualValue}
           forecast={capitalForecast}
         />
+      )}
+
+      {fete && (
+        <MonthCelebration mois={fete.mois} total={fete.total} onDone={() => setFete(null)} />
       )}
     </div>
   );

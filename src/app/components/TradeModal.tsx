@@ -35,7 +35,18 @@ import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import Lightbox from "./Lightbox";
-import { Modal, FIELD_BASE, Textarea, Button, Chip, RemovableChip, CHIP_ROW } from "@/shared/ui";
+import {
+  Modal,
+  FIELD_BASE,
+  Textarea,
+  Button,
+  Chip,
+  RemovableChip,
+  CHIP_ROW,
+  DateField,
+  TimeField,
+} from "@/shared/ui";
+import { intlLocale } from "../i18n/locale";
 import { tradeDraftKey, nsKey, readJSON, removeKey, type TradeDraft } from "../utils/persistence";
 import {
   REFLECTION_REASONS,
@@ -109,7 +120,7 @@ const REASON_LABELS: Record<ReflectionReason, string> = {
 export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) {
   const { user } = useAuth();
   const userId = user?.id || "";
-  const { t } = useT();
+  const { t, lang } = useT();
 
   const [userConfluences, setUserConfluences] = useState<string[]>([]);
   const [newConfluence, setNewConfluence] = useState("");
@@ -487,8 +498,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // chip height (equal, symmetric bubbles). Desktop keeps the roomier 44px.
   const inputClass = cn(fieldBase, "h-9 sm:h-11 text-xs sm:text-sm");
   const textareaClass = cn(fieldBase, "py-2.5");
-  const labelClass =
-    "block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
+  const labelClass = "tv-label block text-slate-400 mb-1.5";
 
   return (
     <>
@@ -501,56 +511,48 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         closeOnBackdrop={!dirty}
         className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
       >
-        {/* Dynamic accent: green when the entry is a gain, red when a loss */}
+        {/* Le liseré du haut dit le SIGNE de la saisie en cours : vert si elle
+            est gagnante, rouge si elle est perdante. L'information est juste,
+            son exécution ne l'était pas — c'était un dégradé qui s'éteignait
+            aux deux bouts, une décoration d'ancienne identité. Un trait plein
+            de deux pixels dit la même chose sans effet. */}
         <div
           className={cn(
             "pointer-events-none absolute inset-x-0 top-0 h-[2px] transition-colors duration-300",
             form.direction === "be"
               ? "bg-slate-500/40"
               : calculatedPnl > 0
-                ? "bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent"
+                ? "bg-[var(--tv-chart-green)]"
                 : calculatedPnl < 0
-                  ? "bg-gradient-to-r from-transparent via-red-400/70 to-transparent"
-                  : "bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent",
+                  ? "bg-[var(--tv-chart-red)]"
+                  : "bg-[var(--tv-border-strong)]",
           )}
         />
-        {/* Header premium — même matière que le widget compte/Jarvis */}
-        <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.07] to-transparent overflow-hidden">
-          <div className="pointer-events-none absolute -top-10 left-1/3 w-56 h-20 rounded-full bg-cyan-500/10 blur-2xl" />
-          <div className="relative flex items-center gap-2.5 min-w-0">
-            <span className="relative shrink-0">
-              <span
-                className={cn(
-                  "absolute -inset-1 rounded-xl blur-md transition-colors",
-                  form.direction === "be"
-                    ? "bg-slate-500/30"
-                    : calculatedPnl > 0
-                      ? "bg-emerald-500/30"
-                      : calculatedPnl < 0
-                        ? "bg-red-500/30"
-                        : "bg-cyan-500/30",
-                )}
-              />
-              <span
-                className={cn(
-                  "relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br transition-colors",
-                  form.direction === "be"
-                    ? "from-slate-400 to-slate-600"
-                    : calculatedPnl > 0
-                      ? "from-emerald-500 to-teal-500"
-                      : calculatedPnl < 0
-                        ? "from-red-500 to-orange-500"
-                        : "from-cyan-500 to-teal-600",
-                )}
-              >
-                <CandlestickChart className="w-4.5 h-4.5 text-white" />
-              </span>
+        <div className="relative flex items-center justify-between border-b border-white/[0.06] px-4 py-3.5 sm:px-6">
+          <div className="relative flex min-w-0 items-center gap-2.5">
+            {/* La pastille portait un HALO FLOUTÉ (`blur-md`) et un dégradé
+                bicolore — les deux derniers effets de ce genre dans un
+                formulaire du produit. Elle garde sa couleur, qui est une
+                information, et perd les deux, qui n'en sont pas. */}
+            <span
+              className={cn(
+                "grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition-colors",
+                form.direction === "be"
+                  ? "border-slate-500/25 bg-slate-500/15 text-slate-300"
+                  : calculatedPnl > 0
+                    ? "border-emerald-400/25 bg-emerald-400/15 text-emerald-400"
+                    : calculatedPnl < 0
+                      ? "border-red-400/25 bg-red-400/15 text-red-400"
+                      : "border-[var(--tv-border-strong)] bg-white/[0.05] text-slate-300",
+              )}
+            >
+              <CandlestickChart className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-base font-bold text-white leading-tight">
+              <h2 className="tv-title leading-tight">
                 {trade ? t("trade.editTitle") : t("trade.newTitle")}
               </h2>
-              <p className="text-[11px] text-slate-500 truncate">
+              <p className="tv-row-label truncate">
                 {form.symbol ? `${form.symbol} · ` : ""}
                 {form.direction === "long"
                   ? "Long"
@@ -563,7 +565,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <button
                 onClick={discardDraft}
                 title={t("trade.discardDraft")}
-                className="group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold uppercase tracking-wide transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+                className="tv-label group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 group-hover:bg-red-400" />
                 {t("trade.draftBadge")}
@@ -637,10 +639,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
             <div>
               <label className={labelClass}>{t("trade.date")}</label>
-              <input
-                type="date"
+              {/* Plus `<input type="date">` : voir `DateField`. Le sélecteur
+                  natif ouvrait un calendrier BLANC, hors document, insensible
+                  au thème — la page d'un autre site au milieu de celle-ci. */}
+              <DateField
                 value={form.date}
-                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                onChange={(iso) => setForm((f) => ({ ...f, date: iso }))}
+                locale={intlLocale(lang)}
+                todayLabel={t("common.today")}
+                aria-label={t("trade.date")}
                 className={inputClass}
               />
             </div>
@@ -698,7 +705,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <label className={labelClass}>{t("trade.estPnl")}</label>
               <div
                 className={cn(
-                  "w-full h-11 flex items-center rounded-xl px-3 text-sm font-bold border tabular-nums",
+                  "tv-figure w-full h-11 flex items-center rounded-xl px-3 text-sm border",
                   calculatedPnl > 0
                     ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-400"
                     : calculatedPnl < 0
@@ -821,19 +828,21 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>{t("trade.entryTime")}</label>
-              <input
-                type="time"
+              <TimeField
                 value={form.entryTime}
-                onChange={(e) => setForm((f) => ({ ...f, entryTime: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, entryTime: v }))}
+                locale={intlLocale(lang)}
+                aria-label={t("trade.entryTime")}
                 className={inputClass}
               />
             </div>
             <div>
               <label className={labelClass}>{t("trade.exitTime")}</label>
-              <input
-                type="time"
+              <TimeField
                 value={form.exitTime}
-                onChange={(e) => setForm((f) => ({ ...f, exitTime: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, exitTime: v }))}
+                locale={intlLocale(lang)}
+                aria-label={t("trade.exitTime")}
                 className={inputClass}
               />
             </div>
@@ -855,9 +864,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
           {/* Presets d'heure — un tap remplit entrée + sortie (puis ajustables) */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mr-0.5">
-              {t("trade.timePresets")}
-            </span>
+            <span className="tv-label text-slate-500 mr-0.5">{t("trade.timePresets")}</span>
             {[
               { t: "09:30", v: "10:15" },
               { t: "10:00", v: "11:00" },
@@ -881,7 +888,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <label className={labelClass + " mb-0"}>{t("trade.setupQuality")}</label>
               <span
                 className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                  "tv-label px-2 py-0.5 rounded-full border",
                   form.setupQuality <= 1 && "text-red-300 bg-red-500/10 border-red-500/25",
                   form.setupQuality === 2 && "text-amber-300 bg-amber-500/10 border-amber-500/25",
                   form.setupQuality === 3 && "text-slate-200 bg-white/[0.05] border-white/[0.1]",
@@ -919,9 +926,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     <Star
                       className={cn(
                         "w-4 h-4 transition duration-200",
-                        on
-                          ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]"
-                          : "text-slate-600",
+                        on ? "text-amber-400 fill-amber-400" : "text-slate-600",
                       )}
                       strokeWidth={on ? 2 : 1.75}
                     />
@@ -937,7 +942,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <label className={labelClass + " mb-0"}>{t("trade.confidence")}</label>
               <span
                 className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                  "tv-label px-2 py-0.5 rounded-full border",
                   form.confidence >= 75 &&
                     "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
                   form.confidence >= 50 &&
@@ -1008,12 +1013,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   </defs>
                 </svg>
                 <div className="absolute inset-0 grid place-items-center">
-                  <span
-                    className={cn(
-                      "font-display text-base font-extrabold tabular-nums",
-                      confidenceColor.text,
-                    )}
-                  >
+                  <span className={cn("tv-figure text-base", confidenceColor.text)}>
                     {form.confidence}%
                   </span>
                 </div>
@@ -1151,7 +1151,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <button
                 onClick={() => setShowAllMistakes(!showAllMistakes)}
                 aria-label={showAllMistakes ? t("common.showLess") : t("common.showMore")}
-                className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 px-2 py-1.5"
+                className="flex h-8 min-w-[32px] items-center justify-center gap-1 px-2 text-xs text-slate-500 hover:text-slate-300"
               >
                 {showAllMistakes ? (
                   <ChevronUp className="w-3 h-3" />
@@ -1429,7 +1429,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <>
                 <span className="font-bold text-white shrink-0">{form.symbol.toUpperCase()}</span>
                 {session && (
-                  <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[11px] font-bold uppercase shrink-0">
+                  <span className="tv-label hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 shrink-0">
                     {t(`session.${session}` as never)}
                   </span>
                 )}
@@ -1438,7 +1438,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </span>
                 <span
                   className={cn(
-                    "font-bold tabular-nums shrink-0",
+                    "tv-figure shrink-0",
                     form.direction === "be"
                       ? "text-slate-300"
                       : calculatedPnl >= 0
@@ -1458,11 +1458,11 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         </div>
         {(timeError || rMultipleError) && (
           <div className="px-4 md:px-6 pb-2 space-y-1">
-            {timeError && <p className="text-xs text-red-400">{timeError}</p>}
-            {rMultipleError && <p className="text-xs text-red-400">{rMultipleError}</p>}
+            {timeError && <p className="tv-prose text-red-400">{timeError}</p>}
+            {rMultipleError && <p className="tv-prose text-red-400">{rMultipleError}</p>}
           </div>
         )}
-        <div className="sticky bottom-0 bg-[#0a1220] border-t border-white/[.06] px-4 md:px-6 py-3 md:py-4 flex items-center justify-end gap-2 z-10">
+        <div className="sticky bottom-0 bg-[var(--tv-plate-1)] border-t border-white/[.06] px-4 md:px-6 py-3 md:py-4 flex items-center justify-end gap-2 z-10">
           <button
             onClick={onClose}
             className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
@@ -1474,9 +1474,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             disabled={!isValid}
             className={cn(
               "px-6 py-2.5 rounded-xl text-sm font-bold transition",
-              isValid
-                ? "bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white"
-                : "bg-slate-800 text-slate-500 cursor-not-allowed",
+              isValid ? "tv-accent-fill" : "bg-slate-800 text-slate-500 cursor-not-allowed",
             )}
           >
             {trade ? t("trade.updateTrade") : t("trade.saveTrade")}

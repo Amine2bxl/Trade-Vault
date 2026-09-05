@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Trade } from "../types";
 import { getActiveAccountId } from "./accounts";
 import { storagePathsOf, removeScreenshotFiles, uploadScreenshot } from "./storage";
+import { planLimitFromDbError } from "../utils/planLimits";
 
 interface TradeRow {
   id: string;
@@ -53,6 +54,9 @@ export function rowToTrade(r: TradeRow): Trade {
     mfe: r.mfe ?? null,
     slippage: r.slippage ?? null,
     isExample: !!r.is_example,
+    // Le compte d'origine voyage AVEC le trade : c'est ce qui permet à une
+    // modification de ne pas le déplacer vers le compte actif du moment.
+    accountId: r.account_id ?? null,
   };
 }
 
@@ -64,7 +68,15 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
   return {
     id: t.id,
     user_id: userId,
-    account_id: getActiveAccountId() ?? null,
+    // Le compte du TRADE d'abord, le compte actif seulement à défaut.
+    //
+    // Écrire `getActiveAccountId()` sans condition était un bug de données :
+    // à chaque MODIFICATION, le trade était réaffecté au compte sélectionné à
+    // cet instant. Modifier une note sur un trade du compte « Prop » depuis le
+    // compte « Perso » le faisait disparaître du premier — et la migration des
+    // captures d'écran, qui réécrit chaque trade concerné, pouvait déplacer un
+    // lot entier d'un coup.
+    account_id: t.accountId ?? getActiveAccountId() ?? null,
     trade_date: t.date,
     symbol: t.symbol,
     direction: t.direction,
@@ -88,33 +100,88 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
 }
 
 // ── Trades ──
+
+const TRADE_COLS =
+  "id,user_id,account_id,trade_date,symbol,direction,pnl,risk_amount,r_multiple,strategy,mistakes,setup_quality,notes,screenshots,entry_time,exit_time,confluences,confidence,mae,mfe,slippage,is_example,created_at,updated_at";
+
+/**
+ * Taille d'une page de lecture.
+ *
+ * PostgREST plafonne toute réponse à `db.max_rows` — 1 000 chez Supabase. On
+ * demande donc explicitement des pages de 1 000 et on les enchaîne, au lieu de
+ * demander « tout » et de recevoir silencieusement les mille premiers.
+ */
+const READ_PAGE_SIZE = 1000;
+
+/**
+ * Garde-fou d'un historique anormalement grand.
+ *
+ * Cinquante mille trades, c'est déjà bien au-delà de ce qu'un particulier
+ * accumule ; au-delà, on s'arrête et on le DIT dans la console plutôt que de
+ * faire fondre l'onglet en silence.
+ */
+const READ_HARD_CAP = 50_000;
+
+/**
+ * L'historique du compte, EN ENTIER.
+ *
+ * ── LE BUG QUE CETTE PAGINATION CORRIGE ─────────────────────────────────────
+ * La requête n'avait aucune borne, et `limit`/`offset` n'étaient passés par
+ * aucun appelant. Or une requête PostgREST sans borne n'est pas « sans
+ * limite » : elle est tronquée à `db.max_rows` (1 000). Un trader avec plus de
+ * mille trades voyait donc, SANS AUCUN SIGNAL, un historique amputé — et tout
+ * ce que le produit calcule dessus (win rate, expectancy, drawdown, edge par
+ * session, Monte-Carlo) était faux, silencieusement, pour ses meilleurs
+ * clients. Les pages s'enchaînent maintenant jusqu'à épuisement.
+ *
+ * Le produit a BESOIN de l'historique complet : chaque moteur statistique
+ * raisonne sur l'ensemble. Paginer vers l'interface changerait les chiffres,
+ * ce n'est donc pas ce qui est fait ici — on garantit seulement que « tout »
+ * veut bien dire tout.
+ *
+ * `accountId` est passé EXPLICITEMENT et non lu depuis l'état de module : voir
+ * `useTrades`, où la clé de cache et la requête doivent désigner le même compte.
+ */
 export async function loadUserTrades(
   userId: string,
-  opts?: { limit?: number; offset?: number },
+  opts?: { accountId?: string | null },
 ): Promise<Trade[]> {
-  let q = supabase
-    .from("trades")
-    .select(
-      "id,user_id,account_id,trade_date,symbol,direction,pnl,risk_amount,r_multiple,strategy,mistakes,setup_quality,notes,screenshots,entry_time,exit_time,confluences,confidence,mae,mfe,slippage,is_example,created_at,updated_at",
-    )
-    .eq("user_id", userId);
-  const activeId = getActiveAccountId();
-  if (activeId) q = q.eq("account_id", activeId);
-  if (opts?.limit || opts?.offset) {
-    const start = opts?.offset ?? 0;
-    const end = start + (opts?.limit ?? 50) - 1;
-    q = q.range(start, end);
+  const activeId = opts?.accountId !== undefined ? opts.accountId : getActiveAccountId();
+  const out: Trade[] = [];
+
+  for (let from = 0; from < READ_HARD_CAP; from += READ_PAGE_SIZE) {
+    let q = supabase.from("trades").select(TRADE_COLS).eq("user_id", userId);
+    if (activeId) q = q.eq("account_id", activeId);
+    const { data, error } = await q
+      // Tri STABLE : `trade_date` seul laisse l'ordre des trades du même jour à
+      // la discrétion de Postgres, ce qui ferait qu'une page peut renvoyer deux
+      // fois la même ligne et jamais une autre. `id` départage.
+      .order("trade_date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + READ_PAGE_SIZE - 1);
+    if (error) throw error;
+
+    const rows = (data ?? []) as TradeRow[];
+    for (const row of rows) out.push(rowToTrade(row));
+    if (rows.length < READ_PAGE_SIZE) return out;
   }
-  const { data, error } = await q.order("trade_date", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((r: TradeRow) => rowToTrade(r));
+
+  console.warn(`[trades] historique tronqué à ${READ_HARD_CAP} lignes pour ${userId}`);
+  return out;
 }
 
 export async function upsertTrade(userId: string, trade: Trade): Promise<void> {
   // RLS ensures auth.uid() = user_id on both INSERT and UPDATE.
   // The row's user_id is always set from the authenticated userId param.
   const { error } = await supabase.from("trades").upsert(tradeToRow(trade, userId));
-  if (error) throw error;
+  if (error) {
+    // La limite mensuelle est aussi appliquée par un déclencheur Postgres : son
+    // refus doit arriver à l'interface comme un moment de vente, pas comme une
+    // erreur de contrainte SQL.
+    const limit = planLimitFromDbError(error);
+    if (limit) throw limit;
+    throw error;
+  }
 }
 
 /** Taille d'un lot d'import. Assez gros pour être rapide, assez petit pour
@@ -138,9 +205,15 @@ export async function importTrades(
   userId: string,
   trades: readonly Trade[],
   onProgress?: (done: number, total: number) => void,
-): Promise<{ saved: Trade[]; failed: number }> {
+): Promise<{ saved: Trade[]; failed: number; planLimitReached: boolean }> {
   const saved: Trade[] = [];
   let failed = 0;
+  // Vrai dès qu'une ligne a été refusée par la limite mensuelle de l'offre.
+  // À distinguer d'un échec technique : ce n'est pas une panne, c'est le
+  // produit qui dit non — et l'interface doit proposer l'offre supérieure au
+  // lieu d'afficher « 490 trades ont échoué ».
+  let planLimitReached = false;
+
   for (let i = 0; i < trades.length; i += IMPORT_BATCH_SIZE) {
     const batch = trades.slice(i, i + IMPORT_BATCH_SIZE);
     const { error } = await supabase.from("trades").upsert(batch.map((t) => tradeToRow(t, userId)));
@@ -153,13 +226,25 @@ export async function importTrades(
         batch.map((t) => supabase.from("trades").upsert(tradeToRow(t, userId))),
       );
       results.forEach((r, k) => {
-        if (r.status === "fulfilled" && !r.value.error) saved.push(batch[k]);
-        else failed++;
+        if (r.status === "fulfilled" && !r.value.error) {
+          saved.push(batch[k]);
+          return;
+        }
+        failed++;
+        const rowError = r.status === "fulfilled" ? r.value.error : r.reason;
+        if (planLimitFromDbError(rowError)) planLimitReached = true;
       });
+      // Une fois la limite atteinte, les lots suivants échoueront tous : on
+      // arrête plutôt que de lancer des centaines de requêtes vouées au refus.
+      if (planLimitReached) {
+        failed += trades.length - (i + batch.length);
+        onProgress?.(trades.length, trades.length);
+        break;
+      }
     }
     onProgress?.(Math.min(i + batch.length, trades.length), trades.length);
   }
-  return { saved, failed };
+  return { saved, failed, planLimitReached };
 }
 
 export async function deleteTrade(userId: string, id: string): Promise<void> {
@@ -179,12 +264,27 @@ export async function deleteTrade(userId: string, id: string): Promise<void> {
 // Scoped to the active account: "delete all" only clears the current account.
 export async function deleteAllTrades(userId: string): Promise<void> {
   const activeId = getActiveAccountId();
-  let selectQ = supabase.from("trades").select("screenshots").eq("user_id", userId);
-  if (activeId) selectQ = selectQ.eq("account_id", activeId);
-  const { data } = await selectQ;
-  const allPaths = (data ?? []).flatMap((r: { screenshots: string[] }) =>
-    storagePathsOf(r.screenshots),
-  );
+
+  // PAGINÉ, pour la même raison que la lecture de l'historique : sans
+  // `.range()`, PostgREST s'arrête à `db.max_rows` (mille) SANS erreur. Les
+  // lignes, elles, étaient toutes supprimées ensuite — les captures d'écran
+  // des trades au-delà du millième restaient donc dans le bucket, orphelines,
+  // définitivement. Ce n'est pas seulement de l'espace perdu : ce sont les
+  // images d'un journal que le trader vient d'effacer.
+  const allPaths: string[] = [];
+  for (let from = 0; from < READ_HARD_CAP; from += READ_PAGE_SIZE) {
+    let selectQ = supabase.from("trades").select("id, screenshots").eq("user_id", userId);
+    if (activeId) selectQ = selectQ.eq("account_id", activeId);
+    const { data, error } = await selectQ
+      // Ordre stable : sans lui, deux pages peuvent rendre la même ligne et en
+      // sauter une autre.
+      .order("id", { ascending: true })
+      .range(from, from + READ_PAGE_SIZE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as { screenshots: string[] | null }[];
+    for (const r of rows) allPaths.push(...storagePathsOf(r.screenshots ?? []));
+    if (rows.length < READ_PAGE_SIZE) break;
+  }
   if (allPaths.length) {
     await removeScreenshotFiles(allPaths);
   }
