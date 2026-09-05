@@ -334,6 +334,8 @@ const fr: Dict = {
   "mc.p25": "Le quart du bas",
   "mc.p50": "Médiane",
   "mc.p95": "Les 5% du haut",
+  "goals.monthDone": "Mois validé",
+  "goals.monthStep": "Étape {i} sur {n} · toutes les actions sont faites",
   "inbox.title": "Boîte de réception",
   "inbox.subtitle": "Tous tes signaux, alertes et insights en un seul endroit.",
   "inbox.empty": "Aucune notification pour le moment. Elles apparaîtront ici au fil de ta session.",

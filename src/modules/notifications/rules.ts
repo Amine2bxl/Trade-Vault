@@ -102,7 +102,14 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
         body: fr
           ? `${streak} pertes consécutives. C'est un signal de tilt ou de sur-trading — pas une fatalité.`
           : `${streak} consecutive losses. A tilt or over-trading signal — not bad luck.`,
-        severity: "warning",
+        /* `error`, PAS `warning` — et c'est la seule règle qui l'obtienne.
+           Trois pertes d'affilée est le seul moment où le produit doit
+           INTERROMPRE : c'est là qu'un compte se perd, et un toast de trois
+           secondes ne suffit pas. La sévérité `error` ouvre le popup de
+           détail à l'écran (voir `App.tsx`), avec le plan d'action.
+           Les autres règles restent en `warning` : un popup par séance ne
+           voudrait plus rien dire. */
+        severity: "error",
         url: "/journal",
         category: "risk",
         data: {

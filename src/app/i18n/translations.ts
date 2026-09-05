@@ -375,6 +375,8 @@ const en = {
   "mc.p25": "Bottom quarter",
   "mc.p50": "Median",
   "mc.p95": "Best 5%",
+  "goals.monthDone": "Month complete",
+  "goals.monthStep": "Step {i} of {n} · every action done",
   "inbox.title": "Inbox",
   "inbox.subtitle": "Stay aware without scrolling. One place for every signal, alert and insight.",
   "inbox.empty": "No notifications yet. They'll appear here as your trading day unfolds.",

@@ -392,7 +392,25 @@ function AppContent() {
     NotificationEngine.configure(user?.id ?? null, {
       toast: (message, type) => toast(message, type),
       push: (payload) => sendPush({ data: payload }),
-      persist: persistNotification,
+      persist: (n) => {
+        /* LES ALERTES GRAVES S'OUVRENT, ELLES N'ATTENDENT PAS.
+           Une série de pertes, une limite de risque franchie, un motif qui
+           vient d'être détecté : tout cela partait dans un toast de trois
+           secondes et dans une boîte de réception qu'on ouvre le lendemain.
+           Une notification de sévérité `error` ouvre maintenant le même popup
+           que si le trader avait cliqué dessus dans sa boîte — la surface
+           existait déjà (`tv:open-notification`), rien ne la déclenchait
+           toute seule.
+
+           SEULEMENT `error`. Étendre aux avertissements ferait un popup par
+           séance, et le popup ne voudrait plus rien dire. */
+        if (n.severity === "error") {
+          window.dispatchEvent(
+            new CustomEvent("tv:open-notification", { detail: { notification: n } }),
+          );
+        }
+        return persistNotification(n);
+      },
     });
   }, [user?.id, toast, sendPush]);
 
