@@ -52,6 +52,16 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
     longestStreak,
     total,
     title = "Streak",
+    /* IL MANQUAIT ICI, ET CELA CASSAIT LE TABLEAU DE BORD.
+       `subtitle` était déclaré dans les props et utilisé dans le JSX, mais
+       jamais SORTI de l'objet : il partait dans `...props`, étalé sur la
+       `<section>`, pendant que l'identifiant nu du JSX ne référençait plus
+       rien. Au rendu, `ReferenceError: subtitle is not defined` — la carte
+       lève, la frontière d'erreur attrape, et toute la page se remplace par
+       l'écran « 500 ». C'est-à-dire : plus de tableau de bord du tout, pour
+       une variable oubliée lors d'une résolution de conflit.
+       (`tsc` le signalait : deux erreurs TS2304 sur ce fichier.) */
+    subtitle,
     daysLabel = "days",
     longestLabel = "Longest streak",
     totalLabel = "Total",

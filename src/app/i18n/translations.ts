@@ -688,7 +688,8 @@ const en = {
   // Dashboard — Copilot block (Edge Score, rule of the day, objective)
   "copilot.title": "Today's copilot",
   "copilot.intro": "Your discipline score, the rule to keep today, your monthly goal.",
-  "copilot.explain": "Measures your discipline (plan kept, risk, consistency) over your last 10 traded days — never your P&L.",
+  "copilot.explain":
+    "Measures your discipline (plan kept, risk, consistency) over your last 10 traded days — never your P&L.",
   "copilot.edgeLabel": "Edge score",
   "copilot.trendTitle": "Your discipline trajectory over the last sessions",
   "copilot.scoreBuilding": "Score building — log more trades",
@@ -1309,7 +1310,8 @@ const en = {
 
   // Streak card (dashboard)
   "streak.title": "Checklist streak",
-  "streak.subtitle": "The days your pre-market checklist was locked — discipline you can see, not performance you hope for.",
+  "streak.subtitle":
+    "The days your pre-market checklist was locked — discipline you can see, not performance you hope for.",
   "streak.days": "days",
   "streak.longest": "Longest streak",
   "streak.total": "Days completed",
