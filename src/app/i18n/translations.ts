@@ -498,6 +498,9 @@ const en = {
   // Jarvis (floating panel)
   "assistant.title": "Jarvis",
   "assistant.subtitle": "Your trading performance intelligence",
+  "jarvis.pageLead": "Type or speak — he has already read your journal.",
+  "jarvis.newConversation": "New conversation",
+  "jarvis.waking": "Jarvis is waking up…",
   "jarvis.copilot": "Your AI trading copilot",
   "assistant.placeholder": "Ask Jarvis…",
   "assistant.empty":

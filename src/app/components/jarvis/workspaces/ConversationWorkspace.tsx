@@ -724,20 +724,23 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Toolbar du workspace */}
-      <div className="flex items-center gap-2 px-4 md:px-6 py-2 border-b border-white/[0.04] shrink-0">
-        <span className="tv-label text-slate-600">{t("jarvis.conversation")}</span>
-        {messages.length > 0 && (
+      {/* LA BANDE D'OUTILS N'EXISTE QUE QUAND ELLE PORTE QUELQUE CHOSE.
+          Elle occupait une hauteur pleine pour afficher le mot
+          « Conversation » — un titre qui répète ce que la page est déjà, sur
+          une bande qui prenait la place du dialogue. Il ne reste que le bouton
+          « effacer », et seulement quand il y a quelque chose à effacer. */}
+      {messages.length > 0 && (
+        <div className="flex shrink-0 items-center justify-end border-b border-white/[0.04] px-4 py-1.5 md:px-6">
           <button
             onClick={clearChat}
             aria-label={t("assistant.clear")}
             title={t("assistant.clear")}
-            className="ml-auto w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
           >
-            <Eraser className="w-4 h-4" />
+            <Eraser className="h-4 w-4" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Messages — rendus UNIQUEMENT via les blocs */}
       {/* `aria-live="polite"` : les réponses arrivent de façon asynchrone. Sans
@@ -766,11 +769,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           <div className="animate-fade-in-up">
             <div className="relative">
               <div className="relative flex items-center gap-3">
-                <span className="relative shrink-0">
-                  <span className="absolute -inset-1.5 rounded-2xl bg-cyan-500/35 blur-md" />
-                  <span className="relative grid h-11 w-11 place-items-center rounded-2xl tv-accent-fill">
-                    <Bot className="w-5 h-5" />
-                  </span>
+                {/* Le halo flou est parti : un carré de lumière cyan de 35%
+                    posé derrière un avatar, c'est de l'effet, pas du dessin. */}
+                <span className="tv-accent-fill grid h-11 w-11 shrink-0 place-items-center rounded-2xl">
+                  <Bot className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-white tracking-tight">
