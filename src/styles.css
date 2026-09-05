@@ -3041,3 +3041,52 @@ a:focus-visible,
     page-break-after: avoid;
   }
 }
+
+/* ── LA RANGÉE DE RÉGLAGES DU MONTE-CARLO ──
+ * Cinq réglages sur une ligne à partir de `lg`, deux sur tablette, un sur
+ * téléphone. `auto-fit` aurait suffi s'ils avaient tous la même largeur de
+ * contenu — ce n'est pas le cas (« $50,000 » contre « 30 jours »), et une
+ * grille à colonnes égales garde les curseurs alignés, ce qui est la seule
+ * chose qui les fait lire comme UN réglage à cinq entrées. */
+.mc-params {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem 1.5rem;
+}
+@media (min-width: 640px) {
+  .mc-params {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .mc-params {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ── LES QUATRE FAITS DU VERDICT (Monte-Carlo) ──
+ * Une rangée à filets sur écran large ; une grille de deux, sans filets, sur
+ * téléphone — quatre faits « shrink-0 » à côté d'un chiffre de 48px
+ * demandaient 499px dans les 319 disponibles. */
+.mc-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.25rem;
+  min-width: 0;
+}
+@media (min-width: 640px) {
+  .mc-facts {
+    display: flex;
+    flex-shrink: 0;
+    align-items: stretch;
+    gap: 1.25rem;
+  }
+  .mc-facts > * {
+    padding-left: 1.25rem;
+    border-left: 1px solid rgb(255 255 255 / 0.07);
+  }
+  .mc-facts > :first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+}

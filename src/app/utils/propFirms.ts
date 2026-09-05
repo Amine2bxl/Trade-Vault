@@ -150,5 +150,8 @@ export function formatMoney(v: number): string {
   const abs = Math.abs(v);
   const sign = v < 0 ? "-" : "";
   if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(abs % 1000 === 0 ? 0 : 1)}k`;
-  return `${sign}$${abs.toLocaleString("en-US")}`;
+  // Arrondi au dollar. Sans lui, une valeur calculée — un drawdown médian de
+  // 509.175 — sortait « $509.175 », un montant à trois décimales que personne
+  // ne lit comme de l'argent. La branche des milliers arrondissait déjà.
+  return `${sign}$${Math.round(abs).toLocaleString("en-US")}`;
 }

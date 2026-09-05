@@ -1,18 +1,23 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { Loader2, Shuffle, RotateCcw } from "lucide-react";
 import {
-  Play,
-  Loader2,
-  BarChart3,
-  Zap,
-  TrendingUp,
-  AlertTriangle,
-  Info,
-  ChevronDown,
-  X,
-} from "lucide-react";
+  ResponsiveContainer,
+  ComposedChart,
+  Area,
+  Line,
+  BarChart,
+  Bar,
+  Cell,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 import { Trade } from "../types";
-import { formatPnl, formatPct } from "../utils/tradeCalcs";
+import { formatPnl } from "../utils/tradeCalcs";
 import { useT } from "../i18n/LanguageContext";
+import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import { usePageActions } from "../contexts/PageActionsContext";
 import {
@@ -20,28 +25,10 @@ import {
   runMonteCarlo,
   computeStatistics,
   monteCarloSE,
-  generateSamples,
-  computeExpectancy,
-  computeProfitFactor,
   type MonteCarloParams,
   type MonteCarloResult,
-  type RMultipleSample,
-  type SampleStatistics,
-  type ManualTradeParams,
 } from "../utils/monteCarlo";
-import { findFirm, findChallenge, formatMoney, type PropChallenge } from "../utils/propFirms";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ReferenceLine,
-  ComposedChart,
-} from "recharts";
+import { formatMoney } from "../utils/propFirms";
 import {
   AXIS_TICK,
   CHART_GREEN,
@@ -49,144 +36,382 @@ import {
   EQUITY_CURVE_TYPE,
   EQUITY_GRID,
   EQUITY_LINE,
+  tooltipStyle,
 } from "../utils/chartTheme";
 
 interface Props {
   trades: Trade[];
 }
 
-const SIM_OPTIONS = [100, 500, 1000, 5000, 10000];
+/** Un seul nombre de tirages. Deux mille suffisent, et personne n'a envie de
+ *  choisir entre 100 et 10 000 avant de savoir ce que la page va lui dire. */
+const TIRAGES = 2000;
 
-/* ─────── PARAMETER INPUT ─────── */
-function ParamRow({
-  label,
-  value,
-  onChange,
-  suffix = "",
-  computed,
-  hint,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  suffix?: string;
-  computed?: boolean;
-  hint?: string;
-}) {
+/**
+ * MONTE-CARLO — « où va mon compte, si je continue comme ça ? »
+ *
+ * ══ CE QUE LA PAGE DEMANDAIT AVANT ══
+ *
+ * Une colonne de cinq cartes : un sélecteur de prop firm, un sélecteur de
+ * challenge, puis DOUZE champs numériques (solde, objectif, drawdown, perte
+ * journalière, drawdown glissant, jours max, trades par jour max, risque par
+ * trade), un basculement « journal / manuel » qui rouvrait quatre champs de
+ * plus, et une rangée de cinq boutons pour choisir le nombre de tirages. Le
+ * tout en anglais codé en dur, dans une application traduite en douze langues.
+ *
+ * Le trader devait donc REMPLIR UN FORMULAIRE DE PROP FIRM pour obtenir une
+ * réponse sur SON compte. Et les valeurs par défaut venaient d'un challenge
+ * Apex 50k — pas de lui.
+ *
+ * ══ CE QU'ELLE DEMANDE MAINTENANT ══
+ *
+ * Cinq réglages, tous préremplis DEPUIS SES PROPRES DONNÉES, tous sur une
+ * seule ligne :
+ *
+ *   • le solde de son compte actif ;
+ *   • ce qu'il risque par trade — sa perte médiane réelle ;
+ *   • l'horizon, en jours ;
+ *   • l'objectif et la limite de perte, en % du solde.
+ *
+ * Et ce qu'elle NE demande plus, parce qu'elle le sait : combien de trades il
+ * prend par jour (mesuré sur son journal), et à quoi ressemblent ses gains et
+ * ses pertes (elle les rejoue tels quels, par tirage avec remise — c'est tout
+ * l'intérêt d'un Monte-Carlo sur un journal).
+ *
+ * Aucun préréglage. Aucun nom de prop firm. La simulation part de la situation
+ * du trader, pas d'un catalogue.
+ *
+ * ══ ET ELLE RÉPOND TOUTE SEULE ══
+ *
+ * La page se lançait vide, sur un « configure your parameters and run a
+ * simulation ». Elle tire maintenant dès l'ouverture, et retire à chaque
+ * changement de réglage : on déplace un curseur, la réponse suit.
+ */
+export default function MonteCarloPage({ trades }: Props) {
+  const { t } = useT();
+  const { activeAccount } = useAccounts();
+
+  const samples = useMemo(() => extractRSamples(trades), [trades]);
+  const stats = useMemo(() => computeStatistics(samples), [samples]);
+
+  /* ── LES DÉFAUTS VIENNENT DU TRADER ────────────────────────────────────
+     Pas d'un challenge Apex 50k. Le solde est celui de son compte actif ; le
+     risque par trade est sa perte moyenne réelle ; la cadence est celle qu'on
+     lit dans son journal. */
+  const defauts = useMemo(() => {
+    const solde = Math.max(1000, Math.round(activeAccount?.startingBalance || 10000));
+    const risque = Math.max(1, Math.round(stats.avgLossPnl || solde * 0.01));
+    // La cadence RÉELLE : nombre de trades ÷ nombre de journées tradées.
+    const jours = new Set(trades.map((tr) => tr.date)).size;
+    const parJour = jours > 0 ? Math.min(10, Math.max(1, Math.round(trades.length / jours))) : 3;
+    return { solde, risque, parJour };
+  }, [activeAccount?.startingBalance, stats.avgLossPnl, trades]);
+
+  const [solde, setSolde] = useState(defauts.solde);
+  const [risque, setRisque] = useState(defauts.risque);
+  const [horizon, setHorizon] = useState(30);
+  const [objectifPct, setObjectifPct] = useState(10);
+  const [limitePct, setLimitePct] = useState(10);
+
+  // Les défauts arrivent APRÈS le premier rendu (le compte actif se charge en
+  // parallèle) : on les adopte tant que le trader n'a rien touché lui-même.
+  const touche = useRef(false);
+  useEffect(() => {
+    if (touche.current) return;
+    setSolde(defauts.solde);
+    setRisque(defauts.risque);
+  }, [defauts.solde, defauts.risque]);
+
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<MonteCarloResult | null>(null);
+
+  const params: MonteCarloParams = useMemo(
+    () => ({
+      startingBalance: solde,
+      profitTarget: Math.round((solde * objectifPct) / 100),
+      maxDrawdown: Math.round((solde * limitePct) / 100),
+      // Les mécaniques de challenge que le trader n'a plus à saisir : elles ne
+      // décrivent pas SA situation, elles décrivent un contrat de prop firm.
+      maxDailyLoss: 0,
+      trailingDrawdown: false,
+      maxTradingDays: horizon,
+      maxTradesPerDay: defauts.parJour,
+      riskPerTrade: risque,
+      simulations: TIRAGES,
+    }),
+    [solde, objectifPct, limitePct, horizon, defauts.parJour, risque],
+  );
+
+  /* ── ELLE TIRE TOUTE SEULE ────────────────────────────────────────────
+     À l'ouverture, puis 250 ms après le dernier changement de réglage. Deux
+     mille tirages sur une centaine de trades, c'est une poignée de
+     millisecondes : rien ne justifie de faire attendre un clic. */
+  useEffect(() => {
+    if (samples.length < 5) return;
+    setRunning(true);
+    const id = setTimeout(() => {
+      setResult(runMonteCarlo(params, samples));
+      setRunning(false);
+    }, 250);
+    return () => clearTimeout(id);
+  }, [params, samples]);
+
+  const reinitialiser = useCallback(() => {
+    touche.current = false;
+    setSolde(defauts.solde);
+    setRisque(defauts.risque);
+    setHorizon(30);
+    setObjectifPct(10);
+    setLimitePct(10);
+  }, [defauts]);
+
+  const actions = useMemo(
+    () => (
+      <button
+        onClick={reinitialiser}
+        className="btn-ghost btn-sm shrink-0"
+        title={t("mc.resetHint")}
+      >
+        <RotateCcw className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">{t("mc.reset")}</span>
+      </button>
+    ),
+    [reinitialiser, t],
+  );
+  usePageActions(actions);
+
+  if (samples.length < 5) {
+    return (
+      <div className="mx-auto max-w-[1100px] p-4 md:p-5">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Shuffle className="mb-5 h-12 w-12 text-[var(--tv-highlight)] opacity-40" />
+          <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
+          <p className="max-w-sm text-sm text-slate-500">{t("mc.emptyBody")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const se = result ? monteCarloSE(result.passRate, result.runs.length) : 0;
+
   return (
-    <div className="flex items-center justify-between group">
-      <div className="flex items-center gap-1 min-w-0">
-        <span className="text-[11px] text-slate-400 truncate">{label}</span>
-        {computed && (
-          <span
-            className="w-1.5 h-1.5 rounded-full bg-cyan-500/60 shrink-0"
-            title="Auto-computed from your data"
+    <div className="mx-auto max-w-[1100px] space-y-3 p-4 md:p-5">
+      {/* ══ LES CINQ RÉGLAGES ═══════════════════════════════════════════ */}
+      <section className="glass animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
+        <div className="mc-params">
+          <Reglage
+            label={t("mc.balance")}
+            value={solde}
+            onChange={(v) => {
+              touche.current = true;
+              setSolde(v);
+            }}
+            min={1000}
+            max={500000}
+            step={1000}
+            format={(v) => formatMoney(v)}
           />
-        )}
-        {hint && <Info className="w-3 h-3 text-slate-600 shrink-0" />}
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          className="tv-figure w-[80px] h-7 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 text-[11px] text-white text-right focus:outline-none focus:border-cyan-500/40 transition"
-        />
-        {suffix && <span className="text-[10px] text-slate-500 w-3">{suffix}</span>}
-      </div>
+          <Reglage
+            label={t("mc.risk")}
+            value={risque}
+            onChange={(v) => {
+              touche.current = true;
+              setRisque(v);
+            }}
+            min={1}
+            max={Math.max(50, Math.round(solde * 0.1))}
+            step={Math.max(1, Math.round(solde * 0.001))}
+            format={(v) => formatMoney(v)}
+            hint={`${((risque / solde) * 100).toFixed(2)}%`}
+          />
+          <Reglage
+            label={t("mc.horizon")}
+            value={horizon}
+            onChange={setHorizon}
+            min={5}
+            max={120}
+            step={1}
+            format={(v) => `${v} ${t("mc.days")}`}
+          />
+          <Reglage
+            label={t("mc.target")}
+            value={objectifPct}
+            onChange={setObjectifPct}
+            min={1}
+            max={50}
+            step={1}
+            format={(v) => `+${v}%`}
+            hint={formatMoney(Math.round((solde * objectifPct) / 100))}
+          />
+          <Reglage
+            label={t("mc.limit")}
+            value={limitePct}
+            onChange={setLimitePct}
+            min={1}
+            max={50}
+            step={1}
+            format={(v) => `-${v}%`}
+            hint={formatMoney(Math.round((solde * limitePct) / 100))}
+          />
+        </div>
+
+        {/* CE QUE LA PAGE SAIT DÉJÀ — et ne demande donc pas. */}
+        <p className="tv-hint mt-3 border-t border-white/[0.05] pt-3">
+          {t("mc.derivedFrom")
+            .replace("{n}", String(stats.totalSamples))
+            .replace("{pace}", String(defauts.parJour))}
+        </p>
+      </section>
+
+      {!result ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+        </div>
+      ) : (
+        <div className={cn("space-y-3 transition-opacity", running && "opacity-50")}>
+          {/* ══ LE VERDICT ═══════════════════════════════════════════════ */}
+          <section className="glass animate-fade-in-up stagger-1 rounded-3xl px-4 py-4 sm:px-5">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+              <div className="min-w-0">
+                <div className="tv-label text-slate-500">{t("mc.verdictLabel")}</div>
+                <div
+                  className={cn(
+                    "tv-figure mt-1 text-4xl leading-none md:text-5xl",
+                    result.passRate >= 0.5 ? "rp-pos" : "rp-warn",
+                  )}
+                >
+                  {(result.passRate * 100).toFixed(0)}%
+                </div>
+                <p className="tv-prose mt-2 max-w-md text-slate-400">
+                  {t("mc.verdictBody")
+                    .replace("{target}", `+${objectifPct}%`)
+                    .replace("{limit}", `-${limitePct}%`)
+                    .replace("{days}", String(horizon))}
+                </p>
+              </div>
+              {/* `mc-facts` : sur téléphone, quatre faits « shrink-0 » à côté
+                  d'un chiffre de 48px demandaient 499px dans 319 disponibles.
+                  Ils passent en grille de deux, et ne reprennent leur rangée
+                  et leurs filets qu'à partir de `sm`. */}
+              <div className="mc-facts">
+                <Fait
+                  label={t("mc.failRate")}
+                  value={`${(result.failRate * 100).toFixed(0)}%`}
+                  tone="neg"
+                />
+                <Fait
+                  label={t("mc.timeoutRate")}
+                  value={`${(result.timeOutRate * 100).toFixed(0)}%`}
+                />
+                <Fait
+                  label={t("mc.medianDD")}
+                  value={formatMoney(result.medianMaxDD)}
+                  hint={`${((result.medianMaxDD / solde) * 100).toFixed(1)}%`}
+                />
+                <Fait
+                  label={t("mc.daysToPass")}
+                  value={result.avgDaysToPass > 0 ? result.avgDaysToPass.toFixed(0) : "—"}
+                  hint={t("mc.days")}
+                />
+              </div>
+            </div>
+
+            {/* Les trois issues, dans une barre — pas trois pourcentages
+                dispersés dans une grille de tuiles. */}
+            <div className="mt-4">
+              <div className="rp-mix" role="img" aria-label={t("mc.outcomes")}>
+                {result.passRate > 0 && (
+                  <span className="rp-fill-pos" style={{ width: `${result.passRate * 100}%` }} />
+                )}
+                {result.timeOutRate > 0 && (
+                  <span
+                    className="rp-fill-flat"
+                    style={{ width: `${result.timeOutRate * 100}%` }}
+                  />
+                )}
+                {result.failRate > 0 && (
+                  <span className="rp-fill-neg" style={{ width: `${result.failRate * 100}%` }} />
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <Legende cls="rp-fill-pos" label={t("mc.passed")} />
+                <Legende cls="rp-fill-flat" label={t("mc.timedOut")} />
+                <Legende cls="rp-fill-neg" label={t("mc.failed")} />
+                <span className="tv-hint ml-auto">
+                  {t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* ══ LA COURBE ════════════════════════════════════════════════ */}
+          <Faisceau result={result} horizon={horizon} />
+
+          {/* ══ LA DISTRIBUTION ══════════════════════════════════════════ */}
+          <Histogramme result={result} />
+        </div>
+      )}
     </div>
   );
 }
 
-function SectionHeader({ title, children }: { title: string; children?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between mb-2">
-      <h4 className="tv-label text-slate-500">{title}</h4>
-      {children}
-    </div>
-  );
-}
+/* ────────────────────────────────────────────────────────────────────────────
+   LE FAISCEAU DE TRAJECTOIRES
+   ──────────────────────────────────────────────────────────────────────────*/
 
-/* ─────── KPI CARD ─────── */
-function KpiCard({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color: "emerald" | "red" | "amber" | "cyan" | "white";
-}) {
-  const cls =
-    color === "emerald"
-      ? "text-emerald-400"
-      : color === "red"
-        ? "text-red-400"
-        : color === "amber"
-          ? "text-amber-400"
-          : color === "cyan"
-            ? "text-cyan-400"
-            : "text-white";
-  return (
-    <div className="glass rounded-xl p-3 text-center">
-      <div className="tv-label text-slate-500 mb-1">{label}</div>
-      <div className={cn("tv-figure text-base", cls)}>{value}</div>
-      {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
-    </div>
-  );
-}
-
-/* ─────── EQUITY CURVE CHART ─────── */
-function EquityCurves({
-  result,
-  challenge,
-}: {
-  result: MonteCarloResult;
-  challenge: PropChallenge | undefined;
-}) {
-  // Build chart data: aggregate the first 100 runs
-  const sampled = result.runs.slice(0, 100);
+/**
+ * Le graphe existait déjà, mais il n'avait AUCUN AXE DES ABSCISSES
+ * (`tick={false}`) : on voyait une forme monter sans jamais savoir sur combien
+ * de temps. Il porte maintenant les jours, et sa légende dit ce que chaque
+ * bande veut dire au lieu de nommer des percentiles.
+ */
+function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: number }) {
+  const { t } = useT();
+  const sampled = result.runs.slice(0, 200);
   const maxLen = Math.max(...sampled.map((r) => r.equity.length), 1);
 
-  const chartData = useMemo(() => {
-    // Compute percentile bands at each step
-    const steps = 80; // downsample for performance
-    const data: { step: number; p95: number; p75: number; p50: number; p25: number; p5: number }[] =
-      [];
+  const data = useMemo(() => {
+    /* UN PAS = UN JOUR ENTIER. Soixante pas répartis sur trente jours
+       donnaient des graduations à « J0 J2 J3 J5 J6 J8 J9 J11 » — des sauts
+       irréguliers, parce que deux pas voisins tombaient parfois sur le même
+       jour arrondi. */
+    const steps = Math.max(2, Math.min(60, horizon));
+    const out: {
+      jour: number;
+      p95: number;
+      p75: number;
+      p50: number;
+      p25: number;
+      p5: number;
+    }[] = [];
     for (let i = 0; i <= steps; i++) {
       const idx = Math.floor((i / steps) * (maxLen - 1));
       const vals = sampled
         .map((r) => r.equity[Math.min(idx, r.equity.length - 1)])
         .sort((a, b) => a - b);
-      data.push({
-        step: idx,
-        p95: vals[Math.floor(vals.length * 0.95)],
-        p75: vals[Math.floor(vals.length * 0.75)],
-        p50: vals[Math.floor(vals.length * 0.5)],
-        p25: vals[Math.floor(vals.length * 0.25)],
-        p5: vals[Math.floor(vals.length * 0.05)],
+      const at = (q: number) => vals[Math.min(vals.length - 1, Math.floor(vals.length * q))];
+      out.push({
+        jour: Math.round((i / steps) * horizon),
+        p95: at(0.95),
+        p75: at(0.75),
+        p50: at(0.5),
+        p25: at(0.25),
+        p5: at(0.05),
       });
     }
-    return data;
-  }, [sampled, maxLen]);
+    return out;
+  }, [sampled, maxLen, horizon]);
 
-  const targetVal = result.params.startingBalance + result.params.profitTarget;
-  const ddVal = result.params.startingBalance - result.params.maxDrawdown;
+  const cible = result.params.startingBalance + result.params.profitTarget;
+  const plancher = result.params.startingBalance - result.params.maxDrawdown;
 
   return (
-    <div className="glass rounded-2xl p-4">
-      <h4 className="tv-label text-slate-500 mb-3">
-        Equity Curves — {result.runs.length.toLocaleString()} simulations
-      </h4>
+    <section className="glass animate-fade-in-up stagger-2 rounded-3xl px-4 py-4 sm:px-5">
+      <TitreGraphe titre={t("mc.chartPaths")} sous={t("mc.chartPathsSub")} />
       <div className="h-64 md:h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 20, right: 10, bottom: 20, left: 0 }}>
+          <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
             <defs>
-              {/* La même masse dégradée que la courbe d'equity — même vert,
-                  même chute vers zéro — mais deux fois plus légère : ici elle
-                  porte une PLAGE de probabilité, pas une trajectoire. */}
               <linearGradient id="mcBand" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.14} />
                 <stop offset="55%" stopColor={CHART_GREEN} stopOpacity={0.05} />
@@ -194,49 +419,70 @@ function EquityCurves({
               </linearGradient>
             </defs>
             <CartesianGrid {...EQUITY_GRID} />
-            <XAxis dataKey="step" tick={false} axisLine={false} tickLine={false} />
-            <YAxis
+            <XAxis
+              dataKey="jour"
               tick={AXIS_TICK}
-              tickFormatter={(v) => formatMoney(v)}
               axisLine={false}
               tickLine={false}
-              width={55}
+              minTickGap={28}
+              tickFormatter={(v) => `${t("mc.dayShort")}${v}`}
+            />
+            <YAxis
+              tick={AXIS_TICK}
+              tickFormatter={(v) => formatMoney(v as number)}
+              axisLine={false}
+              tickLine={false}
+              width={58}
               domain={["dataMin - 500", "dataMax + 500"]}
             />
             <ReferenceLine
-              y={targetVal}
+              y={cible}
               stroke={CHART_GREEN}
               strokeWidth={1}
               strokeDasharray="6 4"
+              label={{
+                value: t("mc.target"),
+                position: "insideTopLeft",
+                fill: CHART_GREEN,
+                fontSize: 10,
+              }}
             />
-            <ReferenceLine y={ddVal} stroke={CHART_RED} strokeWidth={1} strokeDasharray="4 4" />
-
-            {/* P5-P95 band */}
+            <ReferenceLine
+              y={plancher}
+              stroke={CHART_RED}
+              strokeWidth={1}
+              strokeDasharray="4 4"
+              label={{
+                value: t("mc.limit"),
+                position: "insideBottomLeft",
+                fill: CHART_RED,
+                fontSize: 10,
+              }}
+            />
             <Area
               type={EQUITY_CURVE_TYPE}
               dataKey="p95"
               stroke="none"
               fill="url(#mcBand)"
               fillOpacity={1}
-            />
-
-            {/* P25-P75 band */}
-            <Area
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p25"
-              stroke="none"
-              fill="rgb(var(--tv-chart-green-rgb) / 0.05)"
-              fillOpacity={1}
+              isAnimationActive={false}
             />
             <Area
               type={EQUITY_CURVE_TYPE}
               dataKey="p75"
               stroke="none"
-              fill="rgb(var(--tv-chart-green-rgb) / 0.05)"
+              fill="rgb(var(--tv-chart-green-rgb) / 0.06)"
               fillOpacity={1}
+              isAnimationActive={false}
             />
-
-            {/* Median line */}
+            <Area
+              type={EQUITY_CURVE_TYPE}
+              dataKey="p25"
+              stroke="none"
+              fill="rgb(var(--tv-chart-green-rgb) / 0.06)"
+              fillOpacity={1}
+              isAnimationActive={false}
+            />
             {/* La médiane EST une courbe d'equity — projetée, mais une courbe
                 d'equity. Elle porte donc le trait de la référence et son vert,
                 qui ne suit pas le thème. */}
@@ -246,566 +492,263 @@ function EquityCurves({
               stroke={CHART_GREEN}
               {...EQUITY_LINE}
               dot={false}
+              isAnimationActive={false}
             />
-
             <Tooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const d = payload[0].payload;
-                return (
-                  <div
-                    className="rounded-xl border border-white/[0.08] px-3 py-2"
-                    style={{ background: "rgba(10,15,30,0.97)" }}
-                  >
-                    <p className="tv-label text-slate-500 mb-0.5">Equity Distribution</p>
-                    <div className="tv-figure space-y-0.5 text-[10px]">
-                      <p className="text-emerald-400">P95: {formatMoney(d.p95)}</p>
-                      <p className="text-cyan-300">P75: {formatMoney(d.p75)}</p>
-                      <p className="text-white font-bold">Median: {formatMoney(d.p50)}</p>
-                      <p className="text-cyan-300">P25: {formatMoney(d.p25)}</p>
-                      <p className="text-red-400">P5: {formatMoney(d.p5)}</p>
-                    </div>
-                  </div>
-                );
+              {...tooltipStyle}
+              labelFormatter={(v) => `${t("mc.dayShort")}${v}`}
+              formatter={(value: number | string, name: string) => {
+                const libelle: Record<string, string> = {
+                  p95: t("mc.bandBest"),
+                  p75: t("mc.bandGood"),
+                  p50: t("mc.bandMedian"),
+                  p25: t("mc.bandPoor"),
+                  p5: t("mc.bandWorst"),
+                };
+                return [formatMoney(Number(value)), libelle[name] ?? name];
               }}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-600">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-cyan-400" />
-          Median
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="h-0.5 w-4 rounded-full bg-[var(--tv-chart-green)]" />
+          <span className="tv-row-label">{t("mc.bandMedian")}</span>
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-0.5 w-3 bg-cyan-400/20" />
-          P25-P75
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-2 w-4 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.18)]"
+          />
+          <span className="tv-row-label">{t("mc.bandHalf")}</span>
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-0.5 w-3 bg-cyan-400/10" />
-          P5-P95
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-2 w-4 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.08)]"
+          />
+          <span className="tv-row-label">{t("mc.bandNine")}</span>
         </span>
       </div>
-    </div>
+    </section>
   );
 }
 
-/* ─────── MAIN PAGE ─────── */
-export default function MonteCarloPage({ trades }: Props) {
+/* ────────────────────────────────────────────────────────────────────────────
+   L'HISTOGRAMME DES ISSUES
+   ──────────────────────────────────────────────────────────────────────────*/
+
+/**
+ * Cinq barres de percentiles (P5, P25, P50, P75, P95) remplaçaient une
+ * distribution. Elles disaient cinq points d'une courbe qu'on ne voyait pas —
+ * et personne ne lit « P75 » comme un fait sur son compte.
+ *
+ * Voici la vraie distribution : les deux mille soldes finaux, rangés par
+ * tranches. Vert au-dessus du solde de départ, rouge en dessous. On lit d'un
+ * coup où le paquet se pose, et à quel point il traîne à gauche.
+ */
+function Histogramme({ result }: { result: MonteCarloResult }) {
   const { t } = useT();
+  const depart = result.params.startingBalance;
 
-  // Extract R-multiple samples from all trades
-  const samples = useMemo(() => extractRSamples(trades), [trades]);
-  const computedStats = useMemo(() => computeStatistics(samples), [samples]);
-
-  // Manual input mode
-  const [wrVal, setWrVal] = useState(0);
-  const [awVal, setAwVal] = useState(0);
-  const [alVal, setAlVal] = useState(0);
-  const [beVal, setBeVal] = useState(0);
-  const [useManual, setUseManual] = useState(trades.length === 0);
-
-  const fillFromJournal = () => {
-    if (computedStats.winRate > 0) setWrVal(Math.round(computedStats.winRate * 100));
-    if (computedStats.avgWinR > 0) setAwVal(Math.round(computedStats.avgWinR * 10) / 10);
-    if (computedStats.avgLossR > 0) setAlVal(Math.round(computedStats.avgLossR * 10) / 10);
-    if (samples.length > 0)
-      setBeVal(Math.round((samples.filter((s) => s.isBE).length / samples.length) * 100));
-  };
-
-  const manualParams: ManualTradeParams = useMemo(
-    () => ({
-      winRate: wrVal / 100,
-      avgWinR: awVal,
-      avgLossR: alVal,
-      breakEvenRate: beVal / 100,
-    }),
-    [wrVal, awVal, alVal, beVal],
-  );
-
-  const manualExpectancy = computeExpectancy(wrVal / 100, awVal, alVal);
-  const manualPF = computeProfitFactor(wrVal / 100, awVal, alVal);
-
-  // ── Challenge preset ──
-  const [firmId, setFirmId] = useState("apex");
-  const [challengeId, setChallengeId] = useState("apex-50k");
-  const firm = useMemo(() => findFirm(firmId), [firmId]);
-  const challenge = useMemo(() => findChallenge(challengeId), [challengeId]);
-
-  // Apply challenge preset as starting values
-  const applyPreset = useCallback((ch: PropChallenge) => {
-    setStartingBalance(ch.startingBalance);
-    setProfitTarget(ch.profitTarget);
-    setMaxDrawdown(ch.maxDrawdown);
-    setMaxDailyLoss(ch.maxDailyLoss);
-    setTrailingDD(ch.trailingDrawdown);
-    setMaxTradingDays(ch.maxTradingDays);
-    setMaxTradesPerDay(Math.min(ch.maxTradesPerDay, 5));
-    setResult(null);
-  }, []);
-
-  // ── Overridable params ──
-  const [startingBalance, setStartingBalance] = useState(50000);
-  const [profitTarget, setProfitTarget] = useState(3000);
-  const [maxDrawdown, setMaxDrawdown] = useState(2500);
-  const [maxDailyLoss, setMaxDailyLoss] = useState(0);
-  const [trailingDD, setTrailingDD] = useState(true);
-  const [maxTradingDays, setMaxTradingDays] = useState(30);
-  const [maxTradesPerDay, setMaxTradesPerDay] = useState(5);
-  const [riskPerTrade, setRiskPerTrade] = useState(() =>
-    Math.round(computedStats.avgLossPnl || 100),
-  );
-
-  // ── Simulation ──
-  const [simCount, setSimCount] = useState(2000);
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<MonteCarloResult | null>(null);
-
-  const selectFirm = (fId: string) => {
-    const f = findFirm(fId);
-    if (f && f.challenges.length > 0) {
-      setFirmId(fId);
-      setChallengeId(f.challenges[0].id);
-      applyPreset(f.challenges[0]);
+  const { bins, max } = useMemo(() => {
+    const vals = result.runs.map((r) => r.finalBalance);
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    const n = 28;
+    const largeur = (hi - lo) / n || 1;
+    const acc = Array.from({ length: n }, (_, i) => ({
+      centre: lo + largeur * (i + 0.5),
+      bas: lo + largeur * i,
+      count: 0,
+    }));
+    for (const v of vals) {
+      const i = Math.min(n - 1, Math.max(0, Math.floor((v - lo) / largeur)));
+      acc[i].count++;
     }
-  };
-
-  const selectChallenge = (cId: string) => {
-    setChallengeId(cId);
-    const ch = findChallenge(cId);
-    if (ch) applyPreset(ch);
-  };
-
-  const handleRun = useCallback(() => {
-    const simSamples =
-      useManual && wrVal > 0 && awVal > 0 && alVal > 0
-        ? generateSamples(manualParams, 500)
-        : samples;
-    if (simSamples.length < 5) return;
-    setRunning(true);
-    setTimeout(() => {
-      const params: MonteCarloParams = {
-        startingBalance,
-        profitTarget,
-        maxDrawdown,
-        maxDailyLoss,
-        trailingDrawdown: trailingDD,
-        maxTradingDays,
-        maxTradesPerDay,
-        riskPerTrade,
-        simulations: Math.min(simCount, 5000),
-      };
-      const output = runMonteCarlo(params, simSamples);
-      setResult(output);
-      setRunning(false);
-    }, 30);
-  }, [
-    useManual,
-    manualParams,
-    samples,
-    startingBalance,
-    profitTarget,
-    maxDrawdown,
-    maxDailyLoss,
-    trailingDD,
-    maxTradingDays,
-    maxTradesPerDay,
-    riskPerTrade,
-    simCount,
-    wrVal,
-    awVal,
-    alVal,
-  ]);
-
-  // Apply preset on first mount
-  useMemo(() => {
-    if (challenge) applyPreset(challenge);
-  }, []);
-
-  const se = result ? monteCarloSE(result.passRate, result.runs.length) : 0;
-
-  const headerActions = useMemo(
-    () => (
-      <button
-        onClick={handleRun}
-        disabled={running || trades.length < 5}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl tv-accent-fill text-sm font-bold transition disabled:opacity-50"
-      >
-        {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-        {running ? "Running..." : `Run ${simCount.toLocaleString()} simulations`}
-      </button>
-    ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [running, simCount, trades.length, handleRun],
-  );
-  usePageActions(headerActions);
-
-  if (trades.length === 0) {
-    return (
-      <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <BarChart3 className="w-12 h-12 text-cyan-400/30 mb-5" />
-          <h3 className="tv-title mb-1.5">Ton Monte Carlo commence avec tes données</h3>
-          <p className="text-sm text-slate-500 max-w-sm">
-            Ajoute au moins 5 trades dans ton journal pour lancer ta première simulation.
-          </p>
-        </div>
-      </div>
-    );
-  }
+    return { bins: acc, max: Math.max(...acc.map((b) => b.count), 1) };
+  }, [result]);
 
   return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
-        {/* LEFT: Configuration */}
-        <div className="space-y-3">
-          {/* Preset */}
-          <div className="glass rounded-2xl p-4">
-            <h4 className="tv-label text-slate-500 mb-2">Quick Preset</h4>
-            <select
-              value={firmId}
-              onChange={(e) => selectFirm(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-cyan-500/40 transition mb-2"
-            >
-              {[
-                { id: "apex", name: "Apex Trader Funding" },
-                { id: "topstep", name: "Topstep" },
-                { id: "custom", name: "Custom" },
-              ].map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
+    <section className="glass animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
+      <TitreGraphe titre={t("mc.chartDist")} sous={t("mc.chartDistSub")} />
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={bins} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid {...EQUITY_GRID} />
+            <XAxis
+              dataKey="centre"
+              tick={AXIS_TICK}
+              axisLine={false}
+              tickLine={false}
+              minTickGap={40}
+              tickFormatter={(v) => formatMoney(v as number)}
+            />
+            <YAxis
+              tick={AXIS_TICK}
+              axisLine={false}
+              tickLine={false}
+              width={34}
+              allowDecimals={false}
+            />
+            <ReferenceLine x={depart} stroke="var(--tv-border-strong)" strokeDasharray="3 3" />
+            <Tooltip
+              {...tooltipStyle}
+              labelFormatter={(v) => formatMoney(Number(v))}
+              formatter={(value: number | string) => [
+                `${value} / ${result.runs.length}`,
+                t("mc.paths"),
+              ]}
+            />
+            <Bar dataKey="count" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+              {bins.map((b, i) => (
+                <Cell
+                  key={i}
+                  fill={b.centre >= depart ? CHART_GREEN : CHART_RED}
+                  fillOpacity={0.6}
+                />
               ))}
-            </select>
-            <select
-              value={challengeId}
-              onChange={(e) => selectChallenge(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-[11px] font-medium text-slate-300 focus:outline-none focus:border-cyan-500/40 transition"
-            >
-              {firm?.challenges.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <p className="tv-hint mt-2 italic">
-              Selecting a preset fills the parameters below — you can override any value.
-            </p>
-          </div>
-
-          {/* Account */}
-          <div className="glass rounded-2xl p-4">
-            <SectionHeader title="Account" />
-            <div className="space-y-2">
-              <ParamRow
-                label="Starting Balance"
-                value={startingBalance}
-                onChange={setStartingBalance}
-              />
-            </div>
-          </div>
-
-          {/* Challenge Rules */}
-          <div className="glass rounded-2xl p-4">
-            <SectionHeader title="Challenge Rules" />
-            <div className="space-y-2">
-              <ParamRow label="Profit Target ($)" value={profitTarget} onChange={setProfitTarget} />
-              <ParamRow label="Max Drawdown ($)" value={maxDrawdown} onChange={setMaxDrawdown} />
-              <ParamRow
-                label="Daily Loss Limit ($)"
-                value={maxDailyLoss}
-                onChange={setMaxDailyLoss}
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">Trailing DD</span>
-                <button
-                  onClick={() => setTrailingDD(!trailingDD)}
-                  className={cn(
-                    "flex h-9 items-center rounded-lg border px-3 text-[11px] font-bold transition",
-                    trailingDD
-                      ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"
-                      : "bg-white/[0.04] text-slate-500 border-white/[0.08]",
-                  )}
-                >
-                  {trailingDD ? "Trailing" : "Static"}
-                </button>
-              </div>
-              <ParamRow
-                label="Max Trading Days"
-                value={maxTradingDays}
-                onChange={setMaxTradingDays}
-              />
-              <ParamRow
-                label="Max Trades / Day"
-                value={maxTradesPerDay}
-                onChange={setMaxTradesPerDay}
-              />
-            </div>
-          </div>
-
-          {/* Risk */}
-          <div className="glass rounded-2xl p-4">
-            <SectionHeader title="Risk Model" />
-            <div className="space-y-2">
-              <ParamRow
-                label="Risk per Trade ($)"
-                value={riskPerTrade}
-                onChange={setRiskPerTrade}
-              />
-              {startingBalance > 0 && (
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-500">Risk %</span>
-                  <span className="tv-figure text-slate-400">
-                    {((riskPerTrade / startingBalance) * 100).toFixed(1)}%
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Your Stats — switchable: journal data or manual */}
-          <div className="glass rounded-2xl p-4">
-            <SectionHeader title="Your Data">
-              <button
-                onClick={() => setUseManual(!useManual)}
-                className={cn(
-                  "flex h-8 items-center rounded-lg border px-2.5 text-[11px] font-bold transition",
-                  useManual
-                    ? "bg-amber-500/10 text-amber-300 border-amber-500/25"
-                    : "bg-cyan-500/10 text-cyan-300 border-cyan-500/25",
-                )}
-              >
-                {useManual ? "Manual" : "Journal"}
-              </button>
-            </SectionHeader>
-            {useManual ? (
-              <div className="space-y-1.5">
-                <ParamRow label="Win Rate" value={wrVal} onChange={setWrVal} suffix="%" />
-                <ParamRow label="Avg Win" value={awVal} onChange={setAwVal} suffix="R" />
-                <ParamRow label="Avg Loss" value={alVal} onChange={setAlVal} suffix="R" />
-                <ParamRow label="BE Rate" value={beVal} onChange={setBeVal} suffix="%" />
-                {wrVal === 0 && trades.length > 0 && (
-                  <button
-                    onClick={fillFromJournal}
-                    className="w-full mt-2 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-[10px] text-cyan-300 font-semibold hover:bg-cyan-500/15 transition"
-                  >
-                    Fill from my journal data
-                  </button>
-                )}
-                {wrVal > 0 && awVal > 0 && alVal > 0 && (
-                  <div className="pt-2 mt-2 border-t border-white/[0.05] space-y-1">
-                    <StatRow
-                      label="Expectancy"
-                      value={`${manualExpectancy >= 0 ? "+" : ""}${manualExpectancy.toFixed(2)}R`}
-                      computed
-                      accent={manualExpectancy >= 0 ? "text-emerald-400" : "text-red-400"}
-                    />
-                    <StatRow
-                      label="Profit Factor"
-                      value={manualPF >= 99 ? "99+" : manualPF.toFixed(2)}
-                      computed
-                    />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <StatRow label="Win Rate" value={formatPct(computedStats.winRate)} computed />
-                <StatRow
-                  label="Avg Win R"
-                  value={`+${computedStats.avgWinR.toFixed(2)}R`}
-                  computed
-                  accent="text-emerald-400"
-                />
-                <StatRow
-                  label="Avg Loss R"
-                  value={`-${computedStats.avgLossR.toFixed(2)}R`}
-                  computed
-                  accent="text-red-400"
-                />
-                <StatRow
-                  label="Expectancy"
-                  value={`${computedStats.expectancy >= 0 ? "+" : ""}${computedStats.expectancy.toFixed(2)}R`}
-                  computed
-                  accent={computedStats.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
-                />
-                <StatRow
-                  label="Profit Factor"
-                  value={
-                    computedStats.profitFactor >= 99 ? "99+" : computedStats.profitFactor.toFixed(2)
-                  }
-                  computed
-                />
-                <StatRow label="Samples" value={`${computedStats.totalSamples}`} computed />
-                {trades.length < 30 && (
-                  <p className="mt-2 text-[10px] text-amber-400/80">
-                    Small sample — results may vary significantly
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Simulations count */}
-          <div className="glass rounded-2xl p-4">
-            <SectionHeader title="Simulations" />
-            <div className="flex gap-1">
-              {SIM_OPTIONS.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setSimCount(n)}
-                  className={cn(
-                    "flex-1 h-8 rounded-lg text-[10px] font-bold transition",
-                    simCount === n
-                      ? "bg-cyan-500/15 text-cyan-300 border border-cyan-500/25"
-                      : "bg-white/[0.03] text-slate-500 border border-white/[0.06] hover:text-slate-300",
-                  )}
-                >
-                  {n >= 1000 ? `${n / 1000}k` : n}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: Results */}
-        <div className="space-y-4">
-          {result ? (
-            <>
-              {/* KPIs */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <KpiCard
-                  label="Pass Rate"
-                  value={`${(result.passRate * 100).toFixed(1)}%`}
-                  sub={`±${(se * 100).toFixed(1)}% SE`}
-                  color="emerald"
-                />
-                <KpiCard
-                  label="Fail Rate"
-                  value={`${(result.failRate * 100).toFixed(1)}%`}
-                  color="red"
-                />
-                <KpiCard
-                  label="Time Out"
-                  value={`${(result.timeOutRate * 100).toFixed(1)}%`}
-                  color="amber"
-                />
-                <KpiCard
-                  label="Avg P&L (Pass)"
-                  value={formatPnl(result.avgFinalBalancePassing - result.params.startingBalance)}
-                  color="emerald"
-                />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <KpiCard
-                  label="Avg Days to Pass"
-                  value={result.avgDaysToPass.toFixed(1)}
-                  color="cyan"
-                />
-                <KpiCard
-                  label="Avg Trades to Pass"
-                  value={result.avgTradesToPass.toFixed(0)}
-                  color="cyan"
-                />
-                <KpiCard
-                  label="Median Max DD"
-                  value={formatMoney(result.medianMaxDD)}
-                  color="red"
-                />
-                <KpiCard
-                  label="P95 Final Balance"
-                  value={formatMoney(result.finalBalanceDistribution.p95)}
-                  color="white"
-                />
-              </div>
-
-              {/* Confidence intervals */}
-              <div className="glass rounded-2xl p-4">
-                <h4 className="tv-label text-slate-500 mb-2">Final Balance Distribution</h4>
-                <div className="flex items-end gap-1 h-10">
-                  {(["p5", "p25", "p50", "p75", "p95"] as const).map((k) => {
-                    const v = result.finalBalanceDistribution[k];
-                    const maxV = result.finalBalanceDistribution.p95;
-                    const minV = result.params.startingBalance - result.params.maxDrawdown;
-                    const range = maxV - minV;
-                    const h = range > 0 ? ((v - minV) / range) * 100 : 50;
-                    return (
-                      <div key={k} className="flex-1 flex flex-col items-center gap-1">
-                        <span className="tv-figure text-[10px] text-slate-500">
-                          {formatMoney(v)}
-                        </span>
-                        <div
-                          className={cn(
-                            "w-full rounded-t",
-                            k === "p50" ? "bg-cyan-500/60" : "bg-white/[0.08]",
-                          )}
-                          style={{ height: `${Math.max(2, h)}%` }}
-                        />
-                        <span className="tv-label text-slate-600">{k.toUpperCase()}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Equity curves */}
-              <EquityCurves result={result} challenge={challenge} />
-
-              {/* Methodology note */}
-              <div className="glass rounded-2xl p-4 flex items-start gap-2.5">
-                <Info className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
-                <div className="text-[10px] text-slate-500 leading-relaxed">
-                  <p className="font-semibold text-slate-400 mb-1">Methodology</p>
-                  <p>
-                    Bootstrap resampling from your {computedStats.totalSamples} trades with
-                    replacement. Each simulation draws independently from your actual R-multiple
-                    distribution, preserving the correlation between win/loss direction and
-                    magnitude. This is a Monte Carlo estimate — results reflect historical patterns,
-                    not predictions.
-                  </p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Zap className="w-10 h-10 text-cyan-400/40 mb-4" />
-              <p className="text-sm text-slate-500">
-                Configure your parameters and run a simulation
-              </p>
-              {trades.length < 5 && (
-                <p className="text-[11px] text-amber-400/80 mt-2">Minimum 5 trades required</p>
-              )}
-            </div>
-          )}
-        </div>
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <Case
+          label={t("mc.p5")}
+          value={formatMoney(result.finalBalanceDistribution.p5)}
+          delta={result.finalBalanceDistribution.p5 - depart}
+        />
+        <Case
+          label={t("mc.p25")}
+          value={formatMoney(result.finalBalanceDistribution.p25)}
+          delta={result.finalBalanceDistribution.p25 - depart}
+        />
+        <Case
+          label={t("mc.p50")}
+          value={formatMoney(result.finalBalanceDistribution.p50)}
+          delta={result.finalBalanceDistribution.p50 - depart}
+        />
+        <Case
+          label={t("mc.p95")}
+          value={formatMoney(result.finalBalanceDistribution.p95)}
+          delta={result.finalBalanceDistribution.p95 - depart}
+        />
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LES PIÈCES
+   ──────────────────────────────────────────────────────────────────────────*/
+
+/**
+ * UN RÉGLAGE — un libellé, sa valeur lisible, et un curseur.
+ *
+ * L'ancienne page posait un `<input type="number">` de 80px : pour passer de
+ * 3 000 à 5 000, il fallait sélectionner le texte et retaper. Un curseur donne
+ * l'ordre de grandeur et le sens du réglage dans le même geste ; le champ
+ * reste là, sous le doigt, quand on veut une valeur exacte.
+ */
+function Reglage({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  format,
+  hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  format: (v: number) => string;
+  hint?: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="mb-1.5 flex items-baseline justify-between gap-2">
+        <span className="tv-label truncate text-slate-500">{label}</span>
+        {hint && <span className="tv-figure shrink-0 text-[10px] text-slate-600">{hint}</span>}
+      </div>
+      <div className="tv-figure mb-1.5 text-base leading-none text-white">{format(value)}</div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={Math.min(max, Math.max(min, value))}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={label}
+        className="w-full"
+      />
     </div>
   );
 }
 
-function StatRow({
+function TitreGraphe({ titre, sous }: { titre: string; sous: string }) {
+  return (
+    <div className="mb-3">
+      <h4 className="flex items-center gap-2">
+        <span className="tv-label shrink-0 text-slate-400">{titre}</span>
+        <span aria-hidden className="rp-rule h-px flex-1" />
+      </h4>
+      <p className="tv-row-label mt-1">{sous}</p>
+    </div>
+  );
+}
+
+function Fait({
   label,
   value,
-  computed,
-  accent,
+  hint,
+  tone,
 }: {
   label: string;
   value: string;
-  computed?: boolean;
-  accent?: string;
+  hint?: string;
+  tone?: "neg";
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-1">
-        {computed && (
-          <span
-            className="w-1.5 h-1.5 rounded-full bg-cyan-500/60 shrink-0"
-            title="Computed from your data"
-          />
+    <div className="min-w-0">
+      <div className="tv-label truncate text-slate-500">{label}</div>
+      <div
+        className={cn(
+          "tv-figure mt-1 truncate text-sm leading-none",
+          tone === "neg" ? "rp-neg" : "text-white",
         )}
-        <span className="text-[10px] text-slate-500">{label}</span>
+      >
+        {value}
       </div>
-      <span className={cn("tv-figure text-[10px]", accent || "text-white")}>{value}</span>
+      {hint && <div className="tv-row-label mt-1 truncate">{hint}</div>}
+    </div>
+  );
+}
+
+function Legende({ cls, label }: { cls: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", cls)} />
+      <span className="tv-row-label">{label}</span>
+    </span>
+  );
+}
+
+function Case({ label, value, delta }: { label: string; value: string; delta: number }) {
+  return (
+    <div className="rp-kpi">
+      <div className="tv-label truncate text-slate-500">{label}</div>
+      <div className="tv-figure mt-1 truncate text-sm text-white">{value}</div>
+      <div
+        className={cn("tv-figure mt-0.5 truncate text-[10px]", delta >= 0 ? "rp-pos" : "rp-neg")}
+      >
+        {formatPnl(delta)}
+      </div>
     </div>
   );
 }
