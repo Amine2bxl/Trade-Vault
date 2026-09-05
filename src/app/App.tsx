@@ -272,6 +272,13 @@ function AppContent() {
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   // Actions d'en-tête de la page courante, remontées dans la barre d'onglets.
   const [pageActions, setPageActions] = useState<React.ReactNode | null>(null);
+  /* Le résumé d'en-tête, posé par la page dans l'emplacement GAUCHE de la
+     barre — celui que les onglets occupent quand la section en a. */
+  const [pageLead, setPageLead] = useState<React.ReactNode | null>(null);
+  const setHeaderSlot = useCallback((slot: "actions" | "lead", node: React.ReactNode | null) => {
+    if (slot === "lead") setPageLead(node);
+    else setPageActions(node);
+  }, []);
   // Notification ouverte via tv:open-notification → popup centré (fond flouté).
   const [detailNotification, setDetailNotification] = useState<AppNotification | null>(null);
   useEffect(() => {
@@ -754,14 +761,16 @@ function AppContent() {
           )}
         >
           <div className="min-w-0 flex-1">
-            {hasSectionTabs && (
+            {hasSectionTabs ? (
               <SectionTabs section={currentSection!} page={page} setPage={setPage} />
+            ) : (
+              pageLead
             )}
           </div>
           {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
           <MobileActions page={page} setPage={setPage} />
         </div>
-        <PageActionsProvider setActions={setPageActions}>
+        <PageActionsProvider setActions={setHeaderSlot}>
           {accountsReady ? (
             <PageErrorBoundary resetKey={page}>
               {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de

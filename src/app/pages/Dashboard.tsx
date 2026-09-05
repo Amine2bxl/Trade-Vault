@@ -27,7 +27,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { PageContainer, Metric, Card, Button, StreakCard, density } from "@/shared/ui";
 import type { StreakPeriod } from "@/shared/ui";
-import { usePageActions } from "../contexts/PageActionsContext";
+import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 import CopilotBlock from "./dashboard/CopilotBlock";
 import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
@@ -276,7 +276,15 @@ export default function Dashboard({
 
   const headerActions = useMemo(
     () => (
-      <Button variant="accent" onClick={onAddTrade} className="relative hidden md:flex">
+      /* Le bouton PRINCIPAL du produit : vert plein, texte blanc — la même
+         pièce que « setups manqués » dans le Journal. Il portait la variante
+         `accent` (contour, texte teinté), qui est la grammaire d'une action
+         SECONDAIRE : saisir un trade est l'action que toute l'application
+         existe pour servir, elle ne peut pas se présenter comme un export CSV.
+         Le Journal garde ses actions en `subtle` — il a déjà son propre bouton
+         d'ajout dans sa liste, et deux verts pleins sur une même barre se
+         disputeraient l'attention. */
+      <Button variant="primary" onClick={onAddTrade} className="relative hidden md:flex">
         <Plus className="w-4 h-4" /> {t("common.addTrade")}
         {hasDraft && (
           <span className="tv-label flex items-center gap-1 ml-1 pl-2 border-l border-white/25">
@@ -289,6 +297,56 @@ export default function Dashboard({
     [onAddTrade, hasDraft, t],
   );
   usePageActions(headerActions);
+
+  /* ── LE RÉSUMÉ DU JOUR ──
+     La barre de tête du Tableau de bord n'a pas d'onglets : sa moitié gauche
+     était une bande vide au-dessus de la courbe. Elle porte maintenant la
+     seule chose qu'un trader cherche avant tout le reste en ouvrant son
+     journal — où en est LA JOURNÉE. Trois faits, une ligne, aucune phrase :
+     la date, le P&L du jour, le nombre de trades. Rien qui ne soit déjà une
+     donnée : ce n'est pas un message d'accueil. */
+  const jour = useMemo(() => {
+    const duJour = trades.filter((t) => t.date === today);
+    return { pnl: duJour.reduce((s, t) => s + t.pnl, 0), n: duJour.length };
+  }, [trades, today]);
+
+  const dateLongue = useMemo(
+    () =>
+      new Date().toLocaleDateString(undefined, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }),
+    [],
+  );
+
+  const lead = useMemo(
+    () => (
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="tv-label shrink-0 text-slate-500">{dateLongue}</span>
+        <span className="h-3.5 w-px shrink-0 bg-white/[0.12]" />
+        {jour.n === 0 ? (
+          <span className="tv-row-label truncate">{t("dashboard.noTradeToday")}</span>
+        ) : (
+          <>
+            <span
+              className={cn(
+                "tv-figure shrink-0 text-sm leading-none",
+                jour.pnl >= 0 ? "text-emerald-400" : "text-red-400",
+              )}
+            >
+              {formatPnl(jour.pnl)}
+            </span>
+            <span className="tv-row-label shrink-0">
+              {jour.n} {jour.n > 1 ? t("dashboard.tradesToday") : t("dashboard.tradeToday")}
+            </span>
+          </>
+        )}
+      </div>
+    ),
+    [dateLongue, jour.n, jour.pnl, t],
+  );
+  usePageLead(lead);
 
   return (
     <PageContainer>

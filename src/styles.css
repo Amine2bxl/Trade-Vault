@@ -2599,3 +2599,445 @@ a:focus-visible,
 .group:focus-visible > .rail-tip {
   opacity: 1;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA FEUILLE DE RAPPORT  (page Rapports)
+   ══════════════════════════════════════════════════════════════════════════
+
+   Le rapport mensuel n'est pas une carte de plus : c'est un DOCUMENT. Il en a
+   donc la grammaire — des sections séparées par un filet, une largeur de
+   lecture, des chiffres alignés — et il s'imprime (voir `@media print` en bas
+   de ce fichier), ce qui interdit deux facilités du web sombre :
+
+     • pas de texte posé SUR une teinte (la barre passe sous le texte, jamais
+       derrière : sur papier, un texte sur fond teinté perd son contraste) ;
+     • aucune couleur porteuse de sens qui vienne du thème. Le vert d'un gain
+       est `--tv-chart-green`, fixe sur tous les thèmes et sur le papier.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* LES TROIS COULEURS DE LA DONNÉE. Une seule déclaration pour l'écran ET le
+   papier — c'est ce qui permet à la feuille d'impression de ne retoucher que
+   ces trois règles au lieu de courir après des classes utilitaires. */
+.rp-pos {
+  color: var(--tv-chart-green);
+}
+.rp-neg {
+  color: var(--tv-chart-red);
+}
+.rp-warn {
+  color: #fbbf24;
+}
+.rp-fill-pos {
+  background: var(--tv-chart-green);
+}
+.rp-fill-neg {
+  background: var(--tv-chart-red);
+}
+.rp-fill-flat {
+  background: var(--tv-text-muted);
+}
+
+/* LA SECTION — l'unité du document. Le filet ne sépare que deux sections
+   voisines : la première n'en porte pas, sinon elle doublerait le bord de la
+   feuille. */
+.rp-section {
+  padding: 1.1rem 1rem;
+}
+@media (min-width: 768px) {
+  .rp-section {
+    padding: 1.35rem 1.5rem;
+  }
+}
+.rp-section + .rp-section {
+  border-top: 1px solid var(--tv-border);
+}
+
+.rp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem 1.25rem;
+}
+.rp-verdict {
+  margin-left: auto;
+  text-align: right;
+}
+
+.rp-rule {
+  background: linear-gradient(to right, var(--tv-border-strong), transparent);
+}
+
+.rp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rp-pill-pos {
+  color: var(--tv-chart-green);
+  border-color: rgb(var(--tv-chart-green-rgb) / 0.35);
+  background: rgb(var(--tv-chart-green-rgb) / 0.1);
+}
+.rp-pill-neg {
+  color: var(--tv-chart-red);
+  border-color: rgb(var(--tv-chart-red-rgb) / 0.35);
+  background: rgb(var(--tv-chart-red-rgb) / 0.1);
+}
+
+.rp-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+/* QUATRE COLONNES SEULEMENT À PARTIR DE 1024px, et pas de 768.
+   Sur une tablette, le rail prend déjà 230px : quatre cases dans les 600px
+   qui restent font 140px chacune, et « Sharpe 1.32 · Sortino 1.87 » y est
+   coupé. La bascule suit la largeur RÉELLE de la colonne de contenu, pas
+   celle de l'écran. */
+@media (min-width: 1024px) {
+  .rp-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.rp-kpi {
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.75rem;
+  background: var(--tv-plate-2);
+}
+
+/* LA BARRE SEGMENTÉE. Un liseré d'écart entre les segments, pas une bordure :
+   deux couleurs pleines qui se touchent se lisent comme une seule masse. */
+.rp-mix {
+  display: flex;
+  gap: 2px;
+  height: 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tv-plate-3);
+}
+.rp-mix > span {
+  display: block;
+  height: 100%;
+}
+
+.rp-bartrack {
+  height: 0.35rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tv-plate-3);
+}
+.rp-bartrack > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+.rp-barrow {
+  min-width: 0;
+}
+
+.rp-weekgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+.rp-weekcell {
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.6rem;
+}
+
+.rp-momgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 0.55rem;
+}
+.rp-momcell {
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.75rem;
+}
+
+/* LE DÉBRIEF — un filet vertical, pas un encadré teinté. La boîte cyan qui
+   l'entourait en faisait une publicité pour l'IA ; le filet en fait une
+   citation, ce qu'elle est. */
+.rp-debrief {
+  padding-left: 0.9rem;
+  border-left: 2px solid rgb(var(--tv-accent-rgb) / 0.45);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--tv-text-secondary);
+}
+
+/* LE SÉLECTEUR DE PÉRIODE — 32px de haut, la cible tactile minimale. */
+.rp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.6rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+.rp-chip:hover {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.rp-chip-active {
+  background: var(--tv-plate-3);
+  border-color: var(--tv-border-accent);
+  color: var(--tv-text-primary);
+}
+
+/* Les pièces qui n'existent QUE sur le papier : l'en-tête et le pied de la
+   feuille. À l'écran, la page porte déjà son titre et sa navigation. */
+.rp-print-only {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   L'IMPRESSION  —  « Enregistrer au format PDF »
+   ══════════════════════════════════════════════════════════════════════════
+
+   Le rapport mensuel s'exporte en PDF sans aucune bibliothèque : le bouton
+   appelle `window.print()`, et c'est cette feuille de style qui transforme
+   l'application en document A4. Le PDF obtenu contient du VRAI TEXTE (il se
+   sélectionne, se cherche, se lit à l'écran d'un lecteur) — une capture
+   d'image aurait pesé dix fois plus pour un résultat flou.
+
+   TROIS RÈGLES SUFFISENT À SORTIR LA FEUILLE DE SA COQUE.
+
+   1. « Tout ce qui n'est pas sur le chemin de la feuille disparaît. »
+      La règle générique ci-dessous se lit : pour tout élément qui CONTIENT la
+      feuille, masquer ceux de ses enfants qui ne la contiennent pas et ne
+      sont pas elle. Appliquée à chaque niveau, elle élague récursivement le
+      rail, la barre de tête, la navigation mobile, les FAB et les portails —
+      sans que ce fichier ait à connaître un seul de leurs noms de classe.
+
+   2. « Les ancêtres cessent d'être des fenêtres. »
+      La coque de l'app est haute d'un écran et défile à l'intérieur
+      (`h-dvh` + `overflow-hidden`). Sur papier, une fenêtre de défilement
+      découpe le document à la première page. Les ancêtres redeviennent donc
+      de simples blocs sans hauteur, sans débordement et sans décor.
+
+   3. « Le papier est blanc. »
+      L'interface est sombre ; un aplat sombre sur une page A4 est illisible
+      et impubliable. La feuille repasse en encre noire sur fond blanc, et
+      seules les couleurs PORTEUSES DE SENS survivent — le vert du gain, le
+      rouge de la perte — avec `print-color-adjust: exact` pour que le
+      navigateur ne les efface pas au nom de l'économie d'encre.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm;
+  }
+
+  /* 1 — l'élagage récursif */
+  :has(.tv-print-sheet) > *:not(.tv-print-sheet):not(:has(.tv-print-sheet)) {
+    display: none !important;
+  }
+
+  /* 2 — les ancêtres redeviennent des blocs */
+  *:has(.tv-print-sheet) {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* 3 — le papier */
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  .tv-print-sheet {
+    /* Les jetons de couleur repassent en encre : tout ce qui les lit —
+       jusqu'aux graduations des graphes recharts, qui reçoivent
+       `fill: var(--tv-text-muted)` — suit sans une règle de plus. */
+    --tv-bg: #ffffff;
+    --tv-text-primary: #0f172a;
+    --tv-text-secondary: #475569;
+    --tv-text-muted: #475569;
+    --tv-border: rgba(15, 23, 42, 0.15);
+    --tv-border-strong: rgba(15, 23, 42, 0.28);
+
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    color: #0f172a !important;
+  }
+
+  .tv-print-sheet,
+  .tv-print-sheet * {
+    color: #0f172a !important;
+    border-color: rgba(15, 23, 42, 0.16) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Aucune animation ne doit être surprise à mi-course par l'impression.
+     `transform` n'est remis à zéro QUE sur le masque de tracé de la courbe :
+     dans un SVG, `transform` porte la mise en page des groupes recharts, et
+     l'annuler partout démonterait le graphe. */
+  .tv-print-sheet [class*="animate-"],
+  .tv-print-sheet .card-premium {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .tv-print-sheet .eq-draw {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Le gris des libellés secondaires — sinon tout le document est en noir
+     plein et la hiérarchie de lecture disparaît. */
+  .tv-print-sheet .tv-label,
+  .tv-print-sheet .tv-row-label,
+  .tv-print-sheet .tv-hint,
+  .tv-print-sheet .text-slate-500,
+  .tv-print-sheet .text-slate-600,
+  .tv-print-sheet .text-slate-700 {
+    color: #64748b !important;
+  }
+
+  /* LES COULEURS QUI RESTENT — celles qui disent quelque chose. Assombries
+     par rapport à l'écran : le vert et le rouge du thème sombre sont trop
+     clairs pour tenir sur du blanc. */
+  .tv-print-sheet .rp-pos {
+    color: #047857 !important;
+  }
+  .tv-print-sheet .rp-neg {
+    color: #b91c1c !important;
+  }
+  .tv-print-sheet .rp-warn {
+    color: #b45309 !important;
+  }
+  .tv-print-sheet .rp-fill-pos {
+    background: #059669 !important;
+  }
+  .tv-print-sheet .rp-fill-neg {
+    background: #dc2626 !important;
+  }
+  .tv-print-sheet .rp-fill-flat {
+    background: #94a3b8 !important;
+  }
+  .tv-print-sheet .rp-mix,
+  .tv-print-sheet .rp-bartrack {
+    background: #e2e8f0 !important;
+  }
+  .tv-print-sheet .rp-pill-pos {
+    color: #047857 !important;
+    background: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+  }
+  .tv-print-sheet .rp-pill-neg {
+    color: #b91c1c !important;
+    background: #fef2f2 !important;
+    border-color: #fecaca !important;
+  }
+  .tv-print-sheet .rp-rule {
+    background: rgba(15, 23, 42, 0.16) !important;
+  }
+  .tv-print-sheet .rp-kpi,
+  .tv-print-sheet .rp-momcell,
+  .tv-print-sheet .rp-weekcell {
+    background: #fff !important;
+  }
+  .tv-print-sheet .rp-debrief {
+    border-left-color: #94a3b8 !important;
+  }
+  .tv-print-sheet .recharts-cartesian-grid line {
+    stroke: rgba(15, 23, 42, 0.12) !important;
+  }
+
+  /* L'en-tête et le pied de la feuille n'existent que sur le papier — et le
+     sourcil « rapport mensuel » disparaît, puisque l'en-tête le porte déjà. */
+  .rp-print-only {
+    display: flex !important;
+  }
+  .rp-eyebrow {
+    display: none !important;
+  }
+  .rp-paper-head {
+    align-items: baseline;
+    gap: 0.6rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
+    border-bottom: 1.5px solid #0f172a !important;
+    font-size: 9pt;
+    color: #475569 !important;
+  }
+  .rp-paper-brand {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #0f172a !important;
+  }
+  .rp-paper-date {
+    margin-left: auto;
+  }
+  .rp-paper-foot {
+    justify-content: center;
+    padding-top: 0.5rem;
+    margin-top: 0.4rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.16) !important;
+    font-size: 8pt;
+    color: #64748b !important;
+  }
+
+  /* Une section ne se coupe pas en deux entre deux pages tant qu'elle tient
+     sur une. Le titre reste avec ce qu'il annonce. */
+  .tv-print-sheet .rp-section {
+    padding: 0.7rem 0 !important;
+    border-top-color: rgba(15, 23, 42, 0.14) !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .tv-print-sheet h2,
+  .tv-print-sheet h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
