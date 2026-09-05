@@ -142,6 +142,7 @@ const fr: Dict = {
   "common.exportCsv": "Exporter en CSV",
   "common.deleteAll": "Tout supprimer",
   "common.addTrade": "Ajouter un trade",
+  "common.today": "Aujourd'hui",
   "common.trades": "trades",
   "common.risk": "Risque",
   "app.confirmDeleteTrade": "Supprimer ce trade ? Action irréversible.",

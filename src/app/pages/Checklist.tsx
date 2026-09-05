@@ -57,7 +57,8 @@ import {
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
-import { Button } from "@/shared/ui";
+import { Button, TimeField } from "@/shared/ui";
+import { intlLocale } from "../i18n/locale";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -1473,11 +1474,14 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                 <div className="tv-label text-slate-500">{t("chk.cfgSession")}</div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                   <label>{t("chk.cfgStart")}</label>
-                  <input
-                    type="time"
-                    className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500/40"
+                  {/* Plus `<input type="time">` : le minuteur natif est blanc
+                      et hors du thème. Voir `TimeField`. */}
+                  <TimeField
                     value={config.startTime}
-                    onChange={(e) => e.target.value && patch({ startTime: e.target.value })}
+                    onChange={(v) => v && patch({ startTime: v })}
+                    locale={intlLocale(lang)}
+                    aria-label={t("chk.cfgStart")}
+                    className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />
                   <label>{t("chk.cfgTz")}</label>
                   <select

@@ -177,6 +177,7 @@ const en = {
   "app.confirmDeleteTrade": "Delete this trade? This cannot be undone.",
   "app.confirmDeleteAllTrades": "Delete ALL trades? This cannot be undone.",
   "app.saveTradeFailed": "Could not save trade. Please try again.",
+  "common.today": "Today",
   "common.trades": "trades",
   "common.risk": "Risk",
   "common.side": "Side",

@@ -35,7 +35,18 @@ import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import Lightbox from "./Lightbox";
-import { Modal, FIELD_BASE, Textarea, Button, Chip, RemovableChip, CHIP_ROW } from "@/shared/ui";
+import {
+  Modal,
+  FIELD_BASE,
+  Textarea,
+  Button,
+  Chip,
+  RemovableChip,
+  CHIP_ROW,
+  DateField,
+  TimeField,
+} from "@/shared/ui";
+import { intlLocale } from "../i18n/locale";
 import { tradeDraftKey, nsKey, readJSON, removeKey, type TradeDraft } from "../utils/persistence";
 import {
   REFLECTION_REASONS,
@@ -109,7 +120,7 @@ const REASON_LABELS: Record<ReflectionReason, string> = {
 export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) {
   const { user } = useAuth();
   const userId = user?.id || "";
-  const { t } = useT();
+  const { t, lang } = useT();
 
   const [userConfluences, setUserConfluences] = useState<string[]>([]);
   const [newConfluence, setNewConfluence] = useState("");
@@ -628,10 +639,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
             <div>
               <label className={labelClass}>{t("trade.date")}</label>
-              <input
-                type="date"
+              {/* Plus `<input type="date">` : voir `DateField`. Le sélecteur
+                  natif ouvrait un calendrier BLANC, hors document, insensible
+                  au thème — la page d'un autre site au milieu de celle-ci. */}
+              <DateField
                 value={form.date}
-                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                onChange={(iso) => setForm((f) => ({ ...f, date: iso }))}
+                locale={intlLocale(lang)}
+                todayLabel={t("common.today")}
+                aria-label={t("trade.date")}
                 className={inputClass}
               />
             </div>
@@ -812,19 +828,21 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>{t("trade.entryTime")}</label>
-              <input
-                type="time"
+              <TimeField
                 value={form.entryTime}
-                onChange={(e) => setForm((f) => ({ ...f, entryTime: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, entryTime: v }))}
+                locale={intlLocale(lang)}
+                aria-label={t("trade.entryTime")}
                 className={inputClass}
               />
             </div>
             <div>
               <label className={labelClass}>{t("trade.exitTime")}</label>
-              <input
-                type="time"
+              <TimeField
                 value={form.exitTime}
-                onChange={(e) => setForm((f) => ({ ...f, exitTime: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, exitTime: v }))}
+                locale={intlLocale(lang)}
+                aria-label={t("trade.exitTime")}
                 className={inputClass}
               />
             </div>

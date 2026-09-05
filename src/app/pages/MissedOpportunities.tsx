@@ -37,7 +37,17 @@ import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useRealtimeTable } from "../hooks/useRealtimeTable";
 import { usePreviewMode } from "../components/PremiumGate";
 import { previewMissed } from "../utils/previewTrades";
-import { Card, PageContainer, Button, EmptyState, Modal, Textarea, FIELD_BASE } from "@/shared/ui";
+import {
+  Card,
+  PageContainer,
+  Button,
+  EmptyState,
+  Modal,
+  Textarea,
+  FIELD_BASE,
+  DateField,
+} from "@/shared/ui";
+import { intlLocale } from "../i18n/locale";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { nsKey, readJSON, removeKey } from "../utils/persistence";
 import { usePageActions } from "../contexts/PageActionsContext";
@@ -852,8 +862,8 @@ function FieldArea({
   );
 }
 
-/** Date en BULLES (présélections) + date précise via un picker natif — pas de
- *  case à remplir : un tap suffit pour le cas le plus fréquent. */
+/** Date en BULLES (présélections) + date précise via le sélecteur DU PRODUIT —
+ *  pas de case à remplir : un tap suffit pour le cas le plus fréquent. */
 function DateBubbles({
   label,
   value,
@@ -863,7 +873,7 @@ function DateBubbles({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const iso = (offset: number) => {
     const d = new Date();
     d.setDate(d.getDate() - offset);
@@ -895,14 +905,14 @@ function DateBubbles({
             {p.label}
           </button>
         ))}
-        <input
-          type="date"
+        {/* Plus `<input type="date">` : le sélecteur natif ouvre un calendrier
+            blanc, hors document, insensible au thème. Voir `DateField`. */}
+        <DateField
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={cn(
-            FIELD_BASE,
-            "h-9 px-2.5 text-xs sm:text-sm w-auto min-w-[140px] flex-1 sm:flex-none",
-          )}
+          onChange={onChange}
+          locale={intlLocale(lang)}
+          todayLabel={t("common.today")}
+          className="h-9 w-auto min-w-[150px] flex-1 px-2.5 text-xs sm:flex-none sm:text-sm"
         />
       </div>
     </label>

@@ -3090,3 +3090,125 @@ a:focus-visible,
     border-left: 0;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LES SÉLECTEURS DE DATE ET D'HEURE
+   ══════════════════════════════════════════════════════════════════════════
+
+   `<input type="date">` et `<input type="time">` ouvrent le widget NATIF du
+   navigateur : sur Chrome, un calendrier et un minuteur BLANCS, avec la
+   typographie et les couleurs du système, posés au milieu d'une application
+   noire. Aucune règle CSS ne les teinte — ils vivent hors du document. Le
+   trader ouvre une date et reçoit la page d'un autre site.
+
+   Ces classes habillent des remplaçants faits de DOM ordinaire
+   (`DateField`, `TimeField`) : ils héritent des jetons du thème, suivent
+   l'accent, et se ferment au clic dehors comme à Échap.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.tv-pop {
+  border-radius: 1rem;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  box-shadow: var(--tv-elev-3);
+}
+
+.tv-pop-nav {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  color: var(--tv-text-secondary);
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+.tv-pop-nav:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+
+/* La case d'un jour. 2rem de côté : trente-cinq cases dans un panneau de
+   17rem, et une cible qui reste cliquable au doigt. */
+.tv-pop-day {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-secondary);
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+.tv-pop-day:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.07);
+  color: var(--tv-text-primary);
+}
+.tv-pop-day:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.tv-pop-day-on {
+  background: var(--tv-accent);
+  color: #fff;
+}
+.tv-pop-day-on:hover {
+  background: var(--tv-accent);
+  color: #fff;
+}
+/* Aujourd'hui : un point sous le chiffre, pas un cadre. Un cadre entrerait en
+   concurrence avec la sélection, qui est la seule chose qu'on cherche. */
+.tv-pop-day-today {
+  position: relative;
+  color: var(--tv-text-primary);
+}
+.tv-pop-day-today::after {
+  content: "";
+  position: absolute;
+  bottom: 0.25rem;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 999px;
+  background: var(--tv-highlight);
+}
+
+/* Les colonnes du sélecteur d'heure. */
+.tv-pop-col {
+  max-height: 11rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  border-radius: 0.6rem;
+  background: rgb(0 0 0 / 0.2);
+  padding: 0.2rem;
+}
+.tv-pop-cell {
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0;
+  border-radius: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-secondary);
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+.tv-pop-cell:hover {
+  background: rgb(255 255 255 / 0.07);
+  color: var(--tv-text-primary);
+}
+.tv-pop-cell-on {
+  background: var(--tv-accent);
+  color: #fff;
+}
+.tv-pop-cell-on:hover {
+  background: var(--tv-accent);
+  color: #fff;
+}

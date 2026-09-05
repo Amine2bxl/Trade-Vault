@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import type { ChkItem } from "./checklistDefaults";
-import { Button } from "@/shared/ui";
+import { Button, TimeField } from "@/shared/ui";
+import { intlLocale } from "../i18n/locale";
 
 /* Adaptive setup for the pre-market checklist. A short, visual questionnaire
    whose answers BUILD the checklist — every option carries the exact checks it
@@ -542,14 +543,15 @@ export default function ChecklistWizard({
               })}
               <label className="flex items-center gap-3 rounded-2xl p-3.5 border bg-white/[0.04] border-white/[0.08]">
                 <span className="text-sm text-slate-300">{tr("Heure perso", "Custom time")}</span>
-                <input
-                  type="time"
-                  value={time.startTime}
-                  onChange={(e) =>
-                    e.target.value && setTime((t) => ({ ...t, startTime: e.target.value }))
-                  }
-                  className="ml-auto bg-white/[0.06] border border-white/[0.1] rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-cyan-500/40"
-                />
+                <div className="ml-auto">
+                  <TimeField
+                    value={time.startTime}
+                    onChange={(v) => v && setTime((t) => ({ ...t, startTime: v }))}
+                    locale={intlLocale(lang)}
+                    aria-label={tr("Heure perso", "Custom time")}
+                    className="h-9 w-[9.5rem] px-2.5 text-sm"
+                  />
+                </div>
               </label>
             </div>
             <Button onClick={buildAndApply}>

@@ -75,3 +75,8 @@ export type { StreakCardProps } from "./StreakCard";
 export { StreakCalendar } from "./StreakCalendar";
 export type { StreakPeriod } from "./StreakCalendar";
 export { BrandWord } from "./Brand";
+export { DateField } from "./DateField";
+export type { DateFieldProps } from "./DateField";
+export { TimeField } from "./TimeField";
+export type { TimeFieldProps } from "./TimeField";
+export { usePopPlacement } from "./usePopPlacement";
