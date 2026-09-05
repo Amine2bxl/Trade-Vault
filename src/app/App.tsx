@@ -642,6 +642,8 @@ function AppContent() {
     setModalOpen(false);
     setEditingTrade(null);
   }, []);
+  // Stable — évite un nouveau nœud à chaque rendu (boucle `usePageActions`).
+  const handleOpenMissed = useCallback(() => setPage("missed"), []);
 
   // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
   // seeds three example trades so Dashboard/Analytics light up instantly.
@@ -836,7 +838,7 @@ function AppContent() {
                         onDelete={handleDelete}
                         onDeleteAll={handleDeleteAll}
                         onAdd={handleAdd}
-                        onOpenMissed={() => setPage("missed")}
+                        onOpenMissed={handleOpenMissed}
                       />
                     )}
                     {page === "checklist" && (
