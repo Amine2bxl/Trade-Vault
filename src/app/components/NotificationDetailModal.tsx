@@ -109,11 +109,8 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
     <Modal open onClose={onClose} wrapperClassName="z-[90]" className="md:max-w-md">
       {/* En-tête Jarvis — la notification est signée, comme chaque message. */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
-        <div className="relative shrink-0">
-          <span className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md" />
-          <div className="relative grid h-10 w-10 place-items-center rounded-xl tv-accent-fill">
-            <Bot className="w-5 h-5" />
-          </div>
+        <div className="tv-accent-fill grid h-10 w-10 shrink-0 place-items-center rounded-xl">
+          <Bot className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

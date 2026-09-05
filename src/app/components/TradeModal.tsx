@@ -500,49 +500,42 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         closeOnBackdrop={!dirty}
         className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
       >
-        {/* Dynamic accent: green when the entry is a gain, red when a loss */}
+        {/* Le liseré du haut dit le SIGNE de la saisie en cours : vert si elle
+            est gagnante, rouge si elle est perdante. L'information est juste,
+            son exécution ne l'était pas — c'était un dégradé qui s'éteignait
+            aux deux bouts, une décoration d'ancienne identité. Un trait plein
+            de deux pixels dit la même chose sans effet. */}
         <div
           className={cn(
             "pointer-events-none absolute inset-x-0 top-0 h-[2px] transition-colors duration-300",
             form.direction === "be"
               ? "bg-slate-500/40"
               : calculatedPnl > 0
-                ? "bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent"
+                ? "bg-[var(--tv-chart-green)]"
                 : calculatedPnl < 0
-                  ? "bg-gradient-to-r from-transparent via-red-400/70 to-transparent"
-                  : "bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent",
+                  ? "bg-[var(--tv-chart-red)]"
+                  : "bg-[var(--tv-border-strong)]",
           )}
         />
-        {/* Header premium — même matière que le widget compte/Jarvis */}
-        <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.07] to-transparent overflow-hidden">
-          <div className="relative flex items-center gap-2.5 min-w-0">
-            <span className="relative shrink-0">
-              <span
-                className={cn(
-                  "absolute -inset-1 rounded-xl blur-md transition-colors",
-                  form.direction === "be"
-                    ? "bg-slate-500/30"
-                    : calculatedPnl > 0
-                      ? "bg-emerald-500/30"
-                      : calculatedPnl < 0
-                        ? "bg-red-500/30"
-                        : "bg-cyan-500/30",
-                )}
-              />
-              <span
-                className={cn(
-                  "relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br transition-colors",
-                  form.direction === "be"
-                    ? "from-slate-400 to-slate-600"
-                    : calculatedPnl > 0
-                      ? "from-emerald-500 to-teal-500"
-                      : calculatedPnl < 0
-                        ? "from-red-500 to-orange-500"
-                        : "from-cyan-500 to-teal-600",
-                )}
-              >
-                <CandlestickChart className="w-4.5 h-4.5 text-white" />
-              </span>
+        <div className="relative flex items-center justify-between border-b border-white/[0.06] px-4 py-3.5 sm:px-6">
+          <div className="relative flex min-w-0 items-center gap-2.5">
+            {/* La pastille portait un HALO FLOUTÉ (`blur-md`) et un dégradé
+                bicolore — les deux derniers effets de ce genre dans un
+                formulaire du produit. Elle garde sa couleur, qui est une
+                information, et perd les deux, qui n'en sont pas. */}
+            <span
+              className={cn(
+                "grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition-colors",
+                form.direction === "be"
+                  ? "border-slate-500/25 bg-slate-500/15 text-slate-300"
+                  : calculatedPnl > 0
+                    ? "border-emerald-400/25 bg-emerald-400/15 text-emerald-400"
+                    : calculatedPnl < 0
+                      ? "border-red-400/25 bg-red-400/15 text-red-400"
+                      : "border-[var(--tv-border-strong)] bg-white/[0.05] text-slate-300",
+              )}
+            >
+              <CandlestickChart className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
               <h2 className="tv-title leading-tight">
@@ -1140,7 +1133,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <button
                 onClick={() => setShowAllMistakes(!showAllMistakes)}
                 aria-label={showAllMistakes ? t("common.showLess") : t("common.showMore")}
-                className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 px-2 py-1.5"
+                className="flex h-8 min-w-[32px] items-center justify-center gap-1 px-2 text-xs text-slate-500 hover:text-slate-300"
               >
                 {showAllMistakes ? (
                   <ChevronUp className="w-3 h-3" />

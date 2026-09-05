@@ -146,7 +146,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
       <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden shrink-0">
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 md:gap-3.5 min-w-0">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl border border-amber-500/20 bg-amber-500/15 flex items-center justify-center shrink-0">
               <Target className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
             </div>
             <div className="min-w-0">

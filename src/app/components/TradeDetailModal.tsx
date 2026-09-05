@@ -430,11 +430,15 @@ export default function TradeDetailModal({
                     <div
                       className={cn(
                         "h-full rounded-full transition duration-250",
+                        /* Un aplat, pas un dégradé sur deux nuances de la
+                           même couleur : à deux pixels de haut, la rampe ne se
+                           voit pas — elle ne fait qu'ajouter une exception au
+                           reste des jauges du produit. */
                         trade.confidence >= 75
-                          ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                          ? "bg-emerald-400/80"
                           : trade.confidence >= 50
-                            ? "bg-gradient-to-r from-amber-500 to-amber-400"
-                            : "bg-gradient-to-r from-red-500 to-red-400",
+                            ? "bg-amber-400/80"
+                            : "bg-red-400/80",
                       )}
                       style={{ width: `${trade.confidence}%` }}
                     />

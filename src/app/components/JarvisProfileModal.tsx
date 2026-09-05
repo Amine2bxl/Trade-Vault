@@ -85,11 +85,10 @@ export default function JarvisProfileModal({
       <div className="relative px-6 pt-6 pb-5">
         {/* Header */}
         <div className="flex items-start gap-3 mb-5">
-          <div className="relative shrink-0">
-            <div className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md" />
-            <div className="relative w-11 h-11 rounded-2xl tv-accent-fill flex items-center justify-center">
-              <Sparkles className="w-5 h-5" />
-            </div>
+          {/* Le halo flouté derrière la pastille a sauté : la surface d'action
+              se voit très bien sans qu'on l'éclaire par-derrière. */}
+          <div className="tv-accent-fill flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl">
+            <Sparkles className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <h2 id="jarvis-profile-title" className="tv-title leading-tight">

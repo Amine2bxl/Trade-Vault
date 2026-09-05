@@ -1177,13 +1177,34 @@ input[type="number"] {
   }
 }
 
+/* LE CURSEUR — la zone tactile n'est pas la piste.
+ *
+ * L'élément faisait 6px de haut : la hauteur du TRAIT. Sur téléphone, attraper
+ * une poignée dans une bande de six pixels relève de la chance — mesuré, c'était
+ * la plus petite cible de tout le formulaire de trade.
+ *
+ * La boîte fait maintenant 28px et devient transparente ; c'est un
+ * pseudo-élément qui peint la piste de 6px, centrée dedans. Le doigt a une
+ * zone, l'œil garde le même trait fin. Les deux moteurs ont chacun leur
+ * pseudo-élément, d'où la duplication — elle n'est pas décorative.
+ */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
+  height: 32px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
-  background: #1e293b;
-  outline: none;
+  background: var(--tv-plate-3);
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--tv-plate-3);
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1192,7 +1213,22 @@ input[type="range"]::-webkit-slider-thumb {
   height: 18px;
   border-radius: 50%;
   background: var(--tv-accent);
+  /* (6 − 18) / 2 : la poignée se recentre sur la piste, que le navigateur
+     aligne par défaut sur son bord haut. */
+  margin-top: -6px;
   cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tv-accent);
+  cursor: pointer;
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
 }
 
 /* Les « orbes » d'ambiance (gros ronds colorés floutés à 80px, posés derrière
