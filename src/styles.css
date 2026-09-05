@@ -1672,7 +1672,7 @@ a:focus-visible,
      quart, presque noir aux deux tiers. Un dégradé qui descend lentement sur
      toute la hauteur donne une colonne verte uniforme — exactement ce qu'on
      ne veut pas. Ici la couleur est un éclairage, pas un aplat. */
-background:
+  background:
     /* La colonne verte ne doit PAS devenir l'identité : on l'assourdit au
        sommet et à la base pour ne garder qu'une lueur discrète, et la page
        noire reprend le dessus. Le rail s'INTÈGRE au site au lieu de flotter
@@ -1687,26 +1687,16 @@ background:
     /* … et la lumière tombe aussi DE BIAIS. Cette seconde couche assombrit le
        tiers droit du rail : la capsule « tourne » vers la fenêtre au lieu de
        finir sur un bord franc. */
-    linear-gradient(
-      90deg,
-      rgb(0 0 0 / 0.18) 0%,
-      rgb(0 0 0 / 0) 60%,
-      rgb(0 0 0 / 0.34) 100%
-    ),
-    linear-gradient(
-      180deg,
-      var(--tv-rail-top) 0%,
-      var(--tv-rail-mid) 40%,
-      var(--tv-rail-bot) 100%
-    );
+    linear-gradient(90deg, rgb(0 0 0 / 0.18) 0%, rgb(0 0 0 / 0) 60%, rgb(0 0 0 / 0.34) 100%),
+    linear-gradient(180deg, var(--tv-rail-top) 0%, var(--tv-rail-mid) 40%, var(--tv-rail-bot) 100%);
   /* Un liseré interne complet (l'épaisseur de la capsule) + un reflet plus
      marqué sur l'arête haute, là où la lumière frappe. Adouci pour rester un
      outil, pas un néon. */
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.06),
     inset 0 1px 0 rgb(255 255 255 / 0.08),
-    /* L'arête qui FAIT FACE à la fenêtre s'éclaire comme celle du haut. */
-    inset -1px 0 0 rgb(255 255 255 / 0.08),
+    /* L'arête qui FAIT FACE à la fenêtre s'éclaire comme celle du haut. */ inset -1px 0 0
+      rgb(255 255 255 / 0.08),
     0 18px 50px -24px rgb(0 0 0 / 0.8);
   /* La largeur est la SEULE chose qui s'anime au pli/dépli. */
   transition: width var(--tv-dur-4) var(--tv-ease);

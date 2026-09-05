@@ -645,7 +645,8 @@ const fr: Dict = {
   // Dashboard — bloc Copilote (Score d'Edge, règle du jour, objectif)
   "copilot.title": "Copilote du jour",
   "copilot.intro": "Ton score de discipline, la règle à tenir aujourd'hui, ton objectif du mois.",
-  "copilot.explain": "Mesure ta discipline (plan respecté, risque, régularité) sur tes 10 derniers jours tradés — jamais ton P&L.",
+  "copilot.explain":
+    "Mesure ta discipline (plan respecté, risque, régularité) sur tes 10 derniers jours tradés — jamais ton P&L.",
   "copilot.edgeLabel": "Score d'Edge",
   "copilot.trendTitle": "Ta trajectoire de discipline sur les dernières sessions",
   "copilot.scoreBuilding": "Score en construction — logge plus de trades",
