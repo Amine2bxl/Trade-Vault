@@ -77,10 +77,20 @@ export default function Analytics({ trades }: AnalyticsProps) {
   const { activeId } = useAccounts();
   const locale = LOCALE_MAP[lang] || "en-US";
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("all");
+  /* LE JOUR DE LA SEMAINE — la deuxième moitié de la question.
+     La page ne savait filtrer qu'une DURÉE : « les trente derniers jours ».
+     Or la question qu'un trader se pose sur ses statistiques est presque
+     toujours croisée — « mes lundis sur trente jours », « mes vendredis sur
+     l'année » —, et c'est exactement ce qu'il faut pour décider d'arrêter de
+     trader un jour donné. Le filtre s'applique EN AMONT de tous les calculs de
+     la page : chaque chiffre, chaque graphe répond alors à la question posée,
+     et pas seulement l'un d'entre eux. */
+  const [dayFilter, setDayFilter] = useState<string>("all");
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const [startingBalance, setStartingBalance] = useState(0);
 
-  const cutoffTrades = useMemo(() => {
+  /** Premier axe : la DURÉE. */
+  const dureeTrades = useMemo(() => {
     if (analyticsPeriod === "all") return trades;
     const cutoff = new Date();
     if (analyticsPeriod === "7d") cutoff.setDate(cutoff.getDate() - 7);
@@ -89,6 +99,35 @@ export default function Analytics({ trades }: AnalyticsProps) {
     else if (analyticsPeriod === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
     return trades.filter((t) => new Date(t.date) >= cutoff);
   }, [trades, analyticsPeriod]);
+
+  /* Second axe : le JOUR. Le croisement porte le nom `cutoffTrades` — celui
+     que toute la page consomme déjà —, donc chaque chiffre et chaque graphe
+     répond à la question posée, et pas seulement l'un d'entre eux.
+     `getDay()` rend 0 pour dimanche, comme les libellés : une convention. */
+  const cutoffTrades = useMemo(
+    () =>
+      dayFilter === "all"
+        ? dureeTrades
+        : dureeTrades.filter((tr) => String(new Date(tr.date).getDay()) === dayFilter),
+    [dureeTrades, dayFilter],
+  );
+
+  /** Combien de trades chaque jour porte DANS LA PÉRIODE — le compteur des
+   *  pastilles, et ce qui permet de griser un jour sans données. */
+  const periodDayCount = useMemo(() => {
+    const acc: Record<number, number> = {};
+    for (const tr of dureeTrades) {
+      const d = new Date(tr.date).getDay();
+      acc[d] = (acc[d] ?? 0) + 1;
+    }
+    return acc;
+  }, [dureeTrades]);
+
+  /** Les noms de jours dans la langue de l'app — jamais une liste écrite ici. */
+  const jours = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
+    return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2023, 0, 1 + i)));
+  }, [locale]);
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
@@ -327,22 +366,74 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
   return (
     <PageContainer>
-      {/* Period filter */}
-      <div className="flex items-center gap-1.5 mb-4">
-        {(["all", "7d", "30d", "90d", "1y"] as AnalyticsPeriod[]).map((p) => (
+      {/* ── LES DEUX FILTRES : LA DURÉE, ET LE JOUR ──
+          La durée était seule. « Mes lundis sur trente jours » n'était pas une
+          question qu'on pouvait poser à cette page ; c'est pourtant celle qui
+          décide si on arrête de trader un jour. Le jour s'ajoute donc en
+          second axe, et il s'applique en amont de tous les calculs. */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="section-tabs">
+          {(["all", "7d", "30d", "90d", "1y"] as AnalyticsPeriod[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => setAnalyticsPeriod(p)}
+              className={cn(
+                "tv-label section-tab px-3 md:text-xs",
+                analyticsPeriod === p ? "section-tab-active" : "section-tab-idle",
+              )}
+            >
+              {p === "all" ? t("common.all") : t(`common.${p}`)}
+            </button>
+          ))}
+        </div>
+
+        <span aria-hidden className="hidden h-4 w-px bg-white/[0.1] sm:block" />
+
+        {/* Pas de marge negative ici : elle fait deborder la rangee de 4px
+            de son conteneur (mesure). Le voile de defilement de
+            `tv-scroll-x` se suffit a lui-meme. */}
+        <div className="tv-scroll-x min-w-0 flex-1 rounded-xl">
+          <div className="flex w-max items-center gap-1 py-0.5">
+            <span className="tv-label shrink-0 pr-1 text-slate-500">{t("journal.filterDay")}</span>
+            <button
+              onClick={() => setDayFilter("all")}
+              aria-pressed={dayFilter === "all"}
+              className={cn("rp-chip", dayFilter === "all" && "rp-chip-active")}
+            >
+              {t("common.all")}
+            </button>
+            {/* Lundi à vendredi : les marchés que ce produit journalise ne
+                s'échangent pas le week-end, et deux pastilles toujours vides
+                ne sont pas un filtre. */}
+            {[1, 2, 3, 4, 5].map((d) => {
+              const n = periodDayCount[d] ?? 0;
+              return (
+                <button
+                  key={d}
+                  onClick={() => setDayFilter(String(d))}
+                  aria-pressed={dayFilter === String(d)}
+                  disabled={n === 0 && dayFilter !== String(d)}
+                  className={cn(
+                    "rp-chip disabled:opacity-35",
+                    dayFilter === String(d) && "rp-chip-active",
+                  )}
+                >
+                  <span className="capitalize">{jours[d]}</span>
+                  <span className="tv-figure text-[10px] text-slate-600">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {dayFilter !== "all" && (
           <button
-            key={p}
-            onClick={() => setAnalyticsPeriod(p)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition",
-              analyticsPeriod === p
-                ? "bg-cyan-500/15 text-cyan-400"
-                : "text-slate-500 hover:text-slate-300",
-            )}
+            onClick={() => setDayFilter("all")}
+            className="inline-flex h-8 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
           >
-            {p === "all" ? t("common.all") : t(`common.${p}`)}
+            {t("common.reset")}
           </button>
-        ))}
+        )}
       </div>
 
       <div className="space-y-4 md:space-y-6">
