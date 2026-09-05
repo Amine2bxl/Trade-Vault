@@ -43,7 +43,7 @@ export default function MonthCelebration({
       /* `pointer-events-none` : la célébration ne doit jamais intercepter un
          clic. Le trader vient de cocher une case, il peut vouloir en cocher
          une autre pendant que ça joue. */
-      className="pointer-events-none fixed inset-0 z-[90] grid place-items-center"
+      className="pointer-events-none fixed inset-0 z-[var(--tv-z-modal)] grid place-items-center"
     >
       <div className="tv-fete glass-strong flex flex-col items-center gap-3 rounded-3xl px-8 py-7 shadow-[var(--tv-elev-3)]">
         <svg viewBox="0 0 64 64" className="h-16 w-16" aria-hidden="true">

@@ -31,7 +31,7 @@
   width: 2.5px;
   height: 28%;
   border-radius: 2px;
-  background: linear-gradient(180deg, #67e8f9, #2dd4bf);
+  background: linear-gradient(180deg, var(--tv-highlight), var(--tv-accent));
   opacity: 0.9;
 }
 @media (prefers-reduced-motion: no-preference) {

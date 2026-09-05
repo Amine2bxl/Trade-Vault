@@ -95,7 +95,7 @@ describe("purgeLocalSessionData", () => {
     const { local, session } = installStorage();
     local.data.set("tv:jarvis:conv:u1:index", "[…]");
     local.data.set("tv.u1.trade.draft", "{…}");
-    local.data.set("tv-themes", "{…}");
+    local.data.set("tv-themes-v2", "{…}");
     local.data.set("sb-xyz-auth-token", "jwt");
     session.data.set("tv:trades:u1:acc-1", "[…]");
     session.data.set("tv:jarvis:memory", "{…}");
@@ -107,7 +107,7 @@ describe("purgeLocalSessionData", () => {
     expect(session.data.has("tv:trades:u1:acc-1")).toBe(false);
     expect(session.data.has("tv:jarvis:memory")).toBe(false);
     // …sans emporter le thème personnalisé ni le jeton.
-    expect(local.data.has("tv-themes")).toBe(true);
+    expect(local.data.has("tv-themes-v2")).toBe(true);
     expect(local.data.has("sb-xyz-auth-token")).toBe(true);
   });
 

@@ -19,6 +19,7 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 import { Button } from "@/shared/ui";
+import { todayLocalDate } from "@/shared/calendar-date";
 import { cn } from "../utils/cn";
 
 /** « Toutes », « non lues », ou une catégorie. */
@@ -93,7 +94,7 @@ function groupIndex(date: Date): number {
 function useFirstLoginToday(): boolean {
   return useMemo(() => {
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayLocalDate();
       const last = localStorage.getItem("tv.lastInboxVisit");
       if (last !== today) {
         localStorage.setItem("tv.lastInboxVisit", today);

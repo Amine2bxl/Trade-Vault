@@ -153,7 +153,7 @@ export default function ThemeStudioModal({
   };
 
   return (
-    <Modal open onClose={annuler} className="md:max-w-lg" wrapperClassName="z-[80]">
+    <Modal open onClose={annuler} className="md:max-w-lg" wrapperClassName="z-[var(--tv-z-modal)]">
       <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-2.5">
         <span className="w-8 h-8 rounded-xl bg-[var(--tv-accent)]/15 flex items-center justify-center">
           <Palette className="w-4 h-4 text-[var(--tv-accent)]" />

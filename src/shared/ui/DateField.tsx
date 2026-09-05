@@ -188,7 +188,7 @@ export function DateField({
           aria-label={aria["aria-label"]}
           id={id}
           className={cn(
-            "tv-pop absolute z-50 w-[max(100%,17rem)] p-3",
+            "tv-pop absolute z-[var(--tv-z-nav)] w-[max(100%,17rem)] p-3",
             pose.align === "end" ? "right-0" : "left-0",
             pose.side === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5",
           )}

@@ -137,7 +137,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
       className={cn(
         // Le rayon vit dans `.rail` (token `--tv-shell-radius`), partagé
         // avec la fenêtre de contenu : une seule valeur pour les deux coques.
-        "rail relative z-30 hidden shrink-0 flex-col md:flex",
+        "rail relative z-[var(--tv-z-rail)] hidden shrink-0 flex-col md:flex",
         // Une capsule qui FLOTTE : elle ne touche aucun bord. La hauteur se
         // calcule sur le viewport moins ses propres marges, pour que le fond de
         // la page passe au-dessus ET en dessous d'elle.
@@ -307,7 +307,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         <Modal
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          wrapperClassName="z-[80] md:items-center md:justify-center"
+          wrapperClassName="z-[var(--tv-z-modal)] md:items-center md:justify-center"
           className="md:max-w-xs"
         >
           <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3">

@@ -453,7 +453,7 @@ export default function Journal({
       <Modal
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        wrapperClassName="z-[80] md:hidden"
+        wrapperClassName="z-[var(--tv-z-modal)] md:hidden"
         className="md:max-w-sm"
       >
         <div className="flex items-center justify-between px-5 pb-2 pt-4">

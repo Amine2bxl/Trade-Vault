@@ -1,9 +1,16 @@
 /* Modale d'authentification (login/signup) affichée par-dessus la landing.
- * Layout split-screen : marque + confiance à gauche, formulaire à droite. */
+ * Layout split-screen : marque + confiance à gauche, formulaire à droite.
+ *
+ * TRADUITE. Ce composant était intégralement en français, sans passer par le
+ * dictionnaire de la landing — alors que celle-ci s'ouvre en ANGLAIS pour tout
+ * navigateur non francophone. Un visiteur anglophone traversait donc une page
+ * de vente anglaise et tombait sur un formulaire français au moment exact de la
+ * conversion : le seul écran où l'on demande quelque chose. */
 import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon } from "./Icon";
+import { useLandingT } from "./i18n";
 
 export function AuthModal({
   onClose,
@@ -14,6 +21,7 @@ export function AuthModal({
   initialMode?: "login" | "signup";
   plan?: string;
 }) {
+  const { t } = useLandingT();
   const { login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [name, setName] = useState("");
@@ -79,12 +87,12 @@ export function AuthModal({
     setError("");
     setInfo("");
     if (!email) {
-      setError("Entre ton e-mail pour recevoir le lien de réinitialisation.");
+      setError(t("auth.err.needEmail"));
       return;
     }
     const err = await requestPasswordReset(email);
     if (err) setError(err);
-    else setInfo("Lien de réinitialisation envoyé. Vérifie ta boîte mail.");
+    else setInfo(t("auth.info.resetSent"));
   };
 
   const field =
@@ -97,13 +105,13 @@ export function AuthModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-[var(--tv-z-top)] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md overflow-y-auto"
       onMouseDown={(e) => e.currentTarget === e.target && onClose()}
     >
-      <div className="modal-in relative my-auto w-full max-w-[880px] overflow-hidden rounded-2xl border border-white/[.09] bg-[var(--tv-plate-1)] shadow-[0_40px_110px_rgba(0,0,0,.7)]">
+      <div className="modal-in relative my-auto w-full max-w-[880px] overflow-hidden rounded-2xl border border-white/[.09] bg-[#0a1220] shadow-[0_40px_110px_rgba(0,0,0,.7)]">
         <button
           onClick={onClose}
-          aria-label="Fermer"
+          aria-label={t("auth.close")}
           className="absolute right-3.5 top-3.5 z-10 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-white/[.06] hover:text-white transition"
         >
           <Icon n="close" cls="h-4 w-4" />
@@ -112,6 +120,8 @@ export function AuthModal({
         <div className="grid md:grid-cols-2">
           {/* ── Colonne gauche : marque + confiance (masquée sur mobile) ── */}
           <div className="relative hidden md:flex flex-col justify-between p-8 overflow-hidden bg-[linear-gradient(160deg,rgba(14,58,82,.4),rgba(7,14,24,.95)_70%)]">
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-cyan-500/[.08] blur-3xl" />
+
             <div className="relative">
               <div className="flex items-center gap-2.5">
                 <img
@@ -127,22 +137,16 @@ export function AuthModal({
               </div>
 
               <h2 className="mt-8 font-display text-2xl font-bold leading-tight tracking-[-0.02em] text-white">
-                {mode === "login" ? "Ravi de te revoir." : "Commence à comprendre ton trading."}
+                {mode === "login" ? t("auth.brandTitle.login") : t("auth.brandTitle.signup")}
               </h2>
-              <p className="mt-3 text-sm leading-6 text-slate-400">
-                Ton coach IA analyse tes trades, détecte tes erreurs et t'aide à devenir le trader
-                discipliné que tu veux être.
-              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-400">{t("auth.brandSub")}</p>
 
               {/* Deux promesses DISTINCTES. L'absence de carte et l'annulation
                * vivent dans le sous-titre du formulaire, à droite — là où la
                * décision se prend ; les répéter ici ne rassurait pas deux fois,
                * ça diluait les deux arguments que cette colonne porte seule. */}
               <div className="mt-7 space-y-2.5">
-                {[
-                  "Analyse de tes trades dès le premier jour",
-                  "Tes données restent exportables à tout moment",
-                ].map((line) => (
+                {[t("auth.promise1"), t("auth.promise2")].map((line) => (
                   <p
                     key={line}
                     className="flex items-start gap-2 text-[13px] leading-5 text-slate-300"
@@ -175,7 +179,7 @@ export function AuthModal({
                   ))}
                 </span>
                 <span className="text-xs font-semibold text-slate-300">
-                  Avis vérifiés sur <span className="text-white font-bold">Trustpilot</span>
+                  {t("auth.trustpilot")} <span className="text-white font-bold">Trustpilot</span>
                 </span>
               </a>
             </div>
@@ -198,12 +202,10 @@ export function AuthModal({
               </div>
             )}
             <h2 className="mt-3 font-display text-[1.4rem] font-bold tracking-[-0.02em] text-white">
-              {mode === "login" ? "Se connecter" : "Créer ton compte"}
+              {mode === "login" ? t("auth.title.login") : t("auth.title.signup")}
             </h2>
             <p className="mt-1 text-sm text-slate-400">
-              {mode === "login"
-                ? "Reprends où tu t'es arrêté."
-                : "Gratuit pour toujours. Passe Premium quand tu le décides."}
+              {mode === "login" ? t("auth.sub.login") : t("auth.sub.signup")}
             </p>
 
             {/* SSO Google */}
@@ -231,13 +233,15 @@ export function AuthModal({
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Continuer avec Google
+                {t("auth.google")}
               </button>
             </div>
 
             <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-white/[.07]" />
-              <span className="tv-label text-slate-600">ou par e-mail</span>
+              <span className="text-[11px] uppercase tracking-wider text-slate-600">
+                {t("auth.orEmail")}
+              </span>
               <div className="h-px flex-1 bg-white/[.07]" />
             </div>
 
@@ -256,40 +260,42 @@ export function AuthModal({
               {mode === "signup" && (
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                    Nom d'utilisateur
+                    {t("auth.name")}
                   </label>
                   <input
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     autoComplete="name"
-                    placeholder="Alex Martin"
+                    placeholder={t("auth.namePlaceholder")}
                     className={field}
                   />
                 </div>
               )}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400">E-mail</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                  {t("auth.email")}
+                </label>
                 <input
                   required
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  placeholder="nom@exemple.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   className={field}
                 />
               </div>
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-400">Mot de passe</label>
+                  <label className="text-xs font-medium text-slate-400">{t("auth.password")}</label>
                   {mode === "login" && (
                     <button
                       type="button"
                       onClick={forgot}
                       className="text-[11px] text-slate-500 hover:text-cyan-300 transition"
                     >
-                      Oublié ?
+                      {t("auth.forgot")}
                     </button>
                   )}
                 </div>
@@ -301,13 +307,13 @@ export function AuthModal({
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete={mode === "signup" ? "new-password" : "current-password"}
                     minLength={6}
-                    placeholder="6+ caractères"
+                    placeholder={t("auth.passwordPlaceholder")}
                     className={`${field} pr-10`}
                   />
                   <button
                     type="button"
                     onClick={() => setShow((s) => !s)}
-                    aria-label={show ? "Masquer" : "Afficher"}
+                    aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
                     className="absolute right-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-md text-slate-500 hover:text-slate-300 transition"
                   >
                     <Icon n="eye" cls="h-4 w-4" />
@@ -318,29 +324,33 @@ export function AuthModal({
                 disabled={loading}
                 className="btn-primary w-full h-11! mt-1 disabled:opacity-60 disabled:cursor-wait"
               >
-                {loading ? "Un instant…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
+                {loading
+                  ? t("auth.submitting")
+                  : mode === "login"
+                    ? t("auth.submit.login")
+                    : t("auth.submit.signup")}
                 {!loading && <Icon n="arrow" cls="h-4 w-4" />}
               </button>
             </form>
 
             <p className="mt-5 text-center text-[13px] text-slate-500">
-              {mode === "login" ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
+              {mode === "login" ? t("auth.switch.toSignup") : t("auth.switch.toLogin")}{" "}
               <button
                 onClick={toggleMode}
                 className="font-semibold text-cyan-300 hover:text-cyan-200 transition"
               >
-                {mode === "login" ? "Créer un compte" : "Se connecter"}
+                {mode === "login" ? t("auth.switchCta.signup") : t("auth.switchCta.login")}
               </button>
             </p>
 
             <p className="mt-4 text-center text-[10.5px] leading-4 text-slate-600">
-              En continuant, tu acceptes nos{" "}
+              {t("auth.legal.prefix")}{" "}
               <a href="/terms" className="underline hover:text-slate-400">
-                Conditions
+                {t("auth.legal.terms")}
               </a>{" "}
-              et notre{" "}
+              {t("auth.legal.and")}{" "}
               <a href="/privacy" className="underline hover:text-slate-400">
-                Politique de confidentialité
+                {t("auth.legal.privacy")}
               </a>
               .
             </p>

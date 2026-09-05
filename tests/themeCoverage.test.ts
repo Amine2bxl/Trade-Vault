@@ -88,11 +88,6 @@ describe("l'inventaire de ce qui reste en dur", () => {
         "la couleur par défaut d'un COMPTE, écrite en base : une donnée, pas un style",
       "components/UpgradeSuccessOverlay.tsx":
         "la palette des confettis : décorative et multicolore, la réduire à l'accent l'appauvrirait",
-      "pages/dashboard/CopilotBlock.tsx":
-        "une échelle SÉMANTIQUE (rouge → ambre → cyan → vert selon le score) : ici le cyan veut dire « moyen », pas « marque »",
-      "pages/Dashboard.tsx": "même échelle sémantique, sur le ratio risque/rendement",
-      "components/ErrorScreen.tsx":
-        "l'écran d'erreur double `shared/error-page.ts`, rendu par le serveur sans CSS de l'application : les deux doivent rester identiques",
     };
 
     const found: string[] = [];

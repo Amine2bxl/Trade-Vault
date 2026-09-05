@@ -136,7 +136,7 @@ export function TimeField({
           role="dialog"
           aria-label={aria["aria-label"]}
           className={cn(
-            "tv-pop absolute z-50 w-[13rem] p-2",
+            "tv-pop absolute z-[var(--tv-z-nav)] w-[13rem] p-2",
             pose.align === "end" ? "right-0" : "left-0",
             pose.side === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5",
           )}

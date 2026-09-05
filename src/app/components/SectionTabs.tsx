@@ -131,7 +131,7 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
       <Modal
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        wrapperClassName="z-[80] md:hidden"
+        wrapperClassName="z-[var(--tv-z-modal)] md:hidden"
         className="md:max-w-sm"
       >
         <div className="px-5 pb-2 pt-4">

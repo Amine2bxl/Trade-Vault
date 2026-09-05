@@ -69,8 +69,8 @@ export const KEPT_ON_LOGOUT: readonly string[] = [
   "tv.landing.lang",
   "tv:jarvis:lang",
   "tv:sidebar-collapsed",
-  "tv-themes",
-  "tv-theme-vars",
+  "tv-themes-v2",
+  "tv-theme-vars-v2",
   "tv-chunk-reload-at",
   "tv.last-pwd-reset",
 ];
