@@ -634,6 +634,7 @@ const en = {
   "nav.sectionViews": "Go to",
   "common.filters": "Filters",
   "common.period": "Period",
+  "journal.filterDay": "Day",
   "journal.allDays": "Day of week",
   "journal.filterDuration": "Duration",
   "common.reset": "Reset",

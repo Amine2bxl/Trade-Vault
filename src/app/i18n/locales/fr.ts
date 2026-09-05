@@ -586,6 +586,7 @@ const fr: Dict = {
   "nav.sectionViews": "Aller à",
   "common.filters": "Filtres",
   "common.period": "Période",
+  "journal.filterDay": "Jour",
   "journal.allDays": "Jour de la semaine",
   "journal.filterDuration": "Durée",
   "common.reset": "Réinitialiser",

@@ -27,6 +27,7 @@ import {
 import { exportTradesCSV } from "../utils/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { intlLocale } from "../i18n/locale";
 import { useTradeFilter } from "../hooks/useTradeFilter";
 import TradeDetailModal from "../components/TradeDetailModal";
 import { PageContainer, Button, EmptyState, Card, Modal } from "@/shared/ui";
@@ -48,28 +49,18 @@ const SELECT_PILL =
 type SortKey = "date" | "symbol" | "pnl" | "strategy" | "rMultiple";
 type SortDir = "asc" | "desc";
 type ResultFilter = "all" | "win" | "loss" | "be";
-type DurationFilter = "all" | "lt30" | "30to60" | "1to4" | "gt4";
 
 const PAGE_SIZE = 50;
 const FILTERS_STORAGE_KEY = "tv.journal.filters";
 
-const DAY_NAMES = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-
-const DURATION_OPTIONS: { value: DurationFilter; label: string }[] = [
-  { value: "all", label: "Toute durée" },
-  { value: "lt30", label: "< 30 min" },
-  { value: "30to60", label: "30 min – 1h" },
-  { value: "1to4", label: "1h – 4h" },
-  { value: "gt4", label: "> 4h" },
-];
-
-function tradeDurationMinutes(t: Trade): number | null {
-  if (!t.entryTime || !t.exitTime) return null;
-  const [eh, em] = t.entryTime.split(":").map(Number);
-  const [xh, xm] = t.exitTime.split(":").map(Number);
-  let diffMin = xh * 60 + xm - (eh * 60 + em);
-  if (diffMin < 0) diffMin += 24 * 60;
-  return diffMin;
+/* LES NOMS DE JOURS VIENNENT D'`Intl`, PAS D'UNE LISTE.
+   Ils étaient écrits en français en dur — « Dim, Lun, Mar… » — dans une
+   application traduite en douze langues. `Intl` les donne dans la langue de
+   l'utilisateur, et l'index 0 y désigne bien le dimanche, comme
+   `Date.getDay()`. La semaine de référence part du dimanche 2023-01-01. */
+function dayNames(locale: string): string[] {
+  const fmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
+  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2023, 0, 1 + i)));
 }
 
 interface StoredFilters {
@@ -78,7 +69,6 @@ interface StoredFilters {
   sortKey: SortKey;
   sortDir: SortDir;
   dayFilter: string;
-  durationFilter: DurationFilter;
 }
 
 function loadStoredFilters(): Partial<StoredFilters> {
@@ -99,7 +89,7 @@ export default function Journal({
   onAdd,
   onOpenMissed,
 }: JournalProps) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const stored = useMemo(loadStoredFilters, []);
   // Deep-link : le filtre unifié (`?f=`) s'applique AVANT les filtres locaux.
   const {
@@ -114,9 +104,6 @@ export default function Journal({
   const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? "date");
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
   const [dayFilter, setDayFilter] = useState<string>(stored.dayFilter ?? "all");
-  const [durationFilter, setDurationFilter] = useState<DurationFilter>(
-    stored.durationFilter ?? "all",
-  );
   const [viewingIdx, setViewingIdx] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -130,17 +117,16 @@ export default function Journal({
           sortKey,
           sortDir,
           dayFilter,
-          durationFilter,
         } satisfies StoredFilters),
       );
     } catch {
       /* best-effort persistence */
     }
-  }, [strategyFilter, resultFilter, sortKey, sortDir, dayFilter, durationFilter]);
+  }, [strategyFilter, resultFilter, sortKey, sortDir, dayFilter]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [strategyFilter, resultFilter, dayFilter, durationFilter]);
+  }, [strategyFilter, resultFilter, dayFilter]);
 
   const filtered = useMemo(() => {
     let list = [...deepLinked];
@@ -170,25 +156,6 @@ export default function Journal({
       list = list.filter((t) => new Date(t.date).getDay().toString() === dayFilter);
     }
 
-    if (durationFilter !== "all") {
-      list = list.filter((t) => {
-        const mins = tradeDurationMinutes(t);
-        if (mins === null) return false;
-        switch (durationFilter) {
-          case "lt30":
-            return mins < 30;
-          case "30to60":
-            return mins >= 30 && mins <= 60;
-          case "1to4":
-            return mins > 60 && mins <= 240;
-          case "gt4":
-            return mins > 240;
-          default:
-            return true;
-        }
-      });
-    }
-
     if (resultFilter === "win") list = list.filter((t) => !isBreakEven(t) && t.pnl > 0);
     if (resultFilter === "loss") list = list.filter((t) => !isBreakEven(t) && t.pnl < 0);
     if (resultFilter === "be") list = list.filter((t) => isBreakEven(t));
@@ -213,7 +180,6 @@ export default function Journal({
     sortKey,
     sortDir,
     dayFilter,
-    durationFilter,
   ]);
 
   const counts = useMemo(() => {
@@ -250,6 +216,7 @@ export default function Journal({
   };
 
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const jours = useMemo(() => dayNames(intlLocale(lang)), [lang]);
 
   /* Le compteur du bouton « Filtres » ne compte QUE ce qui est dans la
      feuille. La recherche et le segment Résultat restent visibles à l'écran :
@@ -258,21 +225,18 @@ export default function Journal({
   const sheetFilterCount =
     (periodFilter !== "all" ? 1 : 0) +
     (strategyFilter !== "all" ? 1 : 0) +
-    (dayFilter !== "all" ? 1 : 0) +
-    (durationFilter !== "all" ? 1 : 0);
+    (dayFilter !== "all" ? 1 : 0);
 
   const resetFilters = () => {
     setPeriodFilter("all");
     setStrategyFilter("all");
     setDayFilter("all");
-    setDurationFilter("all");
   };
 
   const activeFilterCount =
     (periodFilter !== "all" ? 1 : 0) +
     (strategyFilter !== "all" ? 1 : 0) +
     (dayFilter !== "all" ? 1 : 0) +
-    (durationFilter !== "all" ? 1 : 0) +
     (resultFilter !== "all" ? 1 : 0) +
     (searchQuery.trim() ? 1 : 0);
 
@@ -299,13 +263,22 @@ export default function Journal({
           <Trash className="w-3.5 h-3.5" />
           <span className="hidden md:inline">{t("common.deleteAll")}</span>
         </Button>
+        {/* Il vivait au milieu de la RANGÉE DE FILTRES, en vert plein : une
+            navigation posée entre deux listes déroulantes. Sa place est ici,
+            avec les autres actions de la page — en `subtle`, parce que la
+            barre porte déjà un vert (« ajouter un trade ») et que deux verts
+            se disputent. */}
+        <Button variant="subtle" size="sm" onClick={onOpenMissed} title={t("missed.title")}>
+          <Target className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">{t("missed.title")}</span>
+        </Button>
         <Button variant="accent" size="sm" onClick={onAdd} className="hidden md:inline-flex">
           <Plus className="w-4 h-4" /> {t("common.addTrade")}
         </Button>
       </div>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trades, onDeleteAll, onAdd, t],
+    [trades, onDeleteAll, onAdd, onOpenMissed, t],
   );
   usePageActions(headerActions);
 
@@ -345,137 +318,135 @@ export default function Journal({
         </div>
       )}
 
-      {/* ── LA BARRE DE FILTRES ──
-          MOBILE : une seule ligne. La recherche, et un bouton « Filtres » qui
-          porte le nombre de filtres actifs. Les quatre listes (période,
-          stratégie, jour, durée) et l'accès aux setups manqués partent dans une
-          feuille. Elles occupaient QUATRE rangées avant la première ligne de
-          données — on ouvrait son journal et on voyait des filtres.
-          DESKTOP : rien ne change, la place existe. */}
-      <div className="mb-2.5 flex flex-col gap-1.5 md:mb-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t("journal.searchPlaceholder")}
-            enterKeyHint="search"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] md:h-auto md:w-44 md:flex-none md:py-1.5 md:text-sm"
-          />
-          {/* Le bouton n'existe que sous md — au-dessus les listes sont
-              directement là, il n'aurait rien à ouvrir. */}
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(true)}
-            aria-haspopup="dialog"
-            className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 text-sm font-semibold text-slate-300 transition-colors active:bg-white/[0.07] md:hidden"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t("common.filters")}
-            {sheetFilterCount > 0 && (
-              <span className="tv-figure tv-accent-fill grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px]">
-                {sheetFilterCount}
-              </span>
-            )}
-          </button>
-          <div className="hidden items-center gap-1.5 md:flex">
-            <select
-              value={periodFilter}
-              onChange={(e) => setPeriodFilter(e.target.value)}
-              className={SELECT_PILL}
+      {/* ── LA BARRE DE FILTRES — UNE SEULE RANGÉE ──
+          Elle en occupait DEUX sur bureau, et la seconde portait, en plus de
+          deux listes, le bouton vert « setups manqués » : une NAVIGATION posée
+          au milieu de filtres, du vert au centre de l'écran là où le vert doit
+          rester l'action principale. Ce bouton est remonté dans la barre de
+          tête, avec les autres actions de la page.
+
+          Ce qui a sauté : le filtre de DURÉE. Ses cinq intitulés étaient écrits
+          en français en dur (« Toute durée », « 30 min – 1h »…) dans une
+          application traduite en douze langues, il ne fonctionnait que sur les
+          trades ayant une heure d'entrée ET de sortie, et il répondait à une
+          question que personne ne pose en ouvrant son journal.
+
+          Ce qui a changé : les listes portent leur NOM. Deux pastilles marquées
+          « All » côte à côte ne disent pas ce qu'elles filtrent — il fallait
+          les ouvrir pour savoir laquelle était la période et laquelle la
+          stratégie.
+
+          La bascule passe de `md` à `lg` : sur une tablette, le rail laisse
+          570px de contenu, où cinq contrôles ne tiennent pas sur une ligne. En
+          dessous, la feuille de filtres prend le relais. */}
+      <div className="mb-2.5 flex flex-wrap items-center gap-1.5 md:mb-3">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t("journal.searchPlaceholder")}
+          enterKeyHint="search"
+          className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] lg:h-9 lg:w-44 lg:flex-none"
+        />
+        {/* Le bouton n'existe que sous `lg` — au-dessus les listes sont
+            directement là, il n'aurait rien à ouvrir. */}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          aria-haspopup="dialog"
+          className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 text-sm font-semibold text-slate-300 transition-colors active:bg-white/[0.07] lg:hidden"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {t("common.filters")}
+          {sheetFilterCount > 0 && (
+            <span className="tv-figure tv-accent-fill grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px]">
+              {sheetFilterCount}
+            </span>
+          )}
+        </button>
+
+        <FiltrePill
+          label={t("common.period")}
+          value={periodFilter}
+          onChange={setPeriodFilter}
+          options={[
+            { v: "all", l: t("common.all") },
+            { v: "7d", l: t("common.7d") },
+            { v: "30d", l: t("common.30d") },
+            { v: "90d", l: t("common.90d") },
+            { v: "1y", l: t("common.1y") },
+          ]}
+        />
+        <FiltrePill
+          label={t("journal.colStrategy")}
+          value={strategyFilter}
+          onChange={setStrategyFilter}
+          options={[{ v: "all", l: t("common.all") }, ...STRATEGIES.map((x) => ({ v: x, l: x }))]}
+        />
+        <FiltrePill
+          label={t("journal.filterDay")}
+          value={dayFilter}
+          onChange={setDayFilter}
+          options={[
+            { v: "all", l: t("common.all") },
+            ...jours.map((n, i) => ({ v: String(i), l: n })),
+          ]}
+        />
+
+        {/* Le segment RÉSULTAT — le filtre qu'on touche vraiment, et le seul
+            qui porte des compteurs. */}
+        <div className="flex w-full items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 lg:w-auto lg:flex-none">
+          {(
+            [
+              { v: "all", label: t("common.all") },
+              { v: "win", label: t("common.win") },
+              { v: "loss", label: t("common.loss") },
+              { v: "be", label: t("common.be") },
+            ] as { v: ResultFilter; label: string }[]
+          ).map((opt) => (
+            <button
+              key={opt.v}
+              onClick={() => setResultFilter(opt.v)}
+              className={cn(
+                "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition lg:h-8 lg:flex-none lg:px-3",
+                resultFilter === opt.v
+                  ? opt.v === "win"
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : opt.v === "loss"
+                      ? "bg-red-500/15 text-red-400"
+                      : opt.v === "be"
+                        ? "bg-slate-500/20 text-slate-200"
+                        : "bg-cyan-500/15 text-cyan-400"
+                  : "text-slate-500 hover:text-slate-300",
+              )}
             >
-              <option value="all">{t("common.all")}</option>
-              <option value="7d">{t("common.7d")}</option>
-              <option value="30d">{t("common.30d")}</option>
-              <option value="90d">{t("common.90d")}</option>
-              <option value="1y">{t("common.1y")}</option>
-            </select>
-            <select
-              value={strategyFilter}
-              onChange={(e) => setStrategyFilter(e.target.value)}
-              className={SELECT_PILL}
-            >
-              <option value="all">{t("common.all")}</option>
-              {STRATEGIES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Le segment RÉSULTAT reste visible : c'est le filtre qu'on touche
-              vraiment, et il porte les compteurs. Il passe à 36px de haut —
-              28 était sous le seuil du pouce. */}
-          <div className="flex w-full items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 md:w-auto md:flex-none">
-            {(
-              [
-                { v: "all", label: t("common.all") },
-                { v: "win", label: t("common.win") },
-                { v: "loss", label: t("common.loss") },
-                { v: "be", label: t("common.be") },
-              ] as { v: ResultFilter; label: string }[]
-            ).map((opt) => (
-              <button
-                key={opt.v}
-                onClick={() => setResultFilter(opt.v)}
+              {opt.label}
+              <span
                 className={cn(
-                  "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition md:h-auto md:flex-none md:px-4 md:py-1.5 md:text-sm",
-                  resultFilter === opt.v
-                    ? opt.v === "win"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : opt.v === "loss"
-                        ? "bg-red-500/15 text-red-400"
-                        : opt.v === "be"
-                          ? "bg-slate-500/20 text-slate-200"
-                          : "bg-cyan-500/15 text-cyan-400"
-                    : "text-slate-500 hover:text-slate-300",
+                  "tv-figure text-[10px]",
+                  resultFilter === opt.v ? "opacity-70" : "text-slate-600",
                 )}
               >
-                {opt.label}
-                <span
-                  className={cn(
-                    "tv-figure text-[10px]",
-                    resultFilter === opt.v ? "opacity-70" : "text-slate-600",
-                  )}
-                >
-                  {counts[opt.v]}
-                </span>
-              </button>
-            ))}
-          </div>
+                {counts[opt.v]}
+              </span>
+            </button>
+          ))}
         </div>
 
-        {/* Seconde rangée : desktop uniquement. */}
-        <div className="hidden flex-wrap items-center gap-1.5 md:flex">
-          <select
-            value={dayFilter}
-            onChange={(e) => setDayFilter(e.target.value)}
-            className={SELECT_PILL}
+        {/* Il n'apparaît que s'il y a quelque chose à effacer. */}
+        {activeFilterCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              resetFilters();
+              setResultFilter("all");
+              setSearchQuery("");
+            }}
+            className="hidden h-9 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white lg:inline-flex"
           >
-            <option value="all">{t("journal.allDays")}</option>
-            {DAY_NAMES.map((name, i) => (
-              <option key={i} value={String(i)}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={durationFilter}
-            onChange={(e) => setDurationFilter(e.target.value as DurationFilter)}
-            className={SELECT_PILL}
-          >
-            {DURATION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <div className="flex-1" />
-          <Button variant="primary" size="sm" onClick={onOpenMissed} title={t("missed.title")}>
-            <Target className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("missed.title")}</span>
-          </Button>
-        </div>
+            {t("common.reset")}
+          </button>
+        )}
       </div>
 
       {/* La feuille de filtres — mobile seulement. */}
@@ -525,20 +496,13 @@ export default function Journal({
               },
               {
                 k: "day",
-                label: t("journal.allDays"),
+                label: t("journal.filterDay"),
                 value: dayFilter,
                 set: setDayFilter,
                 opts: [
                   { v: "all", l: t("common.all") },
-                  ...DAY_NAMES.map((n, i) => ({ v: String(i), l: n })),
+                  ...jours.map((n, i) => ({ v: String(i), l: n })),
                 ],
-              },
-              {
-                k: "duration",
-                label: t("journal.filterDuration"),
-                value: durationFilter,
-                set: (v: string) => setDurationFilter(v as DurationFilter),
-                opts: DURATION_OPTIONS.map((o) => ({ v: o.value, l: o.label })),
               },
             ] as {
               k: string;
@@ -608,7 +572,6 @@ export default function Journal({
                   setResultFilter("all");
                   setStrategyFilter("all");
                   setDayFilter("all");
-                  setDurationFilter("all");
                 }}
               >
                 {t("common.all")}
@@ -1030,9 +993,14 @@ function QuickEditCell({
         setDraft(String(value));
         setEditing(true);
       }}
+      /* `h-8` : la cellule éditable était haute de 20px — la hauteur de son
+         texte. Ce n'est pas une cible tactile, et il y en a une par ligne,
+         donc deux cents sur un journal ordinaire. Le texte garde sa taille,
+         c'est la zone qui s'ouvre, et le `-mx-1 -my-1` empêche la colonne de
+         s'élargir pour autant. */
       className={cn(
         className,
-        "rounded-md px-1 -mx-1 text-left transition-colors",
+        "-mx-1 -my-1 inline-flex h-8 items-center rounded-md px-1 text-left transition-colors",
         "hover:bg-white/[0.08] hover:ring-1 hover:ring-cyan-500/30",
         "focus:outline-none focus:ring-1 focus:ring-cyan-500/60",
       )}
@@ -1041,5 +1009,62 @@ function QuickEditCell({
       {value.toFixed(decimals)}
       {suffix}
     </button>
+  );
+}
+
+/**
+ * UNE PASTILLE DE FILTRE — son NOM, puis sa valeur.
+ *
+ * Les listes portaient « All » et rien d'autre : deux pastilles identiques
+ * côte à côte, et il fallait les ouvrir pour savoir laquelle était la période
+ * et laquelle la stratégie. Le nom est écrit devant, en petit ; la valeur suit,
+ * en clair. Le `<select>` reste natif (donc accessible et utilisable au
+ * clavier) mais transparent, posé par-dessus la pastille.
+ */
+function FiltrePill({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { v: string; l: string }[];
+}) {
+  const actif = value !== "all";
+  const courant = options.find((o) => o.v === value)?.l ?? value;
+  return (
+    <label
+      className={cn(
+        "relative hidden h-9 shrink-0 items-center gap-1.5 rounded-xl border px-2.5 transition-colors lg:inline-flex",
+        actif
+          ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.08)]"
+          : "border-white/[0.06] bg-white/[0.03] hover:border-white/[0.12]",
+      )}
+    >
+      <span className="tv-label shrink-0 text-slate-500">{label}</span>
+      <span
+        className={cn(
+          "max-w-[7rem] truncate text-xs font-semibold",
+          actif ? "text-[var(--tv-highlight)]" : "text-slate-300",
+        )}
+      >
+        {courant}
+      </span>
+      <ChevronDown className="h-3 w-3 shrink-0 text-slate-600" />
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        className="absolute inset-0 cursor-pointer opacity-0"
+      >
+        {options.map((o) => (
+          <option key={o.v} value={o.v}>
+            {o.l}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
