@@ -85,7 +85,9 @@ describe("applyFilter — dimensions simples", () => {
 
 describe("applyFilter — période", () => {
   it("coupe selon la période relative", () => {
-    const recent = trade({ date: "2026-08-04" });
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    // Toujours dans la fenêtre 30j, quel que soit le jour d'exécution du test.
+    const recent = trade({ date: fmt(new Date(Date.now() - 2 * 86_400_000)) });
     const old = trade({ date: "2020-01-01" });
     expect(applyFilter([recent, old], { period: "30d" }).length).toBe(1);
     expect(applyFilter([recent, old], { period: "all" }).length).toBe(2);
