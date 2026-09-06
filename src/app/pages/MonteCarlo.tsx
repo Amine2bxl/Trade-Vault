@@ -99,12 +99,16 @@ type Vue = "paths" | "dist" | "details";
  *      avant qu'on sache sur QUOI il portait. Trois boutons de même poids,
  *      aucun présélectionné, et celui du journal annonce combien de trades il
  *      va prendre. Tant qu'aucun n'est cliqué, rien ne tourne.
- *   2. UN SEUL BLOC POUR TOUTES LES ENTRÉES. Les réglages vivaient dans une
- *      colonne latérale de 320px au-dessus de 1024px, et dans une FEUILLE
- *      ancrée en dessous — deux emplacements pour un même contenu, dont aucun
- *      n'était visible par défaut. Il fallait donc ouvrir un panneau pour
- *      savoir sur quoi tournait la simulation : c'était la friction principale
- *      de la page. Tout est maintenant dans un bloc unique, toujours à l'écran.
+ *   2. LES ENTRÉES À CÔTÉ, ET TOUJOURS VISIBLES. Elles ont connu deux mauvais
+ *      emplacements avant celui-ci. D'abord une FEUILLE ancrée sous 1024px,
+ *      doublée d'une colonne au-dessus : deux endroits pour un même contenu,
+ *      dont aucun n'était ouvert par défaut — il fallait donc cliquer pour
+ *      savoir sur quoi tournait la simulation. Puis un bloc empilé AU-DESSUS
+ *      du résultat : tout était visible, mais plus rien ne tenait dans la
+ *      fenêtre, et il fallait défiler pour atteindre le graphe.
+ *      Elles vivent maintenant dans une colonne de 340px À CÔTÉ du résultat,
+ *      sans feuille ni bouton : réglages et graphe se lisent ensemble, et on
+ *      voit la courbe bouger en déplaçant un curseur.
  *   3. LA RÉPONSE ENSUITE, ET ENTIÈRE. Le verdict — le pourcentage, la barre
  *      des trois issues — suit immédiatement le bloc d'entrées.
  *   4. UNE VUE À LA FOIS. Les deux graphes et le détail des percentiles sont
@@ -421,76 +425,69 @@ export default function MonteCarloPage({ trades }: Props) {
         </div>
       )}
 
-      {/* ══ LE BLOC UNIQUE ═══════════════════════════════════════════════
-          Tout ce que la simulation prend en entrée, à un seul endroit,
-          toujours visible : la source, puis les paramètres. Il remplace la
-          colonne latérale de 320px (grand écran) ET la feuille ancrée
-          (mobile) — deux emplacements pour un même contenu, dont aucun n'était
-          visible par défaut. */}
-      <section className="glass mt-3 shrink-0 rounded-3xl px-4 py-4 sm:px-5">
-        {panneau}
-        <div className="mt-3 flex justify-end border-t border-[var(--tv-border)] pt-3">
-          <button onClick={reinitialiser} className="btn-ghost btn-sm">
-            <RotateCcw className="h-3.5 w-3.5" />
-            {t("mc.reset")}
-          </button>
-        </div>
-      </section>
-
-      {/* `min-h-0` retiré : il autorisait cette zone à rétrécir sous son propre
-          contenu, ce qui écrasait verdict et graphe dans un cadre de hauteur
-          fixe. Les `min-h-0` PLUS BAS, eux, restent — ceux des sections de
-          graphe sont indispensables pour que `ResponsiveContainer` puisse
-          mesurer sa place au lieu de gonfler indéfiniment. */}
-      <div className="mt-3 flex-1">
-        {samples.length < 5 ? (
-          /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
+      {/* ══ DEUX COLONNES, PAS DEUX ÉCRANS ═══════════════════════════════
+          J'avais empilé les réglages AU-DESSUS du résultat : tout était bien
+          visible, mais plus rien ne tenait dans la fenêtre — il fallait
+          défiler pour voir le graphe, ce qui est exactement le défaut que la
+          page cherchait à corriger.
+          Les réglages retournent donc à CÔTÉ (320px à droite dès 1024px), et
+          ils y restent VISIBLES en permanence : plus de feuille à ouvrir,
+          plus de bouton pour les atteindre. Sous 1024px la colonne passe
+          simplement au-dessus, dans le flux — un téléphone défile de toute
+          façon, autant qu'il défile dans un seul sens. */}
+      <div className="mt-3 grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="order-2 flex min-w-0 flex-col lg:order-1">
+          {samples.length < 5 ? (
+            /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
              lui, un trader sans journal ne pouvait pas même atteindre la saisie
              manuelle — la seule qui lui permette d'éprouver sa stratégie. */
-          /* Le repos, pas une erreur : tant qu'aucune source n'est choisie, la
+            /* Le repos, pas une erreur : tant qu'aucune source n'est choisie, la
              page attend, et le bloc au-dessus dit exactement ce qu'elle
              attend. */
-          <div className="glass flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl px-6 py-10 text-center">
-            <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
-            <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
-            <p className="max-w-sm text-sm text-slate-500">
-              {source === "csv"
-                ? t("mc.emptyCsv")
-                : source === "manual"
-                  ? t("mc.emptyManual")
-                  : t("mc.emptyBody")}
-            </p>
-          </div>
-        ) : !result ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
-          </div>
-        ) : (
-          <div
-            className={cn("flex h-full flex-col gap-3 transition-opacity", running && "opacity-50")}
-          >
-            <>
-              {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
-              <section className="glass shrink-0 animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
-                <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-                  <div className="min-w-0">
-                    <div className="tv-label text-slate-500">{t("mc.verdictLabel")}</div>
-                    <div
-                      className={cn(
-                        "tv-figure mt-1 text-[34px] leading-none md:text-5xl",
-                        result.passRate >= 0.5 ? "rp-pos" : "rp-warn",
-                      )}
-                    >
-                      {(result.passRate * 100).toFixed(0)}%
+            <div className="glass flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl px-6 py-10 text-center">
+              <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
+              <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
+              <p className="max-w-sm text-sm text-slate-500">
+                {source === "csv"
+                  ? t("mc.emptyCsv")
+                  : source === "manual"
+                    ? t("mc.emptyManual")
+                    : t("mc.emptyBody")}
+              </p>
+            </div>
+          ) : !result ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "flex h-full flex-col gap-3 transition-opacity",
+                running && "opacity-50",
+              )}
+            >
+              <>
+                {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
+                <section className="glass shrink-0 animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
+                  <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                    <div className="min-w-0">
+                      <div className="tv-label text-slate-500">{t("mc.verdictLabel")}</div>
+                      <div
+                        className={cn(
+                          "tv-figure mt-1 text-[34px] leading-none md:text-5xl",
+                          result.passRate >= 0.5 ? "rp-pos" : "rp-warn",
+                        )}
+                      >
+                        {(result.passRate * 100).toFixed(0)}%
+                      </div>
+                      <p className="tv-prose mt-2 max-w-md text-slate-400">
+                        {t("mc.verdictBody")
+                          .replace("{target}", `+${objectifPct}%`)
+                          .replace("{limit}", `-${limitePct}%`)
+                          .replace("{days}", String(horizon))}
+                      </p>
                     </div>
-                    <p className="tv-prose mt-2 max-w-md text-slate-400">
-                      {t("mc.verdictBody")
-                        .replace("{target}", `+${objectifPct}%`)
-                        .replace("{limit}", `-${limitePct}%`)
-                        .replace("{days}", String(horizon))}
-                    </p>
-                  </div>
-                  {/* DEUX FAITS, PLUS QUATRE.
+                    {/* DEUX FAITS, PLUS QUATRE.
                       « Taux d'échec » et « taux d'expiration » redisaient
                       exactement ce que la barre d'issues montre juste en
                       dessous — trois segments proportionnels. Leurs
@@ -500,67 +497,67 @@ export default function MonteCarloPage({ trades }: Props) {
                       Restent les deux chiffres que la barre ne peut PAS dire :
                       combien ça coûte en chemin (drawdown médian) et combien
                       de temps ça prend. */}
-                  <div className="mc-facts">
-                    <Fait
-                      label={t("mc.medianDD")}
-                      value={formatMoney(result.medianMaxDD)}
-                      hint={`${((result.medianMaxDD / solde) * 100).toFixed(1)}%`}
-                    />
-                    <Fait
-                      label={t("mc.daysToPass")}
-                      value={result.avgDaysToPass > 0 ? result.avgDaysToPass.toFixed(0) : "—"}
-                      hint={t("mc.days")}
-                    />
+                    <div className="mc-facts">
+                      <Fait
+                        label={t("mc.medianDD")}
+                        value={formatMoney(result.medianMaxDD)}
+                        hint={`${((result.medianMaxDD / solde) * 100).toFixed(1)}%`}
+                      />
+                      <Fait
+                        label={t("mc.daysToPass")}
+                        value={result.avgDaysToPass > 0 ? result.avgDaysToPass.toFixed(0) : "—"}
+                        hint={t("mc.days")}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* Les trois issues, dans une barre — pas trois pourcentages
+                  {/* Les trois issues, dans une barre — pas trois pourcentages
                     dispersés dans une grille de tuiles. */}
-                <div className="mt-4">
-                  <div className="rp-mix" role="img" aria-label={t("mc.outcomes")}>
-                    {result.passRate > 0 && (
-                      <span
-                        className="rp-fill-pos"
-                        style={{ width: `${result.passRate * 100}%` }}
+                  <div className="mt-4">
+                    <div className="rp-mix" role="img" aria-label={t("mc.outcomes")}>
+                      {result.passRate > 0 && (
+                        <span
+                          className="rp-fill-pos"
+                          style={{ width: `${result.passRate * 100}%` }}
+                        />
+                      )}
+                      {result.timeOutRate > 0 && (
+                        <span
+                          className="rp-fill-flat"
+                          style={{ width: `${result.timeOutRate * 100}%` }}
+                        />
+                      )}
+                      {result.failRate > 0 && (
+                        <span
+                          className="rp-fill-neg"
+                          style={{ width: `${result.failRate * 100}%` }}
+                        />
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <Legende
+                        cls="rp-fill-pos"
+                        label={t("mc.passed")}
+                        value={`${(result.passRate * 100).toFixed(0)}%`}
                       />
-                    )}
-                    {result.timeOutRate > 0 && (
-                      <span
-                        className="rp-fill-flat"
-                        style={{ width: `${result.timeOutRate * 100}%` }}
+                      <Legende
+                        cls="rp-fill-flat"
+                        label={t("mc.timedOut")}
+                        value={`${(result.timeOutRate * 100).toFixed(0)}%`}
                       />
-                    )}
-                    {result.failRate > 0 && (
-                      <span
-                        className="rp-fill-neg"
-                        style={{ width: `${result.failRate * 100}%` }}
+                      <Legende
+                        cls="rp-fill-neg"
+                        label={t("mc.failed")}
+                        value={`${(result.failRate * 100).toFixed(0)}%`}
                       />
-                    )}
+                      <span className="tv-hint ml-auto">
+                        {t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
+                      </span>
+                    </div>
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <Legende
-                      cls="rp-fill-pos"
-                      label={t("mc.passed")}
-                      value={`${(result.passRate * 100).toFixed(0)}%`}
-                    />
-                    <Legende
-                      cls="rp-fill-flat"
-                      label={t("mc.timedOut")}
-                      value={`${(result.timeOutRate * 100).toFixed(0)}%`}
-                    />
-                    <Legende
-                      cls="rp-fill-neg"
-                      label={t("mc.failed")}
-                      value={`${(result.failRate * 100).toFixed(0)}%`}
-                    />
-                    <span className="tv-hint ml-auto">
-                      {t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
-                    </span>
-                  </div>
-                </div>
-              </section>
+                </section>
 
-              {/* ══ LA LECTURE CHOISIE — elle remplit l'espace restant ═══════
+                {/* ══ LA LECTURE CHOISIE — elle remplit l'espace restant ═══════
                   `min-h-[340px]` est un FILET, pas une mise en page : les trois
                   vues montent un `ResponsiveContainer` en hauteur 100 %, qui ne
                   dessine RIEN si son parent n'a pas de hauteur définie. Tant
@@ -568,14 +565,27 @@ export default function MonteCarloPage({ trades }: Props) {
                   toujours une ; maintenant qu'elle peut défiler, ce plancher
                   garantit que le graphe a de la place même quand la fenêtre est
                   courte — au lieu de disparaître en silence. */}
-              <div className="min-h-[340px] flex-1">
-                {vue === "paths" && <Faisceau result={result} horizon={horizon} />}
-                {vue === "dist" && <Histogramme result={result} />}
-                {vue === "details" && <Details result={result} />}
-              </div>
-            </>
+                <div className="min-h-[340px] flex-1">
+                  {vue === "paths" && <Faisceau result={result} horizon={horizon} />}
+                  {vue === "dist" && <Histogramme result={result} />}
+                  {vue === "details" && <Details result={result} />}
+                </div>
+              </>
+            </div>
+          )}
+        </div>
+
+        {/* La colonne des entrées — toujours à l'écran, jamais derrière un
+            bouton. Elle défile pour elle-même si les réglages dépassent. */}
+        <aside className="glass order-1 flex flex-col overflow-hidden rounded-3xl lg:order-2 lg:max-h-full">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">{panneau}</div>
+          <div className="flex justify-end border-t border-[var(--tv-border)] px-4 py-2.5 sm:px-5">
+            <button onClick={reinitialiser} className="btn-ghost btn-sm">
+              <RotateCcw className="h-3.5 w-3.5" />
+              {t("mc.reset")}
+            </button>
           </div>
-        )}
+        </aside>
       </div>
     </div>
   );
@@ -659,8 +669,15 @@ function PanneauReglages({
       <div>
         <div className="tv-label mb-2 text-slate-500">{t("mc.source")}</div>
         <div className="grid gap-2 sm:grid-cols-3">
+          {/* LE JOURNAL EST UN APPEL À L'ACTION, PAS UNE OPTION PARMI TROIS.
+              C'est la meilleure source — elle porte la forme RÉELLE des gains
+              et des pertes du trader, pas une moyenne saisie à la main — et
+              c'est la seule qui ne demande aucun travail : les données sont
+              déjà là. Tant qu'elle n'est pas choisie, elle se présente donc
+              en accent plein, comme le bouton principal de la page. */}
           <ChoixSource
             actif={source === "journal"}
+            appel={source === null && journalCount >= 5}
             onClick={() => setSource("journal")}
             icone={<BookOpen className="h-4 w-4" />}
             titre={t("mc.srcJournal")}
@@ -1462,6 +1479,7 @@ function Fait({
  */
 function ChoixSource({
   actif,
+  appel,
   onClick,
   icone,
   titre,
@@ -1469,6 +1487,8 @@ function ChoixSource({
   desactive,
 }: {
   actif: boolean;
+  /** Se présente comme l'action principale tant que rien n'est choisi. */
+  appel?: boolean;
   onClick: () => void;
   icone: React.ReactNode;
   titre: string;
@@ -1485,16 +1505,30 @@ function ChoixSource({
         "flex items-start gap-2.5 rounded-xl border p-3 text-left transition",
         actif
           ? "border-[rgb(var(--tv-accent-rgb)/0.45)] bg-[rgb(var(--tv-accent-rgb)/0.08)]"
-          : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] hover:border-[var(--tv-border-strong)]",
+          : appel
+            ? "border-[rgb(var(--tv-accent-rgb)/0.55)] bg-[rgb(var(--tv-accent-rgb)/0.14)] hover:bg-[rgb(var(--tv-accent-rgb)/0.2)]"
+            : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] hover:border-[var(--tv-border-strong)]",
         desactive && "cursor-not-allowed opacity-40",
       )}
     >
-      <span className={cn("mt-0.5 shrink-0", actif ? "text-[var(--tv-accent)]" : "text-slate-500")}>
+      <span
+        className={cn(
+          "mt-0.5 shrink-0",
+          actif || appel ? "text-[var(--tv-highlight)]" : "text-slate-500",
+        )}
+      >
         {icone}
       </span>
       <span className="min-w-0">
         <span className="block truncate text-sm font-semibold text-white">{titre}</span>
-        <span className="tv-row-label mt-0.5 block truncate">{detail}</span>
+        <span
+          className={cn(
+            "mt-0.5 block truncate",
+            appel ? "text-[11px] text-[var(--tv-highlight)]" : "tv-row-label",
+          )}
+        >
+          {detail}
+        </span>
       </span>
     </button>
   );

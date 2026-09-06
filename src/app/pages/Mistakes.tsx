@@ -180,41 +180,87 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             même ligne : ils accompagnent le verdict, ils ne le précèdent
             plus. */}
         <section className="glass animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
-          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          {/* ══ CE QU'IL FAUT CORRIGER — PAS CE QU'ON A PERDU ═══════════════
+              Le héros de cette page était le P&L des trades marqués : un
+              montant en gros, en tête. C'est la mauvaise question. Un trader
+              n'ouvre pas « Erreurs » pour se faire rappeler ce qu'il a perdu
+              — le tableau de bord le lui dit déjà, et mieux. Il l'ouvre pour
+              savoir CE QU'IL FAIT MAL, et quoi arrêter.
+
+              Le héros est donc l'ERREUR elle-même : son nom, en grand.
+              Dessous, les trois seuls faits qui aident à décider — combien de
+              fois, dans quel sens elle va, et la consigne pour l'arrêter.
+              Le coût descend au rang de détail : il qualifie l'erreur, il ne
+              la remplace pas.
+
+              Le P&L n'est pas supprimé pour autant : il reste dans le
+              graphique des fuites, où il sert à CLASSER — c'est là qu'il a du
+              sens, pas en titre de page. */}
+          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
             <div className="min-w-0 max-w-xl">
-              {/* « Coût total » avec un « +1 831,50 $ » en VERT se contredit
-                  tout seul : la valeur n'est pas un coût, c'est le P&L des
-                  trades où une erreur a été cochée. Le libellé dit maintenant
-                  ce que le chiffre est, et la couleur suit son signe — quand
-                  il est négatif, il se lit bien comme un coût. */}
-              <div className="tv-label flex items-center gap-1.5 text-slate-500">
-                <TrendingDown className="h-3.5 w-3.5" />
-                {t("mistakes.flaggedPnl")}
-              </div>
-              <div
-                className={cn(
-                  "tv-figure mt-1 text-[34px] leading-none md:text-5xl",
-                  b.totalCost < 0 ? "rp-neg" : "text-white",
-                )}
-              >
-                {formatPnl(b.totalCost)}
-              </div>
-              <p className="tv-prose mt-2 text-slate-400">
-                {b.cleanWinRate !== null && b.mistakeWinRate !== null ? (
-                  <>
-                    {t("mistakes.edgePrefix")}{" "}
-                    <span className="font-bold text-[var(--tv-chart-green)]">
-                      {((b.cleanWinRate - b.mistakeWinRate) * 100).toFixed(0)}{" "}
-                      {t("mistakes.edgePoints")}
-                    </span>{" "}
-                    {t("mistakes.edgeSuffix")}
-                  </>
-                ) : (
-                  t("mistakes.disciplineSub")
-                )}
-              </p>
+              {b.rows.length > 0 ? (
+                <>
+                  <div className="tv-label flex items-center gap-1.5 text-red-400">
+                    <Target className="h-3.5 w-3.5" />
+                    {t("mistakes.priority")}
+                  </div>
+                  <h2 className="mt-1.5 font-display text-[28px] font-bold leading-tight tracking-[-0.02em] text-white md:text-4xl">
+                    {b.rows[0].mistake}
+                  </h2>
+
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    <span className="tv-figure text-sm text-slate-300">
+                      {b.rows[0].count}× · {formatPnl(b.rows[0].totalPnl)}
+                    </span>
+                    {b.rows[0].trend && b.rows[0].trend.deltaPct !== 0 && (
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 text-xs font-bold",
+                          b.rows[0].trend.deltaPct < 0 ? "rp-pos" : "rp-neg",
+                        )}
+                        title={t("mistakes.trendWindow")}
+                      >
+                        {b.rows[0].trend.deltaPct < 0 ? (
+                          <TrendingDown className="h-3.5 w-3.5" />
+                        ) : (
+                          <TrendingUp className="h-3.5 w-3.5" />
+                        )}
+                        {b.rows[0].trend.deltaPct > 0 ? "+" : ""}
+                        {b.rows[0].trend.deltaPct}% · {t("mistakes.trendWindow")}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* LA CONSIGNE, PAS UN CONSTAT. C'est la seule ligne de la
+                      page qui dise quoi FAIRE, et elle vivait repliée dans
+                      une ligne de liste, en douzième position. */}
+                  <p className="tv-prose mt-3 border-l-2 border-[rgb(var(--tv-accent-rgb)/0.5)] pl-3 text-slate-300">
+                    {MISTAKE_TIP_KEYS[b.rows[0].mistake]
+                      ? t(MISTAKE_TIP_KEYS[b.rows[0].mistake] as never)
+                      : t("mistakes.defaultTip")}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="tv-label flex items-center gap-1.5 text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {t("mistakes.cleanSuffix")}
+                  </div>
+                  <h2 className="mt-1.5 font-display text-2xl font-bold text-white">
+                    {t("mistakes.noMistakesGreat")}
+                  </h2>
+                </>
+              )}
             </div>
 
+            {/* LES DEUX SEULS CHIFFRES QUI MESURENT UN PROGRÈS.
+                Il y en avait quatre, dont deux taux de réussite — « propre »
+                contre « avec erreur ». Ils comparaient des PERFORMANCES, or
+                cette page ne parle pas de performance : elle parle de ce qu'on
+                répète. Le score de discipline et la part de trades propres
+                disent tous deux la même chose dans le bon registre — est-ce
+                que je m'améliore ? L'écart de win rate, lui, reste dans la
+                phrase sous le verdict, où il sert d'argument, pas de mesure. */}
             <div className="mc-facts">
               <FaitErreur
                 label={t("mistakes.discipline")}
@@ -226,18 +272,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 label={t("mistakes.totalMistakes")}
                 value={String(b.totalIncidents)}
                 hint={`${b.tradesWithMistakes} ${t("mistakes.tradesSuffix")}`}
-              />
-              <FaitErreur
-                label={t("mistakes.cleanWr")}
-                value={b.cleanWinRate !== null ? `${(b.cleanWinRate * 100).toFixed(0)}%` : "—"}
-                hint={t("mistakes.cleanSuffix")}
-                tone="pos"
-              />
-              <FaitErreur
-                label={t("mistakes.mistakeWr")}
-                value={b.mistakeWinRate !== null ? `${(b.mistakeWinRate * 100).toFixed(0)}%` : "—"}
-                hint={t("mistakes.mistakeSuffix")}
-                tone="warn"
+                tone={b.totalIncidents > 0 ? "warn" : "pos"}
               />
             </div>
           </div>
