@@ -181,39 +181,34 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           A round gradient bubble is the universal signature of a bolt-on chat
           widget — the thing every SaaS glues to the corner. Jarvis is not a
           widget, it is the product's intelligence, so it gets a piece of app
-          chrome instead: the same glass surface, cyan hairline and squircle
+          chrome instead: the same glass surface, emerald accent and squircle
           mark used by the Jarvis page and the sidebar, named, with a live
-          status dot. On mobile it collapses to the mark alone to stay out of
-          the thumb zone, but keeps the identical surface. */}
+          status dot. Nothing glows and nothing pings — depth is carried by
+          value and hairline, like everywhere else in the app. On mobile it
+          collapses to the mark alone with a quiet live dot, out of the thumb
+          zone, on the identical surface. */}
       <button
         onClick={toggleOpen}
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
           "group fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
-          "flex items-center justify-center md:gap-2.5",
+          "flex items-center justify-center",
           // Mobile : pilule float-shell 44px, badge bien arrondi.
           "h-11 w-11 rounded-full float-shell",
           // Desktop : pill glass ORIGINAL (inchangé).
           "md:h-auto md:w-auto md:rounded-2xl md:border md:p-1.5 md:pr-4 md:glass-strong",
-          "md:shadow-xl md:shadow-black/40",
           "transition duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
-          open && "md:border-cyan-400/40 md:bg-cyan-500/[0.08]",
-          !open && "md:border-white/[0.1] md:hover:border-cyan-400/35",
+          open && "md:border-emerald-400/40",
+          !open && "md:border-white/[0.1] md:hover:border-emerald-400/40",
         )}
       >
         <span className="relative shrink-0">
           <span
             className={cn(
-              "hidden md:block absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md transition-opacity",
-              open ? "opacity-100" : "opacity-0 group-hover:opacity-70",
-            )}
-          />
-          <span
-            className={cn(
               "relative grid place-items-center tv-accent-fill",
               "h-7 w-7 rounded-2xl",
-              "md:h-10 md:w-10 md:rounded-xl md:shadow-lg",
+              "md:h-10 md:w-10 md:rounded-xl",
             )}
           >
             {open ? (
@@ -225,14 +220,15 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
         </span>
         <span className="hidden md:block text-left leading-none">
           <span className="block text-[13px] font-bold text-white">{t("assistant.title")}</span>
-          <span className="tv-label mt-1 flex items-center gap-1.5 text-cyan-300/80">
+          <span className="tv-label mt-1 flex items-center gap-1.5 text-emerald-300/80">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60 animate-ping" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </span>
             {t("assistant.dockStatus")}
           </span>
         </span>
+        {/* Mobile : point de vie discret, assis sur le bord de la bulle. */}
+        <span className="pointer-events-none absolute right-0 top-0 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[var(--tv-plate-2)] md:hidden" />
       </button>
 
       {/* Workspace actif : la fenêtre espace de travail (le chat est un module). */}
