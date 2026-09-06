@@ -55,7 +55,7 @@ export function TraderProof({ onStart }: { onStart: () => void }) {
         <div className="mt-8 grid grid-cols-3 gap-4">
           {FACTS.map((f) => (
             <div key={f.v}>
-              <p className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold text-cyan-300">
+              <p className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tabular-nums text-[var(--tv-highlight)]">
                 {f.v}
               </p>
               <p className="mt-1 text-[11.5px] leading-5 text-slate-500">{t(f.l)}</p>
@@ -66,10 +66,10 @@ export function TraderProof({ onStart }: { onStart: () => void }) {
 
       {/* ── La carte citation ── */}
       <div className="glass-card reveal flex flex-col justify-between px-6 py-7">
-        <Quote className="h-7 w-7 text-cyan-400/40" aria-hidden="true" />
+        <Quote className="h-7 w-7 text-slate-600" aria-hidden="true" />
         <p className="mt-4 text-[14px] leading-7 text-slate-300">{t("proof.quote")}</p>
         <div className="mt-6 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 font-display text-sm font-bold text-cyan-300">
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-[rgb(var(--tv-accent-rgb)/0.35)] bg-[rgb(var(--tv-accent-rgb)/0.1)] font-display text-sm font-bold text-[var(--tv-highlight)]">
             TV
           </div>
           <div>

@@ -52,7 +52,7 @@ export function absoluteUrl(path = "/"): string {
  * never drift apart into three different claims about what the product is.
  */
 export const PRODUCT_DESCRIPTION_EN =
-  "TradeVault is an AI-powered trading journal and trading coach that helps traders analyze performance, follow their trading plan and improve discipline.";
+  "TradeVault is an AI trading journal and trading coach that turns your trading history into clear performance analytics — equity curve, drawdown, expectancy, recurring mistakes — so you understand and improve your own trading.";
 
 /**
  * schema.org graph for the homepage.
@@ -61,7 +61,8 @@ export const PRODUCT_DESCRIPTION_EN =
  * application unambiguously under the same name as the consent screen. Machine-
  * readable Organization + SoftwareApplication nodes state that outright instead
  * of leaving it to be inferred from marketing copy, and the `url` fields tie the
- * brand to the domain being verified.
+ * brand to the domain being verified. A SoftwareApplication node also lets
+ * answer engines (GEO) describe the product from structured facts.
  */
 export function structuredData(): string {
   return JSON.stringify({
@@ -80,7 +81,8 @@ export function structuredData(): string {
         "@id": `${SITE_URL}/#website`,
         name: SITE_NAME,
         url: `${SITE_URL}/`,
-        inLanguage: "fr-FR",
+        // Aligné sur `SSR_LANG` (english default) — la langue du document servi.
+        inLanguage: SSR_LANG === "fr" ? "fr-FR" : "en-US",
         publisher: { "@id": `${SITE_URL}/#organization` },
       },
       {
@@ -91,7 +93,7 @@ export function structuredData(): string {
         operatingSystem: "Web",
         description: PRODUCT_DESCRIPTION_EN,
         image: `${SITE_URL}/icon-512.png`,
-        publisher: { "@id": `${SITE_URL}/#organization` },
+        author: { "@id": `${SITE_URL}/#organization` },
         offers: {
           "@type": "Offer",
           price: "0",
