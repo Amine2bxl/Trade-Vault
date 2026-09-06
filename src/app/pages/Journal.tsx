@@ -30,7 +30,7 @@ import { useT } from "../i18n/LanguageContext";
 import { intlLocale } from "../i18n/locale";
 import { useTradeFilter } from "../hooks/useTradeFilter";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageContainer, Button, EmptyState, Card, Modal } from "@/shared/ui";
+import { PageContainer, Button, EmptyState, Card, Modal, Kpi, KpiGrid } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 
 interface JournalProps {
@@ -284,23 +284,26 @@ export default function Journal({
 
   return (
     <PageContainer>
+      {/* Quatre cases statiques : un libellé, un chiffre, aucune interaction.
+          C'est `Kpi`, la case du produit — pas une tuile de carte réécrite
+          ici. Elles suivent donc la compaction de toutes les autres. */}
       {filtered.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
-          <SummaryTile
+        <KpiGrid cols={4} className="mb-2.5">
+          <Kpi
             label={t("stats.totalPnl")}
             value={formatPnl(summary.totalPnl)}
-            tone={summary.totalPnl >= 0 ? "up" : "down"}
+            tone={summary.totalPnl >= 0 ? "pos" : "neg"}
           />
-          <SummaryTile label={t("stats.winRate")} value={formatPct(summary.winRate)} />
-          <SummaryTile label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
-          <SummaryTile
+          <Kpi label={t("stats.winRate")} value={formatPct(summary.winRate)} />
+          <Kpi label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
+          <Kpi
             /* « P&L » + la mention « BEST » se lisaient « P&L BEST », qui
                n'est le nom de rien. La tuile a déjà un libellé pour ça. */
             label={t("dashboard.bestTrade")}
             value={formatPnl(summary.bestTrade?.pnl ?? 0)}
-            tone="up"
+            tone="pos"
           />
-        </div>
+        </KpiGrid>
       )}
 
       {/* Deep-link filter actif — un chip qui permet de revenir à la vue complète */}
@@ -877,35 +880,6 @@ export default function Journal({
         />
       )}
     </PageContainer>
-  );
-}
-
-function SummaryTile({
-  label,
-  value,
-  hint,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: "up" | "down" | "neutral";
-}) {
-  return (
-    <div className="stat-card px-3 py-2.5">
-      <div className="flex items-center gap-1.5">
-        <span className="tv-label text-slate-500 truncate">{label}</span>
-        {hint && <span className="tv-label text-slate-600 shrink-0">{hint}</span>}
-      </div>
-      <div
-        className={cn(
-          "mt-1 tv-figure text-base md:text-lg",
-          tone === "up" ? "text-emerald-400" : tone === "down" ? "text-red-400" : "text-white",
-        )}
-      >
-        {value}
-      </div>
-    </div>
   );
 }
 

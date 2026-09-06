@@ -9,7 +9,7 @@ import { cn } from "../utils/cn";
 import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useT } from "../i18n/LanguageContext";
-import { PageContainer } from "@/shared/ui";
+import { PageContainer, Kpi, KpiGrid } from "@/shared/ui";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -233,84 +233,91 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   return (
     <PageContainer>
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-4 mb-3 md:mb-6">
-        {[
-          {
-            label: t("calendar.monthlyPnl"),
-            value:
-              monthlySummary.tradingDays === 0
-                ? "$0.00"
-                : `${monthlySummary.total >= 0 ? "" : "-"}$${Math.abs(monthlySummary.total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            color:
-              monthlySummary.tradingDays === 0
-                ? "text-white"
-                : monthlySummary.total > 0
-                  ? "text-emerald-400"
-                  : monthlySummary.total < 0
-                    ? "text-red-400"
-                    : "text-white",
-            delay: 0,
-          },
-          {
-            label: t("calendar.tradingDays"),
-            value: String(monthlySummary.tradingDays),
-            color: "text-white",
-            delay: 1,
-          },
-          {
-            label: t("calendar.winningDays"),
-            value: `${monthlySummary.winDays}/${monthlySummary.tradingDays}`,
-            color: monthlySummary.tradingDays === 0 ? "text-white" : "text-emerald-400",
-            delay: 2,
-          },
-          {
-            label: t("dashboard.avgRR"),
-            value: monthlySummary.avgRR.toFixed(2),
-            color: monthlySummary.tradingDays === 0 ? "text-white" : "text-cyan-400",
-            delay: 3,
-          },
-          {
-            label: t("calendar.totalRR"),
-            value: `${monthlySummary.totalRR.toFixed(2)}R`,
-            color:
-              monthlySummary.tradingDays === 0
-                ? "text-white"
-                : monthlySummary.totalRR > 0
-                  ? "text-emerald-400"
-                  : monthlySummary.totalRR < 0
-                    ? "text-red-400"
-                    : "text-white",
-            delay: 4,
-          },
-          {
-            label: t("stats.winRate"),
-            value:
-              monthlySummary.winRate === null
-                ? "—"
-                : `${(monthlySummary.winRate * 100).toFixed(1)}%`,
-            color:
-              monthlySummary.winRate === null
-                ? "text-white"
-                : monthlySummary.winRate > 0.5
-                  ? "text-emerald-400"
-                  : monthlySummary.winRate < 0.5
-                    ? "text-red-400"
-                    : "text-white",
-            delay: 5,
-          },
-        ].map((card) => (
-          <div
+      <KpiGrid className="mb-3 md:mb-6">
+        {(
+          [
+            {
+              label: t("calendar.monthlyPnl"),
+              value:
+                monthlySummary.tradingDays === 0
+                  ? "$0.00"
+                  : `${monthlySummary.total >= 0 ? "" : "-"}$${Math.abs(monthlySummary.total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              tone:
+                monthlySummary.tradingDays === 0
+                  ? "neutral"
+                  : monthlySummary.total > 0
+                    ? "pos"
+                    : monthlySummary.total < 0
+                      ? "neg"
+                      : "neutral",
+              delay: 0,
+            },
+            {
+              label: t("calendar.tradingDays"),
+              value: String(monthlySummary.tradingDays),
+              tone: "neutral",
+              delay: 1,
+            },
+            {
+              label: t("calendar.winningDays"),
+              value: `${monthlySummary.winDays}/${monthlySummary.tradingDays}`,
+              tone: monthlySummary.tradingDays === 0 ? "neutral" : "pos",
+              delay: 2,
+            },
+            {
+              label: t("dashboard.avgRR"),
+              value: monthlySummary.avgRR.toFixed(2),
+              tone: monthlySummary.tradingDays === 0 ? "neutral" : "accent",
+              delay: 3,
+            },
+            {
+              label: t("calendar.totalRR"),
+              value: `${monthlySummary.totalRR.toFixed(2)}R`,
+              tone:
+                monthlySummary.tradingDays === 0
+                  ? "neutral"
+                  : monthlySummary.totalRR > 0
+                    ? "pos"
+                    : monthlySummary.totalRR < 0
+                      ? "neg"
+                      : "neutral",
+              delay: 4,
+            },
+            {
+              label: t("stats.winRate"),
+              value:
+                monthlySummary.winRate === null
+                  ? "\u2014"
+                  : `${(monthlySummary.winRate * 100).toFixed(1)}%`,
+              tone:
+                monthlySummary.winRate === null
+                  ? "neutral"
+                  : monthlySummary.winRate > 0.5
+                    ? "pos"
+                    : monthlySummary.winRate < 0.5
+                      ? "neg"
+                      : "neutral",
+              delay: 5,
+            },
+          ] as const
+        ).map((card) => (
+          /* SIX CASES QUI NE RÉPONDENT À RIEN.
+             Elles portaient `card-premium` : la carte s'éclaircissait au
+             survol, ce qui dans ce produit annonce « je réponds au clic ».
+             Aucune ne répond, et le rembourrage de carte pleine coûtait deux
+             rangées de hauteur sur un téléphone, juste au-dessus du calendrier
+             — la seule chose que cette page existe pour montrer. C'est `Kpi`,
+             la case statique du produit, et la couleur reste ce qu'elle a
+             toujours été : le SIGNE de la valeur. */
+          <Kpi
             key={card.label}
-            className={cn(
-              "stat-card card-premium p-2.5 md:p-3.5 animate-fade-in-up",
-              `stagger-${card.delay}`,
-            )}
-          >
-            <div className="tv-label text-slate-500 mb-1">{card.label}</div>
-            <div className={cn("tv-figure text-base md:text-xl", card.color)}>{card.value}</div>
-          </div>
+            label={card.label}
+            value={card.value}
+            tone={card.tone}
+            className={cn("animate-fade-in-up", `stagger-${card.delay}`)}
+          />
         ))}
-      </div>
+      </KpiGrid>
 
       {/* Calendar */}
       <div className="stat-card-elevated overflow-hidden animate-fade-in-up stagger-5">
