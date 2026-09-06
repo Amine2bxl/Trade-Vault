@@ -71,13 +71,26 @@ const EMPTY: OnboardingData = {
 
 /* ── Petits blocs réutilisables du design system ────────────────────────── */
 
+/**
+ * L'EN-TÊTE D'UNE ÉTAPE.
+ *
+ * Un écran d'onboarding vit dans `h-dvh` : tout ce que l'en-tête prend, les
+ * choix ne l'ont pas. Il en prenait ~150px — une pastille de 56px cerclée d'un
+ * halo cyan flou, 20px de marge, un titre de 24px, puis 28px avant les options.
+ * Sur un téléphone de 667px, les six cartes d'un choix commençaient sous la
+ * ligne de flottaison : le trader devait défiler pour savoir qu'il y avait
+ * quelque chose à choisir. C'est de la friction pure, à l'écran où il y en a
+ * le moins besoin.
+ *
+ * L'en-tête tient maintenant en ~95px, et le halo est parti — la règle du
+ * système est que rien ne rayonne, et un flou coloré derrière une pastille
+ * n'ajoutait aucune information à un écran dont le seul travail est de poser
+ * une question.
+ */
 function IconBadge({ icon: Icon }: { icon: typeof Target }) {
   return (
-    <div className="relative mb-5">
-      <span className="absolute -inset-2 rounded-2xl bg-cyan-500/30 blur-lg" />
-      <div className="relative grid h-14 w-14 place-items-center rounded-2xl tv-accent-fill">
-        <Icon className="w-7 h-7" />
-      </div>
+    <div className="tv-accent-fill mb-3 grid h-10 w-10 place-items-center rounded-xl">
+      <Icon className="h-5 w-5" />
     </div>
   );
 }
@@ -98,9 +111,11 @@ function ScreenShell({
       <div className="flex justify-center">
         <IconBadge icon={icon} />
       </div>
-      <h2 className="text-2xl font-bold text-white tracking-tight mb-2">{title}</h2>
+      <h2 className="mb-1.5 text-xl font-bold tracking-tight text-white">{title}</h2>
       {subtitle && (
-        <p className="text-sm text-slate-400 max-w-md mx-auto mb-7 leading-relaxed">{subtitle}</p>
+        <p className="mx-auto mb-5 max-w-md text-[13px] leading-relaxed text-slate-400">
+          {subtitle}
+        </p>
       )}
       {children}
     </div>
@@ -124,10 +139,14 @@ function OptionCard({
     <button
       onClick={onClick}
       className={cn(
-        "onb-card relative rounded-2xl p-4 border text-left w-full transition",
+        "onb-card relative w-full rounded-2xl border p-3.5 text-left transition",
+        /* Le SÉLECTIONNÉ du produit : une plaque plus claire et un liseré
+           d'accent — le même contrat que la navigation secondaire et que les
+           lignes actives de Jarvis. Un aplat cyan sur toute la carte faisait
+           lire la sélection comme un état de risque. */
         selected
-          ? "bg-cyan-500/15 border-cyan-400/50"
-          : "bg-white/[0.04] border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]",
+          ? "border-[var(--tv-border-accent)] bg-[var(--tv-plate-3)]"
+          : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)]",
       )}
     >
       {multi && (
@@ -166,10 +185,10 @@ function Chip({
     <button
       onClick={onClick}
       className={cn(
-        "onb-card rounded-xl px-3.5 py-2.5 border text-[13px] font-semibold inline-flex items-center gap-1.5 transition",
+        "onb-card inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-semibold transition",
         selected
-          ? "bg-cyan-500/15 border-cyan-400/50 text-white"
-          : "bg-white/[0.04] border-white/[0.08] text-slate-300 hover:border-white/20",
+          ? "border-[var(--tv-border-accent)] bg-[var(--tv-plate-3)] text-white"
+          : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-300 hover:border-[var(--tv-border-strong)]",
       )}
     >
       {selected && <Check className="w-3.5 h-3.5 text-cyan-300" strokeWidth={3} />}
@@ -568,12 +587,21 @@ export default function Onboarding({
           {/* ── 7 · OBJECTIF + CAPITAL + APPARENCE ── */}
           {step === "settings" && (
             <ScreenShell icon={SlidersHorizontal} title={c.targetTitle} subtitle={c.targetSub}>
-              {/* Two cards: target + capital */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 onb-in max-w-md mx-auto">
-                <div className="glass-strong rounded-2xl p-4 text-center">
-                  <Target className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
-                  <div className="tv-label text-slate-400 mb-2">Objectif mensuel</div>
-                  <div className="relative max-w-[120px] mx-auto">
+              {/* LES DEUX CHIFFRES.
+                  C'étaient deux cartes `glass-strong` centrées de ~140px de
+                  haut : une icône, un libellé, puis un champ de 56px — pour
+                  saisir un nombre. Une carte qui flotte (`glass-strong` est la
+                  matière des modales) autour d'un champ de formulaire, c'est
+                  de la présence donnée à ce qui n'en demande pas. Deux champs
+                  étiquetés, sur une rangée, et l'étape entière remonte de
+                  ~80px — ce qui compte sur un écran qui ne défile pas. */}
+              <div className="onb-in mx-auto mb-5 grid max-w-md grid-cols-2 gap-3">
+                <label className="text-left">
+                  <span className="tv-label mb-1 flex items-center gap-1.5 text-slate-400">
+                    <Target className="h-3.5 w-3.5" />
+                    {c.targetLabel}
+                  </span>
+                  <span className="relative block">
                     <input
                       type="number"
                       inputMode="decimal"
@@ -583,18 +611,20 @@ export default function Onboarding({
                       value={target}
                       onChange={(e) => setTarget(e.target.value)}
                       placeholder="3"
-                      className="tv-figure w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 pr-10 text-center text-2xl text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06]"
+                      className="tv-figure h-11 w-full rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 pr-8 text-center text-lg text-white outline-none transition placeholder:text-slate-600 focus:border-[var(--tv-border-accent)]"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
                       %
                     </span>
-                  </div>
-                </div>
-                <div className="glass-strong rounded-2xl p-4 text-center">
-                  <Wallet className="w-5 h-5 text-cyan-300 mx-auto mb-2" />
-                  <div className="tv-label text-slate-400 mb-2">Capital de départ</div>
-                  <div className="relative max-w-[140px] mx-auto">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                  </span>
+                </label>
+                <label className="text-left">
+                  <span className="tv-label mb-1 flex items-center gap-1.5 text-slate-400">
+                    <Wallet className="h-3.5 w-3.5" />
+                    {c.capitalLabel}
+                  </span>
+                  <span className="relative block">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
                       $
                     </span>
                     <input
@@ -604,36 +634,38 @@ export default function Onboarding({
                       value={accountSize}
                       onChange={(e) => setAccountSize(e.target.value)}
                       placeholder="25000"
-                      className="tv-figure w-full h-14 bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 text-center text-2xl text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-500/40 focus:bg-white/[0.06]"
+                      className="tv-figure h-11 w-full rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] pl-7 pr-3 text-center text-lg text-white outline-none transition placeholder:text-slate-600 focus:border-[var(--tv-border-accent)]"
                     />
-                  </div>
-                </div>
+                  </span>
+                </label>
               </div>
-              <p className="tv-row-label text-center mb-8 -mt-2">
-                Modifiable à tout moment depuis tes paramètres
-              </p>
+              <p className="tv-row-label mb-6 text-center">{c.settingsHint}</p>
 
               {/* Thème */}
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Palette className="w-4 h-4 text-cyan-300" />
+              <div className="mb-2 flex items-center justify-center gap-2">
+                <Palette className="h-4 w-4 text-[var(--tv-highlight)]" />
                 <h3 className="tv-title">{t("onb.appearance")}</h3>
               </div>
-              <p className="tv-prose text-slate-400 text-center mb-4">{t("onb.appearanceSub")}</p>
-              <div className="max-w-full overflow-visible mb-3">
+              <p className="tv-prose mb-3 text-center text-slate-400">{t("onb.appearanceSub")}</p>
+              <div className="mb-3 max-w-full overflow-visible">
                 <ThemeSettings />
               </div>
               <button
                 onClick={() =>
                   createTheme({
-                    name: "Mon thème",
+                    name: c.themeCustomName,
                     primary: "#06b6d4",
                     secondary: "#10b981",
                     highlight: "#22d3ee",
                   })
                 }
-                className="w-full h-11 rounded-xl text-sm font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 hover:text-cyan-200 transition flex items-center justify-center gap-2 mb-7"
+                /* Une action SECONDAIRE de l'étape — elle ne peut pas porter la
+                   même présence que « Continuer », qui est la seule chose à
+                   faire ici. Plaque neutre, hauteur d'un contrôle, et le « + »
+                   n'est plus écrit deux fois (l'icône le disait déjà). */
+                className="mb-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[13px] font-semibold text-slate-300 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white"
               >
-                <Plus className="w-4 h-4" /> + Personnaliser mon thème
+                <Plus className="h-4 w-4" /> {c.themeCustomCta}
               </button>
 
               <button
