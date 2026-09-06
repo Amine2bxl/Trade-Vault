@@ -229,7 +229,30 @@ export const BUILTIN_THEMES: ThemeDef[] = [
   },
 ];
 
-export const DEFAULT_THEME_ID = "vault";
+/**
+ * LE DÉFAUT EST GRAPHITE, ET PLUS « VAULT ».
+ *
+ * L'émeraude était l'accent par défaut du produit. Le problème n'est pas la
+ * teinte : c'est qu'un journal de trading affiche déjà du vert et du rouge sur
+ * CHAQUE écran — c'est le signe du P&L, l'information la plus importante de
+ * l'application. Poser un accent vert par-dessus, sur les boutons, les onglets
+ * actifs et les liserés, met la couleur du GAIN sur des surfaces qui ne disent
+ * rien du gain. À la fin, le vert ne désigne plus rien.
+ *
+ * Graphite n'a aucune teinte (`#94a3b8`, chroma ramenée au plancher de 0,35) :
+ * le chrome devient neutre, et les deux seules couleurs saturées qui restent à
+ * l'écran sont le vert du profit et le rouge de la perte. C'est la lecture des
+ * terminaux professionnels, et c'est ce que le système énonçait déjà — « la
+ * couleur est RARE ».
+ *
+ * Rien n'est verrouillé : le studio de thèmes garde ses six thèmes intégrés
+ * (Vault émeraude compris) et les thèmes créés par le trader. Ceci n'est que le
+ * point de départ de qui n'a jamais choisi.
+ *
+ * La VITRINE n'est pas concernée : elle s'affiche avant toute connexion, donc
+ * avant tout thème, et porte son propre accent (voir `landing.css`).
+ */
+export const DEFAULT_THEME_ID = "graphite";
 
 // ---- persistence (localStorage; per device, restored before paint) -----
 

@@ -306,6 +306,62 @@ const M: Record<string, Msg> = {
   "journey.s5.t": { en: "Decisions", fr: "Décisions" },
   "journey.s5.d": { en: "You fix, you improve", fr: "Tu corriges, tu progresses" },
 
+  /* Les trois états d'un jalon du parcours. Ils décrivent la PROGRESSION DU
+     PRODUIT sur les données du trader, pas un statut de compte : « acquis »
+     signifie que l'étape ne demande plus rien, « en cours » qu'elle travaille,
+     « à venir » qu'elle attend de la matière. */
+  "journey.state.done": { en: "Covered", fr: "Acquis" },
+  "journey.state.now": { en: "In progress", fr: "En cours" },
+  "journey.state.next": { en: "Next", fr: "À venir" },
+
+  /* ── LES TROIS PILIERS ──
+     Ils ne promettent rien que le produit ne fasse : journaliser vite, mesurer
+     ce qui est mesurable, et nommer un biais avec la preuve chiffrée sous la
+     phrase. Aucun chiffre de performance, aucune promesse de gain. */
+  "pillars.eyebrow": { en: "Why TradeVault", fr: "Pourquoi TradeVault" },
+  "pillars.title.a": { en: "A journal that", fr: "Un journal qui" },
+  "pillars.title.b": { en: "answers back.", fr: "te répond." },
+  "pillars.sub": {
+    en: "Most journals store your trades. This one reads them, and tells you what it found.",
+    fr: "La plupart des journaux stockent tes trades. Celui-ci les lit, et te dit ce qu'il y trouve.",
+  },
+  "pillars.p1.t": { en: "Logged in seconds", fr: "Journalisé en secondes" },
+  "pillars.p1.d": {
+    en: "Import a CSV or log a trade by hand. Screenshots, mistakes and notes stay attached to it.",
+    fr: "Importe un CSV ou saisis un trade à la main. Captures, erreurs et notes y restent attachées.",
+  },
+  "pillars.p2.t": { en: "Your edge, measured", fr: "Ton edge, mesuré" },
+  "pillars.p2.d": {
+    en: "Win rate, R-multiples, expectancy, drawdown — computed on your own history, not on averages.",
+    fr: "Win rate, R-multiples, expectancy, drawdown — calculés sur ton historique, pas sur des moyennes.",
+  },
+  "pillars.p3.t": { en: "Biases named", fr: "Tes biais nommés" },
+  "pillars.p3.d": {
+    en: "Sizing up after a loss, overtrading, your worst day: each claim comes with the trades behind it.",
+    fr: "Taille augmentée après une perte, overtrading, ton pire jour : chaque constat cite ses trades.",
+  },
+  "pillars.cta": { en: "See how", fr: "Voir comment" },
+
+  /* ── LES TROIS PREMIÈRES MINUTES ── */
+  "start.eyebrow": { en: "Getting started", fr: "Pour commencer" },
+  "start.title.a": { en: "Three minutes to your", fr: "Trois minutes pour ton" },
+  "start.title.b": { en: "first insight.", fr: "premier constat." },
+  "start.s1.t": { en: "Bring your trades", fr: "Amène tes trades" },
+  "start.s1.d": {
+    en: "CSV import from your broker, or type them in. Nothing to install.",
+    fr: "Import CSV depuis ton broker, ou saisie manuelle. Rien à installer.",
+  },
+  "start.s2.t": { en: "Set your rules", fr: "Pose tes règles" },
+  "start.s2.d": {
+    en: "Your risk per trade, your sessions, your setups. The checklist is built from them.",
+    fr: "Ton risque par trade, tes sessions, tes setups. La checklist se construit dessus.",
+  },
+  "start.s3.t": { en: "Read what comes back", fr: "Lis ce qui remonte" },
+  "start.s3.d": {
+    en: "Metrics, patterns, and the coach's first read on your history.",
+    fr: "Métriques, schémas, et la première lecture du coach sur ton historique.",
+  },
+
   /* ai */
   "ai.tag": { en: "The solution", fr: "La solution" },
   "ai.title.a": { en: "An AI coach who knows", fr: "Un coach IA qui connaît" },

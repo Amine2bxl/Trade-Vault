@@ -215,7 +215,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
                   onClick={() => setLang(l)}
                   className={`flex-1 rounded-lg border py-2 text-[12px] font-semibold uppercase transition-colors ${
                     lang === l
-                      ? "border-cyan-400/30 bg-cyan-400/[.08] text-cyan-300"
+                      ? "border-[rgb(var(--lp-accent-rgb)/0.30)] bg-[var(--lp-accent)]/[.08] text-[var(--lp-accent-soft)]"
                       : "border-white/[.08] text-slate-400"
                   }`}
                 >

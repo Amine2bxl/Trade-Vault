@@ -96,7 +96,7 @@ export function AuthModal({
   };
 
   const field =
-    "w-full h-11 rounded-xl border border-white/[.1] bg-white/[.03] px-3.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400/55 focus:bg-white/[.05] focus:ring-2 focus:ring-cyan-400/15";
+    "w-full h-11 rounded-xl border border-white/[.1] bg-white/[.03] px-3.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-[rgb(var(--lp-accent-rgb)/0.55)] focus:bg-white/[.05] focus:ring-2 focus:ring-[rgb(var(--lp-accent-rgb)/0.15)]";
   const toggleMode = () => {
     setMode(mode === "login" ? "signup" : "login");
     setError("");
@@ -120,7 +120,7 @@ export function AuthModal({
         <div className="grid md:grid-cols-2">
           {/* ── Colonne gauche : marque + confiance (masquée sur mobile) ── */}
           <div className="relative hidden md:flex flex-col justify-between p-8 overflow-hidden bg-[linear-gradient(160deg,rgba(14,58,82,.4),rgba(7,14,24,.95)_70%)]">
-            <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-cyan-500/[.08] blur-3xl" />
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-[var(--lp-accent)]/[.08] blur-3xl" />
 
             <div className="relative">
               <div className="flex items-center gap-2.5">
@@ -151,7 +151,7 @@ export function AuthModal({
                     key={line}
                     className="flex items-start gap-2 text-[13px] leading-5 text-slate-300"
                   >
-                    <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-cyan-400/15 text-cyan-300">
+                    <span className="mt-[3px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[rgb(var(--lp-accent-rgb)/0.15)] text-[var(--lp-accent-soft)]">
                       <Icon n="check" cls="h-2.5 w-2.5" />
                     </span>
                     {line}
@@ -196,7 +196,7 @@ export function AuthModal({
             </div>
 
             {plan && (
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-400/[.08] px-2.5 py-1 text-[11px] font-semibold text-cyan-300">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--lp-accent-rgb)/0.25)] bg-[var(--lp-accent)]/[.08] px-2.5 py-1 text-[11px] font-semibold text-[var(--lp-accent-soft)]">
                 <Icon n="sparkle" cls="h-3 w-3" />
                 {plan}
               </div>
@@ -293,7 +293,7 @@ export function AuthModal({
                     <button
                       type="button"
                       onClick={forgot}
-                      className="text-[11px] text-slate-500 hover:text-cyan-300 transition"
+                      className="text-[11px] text-slate-500 hover:text-[var(--lp-accent-soft)] transition"
                     >
                       {t("auth.forgot")}
                     </button>
@@ -337,7 +337,11 @@ export function AuthModal({
               {mode === "login" ? t("auth.switch.toSignup") : t("auth.switch.toLogin")}{" "}
               <button
                 onClick={toggleMode}
-                className="font-semibold text-cyan-300 hover:text-cyan-200 transition"
+                /* Le survol doit DIFFÉRER de l'état de base : `cyan-300` et
+                   `cyan-200` tombaient tous deux sur le même jeton, ce qui
+                   rendait le survol muet sur le lien qui fait basculer entre
+                   connexion et inscription. */
+                className="font-semibold text-[var(--lp-accent-soft)] transition hover:text-white"
               >
                 {mode === "login" ? t("auth.switchCta.signup") : t("auth.switchCta.login")}
               </button>

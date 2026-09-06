@@ -1,7 +1,30 @@
 /* ═══════════════════════════════════════════════════════════════
-   LANDING PAGE — Premium Fintech
-   Compact, story-driven. Dark, neon accents, curves & life.
-   ═══════════════════════════════════════════════════════════════ */
+   LA VITRINE — GRAPHITE, ET L'ACCENT EST RARE
+   ═══════════════════════════════════════════════════════════════
+
+   ── POURQUOI LA VITRINE A SES PROPRES COULEURS ────────────────────────────
+
+   Elle s'affiche AVANT toute connexion, donc avant qu'un thème existe : elle
+   ne peut pas lire `--tv-accent`, qui n'est posé qu'une fois l'utilisateur
+   identifié. Et depuis que le défaut du produit est GRAPHITE (un gris sans
+   teinte, pour laisser le vert et le rouge au seul P&L), s'y accrocher rendrait
+   la vitrine entièrement grise — or une page qui doit convaincre a besoin d'un
+   point de couleur.
+
+   Les jetons `--lp-*` ci-dessous sont donc la palette PROPRE à la vitrine.
+   C'est aussi ce que le test `themeCoverage` acte déjà : `pages/Landing.tsx`
+   et `pages/landing/` sont hors du champ du studio de thèmes.
+
+   ── LA RÈGLE, ET ELLE TIENT EN UNE LIGNE ──────────────────────────────────
+
+   Le graphite est la MATIÈRE : le fond, les plaques, les liserés, la grille.
+   L'émeraude est l'ÉVÉNEMENT : une carte pleine par section, jamais deux, les
+   boutons d'action, les nœuds d'une courbe, les anneaux d'icône. Une page où
+   tout est vert n'a pas d'accent — elle a un fond vert.
+
+   Les 66 valeurs cyan/indigo/violet écrites en dur qui traînaient ici (l'ancienne
+   identité Jarvis) sont ramenées à ces jetons : la vitrine se reteinte
+   désormais en changeant trois lignes. */
 
 .landing-root {
   font-family:
@@ -11,8 +34,31 @@
     -apple-system,
     sans-serif;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--tv-bg);
+  background: var(--lp-ink);
   color: #ffffff;
+
+  /* L'ACCENT — l'émeraude de TradeVault, et lui seul. */
+  --lp-accent: #10b981;
+  --lp-accent-rgb: 16 185 129;
+  --lp-accent-soft: #34d399;
+  --lp-accent-deep: #059669;
+  /* Le noir sur lequel se lit une carte pleine d'accent. */
+  --lp-on-accent: #05140e;
+
+  /* LE GRAPHITE — quatre plaques, de la page vers ce qui flotte. */
+  --lp-ink: #0a0b0d;
+  --lp-plate-1: #101215;
+  --lp-plate-2: #16191d;
+  --lp-plate-3: #1e2228;
+
+  /* Deux liserés, pas trois. */
+  --lp-line: rgb(255 255 255 / 0.07);
+  --lp-line-strong: rgb(255 255 255 / 0.14);
+
+  /* Trois crans de texte. */
+  --lp-text: #f4f5f6;
+  --lp-text-2: #9aa1a8;
+  --lp-text-3: #6b7178;
 }
 
 .landing-root > main {
@@ -145,7 +191,7 @@
     transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .glass-card:hover {
-  border-color: rgba(34, 211, 238, 0.25);
+  border-color: rgb(var(--lp-accent-rgb) / 0.25);
   transform: translateY(-3px);
 }
 .card-premium {
@@ -159,15 +205,15 @@
   overflow: hidden;
 }
 .card-premium:hover {
-  border-color: rgba(34, 211, 238, 0.22);
+  border-color: rgb(var(--lp-accent-rgb) / 0.22);
   transform: translateY(-3px);
 }
 .card-featured {
   position: relative;
-  border: 1px solid rgba(34, 211, 238, 0.4);
+  border: 1px solid rgb(var(--lp-accent-rgb) / 0.4);
   border-radius: 1.25rem;
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.12) 0%, rgba(34, 211, 238, 0.04) 100%);
-  box-shadow: 0 0 50px rgba(34, 211, 238, 0.12);
+  background: linear-gradient(135deg, rgb(var(--lp-accent-rgb) / 0.12) 0%, rgb(var(--lp-accent-rgb) / 0.04) 100%);
+  box-shadow: 0 0 50px rgb(var(--lp-accent-rgb) / 0.12);
   overflow: hidden;
 }
 
@@ -176,8 +222,8 @@
   display: grid;
   place-items: center;
   border-radius: 0.75rem;
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  background: rgba(34, 211, 238, 0.07);
+  border: 1px solid rgb(var(--lp-accent-rgb) / 0.2);
+  background: rgb(var(--lp-accent-rgb) / 0.07);
   color: var(--tv-highlight);
   flex-shrink: 0;
 }
@@ -225,7 +271,7 @@
   left: calc(50% + 2.5rem);
   right: calc(-50% + 2.5rem);
   height: 1.5px;
-  background: linear-gradient(90deg, rgba(34, 211, 238, 0.4), rgba(34, 211, 238, 0.08));
+  background: linear-gradient(90deg, rgb(var(--lp-accent-rgb) / 0.4), rgb(var(--lp-accent-rgb) / 0.08));
   z-index: 0;
 }
 .journey-dot {
@@ -237,16 +283,16 @@
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--tv-highlight);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
+  box-shadow: 0 0 12px rgb(var(--lp-accent-rgb) / 0.7);
   animation: journey-pulse 2.4s ease-in-out infinite;
 }
 @keyframes journey-pulse {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 8px rgb(var(--lp-accent-rgb) / 0.5);
   }
   50% {
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.9);
+    box-shadow: 0 0 20px rgb(var(--lp-accent-rgb) / 0.9);
   }
 }
 
@@ -285,7 +331,7 @@
   border-radius: 50%;
   background: linear-gradient(135deg, var(--tv-highlight), var(--tv-accent));
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 10px rgb(var(--lp-accent-rgb) / 0.4);
 }
 .landing-root input[type="range"]::-moz-range-thumb {
   width: 18px;
@@ -300,7 +346,7 @@
 .scroll-bar {
   transform-origin: left;
   background: linear-gradient(to right, var(--tv-highlight), #6366f1);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+  box-shadow: 0 0 12px rgb(var(--lp-accent-rgb) / 0.5);
 }
 
 /* ── Entrances ── */
@@ -397,7 +443,7 @@
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(140deg, rgba(34, 211, 238, 0.3), transparent 40%);
+  background: linear-gradient(140deg, rgb(var(--lp-accent-rgb) / 0.3), transparent 40%);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -408,7 +454,7 @@
 }
 .ai-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(34, 211, 238, 0.2);
+  border-color: rgb(var(--lp-accent-rgb) / 0.2);
 }
 .ai-card:hover::before {
   opacity: 1;
@@ -446,17 +492,17 @@
 /* ── Pricing popular ── */
 .plan-popular {
   position: relative;
-  border: 1px solid rgba(34, 211, 238, 0.4);
+  border: 1px solid rgb(var(--lp-accent-rgb) / 0.4);
   box-shadow:
-    0 0 0 1px rgba(34, 211, 238, 0.15),
-    0 20px 60px rgba(34, 211, 238, 0.12);
+    0 0 0 1px rgb(var(--lp-accent-rgb) / 0.15),
+    0 20px 60px rgb(var(--lp-accent-rgb) / 0.12);
 }
 .plan-popular::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34, 211, 238, 0.12), transparent 60%);
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgb(var(--lp-accent-rgb) / 0.12), transparent 60%);
   pointer-events: none;
 }
 
@@ -514,7 +560,7 @@
   transition: opacity 0.35s ease;
   background: radial-gradient(
     circle,
-    rgba(34, 211, 238, 0.06) 0%,
+    rgb(var(--lp-accent-rgb) / 0.06) 0%,
     rgba(99, 102, 241, 0.03) 45%,
     transparent 72%
   );
@@ -539,7 +585,7 @@
   border-radius: inherit;
   background: radial-gradient(
     280px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(34, 211, 238, 0.1),
+    rgb(var(--lp-accent-rgb) / 0.1),
     transparent 65%
   );
   opacity: 0;
@@ -560,7 +606,7 @@
   z-index: 0;
 }
 .glow-orb-cyan {
-  background: rgba(34, 211, 238, 0.08);
+  background: rgb(var(--lp-accent-rgb) / 0.08);
 }
 .glow-orb-indigo {
   background: rgba(99, 102, 241, 0.06);
@@ -614,4 +660,212 @@
   .typing span {
     animation: none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LES COMPOSANTS DE LA REFONTE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── LA GRILLE DE FOND ──────────────────────────────────────────────────
+   Deux trames de lignes très sourdes, masquées en fondu vers les bords. Elle
+   donne au noir une PROFONDEUR sans rien y peindre : sans elle, une page
+   sombre est un vide, et les plaques y flottent sans plan de référence. */
+.lp-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.028) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 100%);
+}
+
+/* ── LA PLAQUE ─────────────────────────────────────────────────────────── */
+.lp-plate {
+  position: relative;
+  border: 1px solid var(--lp-line);
+  border-radius: 20px;
+  background: var(--lp-plate-1);
+}
+@media (hover: hover) {
+  .lp-plate-hover:hover {
+    border-color: var(--lp-line-strong);
+    background: var(--lp-plate-2);
+  }
+}
+.lp-plate-hover {
+  transition:
+    border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── LA CARTE PLEINE D'ACCENT ───────────────────────────────────────────
+   UNE PAR SECTION, JAMAIS DEUX. C'est le geste central des deux références :
+   trois cartes sombres, celle du milieu pleine — et c'est elle qui porte le
+   bouton. Le contraste fait tout le travail de hiérarchie ; le répéter le
+   détruit. Texte NOIR dessus : du blanc sur émeraude ne passe aucun seuil de
+   contraste lisible. */
+.lp-plate-accent {
+  position: relative;
+  border: 1px solid var(--lp-accent);
+  border-radius: 20px;
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
+}
+.lp-plate-accent .lp-muted {
+  color: rgb(5 20 14 / 0.72);
+}
+
+/* ── L'ANNEAU D'ICÔNE ───────────────────────────────────────────────────
+   Le cercle d'accent des références (« Fund your account », « Start trading »).
+   Un anneau, pas un disque plein : le disque plein est réservé à la carte
+   d'accent, et deux aplats dans la même carte se disputent le regard. */
+.lp-ring {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1.5px solid rgb(var(--lp-accent-rgb) / 0.55);
+  background: rgb(var(--lp-accent-rgb) / 0.08);
+  color: var(--lp-accent-soft);
+}
+/* Sur une carte pleine, l'anneau s'inverse — il devient sombre sur clair. */
+.lp-plate-accent .lp-ring {
+  border-color: rgb(5 20 14 / 0.45);
+  background: rgb(5 20 14 / 0.12);
+  color: var(--lp-on-accent);
+}
+
+/* ── LA PASTILLE D'ÉTAT ─────────────────────────────────────────────────
+   « Acquis · En cours · À venir » — les pastilles des jalons de la 2e
+   référence. Trois états, trois valeurs de gris, et le SEUL coloré est
+   l'étape en cours : c'est la seule qui demande une action. */
+.lp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.375rem;
+  padding: 0 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--lp-line);
+  background: var(--lp-plate-2);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lp-text-3);
+  white-space: nowrap;
+}
+.lp-pill-done {
+  color: var(--lp-text-2);
+}
+.lp-pill-now {
+  border-color: rgb(var(--lp-accent-rgb) / 0.45);
+  background: rgb(var(--lp-accent-rgb) / 0.12);
+  color: var(--lp-accent-soft);
+}
+.lp-pill-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── LA CARTE FLOTTANTE ─────────────────────────────────────────────────
+   Les encarts chiffrés posés SUR la courbe (« $4,528 USD »). Ils flottent
+   vraiment : plaque plus claire, liseré plus fort, une ombre — les trois
+   seules choses qui, sur un fond noir, disent « ceci est devant ». */
+.lp-float-card {
+  border: 1px solid var(--lp-line-strong);
+  border-radius: 14px;
+  background: var(--lp-plate-2);
+  box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.9);
+  backdrop-filter: blur(6px);
+}
+/* Le filet d'accent à gauche, qui rattache l'encart à sa courbe. */
+.lp-float-card-tick {
+  border-left: 2px solid var(--lp-accent);
+  padding-left: 0.5rem;
+}
+
+/* ── LE HALO ────────────────────────────────────────────────────────────
+   Le seul flou de la page, et il ne sert qu'à UNE chose : détacher la carte
+   centrale d'une section. Large, très peu opaque, jamais coloré à plus de
+   14 % — au-delà, ce n'est plus une profondeur, c'est un néon. */
+.lp-halo {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(90px);
+  background: rgb(var(--lp-accent-rgb) / 0.13);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-halo {
+    display: none;
+  }
+}
+
+/* ── LES DEUX BOUTONS ───────────────────────────────────────────────────
+   Un plein, un cerclé. Les références n'en montrent jamais plus de deux côte
+   à côte, et c'est la bonne règle : au troisième, aucun n'est principal. */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.875rem;
+  padding: 0 1.5rem;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
+  border: 1px solid var(--lp-accent);
+  transition:
+    background-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) {
+  .lp-btn:hover {
+    background: var(--lp-accent-soft);
+    border-color: var(--lp-accent-soft);
+  }
+}
+.lp-btn:active {
+  transform: scale(0.98);
+}
+.lp-btn-ghost {
+  background: transparent;
+  color: var(--lp-text);
+  border: 1px solid var(--lp-line-strong);
+}
+@media (hover: hover) {
+  .lp-btn-ghost:hover {
+    background: var(--lp-plate-2);
+    border-color: var(--lp-accent);
+    color: #fff;
+  }
+}
+.lp-btn:focus-visible,
+.lp-btn-ghost:focus-visible {
+  outline: 2px solid var(--lp-accent-soft);
+  outline-offset: 3px;
+}
+
+/* ── LE NUMÉRO DE CARTE ─────────────────────────────────────────────────
+   « 01 · 02 · 03 » de la première référence. Il est GRAND et sourd : il
+   ordonne la lecture sans se disputer le titre. */
+.lp-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--lp-text-3);
+}
+.lp-plate-accent .lp-num {
+  color: rgb(5 20 14 / 0.55);
 }

@@ -360,16 +360,22 @@
   /* Émeraude #10b981 (H 162.5). La chroma est volontairement rentrée sous
      sa valeur nominale (1.065 → 0.95) : le vert doit se lire comme une
      encre, pas comme une diode. */
-  --tv-primary-h: 162.5;
-  --tv-primary-c: 0.95;
-  --tv-secondary-h: 163.2;
-  --tv-secondary-c: 0.88;
-  --tv-accent: #10b981;
-  --tv-accent-2: #059669;
-  --tv-highlight: #34d399;
-  --tv-accent-rgb: 16 185 129;
-  --tv-accent-2-rgb: 5 150 105;
-  --tv-highlight-rgb: 52 211 153;
+  /* LE REPLI, ET IL DOIT ÊTRE CELUI DU THÈME PAR DÉFAUT.
+     Ces valeurs peignent la page pendant les quelques trames qui séparent le
+     premier rendu de l'application du thème par le script. Elles portaient
+     l'émeraude alors que le défaut est GRAPHITE depuis `themes.ts` : chaque
+     chargement montrait donc un éclair vert avant de virer au gris. Ce sont
+     exactement les valeurs que `computeThemeVars` produit pour « graphite ». */
+  --tv-primary-h: 256.8;
+  --tv-primary-c: 0.35;
+  --tv-secondary-h: 257.4;
+  --tv-secondary-c: 0.35;
+  --tv-accent: #94a3b8;
+  --tv-accent-2: #64748b;
+  --tv-highlight: #cbd5e1;
+  --tv-accent-rgb: 148 163 184;
+  --tv-accent-2-rgb: 100 116 139;
+  --tv-highlight-rgb: 203 213 225;
 
   /* ── LE VERT DE LA DONNÉE ──
    *

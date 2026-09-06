@@ -9,6 +9,15 @@ import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
 import PricingPlans from "../components/pricing/PricingPlans";
 import { LandingLangProvider, useLandingT } from "./landing/i18n";
+import {
+  BackgroundGrid,
+  JourneyCurve,
+  PillarCards,
+  SectionHead,
+  StepCards,
+  type Milestone,
+  type Pillar,
+} from "./landing/Sections";
 import "./landing.css";
 
 /* ─────────────────────────── LOGO ────────────────────────── */
@@ -17,7 +26,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <a
       href="#"
-      className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-sm"
+      className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lp-accent)] rounded-sm"
     >
       <img
         src={logoSrc}
@@ -234,7 +243,7 @@ function HeroProductVisual() {
             <p className="tv-label text-slate-500">{t("hero.eq")}</p>
             <p className="tv-figure mt-1 text-2xl text-[var(--tv-chart-green)]">+4 218,50 €</p>
           </div>
-          <span className="tv-figure mt-1 rounded-full border border-emerald-400/20 bg-emerald-400/12 px-2.5 py-1 text-[11px] text-emerald-400">
+          <span className="lp-float-card lp-float-card-tick tv-figure mt-1 py-1 pr-2.5 text-[11px] text-[var(--tv-chart-green)]">
             +16.9%
           </span>
         </div>
@@ -277,7 +286,9 @@ function HeroProductVisual() {
           ].map(([l, v]) => (
             <div key={l} className="text-center">
               <p className="tv-label text-slate-500">{l}</p>
-              <p className="mt-1 font-display text-base font-bold text-cyan-300">{v}</p>
+              <p className="mt-1 font-display text-base font-bold text-[var(--lp-accent-soft)]">
+                {v}
+              </p>
             </div>
           ))}
         </div>
@@ -298,17 +309,21 @@ function HeroProductVisual() {
         </div>
         <p className="text-[11px] leading-4 text-slate-300">
           {t("hero.coach.tip")}{" "}
-          <span className="text-cyan-300 font-semibold">{t("hero.coach.action")}</span>
+          <span className="text-[var(--lp-accent-soft)] font-semibold">
+            {t("hero.coach.action")}
+          </span>
         </p>
       </div>
 
       <div className="float-b absolute -top-8 -right-5 z-10 w-[190px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-1)] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden md:block">
         <div className="flex items-center gap-2 mb-1.5">
-          <Icon n="radar" cls="h-3.5 w-3.5 text-violet-300" />
+          <Icon n="radar" cls="h-3.5 w-3.5 text-[var(--lp-accent-soft)]" />
           <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
         </div>
         <p className="text-[11px] leading-4 text-slate-300">
-          <span className="text-violet-300 font-semibold">{t("hero.pattern.tip")}</span>
+          <span className="text-[var(--lp-accent-soft)] font-semibold">
+            {t("hero.pattern.tip")}
+          </span>
         </p>
       </div>
     </div>
@@ -340,7 +355,7 @@ function AIConversation() {
             <p className="tv-prose text-slate-200">{t("ai.c.q")}</p>
           </div>
         </div>
-        <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-cyan-400/20 bg-cyan-400/[.05] p-3.5">
+        <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-[rgb(var(--lp-accent-rgb)/0.20)] bg-[var(--lp-accent)]/[.05] p-3.5">
           <p className="tv-prose text-slate-200">{t("ai.c.a")}</p>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-3.5">
@@ -371,17 +386,6 @@ function useSpot() {
  * Un kicker n'ajoute aucune information que le titre ne porte pas déjà — il ne
  * fait que retarder la lecture de la seule ligne qui compte.
  */
-function SectionHead({ tag, title, sub }: { tag: string; title: React.ReactNode; sub?: string }) {
-  return (
-    <div className="reveal text-center mx-auto max-w-2xl mb-10" aria-label={tag}>
-      <h2 className="font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-bold tracking-[-0.03em] text-white leading-[1.12]">
-        {title}
-      </h2>
-      {sub && <p className="mt-4 text-slate-400 leading-7">{sub}</p>}
-    </div>
-  );
-}
-
 const NAV: [string, string][] = [
   ["nav.problem", "problem"],
   ["nav.features", "features"],
@@ -389,21 +393,27 @@ const NAV: [string, string][] = [
   ["faq.tag", "faq"],
 ];
 
-/* ─────────────────────────── JOURNEY SECTION ─────────────────────────── */
+/* ─────────────────────────── LE PARCOURS ───────────────────────────
+   Les cinq étapes vivaient sur une rangée de pastilles alignées, reliées par un
+   trait horizontal. Une rangée met les cinq à ÉGALITÉ — or elles ne le sont
+   pas : journaliser un trade est le pied de la pente, corriger un biais est le
+   haut. La courbe ascendante le dit sans une phrase, et c'est le geste le plus
+   réutilisable des deux références. */
 function JourneySection() {
   const { t } = useLandingT();
-  const steps = [
-    { icon: "document" as IName, title: t("journey.s1.t"), sub: t("journey.s1.d") },
-    { icon: "chart" as IName, title: t("journey.s2.t"), sub: t("journey.s2.d") },
-    { icon: "radar" as IName, title: t("journey.s3.t"), sub: t("journey.s3.d") },
-    { icon: "brain" as IName, title: t("journey.s4.t"), sub: t("journey.s4.d") },
-    { icon: "target" as IName, title: t("journey.s5.t"), sub: t("journey.s5.d") },
+  const milestones: Milestone[] = [
+    { icon: "document", title: t("journey.s1.t"), sub: t("journey.s1.d"), state: "done" },
+    { icon: "chart", title: t("journey.s2.t"), sub: t("journey.s2.d"), state: "done" },
+    { icon: "radar", title: t("journey.s3.t"), sub: t("journey.s3.d"), state: "now" },
+    { icon: "brain", title: t("journey.s4.t"), sub: t("journey.s4.d"), state: "next" },
+    { icon: "target", title: t("journey.s5.t"), sub: t("journey.s5.d"), state: "next" },
   ];
   return (
-    <section className="relative section-divider py-14 lg:py-20">
+    <section className="relative section-divider overflow-hidden py-14 lg:py-20">
+      <BackgroundGrid />
       <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
         <SectionHead
-          tag={t("journey.tag")}
+          eyebrow={t("journey.tag")}
           title={
             <>
               {t("journey.title.a")} <span className="text-accent">{t("journey.title.b")}</span>
@@ -411,21 +421,7 @@ function JourneySection() {
           }
           sub={t("journey.sub")}
         />
-        <div className="reveal relative grid grid-cols-2 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
-          {steps.map((s, i) => (
-            <div key={s.title} className="journey-node relative px-2 text-center">
-              {i < steps.length - 1 && <span className="journey-connector hidden lg:block" />}
-              <span className="journey-dot" style={{ animationDelay: `${i * 0.35}s` }} />
-              <div className="feat-icon h-12 w-12 rounded-xl">
-                <Icon n={s.icon} cls="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-display text-[15px] font-bold text-white">{s.title}</p>
-                <p className="mt-1 text-[12px] leading-5 text-slate-500">{s.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <JourneyCurve milestones={milestones} />
       </div>
     </section>
   );
@@ -449,19 +445,29 @@ function LandingPage() {
     { n: "heart" as IName, t: t("problem.p2.t"), d: t("problem.p2.d") },
     { n: "compass" as IName, t: t("problem.p3.t"), d: t("problem.p3.d") },
   ];
+  const pillars: [Pillar, Pillar, Pillar] = [
+    { icon: "document", title: t("pillars.p1.t"), body: t("pillars.p1.d") },
+    { icon: "chart", title: t("pillars.p2.t"), body: t("pillars.p2.d") },
+    { icon: "brain", title: t("pillars.p3.t"), body: t("pillars.p3.d") },
+  ];
+  const startSteps: [Pillar, Pillar, Pillar] = [
+    { icon: "upload", title: t("start.s1.t"), body: t("start.s1.d") },
+    { icon: "shield", title: t("start.s2.t"), body: t("start.s2.d") },
+    { icon: "sparkle", title: t("start.s3.t"), body: t("start.s3.d") },
+  ];
   const ais = [
     {
       n: "brain" as IName,
       t: t("ai.f1.t"),
       d: t("ai.f1.d"),
-      c: "text-cyan-300",
+      c: "text-[var(--lp-accent-soft)]",
       spark: "0,24 14,22 28,20 42,16 56,18 70,10 84,12 96,6",
     },
     {
       n: "radar" as IName,
       t: t("ai.f2.t"),
       d: t("ai.f2.d"),
-      c: "text-violet-300",
+      c: "text-[var(--lp-accent-soft)]",
       spark: "0,26 14,20 28,22 42,14 56,16 70,8 84,10 96,4",
     },
     {
@@ -520,7 +526,7 @@ function LandingPage() {
   };
 
   return (
-    <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white selection:bg-cyan-400 selection:text-[var(--tv-bg)]">
+    <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white selection:bg-[var(--lp-accent)] selection:text-[var(--tv-bg)]">
       <CursorGlow />
       <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
 
@@ -530,19 +536,23 @@ function LandingPage() {
           className="relative overflow-hidden pt-[88px] pb-14 lg:pt-[112px] lg:pb-20"
           onPointerMove={onHeroMove}
         >
+          {/* LA GRILLE D'ABORD, LE HALO ENSUITE — et un seul halo.
+              Le héros portait DEUX nappes floues de 500px, une cyan et une
+              indigo, sur un produit dont l'accent n'est ni l'un ni l'autre.
+              Deux nappes colorées derrière un titre, ce n'est plus une
+              profondeur, c'est un fond d'écran. Reste la grille — qui donne au
+              noir un plan de référence sans y peindre quoi que ce soit — et une
+              seule nappe d'accent, posée derrière le visuel produit. */}
+          <BackgroundGrid />
           <div
-            className="glow-orb glow-orb-cyan"
-            style={{ top: "-10%", right: "-5%", width: "520px", height: "520px" }}
-          />
-          <div
-            className="glow-orb glow-orb-indigo"
-            style={{ bottom: "-10%", left: "-5%", width: "440px", height: "440px" }}
+            className="lp-halo"
+            style={{ top: "-14%", right: "-6%", width: "520px", height: "420px" }}
           />
 
           <div className="relative mx-auto grid max-w-[1200px] items-center gap-12 px-5 lg:grid-cols-[1.02fr_.98fr] lg:gap-14 lg:px-8">
             <div className="text-center lg:text-left">
-              <div className="tv-label fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/[.08] px-4 py-1.5 text-cyan-300">
-                <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />{" "}
+              <div className="tv-label fade-up inline-flex items-center gap-2 rounded-full border border-[rgb(var(--lp-accent-rgb)/0.30)] bg-[var(--lp-accent)]/[.08] px-4 py-1.5 text-[var(--lp-accent-soft)]">
+                <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-[var(--lp-accent)]" />{" "}
                 {t("hero.eyebrow")}
               </div>
               <h1 className="fade-up d1 font-display mt-6 text-[clamp(2.5rem,4.8vw,4rem)] font-bold leading-[1.05] tracking-[-0.03em] text-white">
@@ -569,17 +579,11 @@ function LandingPage() {
                 {t("hero.sub")}
               </p>
               <div className="fade-up d3 mt-7 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
-                <button
-                  onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="btn-primary px-7 py-3 text-base"
-                >
+                <button onClick={() => open("signup", t("nav.cta.plan"))} className="lp-btn">
                   {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
                 </button>
-                <a
-                  href="/demo-site"
-                  className="group -my-2 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-cyan-300"
-                >
-                  <PlayCircle className="w-4 h-4" />
+                <a href="/demo-site" className="lp-btn lp-btn-ghost">
+                  <PlayCircle className="h-4 w-4" />
                   {t("hero.demo")}
                 </a>
               </div>
@@ -610,7 +614,7 @@ function LandingPage() {
         <section id="problem" className="relative section-divider py-14 lg:py-20">
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
             <SectionHead
-              tag={t("problem.tag")}
+              eyebrow={t("problem.tag")}
               title={
                 <>
                   {t("problem.title.a")}{" "}
@@ -619,22 +623,52 @@ function LandingPage() {
               }
               sub={t("problem.sub")}
             />
+            {/* Trois cartes à plat, toutes identiques : rien ne disait par où
+                commencer. La rangée devient 01 · 02 · 03, et celle du MILIEU
+                est pleine d'accent — c'est elle qui porte le bouton. Une seule
+                par section, sinon le contraste ne désigne plus rien. */}
             <div className="grid gap-4 sm:grid-cols-3">
               {problems.map((p, i) => (
                 <article
                   key={p.t}
                   onPointerMove={spot}
-                  className="reveal spot card-premium p-6"
+                  className="reveal spot lp-plate lp-plate-hover p-6"
                   style={{ transitionDelay: `${i * 60}ms` }}
                 >
-                  <div className="feat-icon h-11 w-11 mb-4">
-                    <Icon n={p.n} cls="h-5 w-5" />
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <span className="lp-num">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="lp-ring h-10 w-10">
+                      <Icon n={p.n} cls="h-[18px] w-[18px]" />
+                    </span>
                   </div>
-                  <h3 className="font-display text-base font-bold text-white">{p.t}</h3>
-                  <p className="mt-2 text-[13px] leading-6 text-slate-400">{p.d}</p>
+                  <h3 className="font-display text-base font-bold text-[var(--lp-text)]">{p.t}</h3>
+                  <p className="mt-2 text-[13px] leading-6 text-[var(--lp-text-2)]">{p.d}</p>
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── LES TROIS PILIERS ──
+            La réponse à la douleur qu'on vient de nommer, sous la forme de la
+            première référence : 01/02/03, la médiane pleine et porteuse du CTA. */}
+        <section className="relative section-divider overflow-hidden py-14 lg:py-20">
+          <BackgroundGrid />
+          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+            <SectionHead
+              eyebrow={t("pillars.eyebrow")}
+              title={
+                <>
+                  {t("pillars.title.a")} <span className="text-accent">{t("pillars.title.b")}</span>
+                </>
+              }
+              sub={t("pillars.sub")}
+            />
+            <PillarCards
+              pillars={pillars}
+              ctaLabel={t("pillars.cta")}
+              onCta={() => go("features")}
+            />
           </div>
         </section>
 
@@ -647,12 +681,12 @@ function LandingPage() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse 55% 45% at 50% 30%,rgba(34,211,238,.08),transparent 60%)",
+                "radial-gradient(ellipse 55% 45% at 50% 30%,rgb(var(--lp-accent-rgb)/.07),transparent 60%)",
             }}
           />
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
             <SectionHead
-              tag={t("ai.tag")}
+              eyebrow={t("ai.tag")}
               title={
                 <>
                   {t("ai.title.a")} <span className="text-accent">{t("ai.title.b")}</span>
@@ -672,7 +706,7 @@ function LandingPage() {
                 <div className="space-y-3">
                   {[t("ai.b1"), t("ai.b2"), t("ai.b3")].map((s) => (
                     <div key={s} className="flex items-center gap-3 text-[15px] text-slate-300">
-                      <span className="grid h-5.5 w-5.5 shrink-0 place-items-center rounded-full bg-cyan-400/12 text-cyan-300">
+                      <span className="grid h-5.5 w-5.5 shrink-0 place-items-center rounded-full bg-[rgb(var(--lp-accent-rgb)/0.12)] text-[var(--lp-accent-soft)]">
                         <Icon n="check" cls="h-3.5 w-3.5" />
                       </span>
                       {s}
@@ -709,7 +743,7 @@ function LandingPage() {
         <section id="features" className="relative section-divider py-14 lg:py-20">
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
             <SectionHead
-              tag={t("features.tag")}
+              eyebrow={t("features.tag")}
               title={
                 <>
                   {t("features.title.a")}{" "}
@@ -745,9 +779,32 @@ function LandingPage() {
         </section>
 
         {/* ── PRICING ── */}
+        {/* ── LES TROIS PREMIÈRES MINUTES ──
+            Placée juste avant le prix : c'est là que le visiteur se demande ce
+            que commencer va lui coûter en temps. Trois cartes, la médiane
+            pleine, et son bouton ouvre l'inscription. */}
+        <section className="relative section-divider overflow-hidden py-14 lg:py-20">
+          <BackgroundGrid />
+          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+            <SectionHead
+              eyebrow={t("start.eyebrow")}
+              title={
+                <>
+                  {t("start.title.a")} <span className="text-accent">{t("start.title.b")}</span>
+                </>
+              }
+            />
+            <StepCards steps={startSteps} ctaLabel={t("hero.cta")} onCta={() => open("signup")} />
+          </div>
+        </section>
+
         <section id="pricing" className="relative section-divider py-14 lg:py-20">
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag={t("pricing.tag")} title={t("pricing.title")} sub={t("pricing.sub")} />
+            <SectionHead
+              eyebrow={t("pricing.tag")}
+              title={t("pricing.title")}
+              sub={t("pricing.sub")}
+            />
 
             {/* La grille tarifaire — le MÊME composant que dans l'application.
                 Ce que le visiteur compare ici est exactement ce qu'il retrouve
@@ -782,7 +839,7 @@ function LandingPage() {
         {/* ── FAQ ── */}
         <section id="faq" className="relative section-divider py-14 lg:py-20">
           <div className="relative mx-auto max-w-[760px] px-5 lg:px-8">
-            <SectionHead tag={t("faq.tag")} title={t("faq.title")} />
+            <SectionHead eyebrow={t("faq.tag")} title={t("faq.title")} />
             <div className="reveal border-t border-white/[.08]">
               {faqs.map(({ q, a }, i) => {
                 const o = faq === i;
@@ -799,7 +856,7 @@ function LandingPage() {
                         {q}
                       </span>
                       <span
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/[.12] text-slate-500"}`}
+                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-[rgb(var(--lp-accent-rgb)/0.40)] bg-[rgb(var(--lp-accent-rgb)/0.10)] text-[var(--lp-accent-soft)]" : "border-white/[.12] text-slate-500"}`}
                       >
                         <Icon n="chevron" cls="h-4 w-4" />
                       </span>
@@ -818,7 +875,7 @@ function LandingPage() {
 
         {/* ── CTA FINAL ── */}
         <section className="relative overflow-hidden section-divider py-20 lg:py-28">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_110%,rgba(34,211,238,.14),transparent_60%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_110%,rgb(var(--lp-accent-rgb)/.12),transparent_60%)]" />
           <div className="reveal relative mx-auto max-w-[720px] px-5 text-center">
             {cd && (
               <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/30 bg-amber-400/[.1] px-5 py-2 text-[12px] font-bold text-amber-300 mb-7">
@@ -858,7 +915,7 @@ function LandingPage() {
                     <a
                       key={i}
                       href="#"
-                      className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] text-slate-400 transition hover:text-cyan-300"
+                      className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] text-slate-400 transition hover:text-[var(--lp-accent-soft)]"
                     >
                       <Icon className="h-4 w-4" />
                     </a>
@@ -872,7 +929,7 @@ function LandingPage() {
                     <li key={l}>
                       <a
                         href="#"
-                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
+                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-[var(--lp-accent-soft)]"
                       >
                         {l}
                       </a>
@@ -887,7 +944,7 @@ function LandingPage() {
                     <li key={l}>
                       <a
                         href="#"
-                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
+                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-[var(--lp-accent-soft)]"
                       >
                         {l}
                       </a>
