@@ -316,7 +316,11 @@ const en = {
   "mc.source": "Data",
   "mc.srcJournal": "Journal",
   "mc.srcManual": "Manual",
+  // Ce que chaque source ENGAGE, écrit sur son bouton : « Manuel » et « CSV »
+  // seuls ne disent pas ce qu'on s'apprête à simuler.
+  "mc.srcManualHint": "Describe a strategy",
   "mc.srcCsv": "CSV",
+  "mc.srcCsvHint": "Import a broker export",
   "mc.sampleCount": "{n} trades replayed",
   "mc.avgWin": "Average win",
   "mc.avgLoss": "Average loss",

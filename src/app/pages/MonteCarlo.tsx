@@ -32,7 +32,7 @@ import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import { usePageActions } from "../contexts/PageActionsContext";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
-import { Kpi, KpiGrid, PageToolbar, Sheet, SubNav, type SubNavItem } from "@/shared/ui";
+import { Kpi, KpiGrid, PageToolbar, SubNav, type SubNavItem } from "@/shared/ui";
 import {
   extractRSamples,
   runMonteCarlo,
@@ -41,6 +41,7 @@ import {
   generateSamples,
   computeExpectancy,
   computeProfitFactor,
+  deriveRFromPnl,
   type MonteCarloParams,
   type MonteCarloResult,
   type RMultipleSample,
@@ -91,26 +92,36 @@ type Vue = "paths" | "dist" | "details";
  * atteindre la RÉPONSE, à chaque ouverture, alors que neuf fois sur dix on ne
  * touche à aucun réglage.
  *
- * Trois décisions :
+ * Quatre décisions :
  *
- *   1. LA RÉPONSE D'ABORD. Le verdict — le pourcentage, la barre des trois
- *      issues, les quatre faits — ouvre la page et ne bouge plus. C'est la
- *      seule chose que le trader vient chercher.
- *   2. LES RÉGLAGES SUR LE CÔTÉ. Sur grand écran ils vivent dans une colonne
- *      collante à droite : visibles, ajustables, et le résultat se recalcule
- *      sous les yeux. Sous 1024px ils passent dans une FEUILLE ancrée, ouverte
- *      par un bouton de la barre d'outils — ils ne prennent plus un écran
- *      entier pour ne rien dire de neuf. Un seul composant (`PanneauReglages`)
- *      rend les deux : il n'y a pas deux formulaires à tenir à jour.
- *   3. UNE VUE À LA FOIS. Les deux graphes et le détail des percentiles sont
- *      trois lectures du MÊME tirage, pas trois sections à empiler. La
- *      navigation secondaire les met à un clic, et la barre reste collée en
- *      haut : on change de lecture sans jamais remonter.
+ *   1. ON CHOISIT SA SOURCE, EXPLICITEMENT. La page s'ouvrait déjà simulée sur
+ *      le journal, sans que personne ne l'ait demandé : un résultat s'affichait
+ *      avant qu'on sache sur QUOI il portait. Trois boutons de même poids,
+ *      aucun présélectionné, et celui du journal annonce combien de trades il
+ *      va prendre. Tant qu'aucun n'est cliqué, rien ne tourne.
+ *   2. UN SEUL BLOC POUR TOUTES LES ENTRÉES. Les réglages vivaient dans une
+ *      colonne latérale de 320px au-dessus de 1024px, et dans une FEUILLE
+ *      ancrée en dessous — deux emplacements pour un même contenu, dont aucun
+ *      n'était visible par défaut. Il fallait donc ouvrir un panneau pour
+ *      savoir sur quoi tournait la simulation : c'était la friction principale
+ *      de la page. Tout est maintenant dans un bloc unique, toujours à l'écran.
+ *   3. LA RÉPONSE ENSUITE, ET ENTIÈRE. Le verdict — le pourcentage, la barre
+ *      des trois issues — suit immédiatement le bloc d'entrées.
+ *   4. UNE VUE À LA FOIS. Les deux graphes et le détail des percentiles sont
+ *      trois lectures du MÊME tirage, pas trois sections à empiler.
  *
  * ══ ET ELLE RÉPOND TOUTE SEULE ══
  *
- * Elle tire dès l'ouverture, et retire 250 ms après le dernier changement de
- * réglage : on déplace un curseur, la réponse suit.
+ * Une fois la source choisie, elle tire, et retire 250 ms après le dernier
+ * changement de réglage : on déplace un curseur, la réponse suit.
+ *
+ * ══ L'ÉCHELLE NE BOUGE PAS ══
+ *
+ * Les deux graphes bornent leurs axes sur les RÉGLAGES (solde, cible, limite),
+ * jamais sur les données tirées. Monte-Carlo étant stochastique, une échelle
+ * dérivée du tirage se recalibrait à chaque relance : la ligne de cible
+ * SEMBLAIT bouger alors que sa valeur ne changeait pas, et deux scénarios
+ * devenaient incomparables à l'œil. Voir `domaineY` et le calcul des classes.
  */
 export default function MonteCarloPage({ trades }: Props) {
   const { t } = useT();
@@ -133,7 +144,20 @@ export default function MonteCarloPage({ trades }: Props) {
      `sourceSamples` est le SEUL point où les trois se rejoignent ; tout ce qui
      suit — statistiques, défauts, simulation — ne sait pas d'où viennent les
      tirages. */
-  const [source, setSource] = useState<Source>("journal");
+  /**
+   * `null` AU DÉPART — RIEN NE SE CHARGE TOUT SEUL.
+   *
+   * La source valait « journal » d'office : la page s'ouvrait déjà simulée, sur
+   * des trades importés sans que personne ne l'ait demandé. On voyait un
+   * résultat sans savoir sur QUOI il portait — et le sélecteur de source, noyé
+   * dans une colonne latérale ou une feuille cachée, ne le disait qu'à qui
+   * allait le chercher.
+   *
+   * Le trader choisit maintenant, explicitement, avant qu'un seul tirage ne
+   * parte. « Importer mes trades TradeVault » est un BOUTON, avec le nombre de
+   * trades qu'il va prendre écrit dessus.
+   */
+  const [source, setSource] = useState<Source | null>(null);
 
   // Saisie manuelle
   const [wr, setWr] = useState(50);
@@ -149,6 +173,9 @@ export default function MonteCarloPage({ trades }: Props) {
   const journalSamples = useMemo(() => extractRSamples(trades), [trades]);
 
   const samples = useMemo(() => {
+    // Aucune source choisie = aucun échantillon = aucun tirage. Le garde-fou
+    // `samples.length < 5` plus bas suffit donc à tenir la page au repos.
+    if (source === null) return [];
     if (source === "manual") {
       if (avgWin <= 0 || avgLoss <= 0) return [];
       return generateSamples(
@@ -187,31 +214,10 @@ export default function MonteCarloPage({ trades }: Props) {
           setCsvErreur(t("mc.csv_tooFew").replace("{n}", String(valid.length)));
           return;
         }
-        /* UN CSV NE PORTE PRESQUE JAMAIS DE MULTIPLE R.
-           La plupart des exports de broker n'ont qu'un P&L ; `rMultiple`
-           retombe alors à 0 pour chaque ligne, et une simulation nourrie de
-           zéros ne bouge pas — soixante trades lus, une courbe plate, 0 % de
-           réussite. Mesuré.
-
-           On dérive donc l'unité de risque du fichier lui-même : la PERTE
-           MÉDIANE. C'est ce qu'un trader risque typiquement par trade, c'est
-           robuste aux quelques pertes énormes qui fausseraient une moyenne, et
-           ça rend le R du fichier comparable à celui du journal. */
-        const aDesR = valid.some((tr) => tr.rMultiple !== 0);
-        let normalises = valid;
-        if (!aDesR) {
-          const pertes = valid
-            .filter((tr) => tr.pnl < 0)
-            .map((tr) => Math.abs(tr.pnl))
-            .sort((a, b) => a - b);
-          const unite = pertes.length > 0 ? pertes[Math.floor(pertes.length / 2)] : 0;
-          if (unite > 0) {
-            normalises = valid.map((tr) => ({
-              ...tr,
-              rMultiple: Math.round((tr.pnl / unite) * 100) / 100,
-            }));
-          }
-        }
+        // Un CSV de courtier ne porte presque jamais de R : on le dérive de la
+        // perte médiane du fichier. Voir `deriveRFromPnl` — extrait ici pour
+        // être testable, cette branche n'étant vérifiable par aucun œil.
+        const normalises = deriveRFromPnl(valid);
         setCsvSamples(extractRSamples(normalises));
         setCsvNom(`${file.name} · ${valid.length}`);
         setSource("csv");
@@ -253,7 +259,6 @@ export default function MonteCarloPage({ trades }: Props) {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<MonteCarloResult | null>(null);
   const [vue, setVue] = useState<Vue>("paths");
-  const [reglagesOuverts, setReglagesOuverts] = useState(false);
 
   const params: MonteCarloParams = useMemo(
     () => ({
@@ -381,6 +386,7 @@ export default function MonteCarloPage({ trades }: Props) {
       limitePct={limitePct}
       setLimitePct={setLimitePct}
       parJour={defauts.parJour}
+      journalCount={journalSamples.length}
     />
   );
 
@@ -402,33 +408,34 @@ export default function MonteCarloPage({ trades }: Props) {
       {/* ══ LA BARRE D'OUTILS ════════════════════════════════════════════
           Navigation des trois lectures à gauche, réglages à droite. Elle est
           fixe en tête de page : on change de vue sans jamais scroller. */}
-      <div className="shrink-0">
-        <PageToolbar
-          actions={
-            /* `lg:hidden` vit sur l'ENVELOPPE, pas sur le bouton : `.tv-subnav-item`
-               declare `display: inline-flex` dans une regle non calquee, qui bat
-               un utilitaire Tailwind (lui, dans une couche). Pose sur le bouton,
-               l'utilitaire ne cachait rien — mesure a 1280px, ou le panneau
-               lateral ET son bouton d'ouverture s'affichaient ensemble. */
-            <div className="lg:hidden">
-              <button
-                type="button"
-                onClick={() => setReglagesOuverts(true)}
-                aria-haspopup="dialog"
-                className={cn(
-                  "tv-subnav-item",
-                  "border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-300",
-                )}
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                <span>{t("mc.settingsShort")}</span>
-              </button>
-            </div>
-          }
-        >
-          <SubNav items={vues} value={vue} onChange={setVue} ariaLabel={t("mc.outcomes")} />
-        </PageToolbar>
-      </div>
+      {/* Le bouton « réglages » a disparu de cette barre, et la feuille qu'il
+          ouvrait avec lui : les réglages sont maintenant TOUJOURS à l'écran,
+          dans le bloc juste en dessous. Un panneau qu'il faut ouvrir pour
+          savoir sur quoi tourne la simulation était la friction principale de
+          la page. */}
+      {result && (
+        <div className="shrink-0">
+          <PageToolbar>
+            <SubNav items={vues} value={vue} onChange={setVue} ariaLabel={t("mc.outcomes")} />
+          </PageToolbar>
+        </div>
+      )}
+
+      {/* ══ LE BLOC UNIQUE ═══════════════════════════════════════════════
+          Tout ce que la simulation prend en entrée, à un seul endroit,
+          toujours visible : la source, puis les paramètres. Il remplace la
+          colonne latérale de 320px (grand écran) ET la feuille ancrée
+          (mobile) — deux emplacements pour un même contenu, dont aucun n'était
+          visible par défaut. */}
+      <section className="glass mt-3 shrink-0 rounded-3xl px-4 py-4 sm:px-5">
+        {panneau}
+        <div className="mt-3 flex justify-end border-t border-[var(--tv-border)] pt-3">
+          <button onClick={reinitialiser} className="btn-ghost btn-sm">
+            <RotateCcw className="h-3.5 w-3.5" />
+            {t("mc.reset")}
+          </button>
+        </div>
+      </section>
 
       {/* `min-h-0` retiré : il autorisait cette zone à rétrécir sous son propre
           contenu, ce qui écrasait verdict et graphe dans un cadre de hauteur
@@ -440,35 +447,29 @@ export default function MonteCarloPage({ trades }: Props) {
           /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
              lui, un trader sans journal ne pouvait pas même atteindre la saisie
              manuelle — la seule qui lui permette d'éprouver sa stratégie. */
-          <div className="grid h-full gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="glass flex flex-col items-center justify-center rounded-3xl px-6 py-10 text-center">
-              <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
-              <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
-              <p className="max-w-sm text-sm text-slate-500">
-                {source === "csv"
-                  ? t("mc.emptyCsv")
-                  : source === "manual"
-                    ? t("mc.emptyManual")
-                    : t("mc.emptyBody")}
-              </p>
-              <button
-                type="button"
-                onClick={() => setReglagesOuverts(true)}
-                className="btn-primary btn-sm mt-4 lg:hidden"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                {t("mc.settings")}
-              </button>
-            </div>
-            <ColonneReglages onReset={reinitialiser}>{panneau}</ColonneReglages>
+          /* Le repos, pas une erreur : tant qu'aucune source n'est choisie, la
+             page attend, et le bloc au-dessus dit exactement ce qu'elle
+             attend. */
+          <div className="glass flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl px-6 py-10 text-center">
+            <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
+            <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
+            <p className="max-w-sm text-sm text-slate-500">
+              {source === "csv"
+                ? t("mc.emptyCsv")
+                : source === "manual"
+                  ? t("mc.emptyManual")
+                  : t("mc.emptyBody")}
+            </p>
           </div>
         ) : !result ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
           </div>
         ) : (
-          <div className="grid h-full gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className={cn("flex flex-col gap-3 transition-opacity", running && "opacity-50")}>
+          <div
+            className={cn("flex h-full flex-col gap-3 transition-opacity", running && "opacity-50")}
+          >
+            <>
               {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
               <section className="glass shrink-0 animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
                 <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
@@ -572,28 +573,10 @@ export default function MonteCarloPage({ trades }: Props) {
                 {vue === "dist" && <Histogramme result={result} />}
                 {vue === "details" && <Details result={result} />}
               </div>
-            </div>
-
-            <ColonneReglages onReset={reinitialiser}>{panneau}</ColonneReglages>
+            </>
           </div>
         )}
       </div>
-
-      {/* Sous 1024px, le MÊME panneau vit dans une feuille ancrée. */}
-      <Sheet
-        open={reglagesOuverts}
-        onClose={() => setReglagesOuverts(false)}
-        title={t("mc.settings")}
-        subtitle={t("mc.settingsSub")}
-        footer={
-          <button onClick={reinitialiser} className="btn-ghost btn-sm">
-            <RotateCcw className="h-3.5 w-3.5" />
-            {t("mc.reset")}
-          </button>
-        }
-      >
-        {panneau}
-      </Sheet>
     </div>
   );
 }
@@ -602,40 +585,6 @@ export default function MonteCarloPage({ trades }: Props) {
    LES RÉGLAGES
    ──────────────────────────────────────────────────────────────────────────*/
 
-/**
- * La colonne de droite — présente à partir de 1024px seulement.
- *
- * En dessous, la même chose vit dans la feuille : deux emplacements, UN
- * contenu (`children`). Écrire deux formulaires aurait garanti qu'ils
- * divergent à la première évolution.
- */
-function ColonneReglages({
-  onReset,
-  children,
-}: {
-  onReset: () => void;
-  children: React.ReactNode;
-}) {
-  const { t } = useT();
-  return (
-    <aside className="glass hidden h-full min-h-0 overflow-y-auto rounded-3xl lg:block">
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--tv-border)] px-4 py-3">
-        <h2 className="tv-title truncate">{t("mc.settings")}</h2>
-        <button
-          onClick={onReset}
-          title={t("mc.resetHint")}
-          aria-label={t("mc.reset")}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.06] hover:text-white"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="px-4 py-4">{children}</div>
-    </aside>
-  );
-}
-
-/** Tout ce que la simulation demande — la source, puis les cinq réglages. */
 function PanneauReglages({
   source,
   setSource,
@@ -663,8 +612,9 @@ function PanneauReglages({
   limitePct,
   setLimitePct,
   parJour,
+  journalCount,
 }: {
-  source: Source;
+  source: Source | null;
   setSource: (s: Source) => void;
   stats: { totalSamples: number };
   wr: number;
@@ -690,31 +640,48 @@ function PanneauReglages({
   limitePct: number;
   setLimitePct: (v: number) => void;
   parJour: number;
+  /** Combien de trades le journal fournirait — écrit sur le bouton d'import,
+   *  pour qu'on sache ce qu'on prend AVANT de cliquer. */
+  journalCount: number;
 }) {
   const { t } = useT();
   return (
     <div className="space-y-4">
-      {/* ── LA SOURCE ─────────────────────────────────────────────────── */}
+      {/* ── LA SOURCE — UN CHOIX EXPLICITE, PAS UN ONGLET ────────────────
+          C'était une `SubNav` : trois onglets dont le premier était déjà
+          sélectionné à l'ouverture. La page arrivait donc simulée sur le
+          journal sans que personne ne l'ait demandé, et l'onglet actif — dans
+          une colonne latérale ou une feuille cachée — ne le disait qu'à qui
+          allait le chercher.
+          Trois boutons de même poids, aucun présélectionné, et celui du
+          journal annonce COMBIEN de trades il va prendre. Tant qu'aucun n'est
+          cliqué, rien ne tourne. */}
       <div>
-        <div className="tv-label mb-1.5 text-slate-500">{t("mc.source")}</div>
-        <SubNav
-          items={[
-            {
-              id: "journal",
-              label: t("mc.srcJournal"),
-              icon: <BookOpen className="h-3.5 w-3.5" />,
-            },
-            {
-              id: "manual",
-              label: t("mc.srcManual"),
-              icon: <SlidersHorizontal className="h-3.5 w-3.5" />,
-            },
-            { id: "csv", label: t("mc.srcCsv"), icon: <Upload className="h-3.5 w-3.5" /> },
-          ]}
-          value={source}
-          onChange={(v) => setSource(v as Source)}
-          ariaLabel={t("mc.source")}
-        />
+        <div className="tv-label mb-2 text-slate-500">{t("mc.source")}</div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <ChoixSource
+            actif={source === "journal"}
+            onClick={() => setSource("journal")}
+            icone={<BookOpen className="h-4 w-4" />}
+            titre={t("mc.srcJournal")}
+            detail={t("mc.sampleCount").replace("{n}", String(journalCount))}
+            desactive={journalCount < 5}
+          />
+          <ChoixSource
+            actif={source === "manual"}
+            onClick={() => setSource("manual")}
+            icone={<SlidersHorizontal className="h-4 w-4" />}
+            titre={t("mc.srcManual")}
+            detail={t("mc.srcManualHint")}
+          />
+          <ChoixSource
+            actif={source === "csv"}
+            onClick={() => setSource("csv")}
+            icone={<Upload className="h-4 w-4" />}
+            titre={t("mc.srcCsv")}
+            detail={csvNom ?? t("mc.srcCsvHint")}
+          />
+        </div>
         {source === "journal" && (
           <p className="tv-hint mt-2">
             {t("mc.derivedFrom")
@@ -799,8 +766,15 @@ function PanneauReglages({
         </div>
       )}
 
-      {/* ── LES CINQ RÉGLAGES ─────────────────────────────────────────── */}
-      <div className="space-y-3.5 border-t border-[var(--tv-border)] pt-4">
+      {/* ── LES CINQ RÉGLAGES ───────────────────────────────────────────
+          EN GRILLE, PAS EMPILÉS. Cinq curseurs l'un sous l'autre faisaient
+          230px ; c'était supportable dans une colonne latérale de 320px de
+          large, ça ne l'est plus dans un bloc posé AU-DESSUS du résultat —
+          on repousserait le verdict hors de l'écran, ce que la refonte
+          précédente avait justement corrigé.
+          Deux colonnes dès 640px, trois à partir de 1024 : deux rangées au
+          lieu de cinq, et les cinq valeurs restent lisibles d'un coup d'œil. */}
+      <div className="grid gap-x-5 gap-y-3.5 border-t border-[var(--tv-border)] pt-4 sm:grid-cols-2 lg:grid-cols-3">
         <Reglage
           label={t("mc.balance")}
           value={solde}
@@ -1474,6 +1448,58 @@ function Fait({
  * En posant la valeur sous son propre segment, la barre se suffit — et les
  * deux tuiles ont pu disparaître sans rien perdre.
  */
+/**
+ * UNE DES TROIS SOURCES — un bouton, pas un onglet.
+ *
+ * La différence n'est pas cosmétique : un onglet dit « voici la vue courante »
+ * et en présélectionne toujours une ; un bouton dit « choisis », et peut
+ * n'avoir aucun élu. C'est ce qui permet à la page de rester au repos tant que
+ * le trader n'a pas dit sur quoi il veut simuler.
+ *
+ * `detail` porte ce que le choix engage — le nombre de trades qui seront
+ * importés, le nom du fichier déposé — parce que « Mon journal » seul ne dit
+ * pas ce qu'on s'apprête à prendre.
+ */
+function ChoixSource({
+  actif,
+  onClick,
+  icone,
+  titre,
+  detail,
+  desactive,
+}: {
+  actif: boolean;
+  onClick: () => void;
+  icone: React.ReactNode;
+  titre: string;
+  detail: string;
+  desactive?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={desactive}
+      aria-pressed={actif}
+      className={cn(
+        "flex items-start gap-2.5 rounded-xl border p-3 text-left transition",
+        actif
+          ? "border-[rgb(var(--tv-accent-rgb)/0.45)] bg-[rgb(var(--tv-accent-rgb)/0.08)]"
+          : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] hover:border-[var(--tv-border-strong)]",
+        desactive && "cursor-not-allowed opacity-40",
+      )}
+    >
+      <span className={cn("mt-0.5 shrink-0", actif ? "text-[var(--tv-accent)]" : "text-slate-500")}>
+        {icone}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold text-white">{titre}</span>
+        <span className="tv-row-label mt-0.5 block truncate">{detail}</span>
+      </span>
+    </button>
+  );
+}
+
 function Legende({ cls, label, value }: { cls: string; label: string; value?: string }) {
   return (
     <span className="flex items-center gap-1.5">

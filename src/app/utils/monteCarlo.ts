@@ -448,3 +448,39 @@ export function computeProfitFactor(wr: number, aw: number, al: number): number 
   const gl = (1 - wr) * al;
   return gl > 0 ? gp / gl : gp > 0 ? 99 : 0;
 }
+
+/**
+ * DÉRIVER UN MULTIPLE R À PARTIR DU SEUL P&L.
+ *
+ * Un export de courtier ne porte presque jamais de multiple R : il donne un
+ * P&L, et rien qui dise ce que le trade RISQUAIT. `rMultiple` retombe alors à
+ * 0 sur chaque ligne — et une simulation nourrie de zéros ne bouge pas :
+ * soixante trades lus, une courbe parfaitement plate, 0 % de réussite quels
+ * que soient les réglages. Le fichier est bien importé, la page ne dit rien.
+ *
+ * L'unité de risque est donc lue DANS le fichier : la PERTE MÉDIANE. C'est ce
+ * qu'un trader risque typiquement par trade, c'est robuste aux quelques pertes
+ * énormes qui fausseraient une moyenne, et ça rend le R d'un CSV comparable à
+ * celui du journal.
+ *
+ * Ne touche à rien si le fichier porte déjà des R, ou s'il ne contient aucune
+ * perte (aucune unité à en tirer) : rendre les trades inchangés vaut mieux que
+ * d'inventer une échelle.
+ *
+ * Extrait de `pages/MonteCarlo.tsx`, où il vivait inline — donc intestable,
+ * pour la seule branche d'import que personne ne peut vérifier à l'œil.
+ */
+export function deriveRFromPnl<T extends { pnl: number; rMultiple: number }>(trades: T[]): T[] {
+  if (trades.some((t) => t.rMultiple !== 0)) return trades;
+
+  const pertes = trades
+    .filter((t) => t.pnl < 0)
+    .map((t) => Math.abs(t.pnl))
+    .sort((a, b) => a - b);
+  if (pertes.length === 0) return trades;
+
+  const unite = pertes[Math.floor(pertes.length / 2)];
+  if (unite <= 0) return trades;
+
+  return trades.map((t) => ({ ...t, rMultiple: Math.round((t.pnl / unite) * 100) / 100 }));
+}
