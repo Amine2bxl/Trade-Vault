@@ -18,6 +18,7 @@ import { cn } from "../utils/cn";
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -277,21 +278,46 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               <Lightbulb className="h-3.5 w-3.5 shrink-0 text-amber-400" />
               <h2 className="tv-label text-slate-400">{t("mistakes.leaks")}</h2>
             </header>
-            <div className="divide-y divide-white/[0.04]">
-              {b.rows.map((m, idx) => (
-                <LigneFuite
-                  key={m.mistake}
-                  m={m}
-                  premiere={idx === 0}
-                  part={Math.abs(m.totalPnl) / Math.max(1, maxFuite)}
-                  tip={
-                    MISTAKE_TIP_KEYS[m.mistake]
-                      ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
-                      : t("mistakes.defaultTip")
-                  }
-                />
-              ))}
+            {/* ── LE GRAPHIQUE D'ABORD, LA LISTE ENSUITE ──────────────────
+                Douze lignes de texte ouvraient ce bloc. Chacune était juste,
+                et l'ensemble illisible : pour savoir laquelle coûte le plus,
+                il fallait comparer douze montants à la lecture. « Il y en a
+                beaucoup trop et on ne comprend pas » — c'est exactement ça.
+
+                Un graphique répond à cette question SANS lecture : la barre la
+                plus longue est la fuite la plus chère, on le voit avant
+                d'avoir lu un mot. Les six premières suffisent — au-delà, les
+                barres deviennent des traits et n'apprennent plus rien.
+
+                Rien n'est perdu : la liste complète, avec les conseils et les
+                tendances, vit juste en dessous, repliée. */}
+            <div className="px-4 pb-1 pt-4 sm:px-5">
+              <GrapheFuites rows={b.rows} />
             </div>
+
+            <details className="group border-t border-white/[0.05]">
+              <summary className="tv-row-toggle flex cursor-pointer list-none items-center gap-2 px-4 py-3 sm:px-5">
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
+                <span className="tv-label text-slate-400">
+                  {t("mistakes.leaks")} · {b.rows.length}
+                </span>
+              </summary>
+              <div className="divide-y divide-white/[0.04] border-t border-white/[0.04]">
+                {b.rows.map((m, idx) => (
+                  <LigneFuite
+                    key={m.mistake}
+                    m={m}
+                    premiere={idx === 0}
+                    part={Math.abs(m.totalPnl) / Math.max(1, maxFuite)}
+                    tip={
+                      MISTAKE_TIP_KEYS[m.mistake]
+                        ? t(MISTAKE_TIP_KEYS[m.mistake] as never)
+                        : t("mistakes.defaultTip")
+                    }
+                  />
+                ))}
+              </div>
+            </details>
             {/* L'objectif de progression — il porte la première fuite. */}
             <div className="flex items-start gap-3 border-t border-white/[0.05] px-4 py-3.5 sm:px-5">
               <Target className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
@@ -464,6 +490,96 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
     </div>
   );
 }
+
+/**
+ * CE QUI TE COÛTE LE PLUS — la question de la page, en une image.
+ *
+ * ── POURQUOI UN GRAPHIQUE ET PAS LA LISTE ───────────────────────────────────
+ *
+ * La liste disait tout et ne montrait rien. Douze montants alignés se
+ * COMPARENT à la lecture : il faut les tenir en tête deux par deux pour savoir
+ * lequel est le plus gros. Des barres répondent avant qu'on ait lu un mot —
+ * c'est la seule chose qu'un graphique fait mieux qu'un tableau, et c'est
+ * exactement ce qu'on vient chercher ici.
+ *
+ * ── LES CHOIX ───────────────────────────────────────────────────────────────
+ *
+ *   • HORIZONTAL. Les noms d'erreurs sont longs (« Ignored market
+ *     conditions ») ; en vertical ils se chevauchent ou s'inclinent. En
+ *     horizontal ils se lisent à plat, ce qui supprime le besoin de légende.
+ *   • SIX AU PLUS. Au-delà, les barres du bas deviennent des traits : elles
+ *     occupent de la place sans rien départager. La liste complète reste
+ *     accessible juste en dessous.
+ *   • VALEUR ABSOLUE, teinte par GRAVITÉ. La longueur dit combien, la couleur
+ *     dit à quel point c'est grave — deux informations sur un seul objet, sans
+ *     rien empiler.
+ */
+function GrapheFuites({
+  rows,
+}: {
+  rows: { mistake: string; severity: Severity; count: number; totalPnl: number }[];
+}) {
+  const { t } = useT();
+  const data = useMemo(
+    () =>
+      [...rows]
+        .sort((a, b) => Math.abs(b.totalPnl) - Math.abs(a.totalPnl))
+        .slice(0, 6)
+        .map((r) => ({
+          nom: r.mistake,
+          cout: Math.abs(r.totalPnl),
+          brut: r.totalPnl,
+          count: r.count,
+          severity: r.severity,
+        })),
+    [rows],
+  );
+
+  if (data.length === 0) return null;
+
+  return (
+    <div style={{ height: Math.max(140, data.length * 34 + 24) }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
+          <XAxis type="number" hide />
+          <YAxis
+            type="category"
+            dataKey="nom"
+            tick={AXIS_TICK}
+            axisLine={false}
+            tickLine={false}
+            width={118}
+          />
+          <Tooltip
+            {...tooltipStyle}
+            cursor={{ fill: "rgba(148,163,184,.06)" }}
+            formatter={(
+              _v: number | string,
+              _n: string,
+              p: { payload?: (typeof data)[number] },
+            ) => [
+              `${formatPnl(p.payload?.brut ?? 0)} · ${p.payload?.count ?? 0}×`,
+              t("mistakes.totalCost"),
+            ]}
+          />
+          <Bar dataKey="cout" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+            {data.map((d) => (
+              <Cell key={d.nom} fill={SEV_FILL[d.severity]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** La teinte des barres — la même famille que les pastilles de gravité, en
+ *  valeur pleine : une barre doit se lire à distance, pas une bordure. */
+const SEV_FILL: Record<Severity, string> = {
+  high: "#f87171",
+  medium: "#f59e0b",
+  low: "#94a3b8",
+};
 
 /**
  * UN FAIT DU VERDICT — filet vertical, jamais de cadre. Le disque de score de
