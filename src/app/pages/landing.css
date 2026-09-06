@@ -323,9 +323,22 @@
     gap: 12px;
   }
 }
+/* LES TROIS COLONNES SE VOIENT AUSSI SUR UN TÉLÉPHONE.
+   Elles portaient `hidden sm:block` alors que `.cmp-row` réservait ses quatre
+   colonnes à TOUTES les tailles : sous 640px, le tableau affichait donc le
+   libellé, 80px de vide, puis la seule coche TradeVault. Ce n'était plus une
+   comparaison — c'était une liste de coches, sur la taille d'écran la plus
+   fréquente, dans la section dont la comparaison EST le sujet.
+   Onze pixels suffisent pour « Excel » et « Notion » dans 40px ; la taille
+   remonte à 13px dès qu'il y a la place. */
 .cmp-col {
   text-align: center;
-  font-size: 13px;
+  font-size: 11px;
+}
+@media (min-width: 640px) {
+  .cmp-col {
+    font-size: 13px;
+  }
 }
 .cmp-col.cmp-tv {
   color: var(--tv-highlight);

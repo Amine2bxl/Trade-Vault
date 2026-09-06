@@ -587,22 +587,22 @@ function AlternativeSection() {
           <div className="lp-panel px-4 py-5 sm:px-6">
             <div className="cmp-row" style={{ borderTop: "none" }}>
               <div />
-              <p className="cmp-col hidden sm:block">{t("alt.h.excel")}</p>
-              <p className="cmp-col hidden sm:block">{t("alt.h.notion")}</p>
+              <p className="cmp-col">{t("alt.h.excel")}</p>
+              <p className="cmp-col">{t("alt.h.notion")}</p>
               <p className="cmp-col cmp-tv">{t("alt.h.tv")}</p>
             </div>
             <div className="cmp-row">
               <p className="text-[12.5px] text-slate-200">{t("alt.excel.d")}</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">—</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">~</p>
+              <p className="cmp-col text-slate-500">—</p>
+              <p className="cmp-col text-slate-500">~</p>
               <p className="cmp-col cmp-tv">
                 <Check className="mx-auto h-3.5 w-3.5" />
               </p>
             </div>
             <div className="cmp-row">
               <p className="text-[12.5px] text-slate-200">{t("alt.notion.d")}</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">~</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">—</p>
+              <p className="cmp-col text-slate-500">~</p>
+              <p className="cmp-col text-slate-500">—</p>
               <p className="cmp-col cmp-tv">
                 <Check className="mx-auto h-3.5 w-3.5" />
               </p>
@@ -610,14 +610,14 @@ function AlternativeSection() {
             {rows.map((r, i) => (
               <div key={r} className="cmp-row">
                 <p className="text-[13px] text-slate-200">{t(r)}</p>
-                <p className="cmp-col hidden sm:block">
+                <p className="cmp-col">
                   {i === 5 ? (
                     <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
                   ) : (
                     <span className="text-slate-600">–</span>
                   )}
                 </p>
-                <p className="cmp-col hidden sm:block">
+                <p className="cmp-col">
                   {i === 5 ? (
                     <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
                   ) : (
