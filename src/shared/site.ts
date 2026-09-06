@@ -40,6 +40,22 @@ export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://tradevault.be
 /** Bare hostname — Trustpilot review paths and any display copy. */
 export const SITE_DOMAIN = SITE_URL.replace(/^https?:\/\//, "");
 
+/**
+ * La fiche Trustpilot du produit — le SEUL profil externe réel de la marque.
+ *
+ * Elle était écrite en dur dans `landing/AuthModal.tsx`, et pointait encore sur
+ * `tradevaultt.vercel.app` : l'ancien domaine, abandonné lors de la migration
+ * vers `tradevault.be`. Le lien « Avis vérifiés » affiché au moment exact de
+ * l'inscription menait donc à une fiche qui n'est plus la nôtre.
+ *
+ * Trustpilot indexe une fiche PAR DOMAINE. Dériver l'URL de `SITE_DOMAIN`,
+ * comme le commentaire de cette constante l'annonçait déjà, fait suivre la
+ * fiche automatiquement le jour où le domaine change — et c'est la même valeur
+ * qui alimente `sameAs` dans les données structurées (`shared/seo.ts`), pour
+ * que les deux déclarations de « où vit cette marque » ne puissent pas diverger.
+ */
+export const TRUSTPILOT_URL = `https://www.trustpilot.com/review/${SITE_DOMAIN}`;
+
 /** Supabase project ref — also the host of the Google OAuth callback. */
 export const SUPABASE_PROJECT_REF = "tjikygsipblatubyzbrt";
 

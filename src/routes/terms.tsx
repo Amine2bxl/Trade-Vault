@@ -16,5 +16,5 @@ export const Route = createFileRoute("/terms")({
 });
 
 function TermsPage() {
-  return <LegalPage pick={getTermsDoc} />;
+  return <LegalPage pick={getTermsDoc} path="/terms" />;
 }

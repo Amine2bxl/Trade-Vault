@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import App from "@/app/App";
-import { pageSeo } from "../shared/seo";
+import { LANDING_ALTERNATES, pageSeo } from "../shared/seo";
 import Landing from "@/app/pages/Landing";
 
 // The brand comes first and stands alone before the separator, so the browser
@@ -20,7 +20,18 @@ export const Route = createFileRoute("/")({
   // Routed through the shared SEO builder so the home page gets a single,
   // self-referential canonical, an absolute og:image and og:url — the same
   // contract as every other public route, domain-independent via SITE_URL.
-  head: () => pageSeo({ title: SEO_TITLE, description: SEO_DESCRIPTION, path: "/" }),
+  //
+  // `alternates` déclare la paire de langues. La vitrine française vit
+  // maintenant à `/fr` (`routes/fr.tsx`) ; les deux pages doivent se citer
+  // MUTUELLEMENT, sinon Google ignore la grappe `hreflang` en entier. Cette
+  // ligne est la moitié anglaise de cette réciprocité.
+  head: () =>
+    pageSeo({
+      title: SEO_TITLE,
+      description: SEO_DESCRIPTION,
+      path: "/",
+      alternates: LANDING_ALTERNATES,
+    }),
   component: Index,
 });
 

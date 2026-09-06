@@ -19,7 +19,10 @@ interface MegaNavProps {
   pct: number;
 }
 
-const LINKS: { key: "nav.features" | "nav.problem" | "nav.analytics" | "pricing.tag" | "faq.tag"; id: string }[] = [
+const LINKS: {
+  key: "nav.features" | "nav.problem" | "nav.analytics" | "pricing.tag" | "faq.tag";
+  id: string;
+}[] = [
   { key: "nav.features", id: "features" },
   { key: "nav.problem", id: "problem" },
   { key: "nav.analytics", id: "analytics" },
@@ -144,7 +147,9 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
                 key={l}
                 onClick={() => setLang(l)}
                 className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-[11px] font-semibold uppercase transition-colors ${
-                  lang === l ? "bg-[rgb(var(--tv-accent-rgb)/0.14)] text-white" : "text-slate-500 hover:text-slate-300"
+                  lang === l
+                    ? "bg-[rgb(var(--tv-accent-rgb)/0.14)] text-white"
+                    : "text-slate-500 hover:text-slate-300"
                 }`}
               >
                 {l}

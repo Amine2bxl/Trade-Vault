@@ -120,7 +120,9 @@ export function FeaturesBento() {
                 strokeDashoffset={326 - 326 * 0.78}
               />
             </svg>
-            <span className="absolute font-display text-2xl font-bold tabular-nums text-white">78</span>
+            <span className="absolute font-display text-2xl font-bold tabular-nums text-white">
+              78
+            </span>
           </div>
           <div className="mt-3 text-[11px] font-semibold text-emerald-400">
             {t("bento.edge.ready")}

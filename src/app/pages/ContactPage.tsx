@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, Shield, Receipt, Bug, Clock } from "lucide-react";
 import { SUPPORT_EMAIL } from "../types";
 import { getContactDoc, type ContactChannel } from "./contact-content";
 import { usePersistedLang } from "./usePersistedLang";
+import { breadcrumbJsonLd } from "@/shared/seo";
 
 /**
  * /contact — the public support surface.
@@ -45,6 +46,14 @@ export default function ContactPage() {
         }}
       />
       <div className="pointer-events-none absolute inset-0 overflow-hidden"></div>
+
+      {/* Fil d'Ariane — même raison que sur les pages légales : sans lui, le
+          résultat de recherche affiche `tradevault.be/contact` au lieu de
+          « TradeVault › Contact ». */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd(doc.title, "/contact") }}
+      />
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 md:px-6 py-10 md:py-16 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)]">
         <Link

@@ -1,5 +1,7 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { PlayCircle, Twitter, Linkedin, Instagram, Facebook, Youtube, Check } from "lucide-react";
+// Les cinq logos de réseaux sociaux ont quitté cet import avec les liens morts
+// qu'ils portaient : voir le pied de page plus bas.
+import { PlayCircle, Check } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
@@ -7,15 +9,25 @@ import { FeaturesBento } from "./landing/FeaturesBento";
 import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
 import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
+import { faqPageJsonLd } from "@/shared/seo";
 import PricingPlans from "../components/pricing/PricingPlans";
-import { LandingLangProvider, useLandingT, type LandingKey } from "./landing/i18n";
+import {
+  LandingLangProvider,
+  useLandingT,
+  type LandingKey,
+  type LandingLang,
+} from "./landing/i18n";
 import "./landing.css";
 
 /* ─────────────────────────── LOGO ────────────────────────── */
 function Logo() {
   return (
+    // `href="/"`, pas `href="#"`. Le logo est le lien de retour à l'accueil le
+    // plus universellement compris du web, et c'est le seul lien qu'un robot
+    // d'indexation s'attend à trouver sur chaque page. Pointé sur `#`, il ne
+    // désignait rien.
     <a
-      href="#"
+      href="/"
       className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tv-accent)] rounded-sm"
     >
       <img
@@ -29,6 +41,71 @@ function Logo() {
         TradeVault
       </span>
     </a>
+  );
+}
+
+/* ─────────────────────────── PIED DE PAGE ─────────────────────────── */
+
+/**
+ * LES LIENS DU PIED DE PAGE — la seule structure de maillage du site.
+ *
+ * Ils étaient TREIZE à pointer vers `href="#"` : quatre « Produit », quatre
+ * « Ressources », cinq icônes sociales. Le pied de page est le bloc que tout
+ * moteur d'indexation lit sur chaque page pour découvrir le reste du site ;
+ * celui-ci ne menait nulle part, et `/contact` — pourtant déclarée dans le
+ * sitemap — n'était atteignable par AUCUN lien du produit.
+ *
+ * Quatre des libellés annonçaient en plus des pages qui n'existent pas
+ * (« Intégrations », « Changelog », « Documentation », « Blog »). Un lien de
+ * pied de page est une promesse de contenu ; on n'en écrit pas qu'on ne tient
+ * pas.
+ *
+ * Chaque entrée ci-dessous désigne donc une ancre RÉELLE de cette page ou une
+ * route RÉELLE du produit. Le lien vers `/demo` et `/demo-site` est délibéré
+ * bien que ces deux routes soient en `noindex` : elles sont utiles au visiteur,
+ * et un lien vers une page non indexée reste un lien parfaitement valide.
+ */
+type FooterLink = { k: LandingKey; href: string };
+
+const FOOTER_PRODUCT: FooterLink[] = [
+  { k: "footer.f1", href: "#problem" },
+  { k: "footer.f2", href: "#ai" },
+  { k: "footer.f3", href: "#features" },
+  { k: "footer.f4", href: "#pricing" },
+];
+
+const FOOTER_RESOURCES: FooterLink[] = [
+  { k: "footer.r1", href: "/demo-site" },
+  { k: "footer.r2", href: "/demo" },
+  { k: "footer.r3", href: "#faq" },
+  { k: "footer.r4", href: "/contact" },
+];
+
+function FooterColumn({
+  title,
+  links,
+  t,
+}: {
+  title: string;
+  links: FooterLink[];
+  t: (k: LandingKey) => string;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-bold text-white mb-4">{title}</p>
+      <ul className="space-y-2.5 text-sm">
+        {links.map(({ k, href }) => (
+          <li key={k}>
+            <a
+              href={href}
+              className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-slate-300"
+            >
+              {t(k)}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -75,7 +152,16 @@ function useReveal() {
  * Catmull-Rom passe par tous les points ; calculée une fois au chargement.
  */
 const HERO_PTS: [number, number][] = [
-  [0, 130], [42, 118], [84, 124], [126, 96], [168, 106], [210, 74], [252, 88], [294, 52], [336, 62], [376, 30],
+  [0, 130],
+  [42, 118],
+  [84, 124],
+  [126, 96],
+  [168, 106],
+  [210, 74],
+  [252, 88],
+  [294, 52],
+  [336, 62],
+  [376, 30],
 ];
 
 function buildSpline(p: [number, number][]): string {
@@ -93,7 +179,14 @@ function buildSpline(p: [number, number][]): string {
 }
 const HERO_D = buildSpline(HERO_PTS);
 const ANALYTICS_D = buildSpline([
-  [0, 96], [40, 88], [80, 92], [120, 70], [160, 78], [200, 52], [240, 62], [280, 40],
+  [0, 96],
+  [40, 88],
+  [80, 92],
+  [120, 70],
+  [160, 78],
+  [200, 52],
+  [240, 62],
+  [280, 40],
 ]);
 
 /* ─────────────────────────── HERO — THE PRODUCT ─────────────────────────── */
@@ -127,7 +220,12 @@ function HeroProductVisual() {
               <path key={yy} d={`M0 ${yy}H376`} stroke="rgba(148,163,184,.09)" />
             ))}
             <path d={`${HERO_D} L376,145 L0,145 Z`} fill="url(#hf)" />
-            <path d="M0 138H376" stroke="var(--tv-chart-red)" strokeWidth="1.5" strokeDasharray="6 5" />
+            <path
+              d="M0 138H376"
+              stroke="var(--tv-chart-red)"
+              strokeWidth="1.5"
+              strokeDasharray="6 5"
+            />
             <path
               d={HERO_D}
               fill="none"
@@ -169,7 +267,9 @@ function HeroProductVisual() {
           </div>
           <p className="text-[11px] leading-4 text-slate-300">
             {t("hero.coach.tip")}{" "}
-            <span className="text-[var(--tv-highlight)] font-semibold">{t("hero.coach.action")}</span>
+            <span className="text-[var(--tv-highlight)] font-semibold">
+              {t("hero.coach.action")}
+            </span>
           </p>
         </div>
       </div>
@@ -331,7 +431,12 @@ function AnalyticsSection() {
                     <path key={yy} d={`M0 ${yy}H280`} stroke="rgba(148,163,184,.09)" />
                   ))}
                   <path d={`${ANALYTICS_D} L280,100 L0,100 Z`} fill="url(#aa)" />
-                  <path d="M0 96H280" stroke="var(--tv-chart-red)" strokeWidth="1.5" strokeDasharray="6 5" />
+                  <path
+                    d="M0 96H280"
+                    stroke="var(--tv-chart-red)"
+                    strokeWidth="1.5"
+                    strokeDasharray="6 5"
+                  />
                   <path
                     d={ANALYTICS_D}
                     fill="none"
@@ -615,8 +720,7 @@ function LandingPage() {
             <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
               <div className="text-center lg:text-left">
                 <h1 className="fade-up font-display text-[clamp(2.6rem,5.2vw,4.4rem)] font-semibold leading-[1.04] tracking-[-0.035em] text-white">
-                  {t("hero.h1a")}{" "}
-                  <span className="text-accent">{t("hero.h1b")}</span>
+                  {t("hero.h1a")} <span className="text-accent">{t("hero.h1b")}</span>
                 </h1>
                 <p className="fade-up d2 mt-6 max-w-[540px] text-[17px] leading-7 text-slate-400">
                   {t("hero.sub")}
@@ -638,10 +742,7 @@ function LandingPage() {
                 </div>
                 <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 lg:justify-start">
                   {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
-                    <span
-                      key={s}
-                      className="flex items-center gap-1.5 text-[13px] text-slate-500"
-                    >
+                    <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
                       <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
                       {s}
                     </span>
@@ -669,7 +770,8 @@ function LandingPage() {
             <SectionHead
               title={
                 <>
-                  {t("problem.title.a")} <span className="text-slate-500">{t("problem.title.b")}</span>
+                  {t("problem.title.a")}{" "}
+                  <span className="text-slate-500">{t("problem.title.b")}</span>
                 </>
               }
               sub={t("problem.sub")}
@@ -716,10 +818,7 @@ function LandingPage() {
                 <p className="text-slate-400 leading-7 mb-6">{t("ai.body")}</p>
                 <div className="space-y-3">
                   {[t("ai.b1"), t("ai.b2"), t("ai.b3")].map((s) => (
-                    <div
-                      key={s}
-                      className="flex items-center gap-3 text-[15px] text-slate-300"
-                    >
+                    <div key={s} className="flex items-center gap-3 text-[15px] text-slate-300">
                       <span className="grid h-5.5 w-5.5 shrink-0 place-items-center rounded-full bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]">
                         <Icon n="check" cls="h-3.5 w-3.5" />
                       </span>
@@ -822,6 +921,21 @@ function LandingPage() {
         {/* ── FAQ ── */}
         <section id="faq" className="relative section-divider py-14 lg:py-20">
           <div className="mx-auto w-full max-w-[760px] px-5 lg:px-8">
+            {/* `FAQPage` — construit à partir du MÊME tableau `faqs` que
+                l'accordéon rendu juste en dessous, donc incapable d'en
+                diverger. C'est le contenu le plus directement extractible du
+                site, par un moteur de recherche comme par un moteur de
+                réponse, et il n'était balisé nulle part.
+
+                Émis dans le corps plutôt que dans `head()` : le JSON doit
+                sortir VERBATIM (`head()` sérialise des balises, pas un corps de
+                script), et schema.org accepte le JSON-LD partout dans le
+                document. Autre bénéfice : le balisage suit automatiquement la
+                langue rendue, donc `/fr` publie la FAQ française. */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: faqPageJsonLd(faqs) }}
+            />
             <SectionHead title={t("faq.title")} />
             <div className="reveal border-t border-white/[.08]">
               {faqs.map(({ q, a }, i) => {
@@ -885,62 +999,44 @@ function LandingPage() {
                 <p className="mt-4 text-sm leading-6 text-slate-500 max-w-[320px]">
                   {t("footer.tagline")}
                 </p>
-                <div className="mt-5 flex items-center gap-3">
-                  {[Twitter, Linkedin, Instagram, Facebook, Youtube].map((Icon, i) => (
-                    <a
-                      key={i}
-                      href="#"
-                      className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] text-slate-400 transition hover:text-white hover:border-white/[.16]"
-                    >
-                      <Icon className="h-4 w-4" />
-                    </a>
-                  ))}
-                </div>
+                {/* LES CINQ ICÔNES SOCIALES ONT ÉTÉ RETIRÉES.
+                    Elles pointaient toutes vers `href="#"` : Twitter, LinkedIn,
+                    Instagram, Facebook et YouTube dessinaient une présence que
+                    la marque n'a pas. Un logo de réseau est une affirmation —
+                    « nous sommes là » — et celle-ci était fausse. Elles
+                    reviendront le jour où les comptes existeront, avec leurs
+                    vraies URL, et elles rejoindront alors `sameAs`
+                    (`shared/seo.ts`), qui est l'autre endroit où cette même
+                    vérité se déclare. */}
               </div>
-              <div>
-                <p className="text-sm font-bold text-white mb-4">{t("footer.product")}</p>
-                <ul className="space-y-2.5 text-sm">
-                  {[t("footer.f1"), t("footer.f2"), t("footer.f3"), t("footer.f4")].map((l) => (
-                    <li key={l}>
-                      <a
-                        href="#"
-                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-slate-300"
-                      >
-                        {l}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white mb-4">{t("footer.resources")}</p>
-                <ul className="space-y-2.5 text-sm">
-                  {[t("footer.r1"), t("footer.r2"), t("footer.r3"), t("footer.r4")].map((l) => (
-                    <li key={l}>
-                      <a
-                        href="#"
-                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-slate-300"
-                      >
-                        {l}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <FooterColumn title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
+              <FooterColumn title={t("footer.resources")} links={FOOTER_RESOURCES} t={t} />
             </div>
             <div className="mt-10 pt-6 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-slate-600">{t("footer.rights")}</p>
               <div className="flex items-center gap-6 text-sm">
-                <a href="/privacy" className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400">
+                <a
+                  href="/privacy"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
                   {t("footer.privacy")}
                 </a>
-                <a href="/terms" className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400">
+                <a
+                  href="/terms"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
                   {t("footer.terms")}
                 </a>
-                <a href="/cgu" className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400">
+                <a
+                  href="/cgu"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
                   CGU
                 </a>
-                <a href="/privacy" className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400">
+                <a
+                  href="/privacy"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
                   {t("footer.cookies")}
                 </a>
               </div>
@@ -955,9 +1051,18 @@ function LandingPage() {
   );
 }
 
-export default function Landing() {
+/**
+ * `lang` — la langue portée par l'URL, quand l'URL en porte une.
+ *
+ * `/` sert l'anglais (`SSR_LANG`) et laisse la préférence enregistrée du
+ * visiteur reprendre la main après hydratation. `/fr` sert le français dès le
+ * rendu serveur, et l'impose : c'est l'adresse qui fait foi. Voir
+ * `shared/lang.ts` pour la raison — jusqu'ici la vitrine française n'avait
+ * aucune adresse, donc aucune existence pour un moteur de recherche.
+ */
+export default function Landing({ lang }: { lang?: LandingLang } = {}) {
   return (
-    <LandingLangProvider>
+    <LandingLangProvider pinned={lang}>
       <LandingPage />
     </LandingLangProvider>
   );

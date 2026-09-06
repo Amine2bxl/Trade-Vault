@@ -6,9 +6,45 @@ import { SITE_URL } from "./shared/site";
 import { checkRateLimit } from "./backend/rate-limit.server";
 import { logger } from "./shared/logger";
 
-/** Public routes worth indexing. The authenticated app is behind `/` and is
- *  client-rendered, so there is nothing else for a crawler to see. */
-const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/cgu", "/contact"] as const;
+/**
+ * Public routes worth indexing. The authenticated app is behind `/` and is
+ * client-rendered, so there is nothing else for a crawler to see.
+ *
+ * `changefreq` dit à quel rythme la page bouge RÉELLEMENT. Les pages légales
+ * ne changent qu'à une révision de contrat ; la vitrine suit le produit.
+ * L'annoncer honnêtement vaut mieux que de tout déclarer `daily` : un sitemap
+ * qui exagère est un sitemap que le moteur cesse de lire.
+ */
+const PUBLIC_ROUTES = [
+  { path: "/", priority: "1.0", changefreq: "weekly" },
+  { path: "/fr", priority: "1.0", changefreq: "weekly" },
+  { path: "/privacy", priority: "0.5", changefreq: "yearly" },
+  { path: "/terms", priority: "0.5", changefreq: "yearly" },
+  { path: "/cgu", priority: "0.5", changefreq: "yearly" },
+  { path: "/contact", priority: "0.5", changefreq: "monthly" },
+] as const;
+
+/**
+ * `lastmod` — L'HORODATAGE DU BUILD, PAS CELUI DE LA REQUÊTE.
+ *
+ * Il valait `new Date()`, évalué à chaque appel : le sitemap déclarait donc
+ * CHAQUE URL modifiée aujourd'hui, TOUS LES JOURS — y compris des CGU
+ * inchangées depuis des mois. Google mesure cet écart, en conclut que le
+ * `lastmod` du site n'est pas fiable, et cesse alors de le lire pour toutes
+ * les URL, y compris celles qui changent vraiment.
+ *
+ * Le déploiement est le seul moment où le contenu de ces pages peut changer :
+ * c'est donc la bonne date. Figée à l'évaluation du module — une fois par
+ * démarrage de la fonction, pas une fois par requête.
+ *
+ * UTC est ICI le bon choix, contrairement au reste du produit : le `lastmod`
+ * d'un sitemap n'appartient à personne en particulier, et le serveur n'a aucun
+ * fuseau « local » qui voudrait dire quelque chose. (`tests/calendarDate.test.ts`
+ * s'accroche à cette phrase — elle marque une exception délibérée à la règle
+ * « aucune date métier ne repasse par UTC », pour qu'on ne la « corrige » pas
+ * par symétrie.)
+ */
+const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
 /**
  * `robots.txt` et `sitemap.xml`, GÉNÉRÉS plutôt que livrés en fichiers
@@ -41,8 +77,20 @@ function isCanonicalHost(request: Request): boolean {
 }
 
 function robotsTxt(request: Request): Response {
+  // `Disallow: /api/` : ces chemins ne rendent jamais de HTML (webhooks, crons,
+  // facturation). Les faire explorer ne peut rien indexer et gaspille le budget
+  // de crawl — quand ça ne déclenche pas un 405 ou une limitation de débit.
+  //
+  // Le reste du site reste EXPLORABLE, y compris les écrans authentifiés. C'est
+  // délibéré et c'est le point que la plupart des configurations ratent : un
+  // `Disallow` empêche le robot de LIRE le `noindex` de la page, donc l'URL
+  // peut rester dans l'index, sans titre ni description. Explorable + `noindex`
+  // est la seule combinaison qui désindexe vraiment.
+  //
+  // `llms.txt` est annoncé ici parce que c'est le seul endroit conventionnel où
+  // un agent va chercher les métadonnées d'un site.
   const body = isCanonicalHost(request)
-    ? `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`
+    ? `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${SITE_URL}/sitemap.xml\n\n# Machine-readable summary for AI assistants\n# ${SITE_URL}/llms.txt\n`
     : `User-agent: *\nDisallow: /\n`;
   return new Response(body, {
     headers: {
@@ -52,17 +100,26 @@ function robotsTxt(request: Request): Response {
   });
 }
 
+/** Les deux adresses de la vitrine. Doit rester aligné sur
+ *  `LANDING_ALTERNATES` (`shared/seo.ts`) — la grappe `hreflang` du `<head>` et
+ *  celle du sitemap doivent décrire la MÊME paire, sinon Google en ignore une. */
+const LANDING_PATHS: Record<string, string> = { "/": `${SITE_URL}/`, "/fr": `${SITE_URL}/fr` };
+
 function sitemapXml(): Response {
-  // UTC est ICI le bon choix, contrairement au reste du produit : `lastmod`
-  // d'un sitemap n'appartient à personne en particulier, et le serveur n'a
-  // aucun fuseau « local » qui voudrait dire quelque chose.
-  const today = new Date().toISOString().slice(0, 10);
-  const urls = PUBLIC_ROUTES.map((path) => {
+  const urls = PUBLIC_ROUTES.map(({ path, priority, changefreq }) => {
     const loc = path === "/" ? `${SITE_URL}/` : `${SITE_URL}${path}`;
-    const priority = path === "/" ? "1.0" : "0.5";
-    return `  <url><loc>${loc}</loc><lastmod>${today}</lastmod><priority>${priority}</priority></url>`;
+    // Les alternatives de langue sont déclarées DANS le sitemap en plus du
+    // `<head>`. Ce n'est pas une redondance : Google accepte les deux canaux,
+    // et un sitemap est lu même quand le rendu de la page échoue.
+    const alt =
+      path in LANDING_PATHS
+        ? `\n    <xhtml:link rel="alternate" hreflang="en" href="${LANDING_PATHS["/"]}"/>` +
+          `\n    <xhtml:link rel="alternate" hreflang="fr" href="${LANDING_PATHS["/fr"]}"/>` +
+          `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${LANDING_PATHS["/"]}"/>`
+        : "";
+    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${BUILD_DATE}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>${alt}\n  </url>`;
   }).join("\n");
-  const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+  const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls}\n</urlset>\n`;
   return new Response(body, {
     headers: {
       "content-type": "application/xml; charset=utf-8",

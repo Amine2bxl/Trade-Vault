@@ -317,9 +317,7 @@ function PlanColumn({
                 className="flex items-start gap-2.5 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.22)] bg-[rgb(var(--tv-accent-rgb)/0.06)] px-3.5 py-2.5"
               >
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
-                <span className="text-[13px] font-semibold leading-snug text-white">
-                  {h[lang]}
-                </span>
+                <span className="text-[13px] font-semibold leading-snug text-white">{h[lang]}</span>
               </div>
             ))}
             {/* Les 9 pages Premium — la liste concrète de ce qui se débloque. */}

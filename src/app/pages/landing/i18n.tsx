@@ -28,7 +28,7 @@ import {
 // que `__root.tsx` puisse la lire sans traîner tout ce dictionnaire dans le
 // chunk d'entrée de chaque route. Réexportée ici par commodité.
 export { SSR_LANG } from "@/shared/lang";
-import { SSR_LANG } from "@/shared/lang";
+import { SSR_LANG, FR_PREFIX } from "@/shared/lang";
 
 /** `useLayoutEffect` côté navigateur, `useEffect` côté serveur — où il ne
  *  s'exécute de toute façon pas, mais où React avertirait à chaque rendu. */
@@ -66,31 +66,73 @@ interface LandingLangCtx {
 
 const Ctx = createContext<LandingLangCtx | null>(null);
 
-export function LandingLangProvider({ children }: { children: ReactNode }) {
+/**
+ * `pinned` — la langue imposée par l'URL, quand il y en a une.
+ *
+ * `/fr` sert la vitrine française au SSR (voir `shared/lang.ts`). Sur cette
+ * route, l'ADRESSE est la source de vérité, pas la préférence enregistrée : un
+ * visiteur qui arrive depuis un résultat de recherche français doit lire du
+ * français, même si son localStorage garde « en » d'une visite précédente.
+ * Laisser la préférence gagner ferait diverger l'URL de son propre contenu —
+ * et un moteur qui recrawle `/fr` y trouverait de l'anglais sous un
+ * `hreflang="fr"`.
+ *
+ * Le sélecteur EN/FR NAVIGUE alors au lieu de basculer un état, pour que les
+ * deux langues gardent chacune leur adresse.
+ */
+export function LandingLangProvider({
+  children,
+  pinned,
+}: {
+  children: ReactNode;
+  pinned?: LandingLang;
+}) {
   // Premier rendu IDENTIQUE des deux côtés — c'est ce qui supprime la
   // divergence d'hydratation.
-  const [lang, setLangState] = useState<LandingLang>(SSR_LANG);
+  const [lang, setLangState] = useState<LandingLang>(pinned ?? SSR_LANG);
 
   // Avant la première peinture : on applique la langue du visiteur. Un
   // `useEffect` ordinaire s'exécuterait APRÈS, et le clignotement serait
   // simplement déplacé au lieu d'être supprimé.
   useIsomorphicLayoutEffect(() => {
+    if (pinned) return;
     const wanted = preferredLang();
     if (wanted !== SSR_LANG) setLangState(wanted);
-  }, []);
+  }, [pinned]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const setLang = useCallback((l: LandingLang) => {
-    setLangState(l);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, l);
-    } catch {
-      /* best-effort */
-    }
-  }, []);
+  const setLang = useCallback(
+    (l: LandingLang) => {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, l);
+      } catch {
+        /* best-effort */
+      }
+
+      // CHANGER DE LANGUE CHANGE D'ADRESSE — maintenant que les deux langues en
+      // ont chacune une (`/` en anglais, `/fr` en français).
+      //
+      // Le sélecteur basculait un état React à URL constante. Le visiteur
+      // lisait donc du français à une adresse dont le canonical, l'`og:locale`
+      // et le `<html lang>` annoncent tous l'anglais — et surtout, la page
+      // qu'il venait de lire n'était PARTAGEABLE dans aucune des deux langues :
+      // envoyer le lien à quelqu'un lui servait l'autre.
+      //
+      // Un rechargement complet plutôt qu'une navigation du routeur : ce qu'il
+      // faut renouveler, c'est le DOCUMENT SERVI — titre, description,
+      // canonical, `hreflang`, `<html lang>` — pas seulement l'arbre React.
+      const routeLang = pinned ?? SSR_LANG;
+      if (l !== routeLang && typeof window !== "undefined") {
+        window.location.href = l === "fr" ? FR_PREFIX : "/";
+        return;
+      }
+      setLangState(l);
+    },
+    [pinned],
+  );
 
   const value = useMemo<LandingLangCtx>(
     () => ({ lang, setLang, t: (k) => tr(lang, k) }),
@@ -247,39 +289,78 @@ const M: Record<string, Msg> = {
     fr: "Plus de vingt métriques calculées sur ton historique réel — une courbe d'equity qui dit la vérité, un drawdown mesurable, une expectancy fiable.",
   },
   "analytics.c1.t": { en: "Equity curve", fr: "Courbe d'equity" },
-  "analytics.c1.d": { en: "Your account trajectory, day by day.", fr: "La trajectoire de ton compte, jour après jour." },
+  "analytics.c1.d": {
+    en: "Your account trajectory, day by day.",
+    fr: "La trajectoire de ton compte, jour après jour.",
+  },
   "analytics.c2.t": { en: "Drawdown & recovery", fr: "Drawdown & récupération" },
-  "analytics.c2.d": { en: "How deep a losing run goes, and how long to come back.", fr: "Jusqu'où va une série perdante, et le temps de revenir." },
+  "analytics.c2.d": {
+    en: "How deep a losing run goes, and how long to come back.",
+    fr: "Jusqu'où va une série perdante, et le temps de revenir.",
+  },
   "analytics.c3.t": { en: "Expectancy", fr: "Expectancy" },
-  "analytics.c3.d": { en: "What each trade is really worth, in R.", fr: "Ce que vaut réellement chaque trade, en R." },
+  "analytics.c3.d": {
+    en: "What each trade is really worth, in R.",
+    fr: "Ce que vaut réellement chaque trade, en R.",
+  },
   "analytics.c4.t": { en: "Win rate by hour, day & setup", fr: "Win rate par heure, jour & setup" },
-  "analytics.c4.d": { en: "Where your edge lives — and where it dies.", fr: "Où vit ton edge — et où il meurt." },
+  "analytics.c4.d": {
+    en: "Where your edge lives — and where it dies.",
+    fr: "Où vit ton edge — et où il meurt.",
+  },
 
   /* mistakes / psychology */
-  "mistakes.title.a": { en: "It's not about your win rate.", fr: "Ce n'est pas ton taux de réussite." },
+  "mistakes.title.a": {
+    en: "It's not about your win rate.",
+    fr: "Ce n'est pas ton taux de réussite.",
+  },
   "mistakes.title.b": { en: "It's about what costs you.", fr: "C'est ce qui te coûte." },
   "mistakes.sub": {
     en: "Your history can answer the questions you haven't asked it yet.",
     fr: "Ton historique peut répondre aux questions que tu ne lui as pas encore posées.",
   },
-  "mistakes.q1": { en: "When do I actually trade well?", fr: "Quand est-ce que je trade vraiment bien ?" },
-  "mistakes.q2": { en: "Which mistake costs me the most?", fr: "Quelle erreur me coûte le plus cher ?" },
+  "mistakes.q1": {
+    en: "When do I actually trade well?",
+    fr: "Quand est-ce que je trade vraiment bien ?",
+  },
+  "mistakes.q2": {
+    en: "Which mistake costs me the most?",
+    fr: "Quelle erreur me coûte le plus cher ?",
+  },
   "mistakes.q3": { en: "What pattern keeps repeating?", fr: "Quel schéma ne cesse de revenir ?" },
-  "mistakes.q4": { en: "Am I overtrading after a loss?", fr: "Est-ce que je surtrade après une perte ?" },
+  "mistakes.q4": {
+    en: "Am I overtrading after a loss?",
+    fr: "Est-ce que je surtrade après une perte ?",
+  },
 
   /* use cases */
   "uses.title.a": { en: "Built for the way", fr: "Conçu pour la façon dont" },
   "uses.title.b": { en: "you actually trade.", fr: "tu trades réellement." },
   "uses.u1.t": { en: "Futures traders", fr: "Traders futures" },
-  "uses.u1.d": { en: "Performance per contract, R-multiples, drawdown you can measure in ticks.", fr: "Performance par contrat, R-multiples, drawdown mesurable en ticks." },
+  "uses.u1.d": {
+    en: "Performance per contract, R-multiples, drawdown you can measure in ticks.",
+    fr: "Performance par contrat, R-multiples, drawdown mesurable en ticks.",
+  },
   "uses.u2.t": { en: "Day traders", fr: "Day traders" },
-  "uses.u2.d": { en: "A daily review with Jarvis, so every session ends with a verdict.", fr: "Une revue quotidienne avec Jarvis, pour que chaque séance se termine par un verdict." },
+  "uses.u2.d": {
+    en: "A daily review with Jarvis, so every session ends with a verdict.",
+    fr: "Une revue quotidienne avec Jarvis, pour que chaque séance se termine par un verdict.",
+  },
   "uses.u3.t": { en: "ICT traders", fr: "Traders ICT" },
-  "uses.u3.d": { en: "Setup, confluences and the patterns you replay every day — tracked as data.", fr: "Setup, confluences et les patterns que tu rejoues chaque jour — suivis en données." },
+  "uses.u3.d": {
+    en: "Setup, confluences and the patterns you replay every day — tracked as data.",
+    fr: "Setup, confluences et les patterns que tu rejoues chaque jour — suivis en données.",
+  },
 
   /* excel / notion */
-  "alt.title.a": { en: "Spreadsheets gave you freedom.", fr: "Les tableurs t'ont donné la liberté." },
-  "alt.title.b": { en: "They also gave you a full-time job.", fr: "Ils t'ont aussi donné un travail à temps plein." },
+  "alt.title.a": {
+    en: "Spreadsheets gave you freedom.",
+    fr: "Les tableurs t'ont donné la liberté.",
+  },
+  "alt.title.b": {
+    en: "They also gave you a full-time job.",
+    fr: "Ils t'ont aussi donné un travail à temps plein.",
+  },
   "alt.sub": {
     en: "The short version of it.",
     fr: "La version courte.",
@@ -288,18 +369,39 @@ const M: Record<string, Msg> = {
   "alt.h.notion": { en: "Notion", fr: "Notion" },
   "alt.h.tv": { en: "TradeVault", fr: "TradeVault" },
   "alt.excel.d": { en: "Flexible, but manual.", fr: "Flexible, mais manuel." },
-  "alt.notion.d": { en: "Customizable, but not built for trading.", fr: "Personnalisable, mais pas conçu pour le trading." },
-  "alt.tv.d": { en: "Built around the trading workflow.", fr: "Construit autour du flux de travail du trader." },
+  "alt.notion.d": {
+    en: "Customizable, but not built for trading.",
+    fr: "Personnalisable, mais pas conçu pour le trading.",
+  },
+  "alt.tv.d": {
+    en: "Built around the trading workflow.",
+    fr: "Construit autour du flux de travail du trader.",
+  },
   "alt.r1": { en: "A trade logged in 45 seconds", fr: "Un trade journalisé en 45 secondes" },
-  "alt.r2": { en: "Equity curve & drawdown out of the box", fr: "Courbe d'equity & drawdown prêts à l'emploi" },
+  "alt.r2": {
+    en: "Equity curve & drawdown out of the box",
+    fr: "Courbe d'equity & drawdown prêts à l'emploi",
+  },
   "alt.r3": { en: "Recurring-mistake analysis", fr: "Analyse des erreurs récurrentes" },
-  "alt.r4": { en: "Jarvis, your AI coach, on your data", fr: "Jarvis, ton coach IA, sur tes données" },
-  "alt.r5": { en: "R-multiples, expectancy, seasonality", fr: "R-multiples, expectancy, saisonnalité" },
+  "alt.r4": {
+    en: "Jarvis, your AI coach, on your data",
+    fr: "Jarvis, ton coach IA, sur tes données",
+  },
+  "alt.r5": {
+    en: "R-multiples, expectancy, seasonality",
+    fr: "R-multiples, expectancy, saisonnalité",
+  },
   "alt.r6": { en: "Your data, exportable anytime", fr: "Tes données, exportables à tout moment" },
 
   /* cta final */
-  "cta.title.a": { en: "Your trades already contain the data.", fr: "Tes trades contiennent déjà les données." },
-  "cta.title.b": { en: "TradeVault helps you understand it.", fr: "TradeVault t'aide à les comprendre." },
+  "cta.title.a": {
+    en: "Your trades already contain the data.",
+    fr: "Tes trades contiennent déjà les données.",
+  },
+  "cta.title.b": {
+    en: "TradeVault helps you understand it.",
+    fr: "TradeVault t'aide à les comprendre.",
+  },
   "cta.buttonShort": { en: "Start for free", fr: "Commencer gratuitement" },
 
   /* hero product visual */
@@ -701,13 +803,24 @@ const M: Record<string, Msg> = {
   },
   "footer.product": { en: "Product", fr: "Produit" },
   "footer.resources": { en: "Resources", fr: "Ressources" },
-  "footer.f1": { en: "Features", fr: "Fonctionnalités" },
-  "footer.f2": { en: "Pricing", fr: "Tarifs" },
-  "footer.f3": { en: "Integrations", fr: "Intégrations" },
-  "footer.f4": { en: "Changelog", fr: "Changelog" },
-  "footer.r1": { en: "Documentation", fr: "Documentation" },
-  "footer.r2": { en: "Blog", fr: "Blog" },
-  "footer.r3": { en: "Support", fr: "Support" },
+  /* LES LIENS DU PIED DE PAGE DÉSIGNENT DES CHOSES QUI EXISTENT.
+   *
+   * Ils annonçaient « Intégrations », « Changelog », « Documentation » et
+   * « Blog » — quatre pages qui n'ont jamais été écrites — et pointaient tous,
+   * ainsi que les cinq icônes sociales, vers `href="#"`. Treize liens morts
+   * dans le seul bloc du site censé faire circuler le maillage interne, et
+   * quatre promesses de contenu inexistant.
+   *
+   * Chaque libellé ci-dessous correspond maintenant à une ancre réelle de la
+   * page ou à une route réelle du produit. Voir `FOOTER_PRODUCT` et
+   * `FOOTER_RESOURCES` dans `pages/Landing.tsx`. */
+  "footer.f1": { en: "The problem", fr: "Le problème" },
+  "footer.f2": { en: "Jarvis — AI coach", fr: "Jarvis — Coach IA" },
+  "footer.f3": { en: "Features", fr: "Fonctionnalités" },
+  "footer.f4": { en: "Pricing", fr: "Tarifs" },
+  "footer.r1": { en: "Guided demo", fr: "Démo guidée" },
+  "footer.r2": { en: "Video demo", fr: "Démo en vidéo" },
+  "footer.r3": { en: "FAQ", fr: "FAQ" },
   "footer.r4": { en: "Contact", fr: "Contact" },
   "footer.rights": {
     en: "© 2026 TradeVault. All rights reserved.",

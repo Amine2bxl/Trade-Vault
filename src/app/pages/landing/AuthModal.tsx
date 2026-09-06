@@ -11,6 +11,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon } from "./Icon";
 import { useLandingT } from "./i18n";
+import { TRUSTPILOT_URL } from "@/shared/site";
 
 export function AuthModal({
   onClose,
@@ -163,7 +164,7 @@ export function AuthModal({
             {/* Trustpilot — preuve sociale */}
             <div className="relative mt-8">
               <a
-                href="https://www.trustpilot.com/review/tradevaultt.vercel.app"
+                href={TRUSTPILOT_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2.5 rounded-full border border-white/[.08] bg-white/[.03] py-1.5 pl-2 pr-3.5 transition hover:border-[#00b67a]/40 hover:bg-white/[.05]"

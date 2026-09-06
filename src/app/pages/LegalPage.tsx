@@ -5,8 +5,16 @@ import type { Lang } from "../i18n/translations";
 import { SUPPORT_EMAIL } from "../types";
 import { legalChrome, type LegalDoc } from "./legal-content";
 import { usePersistedLang } from "./usePersistedLang";
+import { breadcrumbJsonLd } from "@/shared/seo";
 
-export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) {
+export default function LegalPage({
+  pick,
+  path,
+}: {
+  pick: (lang: Lang) => LegalDoc;
+  /** Le chemin de la route qui rend cette page — pour le fil d'Ariane. */
+  path: string;
+}) {
   const lang = usePersistedLang();
   const doc = useMemo(() => pick(lang), [pick, lang]);
   const chrome = legalChrome(lang);
@@ -26,6 +34,19 @@ export default function LegalPage({ pick }: { pick: (lang: Lang) => LegalDoc }) 
         }}
       />
       <div className="pointer-events-none absolute inset-0 overflow-hidden"></div>
+
+      {/* FIL D'ARIANE — le lien « retour » juste en dessous, en lisible par une
+          machine. Sans lui, un résultat de recherche pour cette page affiche
+          l'URL brute (`tradevault.be/privacy`) au lieu du chemin
+          « TradeVault › Politique de confidentialité », et le moteur n'a rien
+          qui rattache la page à l'accueil.
+
+          `doc.title` suit la langue choisie par le visiteur : le fil d'Ariane
+          nomme donc la page comme elle s'appelle réellement à l'écran. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd(doc.title, path) }}
+      />
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 md:px-6 py-10 md:py-16 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)]">
         <Link
