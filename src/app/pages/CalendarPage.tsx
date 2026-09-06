@@ -233,10 +233,24 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   );
 
   return (
+    // `minHeight`, pas `height` — et `overflow-y-auto`, pas `overflow-hidden`.
+    //
+    // La hauteur mesurée est une CIBLE (« remplis l'écran »), pas un plafond
+    // (« tiens dans l'écran, quoi qu'il en coûte »). Avec `height` +
+    // `overflow-hidden`, les six lignes de semaine se partageaient ce qui
+    // restait après les KPI, l'en-tête, la ligne des jours et la légende : sur
+    // un écran un peu court, chaque cellule tombait sous le seuil lisible et
+    // son contenu — P&L, nombre de trades, pastilles — s'écrasait, sans qu'il
+    // soit possible de défiler pour compenser.
+    //
+    // En minimum, la page se comporte exactement pareil tant qu'il y a la
+    // place : `flex-1` étire les lignes jusqu'à remplir la hauteur. Quand il
+    // n'y a plus la place, les cellules s'arrêtent à leur plancher et le cadre
+    // défile, au lieu de comprimer la grille.
     <div
       ref={boxRef}
-      style={height ? { height } : undefined}
-      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-hidden px-3 py-2 md:px-5 md:py-3"
+      style={height ? { minHeight: height } : undefined}
+      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto px-3 py-2 md:px-5 md:py-3"
     >
       {/* Summary Cards */}
       <KpiGrid className="shrink-0">
@@ -327,7 +341,12 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
 
       {/* Calendar — remplit la hauteur restante, jamais plus : la page ne
           défile pas, la grille des jours s'étire ou se contracte. */}
-      <div className="stat-card-elevated mt-2 flex min-h-0 flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
+      {/* `min-h-0` retiré ici aussi : la permission de rétrécir sous le contenu
+          se propage le long de la chaîne flex. La laisser sur la carte aurait
+          suffi à réécraser la grille, quel que soit le plancher des cellules.
+          `overflow-hidden` reste — il sert les coins arrondis, plus à rogner
+          un débordement. */}
+      <div className="stat-card-elevated mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
         <div className="flex shrink-0 items-center justify-between px-4 py-2.5 md:px-6 md:py-3 border-b border-white/[0.06]">
           <button
             onClick={prevMonth}
@@ -373,18 +392,31 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             {t("calendar.week")}
           </div>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col p-1 md:p-2 space-y-0.5 md:space-y-1.5">
+        <div className="flex flex-1 flex-col p-1 md:p-2 space-y-0.5 md:space-y-1.5">
           {calendarRows.map((row, rowIdx) => {
             const week = weekTotals[rowIdx];
             return (
+              // PAS de `min-h-0` ici — c'était la moitié du problème.
+              //
+              // `min-height: 0` sur un élément flex l'autorise EXPLICITEMENT à
+              // rétrécir sous la taille de son contenu. Combiné à `flex-1`
+              // (`flex: 1 1 0%`) dans un cadre de hauteur fixe, la ligne
+              // pouvait tomber à quelques pixels pendant que ses cellules,
+              // elles, gardaient leur hauteur : elles débordaient de leur
+              // propre ligne et se chevauchaient. C'est exactement ce que l'œil
+              // lit comme « le calendrier s'écrase sur lui-même ».
+              //
+              // Sans lui, `min-height` vaut `auto` : la ligne ne descend jamais
+              // sous le plancher de ses cellules, et `flex-1` continue de
+              // l'étirer dès qu'il y a de la place.
               <div
                 key={rowIdx}
-                className="grid min-h-0 flex-1 grid-cols-7 md:grid-cols-8 gap-0.5 md:gap-1.5"
+                className="grid flex-1 grid-cols-7 md:grid-cols-8 gap-0.5 md:gap-1.5"
               >
                 {row.map((day, colIdx) => {
                   if (day === null)
                     return (
-                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[48px] md:min-h-0" />
+                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[52px] md:min-h-[88px]" />
                     );
                   const dateStr = getDateStr(day);
                   const data = dailyData[dateStr];
@@ -428,7 +460,13 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       disabled={!data && missedCount === 0}
                       style={cellStyle}
                       className={cn(
-                        "min-h-[48px] md:min-h-[0] md:p-2 p-1 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
+                        // LE PLANCHER DE LA CELLULE — ce qui empêche la grille
+                        // de s'écraser. Il valait `md:min-h-[0]` : combiné au
+                        // `flex-1` de la ligne et à la hauteur fixe du cadre,
+                        // une cellule pouvait descendre à quelques pixels et
+                        // laminer son contenu. 88px tient la date, le P&L et le
+                        // nombre de trades ; au-delà, `flex-1` étire toujours.
+                        "min-h-[52px] md:min-h-[88px] md:p-2 p-1 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
                         !cellStyle && !missedCount && "border-white/[0.04] bg-white/[0.02]",
                         !cellStyle && isWeekend && "bg-white/[0.03]",
                         !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",

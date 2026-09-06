@@ -385,10 +385,19 @@ export default function MonteCarloPage({ trades }: Props) {
   );
 
   return (
+    // Même correction que la page Calendrier, et même raison. La hauteur
+    // mesurée est une CIBLE (« remplis l'écran »), pas un plafond (« tiens
+    // dans l'écran, quoi qu'il en coûte »).
+    //
+    // Avec `height` + `overflow-hidden`, la barre d'outils, le verdict, le
+    // graphe et la colonne de réglages se disputaient une hauteur fixe : sur un
+    // portable, le verdict écrasait le graphe, et la colonne de réglages —
+    // pourtant `overflow-y-auto` — se retrouvait tronquée sans que rien ne
+    // puisse défiler à l'échelle de la page.
     <div
       ref={boxRef}
-      style={height ? { height } : undefined}
-      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-hidden p-3 md:p-4"
+      style={height ? { minHeight: height } : undefined}
+      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto p-3 md:p-4"
     >
       {/* ══ LA BARRE D'OUTILS ════════════════════════════════════════════
           Navigation des trois lectures à gauche, réglages à droite. Elle est
@@ -421,7 +430,12 @@ export default function MonteCarloPage({ trades }: Props) {
         </PageToolbar>
       </div>
 
-      <div className="mt-3 min-h-0 flex-1">
+      {/* `min-h-0` retiré : il autorisait cette zone à rétrécir sous son propre
+          contenu, ce qui écrasait verdict et graphe dans un cadre de hauteur
+          fixe. Les `min-h-0` PLUS BAS, eux, restent — ceux des sections de
+          graphe sont indispensables pour que `ResponsiveContainer` puisse
+          mesurer sa place au lieu de gonfler indéfiniment. */}
+      <div className="mt-3 flex-1">
         {samples.length < 5 ? (
           /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
              lui, un trader sans journal ne pouvait pas même atteindre la saisie
@@ -454,12 +468,7 @@ export default function MonteCarloPage({ trades }: Props) {
           </div>
         ) : (
           <div className="grid h-full gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div
-              className={cn(
-                "flex min-h-0 flex-col gap-3 transition-opacity",
-                running && "opacity-50",
-              )}
-            >
+            <div className={cn("flex flex-col gap-3 transition-opacity", running && "opacity-50")}>
               {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
               <section className="glass shrink-0 animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
                 <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
@@ -480,16 +489,17 @@ export default function MonteCarloPage({ trades }: Props) {
                         .replace("{days}", String(horizon))}
                     </p>
                   </div>
+                  {/* DEUX FAITS, PLUS QUATRE.
+                      « Taux d'échec » et « taux d'expiration » redisaient
+                      exactement ce que la barre d'issues montre juste en
+                      dessous — trois segments proportionnels. Leurs
+                      pourcentages ont rejoint la légende de cette barre, sous
+                      leur propre couleur : l'information est intacte, elle
+                      n'est plus écrite deux fois.
+                      Restent les deux chiffres que la barre ne peut PAS dire :
+                      combien ça coûte en chemin (drawdown médian) et combien
+                      de temps ça prend. */}
                   <div className="mc-facts">
-                    <Fait
-                      label={t("mc.failRate")}
-                      value={`${(result.failRate * 100).toFixed(0)}%`}
-                      tone="neg"
-                    />
-                    <Fait
-                      label={t("mc.timeoutRate")}
-                      value={`${(result.timeOutRate * 100).toFixed(0)}%`}
-                    />
                     <Fait
                       label={t("mc.medianDD")}
                       value={formatMoney(result.medianMaxDD)}
@@ -527,9 +537,21 @@ export default function MonteCarloPage({ trades }: Props) {
                     )}
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <Legende cls="rp-fill-pos" label={t("mc.passed")} />
-                    <Legende cls="rp-fill-flat" label={t("mc.timedOut")} />
-                    <Legende cls="rp-fill-neg" label={t("mc.failed")} />
+                    <Legende
+                      cls="rp-fill-pos"
+                      label={t("mc.passed")}
+                      value={`${(result.passRate * 100).toFixed(0)}%`}
+                    />
+                    <Legende
+                      cls="rp-fill-flat"
+                      label={t("mc.timedOut")}
+                      value={`${(result.timeOutRate * 100).toFixed(0)}%`}
+                    />
+                    <Legende
+                      cls="rp-fill-neg"
+                      label={t("mc.failed")}
+                      value={`${(result.failRate * 100).toFixed(0)}%`}
+                    />
                     <span className="tv-hint ml-auto">
                       {t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
                     </span>
@@ -537,8 +559,15 @@ export default function MonteCarloPage({ trades }: Props) {
                 </div>
               </section>
 
-              {/* ══ LA LECTURE CHOISIE — elle remplit l'espace restant ═══════ */}
-              <div className="min-h-0 flex-1">
+              {/* ══ LA LECTURE CHOISIE — elle remplit l'espace restant ═══════
+                  `min-h-[340px]` est un FILET, pas une mise en page : les trois
+                  vues montent un `ResponsiveContainer` en hauteur 100 %, qui ne
+                  dessine RIEN si son parent n'a pas de hauteur définie. Tant
+                  que la page portait une hauteur fixe, `flex-1` en donnait
+                  toujours une ; maintenant qu'elle peut défiler, ce plancher
+                  garantit que le graphe a de la place même quand la fenêtre est
+                  courte — au lieu de disparaître en silence. */}
+              <div className="min-h-[340px] flex-1">
                 {vue === "paths" && <Faisceau result={result} horizon={horizon} />}
                 {vue === "dist" && <Histogramme result={result} />}
                 {vue === "details" && <Details result={result} />}
@@ -1388,11 +1417,23 @@ function Fait({
   );
 }
 
-function Legende({ cls, label }: { cls: string; label: string }) {
+/**
+ * UNE ISSUE DE LA BARRE — sa couleur, son nom, ET SA PART.
+ *
+ * La légende ne portait que le nom. Les pourcentages, eux, vivaient dans deux
+ * tuiles séparées au-dessus (« taux d'échec », « taux d'expiration ») : le
+ * lecteur devait faire l'aller-retour entre un chiffre et un segment de barre
+ * pour les rapprocher, et la même donnée occupait deux endroits de l'écran.
+ *
+ * En posant la valeur sous son propre segment, la barre se suffit — et les
+ * deux tuiles ont pu disparaître sans rien perdre.
+ */
+function Legende({ cls, label, value }: { cls: string; label: string; value?: string }) {
   return (
     <span className="flex items-center gap-1.5">
       <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", cls)} />
       <span className="tv-row-label">{label}</span>
+      {value && <span className="tv-figure text-[11px] text-slate-300">{value}</span>}
     </span>
   );
 }
