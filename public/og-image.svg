@@ -1,7 +1,60 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="630" fill="#060810"/>
-  <rect x="0" y="0" width="1200" height="4" fill="#22d3ee" opacity="0.7"/>
-  <text x="600" y="280" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="72" font-weight="800" fill="#ffffff" letter-spacing="-2">TradeVault</text>
-  <text x="600" y="340" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="24" fill="#94a3b8" letter-spacing="0.5">Ton coach IA de trading personnel</text>
-  <rect x="520" y="400" width="160" height="3" rx="1.5" fill="#22d3ee" opacity="0.5"/>
+  <!--
+    LA CARTE SOCIALE — source de `public/og-image.png`.
+
+    Ce fichier n'est PAS servi comme `og:image` : aucun moissonneur social ne
+    rend le SVG (ni Facebook, ni LinkedIn, ni X, ni Slack, ni Discord). Il est
+    conservé comme SOURCE, pour pouvoir régénérer le PNG :
+
+        scripts/og-image.sh
+
+    Il était auparavant référencé nulle part, resté cyan `#22d3ee` — une couleur
+    que le produit n'utilise plus — avec une accroche française sur un site
+    servi en anglais.
+
+    Couleurs : le graphite du produit (`#0a0b0d` de fond, plaques `#101215`) et
+    l'accent émeraude de la vitrine. Texte en anglais, comme `SSR_LANG`.
+  -->
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#101215"/>
+      <stop offset="100%" stop-color="#0a0b0d"/>
+    </linearGradient>
+    <linearGradient id="curve" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#plate)"/>
+
+  <!-- La grille : le même plan de référence que le héros de la vitrine. -->
+  <g stroke="#ffffff" stroke-opacity="0.035" stroke-width="1">
+    <path d="M0 78.75H1200M0 157.5H1200M0 236.25H1200M0 315H1200M0 393.75H1200M0 472.5H1200M0 551.25H1200"/>
+    <path d="M75 0V630M150 0V630M225 0V630M300 0V630M375 0V630M450 0V630M525 0V630M600 0V630M675 0V630M750 0V630M825 0V630M900 0V630M975 0V630M1050 0V630M1125 0V630"/>
+  </g>
+
+  <!-- La courbe qui monte — l'unique image du produit. -->
+  <path d="M80 470 C 260 430, 380 400, 520 330 S 820 210, 1120 130"
+        fill="none" stroke="url(#curve)" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="1120" cy="130" r="10" fill="#0a0b0d" stroke="#34d399" stroke-width="5"/>
+
+  <!-- Le sigle : le V de Vault, la branche montante plus épaisse. -->
+  <g transform="translate(80,68)">
+    <path d="M0 6 L14 36" stroke="#10b981" stroke-opacity="0.5" stroke-width="6" stroke-linecap="round"/>
+    <path d="M14 36 L28 6" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="128" y="105" font-family="Inter,system-ui,-apple-system,sans-serif"
+        font-size="34" font-weight="700" fill="#e6e8ea" letter-spacing="-0.5">TradeVault</text>
+
+  <text x="80" y="285" font-family="Inter,system-ui,-apple-system,sans-serif"
+        font-size="78" font-weight="800" fill="#ffffff" letter-spacing="-3">Trading journal</text>
+  <text x="80" y="375" font-family="Inter,system-ui,-apple-system,sans-serif"
+        font-size="78" font-weight="800" fill="#34d399" letter-spacing="-3">and AI coach</text>
+
+  <text x="80" y="440" font-family="Inter,system-ui,-apple-system,sans-serif"
+        font-size="27" font-weight="400" fill="#94a3b8" letter-spacing="0">Analyze your performance. Follow your plan. Build discipline.</text>
+
+  <text x="80" y="565" font-family="Inter,system-ui,-apple-system,sans-serif"
+        font-size="22" font-weight="600" fill="#64748b" letter-spacing="0.5">tradevault.be</text>
 </svg>

@@ -161,7 +161,8 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   // réponse est « il faut agir ». Sévérité `error` : elle ouvre le popup.
   const motive = [...sorted.slice(0, 15).reverse()]; // 15 plus récents, en ordre
   const recentMistakes = new Map<string, number>();
-  for (const t of motive) for (const m of t.mistakes) recentMistakes.set(m, (recentMistakes.get(m) ?? 0) + 1);
+  for (const t of motive)
+    for (const m of t.mistakes) recentMistakes.set(m, (recentMistakes.get(m) ?? 0) + 1);
   const repeated = [...recentMistakes.entries()]
     .filter(([, n]) => n >= 3)
     .sort((a, b) => b[1] - a[1])

@@ -16,5 +16,5 @@ export const Route = createFileRoute("/cgu")({
 });
 
 function CguPage() {
-  return <LegalPage pick={getCguDoc} />;
+  return <LegalPage pick={getCguDoc} path="/cgu" />;
 }

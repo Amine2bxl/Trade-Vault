@@ -45,28 +45,68 @@ describe("robots.txt et sitemap.xml", () => {
 });
 
 describe("langue du document servi", () => {
-  test("les quatre déclarations de langue disent la même chose", () => {
-    // `<html lang>`, le corps rendu côté serveur, le titre/description et
-    // `og:locale`. Elles ne l'étaient pas : `lang="fr"` et un titre français
-    // pour un corps rendu en ANGLAIS — la détection de langue s'exécutant dans
-    // un initialiseur d'état, elle rendait « en » côté serveur.
+  test("les cinq déclarations de langue suivent la LANGUE DE LA ROUTE", () => {
+    // `<html lang>`, le corps rendu côté serveur, le titre/description,
+    // `og:locale` et `inLanguage` du graphe schema.org. Elles ne l'étaient pas :
+    // `lang="fr"` et un titre français pour un corps rendu en ANGLAIS — la
+    // détection de langue s'exécutant dans un initialiseur d'état, elle rendait
+    // « en » côté serveur.
     //
-    // La vitrine est maintenant en anglais PAR DÉFAUT (`SSR_LANG = "en"`) :
-    // la langue ne change que sur choix explicite du visiteur. Les quatre
-    // déclarations suivent donc toutes la même constante.
+    // CE QUI A CHANGÉ. La vitrine française a maintenant une ADRESSE (`/fr`).
+    // Tant qu'il n'y en avait qu'une, ces déclarations pouvaient toutes pointer
+    // sur la constante `SSR_LANG` ; désormais elles doivent suivre la langue de
+    // la ROUTE, sinon `/fr` serait servie sous `<html lang="en">` — la même
+    // contradiction, déplacée.
+    //
+    // `SSR_LANG` reste la langue servie par défaut, donc celle de `/` et le
+    // `x-default` de la grappe `hreflang`.
     expect(SSR_LANG).toBe("en");
 
     const root = read("../src/routes/__root.tsx");
-    expect(root).toContain("<html lang={SSR_LANG}>");
+    expect(root).toContain("langForPath(pathname)");
+    expect(root).toContain("<html lang={lang}>");
 
-    // Les DEUX déclarations d'`og:locale` — celle des routes publiques et celle
-    // de l'application — doivent suivre la même constante.
-    for (const file of ["../src/shared/seo.ts", "../src/routes/__root.tsx"]) {
-      expect(read(file), file).toContain('SSR_LANG === "fr" ? "fr_FR" : "en_US"');
-    }
+    // `langForPath` doit rester dans le module SANS DÉPENDANCE, pour la même
+    // raison que `SSR_LANG` : `__root.tsx` est chargé sur chaque route.
+    const lang = read("../src/shared/lang.ts");
+    expect(lang).toContain("export function langForPath");
+    expect(lang).toContain("FR_PREFIX");
 
+    // `og:locale` de l'application suit toujours la constante ; celui des
+    // routes publiques suit la langue de la page (`seo.lang ?? SSR_LANG`).
+    expect(read("../src/routes/__root.tsx")).toContain('SSR_LANG === "fr" ? "fr_FR" : "en_US"');
+    const seo = read("../src/shared/seo.ts");
+    expect(seo).toContain("const lang = seo.lang ?? SSR_LANG;");
+    expect(seo).toContain('lang === "fr" ? "fr_FR" : "en_US"');
+    // La CINQUIÈME déclaration — celle qui avait été oubliée : le graphe
+    // schema.org affirmait `fr-FR` en dur.
+    expect(seo).toContain('SSR_LANG === "fr" ? "fr-FR" : "en-US"');
+    expect(stripComments(seo)).not.toContain('inLanguage: "fr-FR"');
+
+    // Le premier rendu reste identique des deux côtés : l'état initial est une
+    // valeur connue au SSR (la langue de la route), jamais une lecture de
+    // `localStorage`.
     const landing = read("../src/app/pages/landing/i18n.tsx");
-    expect(landing).toContain("useState<LandingLang>(SSR_LANG)");
+    expect(landing).toContain("useState<LandingLang>(pinned ?? SSR_LANG)");
+  });
+
+  test("les deux vitrines se déclarent MUTUELLEMENT en hreflang", () => {
+    // Une grappe `hreflang` à sens unique est ignorée EN BLOC par Google — la
+    // grappe entière, pas seulement le lien manquant. Les deux moitiés doivent
+    // donc citer la même paire, et elles la tirent de la même constante pour
+    // qu'aucune ne puisse être modifiée seule.
+    const seo = read("../src/shared/seo.ts");
+    expect(seo).toContain("export const LANDING_ALTERNATES");
+    for (const file of ["../src/routes/index.tsx", "../src/routes/fr.tsx"]) {
+      expect(read(file), file).toContain("alternates: LANDING_ALTERNATES");
+    }
+    // `x-default` désigne la version servie à qui n'a rien choisi : l'anglais.
+    expect(seo).toContain('hrefLang: "x-default", href: absoluteUrl(alternates.en)');
+
+    // Le sitemap porte la MÊME paire. Deux canaux, une seule vérité.
+    const server = read("../src/server.ts");
+    expect(server).toContain('{ path: "/fr"');
+    expect(server).toContain('hreflang="x-default"');
   });
 
   test("la détection de langue ne s'exécute plus pendant le rendu", () => {

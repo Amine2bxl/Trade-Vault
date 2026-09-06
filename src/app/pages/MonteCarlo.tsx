@@ -875,7 +875,7 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
   const cible = result.params.startingBalance + result.params.profitTarget;
   const plancher = result.params.startingBalance - result.params.maxDrawdown;
 
-return (
+  return (
     <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
       <TitreGraphe titre={t("mc.chartPaths")} sous={t("mc.chartPathsSub")} />
       <div className="min-h-0 flex-1">

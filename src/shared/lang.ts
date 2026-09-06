@@ -41,3 +41,36 @@
 export type SiteLang = "en" | "fr";
 
 export const SSR_LANG: SiteLang = "en";
+
+/**
+ * LA VITRINE FRANÇAISE A MAINTENANT UNE ADRESSE.
+ *
+ * Elle n'en avait pas. Le dictionnaire français existait — plusieurs centaines
+ * de chaînes, entièrement traduites — mais il ne s'affichait qu'après un clic
+ * sur le sélecteur EN/FR, À LA MÊME URL. Or un moteur de recherche n'indexe pas
+ * un état d'interface : il indexe des adresses. Tout le contenu français du
+ * produit était donc, littéralement, introuvable — sur le marché que le produit
+ * adresse (les CGU, la politique de confidentialité et la voix du produit sont
+ * en français).
+ *
+ * `/fr` sert désormais la même page, rendue en français DÈS LE SSR, et les deux
+ * versions se déclarent mutuellement par `hreflang`. L'anglais reste à `/` et
+ * reste `x-default` : c'est la langue servie par défaut à qui n'a rien choisi.
+ *
+ * Le préfixe est volontairement UNIQUE et exhaustif. Toute autre route — les
+ * pages légales, les écrans authentifiés — n'existe qu'en une seule langue et
+ * n'a donc pas d'alternative à déclarer.
+ */
+export const FR_PREFIX = "/fr";
+
+/**
+ * La langue à SERVIR pour un chemin donné, avant toute exécution de JavaScript.
+ *
+ * Lue par `routes/__root.tsx` pour l'attribut `lang` de `<html>`. Sans elle, la
+ * page française était servie sous `<html lang="en">` — le document se
+ * contredisait sur sa propre langue, ce qui est exactement le défaut que
+ * `SSR_LANG` avait été créé pour corriger.
+ */
+export function langForPath(pathname: string): SiteLang {
+  return pathname === FR_PREFIX || pathname.startsWith(`${FR_PREFIX}/`) ? "fr" : SSR_LANG;
+}

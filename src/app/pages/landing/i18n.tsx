@@ -28,7 +28,7 @@ import {
 // que `__root.tsx` puisse la lire sans traîner tout ce dictionnaire dans le
 // chunk d'entrée de chaque route. Réexportée ici par commodité.
 export { SSR_LANG } from "@/shared/lang";
-import { SSR_LANG } from "@/shared/lang";
+import { SSR_LANG, FR_PREFIX } from "@/shared/lang";
 
 /** `useLayoutEffect` côté navigateur, `useEffect` côté serveur — où il ne
  *  s'exécute de toute façon pas, mais où React avertirait à chaque rendu. */
@@ -66,31 +66,73 @@ interface LandingLangCtx {
 
 const Ctx = createContext<LandingLangCtx | null>(null);
 
-export function LandingLangProvider({ children }: { children: ReactNode }) {
+/**
+ * `pinned` — la langue imposée par l'URL, quand il y en a une.
+ *
+ * `/fr` sert la vitrine française au SSR (voir `shared/lang.ts`). Sur cette
+ * route, l'ADRESSE est la source de vérité, pas la préférence enregistrée : un
+ * visiteur qui arrive depuis un résultat de recherche français doit lire du
+ * français, même si son localStorage garde « en » d'une visite précédente.
+ * Laisser la préférence gagner ferait diverger l'URL de son propre contenu —
+ * et un moteur qui recrawle `/fr` y trouverait de l'anglais sous un
+ * `hreflang="fr"`.
+ *
+ * Le sélecteur EN/FR NAVIGUE alors au lieu de basculer un état, pour que les
+ * deux langues gardent chacune leur adresse.
+ */
+export function LandingLangProvider({
+  children,
+  pinned,
+}: {
+  children: ReactNode;
+  pinned?: LandingLang;
+}) {
   // Premier rendu IDENTIQUE des deux côtés — c'est ce qui supprime la
   // divergence d'hydratation.
-  const [lang, setLangState] = useState<LandingLang>(SSR_LANG);
+  const [lang, setLangState] = useState<LandingLang>(pinned ?? SSR_LANG);
 
   // Avant la première peinture : on applique la langue du visiteur. Un
   // `useEffect` ordinaire s'exécuterait APRÈS, et le clignotement serait
   // simplement déplacé au lieu d'être supprimé.
   useIsomorphicLayoutEffect(() => {
+    if (pinned) return;
     const wanted = preferredLang();
     if (wanted !== SSR_LANG) setLangState(wanted);
-  }, []);
+  }, [pinned]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const setLang = useCallback((l: LandingLang) => {
-    setLangState(l);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, l);
-    } catch {
-      /* best-effort */
-    }
-  }, []);
+  const setLang = useCallback(
+    (l: LandingLang) => {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, l);
+      } catch {
+        /* best-effort */
+      }
+
+      // CHANGER DE LANGUE CHANGE D'ADRESSE — maintenant que les deux langues en
+      // ont chacune une (`/` en anglais, `/fr` en français).
+      //
+      // Le sélecteur basculait un état React à URL constante. Le visiteur
+      // lisait donc du français à une adresse dont le canonical, l'`og:locale`
+      // et le `<html lang>` annoncent tous l'anglais — et surtout, la page
+      // qu'il venait de lire n'était PARTAGEABLE dans aucune des deux langues :
+      // envoyer le lien à quelqu'un lui servait l'autre.
+      //
+      // Un rechargement complet plutôt qu'une navigation du routeur : ce qu'il
+      // faut renouveler, c'est le DOCUMENT SERVI — titre, description,
+      // canonical, `hreflang`, `<html lang>` — pas seulement l'arbre React.
+      const routeLang = pinned ?? SSR_LANG;
+      if (l !== routeLang && typeof window !== "undefined") {
+        window.location.href = l === "fr" ? FR_PREFIX : "/";
+        return;
+      }
+      setLangState(l);
+    },
+    [pinned],
+  );
 
   const value = useMemo<LandingLangCtx>(
     () => ({ lang, setLang, t: (k) => tr(lang, k) }),
@@ -638,13 +680,24 @@ const M: Record<string, Msg> = {
   },
   "footer.product": { en: "Product", fr: "Produit" },
   "footer.resources": { en: "Resources", fr: "Ressources" },
-  "footer.f1": { en: "Features", fr: "Fonctionnalités" },
-  "footer.f2": { en: "Pricing", fr: "Tarifs" },
-  "footer.f3": { en: "Integrations", fr: "Intégrations" },
-  "footer.f4": { en: "Changelog", fr: "Changelog" },
-  "footer.r1": { en: "Documentation", fr: "Documentation" },
-  "footer.r2": { en: "Blog", fr: "Blog" },
-  "footer.r3": { en: "Support", fr: "Support" },
+  /* LES LIENS DU PIED DE PAGE DÉSIGNENT DES CHOSES QUI EXISTENT.
+   *
+   * Ils annonçaient « Intégrations », « Changelog », « Documentation » et
+   * « Blog » — quatre pages qui n'ont jamais été écrites — et pointaient tous,
+   * ainsi que les cinq icônes sociales, vers `href="#"`. Treize liens morts
+   * dans le seul bloc du site censé faire circuler le maillage interne, et
+   * quatre promesses de contenu inexistant.
+   *
+   * Chaque libellé ci-dessous correspond maintenant à une ancre réelle de la
+   * page ou à une route réelle du produit. Voir `FOOTER_PRODUCT` et
+   * `FOOTER_RESOURCES` dans `pages/Landing.tsx`. */
+  "footer.f1": { en: "The problem", fr: "Le problème" },
+  "footer.f2": { en: "Jarvis — AI coach", fr: "Jarvis — Coach IA" },
+  "footer.f3": { en: "Features", fr: "Fonctionnalités" },
+  "footer.f4": { en: "Pricing", fr: "Tarifs" },
+  "footer.r1": { en: "Guided demo", fr: "Démo guidée" },
+  "footer.r2": { en: "Video demo", fr: "Démo en vidéo" },
+  "footer.r3": { en: "FAQ", fr: "FAQ" },
   "footer.r4": { en: "Contact", fr: "Contact" },
   "footer.rights": {
     en: "© 2026 TradeVault. All rights reserved.",

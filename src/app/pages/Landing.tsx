@@ -1,5 +1,5 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { PlayCircle, Twitter, Linkedin, Instagram, Facebook, Youtube } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
@@ -7,16 +7,26 @@ import { FeaturesBento } from "./landing/FeaturesBento";
 import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
 import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
+import { faqPageJsonLd } from "@/shared/seo";
 import PricingPlans from "../components/pricing/PricingPlans";
-import { LandingLangProvider, useLandingT } from "./landing/i18n";
+import {
+  LandingLangProvider,
+  useLandingT,
+  type LandingKey,
+  type LandingLang,
+} from "./landing/i18n";
 import "./landing.css";
 
 /* ─────────────────────────── LOGO ────────────────────────── */
 function Logo({ compact = false }: { compact?: boolean }) {
   const s = compact ? 28 : 34;
   return (
+    // `href="/"`, pas `href="#"`. Le logo est le lien de retour à l'accueil le
+    // plus universellement compris du web, et c'est le seul lien qu'un robot
+    // d'indexation s'attend à trouver sur chaque page. Pointé sur `#`, il ne
+    // désignait rien.
     <a
-      href="#"
+      href="/"
       className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-sm"
     >
       <img
@@ -32,6 +42,71 @@ function Logo({ compact = false }: { compact?: boolean }) {
         TradeVault
       </span>
     </a>
+  );
+}
+
+/* ─────────────────────────── PIED DE PAGE ─────────────────────────── */
+
+/**
+ * LES LIENS DU PIED DE PAGE — la seule structure de maillage du site.
+ *
+ * Ils étaient TREIZE à pointer vers `href="#"` : quatre « Produit », quatre
+ * « Ressources », cinq icônes sociales. Le pied de page est le bloc que tout
+ * moteur d'indexation lit sur chaque page pour découvrir le reste du site ;
+ * celui-ci ne menait nulle part, et `/contact` — pourtant déclarée dans le
+ * sitemap — n'était atteignable par AUCUN lien du produit.
+ *
+ * Quatre des libellés annonçaient en plus des pages qui n'existent pas
+ * (« Intégrations », « Changelog », « Documentation », « Blog »). Un lien de
+ * pied de page est une promesse de contenu ; on n'en écrit pas qu'on ne tient
+ * pas.
+ *
+ * Chaque entrée ci-dessous désigne donc une ancre RÉELLE de cette page ou une
+ * route RÉELLE du produit. Le lien vers `/demo` et `/demo-site` est délibéré
+ * bien que ces deux routes soient en `noindex` : elles sont utiles au visiteur,
+ * et un lien vers une page non indexée reste un lien parfaitement valide.
+ */
+type FooterLink = { k: LandingKey; href: string };
+
+const FOOTER_PRODUCT: FooterLink[] = [
+  { k: "footer.f1", href: "#problem" },
+  { k: "footer.f2", href: "#ai" },
+  { k: "footer.f3", href: "#features" },
+  { k: "footer.f4", href: "#pricing" },
+];
+
+const FOOTER_RESOURCES: FooterLink[] = [
+  { k: "footer.r1", href: "/demo-site" },
+  { k: "footer.r2", href: "/demo" },
+  { k: "footer.r3", href: "#faq" },
+  { k: "footer.r4", href: "/contact" },
+];
+
+function FooterColumn({
+  title,
+  links,
+  t,
+}: {
+  title: string;
+  links: FooterLink[];
+  t: (k: LandingKey) => string;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-bold text-white mb-4">{title}</p>
+      <ul className="space-y-2.5 text-sm">
+        {links.map(({ k, href }) => (
+          <li key={k}>
+            <a
+              href={href}
+              className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
+            >
+              {t(k)}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -782,6 +857,21 @@ function LandingPage() {
         {/* ── FAQ ── */}
         <section id="faq" className="relative section-divider py-14 lg:py-20">
           <div className="relative mx-auto max-w-[760px] px-5 lg:px-8">
+            {/* `FAQPage` — construit à partir du MÊME tableau `faqs` que
+                l'accordéon rendu juste en dessous, donc incapable d'en
+                diverger. C'est le contenu le plus directement extractible du
+                site, par un moteur de recherche comme par un moteur de
+                réponse, et il n'était balisé nulle part.
+
+                Émis dans le corps plutôt que dans `head()` : le JSON doit
+                sortir VERBATIM (`head()` sérialise des balises, pas un corps de
+                script), et schema.org accepte le JSON-LD partout dans le
+                document. Autre bénéfice : le balisage suit automatiquement la
+                langue rendue, donc `/fr` publie la FAQ française. */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: faqPageJsonLd(faqs) }}
+            />
             <SectionHead tag={t("faq.tag")} title={t("faq.title")} />
             <div className="reveal border-t border-white/[.08]">
               {faqs.map(({ q, a }, i) => {
@@ -853,48 +943,18 @@ function LandingPage() {
                 <p className="mt-4 text-sm leading-6 text-slate-500 max-w-[320px]">
                   {t("footer.tagline")}
                 </p>
-                <div className="mt-5 flex items-center gap-3">
-                  {[Twitter, Linkedin, Instagram, Facebook, Youtube].map((Icon, i) => (
-                    <a
-                      key={i}
-                      href="#"
-                      className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] text-slate-400 transition hover:text-cyan-300"
-                    >
-                      <Icon className="h-4 w-4" />
-                    </a>
-                  ))}
-                </div>
+                {/* LES CINQ ICÔNES SOCIALES ONT ÉTÉ RETIRÉES.
+                    Elles pointaient toutes vers `href="#"` : Twitter, LinkedIn,
+                    Instagram, Facebook et YouTube dessinaient une présence que
+                    la marque n'a pas. Un logo de réseau est une affirmation —
+                    « nous sommes là » — et celle-ci était fausse. Elles
+                    reviendront le jour où les comptes existeront, avec leurs
+                    vraies URL, et elles rejoindront alors `sameAs`
+                    (`shared/seo.ts`), qui est l'autre endroit où cette même
+                    vérité se déclare. */}
               </div>
-              <div>
-                <p className="text-sm font-bold text-white mb-4">{t("footer.product")}</p>
-                <ul className="space-y-2.5 text-sm">
-                  {[t("footer.f1"), t("footer.f2"), t("footer.f3"), t("footer.f4")].map((l) => (
-                    <li key={l}>
-                      <a
-                        href="#"
-                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
-                      >
-                        {l}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white mb-4">{t("footer.resources")}</p>
-                <ul className="space-y-2.5 text-sm">
-                  {[t("footer.r1"), t("footer.r2"), t("footer.r3"), t("footer.r4")].map((l) => (
-                    <li key={l}>
-                      <a
-                        href="#"
-                        className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
-                      >
-                        {l}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <FooterColumn title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
+              <FooterColumn title={t("footer.resources")} links={FOOTER_RESOURCES} t={t} />
             </div>
             <div className="mt-10 pt-6 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-slate-600">{t("footer.rights")}</p>
@@ -935,9 +995,18 @@ function LandingPage() {
   );
 }
 
-export default function Landing() {
+/**
+ * `lang` — la langue portée par l'URL, quand l'URL en porte une.
+ *
+ * `/` sert l'anglais (`SSR_LANG`) et laisse la préférence enregistrée du
+ * visiteur reprendre la main après hydratation. `/fr` sert le français dès le
+ * rendu serveur, et l'impose : c'est l'adresse qui fait foi. Voir
+ * `shared/lang.ts` pour la raison — jusqu'ici la vitrine française n'avait
+ * aucune adresse, donc aucune existence pour un moteur de recherche.
+ */
+export default function Landing({ lang }: { lang?: LandingLang } = {}) {
   return (
-    <LandingLangProvider>
+    <LandingLangProvider pinned={lang}>
       <LandingPage />
     </LandingLangProvider>
   );

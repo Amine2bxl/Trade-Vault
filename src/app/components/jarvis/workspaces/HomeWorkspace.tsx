@@ -370,9 +370,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           {stats.equityCurve.length > 0 && (
             <div className="glass rounded-2xl p-3 md:p-4">
               <Suspense
-                fallback={
-                  <div className="h-24 animate-pulse rounded-xl bg-white/[0.03]" />
-                }
+                fallback={<div className="h-24 animate-pulse rounded-xl bg-white/[0.03]" />}
               >
                 <EquityChart data={stats.equityCurve} />
               </Suspense>

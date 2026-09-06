@@ -3,6 +3,7 @@ import {
   Outlet,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -30,7 +31,7 @@ const GOOGLE_FONTS_URL =
 
 import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../app/components/ErrorScreen";
-import { SSR_LANG } from "@/shared/lang";
+import { SSR_LANG, langForPath } from "@/shared/lang";
 
 function NotFoundComponent() {
   return (
@@ -136,6 +137,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // LA LANGUE DU DOCUMENT SUIT L'ADRESSE.
+  //
+  // Elle était figée sur `SSR_LANG`. C'était exact tant qu'une seule langue
+  // avait une adresse ; depuis que `/fr` existe (`routes/fr.tsx`), une page
+  // française serait servie sous `<html lang="en">` — le document se
+  // contredirait sur sa propre langue, ce que `SSR_LANG` avait justement été
+  // créé pour empêcher.
+  //
+  // `shellComponent` est rendu par `Match` (@tanstack/react-router), donc à
+  // l'intérieur du routeur : l'état de navigation y est lisible.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const lang = langForPath(pathname);
+
   return (
     // Theme is applied at runtime by ThemeProvider (post-hydration). The default
     // "Graphite" palette lives in the CSS :root, so the first paint is already
@@ -149,7 +163,7 @@ function RootShell({ children }: { children: ReactNode }) {
     //
     // Après hydratation, `LandingLangProvider` remplace cet attribut par la
     // langue réelle du visiteur, avant la première peinture.
-    <html lang={SSR_LANG}>
+    <html lang={lang}>
       <head>
         <HeadContent />
         {/* schema.org identity for the brand + application. Rendered here rather
