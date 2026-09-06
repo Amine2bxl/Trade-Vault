@@ -105,33 +105,49 @@ export default function ProposalsPanel({ userId }: { userId: string }) {
         </span>
       </div>
       {visible.map((proposal) => (
+        /* Une proposition ATTEND UNE DÉCISION : c'est le cas où une carte a le
+           droit d'avoir de la présence. Elle la tient de son liseré d'accent,
+           plus d'un aplat cyan — un fond teinté sur toute la surface faisait
+           lire la carte comme un état (alerte, succès) alors qu'elle est une
+           question. */
         <article
           key={proposal.id}
-          className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4"
+          className="rounded-2xl border border-[var(--tv-border-accent)] bg-[var(--tv-plate-1)] p-3.5"
         >
           {/* Le titre de la carte répétait « Proposition de Jarvis » sur
               chaque carte, sous un titre de section qui le dit déjà. L'icône
               suffit à signer, et la place revient au conseil lui-même. */}
           <div className="flex items-start gap-2.5">
-            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
             <p className="min-w-0 flex-1 text-sm font-semibold text-white">{proposal.text}</p>
           </div>
-          <p className="mt-1.5 pl-[26px] text-sm text-slate-400">{proposal.rationale}</p>
+          <p className="mt-1 pl-[26px] text-[13px] leading-relaxed text-slate-400">
+            {proposal.rationale}
+          </p>
 
-          {/* La base chiffrée, toujours visible, jamais repliée. */}
-          <p className="mt-2 tv-prose text-slate-500">
+          {/* La base chiffrée, toujours visible, jamais repliée. Les deux
+              mentions tenaient sur deux rangées séparées par une marge ; elles
+              disent la même chose — d'où vient ce conseil — et forment donc un
+              seul paragraphe. */}
+          <p className="tv-prose mt-2 pl-[26px] text-slate-500">
             {t("proposal.basis")
               .replace("{n}", String(proposal.evidence?.n ?? 0))
-              .replace("{c}", String(proposal.evidence?.comparisons ?? 0))}
+              .replace("{c}", String(proposal.evidence?.comparisons ?? 0))}{" "}
+            {t("proposal.association")}
           </p>
-          <p className="mt-0.5 tv-prose text-slate-500">{t("proposal.association")}</p>
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2 pl-[26px]">
             <button
               type="button"
               disabled={busy === proposal.id}
               onClick={() => void onAccept(proposal)}
-              className="flex-1 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-sm font-semibold flex items-center justify-center gap-1.5 hover:bg-cyan-500/25 disabled:opacity-50 transition-colors"
+              /* MÊME POIDS QUE « IGNORER » — même hauteur, même plaque, même
+                 liseré. Seule la couleur du texte distingue les deux gestes.
+                 Un « accepter » rempli d'accent en face d'un « ignorer » gris
+                 ferait de la proposition une injonction, et la règle d'oubli
+                 ne servirait plus à rien puisque personne ne choisirait
+                 l'autre bouton. */
+              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--tv-border-accent)] bg-[var(--tv-plate-2)] text-sm font-semibold text-[var(--tv-highlight)] transition-colors hover:bg-[var(--tv-plate-3)] disabled:opacity-50"
             >
               <Check className="w-4 h-4" />
               {t("proposal.accept")}
@@ -140,19 +156,22 @@ export default function ProposalsPanel({ userId }: { userId: string }) {
               type="button"
               disabled={busy === proposal.id}
               onClick={() => void onDismiss(proposal)}
-              className="flex-1 h-9 rounded-xl bg-white/[0.04] border border-white/10 text-slate-300 text-sm font-semibold flex items-center justify-center gap-1.5 hover:bg-white/[0.08] disabled:opacity-50 transition-colors"
+              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-sm font-semibold text-slate-300 transition-colors hover:bg-[var(--tv-plate-3)] hover:text-white disabled:opacity-50"
             >
               <X className="w-4 h-4" />
               {t("proposal.dismiss")}
             </button>
+            {/* L'échéance vit à côté des boutons qu'elle concerne, pas sur une
+                rangée à elle sous la carte. */}
+            <span className="tv-row-label hidden shrink-0 sm:block">
+              {t("proposal.expires").replace(
+                "{date}",
+                new Date(proposal.expiresAt).toLocaleDateString(
+                  lang === "fr" ? "fr-FR" : undefined,
+                ),
+              )}
+            </span>
           </div>
-
-          <p className="mt-2 tv-row-label">
-            {t("proposal.expires").replace(
-              "{date}",
-              new Date(proposal.expiresAt).toLocaleDateString(lang === "fr" ? "fr-FR" : undefined),
-            )}
-          </p>
         </article>
       ))}
     </section>

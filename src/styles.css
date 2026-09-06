@@ -3564,3 +3564,132 @@ a:focus-visible,
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.6);
   outline-offset: -2px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   JARVIS — LE COPILOTE INTÉGRÉ
+   ══════════════════════════════════════════════════════════════════════════
+
+   Jarvis se rendait comme un widget greffé : un halo cyan flou de 30% derrière
+   chaque avatar, un point qui clignote en boucle (`animate-ping`) pour dire
+   « coach en ligne », un dégradé cyan dans l'en-tête de la fenêtre. Trois
+   effets qui contredisent les trois règles du système :
+
+     • « rien ne rayonne » — un halo flou est de la lumière simulée, et la
+       profondeur du produit vient de la VALEUR de la plaque ;
+     • « la couleur est RARE » — le cyan marquait ici une identité, pas un état,
+       donc il ne désignait plus rien quand il marquait vraiment quelque chose ;
+     • un point qui clignote en permanence est un appel à l'attention pour une
+       information qui n'en demande aucune (le coach est toujours en ligne).
+
+   Ce que Jarvis garde : sa marque, sa place, son rôle. Ce qu'il perd : les
+   effets. Les classes ci-dessous nomment les trois surfaces de Jarvis — le
+   module fixe, la fenêtre, ses bandes — pour qu'aucune ne se redessine à la
+   main dans un composant. */
+
+/* ── LE MODULE FIXE ────────────────────────────────────────────────────────
+   Discret au repos, net quand il est actif. Au repos c'est du chrome : la
+   plaque flottante du produit, un liseré, un texte sourd. Ouvert, il porte le
+   liseré d'accent — le MÊME signal d'état actif que la navigation. */
+.tv-jarvis-dock {
+  display: inline-flex;
+  align-items: center;
+  background: var(--tv-plate-2);
+  border: 1px solid var(--tv-border);
+  box-shadow: var(--tv-elev-3);
+  transition-property: border-color, background-color, color;
+  transition-duration: var(--tv-dur-2);
+  transition-timing-function: var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-jarvis-dock:hover {
+    border-color: var(--tv-border-strong);
+    background: var(--tv-surface-hover);
+  }
+}
+.tv-jarvis-dock-active,
+.tv-jarvis-dock-active:hover {
+  border-color: var(--tv-border-accent);
+}
+.tv-jarvis-dock:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
+}
+/* La marque. Au repos elle est une plaque sourde ; ouverte, elle porte
+   l'accent. C'est le seul endroit du module où la couleur a le droit d'entrer,
+   et seulement pour dire « la fenêtre est ouverte ». */
+.tv-jarvis-mark {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-3);
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-2);
+  transition-timing-function: var(--tv-ease);
+}
+.tv-jarvis-mark-on {
+  background: var(--tv-cta);
+  color: #ffffff;
+}
+
+/* ── LA FENÊTRE ───────────────────────────────────────────────────────────
+   Le rayon vient de `--tv-shell-radius` : la coque de l'application et la
+   fenêtre de Jarvis sont le même objet à deux échelles, elles ne peuvent pas
+   avoir deux rayons. */
+.tv-jarvis-shell {
+  border-radius: var(--tv-shell-radius) var(--tv-shell-radius) 0 0;
+}
+@media (min-width: 768px) {
+  .tv-jarvis-shell {
+    border-radius: var(--tv-shell-radius);
+  }
+}
+
+/* Les bandes de la fenêtre — en-tête et pied. Fines, sans dégradé : une bande
+   de chrome porte une bordure, pas une teinte. L'en-tête tient la marque, le
+   nom et la navigation ; le pied tient le quota. */
+.tv-jarvis-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 0.5rem 0.625rem;
+  background: var(--tv-plate-2);
+}
+@media (min-width: 768px) {
+  .tv-jarvis-bar {
+    padding: 0.5rem 0.875rem;
+  }
+}
+.tv-jarvis-bar-top {
+  border-bottom: 1px solid var(--tv-border);
+}
+.tv-jarvis-bar-bottom {
+  border-top: 1px solid var(--tv-border);
+}
+
+/* Le bouton d'icône des bandes — fermer, réglages, tiroir. Une seule cible,
+   une seule taille, partout dans Jarvis. */
+.tv-jarvis-icon-btn {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+  transition-timing-function: var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-jarvis-icon-btn:hover {
+    background: var(--tv-plate-3);
+    color: var(--tv-text-primary);
+  }
+}
+.tv-jarvis-icon-btn:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: -2px;
+}
