@@ -168,9 +168,10 @@ function oklchToHex(L: number, C: number, H: number): string {
 
 export const BUILTIN_THEMES: ThemeDef[] = [
   {
-    /* L'identité par défaut. Émeraude sobre sur noir neutre — la lecture
+    /* L'identité émeraude. Émeraude sobre sur noir neutre — la lecture
        que font les plateformes de prop firm (Lucid, Topstep) : le vert est
-       déjà la couleur du gain, l'accent parle donc la langue du métier. */
+       déjà la couleur du gain, l'accent parle donc la langue du métier.
+       Plus le défaut — Graphite l'est désormais — mais un choix courant. */
     id: "vault",
     name: "Vault",
     builtin: true,
@@ -179,8 +180,9 @@ export const BUILTIN_THEMES: ThemeDef[] = [
     highlight: "#34d399",
   },
   {
-    /* Gris pur, aucune teinte. Pour qui ne veut AUCUNE couleur en dehors
-       du P&L lui-même — la version la plus austère du produit. */
+    /* Gris pur, aucune teinte — l'identité PAR DÉFAUT. Pour qui ne veut
+       AUCUNE couleur en dehors du P&L lui-même — la version la plus austère
+       du produit. Le P&L ne suit pas l'accent : il reste vert/rouge. */
     id: "graphite",
     name: "Graphite",
     builtin: true,
@@ -229,7 +231,14 @@ export const BUILTIN_THEMES: ThemeDef[] = [
   },
 ];
 
-export const DEFAULT_THEME_ID = "vault";
+/// ---- default theme ----
+
+/* Graphite : l'identité PAR DÉFAUT du produit. Gris pur, aucune teinte — la
+   version la plus austère, celle qui ne montre AUCUNE couleur en dehors du
+   P&L lui-même (vert = gain, rouge = perte). Parfait pour une interface qui
+   doit rester neutre et lisible quelle que soit la couleur qui suit le chiffre.
+   L'utilisateur reste libre de choisir Vault / Steel / Amber… dans Réglages. */
+export const DEFAULT_THEME_ID = "graphite";
 
 // ---- persistence (localStorage; per device, restored before paint) -----
 

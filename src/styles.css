@@ -313,7 +313,7 @@
   }
 }
 
-/* Theme tokens — default = "Jarvis" (cyan/teal). The ThemeProvider (and the
+/* Theme tokens — default = "Graphite" (neutral gray). The ThemeProvider (and the
  * pre-paint bootstrap in __root) override these on :root at runtime. Defining
  * them here means SSR / no-JS still renders the default identity with no flash. */
 :root {
@@ -324,26 +324,27 @@
      de la sidebar l'utilisent. */
   --font-display:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  /* Default identity = "Jarvis" cyan/teal — matches the public landing page so
-     the signed-in app and the marketing site share one visual identity. */
+  /* Default identity = "Graphite" neutral gray — matches the public landing
+     page so the signed-in app and the marketing site share one identity. */
   /* Surfaces et textes — extraits en variables pour que le studio de thème
      puisse les piloter. Les valeurs par défaut sont EXACTEMENT celles qui
      étaient codées en dur : sans thème personnalisé, le rendu est inchangé. */
   /* ────────────────────────────────────────────────────────────────
-   * IDENTITÉ — « Vault », le pupitre de trading.
+   * IDENTITÉ — « Graphite », le pupitre de trading.
    *
-   * L'ancienne identité était un navy #060d16 rehaussé de cyan néon :
-   * jolie en capture d'écran, mais elle datait l'outil (halos, dégradés,
-   * pulsations) et le faisait ressembler à un gadget plutôt qu'à un poste
-   * de travail. Les plateformes que le trader respecte — Topstep, Lucid —
-   * partagent trois partis pris, et ce sont les nôtres désormais :
+   * Un accent GRIS NEUTRE, aucune teinte. La couleur la plus austère du
+   * produit : celle qui ne montre AUCUNE couleur en dehors du P&L lui-même
+   * (vert = gagné, rouge = perdu). C'est l'identité PAR DÉFAUT — le trader
+   * peut la remplacer par Vault / Steel / Amber dans Réglages.
+   *
+   * Les trois partis pris communs aux plateformes respectées (Topstep,
+   * Lucid) :
    *
    *   1. Un fond NEUTRE, presque noir. Pas un bleu. Un fond coloré teinte
    *      chaque surface posée dessus ; un fond neutre laisse la seule
    *      couleur de l'écran être la donnée (vert = gagné, rouge = perdu).
-   *   2. Un accent VERT, unique, sobre. Le vert est déjà la couleur du
-   *      profit dans ce métier : l'accent et la donnée parlent la même
-   *      langue au lieu de se disputer l'attention.
+   *   2. Un accent GRIS, unique, sobre. La donnée reste la seule couleur :
+   *      l'accent ne se dispute jamais l'attention du chiffre.
    *   3. La couleur est RARE. Elle marque l'état actif, le chiffre du
    *      jour, l'action principale. Rien d'autre.
    *
@@ -357,19 +358,18 @@
      n'est pas noire. */
   --tv-bg-rgb: 7 9 10;
   --tv-text: #e6e8ea;
-  /* Émeraude #10b981 (H 162.5). La chroma est volontairement rentrée sous
-     sa valeur nominale (1.065 → 0.95) : le vert doit se lire comme une
-     encre, pas comme une diode. */
-  --tv-primary-h: 162.5;
-  --tv-primary-c: 0.95;
-  --tv-secondary-h: 163.2;
-  --tv-secondary-c: 0.88;
-  --tv-accent: #10b981;
-  --tv-accent-2: #059669;
-  --tv-highlight: #34d399;
-  --tv-accent-rgb: 16 185 129;
-  --tv-accent-2-rgb: 5 150 105;
-  --tv-highlight-rgb: 52 211 153;
+  /* Graphite — gris neutre (H ~210, chroma ~0). L'accent du thème par défaut
+     est une encre, pas une diode : il ne porte le sens que par la valeur. */
+  --tv-primary-h: 210;
+  --tv-primary-c: 0.02;
+  --tv-secondary-h: 215;
+  --tv-secondary-c: 0.02;
+  --tv-accent: #94a3b8;
+  --tv-accent-2: #64748b;
+  --tv-highlight: #cbd5e1;
+  --tv-accent-rgb: 148 163 184;
+  --tv-accent-2-rgb: 100 116 139;
+  --tv-highlight-rgb: 203 213 225;
 
   /* ── LE VERT DE LA DONNÉE ──
    *

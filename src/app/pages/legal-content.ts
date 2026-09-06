@@ -212,3 +212,72 @@ export function getTermsDoc(lang: Lang): LegalDoc {
 export function getPrivacyDoc(lang: Lang): LegalDoc {
   return privacyByLang[lang] ?? privacyByLang.en!;
 }
+
+// ── CGU (Conditions Générales d'Utilisation) ────────────────────────────────
+// La version « CGU » est le pendant français des Conditions d'utilisation :
+// accessible via /cgu, elle reprend l'essentiel du cadre d'usage — gratuité,
+// prix, résiliation, interdits, limites de responsabilité. Tout non-francophone
+// retombe sur les Conditions d'utilisation anglaises.
+const cguByLang: Partial<Record<Lang, LegalDoc>> = {
+  fr: {
+    title: "Conditions Générales d'Utilisation (CGU)",
+    updated: "Dernière mise à jour : juillet 2026",
+    intro:
+      "Bienvenue sur TradeVault. En utilisant le service, tu acceptes les présentes CGU. Si tu n'es pas d'accord, n'utilise pas le service.",
+    blocks: [
+      {
+        h: "1. Le service",
+        p: "TradeVault est un journal de trading et un assistant d'analyse. Il enregistre tes trades, calcule des statistiques et te propose des analyses sur tes propres données.",
+        list: [
+          "Le service est fourni « en l'état », sans garantie de disponibilité ou de résultat.",
+          "Tu restes le seul responsable de tes décisions de trading et de tes placements.",
+        ],
+      },
+      {
+        h: "2. Ton compte",
+        p: "Tu dois fournir des informations exactes lors de l'inscription. Tu es responsable de la confidentialité de tes identifiants.",
+        list: ["Une personne = un compte.", "Tu ne peux pas céder ton compte sans accord écrit."],
+      },
+      {
+        h: "3. Gratuité et abonnements",
+        p: "Un plan gratuit existe sans limite de durée. Les plans payants sont facturés via Stripe ou un processeur de paiement tiers, par le biais d'abonnements mensuels ou annuels.",
+        list: [
+          "Toute résiliation prend effet à la fin de la période en cours.",
+          "Les remboursements sont à la discrétion de TradeVault et examinés au cas par cas.",
+        ],
+      },
+      {
+        h: "4. Utilisations interdites",
+        list: [
+          "Détourner l'outil ou tenter d'accéder à des données qui ne sont pas les tiennes.",
+          "Publier du contenu illégal, trompeur ou portant atteinte aux droits de tiers.",
+          "Reverser, extraire ou revendre les données d'un autre utilisateur.",
+        ],
+      },
+      {
+        h: "5. Tes données",
+        p: "Tes données de trading t'appartiennent. Tu peux les exporter à tout moment et les supprimer en supprimant ton compte. Nous ne vendons jamais tes données.",
+      },
+      {
+        h: "6. Aucun conseil financier",
+        p: "TradeVault ne fournit ni conseil en investissement, ni recommandation d'achat ou de vente. Les analyses générées sont des observations sur TES données, pas des ordres ni des garanties de gain.",
+      },
+      {
+        h: "7. Limitation de responsabilité",
+        p: "Dans toute la mesure permise par la loi, TradeVault ne pourra être tenu responsable des pertes financières, pertes de données ou dommages indirects résultant de l'utilisation du service.",
+      },
+      {
+        h: "8. Modifications",
+        p: "Nous pouvons modifier les présentes CGU. Toute modification importante te sera notifiée. L'utilisation continue du service après notification vaut acceptation des nouvelles conditions.",
+      },
+      {
+        h: "9. Contact",
+        p: "Pour toute question concernant les CGU, écris-nous à " + SUPPORT_EMAIL + ".",
+      },
+    ],
+  },
+};
+
+export function getCguDoc(lang: Lang): LegalDoc {
+  return cguByLang[lang] ?? termsByLang.en!;
+}

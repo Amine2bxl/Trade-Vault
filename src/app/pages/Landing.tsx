@@ -899,15 +899,30 @@ function LandingPage() {
             <div className="mt-10 pt-6 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-slate-600">{t("footer.rights")}</p>
               <div className="flex items-center gap-6 text-sm">
-                {[t("footer.privacy"), t("footer.terms"), t("footer.cookies")].map((l) => (
-                  <a
-                    key={l}
-                    href="#"
-                    className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
-                  >
-                    {l}
-                  </a>
-                ))}
+                <a
+                  href="/privacy"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
+                  {t("footer.privacy")}
+                </a>
+                <a
+                  href="/terms"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
+                  {t("footer.terms")}
+                </a>
+                <a
+                  href="/cgu"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
+                  CGU
+                </a>
+                <a
+                  href="/privacy"
+                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                >
+                  {t("footer.cookies")}
+                </a>
               </div>
             </div>
           </div>

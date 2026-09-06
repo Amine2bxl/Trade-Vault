@@ -154,6 +154,45 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
     });
   }
 
+  // ── RISK — un pattern d'erreur QUI SE RÉPÈTE (à ne plus refaire) ───────
+  // « Erreur ultime » : la même erreur revient au moins trois fois sur les
+  // quinze derniers trades. C'est plus précis que la fuite cumulée — ça isole
+  // une HABITUDE en train de se répéter, ici et maintenant, et la seule bonne
+  // réponse est « il faut agir ». Sévérité `error` : elle ouvre le popup.
+  const motive = [...sorted.slice(0, 15).reverse()]; // 15 plus récents, en ordre
+  const recentMistakes = new Map<string, number>();
+  for (const t of motive) for (const m of t.mistakes) recentMistakes.set(m, (recentMistakes.get(m) ?? 0) + 1);
+  const repeated = [...recentMistakes.entries()]
+    .filter(([, n]) => n >= 3)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, n]) => ({ name, n }))[0];
+  if (repeated) {
+    rules.push({
+      key: `recurring_mistake:${repeated.name}:${today}`,
+      input: jarvis({
+        kind: "recurring_mistake",
+        title: fr
+          ? `« ${repeated.name} » : tu le refais encore`
+          : `"${repeated.name}": you keep doing this`,
+        body: fr
+          ? `${repeated.n} fois sur tes 15 derniers trades. C'est ton erreur la plus répétée — tant qu'elle revient, elle te coûte.`
+          : `${repeated.n} times in your last 15 trades. It's your most repeated mistake — as long as it returns, it costs you.`,
+        severity: "error",
+        url: "/mistakes",
+        category: "risk",
+        data: {
+          plan: fr
+            ? `Ajoute « ${repeated.name} » en règle de checklist et bloque 1 trade dès qu'elle réapparaît.`
+            : `Add "${repeated.name}" as a checklist rule and pause 1 trade the moment it reappears.`,
+          ctaLabel: fr ? "Corriger ce pattern" : "Fix this pattern",
+          ctaPage: "mistakes",
+          mistake: repeated.name,
+          count: repeated.n,
+        },
+      }),
+    });
+  }
+
   // ── ACTIVITÉ — aucune session depuis 5 jours ────────────────────────────
   const last = sorted[0]?.date;
   if (last && daysAgo(last) >= 5) {

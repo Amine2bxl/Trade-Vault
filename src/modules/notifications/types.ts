@@ -18,6 +18,7 @@ export type NotificationKind =
   | "after_trade_insight"
   | "weekly_review"
   | "pattern_detected"
+  | "recurring_mistake"
   | "risk_loss_streak"
   | "risk_max_loss"
   | "activity_lull"
