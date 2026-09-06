@@ -904,6 +904,33 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
   const cible = result.params.startingBalance + result.params.profitTarget;
   const plancher = result.params.startingBalance - result.params.maxDrawdown;
 
+  /**
+   * L'ÉCHELLE EST ANCRÉE SUR LES RÉGLAGES, JAMAIS SUR LE TIRAGE.
+   *
+   * Elle valait `["dataMin - 500", "dataMax + 500"]` : elle se recalculait donc
+   * à partir des chemins SIMULÉS. Or Monte-Carlo est stochastique — relancer
+   * sans rien changer donne d'autres extrêmes, donc une autre échelle. Les
+   * deux repères, eux, gardaient la même valeur mais se retrouvaient à une
+   * hauteur différente à l'écran : la ligne de cible SEMBLAIT bouger d'un
+   * scénario à l'autre. Impossible, dans ces conditions, de comparer deux
+   * tirages à l'œil — c'est pourtant tout l'intérêt d'en lancer plusieurs.
+   *
+   * Les trois ancres ci-dessous viennent des paramètres du trader : tant qu'il
+   * n'y touche pas, l'échelle est identique à chaque relance, et les repères
+   * restent cloués au même pixel.
+   *
+   * Aucun risque de rognage : un chemin s'ARRÊTE en touchant la cible ou la
+   * limite (`runMonteCarlo` marque `passed`/`failed` et sort), il ne peut donc
+   * les dépasser que du débordement d'un seul trade — ce que la marge absorbe.
+   */
+  const domaineY = useMemo<[number, number]>(() => {
+    const solde = result.params.startingBalance;
+    const bas = Math.min(plancher, cible, solde);
+    const haut = Math.max(plancher, cible, solde);
+    const marge = Math.max(1, (haut - bas) * 0.12);
+    return [bas - marge, haut + marge];
+  }, [result.params.startingBalance, cible, plancher]);
+
   return (
     <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
       <TitreGraphe titre={t("mc.chartPaths")} sous={t("mc.chartPathsSub")} />
@@ -932,7 +959,8 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
               axisLine={false}
               tickLine={false}
               width={58}
-              domain={["dataMin - 500", "dataMax + 500"]}
+              domain={domaineY}
+              allowDataOverflow
             />
             <ReferenceLine
               y={cible}
@@ -1050,10 +1078,28 @@ function Histogramme({ result }: { result: MonteCarloResult }) {
   const { t } = useT();
   const depart = result.params.startingBalance;
 
+  /**
+   * LES CLASSES SONT ANCRÉES SUR LES RÉGLAGES, PAS SUR LE TIRAGE.
+   *
+   * Elles étaient bornées par `Math.min/max` des soldes finaux SIMULÉS : deux
+   * relances des mêmes réglages ne produisaient donc pas les mêmes classes.
+   * Les barres changeaient de largeur et de position, et la ligne de départ
+   * se retrouvait ailleurs par rapport à elles — impossible de comparer deux
+   * scénarios, alors que c'est exactement ce qu'on vient faire ici.
+   *
+   * Bornes fixes : la limite de perte et la cible, les deux murs que le
+   * trader a lui-même posés. Les valeurs qui sortiraient de cette plage sont
+   * rangées dans la classe extrême (`Math.min/max` sur l'indice), donc rien
+   * n'est perdu du décompte — seule la position de la barre est bornée.
+   */
   const { bins } = useMemo(() => {
     const vals = result.runs.map((r) => r.finalBalance);
-    const lo = Math.min(...vals);
-    const hi = Math.max(...vals);
+    const solde = result.params.startingBalance;
+    const bas0 = Math.min(solde - result.params.maxDrawdown, solde);
+    const haut0 = Math.max(solde + result.params.profitTarget, solde);
+    const marge = Math.max(1, (haut0 - bas0) * 0.06);
+    const lo = bas0 - marge;
+    const hi = haut0 + marge;
     const n = 28;
     const largeur = (hi - lo) / n || 1;
     const acc = Array.from({ length: n }, (_, i) => ({

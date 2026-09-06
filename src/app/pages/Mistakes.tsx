@@ -23,6 +23,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ComposedChart,
+  Line,
   CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
@@ -30,8 +31,11 @@ import {
   AXIS_TICK,
   BAR_RADIUS,
   CHART_ANIMATION,
+  EQUITY_CURVE_TYPE,
   EQUITY_GRID,
+  TREND_LINE,
   tooltipStyle,
+  glowActiveDot,
 } from "../utils/chartTheme";
 import { EmptyState, Card } from "@/shared/ui";
 
@@ -384,17 +388,20 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                           name === "count" ? t("mistakes.incidents") : t("mistakes.totalCost"),
                         ]}
                       />
-                      {/* UNE SEULE SÉRIE, DESSINÉE UNE SEULE FOIS.
-                          Il y avait ici une `<Bar dataKey="count">` ET une
-                          `<Line dataKey="count">` — mêmes données, même
-                          ambre, superposées. Le trait ne portait aucune
-                          information que les barres ne donnaient pas déjà ; il
-                          ajoutait juste une couche à lire. */}
                       <Bar
                         dataKey="count"
                         radius={BAR_RADIUS}
                         fill="#f59e0b"
-                        fillOpacity={0.55}
+                        fillOpacity={0.5}
+                        {...CHART_ANIMATION}
+                      />
+                      <Line
+                        type={EQUITY_CURVE_TYPE}
+                        dataKey="count"
+                        stroke="#f59e0b"
+                        {...TREND_LINE}
+                        dot={false}
+                        activeDot={glowActiveDot("#f59e0b")}
                         {...CHART_ANIMATION}
                       />
                     </ComposedChart>
@@ -541,82 +548,56 @@ function LigneFuite({
         aria-expanded={ouvert}
         className="tv-row-toggle block w-full px-4 py-3 sm:px-5"
       >
-        {/* UNE GRILLE, PAS UN `flex-wrap`.
-            Les huit éléments de cette ligne — pastille, nom, gravité, priorité,
-            tendance, compte, coût, chevron — se répartissaient par
-            enroulement. Dès que le nom d'une erreur était un peu long, ou
-            l'écran un peu étroit, chaque ligne cassait à un endroit différent :
-            les montants ne tombaient plus les uns sous les autres et la liste
-            se lisait en escalier.
-            Deux colonnes fixes : le nom prend ce qui reste et se tronque, les
-            chiffres gardent leur largeur. Ils s'alignent donc d'une ligne à
-            l'autre — c'est ce qui fait qu'une liste se PARCOURT au lieu de se
-            déchiffrer. Les étiquettes descendent sur leur propre rang. */}
-        <span className="grid grid-cols-[1fr_auto] items-center gap-x-3">
-          <span className="flex min-w-0 items-center gap-2">
-            <span
-              aria-hidden
-              className={cn("h-2 w-2 shrink-0 rounded-full", SEV_STYLE[m.severity].dot)}
-            />
-            <span className="truncate text-sm font-semibold text-white">{m.mistake}</span>
-          </span>
-
-          <span className="flex shrink-0 items-center gap-3">
-            <span className="tv-figure w-9 text-right text-xs text-slate-500">{m.count}×</span>
-            <span
-              className={cn(
-                "tv-figure w-24 text-right text-sm",
-                m.totalPnl >= 0 ? "rp-pos" : "rp-neg",
-              )}
-            >
-              {formatPnl(m.totalPnl)}
-            </span>
-            {/* Le chevron — le seul signal qui dise « cette ligne répond au clic ». */}
-            <ChevronDown
-              aria-hidden
-              className={cn(
-                "h-3.5 w-3.5 shrink-0 text-slate-600 transition-transform",
-                ouvert && "rotate-180",
-              )}
-            />
-          </span>
-
-          {/* Les étiquettes, sur leur propre rang : elles qualifient la fuite,
-              elles ne sont pas sa mesure. */}
-          <span className="col-span-2 mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span
-              className={cn(
-                "tv-label rounded px-1 py-0.5",
-                SEV_STYLE[m.severity].bg,
-                SEV_STYLE[m.severity].text,
-              )}
-            >
-              {t(`mistakes.sev_${m.severity}` as never)}
-            </span>
-            {premiere && (
-              <span className="tv-label rounded bg-red-500/20 px-1 py-0.5 text-red-400">
-                {t("mistakes.priority")}
-              </span>
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span
+            aria-hidden
+            className={cn("h-2 w-2 shrink-0 self-center rounded-full", SEV_STYLE[m.severity].dot)}
+          />
+          <span className="text-sm font-semibold text-white">{m.mistake}</span>
+          <span
+            className={cn(
+              "tv-label rounded px-1 py-0.5",
+              SEV_STYLE[m.severity].bg,
+              SEV_STYLE[m.severity].text,
             )}
-            {/* La tendance, pour CHAQUE fuite — pas seulement les trois premières. */}
-            {m.trend && m.trend.deltaPct !== 0 && (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 text-[11px] font-bold",
-                  m.trend.deltaPct < 0 ? "rp-pos" : "rp-neg",
-                )}
-                title={t("mistakes.trendWindow")}
-              >
-                {m.trend.deltaPct < 0 ? (
-                  <TrendingDown className="h-3 w-3" />
-                ) : (
-                  <TrendingUp className="h-3 w-3" />
-                )}
-                {m.trend.deltaPct > 0 ? "+" : ""}
-                {m.trend.deltaPct}%
-              </span>
-            )}
+          >
+            {t(`mistakes.sev_${m.severity}` as never)}
           </span>
+          {premiere && (
+            <span className="tv-label rounded bg-red-500/20 px-1 py-0.5 text-red-400">
+              {t("mistakes.priority")}
+            </span>
+          )}
+          {/* La tendance, pour CHAQUE fuite — pas seulement les trois premières. */}
+          {m.trend && m.trend.deltaPct !== 0 && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-[11px] font-bold",
+                m.trend.deltaPct < 0 ? "rp-pos" : "rp-neg",
+              )}
+              title={t("mistakes.trendWindow")}
+            >
+              {m.trend.deltaPct < 0 ? (
+                <TrendingDown className="h-3 w-3" />
+              ) : (
+                <TrendingUp className="h-3 w-3" />
+              )}
+              {m.trend.deltaPct > 0 ? "+" : ""}
+              {m.trend.deltaPct}%
+            </span>
+          )}
+          <span className="tv-figure ml-auto shrink-0 text-xs text-slate-500">{m.count}×</span>
+          <span className={cn("tv-figure shrink-0 text-sm", m.totalPnl >= 0 ? "rp-pos" : "rp-neg")}>
+            {formatPnl(m.totalPnl)}
+          </span>
+          {/* Le chevron — le seul signal qui dise « cette ligne répond au clic ». */}
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 self-center text-slate-600 transition-transform",
+              ouvert && "rotate-180",
+            )}
+          />
         </span>
         <span className="rp-bartrack mt-2 block">
           <span
