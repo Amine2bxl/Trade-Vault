@@ -9,7 +9,8 @@ import { cn } from "../utils/cn";
 import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useT } from "../i18n/LanguageContext";
-import { PageContainer, Kpi, KpiGrid } from "@/shared/ui";
+import { Kpi, KpiGrid } from "@/shared/ui";
+import { useAvailableHeight } from "../hooks/useAvailableHeight";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -36,6 +37,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   const { user } = useAuth();
   const { activeId } = useAccounts();
   const { t, lang } = useT();
+  const { boxRef, height } = useAvailableHeight();
   const locale = LOCALE_MAP[lang] || "en-US";
   const MONTHS = useMemo(
     () =>
@@ -231,9 +233,13 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   );
 
   return (
-    <PageContainer>
+    <div
+      ref={boxRef}
+      style={height ? { height } : undefined}
+      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-hidden px-3 py-2 md:px-5 md:py-3"
+    >
       {/* Summary Cards */}
-      <KpiGrid className="mb-3 md:mb-6">
+      <KpiGrid className="shrink-0">
         {(
           [
             {
@@ -319,9 +325,10 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         ))}
       </KpiGrid>
 
-      {/* Calendar */}
-      <div className="stat-card-elevated overflow-hidden animate-fade-in-up stagger-5">
-        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-5 border-b border-white/[0.06]">
+      {/* Calendar — remplit la hauteur restante, jamais plus : la page ne
+          défile pas, la grille des jours s'étire ou se contracte. */}
+      <div className="stat-card-elevated mt-2 flex min-h-0 flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
+        <div className="flex shrink-0 items-center justify-between px-4 py-2.5 md:px-6 md:py-3 border-b border-white/[0.06]">
           <button
             onClick={prevMonth}
             aria-label={t("common.previous")}
@@ -350,12 +357,12 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         </div>
         {/* Tout tient sur une page : 7 colonnes de jours sur mobile (la
             colonne semaine est masquée), 8 sur desktop. Pas de scroll. */}
-        <div className="grid grid-cols-7 md:grid-cols-8 border-b border-white/[0.06]">
+        <div className="grid shrink-0 grid-cols-7 md:grid-cols-8 border-b border-white/[0.06]">
           {DAYS.map((d, i) => (
             <div
               key={d + i}
               className={cn(
-                "tv-label py-1.5 md:py-3 text-center md:text-xs",
+                "tv-label py-1.5 md:py-2.5 text-center md:text-xs",
                 i >= 5 ? "text-slate-700" : "text-slate-500",
               )}
             >
@@ -366,14 +373,19 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             {t("calendar.week")}
           </div>
         </div>
-        <div className="p-1 md:p-3 space-y-0.5 md:space-y-2">
+        <div className="flex min-h-0 flex-1 flex-col p-1 md:p-2 space-y-0.5 md:space-y-1.5">
           {calendarRows.map((row, rowIdx) => {
             const week = weekTotals[rowIdx];
             return (
-              <div key={rowIdx} className="grid grid-cols-7 md:grid-cols-8 gap-0.5 md:gap-2">
+              <div
+                key={rowIdx}
+                className="grid min-h-0 flex-1 grid-cols-7 md:grid-cols-8 gap-0.5 md:gap-1.5"
+              >
                 {row.map((day, colIdx) => {
                   if (day === null)
-                    return <div key={`e-${rowIdx}-${colIdx}`} className="h-16 md:min-h-[112px]" />;
+                    return (
+                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[48px] md:min-h-0" />
+                    );
                   const dateStr = getDateStr(day);
                   const data = dailyData[dateStr];
                   const isAllBE = data && data.count > 0 && data.count === data.breakEven;
@@ -416,7 +428,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       disabled={!data && missedCount === 0}
                       style={cellStyle}
                       className={cn(
-                        "h-16 md:min-h-[112px] md:p-2.5 p-1 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
+                        "min-h-[48px] md:min-h-[0] md:p-2 p-1 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
                         !cellStyle && !missedCount && "border-white/[0.04] bg-white/[0.02]",
                         !cellStyle && isWeekend && "bg-white/[0.03]",
                         !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
@@ -531,7 +543,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         </div>
       </div>
 
-      <div className="hidden md:flex items-center gap-6 mt-4 px-2 flex-wrap">
+      <div className="hidden shrink-0 md:flex items-center justify-center gap-6 mt-2 px-2 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20" />
           <span className="text-[10px] text-slate-500">{t("calendar.legendWinningDay")}</span>
@@ -578,6 +590,6 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       {selectedMissed && (
         <MissedSetupDetailModal missed={selectedMissed} onClose={() => setSelectedMissed(null)} />
       )}
-    </PageContainer>
+    </div>
   );
 }

@@ -31,6 +31,7 @@ import { useT } from "../i18n/LanguageContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import { usePageActions } from "../contexts/PageActionsContext";
+import { useAvailableHeight } from "../hooks/useAvailableHeight";
 import { Kpi, KpiGrid, PageToolbar, Sheet, SubNav, type SubNavItem } from "@/shared/ui";
 import {
   extractRSamples,
@@ -114,6 +115,7 @@ type Vue = "paths" | "dist" | "details";
 export default function MonteCarloPage({ trades }: Props) {
   const { t } = useT();
   const { activeAccount } = useAccounts();
+  const { boxRef, height } = useAvailableHeight();
 
   /* ══ D'OÙ VIENNENT LES TRADES ══════════════════════════════════════════
      Trois sources, la même page derrière :
@@ -383,149 +385,170 @@ export default function MonteCarloPage({ trades }: Props) {
   );
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-3 p-4 md:p-5">
+    <div
+      ref={boxRef}
+      style={height ? { height } : undefined}
+      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-hidden p-3 md:p-4"
+    >
       {/* ══ LA BARRE D'OUTILS ════════════════════════════════════════════
           Navigation des trois lectures à gauche, réglages à droite. Elle est
-          collante : on change de vue depuis n'importe où dans le défilement. */}
-      <PageToolbar
-        actions={
-          /* `lg:hidden` vit sur l'ENVELOPPE, pas sur le bouton : `.tv-subnav-item`
-             declare `display: inline-flex` dans une regle non calquee, qui bat
-             un utilitaire Tailwind (lui, dans une couche). Pose sur le bouton,
-             l'utilitaire ne cachait rien — mesure a 1280px, ou le panneau
-             lateral ET son bouton d'ouverture s'affichaient ensemble. */
-          <div className="lg:hidden">
-            <button
-              type="button"
-              onClick={() => setReglagesOuverts(true)}
-              aria-haspopup="dialog"
+          fixe en tête de page : on change de vue sans jamais scroller. */}
+      <div className="shrink-0">
+        <PageToolbar
+          actions={
+            /* `lg:hidden` vit sur l'ENVELOPPE, pas sur le bouton : `.tv-subnav-item`
+               declare `display: inline-flex` dans une regle non calquee, qui bat
+               un utilitaire Tailwind (lui, dans une couche). Pose sur le bouton,
+               l'utilitaire ne cachait rien — mesure a 1280px, ou le panneau
+               lateral ET son bouton d'ouverture s'affichaient ensemble. */
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => setReglagesOuverts(true)}
+                aria-haspopup="dialog"
+                className={cn(
+                  "tv-subnav-item",
+                  "border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-300",
+                )}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                <span>{t("mc.settingsShort")}</span>
+              </button>
+            </div>
+          }
+        >
+          <SubNav items={vues} value={vue} onChange={setVue} ariaLabel={t("mc.outcomes")} />
+        </PageToolbar>
+      </div>
+
+      <div className="mt-3 min-h-0 flex-1">
+        {samples.length < 5 ? (
+          /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
+             lui, un trader sans journal ne pouvait pas même atteindre la saisie
+             manuelle — la seule qui lui permette d'éprouver sa stratégie. */
+          <div className="grid h-full gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="glass flex flex-col items-center justify-center rounded-3xl px-6 py-10 text-center">
+              <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
+              <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
+              <p className="max-w-sm text-sm text-slate-500">
+                {source === "csv"
+                  ? t("mc.emptyCsv")
+                  : source === "manual"
+                    ? t("mc.emptyManual")
+                    : t("mc.emptyBody")}
+              </p>
+              <button
+                type="button"
+                onClick={() => setReglagesOuverts(true)}
+                className="btn-primary btn-sm mt-4 lg:hidden"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                {t("mc.settings")}
+              </button>
+            </div>
+            <ColonneReglages onReset={reinitialiser}>{panneau}</ColonneReglages>
+          </div>
+        ) : !result ? (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+          </div>
+        ) : (
+          <div className="grid h-full gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div
               className={cn(
-                "tv-subnav-item",
-                "border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-300",
+                "flex min-h-0 flex-col gap-3 transition-opacity",
+                running && "opacity-50",
               )}
             >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              <span>{t("mc.settingsShort")}</span>
-            </button>
-          </div>
-        }
-      >
-        <SubNav items={vues} value={vue} onChange={setVue} ariaLabel={t("mc.outcomes")} />
-      </PageToolbar>
-
-      {samples.length < 5 ? (
-        /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
-           lui, un trader sans journal ne pouvait pas même atteindre la saisie
-           manuelle — la seule qui lui permette d'éprouver sa stratégie. */
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="glass flex flex-col items-center justify-center rounded-3xl px-6 py-14 text-center">
-            <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
-            <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
-            <p className="max-w-sm text-sm text-slate-500">
-              {source === "csv"
-                ? t("mc.emptyCsv")
-                : source === "manual"
-                  ? t("mc.emptyManual")
-                  : t("mc.emptyBody")}
-            </p>
-            <button
-              type="button"
-              onClick={() => setReglagesOuverts(true)}
-              className="btn-primary btn-sm mt-4 lg:hidden"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              {t("mc.settings")}
-            </button>
-          </div>
-          <ColonneReglages onReset={reinitialiser}>{panneau}</ColonneReglages>
-        </div>
-      ) : !result ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
-        </div>
-      ) : (
-        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className={cn("min-w-0 space-y-3 transition-opacity", running && "opacity-50")}>
-            {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
-            <section className="glass animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
-              <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-                <div className="min-w-0">
-                  <div className="tv-label text-slate-500">{t("mc.verdictLabel")}</div>
-                  <div
-                    className={cn(
-                      "tv-figure mt-1 text-[34px] leading-none md:text-5xl",
-                      result.passRate >= 0.5 ? "rp-pos" : "rp-warn",
-                    )}
-                  >
-                    {(result.passRate * 100).toFixed(0)}%
+              {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
+              <section className="glass shrink-0 animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
+                <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                  <div className="min-w-0">
+                    <div className="tv-label text-slate-500">{t("mc.verdictLabel")}</div>
+                    <div
+                      className={cn(
+                        "tv-figure mt-1 text-[34px] leading-none md:text-5xl",
+                        result.passRate >= 0.5 ? "rp-pos" : "rp-warn",
+                      )}
+                    >
+                      {(result.passRate * 100).toFixed(0)}%
+                    </div>
+                    <p className="tv-prose mt-2 max-w-md text-slate-400">
+                      {t("mc.verdictBody")
+                        .replace("{target}", `+${objectifPct}%`)
+                        .replace("{limit}", `-${limitePct}%`)
+                        .replace("{days}", String(horizon))}
+                    </p>
                   </div>
-                  <p className="tv-prose mt-2 max-w-md text-slate-400">
-                    {t("mc.verdictBody")
-                      .replace("{target}", `+${objectifPct}%`)
-                      .replace("{limit}", `-${limitePct}%`)
-                      .replace("{days}", String(horizon))}
-                  </p>
-                </div>
-                <div className="mc-facts">
-                  <Fait
-                    label={t("mc.failRate")}
-                    value={`${(result.failRate * 100).toFixed(0)}%`}
-                    tone="neg"
-                  />
-                  <Fait
-                    label={t("mc.timeoutRate")}
-                    value={`${(result.timeOutRate * 100).toFixed(0)}%`}
-                  />
-                  <Fait
-                    label={t("mc.medianDD")}
-                    value={formatMoney(result.medianMaxDD)}
-                    hint={`${((result.medianMaxDD / solde) * 100).toFixed(1)}%`}
-                  />
-                  <Fait
-                    label={t("mc.daysToPass")}
-                    value={result.avgDaysToPass > 0 ? result.avgDaysToPass.toFixed(0) : "—"}
-                    hint={t("mc.days")}
-                  />
-                </div>
-              </div>
-
-              {/* Les trois issues, dans une barre — pas trois pourcentages
-                  dispersés dans une grille de tuiles. */}
-              <div className="mt-4">
-                <div className="rp-mix" role="img" aria-label={t("mc.outcomes")}>
-                  {result.passRate > 0 && (
-                    <span className="rp-fill-pos" style={{ width: `${result.passRate * 100}%` }} />
-                  )}
-                  {result.timeOutRate > 0 && (
-                    <span
-                      className="rp-fill-flat"
-                      style={{ width: `${result.timeOutRate * 100}%` }}
+                  <div className="mc-facts">
+                    <Fait
+                      label={t("mc.failRate")}
+                      value={`${(result.failRate * 100).toFixed(0)}%`}
+                      tone="neg"
                     />
-                  )}
-                  {result.failRate > 0 && (
-                    <span className="rp-fill-neg" style={{ width: `${result.failRate * 100}%` }} />
-                  )}
+                    <Fait
+                      label={t("mc.timeoutRate")}
+                      value={`${(result.timeOutRate * 100).toFixed(0)}%`}
+                    />
+                    <Fait
+                      label={t("mc.medianDD")}
+                      value={formatMoney(result.medianMaxDD)}
+                      hint={`${((result.medianMaxDD / solde) * 100).toFixed(1)}%`}
+                    />
+                    <Fait
+                      label={t("mc.daysToPass")}
+                      value={result.avgDaysToPass > 0 ? result.avgDaysToPass.toFixed(0) : "—"}
+                      hint={t("mc.days")}
+                    />
+                  </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                  <Legende cls="rp-fill-pos" label={t("mc.passed")} />
-                  <Legende cls="rp-fill-flat" label={t("mc.timedOut")} />
-                  <Legende cls="rp-fill-neg" label={t("mc.failed")} />
-                  <span className="tv-hint ml-auto">
-                    {t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
-                  </span>
+
+                {/* Les trois issues, dans une barre — pas trois pourcentages
+                    dispersés dans une grille de tuiles. */}
+                <div className="mt-4">
+                  <div className="rp-mix" role="img" aria-label={t("mc.outcomes")}>
+                    {result.passRate > 0 && (
+                      <span
+                        className="rp-fill-pos"
+                        style={{ width: `${result.passRate * 100}%` }}
+                      />
+                    )}
+                    {result.timeOutRate > 0 && (
+                      <span
+                        className="rp-fill-flat"
+                        style={{ width: `${result.timeOutRate * 100}%` }}
+                      />
+                    )}
+                    {result.failRate > 0 && (
+                      <span
+                        className="rp-fill-neg"
+                        style={{ width: `${result.failRate * 100}%` }}
+                      />
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <Legende cls="rp-fill-pos" label={t("mc.passed")} />
+                    <Legende cls="rp-fill-flat" label={t("mc.timedOut")} />
+                    <Legende cls="rp-fill-neg" label={t("mc.failed")} />
+                    <span className="tv-hint ml-auto">
+                      {t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
+                    </span>
+                  </div>
                 </div>
+              </section>
+
+              {/* ══ LA LECTURE CHOISIE — elle remplit l'espace restant ═══════ */}
+              <div className="min-h-0 flex-1">
+                {vue === "paths" && <Faisceau result={result} horizon={horizon} />}
+                {vue === "dist" && <Histogramme result={result} />}
+                {vue === "details" && <Details result={result} />}
               </div>
-            </section>
+            </div>
 
-            {/* ══ LA LECTURE CHOISIE ═══════════════════════════════════════ */}
-            {vue === "paths" && <Faisceau result={result} horizon={horizon} />}
-            {vue === "dist" && <Histogramme result={result} />}
-            {vue === "details" && <Details result={result} />}
+            <ColonneReglages onReset={reinitialiser}>{panneau}</ColonneReglages>
           </div>
-
-          <ColonneReglages onReset={reinitialiser}>{panneau}</ColonneReglages>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Sous 1024px, le MÊME panneau vit dans une feuille ancrée. */}
       <Sheet
@@ -566,7 +589,7 @@ function ColonneReglages({
 }) {
   const { t } = useT();
   return (
-    <aside className="glass sticky top-14 hidden max-h-[calc(100vh-6rem)] overflow-y-auto rounded-3xl lg:block">
+    <aside className="glass hidden h-full min-h-0 overflow-y-auto rounded-3xl lg:block">
       <div className="flex items-center justify-between gap-2 border-b border-[var(--tv-border)] px-4 py-3">
         <h2 className="tv-title truncate">{t("mc.settings")}</h2>
         <button
@@ -853,9 +876,9 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
   const plancher = result.params.startingBalance - result.params.maxDrawdown;
 
   return (
-    <section className="glass animate-fade-in-up stagger-2 rounded-3xl px-4 py-4 sm:px-5">
+    <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
       <TitreGraphe titre={t("mc.chartPaths")} sous={t("mc.chartPathsSub")} />
-      <div className="h-64 md:h-80">
+      <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
             <defs>
@@ -1017,9 +1040,9 @@ function Histogramme({ result }: { result: MonteCarloResult }) {
   }, [result]);
 
   return (
-    <section className="glass animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
+    <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
       <TitreGraphe titre={t("mc.chartDist")} sous={t("mc.chartDistSub")} />
-      <div className="h-56 md:h-64">
+      <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={bins} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid {...EQUITY_GRID} />
@@ -1080,7 +1103,7 @@ function Details({ result }: { result: MonteCarloResult }) {
   const d = result.finalBalanceDistribution;
 
   return (
-    <section className="glass animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
+    <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
       <TitreGraphe titre={t("mc.chartDist")} sous={t("mc.chartDistSub")} />
       <KpiGrid cols={4}>
         {(

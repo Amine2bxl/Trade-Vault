@@ -8,7 +8,7 @@ import { logger } from "./shared/logger";
 
 /** Public routes worth indexing. The authenticated app is behind `/` and is
  *  client-rendered, so there is nothing else for a crawler to see. */
-const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/contact"] as const;
+const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/cgu", "/contact"] as const;
 
 /**
  * `robots.txt` et `sitemap.xml`, GÉNÉRÉS plutôt que livrés en fichiers

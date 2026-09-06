@@ -15,6 +15,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as DemoSiteRouteImport } from './routes/demo-site'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CguRouteImport } from './routes/cgu'
 import { Route as PageRouteImport } from './routes/$page'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DevUiRouteImport } from './routes/dev.ui'
@@ -50,6 +51,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CguRoute = CguRouteImport.update({
+  id: '/cgu',
+  path: '/cgu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PageRoute = PageRouteImport.update({
   id: '/$page',
   path: '/$page',
@@ -74,6 +80,7 @@ const DevAiRoute = DevAiRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$page': typeof PageRoute
+  '/cgu': typeof CguRoute
   '/contact': typeof ContactRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$page': typeof PageRoute
+  '/cgu': typeof CguRoute
   '/contact': typeof ContactRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$page': typeof PageRoute
+  '/cgu': typeof CguRoute
   '/contact': typeof ContactRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$page'
+    | '/cgu'
     | '/contact'
     | '/demo'
     | '/demo-site'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$page'
+    | '/cgu'
     | '/contact'
     | '/demo'
     | '/demo-site'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$page'
+    | '/cgu'
     | '/contact'
     | '/demo'
     | '/demo-site'
@@ -150,6 +162,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PageRoute: typeof PageRoute
+  CguRoute: typeof CguRoute
   ContactRoute: typeof ContactRoute
   DemoRoute: typeof DemoRoute
   DemoSiteRoute: typeof DemoSiteRoute
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cgu': {
+      id: '/cgu'
+      path: '/cgu'
+      fullPath: '/cgu'
+      preLoaderRoute: typeof CguRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$page': {
       id: '/$page'
       path: '/$page'
@@ -238,6 +258,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PageRoute: PageRoute,
+  CguRoute: CguRoute,
   ContactRoute: ContactRoute,
   DemoRoute: DemoRoute,
   DemoSiteRoute: DemoSiteRoute,

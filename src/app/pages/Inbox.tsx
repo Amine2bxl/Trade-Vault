@@ -19,6 +19,7 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 import { Button } from "@/shared/ui";
+import { useAvailableHeight } from "../hooks/useAvailableHeight";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { cn } from "../utils/cn";
 
@@ -133,6 +134,7 @@ function useFirstLoginToday(): boolean {
 export default function Inbox() {
   const { t } = useT();
   const { user } = useAuth();
+  const { boxRef, height } = useAvailableHeight();
   const [notifs, setNotifs] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKind>("all");
@@ -264,15 +266,18 @@ export default function Inbox() {
   }, [filtered, t]);
 
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-5">
+    <div
+      ref={boxRef}
+      style={height ? { height } : undefined}
+      className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden px-3 py-2 md:px-5 md:py-3"
+    >
       {/* ── LES FILTRES ───────────────────────────────────────────────────
-          Une rangée qui DÉFILE, jamais qui passe à la ligne. Huit pastilles
-          (« toutes », « non lues » et six catégories) demandaient trois lignes
-          sur un téléphone : cent pixels de filtres avant la première
-          notification, sur une page dont le contenu EST une liste. Elle est en
-          plus collée en haut — on change de filtre sans remonter. */}
+          Une rangée qui DÉFILE, jamais qui passe à la ligne. Elle est fixe en
+          tête de l'écran : huit pastilles ne tiennent pas sur une ligne de
+          téléphone, et on change de filtre sans remonter. La liste, elle,
+          défile dessous — comme un écran de notifications d'app. */}
       {notifs.length > 0 && (
-        <div className="animate-fade-in-up sticky top-0 z-[var(--tv-z-rail)] -mx-4 mb-3 bg-[var(--tv-bg)] px-4 py-2 md:-mx-5 md:px-5">
+        <div className="animate-fade-in-up shrink-0 pb-2">
           <div className="tv-scroll-x">
             <div className="flex w-max items-center gap-1.5">
               {filtres.map((f) => (
@@ -298,11 +303,9 @@ export default function Inbox() {
         </div>
       )}
 
-      {/* ── LA BANNIÈRE DU PREMIER PASSAGE ────────────────────────────────
-          Elle porte l'ACCENT DU THÈME, pas un cyan en dur : le produit est
-          thémable, et trois valeurs codées ici le contredisaient. */}
+      {/* ── LA BANNIÈRE DU PREMIER PASSAGE ──────────────────────────────── */}
       {isFirstVisitToday && unreadTotal > 0 && (
-        <div className="animate-fade-in-up mb-3 flex items-center gap-2.5 rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.07)] px-3.5 py-2">
+        <div className="animate-fade-in-up mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.07)] px-3.5 py-2">
           <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--tv-accent)]" />
           <span className="text-xs font-medium text-[var(--tv-highlight)]">
             {t("inbox.newSinceLastVisit").replace("{n}", String(unreadTotal))}
@@ -310,45 +313,47 @@ export default function Inbox() {
         </div>
       )}
 
-      {/* ── LA LISTE ────────────────────────────────────────────────────── */}
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <BellOff className="mb-3 h-10 w-10 text-slate-600" />
-          <p className="max-w-sm text-sm text-slate-500">
-            {filter === "all" ? t("inbox.empty") : t("inbox.emptyFiltered")}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {groupes.map(({ label, key, items }) => (
-            <section key={key}>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="tv-label shrink-0 text-slate-500">{label}</span>
-                <span aria-hidden className="rp-rule h-px flex-1" />
-                <span className="tv-figure shrink-0 text-[10px] text-slate-600">
-                  {items.length}
-                </span>
-              </div>
-              <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-                <div className="divide-y divide-white/[0.04]">
-                  {items.map((n) => (
-                    <Ligne
-                      key={n.id}
-                      n={n}
-                      onOpen={() => openNotification(n)}
-                      onRead={() => handleMarkRead(n.id)}
-                    />
-                  ))}
+      {/* ── LA LISTE — le seul endroit qui défile, dans l'écran ─────────── */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <BellOff className="mb-3 h-10 w-10 text-slate-600" />
+            <p className="max-w-sm text-sm text-slate-500">
+              {filter === "all" ? t("inbox.empty") : t("inbox.emptyFiltered")}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 pb-2">
+            {groupes.map(({ label, key, items }) => (
+              <section key={key}>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="tv-label shrink-0 text-slate-500">{label}</span>
+                  <span aria-hidden className="rp-rule h-px flex-1" />
+                  <span className="tv-figure shrink-0 text-[10px] text-slate-600">
+                    {items.length}
+                  </span>
                 </div>
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+                <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+                  <div className="divide-y divide-white/[0.04]">
+                    {items.map((n) => (
+                      <Ligne
+                        key={n.id}
+                        n={n}
+                        onOpen={() => openNotification(n)}
+                        onRead={() => handleMarkRead(n.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

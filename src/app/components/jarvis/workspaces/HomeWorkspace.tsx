@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense } from "react";
 import {
   Plus,
   Sparkles,
@@ -10,6 +11,9 @@ import {
 } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
+import { Kpi, KpiGrid } from "@/shared/ui";
+
+const EquityChart = lazy(() => import("../../EquityChart"));
 import { useToast } from "../../../contexts/ToastContext";
 import { useJarvisVoice } from "../../../utils/jarvisVoice";
 import { computeStats } from "../../../utils/tradeCalcs";
@@ -332,6 +336,48 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
           </span>
         )}
       </div>
+
+      {/* ── LE CENTRE DE CONTRÔLE ─────────────────────────────────────────
+          Le cerveau de l'app doit montrer l'état en UNE seconde, pas faire
+          défiler des blocs de texte. Une rangée de chiffres (P&L, Edge, win
+          rate, profit factor) puis la courbe d'equity — la même plaque que le
+          tableau de bord, mais résumée ici. N'apparaît que si des trades
+          existent : sans historique il n'y a rien à surveiller. */}
+      {stats.totalTrades > 0 && (
+        <div className="mb-4 space-y-3">
+          <KpiGrid>
+            <Kpi
+              label={t("nav.dashboard")}
+              value={`${stats.totalPnl >= 0 ? "+" : ""}${Math.round(stats.totalPnl).toLocaleString("en-US")}$`}
+              tone={stats.totalPnl > 0 ? "pos" : stats.totalPnl < 0 ? "neg" : "neutral"}
+            />
+            <Kpi
+              label={t("copilot.edgeLabel")}
+              value={edge.score === null ? "—" : `${edge.score}`}
+              tone={edge.score === null ? "neutral" : edge.score >= 50 ? "pos" : "warn"}
+            />
+            <Kpi
+              label={t("stats.winRate")}
+              value={`${Math.round((stats.winRate ?? 0) * 100)}%`}
+              tone={(stats.winRate ?? 0) >= 0.5 ? "pos" : "warn"}
+            />
+            <Kpi
+              label={t("reports.profitFactor")}
+              value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
+              tone={stats.profitFactor >= 1 ? "pos" : "warn"}
+            />
+          </KpiGrid>
+          {stats.equityCurve.length > 0 && (
+            <div className="glass rounded-2xl p-3 md:p-4">
+              <Suspense
+                fallback={<div className="h-24 animate-pulse rounded-xl bg-white/[0.03]" />}
+              >
+                <EquityChart data={stats.equityCurve} />
+              </Suspense>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Les propositions passent AVANT les insights : elles attendent une
           décision, le reste s'observe. Le panneau ne rend rien tant qu'il n'y a

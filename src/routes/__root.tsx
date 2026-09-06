@@ -138,7 +138,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     // Theme is applied at runtime by ThemeProvider (post-hydration). The default
-    // "Jarvis" palette lives in the CSS :root, so the first paint is already
+    // "Graphite" palette lives in the CSS :root, so the first paint is already
     // themed for default-theme users with no flash and no hydration divergence.
     //
     // La langue du HTML SERVI. Elle doit rester alignée sur `SSR_LANG`
