@@ -1313,56 +1313,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   box-shadow: var(--tv-elev-3);
 }
 
-/* ── JARVIS, LE MODULE FIXE ────────────────────────────────────────────────
-   Discret au repos, net quand il est actif. Le dock portait un halo cyan flou,
-   un point qui clignotait en boucle (« coach en ligne ») et une seconde ligne
-   de texte : trois effets pour un bouton, alors que la règle du système est
-   que rien ne rayonne et que la couleur est rare.
-
-   Au repos c'est du chrome : la plaque flottante du produit, un liseré, un
-   texte sourd. Ouvert, il porte le liseré d'accent — le MÊME signal d'état
-   actif que la navigation. */
-.tv-jarvis-dock {
-  display: inline-flex;
-  align-items: center;
-  background: var(--tv-plate-2);
-  border: 1px solid var(--tv-border);
-  box-shadow: var(--tv-elev-3);
-  transition-property: border-color, background-color, color;
-  transition-duration: var(--tv-dur-2);
-  transition-timing-function: var(--tv-ease);
-}
-@media (hover: hover) {
-  .tv-jarvis-dock:hover {
-    border-color: var(--tv-border-strong);
-    background: var(--tv-surface-hover);
-  }
-}
-.tv-jarvis-dock-active,
-.tv-jarvis-dock-active:hover {
-  border-color: var(--tv-border-accent);
-}
-.tv-jarvis-dock:focus-visible {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
-  outline-offset: 2px;
-}
-/* La marque. Au repos elle est une plaque sourde ; ouverte, elle porte
-   l'accent. C'est le seul endroit du module où la couleur a le droit d'entrer,
-   et seulement pour dire « la fenêtre est ouverte ». */
-.tv-jarvis-mark {
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-lg);
-  background: var(--tv-plate-3);
-  color: var(--tv-text-secondary);
-  transition-property: background-color, color;
-  transition-duration: var(--tv-dur-2);
-  transition-timing-function: var(--tv-ease);
-}
-.tv-jarvis-mark-on {
-  background: var(--tv-cta);
-  color: #ffffff;
-}
 .bottom-nav-item {
   position: relative;
   min-width: 44px;
