@@ -10,34 +10,18 @@ import {
 } from "react";
 
 /**
- * Langue de la landing page — détectée depuis le navigateur.
+ * Langue de la landing page.
  *
- * Règle : on suit la langue de base du navigateur (`navigator.language`).
- *   - commence par « fr » → français
- *   - commence par « en » → anglais
- *   - toute autre valeur (es, de, it, inconnue ou indétectable) → anglais
+ * Règle : l'ANGLAIS est la langue par défaut, pour tout le monde, quelle que
+ * soit la langue du navigateur. La vitrine ne passe en français que lorsque le
+ * visiteur le choisit EXPLICITEMENT via le sélecteur EN/FR (persisté dans
+ * `localStorage`). Pas de détection navigateur : un navigateur en espagnol ou
+ * en allemand ne doit pas basculer la page de vente dans une langue non
+ * couverte — et un navigateur francophone voit une vitrine anglaise, comme
+ * l'app une fois connectée.
  *
- * L'utilisateur peut basculer manuellement (persisté en localStorage) ; la
- * détection ne s'exécute qu'une fois, au premier rendu. Le contexte partage
- * l'état entre tous les composants de la landing (nav + sections).
- *
- * ── RENDU SERVEUR ET HYDRATATION ────────────────────────────────────────────
- *
- * La détection lisait `localStorage` et `navigator` DANS l'initialiseur d'état.
- * Le serveur rendait donc l'anglais et le client, au premier rendu, la langue
- * du visiteur : React détectait une divergence d'hydratation et repeignait
- * l'arbre — un clignotement d'anglais pour tout visiteur francophone.
- *
- * Pire, le HTML servi était INCOHÉRENT avec lui-même : `<html lang="fr">`,
- * `og:locale = fr_FR` et un titre français, pour un corps rendu en anglais.
- * C'est ce que voient les moteurs de recherche, qui n'exécutent pas forcément
- * le JavaScript.
- *
- * Désormais : le premier rendu — serveur ET client — utilise `SSR_LANG`, la
- * même langue que celle déclarée dans `__root.tsx` et dans les métadonnées.
- * L'hydratation ne peut plus diverger. La langue du visiteur est appliquée
- * juste après, dans un effet de MISE EN PAGE : il s'exécute avant que le
- * navigateur ne peigne, donc personne ne voit passer la langue par défaut.
+ * `preferredLang()` n'est PLUS appelée pendant le rendu — uniquement depuis
+ * l'effet de mise en page, donc côté navigateur uniquement.
  */
 
 // La langue servie vit dans `shared/lang.ts` — un module sans dépendance, pour
@@ -55,17 +39,10 @@ export type LandingKey = keyof typeof M;
 
 const STORAGE_KEY = "tv.landing.lang";
 
-function detectBrowserLang(): LandingLang {
-  if (typeof navigator === "undefined") return "en";
-  const nav = (navigator.language || "").toLowerCase();
-  if (nav.startsWith("fr")) return "fr";
-  if (nav.startsWith("en")) return "en";
-  return "en";
-}
-
 /**
- * La langue voulue par CE visiteur : son choix explicite s'il en a fait un,
- * sinon celle de son navigateur.
+ * La langue voulue par CE visiteur : son choix explicite s'il en a fait un
+ * (sélecteur EN/FR, persisté en localStorage), sinon l'anglais — la langue
+ * PAR DÉFAUT de la vitrine. Aucune détection navigateur.
  *
  * N'est PLUS appelée pendant le rendu — uniquement depuis l'effet de mise en
  * page, donc côté navigateur uniquement.
@@ -76,9 +53,9 @@ function preferredLang(): LandingLang {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "fr" || stored === "en") return stored;
   } catch {
-    /* storage indisponible — on retombe sur la détection */
+    /* storage indisponible — on retombe sur l'anglais */
   }
-  return detectBrowserLang();
+  return "en";
 }
 
 interface LandingLangCtx {

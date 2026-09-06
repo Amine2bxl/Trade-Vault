@@ -8,17 +8,15 @@ import Landing from "@/app/pages/Landing";
 // tab, search results and Google's brand review all read "TradeVault" first.
 // The suffix stays because a bare one-word title loses the SEO keywords, and it
 // is what the page actually is.
-const SEO_TITLE = "TradeVault — Journal de trading et coach IA pour traders";
-// FRANÇAIS, et c'est désormais vrai. La description était en français alors que
-// le corps de la page était rendu en ANGLAIS côté serveur — la détection de
-// langue s'exécutant dans un initialiseur d'état, elle rendait « en » sur le
-// serveur. Un moteur de recherche lisait donc `lang="fr"`, `og:locale=fr_FR`,
-// un titre français… et un document anglais.
+const SEO_TITLE = "TradeVault — Trading journal and AI coach for traders";
+// ANGLAIS, et c'est désormais vrai : la vitrine est en anglais par défaut
+// (`SSR_LANG`, `shared/lang.ts`) — le titre, la description, `<html lang>` et
+// `og:locale` disent la même langue.
 //
 // La langue servie est maintenant `SSR_LANG` (`shared/lang.ts`), à laquelle ces
 // deux chaînes doivent rester alignées. ≤ 155 caractères.
 const SEO_DESCRIPTION =
-  "Journal de trading et coach IA : analyse tes performances, suis ton plan et gagne en discipline. Analytics, calendrier économique et checklist pré-market.";
+  "AI trading journal and coach: analyze your performance, follow your plan and build discipline. Analytics, economic calendar and pre-market checklist.";
 
 export const Route = createFileRoute("/")({
   // Routed through the shared SEO builder so the home page gets a single,

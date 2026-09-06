@@ -27,13 +27,17 @@
  * français, pour un corps rendu en ANGLAIS — parce que la détection de langue
  * s'exécutait dans l'initialiseur d'état et rendait « en » côté serveur.
  *
- * Basculer la vitrine en anglais demande donc de changer les quatre, pas
- * celle-ci seule.
+ * ── LA LANGUE « PAR DÉFAUT » DE LA VITRINE ──────────────────────────────────
  *
- * Après hydratation, la langue réelle du visiteur est appliquée avant la
+ * Anglais, pour TOUT le monde, quelle que soit la langue du navigateur. Même
+ * règle que l'app une fois connectée (voir `LanguageContext`) : la langue ne
+ * change que si le visiteur la choisit EXPLICITEMENT (sélecteur EN/FR de la
+ * landing, persisté en localStorage). Pas d'auto-détection navigateur.
+ *
+ * Après hydratation, le choix explicite du visiteur est appliqué avant la
  * première peinture — voir `LandingLangProvider`.
  */
 
 export type SiteLang = "en" | "fr";
 
-export const SSR_LANG: SiteLang = "fr";
+export const SSR_LANG: SiteLang = "en";
