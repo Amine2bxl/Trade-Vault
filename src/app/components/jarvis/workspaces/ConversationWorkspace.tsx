@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Eraser, Mic, MicOff, Zap } from "lucide-react";
+import { Eraser, Mic, MicOff, Zap } from "lucide-react";
+import { JarvisMark } from "@/shared/ui";
 import Composer from "../Composer";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
@@ -773,7 +774,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 {/* Le halo flou est parti : un carré de lumière cyan de 35%
                     posé derrière un avatar, c'est de l'effet, pas du dessin. */}
                 <span className="tv-accent-fill grid h-11 w-11 shrink-0 place-items-center rounded-2xl">
-                  <Bot className="h-5 w-5" />
+                  <JarvisMark className="h-[22px] w-[22px]" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-white tracking-tight">
@@ -830,7 +831,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               >
                 <div className="flex items-center gap-2 mb-2.5">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
-                    <Bot className="w-3.5 h-3.5" />
+                    <JarvisMark className="h-4 w-4" />
                   </span>
                   <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
                 </div>
@@ -867,7 +868,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           <div className="animate-fade-in border-t border-white/[0.05] pt-5">
             <div className="flex items-center gap-2 mb-2.5">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
-                <Bot className="w-3.5 h-3.5" />
+                <JarvisMark className="h-4 w-4" />
               </span>
               <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
               <span className="flex items-center gap-1">

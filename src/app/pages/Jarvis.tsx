@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Bot, Eraser } from "lucide-react";
+import { Eraser } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useTrades } from "../hooks/useTrades";
@@ -11,6 +11,7 @@ import { jarvisConversationStore } from "../components/jarvis/conversations";
 import type { JarvisContext } from "../components/jarvis/context";
 import CreditsBar from "../components/jarvis/components/CreditsBar";
 import ProposalsPanel from "../components/jarvis/components/ProposalsPanel";
+import { JarvisMark } from "@/shared/ui";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 
 const ConversationWorkspace = lazy(
@@ -144,7 +145,7 @@ export default function Jarvis() {
     () => (
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="tv-accent-fill grid h-6 w-6 shrink-0 place-items-center rounded-lg">
-          <Bot className="h-3.5 w-3.5" />
+          <JarvisMark className="h-4 w-4" />
         </span>
         <span className="font-display shrink-0 text-sm font-bold tracking-tight text-white">
           {t("assistant.title")}

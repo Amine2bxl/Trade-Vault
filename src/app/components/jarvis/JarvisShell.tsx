@@ -1,8 +1,8 @@
 import { Suspense, useState, type ReactNode } from "react";
-import { Bot, MessageSquare, PanelLeft, Settings2, Sparkles, X } from "lucide-react";
+import { MessageSquare, PanelLeft, Settings2, Sparkles, X } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useT } from "../../i18n/LanguageContext";
-import { Modal, SubNav, type SubNavItem } from "@/shared/ui";
+import { JarvisMark, Modal, SubNav, type SubNavItem } from "@/shared/ui";
 import type { JarvisContext } from "./context";
 import { JARVIS_WORKSPACES, type JarvisWorkspaceId } from "./workspaces";
 
@@ -120,7 +120,7 @@ export default function JarvisShell({
         {/* La marque + le nom. Le nom disparaît sous 640px : la navigation est
             plus utile que le mot « Jarvis » sur une fenêtre qui EST Jarvis. */}
         <span className="tv-jarvis-mark tv-jarvis-mark-on h-7 w-7 shrink-0">
-          <Bot className="h-4 w-4" />
+          <JarvisMark className="h-[18px] w-[18px]" />
         </span>
         <h2 id="jarvis-shell-title" className="tv-title hidden min-w-0 shrink-0 truncate sm:block">
           {t("assistant.title")}
