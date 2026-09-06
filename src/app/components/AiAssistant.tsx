@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Trade, Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { loadJarvisProfile, type JarvisProfile } from "../store";
+import { JarvisMark } from "@/shared/ui";
 import JarvisShell from "./jarvis/JarvisShell";
 import type { JarvisContext } from "./jarvis/context";
 import type { JarvisWorkspaceId } from "./jarvis/workspaces";
@@ -188,18 +189,34 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           effets pour un bouton, sur un système dont la règle est que rien ne
           rayonne et que la couleur est rare.
 
-          Ce qu'il porte maintenant : la plaque flottante du produit, la marque,
-          le nom. Au repos il est sourd ; ouvert, la marque prend l'accent et le
-          liseré passe à l'accent — le même signal d'état actif que partout
-          ailleurs. Sur téléphone il se réduit à la marque seule, hors de la
-          zone du pouce, sur la même plaque. */}
+          ── CE QUI RESTAIT BON MARCHÉ, ET POURQUOI ──────────────────────────
+
+          Deux choses, et aucune n'était une question de réglage :
+
+          1. LE GLYPHE ÉTAIT UN ROBOT DE BIBLIOTHÈQUE (`Bot` de lucide). C'est
+             le dessin que tout le monde colle dans un coin pour dire « il y a
+             une IA ici ». Un produit dont l'IA est l'argument central ne peut
+             pas la signer avec l'icône générique du greffon. Jarvis porte
+             maintenant le V de *Vault* (`JarvisMark`), construit comme le mot
+             de la marque : un bras fin et sourd, un bras épais et plein.
+
+          2. LE REPOS ÉTAIT GRIS SUR GRIS. Un sigle sourd sur une plaque sourde
+             ne se lit pas comme « discret » mais comme « désactivé » : discret,
+             c'est petit et sans effet ; désactivé, c'est sans contraste. Le
+             sigle passe en texte primaire, et sa plaque garde un filet d'accent
+             en creux — un liseré, pas une lueur.
+
+          L'À-PLAT D'ACCENT RESTE À L'ÉTAT OUVERT, et à lui seul : sur
+          téléphone, le « + » de la barre basse est déjà le seul aplat saturé de
+          l'écran. Deux pastilles vertes à trente pixels l'une de l'autre, et
+          plus aucune des deux ne désigne quoi que ce soit. */}
       <button
         onClick={toggleOpen}
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
           "tv-jarvis-dock fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
-          "justify-center gap-2 rounded-full p-1.5 md:rounded-2xl md:pr-3.5",
+          "justify-center gap-2.5 rounded-full p-1.5 md:rounded-2xl md:pr-4",
           "active:scale-[0.98]",
           open && "tv-jarvis-dock-active",
         )}
@@ -210,14 +227,15 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
             open && "tv-jarvis-mark-on",
           )}
         >
-          {open ? <X className="h-4 w-4" /> : <Bot className="h-4 w-4 md:h-4.5 md:w-4.5" />}
-        </span>
-        <span
-          className={cn(
-            "hidden text-[13px] font-semibold md:block",
-            open ? "text-white" : "text-[var(--tv-text-secondary)]",
+          {open ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <JarvisMark className="h-5 w-5 md:h-[22px] md:w-[22px]" />
           )}
-        >
+        </span>
+        {/* Le nom en texte PRIMAIRE, au repos comme ouvert. En secondaire, il
+            achevait de faire lire le module comme un contrôle éteint. */}
+        <span className="hidden text-[13px] font-semibold tracking-[-0.01em] text-[var(--tv-text-primary)] md:block">
           {t("assistant.title")}
         </span>
       </button>

@@ -3592,7 +3592,10 @@ a:focus-visible,
   display: inline-flex;
   align-items: center;
   background: var(--tv-plate-2);
-  border: 1px solid var(--tv-border);
+  /* Le liseré est un cran PLUS FORT que celui d'une carte. Ce module flotte
+     au-dessus de la page — il ne s'y pose pas —, et un liseré de carte sur une
+     plaque flottante donne exactement l'impression d'une vignette collée. */
+  border: 1px solid var(--tv-border-strong);
   box-shadow: var(--tv-elev-3);
   transition-property: border-color, background-color, color;
   transition-duration: var(--tv-dur-2);
@@ -3600,8 +3603,10 @@ a:focus-visible,
 }
 @media (hover: hover) {
   .tv-jarvis-dock:hover {
-    border-color: var(--tv-border-strong);
     background: var(--tv-surface-hover);
+  }
+  .tv-jarvis-dock:hover .tv-jarvis-mark:not(.tv-jarvis-mark-on) {
+    box-shadow: inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.4);
   }
 }
 .tv-jarvis-dock-active,
@@ -3612,22 +3617,31 @@ a:focus-visible,
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: 2px;
 }
-/* La marque. Au repos elle est une plaque sourde ; ouverte, elle porte
-   l'accent. C'est le seul endroit du module où la couleur a le droit d'entrer,
-   et seulement pour dire « la fenêtre est ouverte ». */
+/* LA PLAQUE DE LA MARQUE.
+   Elle portait un glyphe SOURD sur une plaque sourde : gris sur gris, ce qui
+   ne se lit pas comme « discret » mais comme « désactivé ». Discret, c'est
+   petit et sans effet ; désactivé, c'est sans contraste. Le sigle passe donc
+   en texte PRIMAIRE, et la plaque garde un liseré d'accent en creux — un
+   filet, pas une lueur : il signe la surface IA sans lui donner l'à-plat
+   d'accent, qui reste au bouton d'action principal (le « + » de la barre
+   basse, seul aplat saturé de l'écran mobile). */
 .tv-jarvis-mark {
   display: grid;
   place-items: center;
   border-radius: var(--radius-lg);
   background: var(--tv-plate-3);
-  color: var(--tv-text-secondary);
-  transition-property: background-color, color;
+  color: var(--tv-text-primary);
+  box-shadow: inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.22);
+  transition-property: background-color, color, box-shadow;
   transition-duration: var(--tv-dur-2);
   transition-timing-function: var(--tv-ease);
 }
+/* OUVERT : là, l'à-plat est justifié — c'est un ÉTAT, et c'est le seul moment
+   où ce module en porte un. */
 .tv-jarvis-mark-on {
   background: var(--tv-cta);
   color: #ffffff;
+  box-shadow: none;
 }
 
 /* ── LA FENÊTRE ───────────────────────────────────────────────────────────
