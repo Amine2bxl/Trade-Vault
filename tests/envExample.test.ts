@@ -60,7 +60,21 @@ const DYNAMIC: Record<string, string> = {
 };
 
 /** Fournies par la plateforme : les déclarer inviterait à les poser à la main. */
-const PLATFORM = new Set(["PORT", "NITRO_PRESET"]);
+const PLATFORM = new Set([
+  "PORT",
+  "NITRO_PRESET",
+  // Les CONSTANTES DE COMPILATION de Vite. `import.meta.env.DEV` et ses
+  // voisines ne sont pas lues dans l'environnement : Vite les REMPLACE
+  // textuellement au build, d'après le mode. Les inscrire dans
+  // `.env.example` serait précisément le défaut que ce fichier combat --
+  // une variable qui ne configure rien, posée à la main par un opérateur
+  // qui croit qu'elle compte, et qui reste sans effet.
+  "DEV",
+  "PROD",
+  "SSR",
+  "MODE",
+  "BASE_URL",
+]);
 
 function tsFiles(dir: string): string[] {
   const out: string[] = [];
