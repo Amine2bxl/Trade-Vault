@@ -1,5 +1,7 @@
 import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
-import { PlayCircle } from "lucide-react";
+// Les cinq logos de réseaux sociaux ont quitté cet import avec les liens morts
+// qu'ils portaient : voir le pied de page plus bas.
+import { PlayCircle, Check } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { AuthModal } from "./landing/AuthModal";
@@ -18,8 +20,7 @@ import {
 import "./landing.css";
 
 /* ─────────────────────────── LOGO ────────────────────────── */
-function Logo({ compact = false }: { compact?: boolean }) {
-  const s = compact ? 28 : 34;
+function Logo() {
   return (
     // `href="/"`, pas `href="#"`. Le logo est le lien de retour à l'accueil le
     // plus universellement compris du web, et c'est le seul lien qu'un robot
@@ -27,18 +28,16 @@ function Logo({ compact = false }: { compact?: boolean }) {
     // désignait rien.
     <a
       href="/"
-      className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-sm"
+      className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tv-accent)] rounded-sm"
     >
       <img
         src={logoSrc}
         alt="TradeVault"
-        width={s}
-        height={s}
-        className={`${compact ? "h-7 w-7" : "h-9 w-9"} object-contain`}
+        width={30}
+        height={30}
+        className="h-8 w-8 object-contain"
       />
-      <span
-        className={`font-display font-bold tracking-[-0.02em] text-white leading-none hidden sm:block ${compact ? "text-[1.15rem]" : "text-[1.3rem]"}`}
-      >
+      <span className="font-display font-bold tracking-[-0.02em] text-white leading-none hidden sm:block text-[1.15rem]">
         TradeVault
       </span>
     </a>
@@ -99,7 +98,7 @@ function FooterColumn({
           <li key={k}>
             <a
               href={href}
-              className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-cyan-300"
+              className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-slate-300"
             >
               {t(k)}
             </a>
@@ -108,51 +107,6 @@ function FooterColumn({
       </ul>
     </div>
   );
-}
-
-/* ─────────────────────────── CURSOR GLOW ─────────────────────────── */
-function CursorGlow() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const fine = window.matchMedia("(pointer: fine)").matches;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!fine || reduced) return;
-    let tx = window.innerWidth / 2,
-      ty = window.innerHeight / 2,
-      cx = tx,
-      cy = ty,
-      raf = 0,
-      active = false;
-    const onMove = (e: PointerEvent) => {
-      tx = e.clientX;
-      ty = e.clientY;
-      if (!active) {
-        active = true;
-        el.style.opacity = "1";
-      }
-    };
-    const onLeave = () => {
-      active = false;
-      el.style.opacity = "0";
-    };
-    const tick = () => {
-      cx += (tx - cx) * 0.16;
-      cy += (ty - cy) * 0.16;
-      el.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
-      raf = requestAnimationFrame(tick);
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    document.addEventListener("pointerleave", onLeave);
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerleave", onLeave);
-    };
-  }, []);
-  return <div ref={ref} className="landing-cursor-glow" aria-hidden="true" />;
 }
 
 /* ─────────────────────────── HOOKS ─────────────────────────── */
@@ -174,11 +128,7 @@ function useScroll() {
 }
 function useReveal() {
   useEffect(() => {
-    // Sous « réduire les animations », on ne masque rien et on n'observe rien :
-    // le contenu reste tel qu'il est rendu.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // Signale au CSS que le script est vivant : lui seul autorise l'état masqué,
-    // donc un échec de chargement ne peut pas laisser la page vide.
     const root = document.documentElement;
     root.classList.add("js-reveal");
     const io = new IntersectionObserver(
@@ -189,154 +139,98 @@ function useReveal() {
             io.unobserve(e.target);
           }
         }),
-      { threshold: 0.1, rootMargin: "0px 0px -5% 0px" },
+      { threshold: 0.15, rootMargin: "0px 0px -6% 0px" },
     );
     document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
 }
-function useCountdown() {
-  const calc = () => {
-    const n = new Date();
-    const d = n.getDay();
-    if (d === 0 || d === 6) return null;
-    const o = new Date(n);
-    o.setHours(9, 30, 0, 0);
-    const df = o.getTime() - n.getTime();
-    return df > 0 ? df : null;
-  };
-  const [ms, setMs] = useState<number | null>(calc);
-  useEffect(() => {
-    const id = setInterval(() => setMs(calc()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  if (!ms) return null;
-  const s = Math.floor(ms / 1000);
-  return `${Math.floor(s / 3600)
-    .toString()
-    .padStart(2, "0")}:${Math.floor((s % 3600) / 60)
-    .toString()
-    .padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
-}
 
-/* ─────────────────────────── SPARKLINE ─────────────────────────── */
-function Sparkline({ points, up = true }: { points: string; up?: boolean }) {
-  const gid = useRef(`sg${Math.random().toString(36).slice(2, 8)}`);
-  return (
-    <svg viewBox="0 0 96 32" className="h-8 w-full" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id={gid.current} x1="0" x2="0" y1="0" y2="1">
-          <stop stopColor={up ? "var(--tv-highlight)" : "#f87171"} stopOpacity=".25" />
-          <stop offset="1" stopColor={up ? "var(--tv-highlight)" : "#f87171"} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={`${points} 96,32 0,32`} fill={`url(#${gid.current})`} />
-      <polyline
-        points={points}
-        fill="none"
-        stroke={up ? "var(--tv-highlight)" : "#f87171"}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-        className="spark-line"
-      />
-    </svg>
-  );
-}
-
+/* ─────────────────────────── SPLINE · COURBE ─────────────────────────── */
 /**
- * La spline de la courbe héros — même famille que le `natural` de recharts.
- *
- * Catmull-Rom passe par TOUS les points et se convertit exactement en cubiques
- * de Bézier : c'est la façon standard d'obtenir, en SVG statique, la courbe que
- * la bibliothèque de graphes dessine dans l'application. Calculée une fois au
- * chargement du module, pas à chaque rendu.
+ * La spline de la courbe — même famille que le `natural` de recharts.
+ * Catmull-Rom passe par tous les points ; calculée une fois au chargement.
  */
 const HERO_PTS: [number, number][] = [
-  [0, 112],
-  [38, 96],
-  [76, 102],
-  [114, 74],
-  [152, 88],
-  [190, 56],
-  [228, 70],
-  [266, 36],
-  [304, 50],
-  [340, 20],
+  [0, 130],
+  [42, 118],
+  [84, 124],
+  [126, 96],
+  [168, 106],
+  [210, 74],
+  [252, 88],
+  [294, 52],
+  [336, 62],
+  [376, 30],
 ];
 
-const HERO_D = (() => {
-  const p = HERO_PTS;
+function buildSpline(p: [number, number][]): string {
   let d = `M${p[0][0]},${p[0][1]}`;
   for (let i = 0; i < p.length - 1; i++) {
     const p0 = p[i - 1] ?? p[i];
     const p1 = p[i];
     const p2 = p[i + 1];
     const p3 = p[i + 2] ?? p2;
-    // Tension 1/6 : la conversion canonique Catmull-Rom → Bézier.
     const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
     const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
     d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
   }
   return d;
-})();
+}
+const HERO_D = buildSpline(HERO_PTS);
+const ANALYTICS_D = buildSpline([
+  [0, 96],
+  [40, 88],
+  [80, 92],
+  [120, 70],
+  [160, 78],
+  [200, 52],
+  [240, 62],
+  [280, 40],
+]);
 
-/* ─────────────────────────── HERO PRODUCT VISUAL ─────────────────────────── */
+/* ─────────────────────────── HERO — THE PRODUCT ─────────────────────────── */
 function HeroProductVisual() {
   const { t } = useLandingT();
   return (
     <div className="relative">
-      {/* ── LA CARTE HÉROS ──
-          C'est la vitrine du produit : elle doit être la MÊME pièce que la
-          courbe d'equity réelle, pas une illustration qui lui ressemble. Ce
-          qui a changé, et pourquoi :
-            • la surface passe du bleu marine (#0a1625, hérité de l'ancienne
-              identité) à la plaque des cartes du produit. Quelqu'un qui
-              s'inscrit après avoir vu la landing retrouve la même matière ;
-            • la courbe était une POLYLIGNE anguleuse ; c'est une spline,
-              comme dans l'application ;
-            • le dégradé sous le trait reprend les trois paliers de la
-              référence (30 % / 10 % / 0) au lieu de deux ;
-            • la grille passe du pointillé bleu au trait horizontal sourd ;
-            • le ZÉRO en tirets rouges apparaît — c'est lui qui dit qui gagne,
-              et il manquait ;
-            • la pastille cyan lumineuse au bout du tracé a sauté : la courbe
-              du produit ne porte aucun point au repos. */}
-      <div className="relative rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-5 shadow-[0_30px_80px_rgba(0,0,0,.6)]">
+      {/* La plaque produit — la même matière qu'une carte de l'app. */}
+      <div className="lp-panel p-5">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <p className="tv-label text-slate-500">{t("hero.eq")}</p>
-            <p className="tv-figure mt-1 text-2xl text-[var(--tv-chart-green)]">+4 218,50 €</p>
+            <p className="tv-figure mt-1 text-2xl tabular-nums text-[var(--tv-chart-green)]">
+              +$4,218.50
+            </p>
           </div>
-          <span className="tv-figure mt-1 rounded-full border border-emerald-400/20 bg-emerald-400/12 px-2.5 py-1 text-[11px] text-emerald-400">
+          <span className="tv-figure mt-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] tabular-nums text-emerald-300">
             +16.9%
           </span>
         </div>
-        <div className="h-24 w-full">
-          <svg viewBox="0 0 345 125" className="h-full w-full" preserveAspectRatio="none">
+
+        <div className="h-32 w-full">
+          <svg viewBox="0 0 376 145" className="h-full w-full" preserveAspectRatio="none">
             <defs>
               <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1">
-                <stop stopColor="var(--tv-chart-green)" stopOpacity=".3" />
-                <stop offset=".55" stopColor="var(--tv-chart-green)" stopOpacity=".1" />
+                <stop stopColor="var(--tv-chart-green)" stopOpacity=".22" />
                 <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
               </linearGradient>
             </defs>
-            {[30, 65, 100].map((yy) => (
-              <path key={yy} d={`M0 ${yy}H345`} stroke="rgba(148,163,184,.08)" />
+            {[34, 74, 114].map((yy) => (
+              <path key={yy} d={`M0 ${yy}H376`} stroke="rgba(148,163,184,.09)" />
             ))}
-            <path d={`${HERO_D} L340,125 L0,125 Z`} fill="url(#hf)" />
+            <path d={`${HERO_D} L376,145 L0,145 Z`} fill="url(#hf)" />
             <path
-              d="M0 119H345"
+              d="M0 138H376"
               stroke="var(--tv-chart-red)"
-              strokeWidth="2"
-              strokeDasharray="7 7"
+              strokeWidth="1.5"
+              strokeDasharray="6 5"
             />
             <path
               d={HERO_D}
               fill="none"
               stroke="var(--tv-chart-green)"
-              strokeWidth="3"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
@@ -344,47 +238,55 @@ function HeroProductVisual() {
             />
           </svg>
         </div>
+
         <div className="mt-4 grid grid-cols-3 gap-3 border-t border-white/[.08] pt-4">
           {[
             [t("hero.winrate"), "64%"],
             [t("hero.pf"), "2.31"],
-            [t("hero.sharpe"), "1.84"],
+            [t("hero.sharpe"), "1.96"],
           ].map(([l, v]) => (
             <div key={l} className="text-center">
               <p className="tv-label text-slate-500">{l}</p>
-              <p className="mt-1 font-display text-base font-bold text-cyan-300">{v}</p>
+              <p className="mt-1 font-display text-base font-bold tabular-nums text-white">{v}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="float-a absolute -bottom-10 -left-6 z-10 w-[230px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-1)] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden sm:block">
-        <div className="flex items-center gap-2 mb-2">
-          {/* Le dégradé cyan→bleu était le dernier reste de l'ancienne identité
-              sur la landing, et il était codé en dur : il restait bleu quel que
-              soit le thème. C'est la surface d'action du produit. */}
-          <div className="tv-accent-fill grid h-6 w-6 place-items-center rounded-md">
-            <Icon n="brain" cls="h-3.5 w-3.5" />
+      {/* Le coach — une vraie remarque sur des données réelles. */}
+      <div className="absolute -bottom-7 -left-3 z-10 hidden w-[236px] sm:block">
+        <div className="lp-card p-3.5">
+          <div className="mb-2 flex items-center gap-2">
+            <div className="tv-accent-fill grid h-6 w-6 place-items-center rounded-md">
+              <Icon n="brain" cls="h-3.5 w-3.5" />
+            </div>
+            <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
+            <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-emerald-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
+            </span>
           </div>
-          <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
-          <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-emerald-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live
-          </span>
+          <p className="text-[11px] leading-4 text-slate-300">
+            {t("hero.coach.tip")}{" "}
+            <span className="text-[var(--tv-highlight)] font-semibold">
+              {t("hero.coach.action")}
+            </span>
+          </p>
         </div>
-        <p className="text-[11px] leading-4 text-slate-300">
-          {t("hero.coach.tip")}{" "}
-          <span className="text-cyan-300 font-semibold">{t("hero.coach.action")}</span>
-        </p>
       </div>
 
-      <div className="float-b absolute -top-8 -right-5 z-10 w-[190px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-1)] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden md:block">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Icon n="radar" cls="h-3.5 w-3.5 text-violet-300" />
-          <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
+      {/* Le pattern détecté. */}
+      <div className="absolute -top-7 -right-3 z-10 hidden w-[200px] md:block">
+        <div className="lp-card p-3.5">
+          <div className="mb-1.5 flex items-center gap-2">
+            <Icon n="radar" cls="h-3.5 w-3.5 text-[var(--tv-highlight)]" />
+            <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
+          </div>
+          <p className="text-[11px] leading-4 text-slate-300">
+            <span className="text-[var(--tv-highlight)] font-semibold">
+              {t("hero.pattern.tip")}
+            </span>
+          </p>
         </div>
-        <p className="text-[11px] leading-4 text-slate-300">
-          <span className="text-violet-300 font-semibold">{t("hero.pattern.tip")}</span>
-        </p>
       </div>
     </div>
   );
@@ -394,7 +296,7 @@ function HeroProductVisual() {
 function AIConversation() {
   const { t } = useLandingT();
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] shadow-[0_24px_64px_rgba(0,0,0,.5)] backdrop-blur-xl">
+    <div className="lp-panel overflow-hidden">
       <div className="flex items-center justify-between border-b border-white/[.08] px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <div className="tv-accent-fill grid h-9 w-9 place-items-center rounded-lg">
@@ -402,10 +304,10 @@ function AIConversation() {
           </div>
           <div>
             <p className="tv-prose font-bold text-white">{t("ai.c.title")}</p>
-            <p className="text-[11px] text-emerald-400">{t("ai.c.sub")}</p>
+            <p className="text-[11px] text-emerald-300">{t("ai.c.sub")}</p>
           </div>
         </div>
-        <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold text-emerald-400">
+        <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
         </span>
       </div>
@@ -415,11 +317,11 @@ function AIConversation() {
             <p className="tv-prose text-slate-200">{t("ai.c.q")}</p>
           </div>
         </div>
-        <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-cyan-400/20 bg-cyan-400/[.05] p-3.5">
+        <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-[rgb(var(--tv-accent-rgb)/0.35)] bg-[rgb(var(--tv-accent-rgb)/0.06)] p-3.5">
           <p className="tv-prose text-slate-200">{t("ai.c.a")}</p>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-3.5">
-          <div className="flex items-center gap-1.5 mb-1.5">
+          <div className="mb-1.5 flex items-center gap-1.5">
             <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
             <span className="tv-label text-emerald-400">{t("ai.c.plan")}</span>
           </div>
@@ -430,55 +332,31 @@ function AIConversation() {
   );
 }
 
-/* ─────────────────────────── SPOTLIGHT HELPER ─────────────────────────── */
-function useSpot() {
-  return (e: RPointerEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
-  };
-}
-
-/* ─────────────────────────── SECTION TITLE ─────────────────────────── */
-/**
- * `tag` reste dans la signature : il nomme la section pour la navigation et les
- * lecteurs d'écran (`aria-label`), mais il ne s'affiche plus au-dessus du titre.
- * Un kicker n'ajoute aucune information que le titre ne porte pas déjà — il ne
- * fait que retarder la lecture de la seule ligne qui compte.
- */
-function SectionHead({ tag, title, sub }: { tag: string; title: React.ReactNode; sub?: string }) {
+/* ─────────────────────────── SECTION HEAD ─────────────────────────── */
+function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
   return (
-    <div className="reveal text-center mx-auto max-w-2xl mb-10" aria-label={tag}>
-      <h2 className="font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-bold tracking-[-0.03em] text-white leading-[1.12]">
+    <div className="mx-auto mb-12 max-w-2xl text-center">
+      <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold tracking-[-0.03em] text-white leading-[1.1]">
         {title}
       </h2>
-      {sub && <p className="mt-4 text-slate-400 leading-7">{sub}</p>}
+      {sub && <p className="mt-4 leading-7 text-slate-400">{sub}</p>}
     </div>
   );
 }
 
-const NAV: [string, string][] = [
-  ["nav.problem", "problem"],
-  ["nav.features", "features"],
-  ["pricing.tag", "pricing"],
-  ["faq.tag", "faq"],
-];
-
-/* ─────────────────────────── JOURNEY SECTION ─────────────────────────── */
-function JourneySection() {
+/* ─────────────────────────── CORE VALUE · 4 TEMPS ─────────────────────────── */
+function CoreValueSection() {
   const { t } = useLandingT();
-  const steps = [
-    { icon: "document" as IName, title: t("journey.s1.t"), sub: t("journey.s1.d") },
-    { icon: "chart" as IName, title: t("journey.s2.t"), sub: t("journey.s2.d") },
-    { icon: "radar" as IName, title: t("journey.s3.t"), sub: t("journey.s3.d") },
-    { icon: "brain" as IName, title: t("journey.s4.t"), sub: t("journey.s4.d") },
-    { icon: "target" as IName, title: t("journey.s5.t"), sub: t("journey.s5.d") },
+  const steps: { n: string; t: string; d: string }[] = [
+    { n: "01", t: t("journey.s1.t"), d: t("journey.s1.d") },
+    { n: "02", t: t("journey.s2.t"), d: t("journey.s2.d") },
+    { n: "03", t: t("journey.s3.t"), d: t("journey.s3.d") },
+    { n: "04", t: t("journey.s4.t"), d: t("journey.s4.d") },
   ];
   return (
     <section className="relative section-divider py-14 lg:py-20">
-      <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+      <div className="lp-container">
         <SectionHead
-          tag={t("journey.tag")}
           title={
             <>
               {t("journey.title.a")} <span className="text-accent">{t("journey.title.b")}</span>
@@ -486,17 +364,13 @@ function JourneySection() {
           }
           sub={t("journey.sub")}
         />
-        <div className="reveal relative grid grid-cols-2 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="reveal mx-auto grid max-w-[860px] gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((s, i) => (
-            <div key={s.title} className="journey-node relative px-2 text-center">
-              {i < steps.length - 1 && <span className="journey-connector hidden lg:block" />}
-              <span className="journey-dot" style={{ animationDelay: `${i * 0.35}s` }} />
-              <div className="feat-icon h-12 w-12 rounded-xl">
-                <Icon n={s.icon} cls="h-5 w-5" />
-              </div>
+            <div key={s.n} className="journey-step">
+              <span className="journey-num">{s.n}</span>
               <div>
-                <p className="font-display text-[15px] font-bold text-white">{s.title}</p>
-                <p className="mt-1 text-[12px] leading-5 text-slate-500">{s.sub}</p>
+                <p className="font-display text-[15px] font-bold text-white">{s.t}</p>
+                <p className="mt-1 text-[12.5px] leading-5 text-slate-400">{s.d}</p>
               </div>
             </div>
           ))}
@@ -505,6 +379,272 @@ function JourneySection() {
     </section>
   );
 }
+
+/* ─────────────────────────── ANALYTICS ─────────────────────────── */
+function AnalyticsSection() {
+  const { t } = useLandingT();
+  const caps: { t: string; d: string }[] = [
+    { t: t("analytics.c1.t"), d: t("analytics.c1.d") },
+    { t: t("analytics.c2.t"), d: t("analytics.c2.d") },
+    { t: t("analytics.c3.t"), d: t("analytics.c3.d") },
+    { t: t("analytics.c4.t"), d: t("analytics.c4.d") },
+  ];
+  return (
+    <section id="analytics" className="relative section-divider py-14 lg:py-24">
+      <div className="lp-container">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="reveal">
+            <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
+              {t("analytics.title.a")} <span className="text-accent">{t("analytics.title.b")}</span>
+            </h2>
+            <p className="mt-4 max-w-xl leading-7 text-slate-400">{t("analytics.sub")}</p>
+            <div className="mt-8 grid gap-x-6 gap-y-5 sm:grid-cols-2">
+              {caps.map((c) => (
+                <div key={c.t} className="flex items-start gap-3">
+                  <span className="mt-1.5 grid h-2 w-2 shrink-0 place-items-center rounded-full bg-[var(--tv-highlight)]" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">{c.t}</p>
+                    <p className="mt-0.5 text-[12.5px] leading-5 text-slate-400">{c.d}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="reveal">
+            <div className="lp-panel p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="tv-label text-slate-500">{t("hero.eq")}</p>
+                <span className="tv-figure rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] tabular-nums text-emerald-300">
+                  +$4,218.50 · 6m
+                </span>
+              </div>
+              <div className="h-28 w-full">
+                <svg viewBox="0 0 280 100" className="h-full w-full" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="aa" x1="0" x2="0" y1="0" y2="1">
+                      <stop stopColor="var(--tv-chart-green)" stopOpacity=".2" />
+                      <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {[24, 50, 76].map((yy) => (
+                    <path key={yy} d={`M0 ${yy}H280`} stroke="rgba(148,163,184,.09)" />
+                  ))}
+                  <path d={`${ANALYTICS_D} L280,100 L0,100 Z`} fill="url(#aa)" />
+                  <path
+                    d="M0 96H280"
+                    stroke="var(--tv-chart-red)"
+                    strokeWidth="1.5"
+                    strokeDasharray="6 5"
+                  />
+                  <path
+                    d={ANALYTICS_D}
+                    fill="none"
+                    stroke="var(--tv-chart-green)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {[
+                  ["Win rate", "64%"],
+                  ["Profit factor", "2.31"],
+                  ["Expectancy", "+0.68R"],
+                  ["Sharpe", "1.96"],
+                ].map(([l, v]) => (
+                  <div
+                    key={l}
+                    className="rounded-lg border border-white/[.06] bg-white/[.02] px-3 py-2.5"
+                  >
+                    <p className="tv-label text-slate-500">{l}</p>
+                    <p className="mt-0.5 tv-figure text-sm tabular-nums text-white">{v}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────── MISTAKES · PSYCHOLOGIE ─────────────────────────── */
+function MistakesSection() {
+  const { t } = useLandingT();
+  const qs: LandingKey[] = ["mistakes.q1", "mistakes.q2", "mistakes.q3", "mistakes.q4"];
+  const leaks: { n: string; c: string; v: number }[] = [
+    { n: "Revenge trading", c: "−$1,240", v: 82 },
+    { n: "FOMO entry", c: "−$890", v: 58 },
+    { n: "Overtrading", c: "−$670", v: 42 },
+  ];
+  return (
+    <section id="mistakes" className="relative section-divider py-14 lg:py-20">
+      <div className="lp-container">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="reveal order-2 lg:order-1">
+            <div className="lp-panel p-5">
+              <p className="tv-label mb-4 text-slate-500">{t("bento.errors.thismonth")}</p>
+              <div className="space-y-3">
+                {leaks.map((m) => (
+                  <div key={m.n}>
+                    <div className="flex items-center justify-between text-[13px]">
+                      <span className="font-medium text-slate-200">{m.n}</span>
+                      <span className="tv-figure tabular-nums text-[var(--tv-chart-red)]">
+                        {m.c}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/[.05]">
+                      <div
+                        className="h-full rounded-full bg-[var(--tv-chart-red)]/60"
+                        style={{ width: `${m.v}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="tv-label mt-4 text-slate-500">{t("bento.errors.d")}</p>
+            </div>
+          </div>
+
+          <div className="reveal order-1 lg:order-2">
+            <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
+              {t("mistakes.title.a")}{" "}
+              <span className="text-slate-500">{t("mistakes.title.b")}</span>
+            </h2>
+            <p className="mt-4 max-w-xl leading-7 text-slate-400">{t("mistakes.sub")}</p>
+            <ul className="mt-8 space-y-3">
+              {qs.map((q, i) => (
+                <li
+                  key={q}
+                  className="flex items-center gap-3 rounded-xl border border-white/[.06] bg-white/[.02] px-4 py-3"
+                >
+                  <span className="tv-figure w-5 shrink-0 text-[11px] tabular-nums text-slate-600">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-[14px] text-slate-200">{t(q)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────── USE CASES ─────────────────────────── */
+function UseCasesSection() {
+  const { t } = useLandingT();
+  const cards: LandingKey[] = ["uses.u1.t", "uses.u2.t", "uses.u3.t"];
+  const descs: LandingKey[] = ["uses.u1.d", "uses.u2.d", "uses.u3.d"];
+  const icons: IName[] = ["chart", "calendar", "radar"];
+  return (
+    <section id="use-cases" className="relative section-divider py-14 lg:py-20">
+      <div className="lp-container">
+        <SectionHead
+          title={
+            <>
+              {t("uses.title.a")} <span className="text-accent">{t("uses.title.b")}</span>
+            </>
+          }
+        />
+        <div className="reveal grid gap-4 sm:grid-cols-3">
+          {cards.map((title, i) => (
+            <div key={title} className="use-card">
+              <div className="feat-icon mb-4 h-10 w-10">
+                <Icon n={icons[i]} cls="h-5 w-5" />
+              </div>
+              <h3 className="font-display text-base font-bold text-white">{t(title)}</h3>
+              <p className="mt-2 text-[13px] leading-6 text-slate-400">{t(descs[i])}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────── EXCEL / NOTION ─────────────────────────── */
+function AlternativeSection() {
+  const { t } = useLandingT();
+  const rows: LandingKey[] = ["alt.r1", "alt.r2", "alt.r3", "alt.r4", "alt.r5", "alt.r6"];
+  return (
+    <section id="alternative" className="relative section-divider py-14 lg:py-20">
+      <div className="lp-container">
+        <SectionHead
+          title={
+            <>
+              {t("alt.title.a")} <span className="text-slate-500">{t("alt.title.b")}</span>
+            </>
+          }
+          sub={t("alt.sub")}
+        />
+        <div className="reveal mx-auto max-w-[760px]">
+          <div className="lp-panel px-4 py-5 sm:px-6">
+            <div className="cmp-row" style={{ borderTop: "none" }}>
+              <div />
+              <p className="cmp-col hidden sm:block">{t("alt.h.excel")}</p>
+              <p className="cmp-col hidden sm:block">{t("alt.h.notion")}</p>
+              <p className="cmp-col cmp-tv">{t("alt.h.tv")}</p>
+            </div>
+            <div className="cmp-row">
+              <p className="text-[12.5px] text-slate-200">{t("alt.excel.d")}</p>
+              <p className="cmp-col hidden text-slate-500 sm:block">—</p>
+              <p className="cmp-col hidden text-slate-500 sm:block">~</p>
+              <p className="cmp-col cmp-tv">
+                <Check className="mx-auto h-3.5 w-3.5" />
+              </p>
+            </div>
+            <div className="cmp-row">
+              <p className="text-[12.5px] text-slate-200">{t("alt.notion.d")}</p>
+              <p className="cmp-col hidden text-slate-500 sm:block">~</p>
+              <p className="cmp-col hidden text-slate-500 sm:block">—</p>
+              <p className="cmp-col cmp-tv">
+                <Check className="mx-auto h-3.5 w-3.5" />
+              </p>
+            </div>
+            {rows.map((r, i) => (
+              <div key={r} className="cmp-row">
+                <p className="text-[13px] text-slate-200">{t(r)}</p>
+                <p className="cmp-col hidden sm:block">
+                  {i === 5 ? (
+                    <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
+                  ) : (
+                    <span className="text-slate-600">–</span>
+                  )}
+                </p>
+                <p className="cmp-col hidden sm:block">
+                  {i === 5 ? (
+                    <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
+                  ) : (
+                    <span className="text-slate-600">–</span>
+                  )}
+                </p>
+                <p className="cmp-col cmp-tv">
+                  <Check className="mx-auto h-3.5 w-3.5" />
+                </p>
+              </div>
+            ))}
+            <p className="tv-label mt-3 text-slate-600">{t("alt.tv.d")}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────── NAV ─────────────────────────── */
+const NAV: [string, string][] = [
+  ["nav.problem", "problem"],
+  ["nav.analytics", "analytics"],
+  ["nav.features", "features"],
+  ["pricing.tag", "pricing"],
+  ["faq.tag", "faq"],
+];
 
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
@@ -515,8 +655,6 @@ function LandingPage() {
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
   const { y, pct } = useScroll();
-  const cd = useCountdown();
-  const spot = useSpot();
   useReveal();
 
   const problems = [
@@ -525,27 +663,9 @@ function LandingPage() {
     { n: "compass" as IName, t: t("problem.p3.t"), d: t("problem.p3.d") },
   ];
   const ais = [
-    {
-      n: "brain" as IName,
-      t: t("ai.f1.t"),
-      d: t("ai.f1.d"),
-      c: "text-cyan-300",
-      spark: "0,24 14,22 28,20 42,16 56,18 70,10 84,12 96,6",
-    },
-    {
-      n: "radar" as IName,
-      t: t("ai.f2.t"),
-      d: t("ai.f2.d"),
-      c: "text-violet-300",
-      spark: "0,26 14,20 28,22 42,14 56,16 70,8 84,10 96,4",
-    },
-    {
-      n: "err" as IName,
-      t: t("ai.f3.t"),
-      d: t("ai.f3.d"),
-      c: "text-amber-300",
-      spark: "0,8 14,12 28,10 42,16 56,14 70,20 84,18 96,12",
-    },
+    { n: "brain" as IName, t: t("ai.f1.t"), d: t("ai.f1.d") },
+    { n: "radar" as IName, t: t("ai.f2.t"), d: t("ai.f2.d") },
+    { n: "err" as IName, t: t("ai.f3.t"), d: t("ai.f3.d") },
   ];
   const faqs = [
     { q: t("faq.q1"), a: t("faq.a1") },
@@ -588,104 +708,66 @@ function LandingPage() {
       scrollLockRef.current = false;
     }, 1000);
   };
-  const onHeroMove = (e: RPointerEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
-  };
 
   return (
-    <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white selection:bg-cyan-400 selection:text-[var(--tv-bg)]">
-      <CursorGlow />
+    <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white">
       <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
 
       <main className="relative z-10">
         {/* ── HERO ── */}
-        <section
-          className="relative overflow-hidden pt-[88px] pb-14 lg:pt-[112px] lg:pb-20"
-          onPointerMove={onHeroMove}
-        >
-          <div
-            className="glow-orb glow-orb-cyan"
-            style={{ top: "-10%", right: "-5%", width: "520px", height: "520px" }}
-          />
-          <div
-            className="glow-orb glow-orb-indigo"
-            style={{ bottom: "-10%", left: "-5%", width: "440px", height: "440px" }}
-          />
-
-          <div className="relative mx-auto grid max-w-[1200px] items-center gap-12 px-5 lg:grid-cols-[1.02fr_.98fr] lg:gap-14 lg:px-8">
-            <div className="text-center lg:text-left">
-              <div className="tv-label fade-up inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/[.08] px-4 py-1.5 text-cyan-300">
-                <span className="ping-dot relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />{" "}
-                {t("hero.eyebrow")}
-              </div>
-              <h1 className="fade-up d1 font-display mt-6 text-[clamp(2.5rem,4.8vw,4rem)] font-bold leading-[1.05] tracking-[-0.03em] text-white">
-                {t("hero.h1a")}{" "}
-                <span className="text-accent relative inline-block">
-                  {t("hero.h1b")}
-                  <svg
-                    className="scribble"
-                    viewBox="0 0 300 20"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
+        <section className="relative overflow-hidden pt-[96px] pb-16 lg:pt-[128px] lg:pb-24">
+          <div className="lp-container">
+            <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
+              <div className="text-center lg:text-left">
+                <h1 className="fade-up font-display text-[clamp(2.6rem,5.2vw,4.4rem)] font-semibold leading-[1.04] tracking-[-0.035em] text-white">
+                  {t("hero.h1a")} <span className="text-accent">{t("hero.h1b")}</span>
+                </h1>
+                <p className="fade-up d2 mt-6 max-w-[540px] text-[17px] leading-7 text-slate-400">
+                  {t("hero.sub")}
+                </p>
+                <div className="fade-up d3 mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
+                  <button
+                    onClick={() => open("signup", t("nav.cta.plan"))}
+                    className="btn-primary px-7 py-3 text-base"
                   >
-                    <path
-                      d="M4 14C40 6 70 18 105 12S190 4 226 12S280 16 296 8"
-                      fill="none"
-                      stroke="var(--tv-highlight)"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-              </h1>
-              <p className="fade-up d2 mt-5 text-lg leading-7 text-slate-400 max-w-[560px] mx-auto lg:mx-0">
-                {t("hero.sub")}
-              </p>
-              <div className="fade-up d3 mt-7 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
-                <button
-                  onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="btn-primary px-7 py-3 text-base"
-                >
-                  {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                </button>
-                <a
-                  href="/demo-site"
-                  className="group -my-2 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-cyan-300"
-                >
-                  <PlayCircle className="w-4 h-4" />
-                  {t("hero.demo")}
-                </a>
+                    {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
+                  </button>
+                  <a
+                    href="/demo-site"
+                    className="group -my-2 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-white"
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    {t("hero.demo")}
+                  </a>
+                </div>
+                <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 lg:justify-start">
+                  {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
+                    <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
+                      <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
+                      {s}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="fade-up d4 mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 lg:justify-start">
-                {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
-                  <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
-                    <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
-                    {s}
-                  </span>
-                ))}
+
+              <div className="fade-up d3 relative mt-6 w-full max-w-[520px] mx-auto pb-8 lg:mx-0 lg:ml-auto lg:mt-0">
+                <HeroProductVisual />
               </div>
-              <p className="fade-up d4 mt-5 flex items-start gap-2.5 text-[13px] leading-5 text-slate-500 max-w-[540px] mx-auto lg:mx-0">
-                <Icon n="lock" cls="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
-                <span>{t("hero.google")}</span>
-              </p>
-            </div>
-            <div className="fade-up d2 w-full max-w-[460px] mx-auto lg:mx-0 lg:ml-auto mt-4">
-              <HeroProductVisual />
             </div>
           </div>
+        </section>
 
-          <div className="relative mx-auto mt-14 max-w-[1200px] px-5 lg:mt-16 lg:px-8">
+        {/* ── PLATEFORMES ── */}
+        <section className="relative pb-14 lg:pb-20">
+          <div className="lp-container">
             <PlatformsStrip />
           </div>
         </section>
 
         {/* ── PROBLÈME ── */}
         <section id="problem" className="relative section-divider py-14 lg:py-20">
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="lp-container">
             <SectionHead
-              tag={t("problem.tag")}
               title={
                 <>
                   {t("problem.title.a")}{" "}
@@ -695,14 +777,9 @@ function LandingPage() {
               sub={t("problem.sub")}
             />
             <div className="grid gap-4 sm:grid-cols-3">
-              {problems.map((p, i) => (
-                <article
-                  key={p.t}
-                  onPointerMove={spot}
-                  className="reveal spot card-premium p-6"
-                  style={{ transitionDelay: `${i * 60}ms` }}
-                >
-                  <div className="feat-icon h-11 w-11 mb-4">
+              {problems.map((p) => (
+                <article key={p.t} className="reveal card-premium p-6">
+                  <div className="feat-icon mb-4 h-11 w-11">
                     <Icon n={p.n} cls="h-5 w-5" />
                   </div>
                   <h3 className="font-display text-base font-bold text-white">{p.t}</h3>
@@ -713,21 +790,16 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── JOURNEY ── */}
-        <JourneySection />
+        {/* ── CORE VALUE — 4 temps ── */}
+        <CoreValueSection />
 
-        {/* ── SECTION IA ── */}
-        <section id="ai" className="relative section-divider overflow-hidden py-14 lg:py-20">
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(ellipse 55% 45% at 50% 30%,rgba(34,211,238,.08),transparent 60%)",
-            }}
-          />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+        {/* ── ANALYTICS ── */}
+        <AnalyticsSection />
+
+        {/* ── AI / JARVIS ── */}
+        <section id="ai" className="relative section-divider py-14 lg:py-20">
+          <div className="lp-container">
             <SectionHead
-              tag={t("ai.tag")}
               title={
                 <>
                   {t("ai.title.a")} <span className="text-accent">{t("ai.title.b")}</span>
@@ -735,7 +807,7 @@ function LandingPage() {
               }
               sub={t("ai.sub")}
             />
-            <div className="reveal grid items-center gap-10 lg:grid-cols-2 lg:gap-14 mb-12">
+            <div className="reveal mb-12 grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
               <AIConversation />
               <div>
                 <h3 className="font-display text-2xl font-bold text-white leading-tight mb-4">
@@ -747,7 +819,7 @@ function LandingPage() {
                 <div className="space-y-3">
                   {[t("ai.b1"), t("ai.b2"), t("ai.b3")].map((s) => (
                     <div key={s} className="flex items-center gap-3 text-[15px] text-slate-300">
-                      <span className="grid h-5.5 w-5.5 shrink-0 place-items-center rounded-full bg-cyan-400/12 text-cyan-300">
+                      <span className="grid h-5.5 w-5.5 shrink-0 place-items-center rounded-full bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]">
                         <Icon n="check" cls="h-3.5 w-3.5" />
                       </span>
                       {s}
@@ -757,34 +829,26 @@ function LandingPage() {
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              {ais.map((a, i) => (
-                <article
-                  key={a.t}
-                  onPointerMove={spot}
-                  className="ai-card spot reveal p-5"
-                  style={{ transitionDelay: `${i * 70}ms` }}
-                >
-                  <div
-                    className={`grid h-11 w-11 place-items-center rounded-xl border border-white/[.1] bg-white/[.04] ${a.c} mb-4`}
-                  >
+              {ais.map((a) => (
+                <article key={a.t} className="ai-card reveal p-5">
+                  <div className="feat-icon mb-4 grid h-11 w-11 place-items-center rounded-xl text-[var(--tv-highlight)]">
                     <Icon n={a.n} cls="h-5.5 w-5.5" />
                   </div>
                   <h3 className="font-display text-base font-bold text-white">{a.t}</h3>
                   <p className="mt-2 text-[13px] leading-6 text-slate-400">{a.d}</p>
-                  <div className="mt-3">
-                    <Sparkline points={a.spark} up />
-                  </div>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── FEATURES ── */}
+        {/* ── MISTAKES · PSYCHOLOGIE ── */}
+        <MistakesSection />
+
+        {/* ── PRODUIT EN PROFONDEUR ── */}
         <section id="features" className="relative section-divider py-14 lg:py-20">
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="lp-container">
             <SectionHead
-              tag={t("features.tag")}
               title={
                 <>
                   {t("features.title.a")}{" "}
@@ -809,9 +873,15 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── QUI FAIT ÇA ── */}
+        {/* ── USE CASES ── */}
+        <UseCasesSection />
+
+        {/* ── EXCEL / NOTION ── */}
+        <AlternativeSection />
+
+        {/* ── POURQUOI ÇA, ET PAR QUI ── */}
         <section className="relative section-divider py-14 lg:py-20">
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="lp-container">
             <TraderProof onStart={() => open("signup", t("nav.cta.plan"))} />
             <div className="mt-8">
               <TrustStrip />
@@ -821,13 +891,8 @@ function LandingPage() {
 
         {/* ── PRICING ── */}
         <section id="pricing" className="relative section-divider py-14 lg:py-20">
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead tag={t("pricing.tag")} title={t("pricing.title")} sub={t("pricing.sub")} />
-
-            {/* La grille tarifaire — le MÊME composant que dans l'application.
-                Ce que le visiteur compare ici est exactement ce qu'il retrouve
-                dans sa page d'abonnement, aux mêmes prix : il n'y a plus qu'un
-                seul endroit où une offre est décrite. */}
+          <div className="lp-container">
+            <SectionHead title={t("pricing.title")} sub={t("pricing.sub")} />
             <div className="reveal">
               <PricingPlans
                 lang={lang}
@@ -835,7 +900,6 @@ function LandingPage() {
                 onFree={() => open("signup", "Free")}
               />
             </div>
-
             <div className="reveal mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
               {[
                 ["shield", "pricing.trust1"],
@@ -846,7 +910,7 @@ function LandingPage() {
                   key={s}
                   className="flex items-center gap-2 text-sm font-medium text-slate-500"
                 >
-                  <Icon n={ic as IName} cls="h-4 w-4 text-emerald-400" />
+                  <Icon n={ic as IName} cls="h-4 w-4 text-[var(--tv-chart-green)]" />
                   {t(s)}
                 </span>
               ))}
@@ -856,7 +920,7 @@ function LandingPage() {
 
         {/* ── FAQ ── */}
         <section id="faq" className="relative section-divider py-14 lg:py-20">
-          <div className="relative mx-auto max-w-[760px] px-5 lg:px-8">
+          <div className="mx-auto w-full max-w-[760px] px-5 lg:px-8">
             {/* `FAQPage` — construit à partir du MÊME tableau `faqs` que
                 l'accordéon rendu juste en dessous, donc incapable d'en
                 diverger. C'est le contenu le plus directement extractible du
@@ -872,7 +936,7 @@ function LandingPage() {
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: faqPageJsonLd(faqs) }}
             />
-            <SectionHead tag={t("faq.tag")} title={t("faq.title")} />
+            <SectionHead title={t("faq.title")} />
             <div className="reveal border-t border-white/[.08]">
               {faqs.map(({ q, a }, i) => {
                 const o = faq === i;
@@ -889,7 +953,7 @@ function LandingPage() {
                         {q}
                       </span>
                       <span
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-cyan-400/40 bg-cyan-400/10 text-cyan-300" : "border-white/[.12] text-slate-500"}`}
+                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]" : "border-white/[.12] text-slate-500"}`}
                       >
                         <Icon n="chevron" cls="h-4 w-4" />
                       </span>
@@ -907,36 +971,28 @@ function LandingPage() {
         </section>
 
         {/* ── CTA FINAL ── */}
-        <section className="relative overflow-hidden section-divider py-20 lg:py-28">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_110%,rgba(34,211,238,.14),transparent_60%)]" />
-          <div className="reveal relative mx-auto max-w-[720px] px-5 text-center">
-            {cd && (
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/30 bg-amber-400/[.1] px-5 py-2 text-[12px] font-bold text-amber-300 mb-7">
-                <span className="ping-dot relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" />
-                {t("cta.countdown")} {cd}
-              </div>
-            )}
-            <h2 className="font-display text-[clamp(2rem,4.4vw,3.2rem)] font-bold tracking-[-0.03em] text-white leading-[1.08] mb-6">
-              {t("cta.title.a")}
-              <br />
-              <span className="text-accent">{t("cta.title.b")}</span>
-            </h2>
-            <p className="text-lg text-slate-400 leading-7 max-w-[540px] mx-auto mb-9">
-              {t("cta.sub")}
-            </p>
-            <button
-              onClick={() => open("signup", t("nav.cta.plan"))}
-              className="btn-primary px-8 py-3 text-lg"
-            >
-              {t("cta.btn")} <Icon n="arrow" cls="h-5 w-5" />
-            </button>
-            <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
+        <section className="relative section-divider py-20 lg:py-28">
+          <div className="lp-container">
+            <div className="reveal mx-auto max-w-[680px] text-center">
+              <h2 className="font-display text-[clamp(2rem,4.4vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
+                {t("cta.title.a")}
+                <br />
+                <span className="text-accent">{t("cta.title.b")}</span>
+              </h2>
+              <button
+                onClick={() => open("signup", t("nav.cta.plan"))}
+                className="btn-primary mt-9 px-8 py-3 text-lg"
+              >
+                {t("cta.buttonShort")} <Icon n="arrow" cls="h-5 w-5" />
+              </button>
+              <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
+            </div>
           </div>
         </section>
 
         {/* ── FOOTER ── */}
         <footer className="relative section-divider py-12">
-          <div className="mx-auto max-w-[1200px] px-5 lg:px-8">
+          <div className="lp-container">
             <div className="grid gap-8 lg:grid-cols-4">
               <div className="lg:col-span-2">
                 <Logo />

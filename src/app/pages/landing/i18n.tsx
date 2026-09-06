@@ -226,6 +226,8 @@ const M: Record<string, Msg> = {
   "nav.resources": { en: "Resources", fr: "Ressources" },
   "nav.problem": { en: "Problem", fr: "Problème" },
   "nav.features": { en: "Features", fr: "Fonctionnalités" },
+  "nav.analytics": { en: "Analytics", fr: "Analytics" },
+  "nav.alternative": { en: "Excel vs Notion", fr: "Excel vs Notion" },
   "nav.signin": { en: "Sign in", fr: "Se connecter" },
   "nav.cta": { en: "Start free", fr: "Commencer gratuitement" },
   "nav.cta.plan": { en: "Start free", fr: "Commencer gratuitement" },
@@ -262,22 +264,145 @@ const M: Record<string, Msg> = {
     en: "TradeVault · The AI coach for traders",
     fr: "TradeVault · Le coach IA des traders",
   },
-  "hero.h1a": { en: "Trade better.", fr: "Trade better." },
-  "hero.h1b": { en: "Understand why.", fr: "Understand why." },
+  "hero.h1a": { en: "Your trades already contain", fr: "Tes trades contiennent déjà" },
+  "hero.h1b": { en: "the answer.", fr: "la réponse." },
   "hero.sub": {
-    en: "TradeVault reads your trades, spots the mistakes you keep repeating, and tells you exactly what to fix. Built for intraday and futures traders.",
-    fr: "TradeVault lit tes trades, détecte les erreurs que tu répètes et te dit exactement quoi corriger. Conçu pour les traders intraday et futures.",
+    en: "TradeVault is an AI trading journal that reads your history, surfaces the patterns behind your results and turns raw data into a clear picture of your trading — so your next decision beats your last.",
+    fr: "TradeVault est un journal de trading à coach IA qui lit ton historique, fait remonter les tendances derrière tes résultats et transforme tes données brutes en une image claire de ton trading — pour que ta prochaine décision batte la précédente.",
   },
-  "hero.cta": { en: "Start free", fr: "Commencer gratuitement" },
+  "hero.cta": { en: "Start for free", fr: "Commencer gratuitement" },
   "hero.demo": { en: "or watch a 2-min demo", fr: "ou regarde une démo de 2 min" },
   "hero.t1": { en: "No credit card", fr: "Sans carte bancaire" },
-  "hero.t2": { en: "Cancel in 1 click", fr: "Annulation en 1 clic" },
-  "hero.t3": { en: "Set up in 2 min", fr: "Setup en 2 min" },
+  "hero.t2": { en: "Set up in 2 minutes", fr: "Prêt en 2 minutes" },
+  "hero.t3": { en: "Cancel anytime", fr: "Sans engagement" },
   "hero.google": {
     en: "Google sign-in is only used to create your TradeVault account securely and sync your data across devices.",
     fr: "La connexion Google sert uniquement à créer ton compte TradeVault en toute sécurité et à synchroniser tes données sur tous tes appareils.",
   },
   "hero.trust": { en: "Verified reviews on", fr: "Avis vérifiés sur" },
+
+  /* analytics */
+  "analytics.title.a": { en: "Raw data in.", fr: "Données brutes in." },
+  "analytics.title.b": { en: "Understanding out.", fr: "Compréhension out." },
+  "analytics.sub": {
+    en: "Twenty-plus metrics computed on your real history — an equity curve that tells the truth, drawdown you can measure, expectancy you can trust.",
+    fr: "Plus de vingt métriques calculées sur ton historique réel — une courbe d'equity qui dit la vérité, un drawdown mesurable, une expectancy fiable.",
+  },
+  "analytics.c1.t": { en: "Equity curve", fr: "Courbe d'equity" },
+  "analytics.c1.d": {
+    en: "Your account trajectory, day by day.",
+    fr: "La trajectoire de ton compte, jour après jour.",
+  },
+  "analytics.c2.t": { en: "Drawdown & recovery", fr: "Drawdown & récupération" },
+  "analytics.c2.d": {
+    en: "How deep a losing run goes, and how long to come back.",
+    fr: "Jusqu'où va une série perdante, et le temps de revenir.",
+  },
+  "analytics.c3.t": { en: "Expectancy", fr: "Expectancy" },
+  "analytics.c3.d": {
+    en: "What each trade is really worth, in R.",
+    fr: "Ce que vaut réellement chaque trade, en R.",
+  },
+  "analytics.c4.t": { en: "Win rate by hour, day & setup", fr: "Win rate par heure, jour & setup" },
+  "analytics.c4.d": {
+    en: "Where your edge lives — and where it dies.",
+    fr: "Où vit ton edge — et où il meurt.",
+  },
+
+  /* mistakes / psychology */
+  "mistakes.title.a": {
+    en: "It's not about your win rate.",
+    fr: "Ce n'est pas ton taux de réussite.",
+  },
+  "mistakes.title.b": { en: "It's about what costs you.", fr: "C'est ce qui te coûte." },
+  "mistakes.sub": {
+    en: "Your history can answer the questions you haven't asked it yet.",
+    fr: "Ton historique peut répondre aux questions que tu ne lui as pas encore posées.",
+  },
+  "mistakes.q1": {
+    en: "When do I actually trade well?",
+    fr: "Quand est-ce que je trade vraiment bien ?",
+  },
+  "mistakes.q2": {
+    en: "Which mistake costs me the most?",
+    fr: "Quelle erreur me coûte le plus cher ?",
+  },
+  "mistakes.q3": { en: "What pattern keeps repeating?", fr: "Quel schéma ne cesse de revenir ?" },
+  "mistakes.q4": {
+    en: "Am I overtrading after a loss?",
+    fr: "Est-ce que je surtrade après une perte ?",
+  },
+
+  /* use cases */
+  "uses.title.a": { en: "Built for the way", fr: "Conçu pour la façon dont" },
+  "uses.title.b": { en: "you actually trade.", fr: "tu trades réellement." },
+  "uses.u1.t": { en: "Futures traders", fr: "Traders futures" },
+  "uses.u1.d": {
+    en: "Performance per contract, R-multiples, drawdown you can measure in ticks.",
+    fr: "Performance par contrat, R-multiples, drawdown mesurable en ticks.",
+  },
+  "uses.u2.t": { en: "Day traders", fr: "Day traders" },
+  "uses.u2.d": {
+    en: "A daily review with Jarvis, so every session ends with a verdict.",
+    fr: "Une revue quotidienne avec Jarvis, pour que chaque séance se termine par un verdict.",
+  },
+  "uses.u3.t": { en: "ICT traders", fr: "Traders ICT" },
+  "uses.u3.d": {
+    en: "Setup, confluences and the patterns you replay every day — tracked as data.",
+    fr: "Setup, confluences et les patterns que tu rejoues chaque jour — suivis en données.",
+  },
+
+  /* excel / notion */
+  "alt.title.a": {
+    en: "Spreadsheets gave you freedom.",
+    fr: "Les tableurs t'ont donné la liberté.",
+  },
+  "alt.title.b": {
+    en: "They also gave you a full-time job.",
+    fr: "Ils t'ont aussi donné un travail à temps plein.",
+  },
+  "alt.sub": {
+    en: "The short version of it.",
+    fr: "La version courte.",
+  },
+  "alt.h.excel": { en: "Excel", fr: "Excel" },
+  "alt.h.notion": { en: "Notion", fr: "Notion" },
+  "alt.h.tv": { en: "TradeVault", fr: "TradeVault" },
+  "alt.excel.d": { en: "Flexible, but manual.", fr: "Flexible, mais manuel." },
+  "alt.notion.d": {
+    en: "Customizable, but not built for trading.",
+    fr: "Personnalisable, mais pas conçu pour le trading.",
+  },
+  "alt.tv.d": {
+    en: "Built around the trading workflow.",
+    fr: "Construit autour du flux de travail du trader.",
+  },
+  "alt.r1": { en: "A trade logged in 45 seconds", fr: "Un trade journalisé en 45 secondes" },
+  "alt.r2": {
+    en: "Equity curve & drawdown out of the box",
+    fr: "Courbe d'equity & drawdown prêts à l'emploi",
+  },
+  "alt.r3": { en: "Recurring-mistake analysis", fr: "Analyse des erreurs récurrentes" },
+  "alt.r4": {
+    en: "Jarvis, your AI coach, on your data",
+    fr: "Jarvis, ton coach IA, sur tes données",
+  },
+  "alt.r5": {
+    en: "R-multiples, expectancy, seasonality",
+    fr: "R-multiples, expectancy, saisonnalité",
+  },
+  "alt.r6": { en: "Your data, exportable anytime", fr: "Tes données, exportables à tout moment" },
+
+  /* cta final */
+  "cta.title.a": {
+    en: "Your trades already contain the data.",
+    fr: "Tes trades contiennent déjà les données.",
+  },
+  "cta.title.b": {
+    en: "TradeVault helps you understand it.",
+    fr: "TradeVault t'aide à les comprendre.",
+  },
+  "cta.buttonShort": { en: "Start for free", fr: "Commencer gratuitement" },
 
   /* hero product visual */
   "hero.eq": { en: "Equity curve", fr: "Courbe de capital" },
@@ -661,8 +786,6 @@ const M: Record<string, Msg> = {
 
   /* final cta */
   "cta.countdown": { en: "Markets open in", fr: "Ouverture des marchés dans" },
-  "cta.title.a": { en: "Your next trade deserves", fr: "Ton prochain trade mérite" },
-  "cta.title.b": { en: "a real coach.", fr: "un vrai coach." },
   "cta.sub": {
     en: "TradeVault doesn't just record your trades. It understands them, spots your patterns and tells you what to fix.",
     fr: "TradeVault ne se contente pas d'enregistrer tes trades. Il les comprend, détecte tes schémas et te dit quoi corriger.",

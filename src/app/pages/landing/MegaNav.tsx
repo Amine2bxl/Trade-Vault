@@ -19,9 +19,13 @@ interface MegaNavProps {
   pct: number;
 }
 
-const LINKS: { key: "nav.features" | "nav.problem" | "pricing.tag" | "faq.tag"; id: string }[] = [
+const LINKS: {
+  key: "nav.features" | "nav.problem" | "nav.analytics" | "pricing.tag" | "faq.tag";
+  id: string;
+}[] = [
   { key: "nav.features", id: "features" },
   { key: "nav.problem", id: "problem" },
+  { key: "nav.analytics", id: "analytics" },
   { key: "pricing.tag", id: "pricing" },
   { key: "faq.tag", id: "faq" },
 ];
@@ -57,7 +61,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
     <header
       className={`fixed inset-x-0 top-0 z-[var(--tv-z-nav)] border-b transition-colors duration-300 ${
         y > 10
-          ? "border-white/[.07] bg-[var(--tv-bg)]/90 backdrop-blur-[12px]"
+          ? "border-[var(--tv-border)] bg-[var(--tv-bg)]/90 backdrop-blur-[12px]"
           : "border-transparent bg-transparent"
       }`}
       style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
@@ -99,14 +103,14 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
               />
             </button>
             {openMenu && (
-              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-white/[.08] bg-[var(--tv-plate-1)] p-1.5 shadow-[0_20px_50px_rgba(0,0,0,.45)]">
+              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-1.5 shadow-[var(--tv-elev-3)]">
                 {productItems.map((item) => (
                   <button
                     key={item.title}
                     onClick={() => goTo(item.id)}
                     className="flex w-full gap-3 items-start rounded-lg p-2.5 text-left hover:bg-white/[.04] transition-colors"
                   >
-                    <div className="h-9 w-9 shrink-0 rounded-lg border border-white/[.06] bg-white/[.03] flex items-center justify-center text-slate-400">
+                    <div className="h-9 w-9 shrink-0 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] flex items-center justify-center text-[var(--tv-highlight)]">
                       <item.icon className="w-4.5 h-4.5" />
                     </div>
                     <div className="min-w-0">
@@ -137,13 +141,15 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
         {/* Right actions */}
         <div className="flex items-center gap-1.5">
           {/* Language toggle */}
-          <div className="hidden sm:flex items-center rounded-lg border border-white/[.08] p-0.5">
+          <div className="hidden sm:flex items-center rounded-lg border border-[var(--tv-border)] p-0.5">
             {(["en", "fr"] as LandingLang[]).map((l) => (
               <button
                 key={l}
                 onClick={() => setLang(l)}
                 className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-[11px] font-semibold uppercase transition-colors ${
-                  lang === l ? "bg-white/[.08] text-white" : "text-slate-500 hover:text-slate-300"
+                  lang === l
+                    ? "bg-[rgb(var(--tv-accent-rgb)/0.14)] text-white"
+                    : "text-slate-500 hover:text-slate-300"
                 }`}
               >
                 {l}
@@ -165,7 +171,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
           </button>
           <button
             onClick={() => setMobile((v) => !v)}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-white/[.08] text-slate-200 lg:hidden"
+            className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--tv-border)] text-slate-200 lg:hidden"
             aria-label="Menu"
           >
             {mobile ? (
@@ -191,7 +197,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
 
       {/* Mobile menu */}
       {mobile && (
-        <div className="lg:hidden border-t border-white/[.07] bg-[#070f1a] px-5 py-4">
+        <div className="lg:hidden border-t border-[var(--tv-border)] bg-[var(--tv-bg)] px-5 py-4">
           <div className="flex flex-col">
             <p className="tv-label text-slate-600 mb-2 px-1">{t("nav.product")}</p>
             {productItems.map((item) => (
@@ -215,8 +221,8 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
                   onClick={() => setLang(l)}
                   className={`flex-1 rounded-lg border py-2 text-[12px] font-semibold uppercase transition-colors ${
                     lang === l
-                      ? "border-cyan-400/30 bg-cyan-400/[.08] text-cyan-300"
-                      : "border-white/[.08] text-slate-400"
+                      ? "border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.08)] text-[var(--tv-highlight)]"
+                      : "border-[var(--tv-border)] text-slate-400"
                   }`}
                 >
                   {l}

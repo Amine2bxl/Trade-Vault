@@ -120,7 +120,9 @@ export function FeaturesBento() {
                 strokeDashoffset={326 - 326 * 0.78}
               />
             </svg>
-            <span className="absolute font-display text-2xl font-bold text-cyan-300">78</span>
+            <span className="absolute font-display text-2xl font-bold tabular-nums text-white">
+              78
+            </span>
           </div>
           <div className="mt-3 text-[11px] font-semibold text-emerald-400">
             {t("bento.edge.ready")}
@@ -145,7 +147,7 @@ export function FeaturesBento() {
                 className="rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2.5 text-center"
               >
                 <div className="tv-label text-slate-500">{s.l}</div>
-                <div className="mt-0.5 tv-figure text-sm text-cyan-300">{s.v}</div>
+                <div className="mt-0.5 tv-figure text-sm tabular-nums text-white">{s.v}</div>
               </div>
             ))}
           </div>

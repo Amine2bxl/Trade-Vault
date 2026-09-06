@@ -358,12 +358,32 @@
      n'est pas noire. */
   --tv-bg-rgb: 7 9 10;
   --tv-text: #e6e8ea;
-  /* Graphite — gris neutre (H ~210, chroma ~0). L'accent du thème par défaut
-     est une encre, pas une diode : il ne porte le sens que par la valeur. */
-  --tv-primary-h: 210;
-  --tv-primary-c: 0.02;
-  --tv-secondary-h: 215;
-  --tv-secondary-c: 0.02;
+  /* Graphite — gris neutre. L'accent du thème par défaut est une encre, pas une
+     diode : il ne porte le sens que par la valeur.
+     ────────────────────────────────────────────────────────────────────────
+     CES QUATRE NOMBRES SONT CEUX QUE `computeThemeVars()` CALCULE, PAS UNE
+     APPROXIMATION À L'ŒIL.
+
+     `AGENTS.md` pose la règle : « the :root palette in styles.css is the
+     SSR/no-JS fallback and must match the default theme ». Elle ne l'était
+     pas. Ce bloc annonçait H 210 / C 0.02 — des valeurs plausibles pour un
+     gris — alors que le moteur de thème, nourri des ancres réelles du graphite
+     (#94a3b8 / #64748b), produit H 256.8 / C 0.350 au moment de l'hydratation.
+
+     Le chroma n'est PAS une saturation absolue ici : `computeThemeVars` le
+     normalise contre 0.14 puis le borne à [0.35, 1.3], et chaque `--color-*`
+     le remultiplie par son propre coefficient. Un `0.02` écrit à la main
+     revient donc à éteindre l'accent au premier rendu, puis à le rallumer
+     d'un coup — un saut de teinte ET de saturation sur toute la page, à chaque
+     chargement à froid, avant que JavaScript ne prenne la main.
+
+     Vérifié par le calcul sur `computeThemeVars(graphite)`. Si les ancres du
+     thème changent, relancer le calcul plutôt que d'ajuster ces nombres à
+     l'estime. */
+  --tv-primary-h: 256.8;
+  --tv-primary-c: 0.35;
+  --tv-secondary-h: 257.4;
+  --tv-secondary-c: 0.35;
   --tv-accent: #94a3b8;
   --tv-accent-2: #64748b;
   --tv-highlight: #cbd5e1;

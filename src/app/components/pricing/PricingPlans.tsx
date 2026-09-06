@@ -176,7 +176,7 @@ function PlanColumn({
       className={cn(
         "relative flex flex-col rounded-3xl border p-6 transition",
         isPro
-          ? "border-cyan-400/40 bg-[linear-gradient(165deg,rgba(16,72,102,.6),rgba(7,14,24,.94)_62%)] lg:-my-4 lg:py-12 shadow-[0_24px_80px_-32px_rgba(34,211,238,.35)]"
+          ? "border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[var(--tv-plate-2)] lg:-my-4 lg:py-12 shadow-[var(--tv-elev-3)]"
           : "border-white/[0.07] bg-white/[0.015]",
         isFree && "lg:bg-transparent lg:opacity-80",
       )}
@@ -184,7 +184,7 @@ function PlanColumn({
       {isPro && (
         <>
           {/* Liseré haut, le seul « chrome » — il oriente l'œil vers Pro. */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--tv-accent)]/80 to-transparent" />
           <span className="tv-label absolute right-6 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-400 px-2.5 py-1 text-[#041018]">
             <Sparkles className="h-3 w-3" />
             {fr ? "Recommandé" : "Recommended"}
@@ -194,11 +194,11 @@ function PlanColumn({
 
       {/* Le nom — aucune prière, juste ce qu'on achète. */}
       <div className="flex items-center gap-2">
-        <Icon className={cn("h-4 w-4", isPro ? "text-cyan-300" : "text-slate-500")} />
+        <Icon className={cn("h-4 w-4", isPro ? "text-[var(--tv-highlight)]" : "text-slate-500")} />
         <span
           className={cn(
             "tv-label inline-flex items-center",
-            isPro ? "text-cyan-300" : "text-slate-400",
+            isPro ? "text-[var(--tv-highlight)]" : "text-slate-400",
           )}
         >
           {tr(tier.name)}
@@ -239,7 +239,7 @@ function PlanColumn({
       <p
         className={cn(
           "mt-4 text-[13.5px] font-medium leading-5",
-          isPro ? "text-cyan-100" : "text-slate-300",
+          isPro ? "text-white" : "text-slate-300",
         )}
       >
         {tr(tier.tagline)}
@@ -314,17 +314,15 @@ function PlanColumn({
             {proHighlights.map((h) => (
               <div
                 key={h.en}
-                className="flex items-start gap-2.5 rounded-xl border border-cyan-400/15 bg-cyan-400/[0.06] px-3.5 py-2.5"
+                className="flex items-start gap-2.5 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.22)] bg-[rgb(var(--tv-accent-rgb)/0.06)] px-3.5 py-2.5"
               >
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-                <span className="text-[13px] font-semibold leading-snug text-cyan-50">
-                  {h[lang]}
-                </span>
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
+                <span className="text-[13px] font-semibold leading-snug text-white">{h[lang]}</span>
               </div>
             ))}
             {/* Les 9 pages Premium — la liste concrète de ce qui se débloque. */}
             <div className="pt-1">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[.12em] text-cyan-300/90">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[.12em] text-[var(--tv-highlight)]/90">
                 {fr
                   ? `${pagesOfTier("pro").length} pages Premium`
                   : `${pagesOfTier("pro").length} Premium pages`}
@@ -354,7 +352,7 @@ function PlanColumn({
         ) : (
           <div className="space-y-2.5">
             {tier.id === "elite" && (
-              <p className="tv-label text-cyan-300/90">
+              <p className="tv-label text-[var(--tv-highlight)]/90">
                 {fr ? "Tout Pro, mais sans limites, plus :" : "All of Pro without limits, plus:"}
               </p>
             )}

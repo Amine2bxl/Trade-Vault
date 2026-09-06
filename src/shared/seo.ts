@@ -87,7 +87,7 @@ export function absoluteUrl(path = "/"): string {
  * never drift apart into three different claims about what the product is.
  */
 export const PRODUCT_DESCRIPTION_EN =
-  "TradeVault is an AI-powered trading journal and trading coach that helps traders analyze performance, follow their trading plan and improve discipline.";
+  "TradeVault is an AI trading journal and trading coach that turns your trading history into clear performance analytics — equity curve, drawdown, expectancy, recurring mistakes — so you understand and improve your own trading.";
 
 /** L'étiquette BCP-47 de la langue SERVIE. Cinquième déclaration de langue du
  *  document, après `<html lang>`, le corps rendu, le titre et `og:locale` —
@@ -102,7 +102,8 @@ export const SITE_LOCALE = SSR_LANG === "fr" ? "fr-FR" : "en-US";
  * application unambiguously under the same name as the consent screen. Machine-
  * readable Organization + SoftwareApplication nodes state that outright instead
  * of leaving it to be inferred from marketing copy, and the `url` fields tie the
- * brand to the domain being verified.
+ * brand to the domain being verified. A SoftwareApplication node also lets
+ * answer engines (GEO) describe the product from structured facts.
  *
  * ── CE GRAPHE NE DOIT DÉCRIRE QUE CE QUI EST VISIBLE ────────────────────────
  *
@@ -110,7 +111,9 @@ export const SITE_LOCALE = SSR_LANG === "fr" ? "fr-FR" : "en-US";
  * ceci ». Trois règles en découlent, et elles ont chacune corrigé un défaut
  * réel ici :
  *
- *   • `inLanguage` suit `SSR_LANG`. Il valait `fr-FR` en dur.
+ *   • `inLanguage` suit `SSR_LANG`. Il valait `fr-FR` en dur — corrigé sur
+ *     `main` en parallèle ; `SITE_LOCALE` nomme simplement la même expression
+ *     pour qu'elle ne soit plus recopiée à deux endroits.
  *   • Les prix sortent du CATALOGUE (`domain/plans`), pas d'une constante
  *     recopiée. Le graphe annonçait `price: "0"` et une vague « offre Premium
  *     optionnelle » pendant que la grille tarifaire de la page affichait trois
@@ -157,6 +160,7 @@ export function structuredData(): string {
         "@id": `${SITE_URL}/#website`,
         name: SITE_NAME,
         url: `${SITE_URL}/`,
+        // Aligné sur `SSR_LANG` (english default) — la langue du document servi.
         inLanguage: SITE_LOCALE,
         publisher: { "@id": `${SITE_URL}/#organization` },
       },
@@ -169,9 +173,12 @@ export function structuredData(): string {
         applicationSubCategory: "Trading journal",
         operatingSystem: "Web",
         description: PRODUCT_DESCRIPTION_EN,
+        // L'aperçu 1200×630, pas l'icône carrée : c'est la même image que celle
+        // que servent `og:image` et `twitter:image`, donc une seule vérité sur
+        // « à quoi ressemble ce produit ».
         image: DEFAULT_OG_IMAGE,
         inLanguage: ["en", "fr"],
-        publisher: { "@id": `${SITE_URL}/#organization` },
+        author: { "@id": `${SITE_URL}/#organization` },
         offers: {
           "@type": "AggregateOffer",
           priceCurrency: "EUR",
