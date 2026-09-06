@@ -1,28 +1,20 @@
 import { useState } from "react";
-import {
-  Home,
-  Plus,
-  History,
-  Pin,
-  PinOff,
-  Pencil,
-  Check,
-  X,
-  Trash2,
-  CheckCheck,
-} from "lucide-react";
+import { Plus, History, Pin, PinOff, Pencil, Check, X, Trash2, CheckCheck } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { cn } from "../../../utils/cn";
 import AccountSwitcher from "../../AccountSwitcher";
 import type { ConversationMeta } from "../conversations";
 
 /**
- * JarvisSidebar — la navigation du cockpit, volontairement MINIMALE.
+ * JarvisSidebar — LA COLONNE DES CONVERSATIONS, et rien d'autre.
  *
- * Trois entrées seulement : Accueil, Nouvelle conversation, Historique.
- * L'historique regroupe les conversations (épinglées en tête) avec des actions
- * au survol : épingler, renommer, supprimer. Plus d'onglets superflus — Jarvis
- * se pilote comme Atlas, pas comme un menu de settings.
+ * Elle portait aussi « Accueil ». Depuis que la fenêtre a une navigation
+ * nommée dans sa bande de tête (Accueil · Conversation · Réglages), cette
+ * entrée était le même geste offert à deux endroits — et deux chemins vers un
+ * même écran font douter qu'ils y mènent tous les deux. La colonne garde ce
+ * qui lui appartient en propre : ouvrir une NOUVELLE conversation, et
+ * retrouver les anciennes (épinglées en tête, avec renommer / épingler /
+ * supprimer au survol).
  */
 
 interface JarvisSidebarProps {
@@ -33,7 +25,6 @@ interface JarvisSidebarProps {
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, title: string) => void;
   onTogglePin: (id: string) => void;
-  onOpenHome: () => void;
 }
 
 export default function JarvisSidebar({
@@ -44,7 +35,6 @@ export default function JarvisSidebar({
   onDeleteConversation,
   onRenameConversation,
   onTogglePin,
-  onOpenHome,
 }: JarvisSidebarProps) {
   const { t } = useT();
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -59,37 +49,29 @@ export default function JarvisSidebar({
     setRenamingId(null);
   };
 
-  const nav = [
-    { id: "home", icon: Home, label: t("jarvisSide.home"), onClick: onOpenHome },
-    { id: "new", icon: Plus, label: t("jarvisSide.new"), onClick: onNew },
-  ];
-
   return (
-    <div className="flex flex-col h-full min-h-0 w-full min-w-0">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3 min-h-0">
-        {/* Navigation principale */}
-        <div className="space-y-px">
-          {nav.map((e) => (
-            <button
-              key={e.id}
-              onClick={e.onClick}
-              className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[12.5px] font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors text-left"
-            >
-              <e.icon className="w-4 h-4 text-slate-600" />
-              <span className="truncate">{e.label}</span>
-            </button>
-          ))}
-        </div>
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 py-2.5">
+        {/* L'action de la colonne — la seule, donc elle se lit comme un bouton
+            et non comme une ligne de menu parmi d'autres. */}
+        <button
+          type="button"
+          onClick={onNew}
+          className="flex h-8 w-full items-center gap-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5 text-[12.5px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)] hover:text-white"
+        >
+          <Plus className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{t("jarvisSide.new")}</span>
+        </button>
 
         {/* Historique — les conversations, épinglées en tête */}
-        <div className="space-y-px mt-1">
-          <div className="tv-label flex items-center gap-1.5 px-3 pb-1 pt-3 text-slate-600">
+        <div className="mt-1 space-y-px">
+          <div className="tv-label flex items-center gap-1.5 px-2.5 pb-1 pt-3 text-slate-600">
             <History className="w-3 h-3" />
             {t("jarvisSide.history")}
           </div>
 
           {conversations.length === 0 && (
-            <p className="px-3 pt-2 tv-row-label leading-relaxed">{t("jarvisConv.empty")}</p>
+            <p className="tv-row-label px-2.5 pt-2 leading-relaxed">{t("jarvisConv.empty")}</p>
           )}
 
           {conversations.slice(0, 12).map((c) => {
@@ -98,7 +80,7 @@ export default function JarvisSidebar({
               return (
                 <div
                   key={c.id}
-                  className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg bg-white/[0.04] border border-cyan-500/30"
+                  className="flex items-center gap-1.5 rounded-lg border border-[var(--tv-border-accent)] bg-[var(--tv-plate-2)] px-1.5 py-1"
                 >
                   <input
                     value={draft}
@@ -132,8 +114,13 @@ export default function JarvisSidebar({
               <div
                 key={c.id}
                 className={cn(
-                  "group flex items-center gap-1 rounded-lg px-1.5 py-1.5 cursor-pointer transition-colors",
-                  c.id === activeId ? "bg-cyan-500/15" : "hover:bg-white/[0.04]",
+                  "group flex cursor-pointer items-center gap-1 rounded-lg px-1.5 py-1.5 transition-colors",
+                  /* L'actif est une PLAQUE plus claire, pas un aplat coloré :
+                     la profondeur vient de la valeur, et l'accent reste à
+                     l'action. C'est exactement le contrat de `.tv-subnav`. */
+                  c.id === activeId
+                    ? "bg-[var(--tv-plate-3)] text-white"
+                    : "hover:bg-[var(--tv-plate-2)]",
                 )}
                 onClick={() => onOpenConversation(c.id)}
               >
@@ -190,7 +177,7 @@ export default function JarvisSidebar({
       </div>
 
       {/* Compte actif — bas gauche de la sidebar (carte CTA premium) */}
-      <div className="shrink-0 border-t border-white/[0.05] px-2 py-2.5">
+      <div className="shrink-0 border-t border-[var(--tv-border)] px-2 py-2.5">
         <AccountSwitcher variant="card" />
       </div>
     </div>

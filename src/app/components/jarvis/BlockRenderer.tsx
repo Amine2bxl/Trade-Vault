@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, Plus, Loader2, ArrowRight, BarChart3, Info, Lightbulb } from "lucide-react";
 import MarkdownAnswer from "../MarkdownAnswer";
+import { Kpi, KpiGrid, type KpiTone } from "@/shared/ui";
 import { encodeFilter } from "../../utils/tradeFilter";
 import type {
   JarvisBlock,
@@ -16,6 +17,20 @@ import type {
  * fournit pour exécuter « Ajouter cette règle à ma checklist ».
  */
 export type BlockToolHandler = (block: JarvisToolBlock) => void | Promise<void>;
+
+/**
+ * Le signe d'une métrique → le ton d'une case. Les blocs disent `up`/`down`
+ * (une direction) ; `Kpi` parle en `pos`/`neg` (un signe). Une seule fonction
+ * fait la traduction, pour les deux blocs qui affichent des chiffres.
+ *
+ * Les deux le faisaient chacun de leur côté, en réécrivant la case elle-même —
+ * même plaque, même liseré, même rembourrage, copiés à l'identique. La case
+ * statique du produit est `Kpi` : les chiffres de Jarvis la portent comme ceux
+ * d'Analytics, et se compactent avec elle.
+ */
+function toneOf(direction: "up" | "down" | "neutral" | undefined): KpiTone {
+  return direction === "up" ? "pos" : direction === "down" ? "neg" : "neutral";
+}
 
 /**
  * BlockRenderer — LA SEULE façon d'afficher du contenu produit par Jarvis.
@@ -106,28 +121,11 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
         </ul>
       )}
       {block.metrics.length > 0 && (
-        <div className="grid grid-cols-2 gap-2">
+        <KpiGrid>
           {block.metrics.map((m, i) => (
-            <div
-              key={i}
-              className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2"
-            >
-              <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
-              <div
-                className={
-                  "tv-figure text-sm" +
-                  (m.tone === "up"
-                    ? "text-emerald-400"
-                    : m.tone === "down"
-                      ? "text-red-400"
-                      : "text-white")
-                }
-              >
-                {m.value}
-              </div>
-            </div>
+            <Kpi key={i} inset label={m.label} value={m.value} tone={toneOf(m.tone)} />
           ))}
-        </div>
+        </KpiGrid>
       )}
       {block.impact && <p className="tv-prose text-slate-300 font-semibold">{block.impact}</p>}
       {/* Claim → evidence : le lien vers les données qui ont servi à conclure. */}
@@ -257,25 +255,11 @@ function StatsView({ block }: { block: Extract<JarvisBlock, { type: "stats" }> }
           </div>
         </header>
       )}
-      <div className="grid grid-cols-2 gap-2">
+      <KpiGrid>
         {block.metrics.map((m, i) => (
-          <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2">
-            <div className="text-[10px] text-slate-500 font-semibold truncate">{m.label}</div>
-            <div
-              className={
-                "metric-display text-sm " +
-                (m.trend === "up"
-                  ? "text-emerald-400"
-                  : m.trend === "down"
-                    ? "text-red-400"
-                    : "text-white")
-              }
-            >
-              {m.value}
-            </div>
-          </div>
+          <Kpi key={i} inset label={m.label} value={m.value} tone={toneOf(m.trend)} />
         ))}
-      </div>
+      </KpiGrid>
     </div>
   );
 }

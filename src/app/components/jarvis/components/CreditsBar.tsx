@@ -1,4 +1,4 @@
-import { Zap, Check, Sparkles, ArrowUpRight } from "lucide-react";
+import { Zap, ArrowUpRight } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { aiUsageToday, jarvisDailyLimit } from "../../../utils/aiUsage";
@@ -9,13 +9,26 @@ import { cn } from "../../../utils/cn";
  * Jarvis Intelligence — le quota IA du jour, selon le palier (3 en gratuit,
  * 20 en Pro, aucune limite en Elite).
  *
- * Rendu premium : jauge radiale dégradé, compteur réel issu du compteur local
- * (`aiUsage`), bénéfices immédiatement lisibles et texte explicatif en pied de
- * carte. Le CTA « Découvrir Premium » ouvre l'abonnement via tv:navigate.
+ * ── POURQUOI C'EST UNE LIGNE, ET PLUS UNE CARTE ───────────────────────────
+ *
+ * Ce pied de fenêtre tenait sur deux rangées : une jauge radiale de 44px, le
+ * compteur, trois bénéfices cochés, puis une seconde ligne d'explication avec
+ * son lien. Environ 76px pris en permanence, en bas de la fenêtre de Jarvis,
+ * pour une information qu'on consulte une fois par session — et autant de
+ * moins pour la conversation, qui est ce pour quoi la fenêtre existe.
+ *
+ * C'est la règle des cartes statiques appliquée au chrome : la surface n'a
+ * qu'UNE interaction (le lien d'abonnement), donc elle a la taille d'une
+ * ligne. Le disque radial devient une barre — même information, sur la hauteur
+ * du texte au lieu de trois fois celle-ci. Les trois bénéfices cochés partent :
+ * une liste de qualités dans une barre de quota est de la décoration, et elle
+ * poussait dehors la phrase qui, elle, dit ce qu'on gagne à passer au palier
+ * supérieur.
+ *
+ * Ce qui est gardé intact : le compteur réel (`aiUsage`), l'état épuisé —
+ * qui reste ambre et explicite — et le CTA, qui ouvre l'abonnement via
+ * `tv:upgrade`.
  */
-
-const RADIUS = 17;
-const CIRC = 2 * Math.PI * RADIUS;
 
 export default function CreditsBar() {
   const { t } = useT();
@@ -27,95 +40,68 @@ export default function CreditsBar() {
   const remaining = unlimited ? Infinity : Math.max(0, limit - used);
   const pct = unlimited ? 0 : Math.min(100, (used / limit) * 100);
   const exhausted = remaining === 0;
-  const values = [t("credits.value1"), t("credits.value2"), t("credits.value3")];
 
   return (
-    <div className="w-full min-w-0 px-4 py-2.5">
-      <div className="flex items-center gap-3">
-        {/* Jauge radiale — la capacité du jour, un coup d'œil suffit. */}
-        <div className="relative shrink-0">
-          <svg width="44" height="44" viewBox="0 0 44 44" className="-rotate-90">
-            <circle
-              cx="22"
-              cy="22"
-              r={RADIUS}
-              fill="none"
-              stroke="rgba(255,255,255,0.06)"
-              strokeWidth="4"
-            />
-            <circle
-              cx="22"
-              cy="22"
-              r={RADIUS}
-              fill="none"
-              stroke="url(#creditsGrad)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray={CIRC}
-              strokeDashoffset={CIRC * (1 - pct / 100)}
-              className="transition-[stroke-dashoffset] duration-250"
-            />
-            <defs>
-              <linearGradient id="creditsGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="var(--tv-highlight)" />
-                <stop offset="100%" stopColor="var(--tv-accent-2)" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span className="absolute inset-0 grid place-items-center">
-            <Zap className={cn("w-4 h-4", exhausted ? "text-slate-500" : "text-cyan-300")} />
-          </span>
-        </div>
+    <div className="flex w-full min-w-0 items-center gap-2.5">
+      <Zap
+        className={cn("h-3.5 w-3.5 shrink-0", exhausted ? "text-amber-400" : "text-slate-500")}
+        aria-hidden
+      />
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-1.5">
-            <span className="tv-figure text-sm text-white leading-none">
-              {unlimited ? "∞" : remaining}
-            </span>
-            <span className="text-[11px] text-slate-500 leading-none">
-              {t("credits.remaining")}
-            </span>
-          </div>
-          <div className="tv-label mt-0.5 text-slate-600">
-            {t("credits.title")} · {unlimited ? "∞" : `${limit}/j`}
-          </div>
-        </div>
+      {/* Le compteur — le chiffre d'abord, sa nature ensuite. */}
+      <span className="flex shrink-0 items-baseline gap-1.5">
+        <span
+          className={cn(
+            "tv-figure text-sm leading-none",
+            exhausted ? "text-amber-300" : "text-white",
+          )}
+        >
+          {unlimited ? "∞" : remaining}
+        </span>
+        <span className="tv-row-label">{t("credits.remaining")}</span>
+      </span>
 
-        {/* Bénéfices — pourquoi Jarvis mérite l'analyse, pas le compteur. */}
-        <div className="hidden lg:flex items-center gap-2 text-[11px] text-slate-500 flex-wrap shrink-0">
-          {values.map((v) => (
-            <span key={v} className="inline-flex items-center gap-1">
-              <Check className="w-2.5 h-2.5 text-emerald-400" /> {v}
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* La jauge — une barre sur la hauteur du texte. Illimité : pas de jauge,
+          il n'y a rien à remplir. */}
+      {!unlimited && (
+        <span
+          className="hidden h-1 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--tv-plate-3)] sm:block"
+          role="progressbar"
+          aria-valuenow={Math.round(pct)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={t("credits.title")}
+        >
+          <span
+            className={cn(
+              "block h-full rounded-full transition-[width] duration-300",
+              exhausted ? "bg-amber-400" : "bg-[var(--tv-accent)]",
+            )}
+            style={{ width: `${pct}%` }}
+          />
+        </span>
+      )}
 
-      {/* Texte explicatif + CTA Premium — la limite est une porte, pas un mur.
-          Taille au plancher de 11px du design system : c'est la seule surface
-          de conversion de l'écran Jarvis, la rendre plus petite que tout le
-          reste revenait à cacher l'offre. */}
-      <div
+      {/* La phrase de conversion. Elle ne prend plus une rangée à elle : elle
+          occupe la place libre de la ligne, et cède la première sur un écran
+          étroit — sauf épuisée, où elle EST l'information du moment. */}
+      <span
         className={cn(
-          "mt-2 flex items-center gap-1.5 text-[11px] leading-snug",
-          exhausted ? "text-amber-300/90" : "text-slate-600",
+          "tv-row-label min-w-0 flex-1 truncate",
+          exhausted ? "text-amber-300/90" : "hidden lg:block",
         )}
       >
-        <Sparkles className="w-3 h-3 shrink-0 text-cyan-400/70" />
-        <span className="flex-1 min-w-0">
-          {exhausted ? t("credits.exhausted") : t("credits.explainer")}
-        </span>
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-          /* Une cible de 15px de haut, mesurée : le lien vivait dans une
-             ligne de 11px sans hauteur propre. Le texte garde sa taille, c'est
-             la zone qui s'ouvre. */
-          className="-my-1.5 inline-flex h-8 shrink-0 items-center gap-0.5 px-1 font-bold text-cyan-400 transition-colors hover:text-cyan-300"
-        >
-          {t("credits.upgrade")}
-          <ArrowUpRight className="w-2.5 h-2.5" />
-        </button>
-      </div>
+        {exhausted ? t("credits.exhausted") : t("credits.explainer")}
+      </span>
+
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
+        className="ml-auto inline-flex h-7 shrink-0 items-center gap-0.5 rounded-lg px-2 text-[11px] font-bold text-[var(--tv-highlight)] transition-colors hover:bg-[var(--tv-plate-3)]"
+      >
+        {t("credits.upgrade")}
+        <ArrowUpRight className="h-3 w-3" />
+      </button>
     </div>
   );
 }

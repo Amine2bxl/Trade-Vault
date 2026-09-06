@@ -48,7 +48,7 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import { PageContainer, Card } from "@/shared/ui";
+import { PageContainer, Card, Kpi, KpiGrid } from "@/shared/ui";
 
 interface SeasonalityProps {
   trades: Trade[];
@@ -149,7 +149,7 @@ function AssetSeasonality() {
       </div>
 
       {/* Highlight cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <KpiGrid cols={4} className="mb-5">
         <HighlightCard
           icon={<Sparkles className="w-4 h-4" />}
           label={t("seasonality.thisMonth")}
@@ -178,7 +178,7 @@ function AssetSeasonality() {
           sub={`${asset.years} ${t("seasonality.years")}`}
           positive={stats.annualAvg >= 0}
         />
-      </div>
+      </KpiGrid>
 
       {/* Monthly avg return chart */}
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
@@ -504,7 +504,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
 
   return (
     <div className="animate-fade-in">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <KpiGrid cols={4} className="mb-5">
         <HighlightCard
           icon={<TrendingUp className="w-4 h-4" />}
           label={t("seasonality.bestMonth")}
@@ -533,7 +533,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           sub={bestHour ? formatPnl(bestHour.pnl) : ""}
           positive={!!bestHour && bestHour.pnl >= 0}
         />
-      </div>
+      </KpiGrid>
 
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
         <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
@@ -707,23 +707,28 @@ function HighlightCard({
   sub: string;
   positive: boolean;
 }) {
+  /* UNE CARTE QUI NE RÉPOND À RIEN NE S'ÉCLAIRE PAS AU SURVOL.
+     Elle portait `hover` : la carte s'éclaircissait sous le curseur, ce qui
+     dans ce produit annonce « je réponds au clic ». Elle ne répond à rien —
+     c'est un mois et son résultat. Le survol était donc une promesse fausse,
+     et le rembourrage de carte pleine (~92px) celui d'une surface qui
+     n'affiche que trois lignes de texte.
+
+     C'est `Kpi` : la case statique du produit, avec sa compaction et son
+     libellé. L'icône passe en ornement du libellé, à la place exacte qu'elle
+     occupait. */
   return (
-    <Card hover className="p-3.5 md:p-4 min-w-0">
-      <div className="tv-label flex items-center gap-1.5 text-slate-500 mb-2 truncate">
-        <span className={positive ? "text-emerald-400" : "text-red-400"}>{icon}</span>
-        {label}
-      </div>
-      <div className="text-sm font-bold text-white font-display truncate">{value}</div>
-      {sub && (
-        <div
-          className={cn(
-            "tv-figure text-[11px] mt-0.5",
-            positive ? "text-emerald-400" : "text-red-400",
-          )}
-        >
-          {sub}
-        </div>
-      )}
-    </Card>
+    <Kpi
+      label={label}
+      value={value}
+      /* Le chiffre garde son SIGNE — c'est lui qui porte la couleur, pas le
+         nom du mois au-dessus. */
+      hint={sub ? <span className={positive ? "rp-pos" : "rp-neg"}>{sub}</span> : undefined}
+      adornment={
+        <span className={cn("shrink-0", positive ? "text-emerald-400" : "text-red-400")}>
+          {icon}
+        </span>
+      }
+    />
   );
 }

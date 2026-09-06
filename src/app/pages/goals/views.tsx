@@ -195,18 +195,18 @@ export function GoalPicker({
   const selectedCount = kinds.filter((k) => drafts[k].selected).length;
 
   return (
-    <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up">
-      <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-1.5">
-        {tr("Choisis tes objectifs", "Pick your goals")}
-      </h2>
-      <p className="tv-prose text-slate-500 mb-3">
+    /* La carte porte `glass`, pas `glass-strong` : elle est POSÉE sur la page,
+       elle ne flotte pas au-dessus. La plaque forte est celle des modales. */
+    <div className="glass animate-fade-in-up rounded-3xl p-4 md:p-5">
+      <h2 className="tv-title">{tr("Choisis tes objectifs", "Pick your goals")}</h2>
+      <p className="tv-row-label mt-0.5 mb-3">
         {tr(
           "Sélectionnes-en autant que tu veux — le plan les combine en 6 étapes mensuelles.",
           "Select as many as you want — the plan combines them into 6 monthly steps.",
         )}
       </p>
 
-      <div className="grid gap-2 mb-4">
+      <div className="mb-4 grid gap-1.5">
         {kinds.map((k) => {
           const m = KIND_META[k];
           const Icon = m.icon;
@@ -216,27 +216,34 @@ export function GoalPicker({
             <div
               key={k}
               className={cn(
-                "rounded-2xl border transition overflow-hidden",
+                "overflow-hidden rounded-xl border transition",
                 d.selected
-                  ? "bg-cyan-500/[0.08] border-cyan-400/40"
-                  : "bg-white/[0.03] border-white/[0.07] hover:border-white/[0.16]",
+                  ? "border-cyan-400/40 bg-cyan-500/[0.08]"
+                  : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] hover:border-[var(--tv-border-strong)]",
               )}
             >
+              {/* UNE RANGÉE, PAS UNE CARTE. Sept choix à 62px de haut, c'est
+                  434px de sélecteur avant le moindre réglage — et chacun ne
+                  porte qu'un nom, une phrase et une case à cocher. La vignette
+                  passe de 36 à 28px, la hauteur de 62 à 48. */}
               <button
                 onClick={() => patch(k, { selected: !d.selected })}
-                className="w-full flex items-center gap-3 p-3.5 text-left"
+                aria-pressed={d.selected}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left"
               >
-                <div
+                <span
                   className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                    "grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-colors",
                     d.selected ? "bg-cyan-500/20 text-cyan-300" : "bg-white/[0.04] text-slate-400",
                   )}
                 >
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-white">{fr ? m.fr : m.en}</div>
-                  <div className="text-xs text-slate-500">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-semibold text-white">
+                    {fr ? m.fr : m.en}
+                  </span>
+                  <span className="tv-row-label block truncate">
                     {fr ? m.frDesc : m.enDesc}
                     {cur !== null && (
                       <>
@@ -248,17 +255,17 @@ export function GoalPicker({
                         </span>
                       </>
                     )}
-                  </div>
-                </div>
+                  </span>
+                </span>
                 <span
                   className={cn(
-                    "w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition",
+                    "grid h-5 w-5 shrink-0 place-items-center rounded-md border transition",
                     d.selected
-                      ? "bg-cyan-500 border-cyan-400 text-white"
+                      ? "border-cyan-400 bg-cyan-500 text-white"
                       : "border-white/[0.15] text-transparent",
                   )}
                 >
-                  <Check className="w-3.5 h-3.5" />
+                  <Check className="h-3 w-3" />
                 </span>
               </button>
 
@@ -407,26 +414,61 @@ export function PlanView({
   };
 
   return (
-    <div className="space-y-4 animate-fade-in-up">
-      {/* ── Goals summary ── */}
-      <div className="glass-strong rounded-3xl p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
-            {tr("Mes objectifs", "My goals")}
-            <span className="ml-2 text-slate-500 normal-case tracking-normal font-medium">
-              {tr("depuis", "since")} {monthLabel(monthOf(plan, 0))}
+    <div className="animate-fade-in-up space-y-3">
+      {/* ══ OÙ EN EST LE PLAN ═══════════════════════════════════════════
+          Le trader ouvrait sur une carte « Mes objectifs » et devait déplier
+          les mois pour savoir à quelle étape il en était. L'étape courante et
+          les actions qui restent CE MOIS-CI sont maintenant la première ligne
+          de la page — c'est la seule chose sur laquelle il peut agir
+          aujourd'hui. */}
+      <div className="glass flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl px-4 py-3">
+        <div className="min-w-0">
+          <div className="tv-label text-slate-500">{tr("Étape en cours", "Current step")}</div>
+          <div className="tv-figure mt-0.5 text-base leading-none text-white">
+            {tr("Mois", "Month")} {cur + 1}
+            <span className="text-slate-600">/{plan.horizonMonths}</span>
+            <span className="ml-2 text-[11px] font-semibold text-slate-500">
+              {monthLabel(monthOf(plan, cur))}
             </span>
-          </h2>
-          <button
-            onClick={onDelete}
-            disabled={busy}
-            aria-label={tr("Supprimer le plan", "Delete plan")}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition shrink-0"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          </div>
         </div>
-        <div className="grid gap-2.5">
+
+        <div className="min-w-[120px] flex-1">
+          <div className="mb-1 flex items-baseline justify-between gap-2">
+            <span className="tv-label text-slate-500">
+              {tr("Actions du mois", "This month's actions")}
+            </span>
+            <span className="tv-figure text-[11px] text-slate-400">
+              {Math.round(monthTaskCompletion(plan, cur) * 100)}%
+            </span>
+          </div>
+          <div className="rp-bartrack">
+            <span
+              className="rp-fill-pos"
+              style={{ width: `${Math.round(monthTaskCompletion(plan, cur) * 100)}%` }}
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={onDelete}
+          disabled={busy}
+          aria-label={tr("Supprimer le plan", "Delete plan")}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-600 transition hover:bg-red-500/10 hover:text-red-400"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* ── Les objectifs eux-mêmes ── */}
+      <div className="glass rounded-3xl p-4">
+        <div className="mb-2.5 flex items-baseline gap-2">
+          <h2 className="tv-title">{tr("Mes objectifs", "My goals")}</h2>
+          <span className="tv-row-label truncate">
+            {tr("depuis", "since")} {monthLabel(monthOf(plan, 0))}
+          </span>
+        </div>
+        <div className="grid gap-1.5">
           {plan.goals.map((g) => {
             const meta = KIND_META[g.kind];
             const Icon = meta.icon;
@@ -448,17 +490,17 @@ export function PlanView({
             return (
               <div
                 key={g.id}
-                className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-3.5"
+                className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center text-cyan-300 shrink-0">
-                    <Icon className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-semibold text-white truncate">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-cyan-500/15 text-cyan-300">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-semibold text-white">
                       {g.kind === "custom" ? g.label : fr ? meta.fr : meta.en}
                     </div>
-                    <div className="tv-figure text-[11px] text-slate-500">
+                    <div className="tv-figure truncate text-[11px] text-slate-500">
                       {fmtVal(g, g.startValue)} →{" "}
                       <span className="text-cyan-300 font-bold">{fmtVal(g, g.targetValue)}</span>
                       {" · "}
@@ -475,7 +517,7 @@ export function PlanView({
                     </span>
                   )}
                 </div>
-                <div className="mt-2.5 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
                   <div
                     className={cn(
                       "h-full rounded-full transition duration-250",
@@ -514,76 +556,85 @@ export function PlanView({
         </div>
       </div>
 
-      {/* ── Monthly roadmap ── */}
-      <div className="space-y-2.5">
-        {Array.from({ length: plan.horizonMonths }, (_, i) => {
-          const locked = i > cur;
-          const past = i < cur;
-          const open = openMonth === i && !locked;
-          const taskCompletion = monthTaskCompletion(plan, i);
-          const tasks = tasksForMonth(plan, i, lang, personal);
-          return (
-            <div
-              key={i}
-              className={cn(
-                "glass rounded-2xl border transition overflow-hidden",
-                i === cur
-                  ? "border-cyan-400/40 bg-cyan-500/[0.04]"
-                  : past
-                    ? taskCompletion === 1
-                      ? "border-emerald-500/25"
-                      : "border-white/[0.06]"
-                    : "border-white/[0.06] opacity-60",
-              )}
-            >
-              <button
-                onClick={() => !locked && setOpenMonth((m) => (m === i ? -1 : i))}
-                disabled={locked}
-                aria-expanded={open}
-                className="w-full flex items-center gap-3 p-4 text-left disabled:cursor-not-allowed"
+      {/* ── LA FEUILLE DE ROUTE ──
+          Six mois, une ligne chacun. La ligne FERMÉE ne porte plus que ce qui
+          situe : le rang, le mois, l'avancement des tâches. Les jalons par
+          objectif — jusqu'à sept pastilles qui passaient sur trois lignes —
+          descendent dans le contenu OUVERT : ce sont des détails de l'étape,
+          pas son étiquette. Six mois fermés passent ainsi de 6 × 96px à
+          6 × 52px. */}
+      <div className="glass overflow-hidden rounded-3xl">
+        <div className="divide-y divide-white/[0.04]">
+          {Array.from({ length: plan.horizonMonths }, (_, i) => {
+            const locked = i > cur;
+            const past = i < cur;
+            const open = openMonth === i && !locked;
+            const taskCompletion = monthTaskCompletion(plan, i);
+            const tasks = tasksForMonth(plan, i, lang, personal);
+            return (
+              <div
+                key={i}
+                className={cn(i === cur && "bg-cyan-500/[0.04]", locked && "opacity-60")}
               >
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                    past && taskCompletion === 1
-                      ? "bg-emerald-500/20 text-emerald-300"
-                      : i === cur
-                        ? "bg-cyan-500/20 text-cyan-300"
-                        : "bg-white/[0.05] text-slate-500",
-                  )}
+                <button
+                  onClick={() => !locked && setOpenMonth((m) => (m === i ? -1 : i))}
+                  disabled={locked}
+                  aria-expanded={open}
+                  className="tv-row-toggle flex w-full items-center gap-2.5 px-4 py-2.5 disabled:cursor-not-allowed"
                 >
-                  {past && taskCompletion === 1 ? (
-                    <Check className="w-4 h-4" />
-                  ) : locked ? (
-                    <Lock className="w-3.5 h-3.5" />
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2">
+                  <span
+                    className={cn(
+                      "grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold",
+                      past && taskCompletion === 1
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : i === cur
+                          ? "bg-cyan-500/20 text-cyan-300"
+                          : "bg-white/[0.05] text-slate-500",
+                    )}
+                  >
+                    {past && taskCompletion === 1 ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : locked ? (
+                      <Lock className="h-3 w-3" />
+                    ) : (
+                      i + 1
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">
                     <span
                       className={cn(
-                        "text-sm font-semibold capitalize",
+                        "text-[13px] font-semibold capitalize",
                         i === cur ? "text-white" : "text-slate-300",
                       )}
                     >
                       {tr("Mois", "Month")} {i + 1} · {monthLabel(monthOf(plan, i))}
-                      {i === cur && (
-                        <span className="tv-label ml-2 rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 text-cyan-300">
-                          {tr("en cours", "current")}
-                        </span>
-                      )}
                     </span>
-                    {!locked && (
-                      <span className="tv-figure text-[11px] text-slate-400 shrink-0">
-                        {Math.round(taskCompletion * 100)}% {tr("tâches", "tasks")}
+                    {i === cur && (
+                      <span className="tv-label ml-2 rounded-full border border-cyan-500/25 bg-cyan-500/15 px-1.5 py-0.5 text-cyan-300">
+                        {tr("en cours", "current")}
                       </span>
                     )}
-                  </div>
-                  {/* Milestone chips per goal */}
+                  </span>
                   {!locked && (
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                    <span className="tv-figure shrink-0 text-[11px] text-slate-400">
+                      {Math.round(taskCompletion * 100)}%
+                    </span>
+                  )}
+                  {!locked && (
+                    <ChevronDown
+                      aria-hidden
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform",
+                        open && "rotate-180",
+                      )}
+                    />
+                  )}
+                </button>
+
+                {open && (
+                  <div className="animate-fade-in space-y-3 border-t border-white/[0.04] px-4 pt-3 pb-4">
+                    {/* Les jalons de l'étape — ici, et non dans l'étiquette. */}
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                       {plan.goals.map((g) => (
                         <span key={g.id} className="tv-figure text-[10px] text-slate-500">
                           {g.kind === "custom"
@@ -605,114 +656,103 @@ export function PlanView({
                         </span>
                       ))}
                     </div>
-                  )}
-                </div>
-                {!locked && (
-                  <ChevronDown
-                    className={cn(
-                      "w-4 h-4 text-slate-500 shrink-0 transition-transform",
-                      open && "rotate-180",
-                    )}
-                  />
-                )}
-              </button>
-
-              {open && (
-                <div className="px-4 pb-4 border-t border-white/[0.06] pt-3.5 animate-fade-in space-y-3">
-                  {/* Per-goal milestone progress (current month only — it's live) */}
-                  {i === cur && (
-                    <div className="grid gap-2">
-                      {plan.goals.map((g) => {
-                        const current = currentGoalValue(g, ctx);
-                        const reached = milestoneReached(g, i, current, plan.horizonMonths);
-                        const prog = reached ? 1 : goalProgress(g, i, current, plan.horizonMonths);
-                        return (
-                          <div key={g.id} className="flex items-center gap-2.5">
-                            <span className="text-[10px] text-slate-500 w-28 truncate shrink-0">
-                              {g.kind === "custom"
-                                ? g.label
-                                : fr
-                                  ? KIND_META[g.kind].fr
-                                  : KIND_META[g.kind].en}
-                            </span>
-                            <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                              <div
-                                className={cn(
-                                  "h-full rounded-full transition duration-250",
-                                  reached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
-                                )}
-                                style={{ width: `${Math.round(prog * 100)}%` }}
-                              />
-                            </div>
-                            <span
-                              className={cn(
-                                "tv-figure text-[10px] w-9 text-right",
-                                reached ? "text-emerald-400" : "text-slate-400",
-                              )}
-                            >
-                              {Math.round(prog * 100)}%
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Tasks checklist */}
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
-                      <span className="tv-label text-cyan-300">
-                        {tr("Actions du mois", "This month's actions")}
-                      </span>
-                    </div>
-                    <div className="grid gap-2">
-                      {tasks.map((task) => {
-                        const done = !!plan.tasksDone[task.key];
-                        return (
-                          <button
-                            key={task.key}
-                            onClick={() => onToggleTask(task.key, !done)}
-                            className={cn(
-                              "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition",
-                              done
-                                ? "bg-emerald-500/[0.06] border-emerald-500/25"
-                                : "bg-white/[0.03] border-white/[0.05] hover:border-white/[0.14]",
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition",
-                                done
-                                  ? "bg-emerald-500 border-emerald-400 text-white"
-                                  : "border-white/[0.2] text-transparent",
-                              )}
-                            >
-                              <Check className="w-3 h-3" />
-                            </span>
-                            <span className="min-w-0">
+                    {/* Per-goal milestone progress (current month only — it's live) */}
+                    {i === cur && (
+                      <div className="grid gap-2">
+                        {plan.goals.map((g) => {
+                          const current = currentGoalValue(g, ctx);
+                          const reached = milestoneReached(g, i, current, plan.horizonMonths);
+                          const prog = reached
+                            ? 1
+                            : goalProgress(g, i, current, plan.horizonMonths);
+                          return (
+                            <div key={g.id} className="flex items-center gap-2.5">
+                              <span className="text-[10px] text-slate-500 w-28 truncate shrink-0">
+                                {g.kind === "custom"
+                                  ? g.label
+                                  : fr
+                                    ? KIND_META[g.kind].fr
+                                    : KIND_META[g.kind].en}
+                              </span>
+                              <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                                <div
+                                  className={cn(
+                                    "h-full rounded-full transition duration-250",
+                                    reached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
+                                  )}
+                                  style={{ width: `${Math.round(prog * 100)}%` }}
+                                />
+                              </div>
                               <span
                                 className={cn(
-                                  "block text-[13px] font-semibold",
-                                  done ? "text-slate-400 line-through" : "text-slate-200",
+                                  "tv-figure text-[10px] w-9 text-right",
+                                  reached ? "text-emerald-400" : "text-slate-400",
                                 )}
                               >
-                                {task.title}
+                                {Math.round(prog * 100)}%
                               </span>
-                              <span className="block text-xs text-slate-500 leading-relaxed mt-0.5">
-                                {task.desc}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Tasks checklist */}
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                        <span className="tv-label text-cyan-300">
+                          {tr("Actions du mois", "This month's actions")}
+                        </span>
+                      </div>
+                      <div className="grid gap-2">
+                        {tasks.map((task) => {
+                          const done = !!plan.tasksDone[task.key];
+                          return (
+                            <button
+                              key={task.key}
+                              onClick={() => onToggleTask(task.key, !done)}
+                              className={cn(
+                                "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition",
+                                done
+                                  ? "bg-emerald-500/[0.06] border-emerald-500/25"
+                                  : "bg-white/[0.03] border-white/[0.05] hover:border-white/[0.14]",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition",
+                                  done
+                                    ? "bg-emerald-500 border-emerald-400 text-white"
+                                    : "border-white/[0.2] text-transparent",
+                                )}
+                              >
+                                <Check className="w-3 h-3" />
                               </span>
-                            </span>
-                          </button>
-                        );
-                      })}
+                              <span className="min-w-0">
+                                <span
+                                  className={cn(
+                                    "block text-[13px] font-semibold",
+                                    done ? "text-slate-400 line-through" : "text-slate-200",
+                                  )}
+                                >
+                                  {task.title}
+                                </span>
+                                <span className="block text-xs text-slate-500 leading-relaxed mt-0.5">
+                                  {task.desc}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -42,7 +42,13 @@ const read = (abs: string) => readSource(import.meta.dir, relative(import.meta.d
 
 describe("les surfaces réparées suivent le thème", () => {
   const FIXED = {
-    "components/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent-2)"],
+    /* `--tv-accent-2` était attendu ici pour une raison précise : la jauge de
+       crédits était un DISQUE radial, et son dégradé allait de `--tv-highlight`
+       à `--tv-accent-2`. Le pied de la fenêtre de Jarvis est repassé en une
+       ligne — la jauge est une barre pleine, qui n'a donc plus qu'une couleur.
+       Ce que ce test protège reste entier : le fichier n'écrit aucun cyan en
+       dur, et les couleurs qu'il porte sont celles que le studio repeint. */
+    "components/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent)"],
     "pages/MonteCarlo.tsx": ["var(--tv-highlight)"],
     "pages/Checklist.tsx": ["var(--tv-highlight)"],
   };

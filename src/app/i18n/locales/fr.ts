@@ -302,6 +302,12 @@ const fr: Dict = {
   "mc.dayShort": "J",
   "mc.target": "Objectif",
   "mc.limit": "Limite de perte",
+  "mc.viewPaths": "Trajectoires",
+  "mc.viewDist": "Distribution",
+  "mc.viewDetails": "Détails",
+  "mc.settingsShort": "Réglages",
+  "mc.settings": "Réglages de simulation",
+  "mc.settingsSub": "D'où viennent les trades, et ce que la simulation vise.",
   "mc.reset": "Réinitialiser",
   "mc.resetHint": "Revenir aux valeurs lues dans ton journal",
   "mc.derivedFrom":
@@ -645,7 +651,8 @@ const fr: Dict = {
   // Dashboard — bloc Copilote (Score d'Edge, règle du jour, objectif)
   "copilot.title": "Copilote du jour",
   "copilot.intro": "Ton score de discipline, la règle à tenir aujourd'hui, ton objectif du mois.",
-  "copilot.explain": "Mesure ta discipline (plan respecté, risque, régularité) sur tes 10 derniers jours tradés — jamais ton P&L.",
+  "copilot.explain":
+    "Mesure ta discipline (plan respecté, risque, régularité) sur tes 10 derniers jours tradés — jamais ton P&L.",
   "copilot.edgeLabel": "Score d'Edge",
   "copilot.trendTitle": "Ta trajectoire de discipline sur les dernières sessions",
   "copilot.scoreBuilding": "Score en construction — logge plus de trades",

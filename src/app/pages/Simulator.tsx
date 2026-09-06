@@ -24,7 +24,7 @@ import { useToast } from "../contexts/ToastContext";
 import { loadScenarios, saveScenario, type SavedScenario } from "../store/simulations";
 import { cn } from "../utils/cn";
 import { assessDataset } from "../utils/datasetQuality";
-import { Button, Card, CardBody, FIELD_BASE, PageHeader, Badge } from "@/shared/ui";
+import { Button, Card, CardBody, FIELD_BASE, PageHeader, Badge, Kpi, KpiGrid } from "@/shared/ui";
 import { buildDataset } from "@/modules/probability/dataset";
 import { buildScenario, type Horizon } from "@/modules/probability/scenario";
 import { runSimulation } from "@/modules/probability/engine";
@@ -356,7 +356,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                     </Badge>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <KpiGrid>
                     <Stat
                       icon={<Target className="w-4 h-4 text-emerald-400" />}
                       label={t("sim.passProb")}
@@ -375,7 +375,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                       value={money.format(result.drawdown.median)}
                       hint={`P95 ${money.format(result.drawdown.p95)}`}
                     />
-                  </div>
+                  </KpiGrid>
 
                   <p className="tv-row-label">
                     {t("sim.disclaimer")} · {result.engineVersion}
@@ -553,6 +553,10 @@ function Row({
   );
 }
 
+/* La case de résultat d'une simulation. Elle redessinait `.tv-kpi` à la main —
+   même plaque, même liseré, même rembourrage — et n'a aucune interaction : un
+   libellé, un chiffre, son intervalle de confiance. C'est `Kpi`, avec l'icône
+   en ornement du libellé (elle porte déjà le sens : cible, risque, alerte). */
 function Stat({
   icon,
   label,
@@ -564,14 +568,5 @@ function Stat({
   value: string;
   hint: string;
 }) {
-  return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-        {icon}
-        {label}
-      </div>
-      <p className="text-xl tv-figure mt-1">{value}</p>
-      <p className="tv-figure text-[11px] text-slate-500">{hint}</p>
-    </div>
-  );
+  return <Kpi label={label} value={value} hint={hint} adornment={icon} />;
 }

@@ -103,6 +103,16 @@ export interface OnboardingCopy {
   // Profile step Q3 — realistic monthly target (optional per locale).
   targetTitle?: string;
   targetSub?: string;
+  // Settings step — the two figures and the theme shortcut. Ces cinq libellés
+  // étaient écrits EN FRANÇAIS DANS LE JSX (« Objectif mensuel », « Capital de
+  // départ », « Modifiable à tout moment depuis tes paramètres »…) : les onze
+  // autres langues affichaient donc du français au milieu de leur propre
+  // écran. Ils rejoignent la copie, comme le reste du flux.
+  targetLabel?: string;
+  capitalLabel?: string;
+  settingsHint?: string;
+  themeCustomCta?: string;
+  themeCustomName?: string;
 }
 
 const en: OnboardingCopy = {
@@ -205,6 +215,11 @@ const en: OnboardingCopy = {
   startWorking: "Preparing your vault…",
   targetTitle: "Realistic monthly target?",
   targetSub: "In % — it anchors your daily checklist. Honest beats heroic.",
+  targetLabel: "Monthly target",
+  capitalLabel: "Starting capital",
+  settingsHint: "You can change both any time in your settings.",
+  themeCustomCta: "Customise my theme",
+  themeCustomName: "My theme",
 };
 
 const fr: OnboardingCopy = {
@@ -307,6 +322,11 @@ const fr: OnboardingCopy = {
   startWorking: "Préparation de ton vault…",
   targetTitle: "Objectif mensuel réaliste ?",
   targetSub: "En % — il ancre ta checklist quotidienne. Honnête vaut mieux qu'héroïque.",
+  targetLabel: "Objectif mensuel",
+  capitalLabel: "Capital de départ",
+  settingsHint: "Modifiable à tout moment depuis tes paramètres.",
+  themeCustomCta: "Personnaliser mon thème",
+  themeCustomName: "Mon thème",
 };
 
 const es: OnboardingCopy = {

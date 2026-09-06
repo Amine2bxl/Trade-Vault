@@ -200,7 +200,9 @@ export default function Jarvis() {
 
   return (
     <div ref={boxRef} className="p-3 md:p-4" style={{ height: hauteur }}>
-      <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/[0.06] bg-white/[0.015]">
+      {/* La plaque du produit, pas un cadre à part : `glass` est la surface que
+          porte chaque carte de l'application. */}
+      <div className="glass flex h-full flex-col overflow-hidden rounded-3xl">
         {/* ── LES CONSEILS DE JARVIS ─────────────────────────────────────
             Ils existaient déjà, adossés à des motifs mesurés sur les trades du
             trader (une proposition sans preuve chiffrée ne s'affiche PAS) —
@@ -230,8 +232,9 @@ export default function Jarvis() {
           </Suspense>
         </div>
 
-        {/* Crédits IA (quota du jour) */}
-        <div className="shrink-0 border-t border-white/[0.05]">
+        {/* Crédits IA (quota du jour) — la MÊME bande que dans la fenêtre
+            flottante : un seul Jarvis, donc un seul pied de page. */}
+        <div className="tv-jarvis-bar tv-jarvis-bar-bottom">
           <CreditsBar />
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Settings, X } from "lucide-react";
+import { Bot, X } from "lucide-react";
 import { Trade, Page } from "../types";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -231,16 +231,9 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           onNavigateWorkspace={setActiveWorkspace}
           context={context}
           initialPrompt={pendingPrompt}
-          actions={
-            <button
-              onClick={() => setActiveWorkspace("settings")}
-              aria-label={t("jarvisSettings.title")}
-              title={t("jarvisSettings.title")}
-              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
-            >
-              <Settings className="w-4.5 h-4.5" />
-            </button>
-          }
+          /* Plus d'engrenage anonyme à droite de l'en-tête : « Réglages » est
+             un espace de travail comme les deux autres, et il vit donc dans la
+             navigation de la fenêtre, nommé. */
           sidebar={
             <JarvisSidebar
               conversations={conversations}
@@ -250,7 +243,6 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
               onDeleteConversation={(id) => void deleteConversation(id)}
               onRenameConversation={(id, title) => void renameConversation(id, title)}
               onTogglePin={(id) => void togglePinConversation(id)}
-              onOpenHome={() => setActiveWorkspace("home")}
             />
           }
           footer={<CreditsBar />}

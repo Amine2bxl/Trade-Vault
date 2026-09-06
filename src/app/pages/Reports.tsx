@@ -45,7 +45,7 @@ import EquityChart from "../components/EquityChart";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 import { cn } from "../utils/cn";
 import type { Trade } from "../types";
-import { Button } from "@/shared/ui";
+import { Button, Kpi } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 
 const LOCALE_MAP: Record<string, string> = {
@@ -469,25 +469,25 @@ function ReportSheet({
 
       {/* ── LES CHIFFRES DE TÊTE ───────────────────────────────────────── */}
       <div className="rp-section rp-kpis">
-        <Kpi
+        <ReportKpi
           label={t("stats.winRate")}
           value={formatPct(r.winRate)}
           sub={`${r.wins}W / ${r.losses}L${r.breakEven ? ` / ${r.breakEven}BE` : ""}`}
           good={r.winRate >= 0.5}
         />
-        <Kpi
+        <ReportKpi
           label={t("quant.expectancy")}
           value={formatPnl(r.expectancy)}
           sub={`${r.expectancyR >= 0 ? "+" : ""}${r.expectancyR.toFixed(2)}R ${t("reports.perTrade")}`}
           good={r.expectancy >= 0}
         />
-        <Kpi
+        <ReportKpi
           label={t("reports.profitFactor")}
           value={r.profitFactor >= 99 ? "99+" : r.profitFactor.toFixed(2)}
           sub={`Sharpe ${r.sharpe ?? "—"} · Sortino ${r.sortino ?? "—"}`}
           good={r.profitFactor >= 1}
         />
-        <Kpi
+        <ReportKpi
           label={t("reports.maxDrawdown")}
           value={formatPnl(-r.maxDrawdown)}
           sub={t("dashboard.peakToTrough")}
@@ -674,7 +674,20 @@ function SectionTitle({
   );
 }
 
-function Kpi({
+/**
+ * La case chiffrée du rapport.
+ *
+ * Elle DÉFINISSAIT une fonction `Kpi` locale, qui masquait la primitive du même
+ * nom dans `@/shared/ui` : la page paraissait migrée — on y lit bien `<Kpi …>` —
+ * alors qu'elle rendait sa propre plaque (`.rp-kpi`, c'est-à-dire
+ * `.tv-kpi-inset` réécrit à 0.05rem près). Le masquage est ce qui rend ce genre
+ * de copie invisible en revue.
+ *
+ * Ce composant ne fait plus que TRADUIRE le vocabulaire du rapport
+ * (`good`/`neutral`, hérité de la feuille imprimable) vers le ton de la case.
+ * `inset` parce qu'elle vit DANS la feuille, qui est déjà une carte.
+ */
+function ReportKpi({
   label,
   value,
   sub,
@@ -688,15 +701,13 @@ function Kpi({
   neutral?: boolean;
 }) {
   return (
-    <div className="rp-kpi">
-      <div className="tv-label mb-1 truncate text-slate-500">{label}</div>
-      <div
-        className={cn("tv-figure text-base", neutral ? "text-white" : good ? "rp-pos" : "rp-warn")}
-      >
-        {value}
-      </div>
-      <div className="tv-row-label mt-0.5 truncate">{sub}</div>
-    </div>
+    <Kpi
+      inset
+      label={label}
+      value={value}
+      hint={sub}
+      tone={neutral ? "neutral" : good ? "pos" : "warn"}
+    />
   );
 }
 

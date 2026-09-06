@@ -57,7 +57,7 @@ import {
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
-import { Button, TimeField } from "@/shared/ui";
+import { Button, PageToolbar, TimeField } from "@/shared/ui";
 import { intlLocale } from "../i18n/locale";
 
 /* ════════════════════════════════════════════════════════════════
@@ -1349,80 +1349,117 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             {t("chk.editBanner")}
           </div>
         )}
-        {/* ══ HEADER ══ */}
-        <div className="flex flex-col gap-3 animate-fade-in-up">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="tv-figure inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] text-slate-400">
-              {dateStr} · {clockStr}
-            </span>
+        {/* ══ LE CONTEXTE ══
+            La date, l'heure et la série : ce qu'on lit une fois en arrivant.
+            Ça défile, et c'est très bien — ce n'est pas ce qu'on cherche à
+            mi-parcours. Une ligne de texte, plus trois pastilles encadrées. */}
+        <div className="animate-fade-in-up flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="tv-figure text-[11px] text-slate-400">
+            {dateStr} · {clockStr}
+          </span>
+          <span aria-hidden className="h-3 w-px bg-[var(--tv-border)]" />
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-[11px] font-semibold",
+              winOpen ? "text-[var(--tv-highlight)]" : "text-amber-300",
+            )}
+          >
+            <Clock className="h-3 w-3" /> {winLabel}
+          </span>
+          {streak > 0 && (
+            <>
+              <span aria-hidden className="h-3 w-px bg-[var(--tv-border)]" />
+              <span
+                title={t("chk.streakHint")}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300"
+              >
+                <Flame className="h-3 w-3" /> {streak} {t("chk.streakSuffix")}
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* ══ LA BARRE D'ÉTAT — COLLANTE ══
+            ─────────────────────────────────────────────────────────────────
+            LE PROBLÈME QU'ELLE RÉSOUT. Le rituel fait cinq sections empilées :
+            sur un téléphone, c'est quatre écrans de défilement. Dès qu'on
+            descend cocher son état mental, on ne voit plus NI où on en est
+            (7 sur 9 ?), NI si la fenêtre de séance est ouverte, NI les trois
+            commandes de la page — tout ça vivait dans un en-tête qui défile.
+            La checklist se perdait dans sa propre page.
+
+            Elle ne se perd plus : l'avancement, l'état et les commandes
+            restent collés en haut de la fenêtre de défilement, à n'importe
+            quel point du rituel. C'est aussi ce qui a permis de SUPPRIMER
+            l'ancienne étape « Validation », qui était une section entière
+            pour une barre de progression et une pastille d'horaire — les deux
+            sont ici, et visibles en permanence au lieu d'être dépassées.
+
+            Les trois commandes (voix, édition, réglages) y montent aussi :
+            elles s'accumulaient dans le coin haut-droit d'un en-tête qui
+            disparaissait au premier défilement. */}
+        <PageToolbar
+          className="gap-2"
+          actions={
+            <>
+              <button
+                onClick={toggleAudio}
+                aria-pressed={audioOn}
+                title={`${t("chk.voice")} · ${audioOn ? "on" : "off"}`}
+                className={cn("tv-chk-tool", audioOn && "tv-chk-tool-on")}
+              >
+                {audioOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={toggleEdit}
+                aria-pressed={editMode}
+                title={t("chk.editor")}
+                className={cn("tv-chk-tool", editMode && "tv-chk-tool-on")}
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setShowConfig((v) => !v)}
+                aria-pressed={showConfig}
+                title={t("chk.customize")}
+                className={cn("tv-chk-tool", showConfig && "tv-chk-tool-on")}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </button>
+            </>
+          }
+        >
+          <div className="flex min-w-0 items-center gap-2.5 pl-1.5">
+            {/* L'ÉTAT — un mot, pas une pastille encadrée. */}
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-                winOpen
-                  ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-300",
-              )}
-            >
-              <Clock className="w-3 h-3" /> {winLabel}
-            </span>
-            <span
-              className={cn(
-                "tv-label inline-flex items-center rounded-full border px-2.5 py-1",
-                allGates || day.locked
-                  ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                  : "border-white/[0.08] bg-white/[0.03] text-slate-400",
+                "tv-label shrink-0",
+                day.locked || allGates ? "text-[var(--tv-highlight)]" : "text-slate-400",
               )}
             >
               {day.locked ? t("chk.locked") : allGates ? t("chk.ready") : t("chk.standby")}
             </span>
-            {streak > 0 && (
+            {/* L'AVANCEMENT — le chiffre, puis la jauge. La jauge seule ne dit
+                pas combien il reste ; le chiffre seul ne se lit pas d'un coup
+                d'œil. */}
+            <span className="tv-figure shrink-0 text-[11px] text-white">
+              {nChecked}/{nActive}
+            </span>
+            <span
+              className="h-1 min-w-8 flex-1 overflow-hidden rounded-full bg-[var(--tv-plate-3)]"
+              role="progressbar"
+              aria-valuenow={nChecked}
+              aria-valuemin={0}
+              aria-valuemax={nActive}
+              aria-label={t("chk.gateChecklist")}
+            >
               <span
-                title={t("chk.streakHint")}
-                className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-300"
-              >
-                <Flame className="w-3 h-3" /> {streak} {t("chk.streakSuffix")}
-              </span>
-            )}
-            <div className="ml-auto flex items-center gap-1.5">
-              <button
-                onClick={toggleAudio}
-                title={`${t("chk.voice")} · ${audioOn ? "on" : "off"}`}
-                className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition",
-                  audioOn
-                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                    : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
-                )}
-              >
-                {audioOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={toggleEdit}
-                title={t("chk.editor")}
-                className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition",
-                  editMode
-                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                    : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
-                )}
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setShowConfig((v) => !v)}
-                title={t("chk.customize")}
-                className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center border transition",
-                  showConfig
-                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                    : "border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white",
-                )}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-              </button>
-            </div>
+                className="block h-full rounded-full bg-[var(--tv-accent)] transition-[width] duration-300"
+                style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
+              />
+            </span>
           </div>
-        </div>
+        </PageToolbar>
 
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
@@ -1756,11 +1793,9 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             {/* ══ STEP 1 · PRÉPARATION — the setup checks ══ */}
             <div className="space-y-2.5 animate-fade-in-up">
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
-                  1
-                </span>
+                <span className="tv-chk-step">1</span>
                 <h2 className="tv-label text-slate-400">{t("chk.stepPrep")}</h2>
-                <span className="flex-1 h-px bg-white/[0.06]" />
+                <span className="h-px flex-1 bg-[var(--tv-border)]" />
               </div>
               <div className="glass rounded-2xl p-3 md:p-3.5">
                 <div className="flex flex-wrap gap-2">
@@ -1802,56 +1837,32 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
               </div>
             </div>
 
-            {/* ══ STEP 2 · VALIDATION — preparation progress + session window ══ */}
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
-                  2
-                </span>
-                <h2 className="tv-label text-slate-400">{t("chk.stepValidation")}</h2>
-                <span className="flex-1 h-px bg-white/[0.06]" />
-              </div>
-              <div className="glass rounded-2xl p-3.5 flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-slate-400 font-semibold">{t("chk.gateChecklist")}</span>
-                    <span className="tv-figure text-white">
-                      {nChecked}/{nActive}
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-[var(--tv-accent)] transition duration-250"
-                      style={{ width: `${nActive ? (nChecked / nActive) * 100 : 0}%` }}
-                    />
-                  </div>
-                </div>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shrink-0",
-                    winOpen
-                      ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                      : "border-amber-500/30 bg-amber-500/10 text-amber-300",
-                  )}
-                >
-                  <Clock className="w-3 h-3" /> {winOpen ? t("chk.cfgOpenNow") : config.startTime}
-                </span>
-              </div>
-            </div>
+            {/* L'ANCIENNE ÉTAPE « VALIDATION » A DISPARU.
+                Elle occupait une section complète — un titre numéroté, une
+                carte de 66px — pour afficher deux choses : la progression de la
+                checklist et l'horaire de séance. Les deux vivent maintenant
+                dans la barre collante, donc SOUS LES YEUX en permanence au lieu
+                d'être dépassées au premier défilement. Une section qui ne
+                contient aucune interaction et dont l'information est mieux
+                placée ailleurs n'a pas à exister. */}
 
-            {/* ══ STEP 3 · MENTAL — motivation + emotional state ══ */}
+            {/* ══ STEP 2 · MENTAL — motivation + emotional state ══ */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
-                  3
-                </span>
+                <span className="tv-chk-step">2</span>
                 <h2 className="tv-label text-slate-400">{t("chk.stepMental")}</h2>
-                <span className="flex-1 h-px bg-white/[0.06]" />
+                <span className="h-px flex-1 bg-[var(--tv-border)]" />
               </div>
 
+              {/* UNE SEULE CARTE POUR LES DEUX QUESTIONS.
+                  « Pourquoi je trade » et « dans quel état je suis » étaient
+                  deux cartes empilées : deux rembourrages, deux liserés et une
+                  gouttière entre les deux, pour deux questions qui forment un
+                  seul examen — celui de l'étape Mental. Une carte, deux groupes,
+                  un filet entre eux. */}
               <div
                 className={cn(
-                  "glass rounded-2xl p-3.5 space-y-2.5",
+                  "glass space-y-2.5 rounded-2xl p-3.5",
                   interference && "border border-red-500/25",
                 )}
               >
@@ -1898,9 +1909,9 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                     <Bot className="w-3.5 h-3.5" /> {t("chk.actCoachCenter")}
                   </button>
                 )}
-              </div>
 
-              <div className="glass rounded-2xl p-3.5 space-y-2.5">
+                <div className="!mt-3.5 border-t border-[var(--tv-border)] pt-3" />
+
                 <div className="text-[11px] text-slate-500 font-semibold">
                   {t("chk.fomoQuestion")}
                 </div>
@@ -1948,14 +1959,12 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
               </div>
             </div>
 
-            {/* ══ STEP 4 · VERROUILLAGE — gates + responsibility ══ */}
+            {/* ══ STEP 3 · VERROUILLAGE — gates + responsibility ══ */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
-                  4
-                </span>
+                <span className="tv-chk-step">3</span>
                 <h2 className="tv-label text-slate-400">{t("chk.stepLock")}</h2>
-                <span className="flex-1 h-px bg-white/[0.06]" />
+                <span className="h-px flex-1 bg-[var(--tv-border)]" />
               </div>
               <div className="glass rounded-2xl p-3.5 space-y-3">
                 <div className="flex flex-wrap gap-2">
@@ -1999,14 +2008,12 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
               </div>
             </div>
 
-            {/* ══ STEP 5 · TRADE — the go / no-go ══ */}
+            {/* ══ STEP 4 · TRADE — the go / no-go ══ */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
-                  5
-                </span>
+                <span className="tv-chk-step">4</span>
                 <h2 className="tv-label text-slate-400">{t("chk.stepTrade")}</h2>
-                <span className="flex-1 h-px bg-white/[0.06]" />
+                <span className="h-px flex-1 bg-[var(--tv-border)]" />
               </div>
               <Button
                 onClick={initiate}

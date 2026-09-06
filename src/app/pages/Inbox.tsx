@@ -265,38 +265,46 @@ export default function Inbox() {
 
   return (
     <div className="mx-auto max-w-3xl p-4 md:p-5">
-      {/* ── LES FILTRES ─────────────────────────────────────────────────── */}
+      {/* ── LES FILTRES ───────────────────────────────────────────────────
+          Une rangée qui DÉFILE, jamais qui passe à la ligne. Huit pastilles
+          (« toutes », « non lues » et six catégories) demandaient trois lignes
+          sur un téléphone : cent pixels de filtres avant la première
+          notification, sur une page dont le contenu EST une liste. Elle est en
+          plus collée en haut — on change de filtre sans remonter. */}
       {notifs.length > 0 && (
-        <div className="animate-fade-in-up mb-3 flex flex-wrap items-center gap-1.5">
-          {filtres.map((f) => (
-            <button
-              key={f.kind}
-              onClick={() => setFilter(f.kind)}
-              aria-pressed={filter === f.kind}
-              className={cn("rp-chip", filter === f.kind && "rp-chip-active")}
-            >
-              <span>{f.label}</span>
-              <span
-                className={cn(
-                  "tv-figure text-[10px]",
-                  f.nonLues > 0 ? "text-[var(--tv-highlight)]" : "text-slate-600",
-                )}
-              >
-                {f.total}
-              </span>
-            </button>
-          ))}
+        <div className="animate-fade-in-up sticky top-0 z-[var(--tv-z-rail)] -mx-4 mb-3 bg-[var(--tv-bg)] px-4 py-2 md:-mx-5 md:px-5">
+          <div className="tv-scroll-x">
+            <div className="flex w-max items-center gap-1.5">
+              {filtres.map((f) => (
+                <button
+                  key={f.kind}
+                  onClick={() => setFilter(f.kind)}
+                  aria-pressed={filter === f.kind}
+                  className={cn("rp-chip shrink-0", filter === f.kind && "rp-chip-active")}
+                >
+                  <span>{f.label}</span>
+                  <span
+                    className={cn(
+                      "tv-figure text-[10px]",
+                      f.nonLues > 0 ? "text-[var(--tv-highlight)]" : "text-slate-600",
+                    )}
+                  >
+                    {f.total}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* ── LA BANNIÈRE DU PREMIER PASSAGE ──────────────────────────────── */}
+      {/* ── LA BANNIÈRE DU PREMIER PASSAGE ────────────────────────────────
+          Elle porte l'ACCENT DU THÈME, pas un cyan en dur : le produit est
+          thémable, et trois valeurs codées ici le contredisaient. */}
       {isFirstVisitToday && unreadTotal > 0 && (
-        <div className="animate-fade-in-up mb-3 flex items-center gap-2.5 rounded-xl border border-cyan-500/15 bg-cyan-500/[0.06] px-3.5 py-2.5">
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
-          </span>
-          <span className="text-xs font-medium text-cyan-200/90">
+        <div className="animate-fade-in-up mb-3 flex items-center gap-2.5 rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.07)] px-3.5 py-2">
+          <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--tv-accent)]" />
+          <span className="text-xs font-medium text-[var(--tv-highlight)]">
             {t("inbox.newSinceLastVisit").replace("{n}", String(unreadTotal))}
           </span>
         </div>
@@ -389,19 +397,26 @@ function Ligne({
       </span>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <p
-            className={cn(
-              "min-w-0 flex-1 text-sm leading-snug",
-              nonLue ? "font-semibold text-white" : "text-slate-400",
-            )}
-          >
-            {n.title}
-          </p>
+        <p
+          className={cn(
+            "text-sm leading-snug",
+            nonLue ? "font-semibold text-white" : "text-slate-400",
+          )}
+        >
+          {n.title}
+        </p>
+        {/* LE SUJET ET L'HEURE, SUR LA MÊME LIGNE. Le sujet occupait sa propre
+            ligne sous le titre pendant que l'heure vivait à droite du titre :
+            deux méta-informations, deux lignes, dix-huit pixels de plus par
+            notification. Ce sont deux mentions du même rang — elles se lisent
+            ensemble, séparées d'un point médian. */}
+        <div className="tv-row-label mt-0.5 flex items-center gap-1.5">
+          <span className="tv-label truncate text-slate-600">{t(CATEGORY_LABEL[n.category])}</span>
+          <span aria-hidden className="text-slate-700">
+            ·
+          </span>
           <span className="tv-figure shrink-0 text-[10px] text-slate-600">{heure}</span>
         </div>
-        {/* LE SUJET, ÉCRIT. C'est la ligne qui manquait. */}
-        <div className="tv-label mt-1 text-slate-600">{t(CATEGORY_LABEL[n.category])}</div>
         {n.body && <p className="tv-prose mt-1 line-clamp-2 text-slate-500">{n.body}</p>}
       </div>
 

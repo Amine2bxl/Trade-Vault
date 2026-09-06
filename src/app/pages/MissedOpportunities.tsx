@@ -46,6 +46,8 @@ import {
   Textarea,
   FIELD_BASE,
   DateField,
+  Kpi,
+  KpiGrid,
 } from "@/shared/ui";
 import { intlLocale } from "../i18n/locale";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
@@ -238,7 +240,7 @@ export default function MissedOpportunities() {
       {/* Cost of hesitation, up front. Seeing "+18.4 R left on the table" is
           what turns this page from a notebook into an argument. */}
       {!loading && items.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mb-2.5 animate-fade-in-up stagger-1">
+        <KpiGrid className="animate-fade-in-up stagger-1 mb-2.5">
           <MissedTile
             label={t("missed.totalMissed")}
             value={`+${summary.totalR.toFixed(1)}R`}
@@ -246,7 +248,7 @@ export default function MissedOpportunities() {
           />
           <MissedTile label={t("missed.logged")} value={String(summary.count)} />
           <MissedTile label={t("missed.avgMissed")} value={`${summary.avgR.toFixed(1)}R`} />
-        </div>
+        </KpiGrid>
       )}
 
       {loading ? (
@@ -372,21 +374,14 @@ export default function MissedOpportunities() {
 }
 
 /** Three flat tiles above the list — same visual weight as the Journal summary
- *  so both "list" pages of the product read the same way. */
+ *  so both "list" pages of the product read the same way.
+ *
+ *  Elles redessinaient la case à la main : même plaque, même liseré, même
+ *  rembourrage que `.tv-kpi`, écrits une deuxième fois. C'est `Kpi` — donc les
+ *  deux pages de liste ne se ressemblent plus par coïncidence, elles portent
+ *  la même primitive. */
 function MissedTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-      <div className="tv-label md:text-xs text-slate-500 truncate">{label}</div>
-      <div
-        className={cn(
-          "mt-0.5 tv-figure text-[15px] md:text-base",
-          accent ? "text-amber-300" : "text-white",
-        )}
-      >
-        {value}
-      </div>
-    </div>
-  );
+  return <Kpi label={label} value={value} tone={accent ? "warn" : "neutral"} />;
 }
 
 function Field({

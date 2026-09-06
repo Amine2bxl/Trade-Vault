@@ -17,11 +17,7 @@ const SURF = "#141619";
 const BORDER = "rgba(255,255,255,0.09)";
 
 const esc = (s) =>
-  s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const logo = `<div style="display:flex;align-items:center;gap:10px">
   <span style="width:14px;height:14px;border-radius:50%;background:${E}"></span>
@@ -43,14 +39,22 @@ function shell(inner, { cta } = {}) {
 }
 
 function slideInner(s) {
-  const { layout = "cover", eyebrow = "", head = "", headTone = "normal", sub = "", cards = [] } = s;
+  const {
+    layout = "cover",
+    eyebrow = "",
+    head = "",
+    headTone = "normal",
+    sub = "",
+    cards = [],
+  } = s;
   const eyebrowEl = eyebrow
     ? `<div style="font-size:24px;font-weight:700;letter-spacing:3px;color:${E};text-transform:uppercase;margin-bottom:30px">${esc(eyebrow)}</div>`
     : "";
   const subEl = sub
     ? `<div style="margin-top:36px;font-size:33px;line-height:1.45;color:${MUT};max-width:900px;white-space:pre-line">${esc(sub)}</div>`
     : "";
-  const toneColor = headTone === "red" ? RED : headTone === "emerald" ? E : headTone === "amber" ? AMBER : INK;
+  const toneColor =
+    headTone === "red" ? RED : headTone === "emerald" ? E : headTone === "amber" ? AMBER : INK;
   if (layout === "compare") {
     const cardsHtml = cards
       .map(
@@ -80,7 +84,12 @@ const POSTS = [
     caption:
       "Ton win rate te ment. Tu peux gagner 55% de tes trades et perdre de l'argent. Tes plus grosses pertes arrivent juste après une perte. Le problème n'est pas ta stratégie. #trading #daytrading #futures #tradingpsychology",
     slides: [
-      { layout: "cover", head: "TON WIN RATE\nTE MENT.", headTone: "red", sub: "Tu peux gagner 55 % de tes trades et perdre de l'argent." },
+      {
+        layout: "cover",
+        head: "TON WIN RATE\nTE MENT.",
+        headTone: "red",
+        sub: "Tu peux gagner 55 % de tes trades et perdre de l'argent.",
+      },
       {
         layout: "compare",
         eyebrow: "Ta semaine réelle",
@@ -90,7 +99,12 @@ const POSTS = [
         ],
         sub: "Tes 3 plus grosses pertes sont arrivées juste après une perte.",
       },
-      { layout: "cover", head: "CE QUI SE PASSE APRÈS UN ROUGE", headTone: "red", sub: "TradeVault mesure tes trades d'après-perte. Le vrai coût du revenge." },
+      {
+        layout: "cover",
+        head: "CE QUI SE PASSE APRÈS UN ROUGE",
+        headTone: "red",
+        sub: "TradeVault mesure tes trades d'après-perte. Le vrai coût du revenge.",
+      },
     ],
   },
   {
@@ -98,7 +112,12 @@ const POSTS = [
     caption:
       "Il n'a pas perdu 250$. Il a ignoré son propre plan. Confiance 85%, plan clair… et entrée avant la confirmation. Le résultat n'est pas le problème : c'est l'écart intention → exécution. #trading #discipline #trader",
     slides: [
-      { layout: "cover", head: "IL N'A PAS PERDU 250$.", headTone: "red", sub: "Il a ignoré son propre plan." },
+      {
+        layout: "cover",
+        head: "IL N'A PAS PERDU 250$.",
+        headTone: "red",
+        sub: "Il a ignoré son propre plan.",
+      },
       {
         layout: "compare",
         eyebrow: "Avant le trade",
@@ -108,7 +127,12 @@ const POSTS = [
         ],
         sub: "En réalité : entrée avant la confirmation · −250 $.",
       },
-      { layout: "cover", head: "LE RÉSULTAT N'EST PAS LE PROBLÈME.", headTone: "normal", sub: "C'est l'écart intention → exécution. TradeVault le compare sur chaque trade." },
+      {
+        layout: "cover",
+        head: "LE RÉSULTAT N'EST PAS LE PROBLÈME.",
+        headTone: "normal",
+        sub: "C'est l'écart intention → exécution. TradeVault le compare sur chaque trade.",
+      },
     ],
   },
   {
@@ -116,7 +140,12 @@ const POSTS = [
     caption:
       "Pourquoi tu doubles ta taille après une perte. Risque prévu 1%… après une perte, 1,8%. Sur 20 trades d'après-perte, l'écart coûte ~620$. La solution n'est pas la volonté : une règle vérifiée à chaque log. #revengetrading #discipline #propfirm",
     slides: [
-      { layout: "cover", head: "POURQUOI TU DOUBLES\nTA TAILLE APRÈS UNE PERTE.", headTone: "red", sub: "Le réflexe le plus cher du trading retail." },
+      {
+        layout: "cover",
+        head: "POURQUOI TU DOUBLES\nTA TAILLE APRÈS UNE PERTE.",
+        headTone: "red",
+        sub: "Le réflexe le plus cher du trading retail.",
+      },
       {
         layout: "compare",
         eyebrow: "Risque par trade",
@@ -126,7 +155,12 @@ const POSTS = [
         ],
         sub: "Sur 20 trades d'après-perte, cet écart te coûte ~620 $.",
       },
-      { layout: "cover", head: "PAS DE LA VOLONTÉ. UNE RÈGLE.", headTone: "emerald", sub: "Une règle vérifiée à chaque log. TradeVault te rappelle la tienne." },
+      {
+        layout: "cover",
+        head: "PAS DE LA VOLONTÉ. UNE RÈGLE.",
+        headTone: "emerald",
+        sub: "Une règle vérifiée à chaque log. TradeVault te rappelle la tienne.",
+      },
     ],
   },
   {
@@ -134,8 +168,18 @@ const POSTS = [
     caption:
       "Ton problème n'est pas ta stratégie. C'est ton comportement. TradeVault est le coach IA qui te montre pourquoi tu perds — et te refait la discipline, semaine après semaine. #trading #journaldetrading #tradevault",
     slides: [
-      { layout: "cover", head: "TON PROBLÈME N'EST PAS TA STRATÉGIE.", headTone: "normal", sub: "C'est ton comportement." },
-      { layout: "cover", head: "TRADEVAULT.", headTone: "emerald", sub: "Le coach IA qui te montre pourquoi tu perds — et te refait la discipline, semaine après semaine." },
+      {
+        layout: "cover",
+        head: "TON PROBLÈME N'EST PAS TA STRATÉGIE.",
+        headTone: "normal",
+        sub: "C'est ton comportement.",
+      },
+      {
+        layout: "cover",
+        head: "TRADEVAULT.",
+        headTone: "emerald",
+        sub: "Le coach IA qui te montre pourquoi tu perds — et te refait la discipline, semaine après semaine.",
+      },
     ],
   },
   {
@@ -144,8 +188,18 @@ const POSTS = [
       "Pourquoi 90% échouent le challenge. Pas parce qu'ils ne savent pas trader : ils ont passé le test. Ils échouent sur la règle. Daily loss, drawdown, un jour d'overtrading. #propfirm #ftmo #challenge",
     slides: [
       { layout: "cover", head: "POURQUOI 90% ÉCHOUENT LE CHALLENGE.", headTone: "red" },
-      { layout: "point", head: "Ils savent trader.", headTone: "emerald", sub: "Ils ont passé le test pour entrer." },
-      { layout: "point", head: "Ils échouent sur la règle.", headTone: "red", sub: "Daily loss · Drawdown · Un jour d'overtrading." },
+      {
+        layout: "point",
+        head: "Ils savent trader.",
+        headTone: "emerald",
+        sub: "Ils ont passé le test pour entrer.",
+      },
+      {
+        layout: "point",
+        head: "Ils échouent sur la règle.",
+        headTone: "red",
+        sub: "Daily loss · Drawdown · Un jour d'overtrading.",
+      },
       {
         layout: "compare",
         eyebrow: "Un mauvais jour",
@@ -155,7 +209,12 @@ const POSTS = [
         ],
         sub: "Le dérapage n'arrive pas le jour où tu trades mal : il arrive le jour où tu continues après.",
       },
-      { layout: "cover", head: "SIMULE TON CHALLENGE.", headTone: "emerald", sub: "TradeVault simule ton plan de rules sur ton historique — avant que ça ne coûte." },
+      {
+        layout: "cover",
+        head: "SIMULE TON CHALLENGE.",
+        headTone: "emerald",
+        sub: "TradeVault simule ton plan de rules sur ton historique — avant que ça ne coûte.",
+      },
     ],
   },
   {
@@ -163,7 +222,12 @@ const POSTS = [
     caption:
       "6 semaines de vraie revue. Voilà ce que ça change. Edge Score qui monte, fuite disparue, règle tenue 11/12. La discipline n'est pas un trait de caractère : c'est un process qu'on vérifie. #progress #discipline #trading",
     slides: [
-      { layout: "cover", head: "6 SEMAINES DE VRAIE REVUE.", headTone: "emerald", sub: "Voilà ce que ça change." },
+      {
+        layout: "cover",
+        head: "6 SEMAINES DE VRAIE REVUE.",
+        headTone: "emerald",
+        sub: "Voilà ce que ça change.",
+      },
       {
         layout: "compare",
         eyebrow: "Après 6 semaines",
@@ -173,7 +237,12 @@ const POSTS = [
         ],
         sub: "Règle « pas de trade de revenge » tenue 11 fois sur 12.",
       },
-      { layout: "cover", head: "CE N'EST PAS UN TRAIT. C'EST UN PROCESS.", headTone: "normal", sub: "Un process qu'on vérifie. TradeVault le vérifie à chaque log." },
+      {
+        layout: "cover",
+        head: "CE N'EST PAS UN TRAIT. C'EST UN PROCESS.",
+        headTone: "normal",
+        sub: "Un process qu'on vérifie. TradeVault le vérifie à chaque log.",
+      },
     ],
   },
   {
@@ -181,7 +250,13 @@ const POSTS = [
     caption:
       "Quelle est ta plus grosse fuite ? Oversize après une perte, overtrading, ou entrée trop tôt ? Réponds en commentaire, je te montre comment la repérer dans ton journal. #tradingcommunity #trading",
     slides: [
-      { layout: "cover", eyebrow: "Question", head: "QUELLE EST TA\nPLUS GROSSE FUITE ?", headTone: "normal", sub: "1 · Oversize après une perte    2 · Overtrading    3 · Entrée trop tôt." },
+      {
+        layout: "cover",
+        eyebrow: "Question",
+        head: "QUELLE EST TA\nPLUS GROSSE FUITE ?",
+        headTone: "normal",
+        sub: "1 · Oversize après une perte    2 · Overtrading    3 · Entrée trop tôt.",
+      },
     ],
   },
   {
@@ -189,7 +264,13 @@ const POSTS = [
     caption:
       "Tu n'as pas besoin d'un cours. Tu as besoin de quelqu'un qui te dise, chiffres à l'appui, d'arrêter de te saborder. Moi, c'est Jarvis. #jarvis #trading #aide",
     slides: [
-      { layout: "cover", eyebrow: "Jarvis — coach IA TradeVault", head: "« TU N'AS PAS BESOIN D'UN COURS.", headTone: "normal", sub: "Tu as besoin de quelqu'un qui te dise, chiffres à l'appui, d'arrêter de te saborder. »" },
+      {
+        layout: "cover",
+        eyebrow: "Jarvis — coach IA TradeVault",
+        head: "« TU N'AS PAS BESOIN D'UN COURS.",
+        headTone: "normal",
+        sub: "Tu as besoin de quelqu'un qui te dise, chiffres à l'appui, d'arrêter de te saborder. »",
+      },
     ],
   },
   {
@@ -197,7 +278,12 @@ const POSTS = [
     caption:
       "Ce que ta semaine dit de toi. Ce qui s'est amélioré, ce qui s'est dégradé, UNE priorité pour lundi. Pas 15 conseils : une carte lisible en 5 secondes. #weekly #review #trading",
     slides: [
-      { layout: "cover", head: "CE QUE TA SEMAINE DIT DE TOI.", headTone: "normal", sub: "Et que tu ignores." },
+      {
+        layout: "cover",
+        head: "CE QUE TA SEMAINE DIT DE TOI.",
+        headTone: "normal",
+        sub: "Et que tu ignores.",
+      },
       {
         layout: "compare",
         eyebrow: "Ta revue de semaine",
@@ -219,11 +305,21 @@ const POSTS = [
         eyebrow: "C'est une question de coût",
         cards: [
           { label: "Challenge raté", value: "200–600$", tone: RED },
-          { label: "TradeVault Pro", value: "≈ 1 moindre coût", tone: E, sub: "que tu échoues en te sabordant" },
+          {
+            label: "TradeVault Pro",
+            value: "≈ 1 moindre coût",
+            tone: E,
+            sub: "que tu échoues en te sabordant",
+          },
         ],
         sub: "La discipline n'est pas une dépense : c'est ce qui te fait passer le prochain.",
       },
-      { layout: "cover", head: "ESSAIE. 30 TRADES OFFERTS.", headTone: "emerald", sub: "Jarvis te dira déjà où tu fuis." },
+      {
+        layout: "cover",
+        head: "ESSAIE. 30 TRADES OFFERTS.",
+        headTone: "emerald",
+        sub: "Jarvis te dira déjà où tu fuis.",
+      },
     ],
   },
 ];
@@ -241,10 +337,16 @@ for (const post of POSTS) {
     await page.waitForTimeout(60);
     const m = await page.evaluate(() => {
       const el = document.getElementById("mid");
-      return { overflow: el.scrollHeight - el.clientHeight, scroll: el.scrollHeight, client: el.clientHeight };
+      return {
+        overflow: el.scrollHeight - el.clientHeight,
+        scroll: el.scrollHeight,
+        client: el.clientHeight,
+      };
     });
     const safe = m.overflow <= 2;
-    console.log(`${post.id}_${i}: content=${m.scroll}px box=${m.client}px ${safe ? "OK" : "⚠ OVERFLOW " + m.overflow + "px"}`);
+    console.log(
+      `${post.id}_${i}: content=${m.scroll}px box=${m.client}px ${safe ? "OK" : "⚠ OVERFLOW " + m.overflow + "px"}`,
+    );
     await page.screenshot({ path: join(OUT, `${post.id}_${i}.png`) });
     results.push(`${post.id}_${i}.png`);
   }
@@ -253,4 +355,3 @@ for (const post of POSTS) {
 await browser.close();
 console.log(results.join("\n"));
 console.log("TOTAL", results.length);
-

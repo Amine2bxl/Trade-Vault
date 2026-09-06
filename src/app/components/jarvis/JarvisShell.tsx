@@ -1,19 +1,33 @@
 import { Suspense, useState, type ReactNode } from "react";
-import { Bot, Menu, X } from "lucide-react";
+import { Bot, MessageSquare, PanelLeft, Settings2, Sparkles, X } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useT } from "../../i18n/LanguageContext";
-import { Modal } from "@/shared/ui";
+import { Modal, SubNav, type SubNavItem } from "@/shared/ui";
 import type { JarvisContext } from "./context";
 import { JARVIS_WORKSPACES, type JarvisWorkspaceId } from "./workspaces";
 
 /**
- * JarvisShell — la FENÊTRE de Jarvis (architecture verrouillée, enrichie UX).
+ * JarvisShell — la FENÊTRE de Jarvis (architecture verrouillée, chrome refait).
  *
  * Jarvis est une PLATEFORME : le Shell n'affiche QUE le workspace actif
  * (lazy). Il expose deux slots optionnels sans dépendre d'aucun module métier :
- *  - `sidebar`  → colonne conversations (drawer sur mobile) ;
- *  - `footer`   → bandeau bas (crédits IA + compte actif).
- * Le header affiche l'identité Jarvis « copilote IA » + un bouton paramètres.
+ *  - `sidebar`  → colonne conversations (tiroir sur mobile) ;
+ *  - `footer`   → bandeau bas (crédits IA).
+ *
+ * ── CE QUI CHANGE, ET POURQUOI ────────────────────────────────────────────
+ *
+ * L'en-tête était une bande de 64px portant un dégradé cyan, un avatar cerné
+ * d'un halo flou, une pastille verte à point clignotant (« coach en ligne ») et
+ * deux lignes de texte qui redisaient toutes les deux ce qu'est Jarvis. Il
+ * annonçait l'assistant ; il ne disait pas OÙ on était ni où aller.
+ *
+ * La bande fait maintenant 48px et porte la seule chose qu'un en-tête doit
+ * porter : la marque, et LA NAVIGATION. Les trois espaces (Accueil,
+ * Conversation, Réglages) étaient jusqu'ici dispersés — « Accueil » dans la
+ * colonne de gauche, « Réglages » derrière un engrenage anonyme à droite, et
+ * la Conversation joignable seulement en ouvrant une conversation. Ils vivent
+ * ensemble, dans le contrôle segmenté du produit (`SubNav`), toujours visible,
+ * et l'espace courant est nommé.
  *
  * Seuls « Jarvis » et « Assistant IA de TradeVault » sont affichés — aucun
  * nom de fournisseur n'est jamais rendu ici.
@@ -30,13 +44,16 @@ export interface JarvisShellProps {
   initialPrompt?: string;
   /** Navigation entre espaces. */
   onNavigateWorkspace?: (id: JarvisWorkspaceId) => void;
-  /** Actions globales du header (paramètres…). */
+  /** Actions globales supplémentaires, posées avant le bouton de fermeture. */
   actions?: ReactNode;
   /** Colonne conversations (facultative). */
   sidebar?: ReactNode;
-  /** Bandeau bas (crédits IA + compte actif). */
+  /** Bandeau bas (crédits IA). */
   footer?: ReactNode;
 }
+
+/** Les espaces réellement navigables — ceux que le registre sait rendre. */
+const NAVIGABLE: readonly JarvisWorkspaceId[] = ["home", "conversation", "settings"];
 
 export default function JarvisShell({
   open,
@@ -53,82 +70,104 @@ export default function JarvisShell({
   const Workspace = JARVIS_WORKSPACES[activeWorkspace];
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const ICON: Record<string, ReactNode> = {
+    home: <Sparkles className="h-3.5 w-3.5" />,
+    conversation: <MessageSquare className="h-3.5 w-3.5" />,
+    settings: <Settings2 className="h-3.5 w-3.5" />,
+  };
+  const LABEL: Record<string, string> = {
+    home: t("jarvisSide.home"),
+    conversation: t("jarvis.conversation"),
+    settings: t("jarvisSettings.title"),
+  };
+  const navItems: SubNavItem<JarvisWorkspaceId>[] = NAVIGABLE.map((id) => ({
+    id,
+    label: LABEL[id],
+    icon: ICON[id],
+  }));
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       labelledBy="jarvis-shell-title"
-      wrapperClassName="p-2 sm:p-4 md:p-6"
+      wrapperClassName="p-0 md:p-6"
       className={cn(
-        "w-[98vw] h-[94vh] sm:w-[92vw] sm:h-[92vh]",
-        "md:w-[85vw] md:h-[88vh] lg:w-[82vw] lg:h-[85vh]",
-        "max-w-[1440px] max-h-[940px]",
-        "md:rounded-[28px] rounded-t-[28px]",
+        "h-[94vh] w-full sm:h-[92vh]",
+        "md:h-[88vh] md:w-[88vw] lg:h-[86vh] lg:w-[84vw]",
+        "max-h-[940px] max-w-[1400px]",
+        // Le rayon de la coque, pas un 28px écrit à la main.
+        "tv-jarvis-shell",
         "flex flex-col overflow-hidden",
       )}
     >
-      {/* ── Header premium ── */}
-      <header className="relative flex items-center gap-3 px-4 md:px-6 py-3.5 md:py-4 border-b border-white/[0.06] bg-gradient-to-b from-cyan-500/[0.06] to-transparent shrink-0">
-        {/* Ouverture de la sidebar (mobile) */}
+      {/* ── La bande de tête : marque, navigation, fermeture ── */}
+      <header className="tv-jarvis-bar tv-jarvis-bar-top">
+        {/* Le tiroir des conversations (mobile) — il n'existe que s'il y a une
+            colonne à ouvrir. */}
         {sidebar && (
           <button
+            type="button"
             onClick={() => setSidebarOpen((v) => !v)}
             aria-label={t("jarvisConv.toggle")}
-            className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors shrink-0"
+            aria-expanded={sidebarOpen}
+            className="tv-jarvis-icon-btn md:hidden"
           >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <PanelLeft className="h-4 w-4" />
           </button>
         )}
-        {/* Avatar Jarvis */}
-        <div className="relative shrink-0">
-          <span className="absolute -inset-1 rounded-2xl bg-cyan-500/30 blur-md" />
-          <div className="relative grid h-9 w-9 md:h-10 md:w-10 place-items-center rounded-xl tv-accent-fill">
-            <Bot className="w-4.5 h-4.5 md:w-5 md:h-5" />
+
+        {/* La marque + le nom. Le nom disparaît sous 640px : la navigation est
+            plus utile que le mot « Jarvis » sur une fenêtre qui EST Jarvis. */}
+        <span className="tv-jarvis-mark tv-jarvis-mark-on h-7 w-7 shrink-0">
+          <Bot className="h-4 w-4" />
+        </span>
+        <h2 id="jarvis-shell-title" className="tv-title hidden min-w-0 shrink-0 truncate sm:block">
+          {t("assistant.title")}
+        </h2>
+
+        {/* LA NAVIGATION. Elle prend la place que prenaient deux lignes de
+            slogan, et elle défile sur téléphone au lieu de passer à la ligne. */}
+        {onNavigateWorkspace && (
+          <div className="min-w-0 flex-1">
+            <SubNav
+              items={navItems}
+              value={activeWorkspace}
+              onChange={onNavigateWorkspace}
+              ariaLabel={t("assistant.title")}
+              className="ml-auto w-fit max-w-full"
+            />
           </div>
-        </div>
-        {/* Identité copilote */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h2 id="jarvis-shell-title" className="tv-title tracking-tight truncate">
-              {t("assistant.title")}
-            </h2>
-            <span className="tv-label hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              </span>
-              {t("assistant.dockStatus")}
-            </span>
-          </div>
-          <p className="tv-row-label truncate">{t("jarvis.copilot")}</p>
-        </div>
-        {/* Actions globales */}
-        {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
+        )}
+        {!onNavigateWorkspace && <div className="min-w-0 flex-1" />}
+
+        {actions}
         <button
+          type="button"
           onClick={onClose}
           aria-label={t("common.close")}
-          className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors shrink-0"
+          className="tv-jarvis-icon-btn"
         >
-          <X className="w-5 h-5" />
+          <X className="h-4 w-4" />
         </button>
       </header>
 
       {/* ── Corps : [sidebar | workspace] ── */}
-      <div className="relative flex-1 min-h-0 flex">
+      <div className="relative flex min-h-0 flex-1">
         {sidebar && (
           <>
             {/* Desktop : colonne fixe, étroite, sans débordement dans la zone */}
-            <aside className="hidden md:flex w-52 shrink-0 min-w-0 overflow-hidden border-r border-white/[0.05] bg-white/[0.01] min-h-0">
+            <aside className="hidden min-h-0 w-52 min-w-0 shrink-0 overflow-hidden border-r border-[var(--tv-border)] md:flex">
               {sidebar}
             </aside>
-            {/* Mobile : drawer superposé */}
+            {/* Mobile : tiroir superposé */}
             {sidebarOpen && (
               <>
                 <div
-                  className="md:hidden absolute inset-0 z-20 bg-black/60 backdrop-blur-sm"
+                  className="absolute inset-0 z-20 bg-black/50 md:hidden"
                   onClick={() => setSidebarOpen(false)}
                 />
-                <aside className="md:hidden absolute inset-y-0 left-0 z-[var(--tv-z-rail)] w-72 bg-[#0a1120] border-r border-white/[0.06] min-h-0">
+                <aside className="absolute inset-y-0 left-0 z-[var(--tv-z-rail)] min-h-0 w-72 border-r border-[var(--tv-border)] bg-[var(--tv-plate-1)] md:hidden">
                   {sidebar}
                 </aside>
               </>
@@ -137,15 +176,12 @@ export default function JarvisShell({
         )}
 
         {/* Workspace actif (lazy) + footer */}
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             <Suspense
               fallback={
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                    Chargement…
-                  </div>
+                <div className="flex flex-1 items-center justify-center">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--tv-border-strong)] border-t-[var(--tv-accent)]" />
                 </div>
               }
             >
@@ -156,17 +192,13 @@ export default function JarvisShell({
                   openWorkspace={onNavigateWorkspace ?? (() => {})}
                 />
               ) : (
-                <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
+                <div className="tv-prose flex flex-1 items-center justify-center text-slate-500">
                   {`${activeWorkspace} — bientôt disponible`}
                 </div>
               )}
             </Suspense>
           </div>
-          {footer && (
-            <div className="shrink-0 border-t border-white/[0.05] bg-gradient-to-b from-transparent to-white/[0.02] flex items-center justify-between gap-2">
-              {footer}
-            </div>
-          )}
+          {footer && <div className="tv-jarvis-bar tv-jarvis-bar-bottom">{footer}</div>}
         </div>
       </div>
     </Modal>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Sparkles, ExternalLink, CheckCircle2, AlertTriangle, X } from "lucide-react";
+import { CreditCard, ExternalLink, X } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { useSubscription } from "../hooks/useSubscription";
 import PricingPlans from "./pricing/PricingPlans";
@@ -57,60 +57,20 @@ export default function SubscriptionSection() {
     // on success the browser navigates away — leave the spinner on
   };
 
-  const planLabel =
-    sub.plan === "pro_yearly"
-      ? t("billing.planProYearly")
-      : sub.plan === "pro_monthly"
-        ? t("billing.planProMonthly")
-        : t("billing.planFree");
-
-  const statusChip =
-    sub.status === "active" || sub.status === "trialing" ? (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 text-xs font-bold text-emerald-300">
-        <CheckCircle2 className="w-3.5 h-3.5" />
-        {sub.cancelAtPeriodEnd ? t("billing.cancelsAtPeriodEnd") : t("billing.active")}
-      </span>
-    ) : sub.status === "past_due" ? (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 px-3 py-1 text-xs font-bold text-amber-300">
-        <AlertTriangle className="w-3.5 h-3.5" />
-        {t("billing.pastDue")}
-      </span>
-    ) : (
-      <span className="inline-flex items-center rounded-full bg-white/[0.05] border border-white/[0.08] px-3 py-1 text-xs font-bold text-slate-400">
-        {t("billing.freePlan")}
-      </span>
-    );
-
+  /* NI PASTILLE DE STATUT NI RÉSUMÉ DE FORMULE ICI.
+     Ce bloc en portait un de chacun, alors que la page d'abonnement affiche
+     déjà l'état complet juste au-dessus — et le portait avec sa PROPRE logique
+     (`sub.status === "active" ? …`), qui ne connaissait ni l'expiration ni la
+     reprise. Deux vérités sur le même écran, dont une fausse : un abonnement
+     annulé s'y lisait en vert. L'état est calculé une seule fois, dans
+     `pages/Subscription.tsx` ; ce bloc ne fait plus que ce que son nom dit —
+     encaisser. */
   const showPlans = !isPro || sub.status === "trialing";
   const isStripeActive = sub.status === "active" && sub.source === "stripe";
 
   return (
-    <div className="glass-strong rounded-3xl p-5 space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
-          {t("billing.title")}
-        </h2>
-        {statusChip}
-      </div>
-
-      {/* Current plan summary */}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-          <Sparkles className="w-4.5 h-4.5" />
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-bold text-white">{planLabel}</div>
-          <div className="text-[11px] text-slate-500">
-            {sub.status === "active" && sub.currentPeriodEnd
-              ? `${sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("billing.renewsOn")} ${sub.currentPeriodEnd.toLocaleDateString()}`
-              : sub.status === "active" || sub.status === "trialing"
-                ? lang === "fr"
-                  ? "Accès permanent — offert"
-                  : "Permanent access — complimentary"
-                : t("billing.freeHint")}
-          </div>
-        </div>
-      </div>
+    <div className="glass rounded-3xl p-4 space-y-3.5 md:p-5">
+      <h2 className="tv-title">{t("billing.title")}</h2>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
