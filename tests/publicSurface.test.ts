@@ -50,7 +50,11 @@ describe("langue du document servi", () => {
     // `og:locale`. Elles ne l'étaient pas : `lang="fr"` et un titre français
     // pour un corps rendu en ANGLAIS — la détection de langue s'exécutant dans
     // un initialiseur d'état, elle rendait « en » côté serveur.
-    expect(SSR_LANG).toBe("fr");
+    //
+    // La vitrine est maintenant en anglais PAR DÉFAUT (`SSR_LANG = "en"`) :
+    // la langue ne change que sur choix explicite du visiteur. Les quatre
+    // déclarations suivent donc toutes la même constante.
+    expect(SSR_LANG).toBe("en");
 
     const root = read("../src/routes/__root.tsx");
     expect(root).toContain("<html lang={SSR_LANG}>");
