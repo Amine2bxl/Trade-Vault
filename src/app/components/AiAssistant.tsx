@@ -177,58 +177,49 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
 
   return (
     <>
-      {/* Jarvis dock.
-          A round gradient bubble is the universal signature of a bolt-on chat
-          widget — the thing every SaaS glues to the corner. Jarvis is not a
-          widget, it is the product's intelligence, so it gets a piece of app
-          chrome instead: the same glass surface, emerald accent and squircle
-          mark used by the Jarvis page and the sidebar, named, with a live
-          status dot. Nothing glows and nothing pings — depth is carried by
-          value and hairline, like everywhere else in the app. On mobile it
-          collapses to the mark alone with a quiet live dot, out of the thumb
-          zone, on the identical surface. */}
+      {/* ── LE MODULE FIXE ────────────────────────────────────────────────
+          Jarvis n'est pas un widget greffé dans un coin : c'est l'intelligence
+          du produit, donc son point d'entrée est du CHROME d'application.
+
+          Ce qu'il portait et qui est parti : un halo cyan flou derrière la
+          marque, un point qui clignotait en boucle pour annoncer « coach en
+          ligne » — une information qui ne change jamais et qui n'appelle donc
+          aucune attention — et une seconde ligne de texte sous le nom. Trois
+          effets pour un bouton, sur un système dont la règle est que rien ne
+          rayonne et que la couleur est rare.
+
+          Ce qu'il porte maintenant : la plaque flottante du produit, la marque,
+          le nom. Au repos il est sourd ; ouvert, la marque prend l'accent et le
+          liseré passe à l'accent — le même signal d'état actif que partout
+          ailleurs. Sur téléphone il se réduit à la marque seule, hors de la
+          zone du pouce, sur la même plaque. */}
       <button
         onClick={toggleOpen}
         aria-label={open ? t("assistant.close") : t("assistant.open")}
         aria-expanded={open}
         className={cn(
-          "group fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
-          "flex items-center justify-center",
-          // Mobile : pilule float-shell 44px, badge bien arrondi.
-          "h-11 w-11 rounded-full float-shell",
-          // Desktop : pill glass ORIGINAL (inchangé).
-          "md:h-auto md:w-auto md:rounded-2xl md:border md:p-1.5 md:pr-4 md:glass-strong",
-          "transition duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
-          open && "md:border-emerald-400/40",
-          !open && "md:border-white/[0.1] md:hover:border-emerald-400/40",
+          "tv-jarvis-dock fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
+          "justify-center gap-2 rounded-full p-1.5 md:rounded-2xl md:pr-3.5",
+          "active:scale-[0.98]",
+          open && "tv-jarvis-dock-active",
         )}
       >
-        <span className="relative shrink-0">
-          <span
-            className={cn(
-              "relative grid place-items-center tv-accent-fill",
-              "h-7 w-7 rounded-2xl",
-              "md:h-10 md:w-10 md:rounded-xl",
-            )}
-          >
-            {open ? (
-              <X className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-white" />
-            ) : (
-              <Bot className="w-4 h-4 md:w-5 md:h-5 text-white" />
-            )}
-          </span>
+        <span
+          className={cn(
+            "tv-jarvis-mark h-8 w-8 shrink-0 md:h-9 md:w-9",
+            open && "tv-jarvis-mark-on",
+          )}
+        >
+          {open ? <X className="h-4 w-4" /> : <Bot className="h-4 w-4 md:h-4.5 md:w-4.5" />}
         </span>
-        <span className="hidden md:block text-left leading-none">
-          <span className="block text-[13px] font-bold text-white">{t("assistant.title")}</span>
-          <span className="tv-label mt-1 flex items-center gap-1.5 text-emerald-300/80">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            </span>
-            {t("assistant.dockStatus")}
-          </span>
+        <span
+          className={cn(
+            "hidden text-[13px] font-semibold md:block",
+            open ? "text-white" : "text-[var(--tv-text-secondary)]",
+          )}
+        >
+          {t("assistant.title")}
         </span>
-        {/* Mobile : point de vie discret, assis sur le bord de la bulle. */}
-        <span className="pointer-events-none absolute right-0 top-0 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-[var(--tv-plate-2)] md:hidden" />
       </button>
 
       {/* Workspace actif : la fenêtre espace de travail (le chat est un module). */}
