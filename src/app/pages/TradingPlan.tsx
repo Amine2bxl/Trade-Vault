@@ -12,17 +12,19 @@ import {
   Check,
   Loader2,
   X,
-  Sparkles,
+  ChevronRight,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
-import { Textarea } from "@/shared/ui";
+import { PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";
 import { cn } from "../utils/cn";
 import type { Page } from "../types";
 import {
   EMPTY_PLAN,
   loadTradingPlan,
   planCompletion,
+  planSectionCompletion,
   saveTradingPlan,
   type PlanSetup,
   type TradingPlanData,
@@ -33,6 +35,11 @@ import { usePageActions } from "../contexts/PageActionsContext";
 // Trading Plan — the trader's written constitution. Every field autosaves
 // (debounced) to profiles.trading_plan; the completion ring fills as the
 // plan takes shape. Copy is inline fr/en like Goals.tsx.
+
+/** Les six parties du plan — l'ordre des onglets. */
+const PARTIES = ["mission", "risk", "setups", "limits", "routine", "rules"] as const;
+type PartieId = (typeof PARTIES)[number];
+const PARTIE_KEY = "tv.planSection";
 
 export default function TradingPlan({ setPage }: { setPage: (p: Page) => void }) {
   const { user } = useAuth();
@@ -48,7 +55,15 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (!user) return;
+    /* PAS D'UTILISATEUR = RIEN À CHARGER, DONC PLUS RIEN À ATTENDRE.
+       Le retour anticipé laissait `loading` à `true` pour toujours : la page
+       restait sur son rond qui tourne au lieu de rendre un plan vide. Le shell
+       garantit un utilisateur en production, mais une page ne doit pas
+       dépendre d'une garantie qu'elle ne vérifie pas. */
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     let active = true;
     loadTradingPlan(user.id)
       .then((p) => {
@@ -99,6 +114,76 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
     ),
   );
 
+  /* ── LA PARTIE OUVERTE ────────────────────────────────────────────────
+     Le plan se lisait d'un seul rouleau : six sections `glass-strong` ouvertes
+     en même temps, soit quatre écrans de formulaire sur un téléphone, dont le
+     trader ne modifie qu'une partie à la fois. Une partie à la fois, donc, et
+     son nom écrit dans la barre — il sait où il est, et ce qu'il peut changer
+     ici tient dans un écran.
+
+     Le choix survit au changement de page : rouvrir le plan pour finir « Mes
+     setups » ne doit pas rendre la main sur « Mission ». */
+  const [partie, setPartie] = useState<PartieId>(() => {
+    try {
+      const v = localStorage.getItem(PARTIE_KEY);
+      return PARTIES.some((x) => x === v) ? (v as PartieId) : "mission";
+    } catch {
+      return "mission";
+    }
+  });
+  const ouvrirPartie = useCallback((id: PartieId) => {
+    setPartie(id);
+    try {
+      localStorage.setItem(PARTIE_KEY, id);
+    } catch {
+      /* navigation privée : la partie ne se mémorise pas, tout marche quand même */
+    }
+  }, []);
+
+  /* Chaque onglet porte CE QU'IL LUI RESTE À REMPLIR. Sans ce compte, ouvrir
+     les six parties était le seul moyen de savoir laquelle est incomplète. */
+  const restes = useMemo(() => planSectionCompletion(plan), [plan]);
+  const onglets = useMemo<readonly SubNavItem<PartieId>[]>(
+    () => [
+      {
+        id: "mission",
+        label: tr("Mission", "Mission"),
+        icon: <Compass className="hidden h-3.5 w-3.5 sm:block" />,
+        count: restes.mission[1] - restes.mission[0] || undefined,
+      },
+      {
+        id: "risk",
+        label: tr("Risque", "Risk"),
+        icon: <ShieldAlert className="hidden h-3.5 w-3.5 sm:block" />,
+        count: restes.risk[1] - restes.risk[0] || undefined,
+      },
+      {
+        id: "setups",
+        label: tr("Setups", "Setups"),
+        icon: <Layers className="hidden h-3.5 w-3.5 sm:block" />,
+        count: restes.setups[1] - restes.setups[0] || undefined,
+      },
+      {
+        id: "limits",
+        label: tr("Limites", "Limits"),
+        icon: <Ban className="hidden h-3.5 w-3.5 sm:block" />,
+        count: restes.limits[1] - restes.limits[0] || undefined,
+      },
+      {
+        id: "routine",
+        label: tr("Routine", "Routine"),
+        icon: <SunMedium className="hidden h-3.5 w-3.5 sm:block" />,
+        count: restes.routine[1] - restes.routine[0] || undefined,
+      },
+      {
+        id: "rules",
+        label: tr("Règles", "Rules"),
+        icon: <Scale className="hidden h-3.5 w-3.5 sm:block" />,
+      },
+    ],
+    [restes, tr],
+  );
+
   if (loading) {
     return (
       <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
@@ -110,328 +195,378 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   }
 
   return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
-      {/* Autosave indicator */}
-      <div className="tv-label h-4 -mt-2 text-right">
-        {saveState === "saving" && (
-          <span className="text-slate-500">{tr("Enregistrement…", "Saving…")}</span>
-        )}
-        {saveState === "saved" && (
-          <span className="text-emerald-400 inline-flex items-center gap-1">
-            <Check className="w-3 h-3" /> {tr("Enregistré", "Saved")}
-          </span>
-        )}
-      </div>
+    <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
+      {/* ══ LA BARRE DU PLAN ═════════════════════════════════════════════
+          Les six parties à gauche, l'état d'enregistrement à droite. Elle est
+          collante : on passe de « Risque » à « Setups » depuis n'importe quel
+          point du formulaire, sans remonter. */}
+      <PageToolbar actions={<EtatSauvegarde etat={saveState} tr={tr} />}>
+        <SubNav
+          items={onglets}
+          value={partie}
+          onChange={ouvrirPartie}
+          ariaLabel={tr("Parties du plan", "Plan sections")}
+        />
+      </PageToolbar>
 
       {/* ── Mission & terrain ── */}
-      <Section
-        icon={Compass}
-        title={tr("Mission & terrain de jeu", "Mission & playing field")}
-        sub={tr(
-          "Pourquoi tu trades, sur quoi, et quand.",
-          "Why you trade, what you trade, and when.",
-        )}
-        delay={0}
-      >
-        <Field
-          label={tr("Ma mission (relue les jours de tilt)", "My mission (re-read on tilt days)")}
+      {partie === "mission" && (
+        <Section
+          icon={Compass}
+          title={tr("Mission & terrain de jeu", "Mission & playing field")}
+          sub={tr(
+            "Pourquoi tu trades, sur quoi, et quand.",
+            "Why you trade, what you trade, and when.",
+          )}
         >
-          <Textarea
-            value={plan.mission}
-            onChange={(e) => update({ mission: e.target.value })}
-            placeholder={tr(
-              "Ex : Devenir constant avant de devenir gros. Je protège mon capital d'abord.",
-              "E.g.: Become consistent before becoming big. I protect my capital first.",
-            )}
-            rows={3}
-            className={inputCls}
-          />
-        </Field>
-        <div className="grid md:grid-cols-2 gap-3">
-          <Field label={tr("Marchés tradés", "Markets traded")}>
-            <MarketChips
-              markets={plan.markets}
-              onChange={(m) => update({ markets: m })}
-              placeholder={tr("NQ, EURUSD… + Entrée", "NQ, EURUSD… + Enter")}
-            />
-          </Field>
-          <Field label={tr("Fenêtre de trading", "Trading window")}>
-            <input
-              value={plan.sessions}
-              onChange={(e) => update({ sessions: e.target.value })}
-              placeholder={tr("Ex : 15h30 – 17h30 (ouverture NY)", "E.g.: 9:30 – 11:30 (NY open)")}
+          <Field
+            label={tr("Ma mission (relue les jours de tilt)", "My mission (re-read on tilt days)")}
+          >
+            <Textarea
+              value={plan.mission}
+              onChange={(e) => update({ mission: e.target.value })}
+              placeholder={tr(
+                "Ex : Devenir constant avant de devenir gros. Je protège mon capital d'abord.",
+                "E.g.: Become consistent before becoming big. I protect my capital first.",
+              )}
+              rows={3}
               className={inputCls}
             />
           </Field>
-        </div>
-      </Section>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field label={tr("Marchés tradés", "Markets traded")}>
+              <MarketChips
+                markets={plan.markets}
+                onChange={(m) => update({ markets: m })}
+                placeholder={tr("NQ, EURUSD… + Entrée", "NQ, EURUSD… + Enter")}
+              />
+            </Field>
+            <Field label={tr("Fenêtre de trading", "Trading window")}>
+              <input
+                value={plan.sessions}
+                onChange={(e) => update({ sessions: e.target.value })}
+                placeholder={tr(
+                  "Ex : 15h30 – 17h30 (ouverture NY)",
+                  "E.g.: 9:30 – 11:30 (NY open)",
+                )}
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        </Section>
+      )}
 
       {/* ── Risk management ── */}
-      <Section
-        icon={ShieldAlert}
-        title={tr("Gestion du risque", "Risk management")}
-        sub={tr(
-          "Les chiffres qui te gardent en vie. Non négociables.",
-          "The numbers that keep you alive. Non-negotiable.",
-        )}
-        delay={1}
-      >
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <NumField
-            label={tr("Risque max / trade", "Max risk / trade")}
-            unit="%"
-            value={plan.risk.maxRiskPerTradePct}
-            onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, maxRiskPerTradePct: v } }))}
-            placeholder="1"
-          />
-          <NumField
-            label={tr("Perte max / jour", "Max daily loss")}
-            unit="%"
-            value={plan.risk.maxDailyLossPct}
-            onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, maxDailyLossPct: v } }))}
-            placeholder="3"
-          />
-          <NumField
-            label={tr("Perte max / semaine", "Max weekly loss")}
-            unit="%"
-            value={plan.risk.maxWeeklyLossPct}
-            onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, maxWeeklyLossPct: v } }))}
-            placeholder="6"
-          />
-          <NumField
-            label={tr("R:R minimum", "Minimum R:R")}
-            unit="R"
-            value={plan.risk.minRR}
-            onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, minRR: v } }))}
-            placeholder="2"
-          />
-        </div>
-      </Section>
+      {partie === "risk" && (
+        <Section
+          icon={ShieldAlert}
+          title={tr("Gestion du risque", "Risk management")}
+          sub={tr(
+            "Les chiffres qui te gardent en vie. Non négociables.",
+            "The numbers that keep you alive. Non-negotiable.",
+          )}
+        >
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <NumField
+              label={tr("Risque max / trade", "Max risk / trade")}
+              unit="%"
+              value={plan.risk.maxRiskPerTradePct}
+              onChange={(v) =>
+                update((p) => ({ ...p, risk: { ...p.risk, maxRiskPerTradePct: v } }))
+              }
+              placeholder="1"
+            />
+            <NumField
+              label={tr("Perte max / jour", "Max daily loss")}
+              unit="%"
+              value={plan.risk.maxDailyLossPct}
+              onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, maxDailyLossPct: v } }))}
+              placeholder="3"
+            />
+            <NumField
+              label={tr("Perte max / semaine", "Max weekly loss")}
+              unit="%"
+              value={plan.risk.maxWeeklyLossPct}
+              onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, maxWeeklyLossPct: v } }))}
+              placeholder="6"
+            />
+            <NumField
+              label={tr("R:R minimum", "Minimum R:R")}
+              unit="R"
+              value={plan.risk.minRR}
+              onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, minRR: v } }))}
+              placeholder="2"
+            />
+          </div>
+        </Section>
+      )}
 
       {/* ── Setups ── */}
-      <Section
-        icon={Layers}
-        title={tr("Mes setups", "My setups")}
-        sub={tr(
-          "Seuls les setups écrits ici méritent ton argent.",
-          "Only the setups written here deserve your money.",
-        )}
-        delay={2}
-        action={
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 h-6 px-2 rounded-lg text-[10px] font-bold border shrink-0",
-              plan.setups.length >= MAX_SETUPS
-                ? "bg-amber-500/10 border-amber-500/25 text-amber-300"
-                : "bg-cyan-500/10 border-cyan-500/20 text-cyan-300",
-            )}
-          >
-            <Layers className="w-3 h-3" />
-            {plan.setups.length}/{MAX_SETUPS}
-          </span>
-        }
-      >
-        <div className="space-y-3">
-          {plan.setups.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-white/[0.1] px-4 py-6 text-center text-xs text-slate-500">
-              {tr(
-                "Aucun setup défini. Ajoute ton premier setup — nom, conditions, invalidation.",
-                "No setup defined yet. Add your first one — name, conditions, invalidation.",
-              )}
-            </div>
+      {partie === "setups" && (
+        <Section
+          icon={Layers}
+          title={tr("Mes setups", "My setups")}
+          sub={tr(
+            "Seuls les setups écrits ici méritent ton argent.",
+            "Only the setups written here deserve your money.",
           )}
-
-          {plan.setups.length >= 3 && (
-            <div
+          action={
+            <span
               className={cn(
-                "rounded-xl px-3 py-2.5 text-xs flex items-start gap-2",
+                "tv-figure inline-flex h-6 shrink-0 items-center rounded-lg border px-2 text-[11px]",
                 plan.setups.length >= MAX_SETUPS
-                  ? "bg-amber-500/[0.07] border border-amber-500/20 text-amber-200/90"
-                  : "bg-cyan-500/[0.04] border border-cyan-500/15 text-cyan-200/70",
+                  ? "border-amber-500/25 bg-amber-500/10 text-amber-300"
+                  : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-400",
               )}
             >
-              <Layers className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              <span>
-                {plan.setups.length >= MAX_SETUPS
-                  ? tr(
-                      `Tu as atteint la limite de ${MAX_SETUPS} setups. Trop de setups disperse l'attention. Maîtrise ces ${MAX_SETUPS} avant d'en changer.`,
-                      `You've reached the ${MAX_SETUPS} setup limit. Too many setups scatter focus. Master these ${MAX_SETUPS} before switching.`,
-                    )
-                  : tr(
-                      `Déjà ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Reste concentré : 3-5 setups maîtrisés valent mieux que 10 survolés.`,
-                      `Already ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Stay focused: 3-5 mastered setups beat 10 half-known ones.`,
-                    )}
-              </span>
-            </div>
-          )}
+              {plan.setups.length}/{MAX_SETUPS}
+            </span>
+          }
+        >
+          <div className="space-y-3">
+            {plan.setups.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-white/[0.1] px-4 py-6 text-center text-xs text-slate-500">
+                {tr(
+                  "Aucun setup défini. Ajoute ton premier setup — nom, conditions, invalidation.",
+                  "No setup defined yet. Add your first one — name, conditions, invalidation.",
+                )}
+              </div>
+            )}
 
-          {plan.setups.map((s, i) => (
-            <SetupCard
-              key={s.id}
-              setup={s}
-              index={i}
-              fr={fr}
-              onChange={(next) =>
-                update((p) => ({
-                  ...p,
-                  setups: p.setups.map((x) => (x.id === next.id ? next : x)),
-                }))
-              }
-              onDelete={() =>
-                update((p) => ({ ...p, setups: p.setups.filter((x) => x.id !== s.id) }))
-              }
-            />
-          ))}
+            {/* Le rappel de concentration n'apparaît qu'à partir du troisième
+                setup — avant, il n'a rien à dire. */}
+            {plan.setups.length >= 3 && (
+              <p
+                className={cn(
+                  "tv-prose flex items-start gap-2 rounded-xl border px-3 py-2",
+                  plan.setups.length >= MAX_SETUPS
+                    ? "border-amber-500/20 bg-amber-500/[0.07] text-amber-200/90"
+                    : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-400",
+                )}
+              >
+                <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  {plan.setups.length >= MAX_SETUPS
+                    ? tr(
+                        `Tu as atteint la limite de ${MAX_SETUPS} setups. Trop de setups disperse l'attention. Maîtrise ces ${MAX_SETUPS} avant d'en changer.`,
+                        `You've reached the ${MAX_SETUPS} setup limit. Too many setups scatter focus. Master these ${MAX_SETUPS} before switching.`,
+                      )
+                    : tr(
+                        `Déjà ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Reste concentré : 3-5 setups maîtrisés valent mieux que 10 survolés.`,
+                        `Already ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Stay focused: 3-5 mastered setups beat 10 half-known ones.`,
+                      )}
+                </span>
+              </p>
+            )}
 
-          {plan.setups.length < MAX_SETUPS && (
-            <button
-              onClick={() =>
-                update((p) => ({
-                  ...p,
-                  setups: [
-                    ...p.setups,
-                    { id: crypto.randomUUID(), name: "", rules: "", invalidation: "" },
-                  ],
-                }))
-              }
-              className="w-full h-11 rounded-xl border border-dashed border-cyan-500/30 text-cyan-300 text-sm font-semibold hover:bg-cyan-500/[0.06] transition flex items-center justify-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> {tr("Ajouter un setup", "Add a setup")}
-            </button>
-          )}
+            {plan.setups.map((s, i) => (
+              <SetupCard
+                key={s.id}
+                setup={s}
+                index={i}
+                fr={fr}
+                onChange={(next) =>
+                  update((p) => ({
+                    ...p,
+                    setups: p.setups.map((x) => (x.id === next.id ? next : x)),
+                  }))
+                }
+                onDelete={() =>
+                  update((p) => ({ ...p, setups: p.setups.filter((x) => x.id !== s.id) }))
+                }
+              />
+            ))}
 
-          {plan.setups.length >= MAX_SETUPS && (
-            <p className="text-center tv-row-label">
-              {tr(
-                `Limite de ${MAX_SETUPS} setups atteinte. Supprime un setup pour en ajouter un autre.`,
-                `${MAX_SETUPS}-setup limit reached. Remove one to add another.`,
-              )}
-            </p>
-          )}
-        </div>
-      </Section>
+            {plan.setups.length < MAX_SETUPS && (
+              <button
+                onClick={() =>
+                  update((p) => ({
+                    ...p,
+                    setups: [
+                      ...p.setups,
+                      { id: crypto.randomUUID(), name: "", rules: "", invalidation: "" },
+                    ],
+                  }))
+                }
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--tv-border-accent)] text-sm font-semibold text-[var(--tv-highlight)] transition hover:bg-[rgb(var(--tv-accent-rgb)/0.07)]"
+              >
+                <Plus className="h-4 w-4" /> {tr("Ajouter un setup", "Add a setup")}
+              </button>
+            )}
+          </div>
+        </Section>
+      )}
 
       {/* ── Limits & discipline ── */}
-      <Section
-        icon={Ban}
-        title={tr("Limites & discipline", "Limits & discipline")}
-        sub={tr(
-          "Les garde-fous qui coupent l'overtrading avant qu'il commence.",
-          "The guardrails that stop overtrading before it starts.",
-        )}
-        delay={3}
-      >
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <NumField
-            label={tr("Trades max / jour", "Max trades / day")}
-            unit=""
-            value={plan.limits.maxTradesPerDay}
-            onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, maxTradesPerDay: v } }))}
-            placeholder="3"
-          />
-          <NumField
-            label={tr("Stop après X pertes", "Stop after X losses")}
-            unit=""
-            value={plan.limits.stopAfterLosses}
-            onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, stopAfterLosses: v } }))}
-            placeholder="2"
-          />
-        </div>
-        <div className="grid md:grid-cols-2 gap-2.5">
-          <Toggle
-            checked={plan.limits.noNews}
-            onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, noNews: v } }))}
-            label={tr(
-              "Pas de trade pendant les news à fort impact",
-              "No trading during high-impact news",
-            )}
-          />
-          <Toggle
-            checked={plan.limits.noRevenge}
-            onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, noRevenge: v } }))}
-            label={tr("Pas de revenge trade — jamais", "No revenge trading — ever")}
-          />
-        </div>
-      </Section>
+      {partie === "limits" && (
+        <Section
+          icon={Ban}
+          title={tr("Limites & discipline", "Limits & discipline")}
+          sub={tr(
+            "Les garde-fous qui coupent l'overtrading avant qu'il commence.",
+            "The guardrails that stop overtrading before it starts.",
+          )}
+        >
+          <div className="mb-3 grid grid-cols-2 gap-3">
+            <NumField
+              label={tr("Trades max / jour", "Max trades / day")}
+              unit=""
+              value={plan.limits.maxTradesPerDay}
+              onChange={(v) =>
+                update((p) => ({ ...p, limits: { ...p.limits, maxTradesPerDay: v } }))
+              }
+              placeholder="3"
+            />
+            <NumField
+              label={tr("Stop après X pertes", "Stop after X losses")}
+              unit=""
+              value={plan.limits.stopAfterLosses}
+              onChange={(v) =>
+                update((p) => ({ ...p, limits: { ...p.limits, stopAfterLosses: v } }))
+              }
+              placeholder="2"
+            />
+          </div>
+          <div className="grid gap-2.5 md:grid-cols-2">
+            <Toggle
+              checked={plan.limits.noNews}
+              onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, noNews: v } }))}
+              label={tr(
+                "Pas de trade pendant les news à fort impact",
+                "No trading during high-impact news",
+              )}
+            />
+            <Toggle
+              checked={plan.limits.noRevenge}
+              onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, noRevenge: v } }))}
+              label={tr("Pas de revenge trade — jamais", "No revenge trading — ever")}
+            />
+          </div>
+        </Section>
+      )}
 
       {/* ── Routine ── */}
-      <Section
-        icon={SunMedium}
-        title={tr("Routine", "Routine")}
-        sub={tr(
-          "Ce que tu fais avant, après, et chaque semaine.",
-          "What you do before, after, and every week.",
-        )}
-        delay={4}
-      >
-        <div className="grid md:grid-cols-3 gap-3">
-          <Field label={tr("Avant la session", "Pre-market")}>
-            <Textarea
-              value={plan.routine.preMarket}
-              onChange={(e) =>
-                update((p) => ({ ...p, routine: { ...p.routine, preMarket: e.target.value } }))
-              }
-              placeholder={tr("Checklist, niveaux clés, news…", "Checklist, key levels, news…")}
-              rows={4}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={tr("Après la session", "Post-market")}>
-            <Textarea
-              value={plan.routine.postMarket}
-              onChange={(e) =>
-                update((p) => ({ ...p, routine: { ...p.routine, postMarket: e.target.value } }))
-              }
-              placeholder={tr(
-                "Journal, screenshots, note /10…",
-                "Journal, screenshots, grade /10…",
-              )}
-              rows={4}
-              className={inputCls}
-            />
-          </Field>
-          <Field label={tr("Chaque semaine", "Weekly")}>
-            <Textarea
-              value={plan.routine.weekly}
-              onChange={(e) =>
-                update((p) => ({ ...p, routine: { ...p.routine, weekly: e.target.value } }))
-              }
-              placeholder={tr("Revue des trades, stats, leçons…", "Trade review, stats, lessons…")}
-              rows={4}
-              className={inputCls}
-            />
-          </Field>
-        </div>
-      </Section>
+      {partie === "routine" && (
+        <Section
+          icon={SunMedium}
+          title={tr("Routine", "Routine")}
+          sub={tr(
+            "Ce que tu fais avant, après, et chaque semaine.",
+            "What you do before, after, and every week.",
+          )}
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <Field label={tr("Avant la session", "Pre-market")}>
+              <Textarea
+                value={plan.routine.preMarket}
+                onChange={(e) =>
+                  update((p) => ({ ...p, routine: { ...p.routine, preMarket: e.target.value } }))
+                }
+                placeholder={tr("Checklist, niveaux clés, news…", "Checklist, key levels, news…")}
+                rows={4}
+                className={inputCls}
+              />
+            </Field>
+            <Field label={tr("Après la session", "Post-market")}>
+              <Textarea
+                value={plan.routine.postMarket}
+                onChange={(e) =>
+                  update((p) => ({ ...p, routine: { ...p.routine, postMarket: e.target.value } }))
+                }
+                placeholder={tr(
+                  "Journal, screenshots, note /10…",
+                  "Journal, screenshots, grade /10…",
+                )}
+                rows={4}
+                className={inputCls}
+              />
+            </Field>
+            <Field label={tr("Chaque semaine", "Weekly")}>
+              <Textarea
+                value={plan.routine.weekly}
+                onChange={(e) =>
+                  update((p) => ({ ...p, routine: { ...p.routine, weekly: e.target.value } }))
+                }
+                placeholder={tr(
+                  "Revue des trades, stats, leçons…",
+                  "Trade review, stats, lessons…",
+                )}
+                rows={4}
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        </Section>
+      )}
 
       {/* ── Anti-bias rules engine (checked live on every trade save) ── */}
-      <div className="animate-fade-in-up stagger-5">
-        <TradingRulesSection />
-      </div>
+      {partie === "rules" && (
+        <div className="animate-fade-in-up">
+          <TradingRulesSection />
+        </div>
+      )}
 
-      {/* ── Goals bridge ── */}
+      {/* ── Passerelle vers les objectifs ──
+          Elle reste visible dans TOUTES les parties : c'est la suite naturelle
+          du plan, pas une septième partie. Une ligne, pas une carte de 72px. */}
       <button
         onClick={() => setPage("goals")}
-        className="w-full glass rounded-2xl p-4 flex items-center gap-3.5 card-premium text-left animate-fade-in-up stagger-6"
+        className="tv-row-toggle glass flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left"
       >
-        <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center text-cyan-300 shrink-0">
-          <Target className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+        <Target className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-semibold text-white">
             {tr("Mes objectifs", "My goals")}
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-          </div>
-          <div className="text-xs text-slate-500">
+          </span>
+          <span className="tv-row-label block truncate">
             {tr(
               "Fixe tes objectifs — TradeVault génère ton plan d'action mensuel.",
               "Set your goals — TradeVault generates your monthly action plan.",
             )}
-          </div>
-        </div>
-        <span className="text-cyan-400 text-sm shrink-0">→</span>
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
       </button>
     </div>
+  );
+}
+
+/**
+ * L'ÉTAT D'ENREGISTREMENT — dans la barre, à droite, à hauteur constante.
+ *
+ * Il vivait dans une bande de 16px au-dessus du premier bloc, alignée à
+ * droite, et cette bande existait même quand il n'y avait rien à dire : une
+ * ligne vide en tête de page, en permanence. Ici il occupe une place qui
+ * existe déjà.
+ */
+function EtatSauvegarde({
+  etat,
+  tr,
+}: {
+  etat: "idle" | "saving" | "saved";
+  tr: (f: string, e: string) => string;
+}) {
+  if (etat === "idle") return null;
+  return (
+    <span
+      className={cn(
+        "tv-label flex items-center gap-1 pr-1 whitespace-nowrap",
+        etat === "saved" ? "text-emerald-400" : "text-slate-500",
+      )}
+      role="status"
+    >
+      {etat === "saved" ? (
+        <>
+          <Check className="h-3 w-3" />
+          <span className="hidden sm:inline">{tr("Enregistré", "Saved")}</span>
+        </>
+      ) : (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span className="hidden sm:inline">{tr("Enregistrement…", "Saving…")}</span>
+        </>
+      )}
+    </span>
   );
 }
 
@@ -440,31 +575,38 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 const inputCls =
   "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-colors";
 
+/**
+ * UNE PARTIE DU PLAN.
+ *
+ * Elle portait `glass-strong` — la plaque de ce qui FLOTTE (modale, menu) — et
+ * un décalage d'animation calculé sur son rang, hérité du temps où les six
+ * s'empilaient. Une seule est rendue à la fois : le rang n'existe plus, et la
+ * partie est une carte posée sur la page, pas une fenêtre par-dessus.
+ *
+ * La vignette d'icône passe de la surface d'accent pleine (`tv-accent-fill`,
+ * réservée à ce qui AGIT) au liseré discret : un en-tête de section ne
+ * déclenche rien.
+ */
 function Section({
   icon: Icon,
   title,
   sub,
-  delay,
   action,
   children,
 }: {
   icon: typeof Map;
   title: string;
   sub: string;
-  delay: number;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up"
-      style={{ animationDelay: `${delay * 70}ms` }}
-    >
-      <div className="flex items-start gap-3 mb-4">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
-          <Icon className="w-4 h-4" />
+    <div className="glass animate-fade-in-up rounded-3xl p-4 md:p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="card-header-icon shrink-0">
+          <Icon className="h-4 w-4" />
         </span>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
             <h2 className="tv-title">{title}</h2>
             {action}

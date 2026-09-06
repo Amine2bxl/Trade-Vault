@@ -108,3 +108,33 @@ export function planCompletion(p: TradingPlanData): number {
   ];
   return checks.filter(Boolean).length / checks.length;
 }
+
+/**
+ * L'état de chaque PARTIE du plan — `[rempli, total]` par section.
+ *
+ * `planCompletion` répond « où en est le plan ? » d'un seul chiffre : c'est ce
+ * qu'il faut pour la jauge d'en-tête, et c'est trop peu pour la navigation.
+ * Depuis que les parties sont des onglets, le trader doit voir CE QUI RESTE À
+ * REMPLIR avant de cliquer — sinon il ouvre les six pour trouver les deux
+ * vides. Les mêmes contrôles que ci-dessus, rangés par partie : les deux
+ * lectures ne peuvent donc pas se contredire.
+ */
+export type PlanSectionId = "mission" | "risk" | "setups" | "limits" | "routine";
+
+export function planSectionCompletion(p: TradingPlanData): Record<PlanSectionId, [number, number]> {
+  const done = (...checks: boolean[]): [number, number] => [
+    checks.filter(Boolean).length,
+    checks.length,
+  ];
+  return {
+    mission: done(p.mission.trim().length > 0, p.markets.length > 0, p.sessions.trim().length > 0),
+    risk: done(
+      p.risk.maxRiskPerTradePct.trim().length > 0,
+      p.risk.maxDailyLossPct.trim().length > 0,
+      p.risk.minRR.trim().length > 0,
+    ),
+    setups: done(p.setups.length > 0),
+    limits: done(p.limits.maxTradesPerDay.trim().length > 0),
+    routine: done(p.routine.preMarket.trim().length > 0, p.routine.postMarket.trim().length > 0),
+  };
+}
