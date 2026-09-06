@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { JourneyCurve, type Milestone } from "../src/app/pages/landing/Sections";
+import {
+  JourneyCurve,
+  ProductChrome,
+  SetupSplit,
+  type Milestone,
+} from "../src/app/pages/landing/Sections";
 import { LandingLangProvider } from "../src/app/pages/landing/i18n";
 
 /**
@@ -94,5 +99,45 @@ describe("la courbe du parcours", () => {
     // vitrine cesse de se reteinter depuis `landing.css`.
     expect(html).not.toMatch(/#[0-9a-f]{6}\b/i);
     expect(html).toContain("--lp-accent");
+  });
+});
+
+/**
+ * LA MAQUETTE PRODUIT DU HÉROS.
+ *
+ * Elle porte deux choses qui peuvent mentir en silence :
+ *
+ *   • la JAUGE de répartition. Sa largeur et le pourcentage écrit à côté sont
+ *     posés séparément. S'ils divergent, la barre affiche une part et le texte
+ *     en annonce une autre — sur la première image que voit un visiteur, à
+ *     propos de chiffres. C'est le genre d'écart qu'aucun typage n'attrape.
+ *
+ *   • le CHROME. Le rail et la barre de tête sont ce qui fait lire le visuel
+ *     comme une application plutôt que comme une illustration ; s'ils
+ *     disparaissent, il ne reste qu'une carte.
+ */
+describe("la maquette produit", () => {
+  test("la jauge de répartition porte EXACTEMENT la part annoncée", () => {
+    const rows = [
+      { label: "Breakout", pct: 42 },
+      { label: "Reversal", pct: 31 },
+    ];
+    const out = renderToStaticMarkup(<SetupSplit rows={rows} />);
+    for (const r of rows) {
+      expect(out).toContain(`width:${r.pct}%`);
+      expect(out).toContain(`${r.pct}%<`);
+    }
+  });
+
+  test("le chrome rend son rail et sa barre de tête", () => {
+    const out = renderToStaticMarkup(
+      <ProductChrome navLabels={["Analytics", "Journal", "Jarvis", "Discipline"]}>
+        <p>contenu</p>
+      </ProductChrome>,
+    );
+    expect(out).toContain("TradeVault");
+    expect(out).toContain("<nav");
+    for (const l of ["Analytics", "Journal", "Jarvis", "Discipline"]) expect(out).toContain(l);
+    expect(out).toContain("contenu");
   });
 });

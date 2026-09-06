@@ -242,6 +242,7 @@ const M: Record<string, Msg> = {
   "hero.winrate": { en: "Win rate", fr: "Réussite" },
   "hero.pf": { en: "Profit Factor", fr: "Profit Factor" },
   "hero.sharpe": { en: "Sharpe", fr: "Sharpe" },
+  "hero.split": { en: "Split by setup", fr: "Répartition par setup" },
   "hero.coach": { en: "AI Coach", fr: "Coach IA" },
   "hero.coach.tip": { en: "You overtrade after a loss.", fr: "Tu surtrades après une perte." },
   "hero.coach.action": { en: "Cap it at 3 setups tomorrow.", fr: "Limite à 3 setups demain." },

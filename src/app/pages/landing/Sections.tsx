@@ -365,3 +365,105 @@ export function StepCards({
     </div>
   );
 }
+
+/* ── LE CHROME DU PRODUIT ───────────────────────────────────────────────────
+   Le héros montrait une CARTE — une courbe d'equity posée sur une plaque. Une
+   carte peut venir de n'importe quel outil ; elle ne dit pas qu'il y a une
+   application derrière. Ce composant l'entoure du chrome réel : un rail de
+   navigation à gauche, une barre de tête au-dessus. C'est la seule chose qui
+   fasse lire le visuel comme UN PRODUIT plutôt que comme une illustration.
+
+   Le rail est volontairement RÉDUIT à ses pastilles sous 640px : sur un
+   téléphone, quatre libellés de navigation dans une maquette de 300px de large
+   ne se lisent plus, ils se tassent. La maquette garde alors sa silhouette
+   (rail + en-tête + contenu) sans le texte qui la sature.
+
+   Aucun chiffre inventé ici : ce sont les mêmes valeurs de démonstration que
+   portait déjà la carte, et les libellés viennent du dictionnaire. */
+export function ProductChrome({
+  navLabels,
+  children,
+}: {
+  navLabels: [string, string, string, string];
+  children: ReactNode;
+}) {
+  return (
+    <div className="lp-plate overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,.6)]">
+      {/* La barre de tête */}
+      <div className="flex items-center gap-2.5 border-b border-[var(--lp-line)] bg-[var(--lp-plate-2)] px-3 py-2.5">
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--lp-accent)] text-[10px] font-extrabold text-[var(--lp-on-accent)]">
+          TV
+        </span>
+        <span className="font-display text-[12px] font-bold tracking-[-0.01em] text-[var(--lp-text)]">
+          TradeVault
+        </span>
+        {/* Les trois pastilles de fenêtre — à droite, discrètes : elles disent
+            « application », elles ne se regardent pas. */}
+        <span aria-hidden className="ml-auto flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="size-1.5 rounded-full bg-[var(--lp-line-strong)]" />
+          ))}
+        </span>
+      </div>
+
+      <div className="flex">
+        {/* Le rail */}
+        <nav
+          aria-hidden
+          className="shrink-0 space-y-1 border-r border-[var(--lp-line)] bg-[var(--lp-plate-2)] p-2 sm:w-[124px]"
+        >
+          {navLabels.map((label, i) => (
+            <span
+              key={label}
+              className={[
+                "flex h-7 items-center gap-2 rounded-md px-2 text-[11px] font-medium",
+                i === 0
+                  ? "bg-[var(--lp-plate-3)] text-[var(--lp-text)]"
+                  : "text-[var(--lp-text-3)]",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "size-1.5 shrink-0 rounded-full",
+                  i === 0 ? "bg-[var(--lp-accent)]" : "bg-[var(--lp-line-strong)]",
+                ].join(" ")}
+              />
+              <span className="hidden truncate sm:inline">{label}</span>
+            </span>
+          ))}
+        </nav>
+
+        {/* Le contenu */}
+        <div className="min-w-0 flex-1 p-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── LA RÉPARTITION PAR SETUP ───────────────────────────────────────────────
+   Les barres horizontales de la maquette Lovable, mais branchées sur une
+   notion RÉELLE du produit : la part de chaque setup dans les trades
+   journalisés. C'est ce que la page Analytics calcule déjà.
+
+   La barre est une jauge, pas une décoration : elle porte la même part que le
+   pourcentage écrit à côté, et l'accent ne peint QUE la portion remplie. */
+export function SetupSplit({ rows }: { rows: { label: string; pct: number }[] }) {
+  return (
+    <div className="space-y-2.5">
+      {rows.map((r) => (
+        <div key={r.label}>
+          <div className="mb-1 flex items-baseline justify-between gap-2">
+            <span className="truncate text-[11px] text-[var(--lp-text-2)]">{r.label}</span>
+            <span className="tv-figure shrink-0 text-[11px] text-[var(--lp-text-3)]">{r.pct}%</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--lp-plate-3)]">
+            <div
+              className="h-full rounded-full bg-[var(--lp-accent)]"
+              style={{ width: `${r.pct}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

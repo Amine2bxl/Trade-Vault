@@ -13,7 +13,9 @@ import {
   BackgroundGrid,
   JourneyCurve,
   PillarCards,
+  ProductChrome,
   SectionHead,
+  SetupSplit,
   StepCards,
   type Milestone,
   type Pillar,
@@ -237,7 +239,14 @@ function HeroProductVisual() {
               et il manquait ;
             • la pastille cyan lumineuse au bout du tracé a sauté : la courbe
               du produit ne porte aucun point au repos. */}
-      <div className="relative rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-5 shadow-[0_30px_80px_rgba(0,0,0,.6)]">
+      <ProductChrome
+        navLabels={[
+          t("nav.p.analytics"),
+          t("nav.p.journal"),
+          t("nav.p.jarvis"),
+          t("nav.p.discipline"),
+        ]}
+      >
         <div className="mb-4 flex items-start justify-between">
           <div>
             <p className="tv-label text-slate-500">{t("hero.eq")}</p>
@@ -292,7 +301,21 @@ function HeroProductVisual() {
             </div>
           ))}
         </div>
-      </div>
+        {/* LA RÉPARTITION PAR SETUP — branchée sur une notion réelle du
+            produit (ce qu'Analytics calcule déjà), pas sur une « allocation
+            d'actifs » : TradeVault est un journal de trading, pas un
+            agrégateur patrimonial. */}
+        <div className="mt-4 border-t border-[var(--lp-line)] pt-4">
+          <p className="tv-label mb-2.5 text-slate-500">{t("hero.split")}</p>
+          <SetupSplit
+            rows={[
+              { label: "Breakout", pct: 42 },
+              { label: "Reversal", pct: 31 },
+              { label: "Momentum", pct: 18 },
+            ]}
+          />
+        </div>
+      </ProductChrome>
 
       <div className="float-a absolute -bottom-10 -left-6 z-10 w-[230px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-1)] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,.6)] backdrop-blur-xl hidden sm:block">
         <div className="flex items-center gap-2 mb-2">
