@@ -2729,13 +2729,10 @@ a:focus-visible,
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-.rp-kpi {
-  min-width: 0;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--tv-border);
-  border-radius: 0.75rem;
-  background: var(--tv-plate-2);
-}
+/* `.rp-kpi` A DISPARU : c'était `.tv-kpi-inset` réécrit — même plaque, même
+   liseré, même rayon, à 0.05rem de rembourrage près. Le rapport porte
+   maintenant la case du produit ; il ne garde en propre que la GRILLE
+   ci-dessus, dont la bascule à 1024px est une décision mesurée. */
 
 /* LA BARRE SEGMENTÉE. Un liseré d'écart entre les segments, pas une bordure :
    deux couleurs pleines qui se touchent se lisent comme une seule masse. */
@@ -3003,7 +3000,7 @@ a:focus-visible,
   .tv-print-sheet .rp-rule {
     background: rgba(15, 23, 42, 0.16) !important;
   }
-  .tv-print-sheet .rp-kpi,
+  .tv-print-sheet .tv-kpi,
   .tv-print-sheet .rp-momcell,
   .tv-print-sheet .rp-weekcell {
     background: #fff !important;
