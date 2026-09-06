@@ -343,6 +343,12 @@ const en = {
   "mc.dayShort": "D",
   "mc.target": "Target",
   "mc.limit": "Loss limit",
+  "mc.viewPaths": "Paths",
+  "mc.viewDist": "Distribution",
+  "mc.viewDetails": "Details",
+  "mc.settingsShort": "Settings",
+  "mc.settings": "Simulation settings",
+  "mc.settingsSub": "Where the trades come from, and what the simulation aims for.",
   "mc.reset": "Reset",
   "mc.resetHint": "Back to the values read from your journal",
   "mc.derivedFrom":

@@ -302,6 +302,12 @@ const fr: Dict = {
   "mc.dayShort": "J",
   "mc.target": "Objectif",
   "mc.limit": "Limite de perte",
+  "mc.viewPaths": "Trajectoires",
+  "mc.viewDist": "Distribution",
+  "mc.viewDetails": "Détails",
+  "mc.settingsShort": "Réglages",
+  "mc.settings": "Réglages de simulation",
+  "mc.settingsSub": "D'où viennent les trades, et ce que la simulation vise.",
   "mc.reset": "Réinitialiser",
   "mc.resetHint": "Revenir aux valeurs lues dans ton journal",
   "mc.derivedFrom":

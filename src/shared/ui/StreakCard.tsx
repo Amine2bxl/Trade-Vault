@@ -65,6 +65,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
     daysLabel = "days",
     longestLabel = "Longest streak",
     totalLabel = "Total",
+    subtitle,
     actionLabel = "View details",
     onActionClick,
     howItWorksTitle = "How do streaks work?",

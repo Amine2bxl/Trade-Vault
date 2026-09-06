@@ -67,6 +67,11 @@ export { Chip, RemovableChip, CHIP_BASE, CHIP_ROW } from "./Chip";
 export type { ChipTone } from "./Chip";
 
 export { PageHeader, SectionHeader } from "./PageHeader";
+export { Kpi, KpiGrid } from "./Kpi";
+export type { KpiProps, KpiTone } from "./Kpi";
+export { SubNav, PageToolbar } from "./SubNav";
+export type { SubNavItem } from "./SubNav";
+export { Sheet } from "./Sheet";
 export { EmptyState } from "./EmptyState";
 export { Metric } from "./Metric";
 export type { MetricProps } from "./Metric";

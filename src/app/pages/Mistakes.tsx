@@ -1,17 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTradingRules } from "../hooks/useTradingRules";
 import { useGoalProgress } from "../hooks/useGoalProgress";
 import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "../utils/ruleAdherence";
 import {
-  AlertTriangle,
   TrendingDown,
-  AlertCircle,
   Lightbulb,
   CheckCircle2,
-  ShieldCheck,
   Target,
   TrendingUp,
+  ChevronDown,
 } from "lucide-react";
 import { Trade } from "../types";
 import { formatPnl } from "../utils/tradeCalcs";
@@ -24,7 +22,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
   ComposedChart,
   Line,
   CartesianGrid,
@@ -32,13 +29,7 @@ import {
 import { useT } from "../i18n/LanguageContext";
 import {
   AXIS_TICK,
-  BAR_FILL_GREEN,
-  BAR_FILL_RED,
-  TREND_STROKE,
   BAR_RADIUS,
-  BAR_RADIUS_H,
-  CHART_GREEN,
-  CHART_RED,
   CHART_ANIMATION,
   EQUITY_CURVE_TYPE,
   EQUITY_GRID,
@@ -168,20 +159,10 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
     );
   }
 
-  // Discipline dial color
+  /* Le score de discipline. Sa teinte et la géométrie de l'ancien disque
+     (rayon, circonférence) vivaient encore ici alors que le disque a disparu
+     du rendu : quatre valeurs calculées à chaque rendu pour personne. */
   const disc = b.cleanJournalScore;
-  const discColor =
-    disc >= 80
-      ? "text-emerald-400"
-      : disc >= 60
-        ? "text-cyan-400"
-        : disc >= 40
-          ? "text-amber-400"
-          : "text-red-400";
-  const discStroke =
-    disc >= 80 ? "#10b981" : disc >= 60 ? "var(--tv-accent)" : disc >= 40 ? "#f59e0b" : "#ef4444";
-  const R = 34,
-    C = 2 * Math.PI * R;
 
   return (
     <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
@@ -211,7 +192,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               </div>
               <div
                 className={cn(
-                  "tv-figure mt-1 text-4xl leading-none md:text-5xl",
+                  "tv-figure mt-1 text-[34px] leading-none md:text-5xl",
                   b.totalCost < 0 ? "rp-neg" : "text-white",
                 )}
               >
@@ -338,7 +319,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             Affiché seulement si des règles vérifiables ont réellement été
             éprouvées — une section vide vaudrait mieux qu'un 100 % inventé. */}
         {adherence.length > 0 && (
-          <Card className="p-4 md:p-5 mb-4 md:mb-6">
+          <Card className="p-4 md:p-5">
             <h3 className="tv-title mb-1">{t("mistakes.adherence")}</h3>
             <p className="tv-row-label mb-3">
               {t("mistakes.adherenceSub").replace("{n}", String(ADHERENCE_WINDOW_DAYS))}
@@ -551,58 +532,81 @@ function LigneFuite({
   tip: string;
 }) {
   const { t } = useT();
+  /* LA CONSIGNE EST REPLIÉE, SAUF SUR LA PREMIÈRE FUITE.
+     Elle s'affichait sous CHAQUE ligne : douze erreurs journalisées, douze
+     paragraphes de deux lignes, et la liste passait de 12 lignes de 64px à
+     douze blocs de 110px — la moitié de la page pour des conseils qu'on lit
+     une fois. La priorité, elle, s'ouvre d'emblée : c'est la seule sur
+     laquelle on demande d'agir maintenant. */
+  const [ouvert, setOuvert] = useState(premiere);
+
   return (
-    <article className="px-4 py-3 transition-colors hover:bg-white/[0.02] sm:px-5">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span
-          aria-hidden
-          className={cn("h-2 w-2 shrink-0 self-center rounded-full", SEV_STYLE[m.severity].dot)}
-        />
-        <span className="text-sm font-semibold text-white">{m.mistake}</span>
-        <span
-          className={cn(
-            "tv-label rounded px-1 py-0.5",
-            SEV_STYLE[m.severity].bg,
-            SEV_STYLE[m.severity].text,
-          )}
-        >
-          {t(`mistakes.sev_${m.severity}` as never)}
-        </span>
-        {premiere && (
-          <span className="tv-label rounded bg-red-500/20 px-1 py-0.5 text-red-400">
-            {t("mistakes.priority")}
-          </span>
-        )}
-        {/* La tendance, pour CHAQUE fuite — pas seulement les trois premières. */}
-        {m.trend && m.trend.deltaPct !== 0 && (
+    <article>
+      <button
+        type="button"
+        onClick={() => setOuvert((v) => !v)}
+        aria-expanded={ouvert}
+        className="tv-row-toggle block w-full px-4 py-3 sm:px-5"
+      >
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span
+            aria-hidden
+            className={cn("h-2 w-2 shrink-0 self-center rounded-full", SEV_STYLE[m.severity].dot)}
+          />
+          <span className="text-sm font-semibold text-white">{m.mistake}</span>
           <span
             className={cn(
-              "inline-flex items-center gap-1 text-[11px] font-bold",
-              m.trend.deltaPct < 0 ? "rp-pos" : "rp-neg",
+              "tv-label rounded px-1 py-0.5",
+              SEV_STYLE[m.severity].bg,
+              SEV_STYLE[m.severity].text,
             )}
-            title={t("mistakes.trendWindow")}
           >
-            {m.trend.deltaPct < 0 ? (
-              <TrendingDown className="h-3 w-3" />
-            ) : (
-              <TrendingUp className="h-3 w-3" />
-            )}
-            {m.trend.deltaPct > 0 ? "+" : ""}
-            {m.trend.deltaPct}%
+            {t(`mistakes.sev_${m.severity}` as never)}
           </span>
-        )}
-        <span className="tv-figure ml-auto shrink-0 text-xs text-slate-500">{m.count}×</span>
-        <span className={cn("tv-figure shrink-0 text-sm", m.totalPnl >= 0 ? "rp-pos" : "rp-neg")}>
-          {formatPnl(m.totalPnl)}
+          {premiere && (
+            <span className="tv-label rounded bg-red-500/20 px-1 py-0.5 text-red-400">
+              {t("mistakes.priority")}
+            </span>
+          )}
+          {/* La tendance, pour CHAQUE fuite — pas seulement les trois premières. */}
+          {m.trend && m.trend.deltaPct !== 0 && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-[11px] font-bold",
+                m.trend.deltaPct < 0 ? "rp-pos" : "rp-neg",
+              )}
+              title={t("mistakes.trendWindow")}
+            >
+              {m.trend.deltaPct < 0 ? (
+                <TrendingDown className="h-3 w-3" />
+              ) : (
+                <TrendingUp className="h-3 w-3" />
+              )}
+              {m.trend.deltaPct > 0 ? "+" : ""}
+              {m.trend.deltaPct}%
+            </span>
+          )}
+          <span className="tv-figure ml-auto shrink-0 text-xs text-slate-500">{m.count}×</span>
+          <span className={cn("tv-figure shrink-0 text-sm", m.totalPnl >= 0 ? "rp-pos" : "rp-neg")}>
+            {formatPnl(m.totalPnl)}
+          </span>
+          {/* Le chevron — le seul signal qui dise « cette ligne répond au clic ». */}
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 self-center text-slate-600 transition-transform",
+              ouvert && "rotate-180",
+            )}
+          />
         </span>
-      </div>
-      <div className="rp-bartrack mt-2">
-        <span
-          className={m.totalPnl >= 0 ? "rp-fill-pos" : "rp-fill-neg"}
-          style={{ width: `${Math.max(2, part * 100)}%` }}
-        />
-      </div>
-      <p className="tv-prose mt-2 text-slate-500">{tip}</p>
+        <span className="rp-bartrack mt-2 block">
+          <span
+            className={m.totalPnl >= 0 ? "rp-fill-pos" : "rp-fill-neg"}
+            style={{ width: `${Math.max(2, part * 100)}%` }}
+          />
+        </span>
+      </button>
+      {ouvert && <p className="tv-prose animate-fade-in px-4 pb-3 text-slate-500 sm:px-5">{tip}</p>}
     </article>
   );
 }

@@ -3309,3 +3309,258 @@ a:focus-visible,
     stroke-dashoffset: 0;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA TUILE KPI — LA RÈGLE DES CARTES STATIQUES
+   ══════════════════════════════════════════════════════════════════════════
+
+   Le produit gonflait ses cartes d'information : une tuile « Avg RR » qui ne
+   porte qu'un libellé, un chiffre et une légende occupait 86px de haut sur un
+   téléphone — la même hauteur qu'une carte qui contient un graphe, un menu et
+   trois actions. Sept de ces tuiles en tête d'Analytics, et l'écran entier
+   partait avant la première information utile.
+
+   La règle, appliquée partout : une carte qui n'a AUCUNE interaction est
+   compacte. Elle n'a pas de survol (rien à survoler), pas de rayon de carte
+   pleine (elle n'est pas une carte, c'est une case), et sa hauteur est celle
+   de son contenu — libellé, chiffre, mention. Ce qui grandit, ce sont les
+   surfaces qui contiennent une action, un graphe ou une vraie complexité.
+
+   Mesuré : 86px → 54px sur téléphone, 96px → 66px sur desktop. Sept tuiles
+   passent donc de 172px (deux rangées) à 108px, et le graphe qui suit entre
+   dans le premier écran. */
+.tv-kpi {
+  min-width: 0;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.75rem;
+  background: var(--tv-plate-1);
+}
+@media (min-width: 768px) {
+  .tv-kpi {
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.875rem;
+  }
+}
+/* La variante CREUSE — la même case, posée DANS une carte. */
+.tv-kpi-inset {
+  background: var(--tv-plate-2);
+}
+/* Le chiffre d'une case. Un cran sous `.tv-figure` de tuile héros : une case
+   compacte porte un chiffre compact, sinon la compacité est reprise par la
+   ligne de texte. */
+.tv-kpi-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-size: 15px;
+  margin-top: 0.125rem;
+}
+@media (min-width: 768px) {
+  .tv-kpi-value {
+    font-size: 17px;
+  }
+}
+/* La rangée de cases. `auto-fit` avec un plancher de 108px : deux colonnes à
+   360px, trois à 520px, autant que ça tient ensuite — et JAMAIS de défilement
+   horizontal, ce que `grid-auto-flow: column` aurait produit. */
+.tv-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+  gap: 0.5rem;
+}
+@media (min-width: 768px) {
+  .tv-kpi-grid {
+    gap: 0.625rem;
+  }
+}
+/* Une rangée bornée à N colonnes — pour les grilles qui ont un compte exact. */
+.tv-kpi-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tv-kpi-grid-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .tv-kpi-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA NAVIGATION SECONDAIRE — `.tv-subnav`
+   ══════════════════════════════════════════════════════════════════════════
+
+   `.section-tabs` est la navigation de SECTION (Analyse → Analytics, Rapports,
+   Monte-Carlo) et disparaît sous 768px au profit d'un sélecteur. Il manquait
+   le cran du dessous : la navigation DANS une page — les parties d'un plan de
+   trading, les vues d'une simulation — qui doit exister sur téléphone aussi,
+   parce que c'est elle qui évite d'empiler six sections dans un seul rouleau.
+
+   Même grammaire que le contrôle segmenté (un cadre, des pastilles, l'active
+   sur une plaque claire), mais visible à toutes les tailles et défilante quand
+   elle déborde. Une seule différence assumée : la pastille active porte
+   l'accent en texte, parce qu'ici elle sélectionne un CONTENU, pas une page —
+   et que la barre latérale, qui pose déjà l'actif de la page, n'est pas dans
+   le même plan de lecture. */
+.tv-subnav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+}
+.tv-subnav::-webkit-scrollbar {
+  display: none;
+}
+.tv-subnav-item {
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--tv-text-secondary);
+  transition-property: color, background-color;
+  transition-duration: var(--tv-dur-2);
+  transition-timing-function: var(--tv-ease);
+}
+@media (min-width: 768px) {
+  .tv-subnav-item {
+    height: 2.125rem;
+    padding: 0 0.9rem;
+    font-size: 13px;
+  }
+}
+@media (hover: hover) {
+  .tv-subnav-item:hover {
+    color: var(--tv-text-primary);
+    background: var(--tv-plate-2);
+  }
+}
+.tv-subnav-item-active,
+.tv-subnav-item-active:hover {
+  color: var(--tv-text-primary);
+  background: var(--tv-plate-3);
+}
+.tv-subnav-item:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: -2px;
+}
+/* Le compteur d'un onglet (nombre d'éléments) — jamais une pastille colorée :
+   un chiffre suffit, et six pastilles dans une rangée font un sapin. */
+.tv-subnav-count {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--tv-text-muted);
+}
+.tv-subnav-item-active .tv-subnav-count {
+  color: var(--tv-highlight);
+}
+
+/* LA BARRE D'OUTILS DE PAGE — la ligne qui porte la navigation secondaire et
+   les commandes de la vue. Collante sous la barre de tête : sur une page de
+   simulation ou de plan, on change de vue depuis n'importe quel point du
+   défilement, sans remonter. */
+.tv-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--tv-z-rail);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--tv-plate-0);
+  border: 1px solid var(--tv-border);
+  min-width: 0;
+}
+/* PAS DE PILULE DANS UNE PILULE. La barre EST déjà le cadre du contrôle
+   segmenté : lui laisser le sien dessinait deux ovales concentriques, et
+   personne ne lit deux cadres comme un seul objet. Dans une barre d'outils, la
+   navigation secondaire n'est plus qu'une rangée de pastilles. */
+.tv-toolbar > * > .tv-subnav,
+.tv-toolbar > .tv-subnav {
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA FEUILLE ANCRÉE — `Sheet`
+   ══════════════════════════════════════════════════════════════════════════
+   Un panneau qui entre par un BORD : les réglages d'une simulation, un
+   formulaire secondaire. Ce n'est pas une modale — il ne coupe pas la tâche,
+   il l'accompagne, et le contenu reste visible derrière lui. */
+@keyframes tv-sheet-right {
+  from {
+    opacity: 0;
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+/* UNE seule classe, deux entrées. Le sens d'ouverture n'est pas un choix de
+   style : il dit d'où vient le panneau. Sur un téléphone il monte du bas (le
+   pouce est en bas) ; sur un écran large il vient du bord droit, celui qu'il
+   occupe. La bascule vit donc dans la classe, pas dans deux variantes
+   Tailwind qui ne s'appliqueraient de toute façon pas à un utilitaire maison. */
+.tv-sheet-in {
+  animation: slide-in-panel var(--tv-dur-3) var(--tv-ease) both;
+}
+@media (min-width: 640px) {
+  .tv-sheet-in {
+    animation-name: tv-sheet-right;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-sheet-in {
+    animation-duration: 1ms;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA LIGNE DÉPLIABLE — `.tv-row-toggle`
+   ══════════════════════════════════════════════════════════════════════════
+   Une ligne de liste qui OUVRE quelque chose. Elle se distingue d'une ligne
+   morte par son survol et son chevron ; c'est le seul signal dont une liste a
+   besoin pour dire « ceci répond au clic ». */
+/* Elle ne déclare NI `display` NI largeur : une règle non calquée bat les
+   utilitaires Tailwind, et une ligne qui posait ici `display: flex` rendait
+   `block`, `grid` ou `w-full` inopérants au point d'appel — mesuré sur la
+   liste des fuites, où la barre de part passait en élément flex de largeur
+   nulle et disparaissait. Cette classe ne porte que le CONTRAT d'interaction ;
+   la mise en page reste au point d'appel. */
+.tv-row-toggle {
+  text-align: left;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-row-toggle:hover {
+    background-color: rgb(255 255 255 / 0.03);
+  }
+}
+.tv-row-toggle:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.6);
+  outline-offset: -2px;
+}

@@ -50,7 +50,13 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!user || !activeId) return;
+    /* Même raison que dans le plan de trading : sans utilisateur ni compte,
+       il n'y a rien à charger — donc plus rien à attendre. `loading` restait
+       à `true` et la page ne montrait qu'un rond qui tourne. */
+    if (!user || !activeId) {
+      setLoading(false);
+      return;
+    }
     let active = true;
     setLoading(true);
     Promise.all([loadGoalPlan(user.id, activeId), loadStartingBalance(user.id)])

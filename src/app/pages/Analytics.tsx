@@ -31,7 +31,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { EmptyState, PageContainer, Card } from "@/shared/ui";
+import { EmptyState, PageContainer, Card, Kpi, KpiGrid } from "@/shared/ui";
 import {
   CHART_GREEN,
   CHART_RED,
@@ -447,100 +447,86 @@ export default function Analytics({ trades }: AnalyticsProps) {
       </div>
 
       <div className="space-y-4 md:space-y-6">
-        {/* Profit Factor — desktop hero card. On mobile it collapses into a
-            standard tile inside the metrics grid below (same size as Win
-            Rate / PnL), so the stats read as one uniform, scroll-light grid. */}
+        {/* ══ LE PROFIT FACTOR — UNE BANDE, PLUS UNE CARTE HÉROS ══════════
+            Il occupait une carte de 108px sur desktop (titre, sous-titre,
+            trois colonnes centrées, un badge, une barre) et se DÉDOUBLAIT sur
+            mobile en une tuile de la grille ci-dessous : deux rendus du même
+            chiffre à maintenir, et deux réponses différentes à « quelle taille
+            fait un profit factor ».
+
+            Une seule bande, partout. Elle porte exactement ce que portait la
+            carte — profits, pertes, facteur, verdict, jauge — sur une ligne, en
+            56px. Elle reste plus présente que les cases qui la suivent, parce
+            qu'elle est LA mesure de synthèse ; elle ne mange plus un dixième
+            de l'écran pour le dire. */}
         <div
           className={cn(
-            "hidden md:block glass rounded-2xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 border",
+            "glass animate-fade-in-up stagger-1 rounded-2xl border px-3.5 py-3 md:px-4",
             profitFactorData.isProfitable ? "border-emerald-500/15" : "border-red-500/15",
           )}
         >
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              <h3 className="tv-title mb-0.5">{t("analytics.profitFactor")}</h3>
-              <p className="tv-hint">{t("analytics.profitsOverLosses")}</p>
-            </div>
-            <div className="flex items-center gap-3 md:gap-5 flex-wrap">
-              <div className="text-center">
-                <div className="tv-label text-slate-500">{t("analytics.profits")}</div>
-                <div className="tv-figure text-base md:text-lg text-emerald-400">
-                  {formatPnl(profitFactorData.totalProfits)}
-                </div>
-              </div>
-              <div className="text-sm text-slate-600 font-light">÷</div>
-              <div className="text-center">
-                <div className="tv-label text-slate-500">{t("analytics.losses")}</div>
-                <div className="tv-figure text-base md:text-lg text-red-400">
-                  {formatPnl(-profitFactorData.totalLosses)}
-                </div>
-              </div>
-              <div className="text-sm text-slate-600 font-light">=</div>
-              <div className="text-center">
-                <div className="tv-label text-slate-500">{t("analytics.factor")}</div>
-                <div
-                  className={cn(
-                    "tv-figure text-lg md:text-xl",
-                    profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
-                  )}
-                >
-                  {profitFactorData.profitFactor >= 99
-                    ? "99+"
-                    : profitFactorData.profitFactor.toFixed(2)}
-                </div>
-              </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex min-w-0 items-baseline gap-2">
+              <span className="tv-label shrink-0 text-slate-500">
+                {t("analytics.profitFactor")}
+              </span>
               <span
                 className={cn(
-                  "px-3 py-1.5 rounded-xl text-[10px] md:text-[11px] font-bold",
-                  profitFactorData.isProfitable
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                    : "bg-red-500/10 text-red-400 border border-red-500/20",
+                  "tv-figure text-xl leading-none md:text-2xl",
+                  profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
                 )}
               >
-                {profitFactorData.isProfitable
-                  ? `✓ ${t("analytics.profitable")}`
-                  : `✗ ${t("analytics.losing")}`}
+                {profitFactorData.profitFactor >= 99
+                  ? "99+"
+                  : profitFactorData.profitFactor.toFixed(2)}
               </span>
             </div>
-          </div>
-          <div className="mt-2 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-            <div
+
+            <span
               className={cn(
-                "h-full rounded-full",
-                profitFactorData.isProfitable ? "bg-emerald-400/70" : "bg-red-400/70",
+                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold",
+                profitFactorData.isProfitable
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                  : "border-red-500/20 bg-red-500/10 text-red-400",
               )}
-              style={{ width: `${Math.min((profitFactorData.profitFactor / 3) * 100, 100)}%` }}
-            />
+            >
+              {profitFactorData.isProfitable ? t("analytics.profitable") : t("analytics.losing")}
+            </span>
+
+            {/* Le calcul, écrit : gains ÷ pertes. C'est ce qui rend le facteur
+                lisible sans le connaître. */}
+            <span className="tv-figure hidden items-baseline gap-1.5 text-[11px] text-slate-500 sm:flex">
+              <span className="text-emerald-400">{formatPnl(profitFactorData.totalProfits)}</span>
+              <span className="text-slate-600">÷</span>
+              <span className="text-red-400">{formatPnl(-profitFactorData.totalLosses)}</span>
+            </span>
+
+            {/* La jauge prend la place qui reste, et jamais moins de 96px. */}
+            <div className="ml-auto h-1.5 min-w-[96px] flex-1 overflow-hidden rounded-full bg-white/[0.05]">
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  profitFactorData.isProfitable ? "bg-emerald-400/70" : "bg-red-400/70",
+                )}
+                style={{
+                  width: `${Math.min((profitFactorData.profitFactor / 3) * 100, 100)}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Quant metrics grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 animate-fade-in-up stagger-1">
-          {/* Mobile-only Profit Factor tile — identical size to its neighbors. */}
-          <Card hover className="md:hidden group relative p-3.5">
-            <div className="flex items-center gap-1 mb-1.5">
-              <span className="tv-label text-slate-500">{t("analytics.profitFactor")}</span>
-            </div>
-            <div
-              className={cn(
-                "tv-figure text-base",
-                profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
-              )}
-            >
-              {profitFactorData.profitFactor >= 99
-                ? "99+"
-                : profitFactorData.profitFactor.toFixed(2)}
-            </div>
-            <div className="text-[11px] text-slate-600 mt-0.5 truncate">
-              {profitFactorData.isProfitable
-                ? `✓ ${t("analytics.profitable")}`
-                : `✗ ${t("analytics.losing")}`}
-            </div>
-          </Card>
+        {/* ══ LES SEPT MESURES — DES CASES, PAS DES CARTES ════════════════
+            Chacune n'affiche qu'un libellé, un chiffre et une légende : aucune
+            n'ouvre, ne trie ni ne filtre quoi que ce soit. Elles portaient
+            pourtant le rembourrage d'une carte pleine et son survol — 86px de
+            haut sur un téléphone, soit deux rangées de 172px avant le premier
+            graphe. En case compacte, la même information tient en 54px. */}
+        <KpiGrid className="animate-fade-in-up stagger-1">
           {[
             {
               label: t("dashboard.avgRR"),
-              value: `${stats.avgRR >= 0 ? "" : ""}${stats.avgRR.toFixed(2)}R`,
+              value: `${stats.avgRR.toFixed(2)}R`,
               sub: t("quant.avgRRSub"),
               good: stats.avgRR >= 2,
               info: t("quant.infoAvgRR"),
@@ -601,30 +587,19 @@ export default function Analytics({ trades }: AnalyticsProps) {
               good: quant.recoveryDays !== -1,
             },
           ].map((m, i) => (
-            <div key={i} className="group relative glass rounded-2xl p-3.5 card-premium">
-              {/* `min-w-0` sur la ligne ET sur le libellé : sans lui, un
-                  élément flex refuse de descendre sous sa largeur de contenu et
-                  pousse l'infobulle hors de la tuile. Mesuré à 390px : 159px de
-                  contenu dans 141px disponibles. */}
-              <div className="flex min-w-0 items-center gap-1 mb-1.5">
-                <span className="tv-label min-w-0 truncate text-slate-500">{m.label}</span>
-                {"info" in m && m.info && <InfoTip text={m.info} />}
-              </div>
-              <div
-                className={cn(
-                  "tv-figure text-base md:text-lg",
-                  m.good ? "text-emerald-400" : "text-amber-400",
-                )}
-              >
-                {m.value}
-              </div>
-              {/* La légende PASSE À LA LIGNE au lieu d'être coupée. « avg planned
-                  reward-to-… » ne dit rien ; deux lignes de onze pixels, si.
-                  Les tuiles vivent dans une grille : elles s'égalisent. */}
-              <div className="tv-row-label mt-0.5 leading-snug">{m.sub}</div>
-            </div>
+            <Kpi
+              key={i}
+              label={m.label}
+              value={m.value}
+              /* La légende PASSE À LA LIGNE au lieu d'être coupée. « avg planned
+                 reward-to-… » ne dit rien ; deux lignes de onze pixels, si. */
+              hint={m.sub}
+              wrapHint
+              tone={m.good ? "pos" : "warn"}
+              adornment={"info" in m && m.info ? <InfoTip text={m.info} /> : undefined}
+            />
           ))}
-        </div>
+        </KpiGrid>
 
         {/* ── Saisonnalité — highlights + yearly heatmap ── */}
         {trades.length >= 3 && <SeasonalitySection trades={cutoffTrades} />}
@@ -1178,49 +1153,40 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
         <h3 className="tv-title">{t("trends.title")}</h3>
       </div>
       <div className="p-4 md:p-5 space-y-4">
-        {/* Highlights */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="tv-label text-slate-500">{t("trends.bestMonth")}</span>
-            </div>
-            <div className="font-display text-sm font-extrabold text-white">
-              {best ? best.month : "—"}
-            </div>
-            <div className="tv-figure text-[11px] text-emerald-400 mt-0.5">
-              {best ? formatPnl(best.pnl) : "—"}
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-              <span className="tv-label text-slate-500">{t("trends.worstMonth")}</span>
-            </div>
-            <div className="font-display text-sm font-extrabold text-white">
-              {worst ? worst.month : "—"}
-            </div>
-            <div className="tv-figure text-[11px] text-red-400 mt-0.5">
-              {worst ? formatPnl(worst.pnl) : "—"}
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <CalendarDays className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="tv-label text-slate-500">{t("trends.monthsTraded")}</span>
-            </div>
-            <div className="tv-figure text-base text-white">{tradedMonths}/12</div>
-            <div className="tv-row-label mt-0.5">{totalTrades} trades</div>
-          </div>
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="tv-label text-slate-500">{t("trends.years")}</span>
-            </div>
-            <div className="tv-figure text-base text-white">{years.length}</div>
-            <div className="tv-row-label mt-0.5">{t("trends.ofData")}</div>
-          </div>
-        </div>
+        {/* LES QUATRE FAITS — DES CASES. Quatre blocs centrés de 76px pour
+            porter « Août / +2 487,50 $ » : le libellé, le chiffre et sa mention
+            n'ont jamais eu besoin de plus que la case standard du produit, et
+            les centrer les rendait en plus impossibles à balayer en colonne. */}
+        <KpiGrid cols={4}>
+          <Kpi
+            inset
+            label={t("trends.bestMonth")}
+            value={best ? best.month : "—"}
+            hint={best ? formatPnl(best.pnl) : "—"}
+            adornment={<TrendingUp className="h-3 w-3 shrink-0 text-emerald-400" />}
+          />
+          <Kpi
+            inset
+            label={t("trends.worstMonth")}
+            value={worst ? worst.month : "—"}
+            hint={worst ? formatPnl(worst.pnl) : "—"}
+            adornment={<TrendingDown className="h-3 w-3 shrink-0 text-red-400" />}
+          />
+          <Kpi
+            inset
+            label={t("trends.monthsTraded")}
+            value={`${tradedMonths}/12`}
+            hint={`${totalTrades} trades`}
+            adornment={<CalendarDays className="h-3 w-3 shrink-0 text-[var(--tv-highlight)]" />}
+          />
+          <Kpi
+            inset
+            label={t("trends.years")}
+            value={String(years.length)}
+            hint={t("trends.ofData")}
+            adornment={<Sparkles className="h-3 w-3 shrink-0 text-amber-400" />}
+          />
+        </KpiGrid>
 
         {/* Yearly heatmap */}
         {years.length > 0 && (
