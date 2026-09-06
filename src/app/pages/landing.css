@@ -59,6 +59,41 @@
   --lp-text: #f4f5f6;
   --lp-text-2: #9aa1a8;
   --lp-text-3: #6b7178;
+
+  /* ── LES RAYONS, ET C'EST LE LEVIER LE PLUS SOUS-ESTIMÉ ──────────────────
+     L'application arrondit à 18-24px. C'est juste POUR ELLE : des cartes
+     larges, tenues longtemps sous les yeux, gagnent à être douces.
+
+     Sur une page de vente, le même rayon dit autre chose. Au-delà de ~12px,
+     une surface se lit comme une application grand public — une bulle. En
+     dessous de ~8px, elle se lit comme un OUTIL : un terminal, un tableau de
+     bord, quelque chose de sérieux. C'est exactement la différence entre les
+     deux impressions, et elle tient en six pixels.
+
+     La vitrine descend donc à 6/8/10px. Elle ne contredit pas l'application :
+     elle parle à quelqu'un qui n'y est pas encore entré. */
+  --lp-r-sm: 6px;
+  --lp-r: 8px;
+  --lp-r-lg: 10px;
+
+  /* ── LA POLICE DES TITRES ────────────────────────────────────────────────
+     Space Grotesk sur les titres, Inter sur le texte. Une grotesque à chasse
+     large sur un titre et une linéale neutre en dessous : c'est l'appariement
+     qui fait qu'une page a l'air DESSINÉE plutôt que composée. L'application,
+     elle, garde Inter partout — son contrat est qu'un chiffre et un mot se
+     lisent dans la même police. */
+  --lp-font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* La police des titres s'applique à TOUS les titres de la vitrine, sans avoir
+   à la poser classe par classe. */
+.landing-root h1,
+.landing-root h2,
+.landing-root h3,
+.landing-root .font-display,
+.landing-root .lp-display {
+  font-family: var(--lp-font-display);
+  letter-spacing: -0.02em;
 }
 
 .landing-root > main {
@@ -686,7 +721,7 @@
 .lp-plate {
   position: relative;
   border: 1px solid var(--lp-line);
-  border-radius: 20px;
+  border-radius: var(--lp-r-lg);
   background: var(--lp-plate-1);
 }
 @media (hover: hover) {
@@ -710,7 +745,7 @@
 .lp-plate-accent {
   position: relative;
   border: 1px solid var(--lp-accent);
-  border-radius: 20px;
+  border-radius: var(--lp-r-lg);
   background: var(--lp-accent);
   color: var(--lp-on-accent);
 }
@@ -780,7 +815,7 @@
    seules choses qui, sur un fond noir, disent « ceci est devant ». */
 .lp-float-card {
   border: 1px solid var(--lp-line-strong);
-  border-radius: 14px;
+  border-radius: var(--lp-r);
   background: var(--lp-plate-2);
   box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.9);
   backdrop-filter: blur(6px);

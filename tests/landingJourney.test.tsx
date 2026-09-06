@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   JourneyCurve,
+  EditorialSection,
   ProductChrome,
   SetupSplit,
+  StatStrip,
   type Milestone,
 } from "../src/app/pages/landing/Sections";
 import { LandingLangProvider } from "../src/app/pages/landing/i18n";
@@ -139,5 +141,39 @@ describe("la maquette produit", () => {
     expect(out).toContain("<nav");
     for (const l of ["Analytics", "Journal", "Jarvis", "Discipline"]) expect(out).toContain(l);
     expect(out).toContain("contenu");
+  });
+});
+
+/**
+ * L'AGENCEMENT ÉDITORIAL.
+ *
+ * Deux motifs dont l'échec est SILENCIEUX — la page continue de s'afficher,
+ * simplement en moins bien, ce qu'aucun typage ni aucun lint n'attrape.
+ */
+describe("l'agencement éditorial", () => {
+  test("la bande de chiffres garde la technique des filets d'1px", () => {
+    // Le liseré n'est PAS une bordure par cellule : c'est le fond du conteneur
+    // qui transparaît dans les interstices de `gap-px`. Inverser les deux
+    // couleurs — conteneur en fond de page, cellules en couleur de liseré —
+    // rend une grille invisible, et rien ne le signale.
+    const out = renderToStaticMarkup(<StatStrip items={[{ value: "2 min", label: "Setup" }]} />);
+    expect(out).toMatch(/gap-px[^"]*bg-\[var\(--lp-line\)\]/);
+    expect(out).toContain("bg-[var(--lp-ink)]");
+  });
+
+  test("la section coupe bien la grille en douze, de façon ASYMÉTRIQUE", () => {
+    // Une coupe 6/6 redonnerait deux colonnes égales — donc aucune hiérarchie,
+    // exactement ce que la refonte corrige.
+    const out = renderToStaticMarkup(
+      <EditorialSection eyebrow="Test" title="Titre">
+        <p>contenu</p>
+      </EditorialSection>,
+    );
+    expect(out).toContain("grid-cols-12");
+    expect(out).toContain("lg:col-span-4");
+    expect(out).toContain("lg:col-span-8");
+    expect(out).not.toContain("lg:col-span-6");
+    // Le titre reste en place pendant que le contenu défile.
+    expect(out).toContain("lg:sticky");
   });
 });

@@ -13,8 +13,10 @@ import {
   BackgroundGrid,
   JourneyCurve,
   PillarCards,
+  EditorialSection,
   ProductChrome,
   SectionHead,
+  StatStrip,
   SetupSplit,
   StepCards,
   type Milestone,
@@ -675,25 +677,17 @@ function LandingPage() {
         {/* ── LES TROIS PILIERS ──
             La réponse à la douleur qu'on vient de nommer, sous la forme de la
             première référence : 01/02/03, la médiane pleine et porteuse du CTA. */}
-        <section className="relative section-divider overflow-hidden py-14 lg:py-20">
-          <BackgroundGrid />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead
-              eyebrow={t("pillars.eyebrow")}
-              title={
-                <>
-                  {t("pillars.title.a")} <span className="text-accent">{t("pillars.title.b")}</span>
-                </>
-              }
-              sub={t("pillars.sub")}
-            />
-            <PillarCards
-              pillars={pillars}
-              ctaLabel={t("pillars.cta")}
-              onCta={() => go("features")}
-            />
-          </div>
-        </section>
+        <EditorialSection
+          eyebrow={t("pillars.eyebrow")}
+          title={
+            <>
+              {t("pillars.title.a")} <span className="text-accent">{t("pillars.title.b")}</span>
+            </>
+          }
+          sub={t("pillars.sub")}
+        >
+          <PillarCards pillars={pillars} ctaLabel={t("pillars.cta")} onCta={() => go("features")} />
+        </EditorialSection>
 
         {/* ── JOURNEY ── */}
         <JourneySection />
@@ -806,20 +800,24 @@ function LandingPage() {
             Placée juste avant le prix : c'est là que le visiteur se demande ce
             que commencer va lui coûter en temps. Trois cartes, la médiane
             pleine, et son bouton ouvre l'inscription. */}
-        <section className="relative section-divider overflow-hidden py-14 lg:py-20">
-          <BackgroundGrid />
-          <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">
-            <SectionHead
-              eyebrow={t("start.eyebrow")}
-              title={
-                <>
-                  {t("start.title.a")} <span className="text-accent">{t("start.title.b")}</span>
-                </>
-              }
+        <EditorialSection
+          eyebrow={t("start.eyebrow")}
+          title={
+            <>
+              {t("start.title.a")} <span className="text-accent">{t("start.title.b")}</span>
+            </>
+          }
+          aside={
+            <StatStrip
+              items={[
+                { value: t("hero.t1"), label: t("pricing.trust1") },
+                { value: t("hero.t3"), label: t("pricing.trust3") },
+              ]}
             />
-            <StepCards steps={startSteps} ctaLabel={t("hero.cta")} onCta={() => open("signup")} />
-          </div>
-        </section>
+          }
+        >
+          <StepCards steps={startSteps} ctaLabel={t("hero.cta")} onCta={() => open("signup")} />
+        </EditorialSection>
 
         <section id="pricing" className="relative section-divider py-14 lg:py-20">
           <div className="relative mx-auto max-w-[1200px] px-5 lg:px-8">

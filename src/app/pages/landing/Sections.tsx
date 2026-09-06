@@ -467,3 +467,93 @@ export function SetupSplit({ rows }: { rows: { label: string; pct: number }[] })
     </div>
   );
 }
+
+/* ── LA SECTION ÉDITORIALE ──────────────────────────────────────────────────
+   LE LEVIER LE PLUS LOURD DE LA REFONTE, ET LE MOINS VISIBLE DANS LE CODE.
+
+   La vitrine empilait des blocs centrés dans un `max-w-2xl` : un titre au
+   milieu, un sous-titre au milieu, du contenu dessous, section après section.
+   C'est la mise en page par DÉFAUT — celle qu'on obtient quand on n'en choisit
+   aucune. Elle est symétrique, donc elle n'a pas de hiérarchie : rien n'y est
+   plus important que le reste, et l'œil n'a aucun endroit où se poser.
+
+   Une grille de douze colonnes coupée en 4/8 (ou 5/7) fait le contraire. Le
+   titre tient une colonne étroite à gauche et ne bouge plus ; le contenu
+   occupe la large à droite. L'œil descend en Z au lieu de zigzaguer, et la
+   page se lit comme une publication plutôt que comme une suite de diapositives.
+
+   `aside` porte le titre : sur grand écran il devient COLLANT — il reste en
+   place pendant que le contenu défile à côté. C'est ce qui donne l'impression
+   d'un document tenu, et ça ne coûte qu'une ligne. */
+export function EditorialSection({
+  id,
+  eyebrow,
+  title,
+  sub,
+  aside,
+  children,
+  split = "4/8",
+}: {
+  id?: string;
+  eyebrow?: string;
+  title: ReactNode;
+  sub?: string;
+  /** Contenu additionnel sous le titre (un bouton, une mention). */
+  aside?: ReactNode;
+  children: ReactNode;
+  split?: "4/8" | "5/7";
+}) {
+  const left = split === "4/8" ? "lg:col-span-4" : "lg:col-span-5";
+  const right = split === "4/8" ? "lg:col-span-8" : "lg:col-span-7";
+  return (
+    <section
+      id={id}
+      className="relative border-b border-[var(--lp-line)] px-4 py-16 sm:px-7 lg:py-24"
+    >
+      <div className="mx-auto grid max-w-7xl grid-cols-12 gap-8">
+        <div className={`col-span-12 ${left}`}>
+          <div className="lg:sticky lg:top-24">
+            {eyebrow && (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--lp-text-3)]">
+                {eyebrow}
+              </p>
+            )}
+            <h2 className="lp-display mt-3 text-3xl font-semibold leading-[1.08] text-[var(--lp-text)] sm:text-4xl">
+              {title}
+            </h2>
+            {sub && (
+              <p className="mt-4 max-w-md text-sm leading-7 text-[var(--lp-text-2)]">{sub}</p>
+            )}
+            {aside && <div className="mt-6">{aside}</div>}
+          </div>
+        </div>
+        <div className={`col-span-12 ${right}`}>{children}</div>
+      </div>
+    </section>
+  );
+}
+
+/* ── LA BANDE DE CHIFFRES ───────────────────────────────────────────────────
+   Le motif le plus rentable de la maquette Lovable, et il tient en une
+   déclaration : `gap-px` sur un conteneur dont le FOND est la couleur du
+   liseré. Les cellules, elles, portent le fond de la page — les « bordures »
+   qu'on voit sont donc les interstices du fond qui transparaissent.
+
+   Pourquoi c'est mieux qu'une bordure par cellule : aucune ligne n'est doublée
+   à la jonction, donc les filets font exactement 1px partout, y compris quand
+   la grille se replie en deux colonnes sur téléphone. Une carte par chiffre,
+   espacée, donnerait quatre objets ; ici on lit UN objet à quatre cases. */
+export function StatStrip({ items }: { items: { value: string; label: string }[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--lp-r-lg)] border border-[var(--lp-line)] bg-[var(--lp-line)] md:grid-cols-4">
+      {items.map((it) => (
+        <div key={it.label} className="bg-[var(--lp-ink)] p-5 sm:p-6">
+          <div className="lp-display text-2xl font-semibold text-[var(--lp-text)] sm:text-3xl">
+            {it.value}
+          </div>
+          <div className="mt-1.5 text-xs leading-5 text-[var(--lp-text-2)]">{it.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}

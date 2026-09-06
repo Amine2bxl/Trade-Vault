@@ -24,9 +24,17 @@ const ROOT_DESCRIPTION =
  *  moderne des produits qui font référence (Geist/21st.dev, Linktree, et le
  *  raffinement de Roboto/Google/YouTube) — plus lisible et plus premium que
  *  Roboto lui-même. Roboto Mono sert aux rares données techniques (codes,
- *  heures). */
+ *  heures).
+ *
+ *  SPACE GROTESK entre pour la VITRINE, et pour elle seule. L'application garde
+ *  Inter partout : sa règle est qu'un chiffre et un mot se lisent dans la même
+ *  police, la hiérarchie venant de la graisse. Une page de vente n'a pas ce
+ *  contrat — elle doit se DISTINGUER en trois secondes, et une grotesque à
+ *  chasse large sur les titres est ce qui sépare une page « propre » d'une page
+ *  qui a l'air dessinée. Elle est portée par `--lp-font-display`, donc bornée à
+ *  `.landing-root`. */
 const GOOGLE_FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap";
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap";
 
 import { lockZoom } from "../shared/lock-zoom";
 import ErrorScreen from "../app/components/ErrorScreen";
