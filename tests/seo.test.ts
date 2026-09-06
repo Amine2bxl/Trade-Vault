@@ -12,6 +12,8 @@ import {
   LANDING_ALTERNATES,
 } from "../src/shared/seo";
 import { TIERS } from "../src/domain/plans";
+import { langForPath, SSR_LANG } from "../src/shared/lang";
+import { tr } from "../src/app/pages/landing/i18n";
 import { readSource, stripComments } from "./helpers/source";
 
 /**
@@ -173,6 +175,32 @@ describe("la carte sociale peut réellement s'afficher", () => {
 });
 
 /* ───────────────────────────── Internationalisation ─────────────────────── */
+
+describe("la langue suit l'adresse", () => {
+  test("`langForPath` ne réclame le français que sous `/fr`", () => {
+    // C'est cette fonction qui pilote `<html lang>` (`routes/__root.tsx`). Une
+    // correspondance trop large — un `includes("fr")` par exemple — servirait
+    // du français sur `/from-somewhere`, et un document se contredirait à
+    // nouveau sur sa propre langue.
+    expect(langForPath("/fr")).toBe("fr");
+    expect(langForPath("/fr/quoi-que-ce-soit")).toBe("fr");
+
+    for (const path of ["/", "/privacy", "/terms", "/cgu", "/contact", "/friends", "/journal"]) {
+      expect(langForPath(path), path).toBe(SSR_LANG);
+    }
+  });
+
+  test("le dictionnaire rend RÉELLEMENT deux langues différentes", () => {
+    // Le garde-fou du pari « /fr ». Si le dictionnaire français retombait sur
+    // l'anglais, `/fr` servirait de l'anglais sous un `hreflang="fr"` et un
+    // canonical distinct — c'est-à-dire un contenu dupliqué déclaré comme une
+    // traduction, le pire des deux mondes.
+    for (const key of ["hero.sub", "faq.q1", "faq.a2", "footer.r1"] as const) {
+      expect(tr("fr", key), key).not.toBe(tr("en", key));
+      expect(tr("fr", key).length, key).toBeGreaterThan(0);
+    }
+  });
+});
 
 describe("hreflang", () => {
   test("une page bilingue déclare les trois liens attendus", () => {
