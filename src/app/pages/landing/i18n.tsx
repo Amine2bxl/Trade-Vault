@@ -404,6 +404,20 @@ const M: Record<string, Msg> = {
   },
   "cta.buttonShort": { en: "Start for free", fr: "Commencer gratuitement" },
 
+  /* Captures d'écran du produit — voir `src/assets/product/README.md`.
+     Le texte alternatif décrit L'ÉCRAN, jamais le résultat qu'on y voit :
+     une capture montre le compte d'un trader, pas une promesse. */
+  "shot.dashboard.alt": {
+    en: "The TradeVault dashboard: equity curve, key stats and the day's trades.",
+    fr: "Le tableau de bord TradeVault : courbe de capital, statistiques et trades du jour.",
+  },
+  "shot.dashboard.cap": { en: "The dashboard", fr: "Le tableau de bord" },
+  "shot.reports.alt": {
+    en: "The monthly report: month-by-month performance breakdown.",
+    fr: "Le rapport mensuel : la performance détaillée mois par mois.",
+  },
+  "shot.reports.cap": { en: "Monthly reports", fr: "Les rapports mensuels" },
+
   /* hero product visual */
   "hero.eq": { en: "Equity curve", fr: "Courbe de capital" },
   "hero.winrate": { en: "Win rate", fr: "Réussite" },
