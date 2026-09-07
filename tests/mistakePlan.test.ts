@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Trade } from "../src/app/types";
 import {
   buildMistakePlan,
+  computeAfterLoss,
   computeCleanStreak,
   computeIncidentRate,
 } from "../src/app/utils/mistakePlan";
@@ -194,5 +195,70 @@ describe("le rythme des erreurs", () => {
     // Zéro erreur par trade sur zéro trade se lirait comme un sans-faute.
     const r = computeIncidentRate([]);
     expect(r).toEqual({ recent: null, previous: null, deltaPct: null });
+  });
+});
+
+describe("ce qui se passe juste après une perte", () => {
+  test("les deux groupes sont comptés séparément, et le PREMIER trade n'en fait partie d'aucun", () => {
+    // Le premier trade n'a pas de précédent : le ranger quelque part
+    // reviendrait à inventer ce qui l'a précédé.
+    //
+    // Séquence (P = perdant, G = gagnant, ✗ = erreur cochée) :
+    //   P  G✗ G  G  G  G  P  P✗ P✗ P  P
+    //   ^ hors décompte
+    // Suivent une PERTE : les trades 2, 8, 9, 10, 11 → 5 trades, 2 avec erreur.
+    // Suivent un GAIN  : les trades 3, 4, 5, 6, 7   → 5 trades, 0 avec erreur.
+    const G = (d: string, m: string[] = []) => ({ ...trade(d, m), pnl: 200 });
+    const trades = [
+      trade("2026-03-01", []), // P — premier, hors décompte
+      G("2026-03-02", ["FOMO entry"]), // suit une perte, AVEC erreur
+      G("2026-03-03"),
+      G("2026-03-04"),
+      G("2026-03-05"),
+      G("2026-03-06"),
+      trade("2026-03-07", []), // suit un gain
+      trade("2026-03-08", ["Revenge trade"]), // suit une perte, AVEC erreur
+      trade("2026-03-09", []),
+      trade("2026-03-10", []),
+      trade("2026-03-11", []),
+    ];
+    const r = computeAfterLoss(trades)!;
+    expect(r).not.toBeNull();
+    expect(r.apres).toEqual({ avecErreur: 2, total: 5 });
+    expect(r.autres).toEqual({ avecErreur: 0, total: 5 });
+    // Les deux groupes couvrent exactement les trades SAUF le premier.
+    expect(r.apres.total + r.autres.total).toBe(trades.length - 1);
+  });
+
+  test("un gain range le trade suivant dans l'AUTRE groupe", () => {
+    const gagnant = (d: string) => ({ ...trade(d, []), pnl: 200 });
+    const trades = [
+      gagnant("2026-03-01"),
+      trade("2026-03-02", ["FOMO entry"]), // suit un GAIN
+      gagnant("2026-03-03"),
+      gagnant("2026-03-04"),
+      gagnant("2026-03-05"),
+      gagnant("2026-03-06"),
+      gagnant("2026-03-07"),
+    ];
+    const r = computeAfterLoss(trades);
+    // Aucun trade ne suit une perte → le groupe « après » est vide, donc on ne
+    // publie rien plutôt qu'une comparaison à un seul côté.
+    expect(r).toBeNull();
+  });
+
+  test("sous cinq trades dans un groupe, rien n'est affirmé", () => {
+    // Deux trades sur trois font 67 % — un chiffre qui a l'air d'un fait et
+    // n'en est pas un.
+    const r = computeAfterLoss([
+      trade("2026-03-01", []),
+      trade("2026-03-02", ["FOMO entry"]),
+      trade("2026-03-03", []),
+    ]);
+    expect(r).toBeNull();
+  });
+
+  test("un journal vide ne produit rien", () => {
+    expect(computeAfterLoss([])).toBeNull();
   });
 });

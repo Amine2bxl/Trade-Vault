@@ -8,10 +8,12 @@ import { Trade } from "../types";
 import { computeBehavioral } from "../utils/behavioral";
 import {
   buildMistakePlan,
+  computeAfterLoss,
   computeCleanStreak,
   computeIncidentRate,
   type PlanItem,
 } from "../utils/mistakePlan";
+import { MISTAKE_CLUSTERS, clusterBreakdown } from "../utils/mistakeClusters";
 import { cn } from "../utils/cn";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useT } from "../i18n/LanguageContext";
@@ -89,6 +91,15 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   const plan = useMemo(() => buildMistakePlan(trades), [trades]);
   const streak = useMemo(() => computeCleanStreak(trades), [trades]);
   const rate = useMemo(() => computeIncidentRate(trades), [trades]);
+  /* DEUX LENTILLES DE PLUS, SANS UNE CARTE DE PLUS.
+     Le plan dit QUELLE erreur revient ; il ne disait ni d'où elle vient, ni
+     quand. Les familles répondent à la première question (« FOMO entry » et
+     « Chased entry » sont le même défaut vu sous deux angles : comptées
+     séparément, chacune reste sous le seuil où l'on peut dire quelque chose) ;
+     le trade qui suit une perte répond à la seconde — c'est le seul
+     déclencheur lisible dans le journal sans rien demander de plus. */
+  const familles = useMemo(() => clusterBreakdown(trades), [trades]);
+  const apresPerte = useMemo(() => computeAfterLoss(trades), [trades]);
 
   /* La consigne d'une erreur — la seule chose de cette page qui dise quoi
      FAIRE. Elle vivait repliée en douzième position d'une liste. */
@@ -204,6 +215,40 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               tipDe={tipDe}
             />
           </div>
+
+          {/* ══ D'OÙ ÇA VIENT, ET QUAND ══════════════════════════════════
+              Deux lentilles de plus, dans le PIED de la carte existante —
+              pas dans deux cartes de plus. La demande était « rajouter de la
+              valeur sans alourdir la page » : une bande de 2 lignes ajoute
+              deux angles d'analyse pour la hauteur d'un paragraphe.
+
+              À GAUCHE, LES FAMILLES. « FOMO entry » et « Chased entry »
+              décrivent le même défaut vu sous deux angles ; comptées
+              séparément, chacune reste sous le seuil où l'on peut dire quoi
+              que ce soit. Regroupées, la première cause devient visible. La
+              table vit dans `mistakeClusters.ts` et la CI échoue si une
+              erreur n'y est pas classée.
+
+              À DROITE, LE DÉCLENCHEUR. Le plan dit quelle erreur revient ; il
+              ne disait pas QUAND. Le trade qui suit une perte est le seul
+              moment qu'on puisse lire dans le journal sans rien demander de
+              plus au trader. */}
+          {(familles.n > 0 || apresPerte) && (
+            <div className="grid gap-x-6 gap-y-4 border-t border-white/[0.05] px-4 py-4 sm:px-5 md:grid-cols-2">
+              {familles.n > 0 && (
+                <div className="min-w-0">
+                  <div className="tv-label mb-2 text-slate-500">{t("mistakes.families")}</div>
+                  <BandeFamilles counts={familles.counts} />
+                </div>
+              )}
+              {apresPerte && (
+                <div className="min-w-0">
+                  <div className="tv-label mb-2 text-slate-500">{t("mistakes.afterLoss")}</div>
+                  <ApresPerte data={apresPerte} />
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* ══ 2 · EST-CE QUE TU PROGRESSES ? ══════════════════════════════
@@ -412,7 +457,10 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       <YAxis hide allowDecimals={false} />
                       <Tooltip
                         {...tooltipStyle}
-                        formatter={(value: any) => [`${value}`, t("mistakes.incidents")]}
+                        formatter={(value: number | string) => [
+                          `${value}`,
+                          t("mistakes.incidents"),
+                        ]}
                       />
                       <Bar
                         dataKey="count"
@@ -604,5 +652,135 @@ function ItemPlan({
         </p>
       )}
     </article>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   D'OÙ ÇA VIENT — LES QUATRE FAMILLES
+   ──────────────────────────────────────────────────────────────────────────*/
+
+/** La teinte d'une famille. La gravité de `MISTAKE_CLUSTERS` donne l'ordre du
+ *  rouge au gris : le risque d'abord, la sortie en dernier. */
+const FAM_TEINTE: Record<string, string> = {
+  risk: "#f87171",
+  fomo: "#fb923c",
+  plan_violation: "#f59e0b",
+  exit: "#94a3b8",
+};
+
+/**
+ * LES QUATRE FAMILLES, EN UNE SEULE BARRE.
+ *
+ * Une barre segmentée plutôt que quatre lignes : la question est « laquelle
+ * pèse le plus », et une proportion se lit d'un coup d'œil sur un segment,
+ * jamais sur quatre nombres alignés.
+ *
+ * Les familles à ZÉRO ne prennent aucun segment mais gardent leur entrée de
+ * légende, en gris : « aucune erreur de ce type » est une information, et une
+ * famille disparue se lirait comme « pas de données ».
+ */
+function BandeFamilles({ counts }: { counts: Record<string, number> }) {
+  const { t } = useT();
+  const total = Object.values(counts).reduce((s, n) => s + n, 0);
+  if (total === 0) return null;
+
+  const rangs = [...MISTAKE_CLUSTERS]
+    .map((c) => ({ ...c, n: counts[c.id] ?? 0 }))
+    .sort((a, b) => b.n - a.n);
+
+  return (
+    <div>
+      <div className="flex h-2 overflow-hidden rounded-full bg-white/[0.06]">
+        {rangs
+          .filter((c) => c.n > 0)
+          .map((c) => (
+            <span
+              key={c.id}
+              style={{ width: `${(c.n / total) * 100}%`, background: FAM_TEINTE[c.id] }}
+              className="h-full"
+            />
+          ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1">
+        {rangs.map((c) => (
+          <span key={c.id} className="flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: c.n > 0 ? FAM_TEINTE[c.id] : "rgb(255 255 255 / 0.14)" }}
+            />
+            <span className={cn("tv-row-label", c.n === 0 && "opacity-50")}>{t(c.labelKey)}</span>
+            {c.n > 0 && (
+              <span className="tv-figure text-[11px] text-slate-400">
+                {Math.round((c.n / total) * 100)}%
+              </span>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   CE QUI SE PASSE JUSTE APRÈS UNE PERTE
+   ──────────────────────────────────────────────────────────────────────────*/
+
+/**
+ * DEUX TAUX, CÔTE À CÔTE — et une phrase qui ne promet pas de cause.
+ *
+ * Le produit observe une ASSOCIATION sur des erreurs que le trader coche
+ * lui-même. « Après une perte, X % de tes trades portent une erreur, contre
+ * Y % des autres » est un constat ; « une perte te fait commettre des erreurs »
+ * serait une affirmation que la donnée ne porte pas. La taille d'échantillon
+ * est écrite dessous, pour la même raison.
+ */
+function ApresPerte({
+  data,
+}: {
+  data: {
+    apres: { avecErreur: number; total: number };
+    autres: { avecErreur: number; total: number };
+  };
+}) {
+  const { t } = useT();
+  const a = Math.round((data.apres.avecErreur / data.apres.total) * 100);
+  const b = Math.round((data.autres.avecErreur / data.autres.total) * 100);
+  const ecart = a - b;
+
+  return (
+    <div>
+      <div className="flex items-end gap-4">
+        <Colonne pct={a} ton={ecart > 0 ? "neg" : "neutre"} />
+        <Colonne pct={b} ton="neutre" />
+        <p className="tv-prose min-w-0 flex-1 text-slate-300">
+          {/* Sous cinq points d'écart, on ne raconte pas une différence : le
+              bruit d'échantillonnage suffit à l'expliquer. */}
+          {Math.abs(ecart) < 5
+            ? t("mistakes.afterLossFlat")
+            : t("mistakes.afterLossBody").replace("{a}", String(a)).replace("{b}", String(b))}
+        </p>
+      </div>
+      <p className="tv-row-label mt-2">
+        {t("mistakes.observed").replace("{n}", String(data.apres.total + data.autres.total))}
+      </p>
+    </div>
+  );
+}
+
+/** Une des deux colonnes du comparatif — sa hauteur EST son pourcentage. */
+function Colonne({ pct, ton }: { pct: number; ton: "neg" | "neutre" }) {
+  return (
+    <span className="flex w-8 shrink-0 flex-col items-center gap-1">
+      <span className={cn("tv-figure text-xs", ton === "neg" ? "rp-neg" : "text-slate-400")}>
+        {pct}%
+      </span>
+      <span className="flex h-10 w-4 items-end overflow-hidden rounded-sm bg-white/[0.05]">
+        <span
+          className={cn("w-full rounded-sm", ton === "neg" ? "bg-red-400/70" : "bg-slate-400/50")}
+          style={{ height: `${Math.max(4, pct)}%` }}
+        />
+      </span>
+    </span>
   );
 }

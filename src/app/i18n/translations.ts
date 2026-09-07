@@ -823,6 +823,12 @@ const en = {
   "mistakes.rateWorsening": "more than the previous window",
   "mistakes.rateStable": "same as the previous window",
   "mistakes.declared": "Counted from the mistakes you tick yourself.",
+  "mistakes.families": "Where it comes from",
+  "mistakes.afterLoss": "Right after a loss",
+  "mistakes.afterLossBody":
+    "{a}% of the trades that follow a loss carry a mistake — against {b}% of the others.",
+  "mistakes.afterLossFlat": "Trades that follow a loss carry no more mistakes than the others.",
+  "mistakes.observed": "Observed over {n} trades. An association, not a cause.",
 
   // Trade Modal (add/edit trade)
   "trade.editTitle": "Edit Trade",

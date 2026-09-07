@@ -250,3 +250,53 @@ export function computeIncidentRate(trades: Trade[]): IncidentRate {
   }
   return { recent, previous, deltaPct };
 }
+
+/**
+ * CE QUI SE PASSE JUSTE APRÈS UNE PERTE.
+ *
+ * ── POURQUOI CETTE MESURE-LÀ ────────────────────────────────────────────────
+ *
+ * La page savait dire QUELLE erreur revient, et à quelle fréquence. Elle ne
+ * savait pas dire QUAND. Or la question que se pose un trader devant sa liste
+ * d'erreurs n'est pas « laquelle » — il la connaît — mais « qu'est-ce qui
+ * déclenche ça ». Le moment le plus documenté du métier est le trade qui SUIT
+ * une perte, et c'est aussi le seul déclencheur qu'on puisse lire dans le
+ * journal sans rien demander de plus au trader.
+ *
+ * ── CE QUE LE CHIFFRE DIT, ET CE QU'IL NE DIT PAS ───────────────────────────
+ *
+ * Deux taux comparés : la part de trades portant une erreur parmi ceux qui
+ * suivent une perte, et la même part parmi les autres. C'est une ASSOCIATION
+ * observée sur ce que le trader a coché lui-même — pas une cause. Le produit
+ * l'écrit comme tel : « après une perte, X % de tes trades portent une erreur,
+ * contre Y % sinon. » Il ne dit pas que la perte produit l'erreur.
+ *
+ * `null` sous cinq trades dans l'un des deux groupes : deux trades sur trois
+ * font 67 %, un chiffre qui a l'air d'un fait et n'en est pas un.
+ */
+export interface AfterLoss {
+  /** Trades suivant une perte : combien, et combien portent une erreur. */
+  apres: { avecErreur: number; total: number };
+  /** Tous les autres trades décidés. */
+  autres: { avecErreur: number; total: number };
+}
+
+/** Sous ce seuil dans un groupe, on ne publie rien plutôt qu'un taux de sable. */
+export const AFTER_LOSS_MIN = 5;
+
+export function computeAfterLoss(trades: Trade[]): AfterLoss | null {
+  const ordre = chronologique(trades);
+  const apres = { avecErreur: 0, total: 0 };
+  const autres = { avecErreur: 0, total: 0 };
+
+  for (let i = 1; i < ordre.length; i++) {
+    const precedent = ordre[i - 1];
+    const t = ordre[i];
+    const groupe = precedent.pnl < 0 ? apres : autres;
+    groupe.total++;
+    if (t.mistakes.length > 0) groupe.avecErreur++;
+  }
+
+  if (apres.total < AFTER_LOSS_MIN || autres.total < AFTER_LOSS_MIN) return null;
+  return { apres, autres };
+}

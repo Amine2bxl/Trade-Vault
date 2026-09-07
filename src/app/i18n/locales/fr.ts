@@ -766,6 +766,13 @@ const fr: Dict = {
   "mistakes.rateWorsening": "de plus que la fenêtre précédente",
   "mistakes.rateStable": "identique à la fenêtre précédente",
   "mistakes.declared": "Compté sur les erreurs que tu coches toi-même.",
+  "mistakes.families": "D'où ça vient",
+  "mistakes.afterLoss": "Juste après une perte",
+  "mistakes.afterLossBody":
+    "{a} % des trades qui suivent une perte portent une erreur — contre {b} % des autres.",
+  "mistakes.afterLossFlat":
+    "Les trades qui suivent une perte ne portent pas plus d'erreurs que les autres.",
+  "mistakes.observed": "Observé sur {n} trades. Une association, pas une cause.",
   "trade.editTitle": "Modifier le trade",
   "trade.newTitle": "Nouveau trade",
   "trade.symbol": "Symbole *",
