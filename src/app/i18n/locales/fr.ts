@@ -292,6 +292,13 @@ const fr: Dict = {
   "mc.csv_tooFew": "Seulement {n} trades lisibles — il en faut au moins 5.",
   "mc.csv_unreadable": "Ce fichier n'a pas pu être lu.",
   "mc.ofBalance": "du solde",
+  "mc.cleanTitle": "Et sans les trades que tu as marqués ?",
+  "mc.cleanBody": "Mêmes réglages, rejoués sur tes {n} trades sans erreur cochée.",
+  "mc.cleanAll": "Journal complet",
+  "mc.cleanOnly": "Trades propres",
+  "mc.cleanCaveat":
+    "Un constat, pas une promesse : un trade marqué est un AUTRE trade, pas le même mieux exécuté — et le marquage est déclaratif.",
+  "mc.cleanGap": "{d} points",
   "mc.csvNoPnl": "Aucune colonne de résultat trouvée. Colonnes lues : {cols}",
   "mc.csvOk": "{n} trades lus depuis {file}",
   "mc.emptyCsv": "Dépose un CSV au-dessus, la simulation part toute seule.",

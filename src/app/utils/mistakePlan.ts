@@ -300,3 +300,65 @@ export function computeAfterLoss(trades: Trade[]): AfterLoss | null {
   if (apres.total < AFTER_LOSS_MIN || autres.total < AFTER_LOSS_MIN) return null;
   return { apres, autres };
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LE PONT VERS MONTE-CARLO
+   ──────────────────────────────────────────────────────────────────────────*/
+
+/**
+ * CE QUE LES DEUX PAGES SE DOIVENT.
+ *
+ * « Erreurs » dit ce que le trader fait mal. Monte-Carlo dit où son compte va
+ * s'il continue. Chacune répond à la moitié d'une question — et aucune des deux
+ * ne posait la seule qui les relie : ces erreurs-là, elles changent quoi à la
+ * suite ?
+ *
+ * On y répond sans rien inventer : en rejouant la simulation sur le
+ * SOUS-ENSEMBLE de ses trades qui ne portent aucune erreur cochée. Ce sont ses
+ * vrais trades, sa vraie forme de gains et de pertes — simplement ceux qu'il a
+ * lui-même jugés propres.
+ *
+ * ── CE QUE CETTE COMPARAISON N'EST PAS ──────────────────────────────────────
+ *
+ * Ce n'est PAS « ce que tu aurais gagné sans tes erreurs ». Deux raisons, et
+ * elles doivent rester écrites à l'écran :
+ *
+ *   1. Un trade propre et un trade marqué ne sont pas le même trade dans un
+ *      autre état : ce sont deux trades différents. Retirer les seconds ne
+ *      « corrige » rien, ça change l'échantillon.
+ *   2. Le marquage est DÉCLARATIF. Un trader marque plus volontiers ses
+ *      pertes que ses gains — le sous-ensemble propre est donc biaisé vers le
+ *      haut par construction, et l'écart surestime probablement le gain.
+ *
+ * La formulation honnête est descriptive : « en rejouant uniquement tes trades
+ * sans erreur cochée ». Pas de causalité, pas de promesse.
+ */
+export interface CleanSplit {
+  /** Les trades sans aucune erreur cochée. */
+  clean: Trade[];
+  /** Ceux qui en portent au moins une. */
+  flagged: Trade[];
+  /**
+   * La comparaison est-elle publiable ? Faux dès qu'un des deux côtés est trop
+   * mince : comparer deux échantillons dont l'un compte trois trades produit un
+   * écart qui ne mesure que le hasard.
+   */
+  comparable: boolean;
+}
+
+/** Sous ce nombre de trades propres, aucune simulation comparative. */
+export const CLEAN_SPLIT_MIN = 20;
+
+export function splitCleanTrades(trades: Trade[]): CleanSplit {
+  const clean: Trade[] = [];
+  const flagged: Trade[] = [];
+  for (const t of trades) (t.mistakes.length === 0 ? clean : flagged).push(t);
+  return {
+    clean,
+    flagged,
+    // Il faut assez de trades propres pour que la simulation ait une forme, ET
+    // au moins un trade marqué — sinon les deux échantillons sont le même et
+    // la comparaison ne compare rien.
+    comparable: clean.length >= CLEAN_SPLIT_MIN && flagged.length > 0,
+  };
+}

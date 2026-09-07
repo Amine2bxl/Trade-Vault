@@ -5,6 +5,8 @@ import {
   computeAfterLoss,
   computeCleanStreak,
   computeIncidentRate,
+  splitCleanTrades,
+  CLEAN_SPLIT_MIN,
 } from "../src/app/utils/mistakePlan";
 
 /**
@@ -260,5 +262,47 @@ describe("ce qui se passe juste après une perte", () => {
 
   test("un journal vide ne produit rien", () => {
     expect(computeAfterLoss([])).toBeNull();
+  });
+});
+
+describe("le pont vers Monte-Carlo", () => {
+  const propre = (d: string) => trade(d, []);
+  const marque = (d: string) => trade(d, ["FOMO entry"]);
+
+  test("les deux sous-ensembles couvrent exactement le journal", () => {
+    // Un trade qui tomberait des deux côtés — ou d'aucun — fausserait les deux
+    // simulations en même temps, et rien à l'écran ne le dirait.
+    const trades = [propre("2026-03-01"), marque("2026-03-02"), propre("2026-03-03")];
+    const s = splitCleanTrades(trades);
+    expect(s.clean.length + s.flagged.length).toBe(trades.length);
+    expect(s.flagged.map((t) => t.id)).toEqual([trades[1].id]);
+  });
+
+  test("sans assez de trades propres, la comparaison ne se publie pas", () => {
+    // Comparer deux échantillons dont l'un compte trois trades produit un écart
+    // qui ne mesure que le hasard du tirage.
+    const s = splitCleanTrades([propre("2026-03-01"), propre("2026-03-02"), marque("2026-03-03")]);
+    expect(s.comparable).toBe(false);
+  });
+
+  test("sans aucun trade marqué, il n'y a rien à comparer", () => {
+    // Les deux échantillons seraient identiques : l'écart afficherait zéro et
+    // se lirait comme « tes erreurs ne coûtent rien ».
+    const trades = Array.from({ length: CLEAN_SPLIT_MIN + 5 }, (_, i) =>
+      propre(`2026-03-${String((i % 28) + 1).padStart(2, "0")}`),
+    );
+    const s = splitCleanTrades(trades);
+    expect(s.clean.length).toBeGreaterThanOrEqual(CLEAN_SPLIT_MIN);
+    expect(s.comparable).toBe(false);
+  });
+
+  test("avec les deux côtés fournis, elle est publiable", () => {
+    const trades = [
+      ...Array.from({ length: CLEAN_SPLIT_MIN }, (_, i) =>
+        propre(`2026-03-${String((i % 28) + 1).padStart(2, "0")}`),
+      ),
+      marque("2026-03-15"),
+    ];
+    expect(splitCleanTrades(trades).comparable).toBe(true);
   });
 });

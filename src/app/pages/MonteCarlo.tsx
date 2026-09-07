@@ -32,6 +32,7 @@ import { cn } from "../utils/cn";
 import { usePageActions } from "../contexts/PageActionsContext";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
 import { Kpi, KpiGrid } from "@/shared/ui";
+import { splitCleanTrades } from "../utils/mistakePlan";
 import {
   extractRSamples,
   runMonteCarlo,
@@ -344,6 +345,24 @@ export default function MonteCarloPage({ trades }: Props) {
     return () => clearTimeout(id);
   }, [params, samples]);
 
+  /* ══ LE PONT VERS « ERREURS » ═══════════════════════════════════════════
+     Les deux pages répondaient chacune à la moitié d'une question — ce que le
+     trader fait mal d'un côté, où son compte va de l'autre — et aucune ne
+     posait celle qui les relie : ces erreurs-là, elles changent quoi à la
+     suite ?
+     On y répond sans rien inventer, en rejouant la MÊME simulation sur le
+     sous-ensemble de ses trades qui ne portent aucune erreur cochée. Ce sont
+     ses vrais trades, sa vraie forme de gains et de pertes.
+     Réservé à la source « journal » : la saisie manuelle et le CSV ne portent
+     aucune erreur cochée, il n'y aurait rien à séparer. */
+  const separation = useMemo(() => splitCleanTrades(trades), [trades]);
+  const resultatPropre = useMemo(() => {
+    if (source !== "journal" || !separation.comparable) return null;
+    const echantillon = extractRSamples(separation.clean);
+    if (echantillon.length < 5) return null;
+    return runMonteCarlo(params, echantillon);
+  }, [source, separation, params]);
+
   const reinitialiser = useCallback(() => {
     touche.current = false;
     setSolde(defauts.solde);
@@ -564,6 +583,13 @@ export default function MonteCarloPage({ trades }: Props) {
                   sous la courbe qu'ils commentent. */}
                 <Faisceau result={result} horizon={horizon} />
                 <Histogramme result={result} />
+                {resultatPropre && (
+                  <SansErreurs
+                    complet={result}
+                    propre={resultatPropre}
+                    nClean={separation.clean.length}
+                  />
+                )}
               </>
             </div>
           )}
@@ -1572,5 +1598,93 @@ function Legende({ cls, label, value }: { cls: string; label: string; value?: st
       <span className="tv-row-label">{label}</span>
       {value && <span className="tv-figure text-[11px] text-slate-300">{value}</span>}
     </span>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LA MÊME SIMULATION, SANS LES TRADES MARQUÉS
+   ──────────────────────────────────────────────────────────────────────────*/
+
+/**
+ * LE BLOC QUI RELIE LES DEUX PAGES.
+ *
+ * « Erreurs » dit ce que le trader fait mal ; Monte-Carlo dit où son compte va.
+ * Chacune répondait à la moitié d'une question, et aucune ne posait celle qui
+ * les relie : ces erreurs-là, elles changent quoi à la suite ?
+ *
+ * Deux barres, une seule échelle, et l'écart en points. Pas de second faisceau :
+ * superposer deux nuages de trajectoires produirait une bouillie, et la
+ * question posée ici n'a qu'une réponse — de combien le taux bouge.
+ *
+ * ── CE QUE LE BLOC REFUSE DE DIRE ───────────────────────────────────────────
+ *
+ * « Ce que tu aurais gagné sans tes erreurs » serait faux deux fois : un trade
+ * marqué est un AUTRE trade, pas le même mieux exécuté ; et le marquage est
+ * déclaratif, un trader marquant plus volontiers ses pertes que ses gains. La
+ * mise en garde n'est donc pas une petite ligne polie en bas — elle est la
+ * condition pour que le chiffre soit montré du tout.
+ */
+function SansErreurs({
+  complet,
+  propre,
+  nClean,
+}: {
+  complet: MonteCarloResult;
+  propre: MonteCarloResult;
+  nClean: number;
+}) {
+  const { t } = useT();
+  const a = complet.passRate * 100;
+  const b = propre.passRate * 100;
+  const ecart = Math.round(b - a);
+
+  return (
+    <section className="glass animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
+      <TitreGraphe
+        titre={t("mc.cleanTitle")}
+        sous={t("mc.cleanBody").replace("{n}", String(nClean))}
+      />
+
+      <div className="space-y-2.5">
+        <BarreTaux label={t("mc.cleanAll")} pct={a} ton="neutre" />
+        <BarreTaux label={t("mc.cleanOnly")} pct={b} ton={ecart > 0 ? "pos" : "neutre"} />
+      </div>
+
+      {/* L'ÉCART EN POINTS, PAS EN POURCENTAGE D'UN POURCENTAGE.
+          « +45 % » sur un taux qui passe de 40 à 58 est vrai et illisible :
+          on ne sait plus si l'on parle du taux ou de sa variation. Des POINTS
+          se lisent sans ambiguïté. */}
+      {ecart !== 0 && (
+        <p className={cn("tv-figure mt-3 text-sm", ecart > 0 ? "rp-pos" : "rp-neg")}>
+          {ecart > 0 ? "+" : ""}
+          {t("mc.cleanGap").replace("{d}", String(ecart))}
+        </p>
+      )}
+
+      <p className="tv-row-label mt-2 max-w-2xl">{t("mc.cleanCaveat")}</p>
+    </section>
+  );
+}
+
+/** Une barre de taux de réussite — la longueur EST le pourcentage. */
+function BarreTaux({ label, pct, ton }: { label: string; pct: number; ton: "pos" | "neutre" }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-28 shrink-0 truncate text-xs text-slate-400 sm:w-36">{label}</span>
+      <span className="rp-bartrack min-w-0 flex-1">
+        <span
+          className={ton === "pos" ? "rp-fill-pos" : "rp-fill-flat"}
+          style={{ width: `${Math.max(1, pct)}%` }}
+        />
+      </span>
+      <span
+        className={cn(
+          "tv-figure w-12 shrink-0 text-right text-sm",
+          ton === "pos" ? "rp-pos" : "text-white",
+        )}
+      >
+        {pct.toFixed(0)}%
+      </span>
+    </div>
   );
 }

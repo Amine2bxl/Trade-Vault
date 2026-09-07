@@ -335,6 +335,13 @@ const en = {
   "mc.csv_tooFew": "Only {n} readable trades — at least 5 are needed.",
   "mc.csv_unreadable": "This file could not be read.",
   "mc.ofBalance": "of balance",
+  "mc.cleanTitle": "And without the trades you flagged?",
+  "mc.cleanBody": "Same settings, replayed on your {n} trades with no mistake ticked.",
+  "mc.cleanAll": "Whole journal",
+  "mc.cleanOnly": "Clean trades only",
+  "mc.cleanCaveat":
+    "Descriptive, not a promise: a flagged trade is a different trade, not the same one done right — and flagging is declarative.",
+  "mc.cleanGap": "{d} points",
   "mc.csvNoPnl": "No result column found. Columns read: {cols}",
   "mc.csvOk": "{n} trades read from {file}",
   "mc.emptyCsv": "Drop a CSV above and the simulation starts on its own.",
