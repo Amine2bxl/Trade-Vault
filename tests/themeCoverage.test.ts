@@ -106,3 +106,50 @@ describe("l'inventaire de ce qui reste en dur", () => {
     expect(found.sort()).toEqual(Object.keys(DELIBERATE).sort());
   });
 });
+
+/**
+ * LE CYAN DE TAILWIND — L'ANGLE MORT DU TEST CI-DESSUS.
+ *
+ * `BRAND_HEX` ne cherche que des HEX. Or `bg-cyan-500/15`, `text-cyan-300` et
+ * `border-cyan-400/50` peignent exactement la même couleur sans jamais écrire
+ * `#22d3ee` — et les classes Tailwind sont, de loin, la façon la plus courante
+ * de poser une couleur dans ce dépôt.
+ *
+ * Le résultat était visible là où il coûte le plus cher : l'ONBOARDING et la
+ * CHECKLIST, les deux premiers écrans d'un compte, portaient plus de quatre
+ * -vingts classes cyan en dur. Un trader qui choisit un thème violet, ou le
+ * graphite par défaut, voyait ses tout premiers écrans dans une couleur qui
+ * n'est nulle part ailleurs dans son produit. C'est exactement ce qui fait
+ * lire une interface comme un gabarit générique plutôt que comme la sienne.
+ *
+ * Ces surfaces-là n'ont aucune raison d'échapper au thème : elles ne montrent
+ * ni P&L (vert/rouge, sémantiques) ni palette décorative.
+ */
+describe("les écrans d'accueil portent le thème du trader", () => {
+  /** Les surfaces où un cyan en dur est une régression, pas un choix. */
+  const SURFACES = [
+    "../src/app/onboarding/Onboarding.tsx",
+    "../src/app/pages/Checklist.tsx",
+    "../src/app/pages/ChecklistWizard.tsx",
+  ];
+
+  /** `bg-cyan-500/15`, `text-cyan-300`, `hover:border-cyan-400/50`, `accent-cyan-500`… */
+  const CLASSE_CYAN =
+    /\b(?:[a-z-]+:)?(?:bg|text|border|ring|from|to|via|fill|stroke|accent|shadow|outline|decoration|divide)-(?:cyan|teal)-\d{2,3}\b/g;
+
+  for (const chemin of SURFACES) {
+    test(`${chemin.split("/").pop()} n'écrit aucune couleur de marque en dur`, () => {
+      const src = stripComments(readSource(import.meta.dir, chemin));
+      expect([...src.matchAll(CLASSE_CYAN)].map((m) => m[0])).toEqual([]);
+    });
+  }
+
+  test("et elles référencent bien les variables du thème", () => {
+    // Un fichier qui n'écrirait AUCUNE couleur passerait le test précédent
+    // sans suivre le thème pour autant. On exige la contrepartie positive.
+    for (const chemin of SURFACES) {
+      const src = readSource(import.meta.dir, chemin);
+      expect(src, chemin).toMatch(/--tv-accent|--tv-highlight/);
+    }
+  });
+});

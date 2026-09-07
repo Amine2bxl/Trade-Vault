@@ -100,8 +100,14 @@ export function parseMoney(raw: string): number | null {
 export function parseDateTime(raw: string): { date: string; time: string } | null {
   const s = raw.trim();
   if (!s) return null;
-  // ISO / YYYY-MM-DD [HH:MM]
-  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+  /* ISO / YYYY-MM-DD [HH:MM] — et ses deux séparateurs frères.
+     MetaTrader 4 et 5 exportent leurs dates avec des POINTS
+     (« 2026.01.05 09:12 ») : aucune des deux expressions ne l'attrapait, donc
+     chaque ligne d'un export MT était rejetée pour date illisible — et le
+     fichier entier finissait à zéro trade, sans que rien ne dise pourquoi.
+     La barre oblique en ordre ISO (« 2026/01/05 ») est sans ambiguïté elle
+     aussi : l'année en tête ne peut pas se confondre avec un jour. */
+  let m = s.match(/^(\d{4})[-./](\d{2})[-./](\d{2})(?:[T ](\d{2}):(\d{2}))?/);
   if (m) return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
   // MM/DD/YYYY [HH:MM[:SS] [AM/PM]] — format par défaut des exports US
   m = s.match(
@@ -160,6 +166,25 @@ export const FIELDS: Field[] = [
 export const REQUIRED: Field[] = ["date", "symbol", "pnl"];
 
 /**
+ * CE QUE MONTE-CARLO EXIGE — beaucoup moins.
+ *
+ * Il ne journalise rien : il REJOUE des gains et des pertes, tirés au sort avec
+ * remise. Le symbole ne lui sert à rien, et la date pas davantage — l'ordre des
+ * trades est justement ce que la simulation détruit.
+ *
+ * Exiger les trois champs du journal rejetait donc l'export le plus simple qui
+ * soit, « une date et un résultat », sans qu'aucune de ces deux colonnes
+ * manquantes ne serve à quoi que ce soit dans le calcul. Mesuré : sur cinq
+ * exports de courtiers réalistes, quatre rendaient zéro trade.
+ *
+ * L'assouplissement s'arrête ici. `REQUIRED` ne bouge pas : un trade sans
+ * instrument serait inexploitable dans le journal, et
+ * `tests/csvBrokerFormats.test.ts` vérifie que l'import du journal continue de
+ * refuser ce que Monte-Carlo accepte.
+ */
+export const MC_REQUIRED: Field[] = ["pnl"];
+
+/**
  * Synonymes d'en-tête par champ.
  *
  * L'objectif est qu'un trader n'ait RIEN à mapper à la main dans le cas
@@ -172,7 +197,32 @@ export const REQUIRED: Field[] = ["date", "symbol", "pnl"];
  * version précédente ne reconnaissait pas du tout.
  */
 const GUESSES: Record<Field, string[]> = {
-  date: ["date", "enteredat", "date/time", "datetime", "opened", "jour", "dateouverture"],
+  /* Mesuré sur cinq exports réels : « Heure » (MT5 français), « Timestamp »
+     (Tradovate) et « Trade Date » n'étaient reconnus par AUCUNE entrée. Sans
+     colonne date, `mapRowsToTrades` rejette chaque ligne — soixante lignes
+     lues, zéro trade, et un message qui ne dit pas quelle colonne manque.
+     « time » et « heure » sont volontairement dans la liste : sur un fichier
+     qui porte À LA FOIS « Date » et « Time », `matchScore` donne 1000+ à la
+     correspondance exacte « date », donc la vraie date gagne ; ils ne servent
+     que lorsqu'ils sont la SEULE colonne temporelle. */
+  date: [
+    "date",
+    "enteredat",
+    "date/time",
+    "datetime",
+    "opened",
+    "jour",
+    "dateouverture",
+    "tradedate",
+    "timestamp",
+    "opentime",
+    "closetime",
+    "closed",
+    "filltime",
+    "executiontime",
+    "heure",
+    "time",
+  ],
   symbol: [
     "symbol",
     "symbole",
@@ -209,6 +259,13 @@ const GUESSES: Record<Field, string[]> = {
     "gain/perte",
     "profit net",
     "benefice",
+    /* « Net Result (USD) » : les plateformes propriétaires libellent volontiers
+       leur colonne de résultat sans jamais écrire « P&L ». */
+    "netresult",
+    "result",
+    "gainloss",
+    "realizedpl",
+    "realizedpnl",
   ],
   risk: ["risk", "risque", "montant risque", "risk amount"],
   rMultiple: ["r multiple", "rmultiple", "r-multiple", "r:r", "multiple r", "ratio r"],
@@ -312,7 +369,17 @@ export function detectFormat(headers: string[]): string | null {
 export function mapRowsToTrades(
   rows: string[][],
   mapping: Partial<Record<Field, number>>,
+  /**
+   * Les champs sans lesquels une ligne est rejetée. Par défaut ceux du
+   * journal ; Monte-Carlo passe `MC_REQUIRED`, qui n'exige que le P&L.
+   *
+   * UN SEUL LECTEUR, DEUX EXIGENCES. Écrire une seconde façon de lire un CSV
+   * aurait donné deux comportements pour un même fichier — deux jeux de
+   * synonymes à maintenir, dont un qui prendrait du retard.
+   */
+  opts?: { required?: Field[] },
 ): { valid: Trade[]; invalid: number } {
+  const required = opts?.required ?? REQUIRED;
   const get = (row: string[], f: Field) => {
     const idx = mapping[f];
     return idx !== undefined ? (row[idx] ?? "").trim() : "";
@@ -323,7 +390,13 @@ export function mapRowsToTrades(
     const dt = parseDateTime(get(row, "date"));
     const symbol = get(row, "symbol").toUpperCase().slice(0, 20);
     const pnl = parseMoney(get(row, "pnl"));
-    if (!dt || !symbol || pnl === null) {
+    /* Un champ non exigé qui manque laisse une valeur VIDE, jamais une valeur
+       inventée : une date de repli ferait croire à un trade daté. */
+    const manque =
+      (required.includes("date") && !dt) ||
+      (required.includes("symbol") && !symbol) ||
+      (required.includes("pnl") && pnl === null);
+    if (manque || pnl === null) {
       invalid++;
       continue;
     }
@@ -335,7 +408,7 @@ export function mapRowsToTrades(
     const riskAmount = risk !== null && risk > 0 ? risk : 0;
     valid.push({
       id: generateId(),
-      date: dt.date,
+      date: dt?.date ?? "",
       symbol,
       direction: parseDirection(get(row, "direction")) ?? "long",
       pnl: Math.round(pnl * 100) / 100,
@@ -347,7 +420,7 @@ export function mapRowsToTrades(
       setupQuality: 3,
       notes: get(row, "notes").slice(0, 10000),
       screenshots: [],
-      entryTime: entryDt?.time || dt.time || "",
+      entryTime: entryDt?.time || (dt?.time ?? "") || "",
       exitTime: exitDt?.time || "",
       confluences: [],
       confidence: 50,

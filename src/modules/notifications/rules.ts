@@ -13,6 +13,8 @@
 
 import type { NotificationInput } from "./types";
 import { localDateOf, todayLocalDate } from "@/shared/calendar-date";
+import type { CalendarEvent } from "../economic-calendar/types";
+import { reglesEconomiques } from "./economic";
 
 export interface RuleContext {
   trades: Array<{ date: string; pnl: number; mistakes: string[] }>;
@@ -30,6 +32,18 @@ export interface RuleContext {
   mistakeTrends?: { mistake: string; deltaPct: number; recent: number; previous: number }[];
   /** Tenue des règles, déjà calculée par `computeRuleAdherence`. */
   adherence?: { text: string; kept: number; applicable: number; ratePct: number }[];
+  /**
+   * Le calendrier économique de la semaine en cours.
+   *
+   * C'est la SEULE donnée du contexte qui ne vienne pas du journal : le trader
+   * ne peut pas la déduire de ses trades, et elle porte une heure limite. Tout
+   * le reste peut attendre qu'il ouvre la page ; une publication à fort impact
+   * dans un quart d'heure, non.
+   *
+   * Optionnel : une absence signifie « calendrier pas encore chargé », jamais
+   * « aucun événement ». Rien ne doit être affirmé sur cette base.
+   */
+  economicEvents?: CalendarEvent[];
 }
 
 /**
@@ -84,6 +98,15 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   const fr = isFr();
   const rules: CodedRule[] = [];
   const today = todayLocalDate();
+
+  /* ── ÉCONOMIE — la seule alerte DATÉE du produit ────────────────────────
+     Elle passe en tête parce qu'elle est la seule à avoir une heure limite :
+     une fuite dans le journal se lira aussi bien demain, une publication à
+     fort impact dans quinze minutes, non. Voir `economic.ts` pour ce qui
+     déclenche et, surtout, pour tout ce qui se tait. */
+  if (ctx.economicEvents?.length) {
+    rules.push(...reglesEconomiques(ctx.economicEvents, new Date(), fr));
+  }
 
   const sorted = [...ctx.trades].sort((a, b) => b.date.localeCompare(a.date));
 

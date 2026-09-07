@@ -105,22 +105,34 @@ export function AuthModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[var(--tv-z-top)] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md overflow-y-auto"
-      onMouseDown={(e) => e.currentTarget === e.target && onClose()}
-    >
-      <div className="modal-in relative my-auto w-full max-w-[880px] overflow-hidden rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] shadow-[var(--tv-elev-3)]">
+    /* ══ PLEIN ÉCRAN, PLUS UNE FENÊTRE ════════════════════════════════════
+       C'était une carte de 880px flottant au centre d'un voile noir flouté :
+       une boîte de dialogue posée SUR la vitrine, qu'on lisait comme une
+       interruption. Or l'inscription n'est pas une interruption du parcours,
+       c'en est la fin — le moment où le visiteur décide.
+
+       C'est maintenant un écran entier, bord à bord : fond opaque, aucun
+       rayon, aucune bordure, aucune ombre. La colonne de gauche porte la
+       marque et la preuve sur toute la hauteur, celle de droite le
+       formulaire. Rien ne rappelle qu'il y a une page derrière, donc rien ne
+       distrait de la seule chose à faire.
+
+       Le clic sur le fond ne ferme plus : sur un plein écran il n'y a pas de
+       « fond », et fermer par mégarde au milieu d'une saisie coûterait le
+       mot de passe déjà tapé. La croix reste, et elle est le seul chemin. */
+    <div className="fixed inset-0 z-[var(--tv-z-top)] overflow-y-auto bg-[var(--tv-bg)]">
+      <div className="modal-in relative min-h-full">
         <button
           onClick={onClose}
           aria-label={t("auth.close")}
-          className="absolute right-3.5 top-3.5 z-10 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-white/[.06] hover:text-white transition"
+          className="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[.06] hover:text-white"
         >
           <Icon n="close" cls="h-4 w-4" />
         </button>
 
-        <div className="grid md:grid-cols-2">
+        <div className="grid min-h-screen md:grid-cols-2">
           {/* ── Colonne gauche : marque + confiance (masquée sur mobile) ── */}
-          <div className="relative hidden md:flex flex-col justify-between p-8 overflow-hidden bg-[var(--tv-plate-1)]">
+          <div className="relative hidden overflow-hidden bg-[var(--tv-plate-1)] p-8 md:flex md:flex-col md:justify-between lg:p-12">
             <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-72 -translate-x-1/2 rounded-full bg-[rgb(var(--tv-accent-rgb)/0.05)] blur-3xl" />
 
             <div className="relative">
@@ -186,175 +198,191 @@ export function AuthModal({
             </div>
           </div>
 
-          {/* ── Colonne droite : formulaire ── */}
-          <div className="relative p-7 sm:p-8">
-            {/* Logo mobile */}
-            <div className="flex items-center gap-2.5 md:hidden mb-6">
-              <img src={logoSrc} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
-              <span className="font-display text-[1.05rem] font-bold leading-none tracking-[-0.03em] text-white">
-                TradeVault
-              </span>
-            </div>
-
-            {plan && (
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--tv-accent-rgb)/0.45)] bg-[rgb(var(--tv-accent-rgb)/0.1)] px-2.5 py-1 text-[11px] font-semibold text-[var(--tv-highlight)]">
-                <Icon n="sparkle" cls="h-3 w-3" />
-                {plan}
+          {/* ── Colonne droite : formulaire ──
+              CENTRÉ, ET BORNÉ. Sur un plein écran, un formulaire qui suit la
+              largeur de sa colonne s'étire à 700px sur un moniteur large : des
+              champs de cette largeur se lisent mal et se remplissent encore
+              moins bien. Il garde donc sa mesure (`max-w-[420px]`) et se pose
+              au centre de la colonne — c'est la colonne qui grandit, pas les
+              champs. */}
+          <div className="relative flex items-center justify-center p-6 sm:p-8 lg:p-12">
+            <div className="w-full max-w-[420px]">
+              {/* Logo mobile */}
+              <div className="flex items-center gap-2.5 md:hidden mb-6">
+                <img
+                  src={logoSrc}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 object-contain"
+                />
+                <span className="font-display text-[1.05rem] font-bold leading-none tracking-[-0.03em] text-white">
+                  TradeVault
+                </span>
               </div>
-            )}
-            <h2 className="mt-3 font-display text-[1.4rem] font-bold tracking-[-0.02em] text-white">
-              {mode === "login" ? t("auth.title.login") : t("auth.title.signup")}
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              {mode === "login" ? t("auth.sub.login") : t("auth.sub.signup")}
-            </p>
 
-            {/* SSO Google */}
-            <div className="mt-6">
-              <button
-                onClick={oauth}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/[.1] bg-white/[.05] py-3 text-sm font-semibold text-slate-100 transition hover:border-white/25 hover:bg-white/[.09] disabled:opacity-60"
-              >
-                <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                {t("auth.google")}
-              </button>
-            </div>
+              {plan && (
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--tv-accent-rgb)/0.45)] bg-[rgb(var(--tv-accent-rgb)/0.1)] px-2.5 py-1 text-[11px] font-semibold text-[var(--tv-highlight)]">
+                  <Icon n="sparkle" cls="h-3 w-3" />
+                  {plan}
+                </div>
+              )}
+              <h2 className="mt-3 font-display text-[1.4rem] font-bold tracking-[-0.02em] text-white">
+                {mode === "login" ? t("auth.title.login") : t("auth.title.signup")}
+              </h2>
+              <p className="mt-1 text-sm text-slate-400">
+                {mode === "login" ? t("auth.sub.login") : t("auth.sub.signup")}
+              </p>
 
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-white/[.07]" />
-              <span className="text-[11px] uppercase tracking-wider text-slate-600">
-                {t("auth.orEmail")}
-              </span>
-              <div className="h-px flex-1 bg-white/[.07]" />
-            </div>
-
-            {error && (
-              <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-400">
-                {error}
+              {/* SSO Google */}
+              <div className="mt-6">
+                <button
+                  onClick={oauth}
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/[.1] bg-white/[.05] py-3 text-sm font-semibold text-slate-100 transition hover:border-white/25 hover:bg-white/[.09] disabled:opacity-60"
+                >
+                  <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  {t("auth.google")}
+                </button>
               </div>
-            )}
-            {info && (
-              <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-[13px] text-emerald-400">
-                {info}
-              </div>
-            )}
 
-            <form onSubmit={submit} className="space-y-3">
-              {mode === "signup" && (
+              <div className="my-5 flex items-center gap-3">
+                <div className="h-px flex-1 bg-white/[.07]" />
+                <span className="text-[11px] uppercase tracking-wider text-slate-600">
+                  {t("auth.orEmail")}
+                </span>
+                <div className="h-px flex-1 bg-white/[.07]" />
+              </div>
+
+              {error && (
+                <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-400">
+                  {error}
+                </div>
+              )}
+              {info && (
+                <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-[13px] text-emerald-400">
+                  {info}
+                </div>
+              )}
+
+              <form onSubmit={submit} className="space-y-3">
+                {mode === "signup" && (
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-400">
+                      {t("auth.name")}
+                    </label>
+                    <input
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      autoComplete="name"
+                      placeholder={t("auth.namePlaceholder")}
+                      className={field}
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                    {t("auth.name")}
+                    {t("auth.email")}
                   </label>
                   <input
                     required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    autoComplete="name"
-                    placeholder={t("auth.namePlaceholder")}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    placeholder={t("auth.emailPlaceholder")}
                     className={field}
                   />
                 </div>
-              )}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-400">
-                  {t("auth.email")}
-                </label>
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  placeholder={t("auth.emailPlaceholder")}
-                  className={field}
-                />
-              </div>
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-400">{t("auth.password")}</label>
-                  {mode === "login" && (
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className="text-xs font-medium text-slate-400">
+                      {t("auth.password")}
+                    </label>
+                    {mode === "login" && (
+                      <button
+                        type="button"
+                        onClick={forgot}
+                        className="text-[11px] text-slate-500 hover:text-[var(--tv-highlight)] transition"
+                      >
+                        {t("auth.forgot")}
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      required
+                      type={show ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                      minLength={6}
+                      placeholder={t("auth.passwordPlaceholder")}
+                      className={`${field} pr-10`}
+                    />
                     <button
                       type="button"
-                      onClick={forgot}
-                      className="text-[11px] text-slate-500 hover:text-[var(--tv-highlight)] transition"
+                      onClick={() => setShow((s) => !s)}
+                      aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-md text-slate-500 hover:text-slate-300 transition"
                     >
-                      {t("auth.forgot")}
+                      <Icon n="eye" cls="h-4 w-4" />
                     </button>
-                  )}
+                  </div>
                 </div>
-                <div className="relative">
-                  <input
-                    required
-                    type={show ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                    minLength={6}
-                    placeholder={t("auth.passwordPlaceholder")}
-                    className={`${field} pr-10`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow((s) => !s)}
-                    aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-md text-slate-500 hover:text-slate-300 transition"
-                  >
-                    <Icon n="eye" cls="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              <button
-                disabled={loading}
-                className="btn-primary w-full h-11! mt-1 disabled:opacity-60 disabled:cursor-wait"
-              >
-                {loading
-                  ? t("auth.submitting")
-                  : mode === "login"
-                    ? t("auth.submit.login")
-                    : t("auth.submit.signup")}
-                {!loading && <Icon n="arrow" cls="h-4 w-4" />}
-              </button>
-            </form>
+                <button
+                  disabled={loading}
+                  className="btn-primary w-full h-11! mt-1 disabled:opacity-60 disabled:cursor-wait"
+                >
+                  {loading
+                    ? t("auth.submitting")
+                    : mode === "login"
+                      ? t("auth.submit.login")
+                      : t("auth.submit.signup")}
+                  {!loading && <Icon n="arrow" cls="h-4 w-4" />}
+                </button>
+              </form>
 
-            <p className="mt-5 text-center text-[13px] text-slate-500">
-              {mode === "login" ? t("auth.switch.toSignup") : t("auth.switch.toLogin")}{" "}
-              <button
-                onClick={toggleMode}
-                className="font-semibold text-[var(--tv-highlight)] hover:brightness-125 transition"
-              >
-                {mode === "login" ? t("auth.switchCta.signup") : t("auth.switchCta.login")}
-              </button>
-            </p>
+              <p className="mt-5 text-center text-[13px] text-slate-500">
+                {mode === "login" ? t("auth.switch.toSignup") : t("auth.switch.toLogin")}{" "}
+                <button
+                  onClick={toggleMode}
+                  className="font-semibold text-[var(--tv-highlight)] hover:brightness-125 transition"
+                >
+                  {mode === "login" ? t("auth.switchCta.signup") : t("auth.switchCta.login")}
+                </button>
+              </p>
 
-            <p className="mt-4 text-center text-[10.5px] leading-4 text-slate-600">
-              {t("auth.legal.prefix")}{" "}
-              <a href="/terms" className="underline hover:text-slate-400">
-                {t("auth.legal.terms")}
-              </a>{" "}
-              {t("auth.legal.and")}{" "}
-              <a href="/privacy" className="underline hover:text-slate-400">
-                {t("auth.legal.privacy")}
-              </a>
-              .
-            </p>
+              <p className="mt-4 text-center text-[10.5px] leading-4 text-slate-600">
+                {t("auth.legal.prefix")}{" "}
+                <a href="/terms" className="underline hover:text-slate-400">
+                  {t("auth.legal.terms")}
+                </a>{" "}
+                {t("auth.legal.and")}{" "}
+                <a href="/privacy" className="underline hover:text-slate-400">
+                  {t("auth.legal.privacy")}
+                </a>
+                .
+              </p>
+            </div>
           </div>
         </div>
       </div>

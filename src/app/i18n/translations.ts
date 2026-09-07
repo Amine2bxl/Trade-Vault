@@ -316,7 +316,11 @@ const en = {
   "mc.source": "Data",
   "mc.srcJournal": "Journal",
   "mc.srcManual": "Manual",
+  // Ce que chaque source ENGAGE, écrit sur son bouton : « Manuel » et « CSV »
+  // seuls ne disent pas ce qu'on s'apprête à simuler.
+  "mc.srcManualHint": "Describe a strategy",
   "mc.srcCsv": "CSV",
+  "mc.srcCsvHint": "Import a broker export",
   "mc.sampleCount": "{n} trades replayed",
   "mc.avgWin": "Average win",
   "mc.avgLoss": "Average loss",
@@ -330,6 +334,16 @@ const en = {
   "mc.csv_noHeaders": "No header row found.",
   "mc.csv_tooFew": "Only {n} readable trades — at least 5 are needed.",
   "mc.csv_unreadable": "This file could not be read.",
+  "mc.ofBalance": "of balance",
+  "mc.cleanTitle": "And without the trades you flagged?",
+  "mc.cleanBody": "Same settings, replayed on your {n} trades with no mistake ticked.",
+  "mc.cleanAll": "Whole journal",
+  "mc.cleanOnly": "Clean trades only",
+  "mc.cleanCaveat":
+    "Descriptive, not a promise: a flagged trade is a different trade, not the same one done right — and flagging is declarative.",
+  "mc.cleanGap": "{d} points",
+  "mc.csvNoPnl": "No result column found. Columns read: {cols}",
+  "mc.csvOk": "{n} trades read from {file}",
   "mc.emptyCsv": "Drop a CSV above and the simulation starts on its own.",
   "mc.emptyManual":
     "Set a win rate, an average win and an average loss above — the simulation starts on its own.",
@@ -791,6 +805,37 @@ const en = {
   "mistakes.improvementTips": "Improvement Tips",
   "mistakes.priority": "PRIORITY",
   "mistakes.defaultTip": "Focus on reducing this mistake.",
+
+  // Mistakes — the correction plan. Three lanes, taken from what a trader
+  // actually needs from this page: what to stop dead, what to work on, and
+  // what they have already dropped.
+  "mistakes.planTitle": "Your correction plan",
+  "mistakes.planSub": "Based on the last {n} days of your journal",
+  "mistakes.laneBanish": "Never again",
+  "mistakes.laneBanishSub": "Serious, and still happening",
+  "mistakes.laneWork": "To work on",
+  "mistakes.laneWorkSub": "Still showing up",
+  "mistakes.laneStopped": "You stopped these",
+  "mistakes.laneStoppedSub": "Not logged once in {n} days",
+  "mistakes.laneEmptyBanish": "Nothing serious in this window.",
+  "mistakes.laneEmptyWork": "Nothing to work on here.",
+  "mistakes.laneEmptyStopped": "Nothing dropped yet — the first one lands here.",
+  "mistakes.progressTitle": "Are you improving?",
+  "mistakes.streak": "Clean streak",
+  "mistakes.streakUnit": "trades in a row, no mistake ticked",
+  "mistakes.streakBest": "Best: {n}",
+  "mistakes.ratePerTrade": "Mistakes per trade",
+  "mistakes.rateNoBase": "Not enough history to compare yet.",
+  "mistakes.rateImproving": "fewer than the previous window",
+  "mistakes.rateWorsening": "more than the previous window",
+  "mistakes.rateStable": "same as the previous window",
+  "mistakes.declared": "Counted from the mistakes you tick yourself.",
+  "mistakes.families": "Where it comes from",
+  "mistakes.afterLoss": "Right after a loss",
+  "mistakes.afterLossBody":
+    "{a}% of the trades that follow a loss carry a mistake — against {b}% of the others.",
+  "mistakes.afterLossFlat": "Trades that follow a loss carry no more mistakes than the others.",
+  "mistakes.observed": "Observed over {n} trades. An association, not a cause.",
 
   // Trade Modal (add/edit trade)
   "trade.editTitle": "Edit Trade",
@@ -1266,6 +1311,7 @@ const en = {
     "You don't enter to win. You enter because your process says so. The result is a consequence.",
   "chk.enterExec": "Enter execution",
   "chk.backStation": "Back to station",
+  "chk.reopen": "Reopen the checklist",
   "chk.secActions": "Quick actions",
   "chk.actAddTrade": "Log the trade in Journal",
   "chk.actAnalytics": "View Analytics",

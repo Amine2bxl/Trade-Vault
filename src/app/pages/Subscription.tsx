@@ -32,6 +32,8 @@ import { usePageLead } from "../contexts/PageActionsContext";
 import { Kpi, KpiGrid } from "@/shared/ui";
 import SubscriptionSection from "../components/SubscriptionSection";
 import PlanMatrix from "../components/pricing/PlanMatrix";
+import PlanScaleBlock from "../components/pricing/PlanScaleBlock";
+import type { Trade } from "../types";
 
 type TFn = (k: TKey) => string;
 
@@ -67,7 +69,7 @@ type TFn = (k: TKey) => string;
  * L'ORDRE DE LECTURE suit la décision : où j'en suis → ce que je peux faire
  * maintenant → ce que ça coûte → ce que ça contient → ce qui me rassure.
  */
-export default function Subscription() {
+export default function Subscription({ trades = [] }: { trades?: Trade[] } = {}) {
   const { t, lang } = useT();
   const fr = lang === "fr";
   const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
@@ -278,6 +280,15 @@ export default function Subscription() {
       <div className="animate-fade-in-up stagger-2">
         <SubscriptionSection />
       </div>
+
+      {/* ══ 3 bis · LE PRIX, À L'ÉCHELLE DE SON JOURNAL ═══════════════════
+          Juste après le prix, avant le détail des offres : c'est là que la
+          question « quinze euros, c'est cher ? » se pose. Le bloc n'y répond
+          pas par une promesse de gain — le produit n'exécute aucun trade — mais
+          en posant le montant dans l'échelle que le trader utilise déjà. Il ne
+          s'affiche pas tant que son journal ne porte pas assez de pertes pour
+          que la moyenne en soit une. */}
+      <PlanScaleBlock trades={trades} />
 
       {/* ══ 4 · CE QUE ÇA CONTIENT ═════════════════════════════════════════
           Une matrice, pas une liste : chaque fonctionnalité n'apparaît qu'une

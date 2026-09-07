@@ -4,6 +4,7 @@ import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "reac
 import { PlayCircle, Check } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
+import { ShotOuVisuel } from "./landing/ProductShot";
 import { AuthModal } from "./landing/AuthModal";
 import { FeaturesBento } from "./landing/FeaturesBento";
 import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
@@ -412,59 +413,68 @@ function AnalyticsSection() {
           </div>
 
           <div className="reveal">
-            <div className="lp-panel p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="tv-label text-slate-500">{t("hero.eq")}</p>
-                <span className="tv-figure rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] tabular-nums text-emerald-300">
-                  +$4,218.50 · 6m
-                </span>
-              </div>
-              <div className="h-28 w-full">
-                <svg viewBox="0 0 280 100" className="h-full w-full" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="aa" x1="0" x2="0" y1="0" y2="1">
-                      <stop stopColor="var(--tv-chart-green)" stopOpacity=".2" />
-                      <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  {[24, 50, 76].map((yy) => (
-                    <path key={yy} d={`M0 ${yy}H280`} stroke="rgba(148,163,184,.09)" />
-                  ))}
-                  <path d={`${ANALYTICS_D} L280,100 L0,100 Z`} fill="url(#aa)" />
-                  <path
-                    d="M0 96H280"
-                    stroke="var(--tv-chart-red)"
-                    strokeWidth="1.5"
-                    strokeDasharray="6 5"
-                  />
-                  <path
-                    d={ANALYTICS_D}
-                    fill="none"
-                    stroke="var(--tv-chart-green)"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                </svg>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {[
-                  ["Win rate", "64%"],
-                  ["Profit factor", "2.31"],
-                  ["Expectancy", "+0.68R"],
-                  ["Sharpe", "1.96"],
-                ].map(([l, v]) => (
-                  <div
-                    key={l}
-                    className="rounded-lg border border-white/[.06] bg-white/[.02] px-3 py-2.5"
-                  >
-                    <p className="tv-label text-slate-500">{l}</p>
-                    <p className="mt-0.5 tv-figure text-sm tabular-nums text-white">{v}</p>
+            {/* Même bascule que le héros : la vraie capture des rapports
+                mensuels remplace ce panneau dès qu'elle est déposée. */}
+            <ShotOuVisuel
+              nom="monthly-reports"
+              alt={t("shot.reports.alt")}
+              legende={t("shot.reports.cap")}
+              repli={
+                <div className="lp-panel p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="tv-label text-slate-500">{t("hero.eq")}</p>
+                    <span className="tv-figure rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] tabular-nums text-emerald-300">
+                      +$4,218.50 · 6m
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="h-28 w-full">
+                    <svg viewBox="0 0 280 100" className="h-full w-full" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="aa" x1="0" x2="0" y1="0" y2="1">
+                          <stop stopColor="var(--tv-chart-green)" stopOpacity=".2" />
+                          <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      {[24, 50, 76].map((yy) => (
+                        <path key={yy} d={`M0 ${yy}H280`} stroke="rgba(148,163,184,.09)" />
+                      ))}
+                      <path d={`${ANALYTICS_D} L280,100 L0,100 Z`} fill="url(#aa)" />
+                      <path
+                        d="M0 96H280"
+                        stroke="var(--tv-chart-red)"
+                        strokeWidth="1.5"
+                        strokeDasharray="6 5"
+                      />
+                      <path
+                        d={ANALYTICS_D}
+                        fill="none"
+                        stroke="var(--tv-chart-green)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </svg>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {[
+                      ["Win rate", "64%"],
+                      ["Profit factor", "2.31"],
+                      ["Expectancy", "+0.68R"],
+                      ["Sharpe", "1.96"],
+                    ].map(([l, v]) => (
+                      <div
+                        key={l}
+                        className="rounded-lg border border-white/[.06] bg-white/[.02] px-3 py-2.5"
+                      >
+                        <p className="tv-label text-slate-500">{l}</p>
+                        <p className="mt-0.5 tv-figure text-sm tabular-nums text-white">{v}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              }
+            />
           </div>
         </div>
       </div>
@@ -587,22 +597,22 @@ function AlternativeSection() {
           <div className="lp-panel px-4 py-5 sm:px-6">
             <div className="cmp-row" style={{ borderTop: "none" }}>
               <div />
-              <p className="cmp-col hidden sm:block">{t("alt.h.excel")}</p>
-              <p className="cmp-col hidden sm:block">{t("alt.h.notion")}</p>
+              <p className="cmp-col">{t("alt.h.excel")}</p>
+              <p className="cmp-col">{t("alt.h.notion")}</p>
               <p className="cmp-col cmp-tv">{t("alt.h.tv")}</p>
             </div>
             <div className="cmp-row">
               <p className="text-[12.5px] text-slate-200">{t("alt.excel.d")}</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">—</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">~</p>
+              <p className="cmp-col text-slate-500">—</p>
+              <p className="cmp-col text-slate-500">~</p>
               <p className="cmp-col cmp-tv">
                 <Check className="mx-auto h-3.5 w-3.5" />
               </p>
             </div>
             <div className="cmp-row">
               <p className="text-[12.5px] text-slate-200">{t("alt.notion.d")}</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">~</p>
-              <p className="cmp-col hidden text-slate-500 sm:block">—</p>
+              <p className="cmp-col text-slate-500">~</p>
+              <p className="cmp-col text-slate-500">—</p>
               <p className="cmp-col cmp-tv">
                 <Check className="mx-auto h-3.5 w-3.5" />
               </p>
@@ -610,14 +620,14 @@ function AlternativeSection() {
             {rows.map((r, i) => (
               <div key={r} className="cmp-row">
                 <p className="text-[13px] text-slate-200">{t(r)}</p>
-                <p className="cmp-col hidden sm:block">
+                <p className="cmp-col">
                   {i === 5 ? (
                     <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
                   ) : (
                     <span className="text-slate-600">–</span>
                   )}
                 </p>
-                <p className="cmp-col hidden sm:block">
+                <p className="cmp-col">
                   {i === 5 ? (
                     <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
                   ) : (
@@ -751,7 +761,18 @@ function LandingPage() {
               </div>
 
               <div className="fade-up d3 relative mt-6 w-full max-w-[520px] mx-auto pb-8 lg:mx-0 lg:ml-auto lg:mt-0">
-                <HeroProductVisual />
+                {/* LA CAPTURE PASSE DEVANT LE DESSIN.
+                    `DESIGN.md` : « lead EVERY section with a product
+                    screenshot ». Tant qu'aucun `dashboard.*` n'est déposé dans
+                    `src/assets/product/`, le dessin ci-dessous tient la place ;
+                    le fichier posé, il s'efface. */}
+                <ShotOuVisuel
+                  nom="dashboard"
+                  alt={t("shot.dashboard.alt")}
+                  legende={t("shot.dashboard.cap")}
+                  priorite
+                  repli={<HeroProductVisual />}
+                />
               </div>
             </div>
           </div>
