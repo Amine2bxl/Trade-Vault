@@ -291,6 +291,9 @@ const fr: Dict = {
   "mc.csv_noHeaders": "Aucune ligne d'en-tête trouvée.",
   "mc.csv_tooFew": "Seulement {n} trades lisibles — il en faut au moins 5.",
   "mc.csv_unreadable": "Ce fichier n'a pas pu être lu.",
+  "mc.ofBalance": "du solde",
+  "mc.csvNoPnl": "Aucune colonne de résultat trouvée. Colonnes lues : {cols}",
+  "mc.csvOk": "{n} trades lus depuis {file}",
   "mc.emptyCsv": "Dépose un CSV au-dessus, la simulation part toute seule.",
   "mc.emptyManual":
     "Renseigne un win rate, un gain moyen et une perte moyenne au-dessus — la simulation part toute seule.",

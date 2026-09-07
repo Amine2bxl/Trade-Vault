@@ -334,6 +334,9 @@ const en = {
   "mc.csv_noHeaders": "No header row found.",
   "mc.csv_tooFew": "Only {n} readable trades — at least 5 are needed.",
   "mc.csv_unreadable": "This file could not be read.",
+  "mc.ofBalance": "of balance",
+  "mc.csvNoPnl": "No result column found. Columns read: {cols}",
+  "mc.csvOk": "{n} trades read from {file}",
   "mc.emptyCsv": "Drop a CSV above and the simulation starts on its own.",
   "mc.emptyManual":
     "Set a win rate, an average win and an average loss above — the simulation starts on its own.",

@@ -1,8 +1,19 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Loader2, Shuffle, RotateCcw, BookOpen, SlidersHorizontal, Upload, X } from "lucide-react";
+import {
+  Loader2,
+  Shuffle,
+  RotateCcw,
+  BookOpen,
+  SlidersHorizontal,
+  Upload,
+  X,
+  Minus,
+  Plus,
+} from "lucide-react";
 import {
   ResponsiveContainer,
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   BarChart,
   Bar,
@@ -34,7 +45,13 @@ import {
   type MonteCarloResult,
   type RMultipleSample,
 } from "../utils/monteCarlo";
-import { parseCsv, guessMapping, mapRowsToTrades, rejectFile } from "../utils/csvImport";
+import {
+  parseCsv,
+  guessMapping,
+  mapRowsToTrades,
+  rejectFile,
+  MC_REQUIRED,
+} from "../utils/csvImport";
 import { formatMoney } from "../utils/propFirms";
 import {
   AXIS_TICK,
@@ -122,13 +139,16 @@ const H_DISTRIB = "h-[170px] sm:h-[190px]";
  *      voir où ça va, et à quel point c'est incertain. Les deux graphes et les
  *      percentiles se lisent maintenant d'une traite, dans une seule colonne.
  *
- * ══ LES CINQ COURBES SE VOIENT ══
+ * ══ UN FAISCEAU, PAS CINQ TRAITS ══
  *
- * Le faisceau était dessiné en aplats superposés : une seule courbe visible (la
- * médiane), quatre bandes de vert à 6 % d'opacité autour. On ne distinguait ni
- * le meilleur cas ni le pire — les deux chiffres qui décident, justement, si le
- * plan tient. Les cinq percentiles sont désormais cinq LIGNES nommées, du vert
- * (meilleur) au rouge (pire).
+ * Deux formes ont échoué avant celle-ci. Des aplats empilés depuis la base de
+ * l'axe : une seule courbe visible, le meilleur et le pire cas confondus avec
+ * le fond. Puis cinq lignes, dont deux pointillées : tout était visible, rien
+ * n'était lisible — cinq traits qui se croisent ne se lisent pas.
+ *
+ * La forme juste pour une projection est le faisceau : deux bandes
+ * concentriques autour d'une médiane. On lit l'incertitude comme une ÉPAISSEUR,
+ * ce qu'elle est.
  *
  * ══ ET ELLE RÉPOND TOUTE SEULE ══
  *
@@ -229,7 +249,21 @@ export default function MonteCarloPage({ trades }: Props) {
       try {
         const texte = await file.text();
         const { headers, rows } = parseCsv(texte);
-        const { valid } = mapRowsToTrades(rows, guessMapping(headers));
+        const mapping = guessMapping(headers);
+        /* MONTE-CARLO N'EXIGE QUE LE RÉSULTAT.
+           Il lisait le fichier avec les exigences du JOURNAL — date + symbole
+           + P&L. Mesuré sur cinq exports de courtiers réalistes : quatre
+           rendaient zéro trade, dont un export « date + résultat » parfaitement
+           valide rejeté pour absence d'une colonne d'instrument dont la
+           simulation n'a aucun usage. Voir `MC_REQUIRED`. */
+        const { valid } = mapRowsToTrades(rows, mapping, { required: MC_REQUIRED });
+        if (mapping.pnl === undefined) {
+          /* DIRE CE QUI MANQUE, ET CE QU'ON A LU. « Trop peu de trades (0) »
+             était exact et inutilisable : rien n'indiquait quelle colonne
+             cherchait le produit, ni sous quel nom il l'avait cherchée. */
+          setCsvErreur(t("mc.csvNoPnl").replace("{cols}", headers.slice(0, 8).join(", ")));
+          return;
+        }
         if (valid.length < 5) {
           setCsvErreur(t("mc.csv_tooFew").replace("{n}", String(valid.length)));
           return;
@@ -751,7 +785,7 @@ function PanneauReglages({
           précédente avait justement corrigé.
           Deux colonnes dès 640px, trois à partir de 1024 : deux rangées au
           lieu de cinq, et les cinq valeurs restent lisibles d'un coup d'œil. */}
-      <div className="grid gap-x-5 gap-y-3.5 border-t border-[var(--tv-border)] pt-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-x-3 gap-y-3 border-t border-[var(--tv-border)] pt-4 sm:grid-cols-2">
         <Reglage
           label={t("mc.balance")}
           value={solde}
@@ -759,6 +793,7 @@ function PanneauReglages({
           min={1000}
           max={500000}
           step={1000}
+          unite="$"
           format={(v) => formatMoney(v)}
         />
         <Reglage
@@ -768,8 +803,9 @@ function PanneauReglages({
           min={1}
           max={Math.max(50, Math.round(solde * 0.1))}
           step={Math.max(1, Math.round(solde * 0.001))}
+          unite="$"
           format={(v) => formatMoney(v)}
-          hint={`${((risque / solde) * 100).toFixed(2)}%`}
+          hint={`${((risque / solde) * 100).toFixed(2)}% ${t("mc.ofBalance")}`}
         />
         <Reglage
           label={t("mc.horizon")}
@@ -778,6 +814,7 @@ function PanneauReglages({
           min={5}
           max={120}
           step={1}
+          unite={t("mc.days")}
           format={(v) => `${v} ${t("mc.days")}`}
         />
         <Reglage
@@ -787,8 +824,9 @@ function PanneauReglages({
           min={1}
           max={50}
           step={1}
+          unite="%"
           format={(v) => `+${v}%`}
-          hint={formatMoney(Math.round((solde * objectifPct) / 100))}
+          hint={`+${formatMoney(Math.round((solde * objectifPct) / 100))}`}
         />
         <Reglage
           label={t("mc.limit")}
@@ -797,8 +835,9 @@ function PanneauReglages({
           min={1}
           max={50}
           step={1}
+          unite="%"
           format={(v) => `-${v}%`}
-          hint={formatMoney(Math.round((solde * limitePct) / 100))}
+          hint={`−${formatMoney(Math.round((solde * limitePct) / 100))}`}
         />
       </div>
     </div>
@@ -828,10 +867,14 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
     const steps = Math.max(2, Math.min(60, horizon));
     const out: {
       jour: number;
-      p95: number;
-      p75: number;
       p50: number;
-      p25: number;
+      /* Les bandes sont des COUPLES [bas, haut] : recharts dessine une aire
+         entre deux valeurs quand la clé rend un tableau, au lieu de la
+         remplir depuis la base de l'axe. C'est ce qui fait la différence
+         entre un faisceau et cinq aplats superposés qui se salissent. */
+      bande90: [number, number];
+      bande50: [number, number];
+      p95: number;
       p5: number;
     }[] = [];
     for (let i = 0; i <= steps; i++) {
@@ -840,13 +883,18 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
         .map((r) => r.equity[Math.min(idx, r.equity.length - 1)])
         .sort((a, b) => a - b);
       const at = (q: number) => vals[Math.min(vals.length - 1, Math.floor(vals.length * q))];
+      const p5 = at(0.05);
+      const p25 = at(0.25);
+      const p50 = at(0.5);
+      const p75 = at(0.75);
+      const p95 = at(0.95);
       out.push({
         jour: Math.round((i / steps) * horizon),
-        p95: at(0.95),
-        p75: at(0.75),
-        p50: at(0.5),
-        p25: at(0.25),
-        p5: at(0.05),
+        p50,
+        bande90: [p5, p95],
+        bande50: [p25, p75],
+        p95,
+        p5,
       });
     }
     return out;
@@ -890,7 +938,20 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
       <TitreGraphe titre={t("mc.chartPaths")} sous={t("mc.chartPathsSub")} />
       <div className={H_COURBE}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
+          <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
+            {/* Les deux bandes ne sont pas des à-plats : elles s'éteignent vers
+                le bas, là où les chemins vont vers la limite de perte. La
+                couleur reste donc du côté qui la mérite. */}
+            <defs>
+              <linearGradient id="mcBande90" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.13} />
+                <stop offset="100%" stopColor={CHART_RED} stopOpacity={0.08} />
+              </linearGradient>
+              <linearGradient id="mcBande50" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.12} />
+              </linearGradient>
+            </defs>
             <CartesianGrid {...EQUITY_GRID} />
             <XAxis
               dataKey="jour"
@@ -933,29 +994,67 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
                 fontSize: 10,
               }}
             />
-            {/* ══ LES CINQ COURBES ═══════════════════════════════════════
-                Elles étaient quatre APLATS à 6 % d'opacité et une seule ligne.
-                Autant dire une courbe : le meilleur cas et le pire — les deux
-                bornes qui décident si le plan tient — se confondaient avec le
-                fond.
-                Cinq lignes, du meilleur au pire, avec le sens dans la couleur :
-                vert au-dessus de la médiane, rouge en dessous. La médiane garde
-                le trait plein de la courbe d'equity du produit ; les quatre
-                autres sont plus fines, et les deux extrêmes pointillées — ce
-                sont des bornes, pas des trajectoires attendues. */}
-            {COURBES.map((c) => (
-              <Line
-                key={c.cle}
-                type={EQUITY_CURVE_TYPE}
-                dataKey={c.cle}
-                stroke={c.trait}
-                strokeWidth={c.cle === "p50" ? EQUITY_LINE.strokeWidth : 1.25}
-                strokeDasharray={c.pointille ? "5 4" : undefined}
-                strokeOpacity={c.opacite}
-                dot={false}
-                isAnimationActive={false}
-              />
-            ))}
+            {/* ══ UN FAISCEAU, PAS CINQ TRAITS ════════════════════════════
+                Première version : quatre aplats à 6 % d'opacité empilés depuis
+                le bas de l'axe, plus une ligne. Le meilleur et le pire cas se
+                confondaient avec le fond.
+                Deuxième version : cinq lignes, dont deux pointillées. Tout
+                était visible et rien n'était beau — cinq traits qui se croisent
+                ne se lisent pas, et le pointillé fait bon marché.
+
+                La forme juste pour une projection est le FAISCEAU : deux
+                bandes concentriques autour d'une médiane. La bande sombre est
+                l'intervalle où la moitié des chemins atterrissent, la claire
+                celui où neuf sur dix le font. On lit l'incertitude comme une
+                ÉPAISSEUR — ce qu'elle est — au lieu de la déduire de l'écart
+                entre deux traits.
+
+                Les deux bornes gardent un filet d'un pixel : sans lui, le bord
+                d'un dégradé à faible opacité devient impossible à situer. */}
+            <Area
+              type={EQUITY_CURVE_TYPE}
+              dataKey="bande90"
+              stroke="none"
+              fill="url(#mcBande90)"
+              fillOpacity={1}
+              isAnimationActive={false}
+            />
+            <Area
+              type={EQUITY_CURVE_TYPE}
+              dataKey="bande50"
+              stroke="none"
+              fill="url(#mcBande50)"
+              fillOpacity={1}
+              isAnimationActive={false}
+            />
+            <Line
+              type={EQUITY_CURVE_TYPE}
+              dataKey="p95"
+              stroke={CHART_GREEN}
+              strokeWidth={1}
+              strokeOpacity={0.45}
+              dot={false}
+              isAnimationActive={false}
+            />
+            <Line
+              type={EQUITY_CURVE_TYPE}
+              dataKey="p5"
+              stroke={CHART_RED}
+              strokeWidth={1}
+              strokeOpacity={0.45}
+              dot={false}
+              isAnimationActive={false}
+            />
+            {/* La médiane EST une courbe d'equity — projetée, mais une courbe
+                d'equity. Elle porte donc le trait de la référence du produit. */}
+            <Line
+              type={EQUITY_CURVE_TYPE}
+              dataKey="p50"
+              stroke={CHART_GREEN}
+              {...EQUITY_LINE}
+              dot={false}
+              isAnimationActive={false}
+            />
             <Tooltip
               {...tooltipStyle}
               labelFormatter={(v) => `${t("mc.dayShort")}${v}`}
@@ -970,23 +1069,35 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
                 return [formatMoney(Number(value)), libelle[name] ?? name];
               }}
             />
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      {/* LA LÉGENDE NOMME LES CINQ, dans l'ordre du graphe — du haut vers le
-          bas. Elle en nommait trois, dont deux bandes qu'on ne voyait pas. */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-        {[...COURBES].reverse().map((c) => (
-          <span key={c.cle} className="flex items-center gap-1.5">
-            <span
-              aria-hidden
-              className="h-0.5 w-4 shrink-0 rounded-full"
-              style={{ background: c.trait, opacity: c.opacite }}
-            />
-            <span className="tv-row-label">{t(c.cleTexte as never)}</span>
-          </span>
-        ))}
+      {/* LA LÉGENDE SUIT LA FORME : deux bandes et une médiane, pas cinq
+          percentiles à mémoriser. « La moitié des chemins » et « neuf sur
+          dix » se comprennent sans savoir ce qu'est un P25. */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-0.5 w-4 shrink-0 rounded-full bg-[var(--tv-chart-green)]"
+          />
+          <span className="tv-row-label">{t("mc.bandMedian")}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-2.5 w-4 shrink-0 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.28)]"
+          />
+          <span className="tv-row-label">{t("mc.bandHalf")}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-2.5 w-4 shrink-0 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.11)]"
+          />
+          <span className="tv-row-label">{t("mc.bandNine")}</span>
+        </span>
       </div>
 
       {/* ══ OÙ ÇA FINIT, CHIFFRE PAR CHIFFRE ═════════════════════════════
@@ -1018,25 +1129,6 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
     </section>
   );
 }
-
-/**
- * LES CINQ PERCENTILES DU FAISCEAU — leur trait et leur nom, en un seul
- * endroit.
- *
- * La table sert DEUX fois : à tracer les lignes, et à écrire la légende. Deux
- * listes séparées auraient dérivé — c'est exactement comme ça qu'une légende
- * finit par nommer une courbe d'une couleur qu'elle n'a plus.
- *
- * Ordre : du pire au meilleur, celui de la lecture d'un axe vertical inversé.
- * La légende le retourne pour se lire de haut en bas, comme le graphe.
- */
-const COURBES = [
-  { cle: "p5", cleTexte: "mc.bandWorst", trait: CHART_RED, opacite: 0.85, pointille: true },
-  { cle: "p25", cleTexte: "mc.bandPoor", trait: CHART_RED, opacite: 0.5, pointille: false },
-  { cle: "p50", cleTexte: "mc.bandMedian", trait: CHART_GREEN, opacite: 1, pointille: false },
-  { cle: "p75", cleTexte: "mc.bandGood", trait: CHART_GREEN, opacite: 0.5, pointille: false },
-  { cle: "p95", cleTexte: "mc.bandBest", trait: CHART_GREEN, opacite: 0.85, pointille: true },
-] as const;
 
 /* ────────────────────────────────────────────────────────────────────────────
    L'HISTOGRAMME DES ISSUES
@@ -1169,19 +1261,20 @@ function Reglage({
   step: number;
   format: (v: number) => string;
   hint?: string;
-  /** Suffixe affiché dans le champ de saisie ($, %, R…). */
+  /** Suffixe affiché dans le champ ($, %, R…). */
   unite?: string;
   decimals?: number;
 }) {
   /* LE CHAMP EST UN BROUILLON TANT QU'ON TAPE.
      Écrire directement dans `value` à chaque frappe rend la saisie
      impossible : effacer « 10000 » pour taper « 25000 » passe par la chaîne
-     vide, que `Number("")` transforme en 0 — et le curseur saute au minimum
+     vide, que `Number("")` transforme en 0 — la valeur retombait au minimum
      sous les doigts. Le brouillon garde ce qui est tapé ; la valeur ne remonte
      que si elle est lisible, et elle est bornée à la sortie du champ. */
   const [brouillon, setBrouillon] = useState<string | null>(null);
   const affiche = brouillon ?? (decimals > 0 ? value.toFixed(decimals) : String(value));
 
+  const borner = (n: number) => Math.min(max, Math.max(min, n));
   const poser = (brut: string) => {
     setBrouillon(brut);
     const n = Number(brut.replace(",", "."));
@@ -1190,27 +1283,45 @@ function Reglage({
   const fermer = () => {
     setBrouillon(null);
     const n = Number(affiche.replace(",", "."));
-    onChange(Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : min);
+    onChange(Number.isFinite(n) ? borner(n) : min);
+  };
+  const pas = (sens: 1 | -1) => {
+    setBrouillon(null);
+    const brut = borner(value + sens * step);
+    /* Arrondi au pas : sans lui, un solde à 10 000 poussé d'un pas de 1 000
+       depuis une valeur tapée à la main (12 345) donnerait 13 345 — un nombre
+       que personne n'a demandé. */
+    onChange(Number((Math.round(brut / step) * step).toFixed(decimals)));
   };
 
   return (
     <div className="min-w-0">
-      {/* UN SEUL NOMBRE PAR RÉGLAGE.
-          Il y en avait deux : la valeur formatée à droite du libellé, ET la
-          même valeur dans le champ juste dessous. Cinq réglages × deux
-          nombres = dix chiffres à l'écran pour cinq informations, et le doute
-          permanent de savoir lequel des deux on modifie.
-          Le champ porte la valeur ; l'unité vit à sa droite, dans la boîte. */}
-      <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <span className="tv-label truncate text-slate-500">{label}</span>
-      </div>
+      {/* ══ UN RÉGLAGE = UNE LIGNE ═══════════════════════════════════════
+          Il en occupait quatre : le libellé, une boîte de saisie de 36px, un
+          curseur, puis la valeur écrite en toutes lettres. Cinq réglages
+          faisaient vingt lignes dans une colonne de 340px — « trop grands,
+          moches, pas simples à comprendre ».
 
-      {/* LA VALEUR EXACTE SE TAPE.
-          Le curseur seul donne l'ordre de grandeur, jamais le nombre : régler
-          un solde à 47 500 $ au pas de 1 000 est impossible, et régler un gain
-          moyen à 1,7R au pixel près relève de la chance. Le champ porte la
-          valeur, le curseur la déplace — les deux écrivent au même endroit. */}
-      <div className="mc-num mb-1.5">
+          Le CURSEUR est parti. Il ne donnait que l'ordre de grandeur, jamais
+          le nombre (régler un solde à 47 500 $ au pas de 1 000 relève de la
+          chance), et il doublait un champ qui, lui, accepte n'importe quelle
+          valeur. Deux contrôles pour une valeur, c'est un de trop : on ne sait
+          plus lequel fait foi.
+
+          Restent deux boutons − / + qui avancent d'un pas rond, et un champ où
+          l'on tape la valeur exacte. Le geste rapide et le geste précis, sans
+          se marcher dessus. */}
+      <label className="tv-label mb-1 block truncate text-slate-500">{label}</label>
+      <div className="mc-step">
+        <button
+          type="button"
+          onClick={() => pas(-1)}
+          disabled={value <= min}
+          aria-label={`${label} −`}
+          className="mc-step-btn"
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </button>
         <input
           type="text"
           inputMode="decimal"
@@ -1219,35 +1330,36 @@ function Reglage({
           onBlur={fermer}
           onKeyDown={(e) => {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              pas(1);
+            }
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              pas(-1);
+            }
           }}
           aria-label={label}
-          /* `h-full` : sans lui le champ ne fait que la hauteur de sa ligne
-             de texte — 18px mesurés — et cliquer dans le rembourrage de la
-             boite ne le met pas au foyer. Il occupe maintenant les 36px. */
-          className="tv-figure h-full min-w-0 flex-1 bg-transparent text-base leading-none text-white outline-none"
+          className="mc-step-input"
         />
-        {unite && <span className="tv-figure shrink-0 text-xs text-slate-500">{unite}</span>}
+        {unite && <span className="mc-step-unit">{unite}</span>}
+        <button
+          type="button"
+          onClick={() => pas(1)}
+          disabled={value >= max}
+          aria-label={`${label} +`}
+          className="mc-step-btn"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
       </div>
-
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={Math.min(max, Math.max(min, value))}
-        onChange={(e) => {
-          setBrouillon(null);
-          onChange(Number(e.target.value));
-        }}
-        aria-label={label}
-        className="w-full"
-      />
-      {/* CE QUE LE NOMBRE VEUT DIRE — c'est ici, et une seule fois.
-          `format` rendait la valeur lisible en haut du bloc ; il la rend
-          maintenant lisible en bas, là où elle n'entre en concurrence avec
-          rien. Un `hint` explicite (l'équivalent en argent d'un pourcentage)
-          prend sa place quand il apporte davantage. */}
-      <div className="tv-row-label mt-1 truncate">{hint ?? format(value)}</div>
+      {/* CE QUE LE NOMBRE VEUT DIRE — une seule fois, sous le champ. Un `hint`
+          explicite (l'équivalent en argent d'un pourcentage) vaut mieux que la
+          valeur reformatée, qui ne dirait rien de plus que le champ. */}
+      {hint !== undefined && <div className="tv-row-label mt-1 truncate">{hint}</div>}
+      {hint === undefined && unite === undefined && (
+        <div className="tv-row-label mt-1 truncate">{format(value)}</div>
+      )}
     </div>
   );
 }

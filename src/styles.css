@@ -3253,26 +3253,85 @@ a:focus-visible,
   color: #fff;
 }
 
-/* Le champ numérique d'un réglage Monte-Carlo — la valeur EXACTE se tape.
- * Le curseur seul donne l'ordre de grandeur, jamais le nombre : régler un
- * solde à 47 500 $ au pas de 1 000 est impossible, et viser 1,7R au pixel
- * près relève de la chance. */
-.mc-num {
+/* ══ UN RÉGLAGE MONTE-CARLO = UNE SEULE LIGNE ══
+ *
+ * Le réglage occupait quatre lignes : libellé, boîte de saisie de 36px,
+ * curseur, puis la valeur réécrite en toutes lettres. Cinq réglages faisaient
+ * vingt lignes dans une colonne de 340px — « trop grands, moches, pas simples
+ * à comprendre ».
+ *
+ * Le curseur est parti : il ne donnait que l'ordre de grandeur, jamais le
+ * nombre, et il doublait un champ qui accepte n'importe quelle valeur. Deux
+ * contrôles pour une même valeur, c'est un de trop.
+ *
+ * Reste un groupe compact : − / champ / unité / +. Le geste rapide (un pas
+ * rond) et le geste précis (on tape) vivent dans le même objet, haut de 34px.
+ */
+.mc-step {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  height: 2.25rem;
-  padding: 0 0.6rem;
+  align-items: stretch;
+  height: 2.125rem;
   border: 1px solid var(--tv-border);
-  border-radius: 0.7rem;
+  border-radius: 0.6rem;
   background: var(--tv-plate-2);
+  overflow: hidden;
   transition:
     border-color 140ms ease,
     box-shadow 140ms ease;
 }
-.mc-num:focus-within {
+.mc-step:focus-within {
   border-color: var(--tv-border-accent);
   box-shadow: 0 0 0 2px rgb(var(--tv-accent-rgb) / 0.18);
+}
+
+.mc-step-btn {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  flex: none;
+  color: var(--tv-text-3, #94a3b8);
+  background: transparent;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.mc-step-btn:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.06);
+  color: #fff;
+}
+.mc-step-btn:active:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+}
+/* Une borne atteinte s'ESTOMPE au lieu de disparaître : un bouton qui
+ * s'efface ferait sauter la largeur du groupe à chaque extrémité. */
+.mc-step-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.mc-step-input {
+  min-width: 0;
+  flex: 1;
+  padding: 0 0.15rem;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  outline: none;
+}
+
+.mc-step-unit {
+  display: grid;
+  place-items: center;
+  padding-right: 0.35rem;
+  flex: none;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
 }
 
 /* ══ LA VALIDATION DU MOIS (plan d'action) ══

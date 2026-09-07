@@ -123,15 +123,26 @@ describe("les graphes de Monte-Carlo", () => {
     }
   });
 
-  test("les cinq percentiles du faisceau sont tous TRACÉS", () => {
-    // Ils existaient dans les données depuis toujours, mais quatre d'entre eux
-    // étaient dessinés en aplats à 6 % d'opacité : invisibles. Le meilleur et
-    // le pire cas — les deux bornes qui disent si le plan tient — n'étaient
-    // donc lisibles nulle part.
-    const table = src.slice(src.indexOf("const COURBES = ["));
-    for (const cle of ["p5", "p25", "p50", "p75", "p95"]) {
-      expect(table).toContain(`cle: "${cle}"`);
+  test("les cinq percentiles du faisceau atteignent tous le graphe", () => {
+    // L'INVARIANT, ET NON LA FORME. Trois formes se sont succédé — cinq aplats
+    // empilés, puis cinq lignes, puis deux bandes et une médiane — et la même
+    // question se pose à chaque fois : les cinq percentiles calculés
+    // finissent-ils réellement dessinés ? La première forme rendait quatre
+    // d'entre eux invisibles (6 % d'opacité) sans que rien ne le signale.
+    //
+    // On vérifie donc les deux bouts de la chaîne : les cinq sont CALCULÉS, et
+    // chacun est porté par une `dataKey` du graphe.
+    const faisceau = src.slice(src.indexOf("function Faisceau("));
+    for (const p of ["p5", "p25", "p50", "p75", "p95"]) {
+      expect(faisceau).toContain(`const ${p} = at(`);
     }
+    // p25/p75 et p5/p95 voyagent par couples dans les deux bandes ; la médiane
+    // garde sa ligne propre.
+    for (const cle of ["bande90", "bande50", "p50", "p95", "p5"]) {
+      expect(faisceau).toContain(`dataKey="${cle}"`);
+    }
+    expect(faisceau).toContain("bande90: [p5, p95]");
+    expect(faisceau).toContain("bande50: [p25, p75]");
   });
 });
 
