@@ -1223,6 +1223,7 @@ const fr: Dict = {
     "Tu n'entres pas pour gagner. Tu entres parce que ton processus le dit. Le résultat est une conséquence.",
   "chk.enterExec": "Entrer en exécution",
   "chk.backStation": "Retour au poste",
+  "chk.reopen": "Rouvrir la checklist",
   "chk.secActions": "Actions rapides",
   "chk.actAddTrade": "Logger le trade dans le Journal",
   "chk.actAnalytics": "Voir Analytics",

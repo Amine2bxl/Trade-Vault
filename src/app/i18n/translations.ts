@@ -1304,6 +1304,7 @@ const en = {
     "You don't enter to win. You enter because your process says so. The result is a consequence.",
   "chk.enterExec": "Enter execution",
   "chk.backStation": "Back to station",
+  "chk.reopen": "Reopen the checklist",
   "chk.secActions": "Quick actions",
   "chk.actAddTrade": "Log the trade in Journal",
   "chk.actAnalytics": "View Analytics",

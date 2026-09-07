@@ -1054,18 +1054,43 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   );
 
   /* ══ Interaction handlers ══ */
+  /**
+   * CORRIGER UNE RÉPONSE ROUVRE LA CHECKLIST.
+   *
+   * ── LE DÉFAUT ─────────────────────────────────────────────────────────────
+   *
+   * Une fois la séance verrouillée, décocher un item « ne faisait rien ». Rien
+   * n'était pourtant bloqué : la case changeait bel et bien d'état — mais
+   * `day.locked` restait VRAI. L'écran continuait donc d'afficher le bandeau
+   * « mode exécution », le bouton restait « edge verrouillé », et la seule
+   * chose qui bougeait était une pastille au milieu d'une liste. Un clic sans
+   * conséquence visible se lit comme un clic mort.
+   *
+   * Pire, l'état devenait incohérent : verrouillé alors que la préparation ne
+   * l'autorisait plus. Aucun écran ne représentait cette combinaison, et le
+   * seul moyen d'en sortir était de quitter la page.
+   *
+   * ── LA RÈGLE ──────────────────────────────────────────────────────────────
+   *
+   * Le verrou reflète la préparation. On change la préparation, le verrou
+   * s'ouvre — et il se refermera de lui-même dès que tout sera vert à nouveau,
+   * puisque c'est déjà ce que fait le compte à rebours. Une seule règle, pour
+   * les quatre entrées qui décident (items, mental, motivation, engagement).
+   */
+  const rouvrirSiVerrouille = (d: DayState): DayState => (d.locked ? { ...d, locked: false } : d);
+
   const toggleItem = (i: number) => {
     if (editMode) return;
     const v = !checked[i];
     const next = checked.slice();
     next[i] = v;
-    setDay((d) => ({ ...d, checked: next }));
+    setDay((d) => rouvrirSiVerrouille({ ...d, checked: next }));
     if (v) confirmTick(i);
     else downBlip();
   };
   const setMotiv = (i: number) => {
     if (editMode) return;
-    setDay((d) => ({ ...d, motiv: i }));
+    setDay((d) => rouvrirSiVerrouille({ ...d, motiv: i }));
     if (config.motivs[i]?.ok) {
       confirmTick(4);
       say("motivOk");
@@ -1076,7 +1101,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   };
   const setFomo = (i: number) => {
     if (editMode) return;
-    setDay((d) => ({ ...d, fomo: i }));
+    setDay((d) => rouvrirSiVerrouille({ ...d, fomo: i }));
     if (i === 3) {
       alarm();
       say("fomo");
@@ -1085,7 +1110,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const toggleAssume = () => {
     setDay((d) => {
       if (!d.assume) blip(520, 0.13, "triangle", 0.02);
-      return { ...d, assume: !d.assume };
+      return rouvrirSiVerrouille({ ...d, assume: !d.assume });
     });
   };
   const toggleAudio = () => {
@@ -1131,6 +1156,13 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const closeLock = () => {
     setDay((d) => ({ ...d, locked: false }));
     setLockOverlay(false);
+  };
+  /** Rouvrir SANS rien effacer — l'inverse de `resetAll`, qui vide la journée. */
+  const rouvrirChecklist = () => {
+    setDay((d) => ({ ...d, locked: false }));
+    setLockOverlay(false);
+    blip(520, 0.09, "sine", 0.018);
+    say("checkDone");
   };
   const resetAll = () => {
     setDay(emptyDay(config.items.length));
@@ -1339,9 +1371,21 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
         {day.locked && (
-          <div className="flex items-center gap-2 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.10)] px-3 py-2 text-xs font-semibold text-[var(--tv-highlight)] animate-fade-in-up">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.10)] px-3 py-2 text-xs font-semibold text-[var(--tv-highlight)] animate-fade-in-up">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--tv-accent)] animate-pulse" />
             {t("chk.execMode")} {execTime !== "—" ? execTime : ""}
+            {/* LA PORTE DE SORTIE, SUR LA PAGE.
+                Elle n'existait que dans la fenêtre de verrouillage (« retour au
+                poste ») — donc plus nulle part une fois cette fenêtre
+                confirmée. Pour revenir sur sa préparation, il fallait quitter
+                la page. Ce bouton fait exactement ce que fait une correction,
+                en le nommant : il rouvre, sans rien effacer. */}
+            <button
+              onClick={rouvrirChecklist}
+              className="ml-auto rounded-lg px-2 py-1 text-[11px] font-bold text-[var(--tv-highlight)] underline decoration-dotted underline-offset-2 transition hover:bg-white/[0.08]"
+            >
+              {t("chk.reopen")}
+            </button>
           </div>
         )}
         {editMode && (
