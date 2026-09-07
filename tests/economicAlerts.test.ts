@@ -61,11 +61,17 @@ describe("ce qui déclenche", () => {
     // Deux préavis, deux rappels : celui qui décide de sortir et celui qui est
     // déjà en position n'ont pas besoin du même message. Sans clés distinctes,
     // le second serait avalé par la déduplication du premier.
-    const r60 = reglesEconomiques([ev({ startsAt: dans(58) })], MAINTENANT);
-    const r15 = reglesEconomiques([ev({ startsAt: dans(14) })], MAINTENANT);
+    const publication = ev({ startsAt: dans(60), id: "nfp-mars" });
+    // La même publication, vue à deux moments : c'est l'HEURE qui change, pas
+    // l'événement.
+    const r60 = reglesEconomiques([publication], MAINTENANT);
+    const r15 = reglesEconomiques([publication], new Date(MAINTENANT.getTime() + 46 * 60_000));
     expect(r60[0].key).not.toBe(r15[0].key);
-    expect(r60[0].key).toEndWith(":60");
-    expect(r15[0].key).toEndWith(":15");
+    // Comparaison EXACTE plutôt qu'un suffixe : elle vérifie du même coup que
+    // la clé porte bien l'identifiant de l'événement, ce qu'un `toEndWith`
+    // laissait passer.
+    expect(r60[0].key).toBe("economic_event:nfp-mars:60");
+    expect(r15[0].key).toBe("economic_event:nfp-mars:15");
   });
 
   test("le rappel de quinze minutes est le SEUL à pouvoir sonner", () => {
