@@ -796,6 +796,31 @@ const en = {
   "mistakes.priority": "PRIORITY",
   "mistakes.defaultTip": "Focus on reducing this mistake.",
 
+  // Mistakes — the correction plan. Three lanes, taken from what a trader
+  // actually needs from this page: what to stop dead, what to work on, and
+  // what they have already dropped.
+  "mistakes.planTitle": "Your correction plan",
+  "mistakes.planSub": "Based on the last {n} days of your journal",
+  "mistakes.laneBanish": "Never again",
+  "mistakes.laneBanishSub": "Serious, and still happening",
+  "mistakes.laneWork": "To work on",
+  "mistakes.laneWorkSub": "Still showing up",
+  "mistakes.laneStopped": "You stopped these",
+  "mistakes.laneStoppedSub": "Not logged once in {n} days",
+  "mistakes.laneEmptyBanish": "Nothing serious in this window.",
+  "mistakes.laneEmptyWork": "Nothing to work on here.",
+  "mistakes.laneEmptyStopped": "Nothing dropped yet — the first one lands here.",
+  "mistakes.progressTitle": "Are you improving?",
+  "mistakes.streak": "Clean streak",
+  "mistakes.streakUnit": "trades in a row, no mistake ticked",
+  "mistakes.streakBest": "Best: {n}",
+  "mistakes.ratePerTrade": "Mistakes per trade",
+  "mistakes.rateNoBase": "Not enough history to compare yet.",
+  "mistakes.rateImproving": "fewer than the previous window",
+  "mistakes.rateWorsening": "more than the previous window",
+  "mistakes.rateStable": "same as the previous window",
+  "mistakes.declared": "Counted from the mistakes you tick yourself.",
+
   // Trade Modal (add/edit trade)
   "trade.editTitle": "Edit Trade",
   "trade.newTitle": "New Trade",
