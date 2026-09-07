@@ -918,7 +918,7 @@ function AppContent() {
                     {page === "goals" && <Goals trades={shownTrades} />}
                     {page === "tradingplan" && <TradingPlan setPage={setPage} />}
                     {page === "appearance" && <Appearance />}
-                    {page === "subscription" && <Subscription />}
+                    {page === "subscription" && <Subscription trades={shownTrades} />}
                     {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
                     {page === "inbox" && <Inbox />}
                     {page === "profile" && <Profile trades={trades} />}
