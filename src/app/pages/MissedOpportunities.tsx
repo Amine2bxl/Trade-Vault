@@ -10,6 +10,7 @@ import {
   ImagePlus,
   Loader2,
   ChevronDown,
+  Camera,
   Download,
   ArrowLeft,
   ArrowRight,
@@ -300,18 +301,57 @@ export default function MissedOpportunities() {
                         open && "rotate-180",
                       )}
                     />
-                    <span className="text-sm font-bold text-white">{m.symbol || "—"}</span>
-                    <span className="text-[10px] text-slate-500">{formatShortDate(m.date)}</span>
-                    {m.estimatedR > 0 && (
-                      <span className="shrink-0 rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                        +{m.estimatedR.toFixed(1)} {t("missed.rMissed")}
-                      </span>
-                    )}
-                    {m.screenshots && m.screenshots.length > 0 && (
-                      <span className="shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold text-slate-400">
-                        {m.screenshots.length} 📷
-                      </span>
-                    )}
+                    {/* ══ LE SYMBOLE ET LA DATE POUSSAIENT LES PASTILLES ═══════
+                        Les quatre éléments se suivaient dans un même flux : la
+                        pastille verte commençait donc APRÈS le symbole et la
+                        date, dont la largeur change à chaque ligne (« US30 »
+                        contre « GBPJPY », « 3 mars » contre « 12 mars »). Les
+                        pastilles zigzaguaient d'une ligne à l'autre — une fois
+                        à gauche, une fois à droite — alors qu'elles portent la
+                        même information sur toutes les lignes. L'œil ne peut
+                        pas comparer une colonne qui n'en est pas une.
+
+                        Le couple symbole + date devient la zone ÉLASTIQUE
+                        (`min-w-0 flex-1`) : c'est lui qui absorbe la variation,
+                        en tronquant si besoin. */}
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
+                      {m.symbol || "—"}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-slate-500">
+                      {formatShortDate(m.date)}
+                    </span>
+                  </div>
+
+                  {/* ══ LES DEUX PASTILLES, CHACUNE SUR SON AXE ═══════════════
+                      Chaque pastille occupe une case de largeur FIXE et s'y
+                      aligne à droite : son bord droit tombe donc au même pixel
+                      sur toutes les lignes, quelle que soit la longueur du
+                      symbole ou de la date — et la case reste réservée même
+                      quand la pastille est absente, sinon la ligne suivante
+                      viendrait combler le trou.
+                      C'est la file indienne demandée : deux colonnes, pas deux
+                      éléments qui flottent. */}
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="flex w-[76px] justify-end sm:w-[92px]">
+                      {m.estimatedR > 0 && (
+                        <span className="truncate rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                          +{m.estimatedR.toFixed(1)} {t("missed.rMissed")}
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex w-[44px] justify-end">
+                      {m.screenshots && m.screenshots.length > 0 && (
+                        /* L'ÉMOJI 📷 EST DEVENU UNE ICÔNE. Un émoji est rendu
+                           par la police du système : il changeait de dessin, de
+                           taille et de couleur d'une machine à l'autre, au
+                           milieu d'une interface qui n'en utilise nulle part
+                           ailleurs. */
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                          {m.screenshots.length}
+                          <Camera className="h-3 w-3" />
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <div
                     className="flex items-center gap-1 shrink-0"

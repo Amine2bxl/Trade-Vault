@@ -1,4 +1,13 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense, startTransition } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  lazy,
+  Suspense,
+  startTransition,
+} from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -88,6 +97,8 @@ import { buildDemoTrades } from "./utils/demoTrades";
 import { previewTrades } from "./utils/previewTrades";
 import { canLogTrade, isPlanLimitError } from "./utils/planLimits";
 import { computeBehavioral } from "./utils/behavioral";
+import { useEconomicCalendar } from "./hooks/useEconomicCalendar";
+import { startOfWeek } from "./utils/economicEvents";
 import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -449,10 +460,23 @@ function AppContent() {
   // Après chargement des trades, Jarvis évalue ses règles locales (série de
   // pertes, fuite, inactivité, revue hebdo) et livre les notifications une
   // fois par jour via l'engine (persist → inbox). Dédupliqué côté runner.
+  /* La semaine courante, figée pour la durée du montage. Recalculée en ligne,
+     `startOfWeek(new Date())` rendrait une NOUVELLE Date à chaque rendu — donc
+     une nouvelle clé de requête, donc un rechargement en boucle. */
+  const semaineCourante = useMemo(() => startOfWeek(new Date()), []);
+
+  /* LE CALENDRIER ÉCONOMIQUE ENTRE DANS LES RÈGLES.
+     C'est la seule donnée du produit qui soit à la fois DATÉE et EXTERNE : le
+     trader ne peut pas la déduire de son journal, et elle a une heure limite.
+     Le hook porte déjà sa propre résilience (cache de session, repli local,
+     rafraîchissement toutes les 30 s dès qu'un événement approche) : il n'y a
+     donc aucun état « en pause » à gérer ici. */
+  const { events: economicEvents } = useEconomicCalendar(semaineCourante);
+
   useEffect(() => {
     if (!user?.id || !accountsReady || tradesLoading) return;
     const uid = user.id;
-    void (async () => {
+    const evaluer = async () => {
       // Le solde est nécessaire aux règles de risque en % ; il est chargé une
       // fois ici plutôt qu'à chaque évaluation.
       const balance =
@@ -468,6 +492,7 @@ function AppContent() {
             mistakeStats: stats.mistakeStats,
           },
           rulesEnabled: rulesRef.current.filter((r) => r.enabled).length,
+          economicEvents,
           // Alimenté par les moteurs déterministes : Jarvis peut désormais
           // signaler un progrès chiffré ou une règle qui échappe — sans appel
           // IA, donc sans coût et sans risque d'invention.
@@ -488,8 +513,25 @@ function AppContent() {
         },
         (id, input) => NotificationEngine.notify(id, input),
       );
-    })().catch(() => {});
-  }, [user?.id, accountsReady, tradesLoading, trades, stats]);
+    };
+
+    void evaluer().catch(() => {});
+
+    /* ── ET ON REMET ÇA TOUTES LES CINQ MINUTES ──────────────────────────
+       Les règles du journal n'ont pas besoin d'être réévaluées : elles
+       portent sur des données qui ne changent qu'à l'encodage d'un trade.
+       Le préavis économique, lui, dépend de L'HEURE : évalué une seule fois
+       au chargement, un rappel à quinze minutes ne partirait que si le
+       trader ouvrait l'application pile dans cette fenêtre-là.
+
+       Cinq minutes est la maille juste : la fenêtre de tolérance d'un préavis
+       fait dix minutes, donc aucun rappel ne peut être manqué, et une
+       réévaluation ne coûte qu'un parcours de tableaux déjà en mémoire.
+       Le journal de déduplication du jour garantit qu'un même rappel ne part
+       qu'une fois — voir `dispatchCodedNotifications`. */
+    const id = window.setInterval(() => void evaluer().catch(() => {}), 5 * 60_000);
+    return () => window.clearInterval(id);
+  }, [user?.id, accountsReady, tradesLoading, trades, stats, economicEvents]);
 
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
