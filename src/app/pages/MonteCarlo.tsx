@@ -1,20 +1,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import {
-  Loader2,
-  Shuffle,
-  RotateCcw,
-  BookOpen,
-  SlidersHorizontal,
-  Upload,
-  X,
-  LineChart,
-  BarChart3,
-  ListTree,
-} from "lucide-react";
+import { Loader2, Shuffle, RotateCcw, BookOpen, SlidersHorizontal, Upload, X } from "lucide-react";
 import {
   ResponsiveContainer,
-  ComposedChart,
-  Area,
+  LineChart,
   Line,
   BarChart,
   Bar,
@@ -32,7 +20,7 @@ import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import { usePageActions } from "../contexts/PageActionsContext";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
-import { Kpi, KpiGrid, PageToolbar, SubNav, type SubNavItem } from "@/shared/ui";
+import { Kpi, KpiGrid } from "@/shared/ui";
 import {
   extractRSamples,
   runMonteCarlo,
@@ -69,8 +57,24 @@ const TIRAGES = 2000;
 /** D'où viennent les trades rejoués. */
 type Source = "journal" | "manual" | "csv";
 
-/** Les trois lectures d'un même résultat. */
-type Vue = "paths" | "dist" | "details";
+/**
+ * LA HAUTEUR DES GRAPHES, EN PIXELS — ET POURQUOI PAS EN `flex-1`.
+ *
+ * `ResponsiveContainer height="100%"` ne dessine RIEN si son parent n'a pas de
+ * hauteur DÉFINIE. Tant que la page portait une hauteur fixe, la chaîne
+ * `flex-1 → min-h-0 → 100 %` en fournissait toujours une. Le jour où la page
+ * est passée en `minHeight` + `overflow-y-auto` (pour ne plus s'écraser), un
+ * maillon de cette chaîne est devenu un bloc ordinaire : la section de graphe
+ * n'était plus étirée, sa hauteur est retombée sur son contenu, le conteneur a
+ * mesuré 0 — et la courbe a disparu SANS ERREUR, sans typage rouge, sans test
+ * rouge. « Pas de courbe. »
+ *
+ * Une hauteur en pixels ne peut pas se rompre : elle ne dépend d'aucun parent.
+ * C'est moins élégant qu'une chaîne flex, et c'est précisément la raison de la
+ * choisir ici — un graphe absent est un bug muet.
+ */
+const H_COURBE = "h-[300px] sm:h-[360px] lg:h-[400px]";
+const H_DISTRIB = "h-[170px] sm:h-[190px]";
 
 /**
  * MONTE-CARLO — « où va mon compte, si je continue comme ça ? »
@@ -111,8 +115,20 @@ type Vue = "paths" | "dist" | "details";
  *      voit la courbe bouger en déplaçant un curseur.
  *   3. LA RÉPONSE ENSUITE, ET ENTIÈRE. Le verdict — le pourcentage, la barre
  *      des trois issues — suit immédiatement le bloc d'entrées.
- *   4. UNE VUE À LA FOIS. Les deux graphes et le détail des percentiles sont
- *      trois lectures du MÊME tirage, pas trois sections à empiler.
+ *   4. PLUS D'ONGLETS : TOUT EST À L'ÉCRAN. Le résultat vivait derrière trois
+ *      onglets (« trajectoires », « distribution », « détail ») — trois
+ *      lectures du MÊME tirage, dont deux invisibles à tout instant. Or on ne
+ *      lance pas 2 000 simulations pour choisir un onglet : on les lance pour
+ *      voir où ça va, et à quel point c'est incertain. Les deux graphes et les
+ *      percentiles se lisent maintenant d'une traite, dans une seule colonne.
+ *
+ * ══ LES CINQ COURBES SE VOIENT ══
+ *
+ * Le faisceau était dessiné en aplats superposés : une seule courbe visible (la
+ * médiane), quatre bandes de vert à 6 % d'opacité autour. On ne distinguait ni
+ * le meilleur cas ni le pire — les deux chiffres qui décident, justement, si le
+ * plan tient. Les cinq percentiles sont désormais cinq LIGNES nommées, du vert
+ * (meilleur) au rouge (pire).
  *
  * ══ ET ELLE RÉPOND TOUTE SEULE ══
  *
@@ -262,7 +278,6 @@ export default function MonteCarloPage({ trades }: Props) {
 
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<MonteCarloResult | null>(null);
-  const [vue, setVue] = useState<Vue>("paths");
 
   const params: MonteCarloParams = useMemo(
     () => ({
@@ -322,36 +337,6 @@ export default function MonteCarloPage({ trades }: Props) {
 
   const se = result ? monteCarloSE(result.passRate, result.runs.length) : 0;
 
-  const vues: readonly SubNavItem<Vue>[] = useMemo(
-    () => [
-      /* Les onglets portent un NOM COURT, pas le titre du graphe. « Where the
-         account goes » (22 caractères) débordait de la barre sur un téléphone,
-         et le titre reste écrit en tête du graphe juste dessous — l'onglet n'a
-         pas à le répéter, il a à le désigner. */
-      /* L'icône DISPARAÎT sous 640px. Trois onglets + le bouton des réglages
-         demandaient 383px dans les 359 disponibles d'un iPhone SE : la rangée
-         défilait, et le troisième onglet vivait hors de l'écran. Sans les trois
-         icônes (18px chacune), tout tient. L'icône est un appui de repérage,
-         le mot est l'information : c'est l'icône qui cède. */
-      {
-        id: "paths",
-        label: t("mc.viewPaths"),
-        icon: <LineChart className="hidden h-3.5 w-3.5 sm:block" />,
-      },
-      {
-        id: "dist",
-        label: t("mc.viewDist"),
-        icon: <BarChart3 className="hidden h-3.5 w-3.5 sm:block" />,
-      },
-      {
-        id: "details",
-        label: t("mc.viewDetails"),
-        icon: <ListTree className="hidden h-3.5 w-3.5 sm:block" />,
-      },
-    ],
-    [t],
-  );
-
   const panneau = (
     <PanneauReglages
       source={source}
@@ -409,22 +394,6 @@ export default function MonteCarloPage({ trades }: Props) {
       style={height ? { minHeight: height } : undefined}
       className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto p-3 md:p-4"
     >
-      {/* ══ LA BARRE D'OUTILS ════════════════════════════════════════════
-          Navigation des trois lectures à gauche, réglages à droite. Elle est
-          fixe en tête de page : on change de vue sans jamais scroller. */}
-      {/* Le bouton « réglages » a disparu de cette barre, et la feuille qu'il
-          ouvrait avec lui : les réglages sont maintenant TOUJOURS à l'écran,
-          dans le bloc juste en dessous. Un panneau qu'il faut ouvrir pour
-          savoir sur quoi tourne la simulation était la friction principale de
-          la page. */}
-      {result && (
-        <div className="shrink-0">
-          <PageToolbar>
-            <SubNav items={vues} value={vue} onChange={setVue} ariaLabel={t("mc.outcomes")} />
-          </PageToolbar>
-        </div>
-      )}
-
       {/* ══ DEUX COLONNES, PAS DEUX ÉCRANS ═══════════════════════════════
           J'avais empilé les réglages AU-DESSUS du résultat : tout était bien
           visible, mais plus rien ne tenait dans la fenêtre — il fallait
@@ -435,8 +404,8 @@ export default function MonteCarloPage({ trades }: Props) {
           plus de bouton pour les atteindre. Sous 1024px la colonne passe
           simplement au-dessus, dans le flux — un téléphone défile de toute
           façon, autant qu'il défile dans un seul sens. */}
-      <div className="mt-3 grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="order-2 flex min-w-0 flex-col lg:order-1">
+      <div className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="order-2 flex min-w-0 flex-col gap-3 lg:order-1">
           {samples.length < 5 ? (
             /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
              lui, un trader sans journal ne pouvait pas même atteindre la saisie
@@ -460,12 +429,7 @@ export default function MonteCarloPage({ trades }: Props) {
               <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
             </div>
           ) : (
-            <div
-              className={cn(
-                "flex h-full flex-col gap-3 transition-opacity",
-                running && "opacity-50",
-              )}
-            >
+            <div className={cn("flex flex-col gap-3 transition-opacity", running && "opacity-50")}>
               <>
                 {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
                 <section className="glass shrink-0 animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
@@ -557,19 +521,15 @@ export default function MonteCarloPage({ trades }: Props) {
                   </div>
                 </section>
 
-                {/* ══ LA LECTURE CHOISIE — elle remplit l'espace restant ═══════
-                  `min-h-[340px]` est un FILET, pas une mise en page : les trois
-                  vues montent un `ResponsiveContainer` en hauteur 100 %, qui ne
-                  dessine RIEN si son parent n'a pas de hauteur définie. Tant
-                  que la page portait une hauteur fixe, `flex-1` en donnait
-                  toujours une ; maintenant qu'elle peut défiler, ce plancher
-                  garantit que le graphe a de la place même quand la fenêtre est
-                  courte — au lieu de disparaître en silence. */}
-                <div className="min-h-[340px] flex-1">
-                  {vue === "paths" && <Faisceau result={result} horizon={horizon} />}
-                  {vue === "dist" && <Histogramme result={result} />}
-                  {vue === "details" && <Details result={result} />}
-                </div>
+                {/* ══ TOUT LE RÉSULTAT, D'UNE TRAITE ═══════════════════════
+                  Ces trois blocs étaient trois ONGLETS. Deux d'entre eux
+                  étaient donc invisibles à tout instant, et il fallait savoir
+                  qu'ils existaient pour aller les chercher. Ils descendent
+                  simplement les uns sous les autres : le faisceau (où ça va),
+                  la distribution (où ça finit), et les percentiles chiffrés
+                  sous la courbe qu'ils commentent. */}
+                <Faisceau result={result} horizon={horizon} />
+                <Histogramme result={result} />
               </>
             </div>
           )}
@@ -922,19 +882,15 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
     return [bas - marge, haut + marge];
   }, [result.params.startingBalance, cible, plancher]);
 
+  const d = result.finalBalanceDistribution;
+  const depart = result.params.startingBalance;
+
   return (
-    <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
+    <section className="glass animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
       <TitreGraphe titre={t("mc.chartPaths")} sous={t("mc.chartPathsSub")} />
-      <div className="min-h-0 flex-1">
+      <div className={H_COURBE}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="mcBand" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.14} />
-                <stop offset="55%" stopColor={CHART_GREEN} stopOpacity={0.05} />
-                <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0} />
-              </linearGradient>
-            </defs>
+          <LineChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid {...EQUITY_GRID} />
             <XAxis
               dataKey="jour"
@@ -977,41 +933,29 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
                 fontSize: 10,
               }}
             />
-            <Area
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p95"
-              stroke="none"
-              fill="url(#mcBand)"
-              fillOpacity={1}
-              isAnimationActive={false}
-            />
-            <Area
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p75"
-              stroke="none"
-              fill="rgb(var(--tv-chart-green-rgb) / 0.06)"
-              fillOpacity={1}
-              isAnimationActive={false}
-            />
-            <Area
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p25"
-              stroke="none"
-              fill="rgb(var(--tv-chart-green-rgb) / 0.06)"
-              fillOpacity={1}
-              isAnimationActive={false}
-            />
-            {/* La médiane EST une courbe d'equity — projetée, mais une courbe
-                d'equity. Elle porte donc le trait de la référence et son vert,
-                qui ne suit pas le thème. */}
-            <Line
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p50"
-              stroke={CHART_GREEN}
-              {...EQUITY_LINE}
-              dot={false}
-              isAnimationActive={false}
-            />
+            {/* ══ LES CINQ COURBES ═══════════════════════════════════════
+                Elles étaient quatre APLATS à 6 % d'opacité et une seule ligne.
+                Autant dire une courbe : le meilleur cas et le pire — les deux
+                bornes qui décident si le plan tient — se confondaient avec le
+                fond.
+                Cinq lignes, du meilleur au pire, avec le sens dans la couleur :
+                vert au-dessus de la médiane, rouge en dessous. La médiane garde
+                le trait plein de la courbe d'equity du produit ; les quatre
+                autres sont plus fines, et les deux extrêmes pointillées — ce
+                sont des bornes, pas des trajectoires attendues. */}
+            {COURBES.map((c) => (
+              <Line
+                key={c.cle}
+                type={EQUITY_CURVE_TYPE}
+                dataKey={c.cle}
+                stroke={c.trait}
+                strokeWidth={c.cle === "p50" ? EQUITY_LINE.strokeWidth : 1.25}
+                strokeDasharray={c.pointille ? "5 4" : undefined}
+                strokeOpacity={c.opacite}
+                dot={false}
+                isAnimationActive={false}
+              />
+            ))}
             <Tooltip
               {...tooltipStyle}
               labelFormatter={(v) => `${t("mc.dayShort")}${v}`}
@@ -1026,32 +970,73 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
                 return [formatMoney(Number(value)), libelle[name] ?? name];
               }}
             />
-          </ComposedChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* LA LÉGENDE NOMME LES CINQ, dans l'ordre du graphe — du haut vers le
+          bas. Elle en nommait trois, dont deux bandes qu'on ne voyait pas. */}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="flex items-center gap-1.5">
-          <span aria-hidden className="h-0.5 w-4 rounded-full bg-[var(--tv-chart-green)]" />
-          <span className="tv-row-label">{t("mc.bandMedian")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className="h-2 w-4 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.18)]"
-          />
-          <span className="tv-row-label">{t("mc.bandHalf")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className="h-2 w-4 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.08)]"
-          />
-          <span className="tv-row-label">{t("mc.bandNine")}</span>
-        </span>
+        {[...COURBES].reverse().map((c) => (
+          <span key={c.cle} className="flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="h-0.5 w-4 shrink-0 rounded-full"
+              style={{ background: c.trait, opacity: c.opacite }}
+            />
+            <span className="tv-row-label">{t(c.cleTexte as never)}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* ══ OÙ ÇA FINIT, CHIFFRE PAR CHIFFRE ═════════════════════════════
+          C'était un TROISIÈME onglet (« détail »), donc une lecture qu'il
+          fallait aller chercher. Ces quatre nombres sont la valeur d'arrivée
+          des quatre courbes du graphe ci-dessus : ils appartiennent à ce
+          graphe, pas à un écran séparé. */}
+      <div className="mt-4 border-t border-[var(--tv-border)] pt-4">
+        <KpiGrid cols={4}>
+          {(
+            [
+              ["mc.p5", d.p5],
+              ["mc.p25", d.p25],
+              ["mc.p50", d.p50],
+              ["mc.p95", d.p95],
+            ] as const
+          ).map(([cle, valeur]) => (
+            <Kpi
+              key={cle}
+              inset
+              label={t(cle)}
+              value={formatMoney(valeur)}
+              tone={valeur >= depart ? "pos" : "neg"}
+              hint={formatPnl(valeur - depart)}
+            />
+          ))}
+        </KpiGrid>
       </div>
     </section>
   );
 }
+
+/**
+ * LES CINQ PERCENTILES DU FAISCEAU — leur trait et leur nom, en un seul
+ * endroit.
+ *
+ * La table sert DEUX fois : à tracer les lignes, et à écrire la légende. Deux
+ * listes séparées auraient dérivé — c'est exactement comme ça qu'une légende
+ * finit par nommer une courbe d'une couleur qu'elle n'a plus.
+ *
+ * Ordre : du pire au meilleur, celui de la lecture d'un axe vertical inversé.
+ * La légende le retourne pour se lire de haut en bas, comme le graphe.
+ */
+const COURBES = [
+  { cle: "p5", cleTexte: "mc.bandWorst", trait: CHART_RED, opacite: 0.85, pointille: true },
+  { cle: "p25", cleTexte: "mc.bandPoor", trait: CHART_RED, opacite: 0.5, pointille: false },
+  { cle: "p50", cleTexte: "mc.bandMedian", trait: CHART_GREEN, opacite: 1, pointille: false },
+  { cle: "p75", cleTexte: "mc.bandGood", trait: CHART_GREEN, opacite: 0.5, pointille: false },
+  { cle: "p95", cleTexte: "mc.bandBest", trait: CHART_GREEN, opacite: 0.85, pointille: true },
+] as const;
 
 /* ────────────────────────────────────────────────────────────────────────────
    L'HISTOGRAMME DES ISSUES
@@ -1106,9 +1091,9 @@ function Histogramme({ result }: { result: MonteCarloResult }) {
   }, [result]);
 
   return (
-    <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
+    <section className="glass animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
       <TitreGraphe titre={t("mc.chartDist")} sous={t("mc.chartDistSub")} />
-      <div className="min-h-0 flex-1">
+      <div className={H_DISTRIB}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={bins} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid {...EQUITY_GRID} />
@@ -1147,80 +1132,6 @@ function Histogramme({ result }: { result: MonteCarloResult }) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-      </div>
-    </section>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   LE DÉTAIL DES ISSUES
-   ──────────────────────────────────────────────────────────────────────────*/
-
-/**
- * Les percentiles vivaient sous l'histogramme, en quatre cases que rien
- * n'annonçait — on les lisait sans savoir qu'on venait de changer d'unité (des
- * trajectoires aux soldes finaux). Ils sont maintenant une LECTURE nommée :
- * « où ça finit, chiffre par chiffre », avec le nombre de tirages qui la
- * fonde.
- */
-function Details({ result }: { result: MonteCarloResult }) {
-  const { t } = useT();
-  const depart = result.params.startingBalance;
-  const d = result.finalBalanceDistribution;
-
-  return (
-    <section className="glass flex min-h-0 flex-1 flex-col animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
-      <TitreGraphe titre={t("mc.chartDist")} sous={t("mc.chartDistSub")} />
-      <KpiGrid cols={4}>
-        {(
-          [
-            ["mc.p5", d.p5],
-            ["mc.p25", d.p25],
-            ["mc.p50", d.p50],
-            ["mc.p95", d.p95],
-          ] as const
-        ).map(([key, value]) => (
-          <Kpi
-            key={key}
-            inset
-            label={t(key)}
-            value={formatMoney(value)}
-            tone={value >= depart ? "pos" : "neg"}
-            hint={formatPnl(value - depart)}
-          />
-        ))}
-      </KpiGrid>
-
-      <div className="mt-4 border-t border-[var(--tv-border)] pt-4">
-        <KpiGrid cols={4}>
-          <Kpi
-            inset
-            label={t("mc.passed")}
-            value={`${(result.passRate * 100).toFixed(1)}%`}
-            tone="pos"
-            hint={`${Math.round(result.passRate * result.runs.length)} / ${result.runs.length}`}
-          />
-          <Kpi
-            inset
-            label={t("mc.timedOut")}
-            value={`${(result.timeOutRate * 100).toFixed(1)}%`}
-            hint={`${Math.round(result.timeOutRate * result.runs.length)} / ${result.runs.length}`}
-          />
-          <Kpi
-            inset
-            label={t("mc.failed")}
-            value={`${(result.failRate * 100).toFixed(1)}%`}
-            tone="neg"
-            hint={`${Math.round(result.failRate * result.runs.length)} / ${result.runs.length}`}
-          />
-          <Kpi
-            inset
-            label={t("mc.medianDD")}
-            value={formatMoney(result.medianMaxDD)}
-            tone="warn"
-            hint={`${((result.medianMaxDD / depart) * 100).toFixed(1)}%`}
-          />
-        </KpiGrid>
       </div>
     </section>
   );
@@ -1284,11 +1195,14 @@ function Reglage({
 
   return (
     <div className="min-w-0">
+      {/* UN SEUL NOMBRE PAR RÉGLAGE.
+          Il y en avait deux : la valeur formatée à droite du libellé, ET la
+          même valeur dans le champ juste dessous. Cinq réglages × deux
+          nombres = dix chiffres à l'écran pour cinq informations, et le doute
+          permanent de savoir lequel des deux on modifie.
+          Le champ porte la valeur ; l'unité vit à sa droite, dans la boîte. */}
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <span className="tv-label truncate text-slate-500">{label}</span>
-        {/* La valeur LUE, à droite du libellé : elle était sous le curseur,
-            donc à trois lignes de son propre nom. */}
-        <span className="tv-figure shrink-0 text-[11px] text-slate-400">{format(value)}</span>
       </div>
 
       {/* LA VALEUR EXACTE SE TAPE.
@@ -1328,7 +1242,12 @@ function Reglage({
         aria-label={label}
         className="w-full"
       />
-      {hint && <div className="tv-row-label mt-1 truncate">{hint}</div>}
+      {/* CE QUE LE NOMBRE VEUT DIRE — c'est ici, et une seule fois.
+          `format` rendait la valeur lisible en haut du bloc ; il la rend
+          maintenant lisible en bas, là où elle n'entre en concurrence avec
+          rien. Un `hint` explicite (l'équivalent en argent d'un pourcentage)
+          prend sa place quand il apporte davantage. */}
+      <div className="tv-row-label mt-1 truncate">{hint ?? format(value)}</div>
     </div>
   );
 }

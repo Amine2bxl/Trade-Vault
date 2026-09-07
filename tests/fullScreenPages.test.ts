@@ -72,6 +72,69 @@ describe("les pages plein écran", () => {
   }
 });
 
+/**
+ * LE GRAPHE QUI DISPARAÎT SANS RIEN CASSER.
+ *
+ * ── LE BUG ──────────────────────────────────────────────────────────────────
+ *
+ * `ResponsiveContainer height="100%"` ne dessine RIEN quand son parent n'a pas
+ * de hauteur définie. Monte-Carlo posait ses graphes dans une chaîne
+ * `flex-1 → min-h-0 → 100 %`, qui fonctionnait tant que la PAGE portait une
+ * hauteur fixe. En la faisant passer en `minHeight` + `overflow-y-auto` — la
+ * correction juste, celle qui empêche l'écrasement testé plus haut — un maillon
+ * de cette chaîne est redevenu un bloc ordinaire : la section n'était plus
+ * étirée, sa hauteur est retombée sur son contenu, le conteneur a mesuré 0.
+ *
+ * Rien n'a échoué. Pas d'erreur, pas de typage rouge, pas de test rouge : la
+ * page s'affichait entière, sans sa courbe. Le retour utilisateur a été « pas
+ * de courbe ». Deux corrections structurelles justes se sont annulées l'une
+ * l'autre — c'est le mode de panne le plus coûteux, parce que rien ne le
+ * signale.
+ *
+ * ── CE QUI EST VÉRIFIÉ ──────────────────────────────────────────────────────
+ *
+ * Une hauteur en PIXELS ne dépend d'aucun parent : elle ne peut pas se rompre.
+ * On exige donc qu'elle soit là, juste avant chaque conteneur.
+ */
+describe("les graphes de Monte-Carlo", () => {
+  const src = read("../src/app/pages/MonteCarlo.tsx");
+
+  test("chaque ResponsiveContainer a un parent de hauteur DÉFINIE", () => {
+    const morceaux = src.split("<ResponsiveContainer");
+    // Le fichier en monte au moins deux : le faisceau et la distribution.
+    expect(morceaux.length - 1).toBeGreaterThanOrEqual(2);
+
+    for (let i = 1; i < morceaux.length; i++) {
+      // Le conteneur porteur de la hauteur est l'élément qui enveloppe
+      // directement le graphe : il tient dans les quelques lignes qui
+      // précèdent.
+      const avant = morceaux[i - 1].slice(-300);
+      expect(avant).toMatch(/h-\[\d+px\]|H_COURBE|H_DISTRIB/);
+    }
+  });
+
+  test("les deux hauteurs nommées sont bien des pixels, pas des pourcentages", () => {
+    // `H_COURBE = "h-full"` passerait le test précédent tout en reproduisant
+    // exactement le bug : la constante doit résoudre en pixels.
+    for (const nom of ["H_COURBE", "H_DISTRIB"]) {
+      const ligne = src.match(new RegExp(`const ${nom} = "([^"]+)"`));
+      expect(ligne).not.toBeNull();
+      expect(ligne![1]).toMatch(/h-\[\d+px\]/);
+    }
+  });
+
+  test("les cinq percentiles du faisceau sont tous TRACÉS", () => {
+    // Ils existaient dans les données depuis toujours, mais quatre d'entre eux
+    // étaient dessinés en aplats à 6 % d'opacité : invisibles. Le meilleur et
+    // le pire cas — les deux bornes qui disent si le plan tient — n'étaient
+    // donc lisibles nulle part.
+    const table = src.slice(src.indexOf("const COURBES = ["));
+    for (const cle of ["p5", "p25", "p50", "p75", "p95"]) {
+      expect(table).toContain(`cle: "${cle}"`);
+    }
+  });
+});
+
 describe("la grille du calendrier", () => {
   const src = read("../src/app/pages/CalendarPage.tsx");
 
