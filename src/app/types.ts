@@ -55,9 +55,12 @@ export const SECTIONS = [
     pages: ["checklist", "calculator", "news"],
   },
   { id: "journal", pages: ["journal", "calendar", "mistakes", "missed"] },
-  { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo", "backtest"] },
+  { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo"] },
   { id: "coach", pages: ["insights"] },
   { id: "strategy", pages: ["tradingplan", "goals"] },
+  // Le terminal de rejeu a SA section : un environnement à part, pas un outil
+  // rangé dans « Analyse ».
+  { id: "backtest", pages: ["backtest"] },
   { id: "settings", pages: ["settings", "profile", "appearance", "subscription"] },
 ] as const satisfies readonly { id: string; pages: readonly Page[] }[];
 

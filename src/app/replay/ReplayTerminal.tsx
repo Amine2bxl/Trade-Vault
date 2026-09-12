@@ -268,6 +268,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               bounds={props.bounds}
               showRthEth={showRthEth}
               tool={tool}
+              mark={props.quote?.mark ?? 0}
               onAddDrawing={props.onAddDrawing}
               onUpdateDrawing={props.onUpdateDrawing}
               onMoveOrder={props.onMoveOrder}

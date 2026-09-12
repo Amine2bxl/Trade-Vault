@@ -56,9 +56,96 @@ interface OverlayProps {
   bounds: { ethStart: number; ethEnd: number; rthStart: number; rthEnd: number };
   showRthEth: boolean;
   tool: ReplayTool;
+  mark: number;
   onAddDrawing: (d: Drawing) => void;
   onUpdateDrawing: (d: Drawing) => void;
   onMoveOrder: (orderId: string, price: number) => void;
+}
+
+/**
+ * Une étiquette de prix — la carte de visite des ordres et des positions.
+ * Plaquette arrondie au liseré teinté, pastille de direction, prix en tabular :
+ * le vocabulaire d'un terminal pro, conforme à la grammaire TradeVault.
+ */
+function PriceTag({
+  x,
+  y,
+  color,
+  label,
+  value,
+  drag,
+}: {
+  x: number;
+  y: number;
+  color: string;
+  label: string;
+  value: string;
+  drag?: {
+    onDown: (ev: React.PointerEvent<SVGElement>) => void;
+    onMove: (ev: React.PointerEvent<SVGElement>) => void;
+    onUp: (ev: React.PointerEvent<SVGElement>) => void;
+  };
+}) {
+  const w = 112;
+  return (
+    <g
+      style={drag ? { pointerEvents: "auto", cursor: "ns-resize" } : { pointerEvents: "none" }}
+      onPointerDown={drag?.onDown}
+      onPointerMove={drag?.onMove}
+      onPointerUp={drag?.onUp}
+    >
+      <rect
+        x={x}
+        y={y - 9.5}
+        width={w}
+        height={19}
+        rx={5.5}
+        fill={color}
+        fillOpacity={0.13}
+        stroke={color}
+        strokeOpacity={0.45}
+        strokeWidth={1}
+      />
+      <circle cx={x + 11} cy={y} r={2.7} fill={color} />
+      <text
+        x={x + 19}
+        y={y + 3.2}
+        fill={color}
+        fontSize={9.5}
+        fontWeight={800}
+        letterSpacing={0.4}
+        fontFamily="ui-monospace, SFMono-Regular, monospace"
+      >
+        {label}
+      </text>
+      <text
+        x={x + w - 9}
+        y={y + 3.2}
+        fill="var(--tv-text)"
+        fontSize={9.5}
+        fontWeight={700}
+        textAnchor="end"
+        fontFamily="ui-monospace, SFMono-Regular, monospace"
+      >
+        {value}
+      </text>
+    </g>
+  );
+}
+
+/** Petit losange de fill — la signature des exécutions. */
+function FillDiamond({ cx, cy, color }: { cx: number; cy: number; color: string }) {
+  return (
+    <rect
+      x={cx - 3}
+      y={cy - 3}
+      width={6}
+      height={6}
+      rx={1}
+      fill={color}
+      transform={`rotate(45 ${cx} ${cy})`}
+    />
+  );
 }
 
 interface DragState {
@@ -76,6 +163,7 @@ export default function ReplayOverlay({
   bounds,
   showRthEth,
   tool,
+  mark,
   onAddDrawing,
   onUpdateDrawing,
   onMoveOrder,
@@ -341,47 +429,40 @@ export default function ReplayOverlay({
   })();
 
   const orderLines = orders
-    .filter((o) => o.status === "working" && o.price != null)
+    .filter(
+      (o) => o.status === "working" && o.price != null && o.label !== "SL" && o.label !== "TP",
+    )
     .map((o) => {
       const { x, y } = coord(0, o.price!);
       if (x == null || y == null) return null;
-      const color =
-        o.label === "SL"
-          ? SL
-          : o.label === "TP"
-            ? TP
-            : o.side === "long"
-              ? "var(--tv-chart-green)"
-              : "var(--tv-chart-red)";
-      const isBracket = o.label === "SL" || o.label === "TP";
+      const color = o.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)";
+      const sideWord = o.side === "long" ? "BUY" : "SELL";
+      const kind = o.type === "limit" ? "LMT" : "STP";
       return (
-        <g
-          key={o.id}
-          stroke={color}
-          strokeWidth={isBracket ? 1 : 1.2}
-          strokeDasharray={isBracket ? "5 4" : "2 4"}
-          opacity={0.95}
-        >
-          <line x1={0} y1={y} x2={W} y2={y} style={{ pointerEvents: "none" }} />
-          <g
-            style={{ pointerEvents: "auto", cursor: "ns-resize" }}
-            onPointerDown={handleDown({ orderId: o.id })}
-            onPointerMove={handleMove}
-            onPointerUp={handleUp}
-          >
-            <rect x={W - 70} y={y - 7} width={70} height={14} fill={color} opacity={0.16} />
-            <rect x={W - 70} y={y - 7} width={70} height={14} fill="transparent" />
-            <text
-              x={W - 66}
-              y={y + 3}
-              fill={color}
-              fontSize={9.5}
-              fontWeight={800}
-              fontFamily="ui-monospace, monospace"
-            >
-              {o.label} {o.price!.toFixed(2)}
-            </text>
-          </g>
+        <g key={o.id} style={{ pointerEvents: "none" }}>
+          {/* Ligne pointillée fine — l'ordre attend. */}
+          <line
+            x1={0}
+            y1={y}
+            x2={W}
+            y2={y}
+            stroke={color}
+            strokeWidth={1}
+            strokeDasharray="1 4"
+            opacity={0.6}
+          />
+          <PriceTag
+            x={W - 112}
+            y={y}
+            color={color}
+            label={`${sideWord} ${o.qty} · ${kind}`}
+            value={o.price!.toFixed(2)}
+            drag={{
+              onDown: handleDown({ orderId: o.id }),
+              onMove: handleMove,
+              onUp: handleUp,
+            }}
+          />
         </g>
       );
     });
@@ -390,19 +471,20 @@ export default function ReplayOverlay({
     const { y } = coord(0, pos.avgEntry);
     if (y == null) return null;
     const color = pos.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)";
-    const slY = pos.stop != null ? coord(0, pos.stop.price ?? 0).y : null;
-    const tpY = pos.target != null ? coord(0, pos.target.price ?? 0).y : null;
-    const vals = [slY, tpY, y].filter((v): v is number => v != null);
-    const top = vals.length ? Math.min(...vals) : y;
-    const bot = vals.length ? Math.max(...vals) : y;
+    const markY = coord(0, mark).y;
+    const slY = pos.stop?.price != null ? coord(0, pos.stop.price).y : null;
+    const tpY = pos.target?.price != null ? coord(0, pos.target.price).y : null;
+    const rail = [slY, tpY, y].filter((v): v is number => v != null);
+    const top = rail.length ? Math.min(...rail) : y;
+    const bot = rail.length ? Math.max(...rail) : y;
 
     const bracketHandle = (yy: number | null, orderId: string | null | undefined) =>
       yy != null && orderId ? (
         <rect
-          x={W - 26}
-          y={yy - 5}
-          width={10}
-          height={10}
+          x={W - 11}
+          y={yy - 10}
+          width={8}
+          height={20}
           fill="transparent"
           style={{ pointerEvents: "auto", cursor: "ns-resize" }}
           onPointerDown={handleDown({ orderId })}
@@ -412,7 +494,23 @@ export default function ReplayOverlay({
       ) : null;
 
     return (
-      <g key={pos.id}>
+      <g key={pos.id} style={{ pointerEvents: "none" }}>
+        {/* Zone de P&L : la bande entre l'entrée et le prix marqué. */}
+        {markY != null && Math.abs(markY - y) > 1 && (
+          <rect
+            x={0}
+            y={Math.min(y, markY)}
+            width={W}
+            height={Math.abs(markY - y)}
+            fill={color}
+            opacity={0.07}
+          />
+        )}
+
+        {/* Ligne d'entrée — pleine, discrète. */}
+        <line x1={0} y1={y} x2={W} y2={y} stroke={color} strokeWidth={1} opacity={0.5} />
+
+        {/* Brackets SL / TP : lignes pointillées + étiquettes draggables. */}
         {slY != null && pos.stop?.price != null && (
           <>
             <line
@@ -423,20 +521,21 @@ export default function ReplayOverlay({
               stroke={SL}
               strokeWidth={1}
               strokeDasharray="5 4"
-              opacity={0.85}
-              style={{ pointerEvents: "none" }}
+              opacity={0.8}
             />
-            <text
-              x={10}
-              y={slY - 3}
-              fill={SL}
-              fontSize={9}
-              fontWeight={700}
-              fontFamily="ui-monospace, monospace"
-            >
-              SL {pos.stop!.price!.toFixed(2)}
-            </text>
-            {bracketHandle(slY, pos.stop?.id)}
+            <PriceTag
+              x={8}
+              y={slY}
+              color={SL}
+              label="SL"
+              value={pos.stop.price.toFixed(2)}
+              drag={{
+                onDown: handleDown({ orderId: pos.stop.id }),
+                onMove: handleMove,
+                onUp: handleUp,
+              }}
+            />
+            {bracketHandle(slY, pos.stop.id)}
           </>
         )}
         {tpY != null && pos.target?.price != null && (
@@ -449,57 +548,48 @@ export default function ReplayOverlay({
               stroke={TP}
               strokeWidth={1}
               strokeDasharray="5 4"
-              opacity={0.85}
-              style={{ pointerEvents: "none" }}
+              opacity={0.8}
             />
-            <text
-              x={10}
-              y={tpY - 3}
-              fill={TP}
-              fontSize={9}
-              fontWeight={700}
-              fontFamily="ui-monospace, monospace"
-            >
-              TP {pos.target!.price!.toFixed(2)}
-            </text>
-            {bracketHandle(tpY, pos.target?.id)}
+            <PriceTag
+              x={8}
+              y={tpY}
+              color={TP}
+              label="TP"
+              value={pos.target.price.toFixed(2)}
+              drag={{
+                onDown: handleDown({ orderId: pos.target.id }),
+                onMove: handleMove,
+                onUp: handleUp,
+              }}
+            />
+            {bracketHandle(tpY, pos.target.id)}
           </>
         )}
+
+        {/* Le rail du bracket — relie SL et TP, avec une encoche à l'entrée. */}
         {(slY != null || tpY != null) && (
-          <line
-            x1={W - 6}
-            y1={top}
-            x2={W - 6}
-            y2={bot}
-            stroke={color}
-            strokeWidth={3}
-            opacity={0.75}
-            style={{ pointerEvents: "none" }}
-          />
+          <>
+            <line
+              x1={W - 3.5}
+              y1={top}
+              x2={W - 3.5}
+              y2={bot}
+              stroke={color}
+              strokeWidth={1.5}
+              opacity={0.65}
+            />
+            <rect x={W - 5.5} y={y - 1.5} width={4} height={3} fill={color} />
+          </>
         )}
-        <line
-          x1={0}
-          y1={y}
-          x2={W}
-          y2={y}
-          stroke={color}
-          strokeWidth={1}
-          strokeDasharray="1 4"
-          opacity={0.5}
-          style={{ pointerEvents: "none" }}
+
+        {/* L'étiquette de position — à droite, plaquette pleine teinte. */}
+        <PriceTag
+          x={W - 112}
+          y={y}
+          color={color}
+          label={`${pos.side.toUpperCase()} ${pos.qty}`}
+          value={pos.avgEntry.toFixed(2)}
         />
-        <circle cx={W - 20} cy={y} r={4} fill={color} style={{ pointerEvents: "auto" }} />
-        <text
-          x={W - 30}
-          y={y + 3.5}
-          fill={color}
-          fontSize={10}
-          fontWeight={800}
-          textAnchor="end"
-          fontFamily="ui-monospace, monospace"
-        >
-          {pos.side.toUpperCase()} {pos.qty} · {pos.avgEntry.toFixed(2)}
-        </text>
       </g>
     );
   });
@@ -508,12 +598,11 @@ export default function ReplayOverlay({
     const { x, y } = coord(ex.at, ex.price);
     if (x == null || y == null) return null;
     return (
-      <circle
+      <FillDiamond
         key={i}
         cx={x}
         cy={y}
-        r={2.6}
-        fill={ex.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)"}
+        color={ex.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)"}
       />
     );
   });

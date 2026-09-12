@@ -3785,26 +3785,26 @@ a:focus-visible,
   outline-offset: -2px;
 }
 
-/* ── Terminal de rejeu : transitions d'entrée/sortie ────────────────────── */
-@keyframes rt-fade-in {
+
+/* ── Mode rejeu : voile, chargeur, révélation ───────────────────────────── */
+@keyframes rt-overlay-in {
   from { opacity: 0; }
-  22% { opacity: 1; }
-  78% { opacity: 1; }
   to { opacity: 1; }
 }
-@keyframes rt-fade-out {
+@keyframes rt-overlay-out {
   from { opacity: 1; }
   to { opacity: 0; }
 }
-@keyframes rt-progress {
-  from { width: 4%; opacity: 0.9; }
-  60% { opacity: 0.9; }
-  to { width: 100%; opacity: 0.9; }
+@keyframes rt-candle {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.55; }
+  50% { transform: scaleY(1); opacity: 1; }
 }
-.slide-up {
-  animation: rt-enter-panel 320ms var(--tv-ease-out) both;
+@keyframes rt-indeterminate {
+  0% { margin-left: -40%; width: 40%; }
+  50% { width: 55%; }
+  100% { margin-left: 100%; width: 40%; }
 }
-@keyframes rt-enter-panel {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes rt-fill {
+  from { width: 0%; }
+  to { width: 100%; }
 }

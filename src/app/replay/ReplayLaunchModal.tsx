@@ -3,12 +3,12 @@
  *
  * Pas d'onboarding : quelques champs minimums (compte de rejeu, date, heure,
  * timeframe, capital) dans une petite fenêtre, à l'instant où le trader entre
- * dans Backtest. Confirmer → la transition jouée, le terminal s'ouvre. Rester
- * court est la fonction : tout le reste vit dans le terminal.
+ * dans Backtest. Une option propose la semaine d'exemple NQ pour voir l'app en
+ * action. Confirmer → la séquence d'entrée jouée, le terminal s'ouvre.
  */
 
 import { useMemo, useState } from "react";
-import { CalendarClock, Flag, Play, RotateCcw } from "lucide-react";
+import { CalendarClock, Flag, Play, RotateCcw, Sparkles } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { Button } from "@/shared/ui";
 import { TIMEFRAMES, sessionDateKey, nyDow, nyDateOf } from "@/modules/replay";
@@ -21,7 +21,7 @@ function todayNy(): string {
 
 export default function ReplayLaunchModal() {
   const { t } = useT();
-  const { session, launchOpen, closeLaunch, enter, resumeInto } = useReplayMode();
+  const { session, launchOpen, closeLaunch, enter, resumeInto, ensureSampleWeek } = useReplayMode();
 
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("NQ Backtest");
@@ -29,6 +29,7 @@ export default function ReplayLaunchModal() {
   const [date, setDate] = useState(() => todayNy());
   const [time, setTime] = useState("09:30");
   const [tf, setTf] = useState("5m");
+  const [seedWeek, setSeedWeek] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const account = session.account ?? session.replayAccounts[0] ?? null;
@@ -40,28 +41,25 @@ export default function ReplayLaunchModal() {
 
   const confirm = async () => {
     setBusy(true);
-    let target = account;
-    if (creating || !target) {
-      try {
+    try {
+      let target = account;
+      if (creating || !target) {
         target = await session.createReplayAccount({
           name: name.trim() || "NQ Backtest",
           startingBalance: Number(balance) || 100_000,
         });
-      } catch {
-        setBusy(false);
-        return;
       }
-    }
-    const ok = await enter({
-      accountId: target.id,
-      date: sessionDateKey(date),
-      startTime: time,
-      timeframe: tf,
-      startingBalance: Number(balance) || target.startingBalance || 100_000,
-    });
-    setBusy(false);
-    if (ok) {
-      setCreating(false);
+      if (seedWeek) await ensureSampleWeek(target.id).catch(() => {});
+      const ok = await enter({
+        accountId: target.id,
+        date: sessionDateKey(date),
+        startTime: time,
+        timeframe: tf,
+        startingBalance: Number(balance) || target.startingBalance || 100_000,
+      });
+      if (ok) setCreating(false);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -71,27 +69,27 @@ export default function ReplayLaunchModal() {
       role="dialog"
       aria-modal="true"
     >
-      {/* Fond : léger voile, la page reste lisible derrière. */}
-      <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" onClick={closeLaunch} />
+      {/* Fond : voile léger, la page reste lisible derrière. */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px]" onClick={closeLaunch} />
 
-      <div className="relative w-full max-w-md rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-5 shadow-[var(--tv-elev-3)]">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl tv-accent-fill">
-            <CalendarClock className="h-5 w-5" />
+      <div className="relative w-full max-w-md rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-5 pt-4 shadow-[var(--tv-elev-3)]">
+        {/* En-tête discret. */}
+        <div className="mb-4 flex items-center gap-2.5">
+          <div className="grid h-9 w-9 place-items-center rounded-xl tv-accent-fill">
+            <CalendarClock className="h-4.5 w-4.5" />
           </div>
-          <div>
-            <h2 className="text-base font-bold text-[var(--tv-text)]">NQ · Backtest</h2>
-            <p className="text-[11px] text-[var(--tv-text-muted)]">{t("rt.setupTitle")}</p>
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold leading-tight text-[var(--tv-text)]">NQ Backtest</h2>
+            <p className="truncate text-[11px] text-[var(--tv-text-muted)]">{t("rt.setupTitle")}</p>
           </div>
-          <RotateCcw className="ml-auto h-4 w-4 text-[var(--tv-text-muted)]/50" />
         </div>
 
         {resumables.length > 0 && (
           <button
             type="button"
             disabled={busy}
-            onClick={() => void resumeInto(resumables[0]).then(() => setBusy(false))}
-            className="mb-3 flex w-full items-center gap-2 rounded-xl border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-2 text-left text-xs font-semibold text-[var(--tv-accent)]"
+            onClick={() => void resumeInto(resumables[0]).catch(() => {})}
+            className="mb-3 flex w-full items-center gap-2 rounded-xl border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-2 text-left text-xs font-semibold text-[var(--tv-accent)] hover:bg-[var(--tv-accent)]/15"
           >
             <Play className="h-3.5 w-3.5" />
             {t("rt.resumeSession")} · {resumables[0].startDate} {resumables[0].startTime}
@@ -116,42 +114,26 @@ export default function ReplayLaunchModal() {
               ))}
             </select>
           ) : (
-            <div className="flex gap-2">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("rt.accountNamePlaceholder")}
-                className="min-w-0 flex-1 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
-              />
-            </div>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("rt.accountNamePlaceholder")}
+              className="w-full rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+            />
           )}
           {session.replayAccounts.length > 0 && (
             <button
               type="button"
               onClick={() => setCreating((v) => !v)}
-              className="mt-1.5 text-[11px] font-semibold text-[var(--tv-accent)]"
+              className="mt-1.5 text-[11px] font-semibold text-[var(--tv-accent)] hover:underline"
             >
               {creating ? t("rt.selectAccount") : `+ ${t("rt.createAccount")}`}
             </button>
           )}
         </label>
 
-        <label className="mb-3 flex items-center justify-between gap-2">
-          <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
-            {t("rt.startingBalance")} ($)
-          </span>
-          <input
-            type="number"
-            min={1000}
-            step={1000}
-            value={balance}
-            onChange={(e) => setBalance(Number(e.target.value))}
-            className="w-36 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 text-right font-mono text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
-          />
-        </label>
-
-        {/* Date / heure */}
-        <div className="mb-3 grid grid-cols-2 gap-2">
+        {/* Date / heure / capital */}
+        <div className="mb-3 grid grid-cols-3 gap-2">
           <label className="flex flex-col gap-1">
             <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
               {t("rt.date")}
@@ -162,29 +144,42 @@ export default function ReplayLaunchModal() {
               max={todayNy()}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+              className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-2 text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
             />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
-              {t("rt.time")} (ET)
+              {t("rt.time")}
             </span>
             <input
               type="time"
               step={300}
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+              className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-2 text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">Capital</span>
+            <input
+              type="number"
+              min={1000}
+              step={1000}
+              value={balance}
+              onChange={(e) => setBalance(Number(e.target.value))}
+              className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-2 text-right font-mono text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
             />
           </label>
         </div>
 
         {dow === 0 || dow === 6 ? (
-          <p className="mb-3 text-[10.5px] text-[var(--tv-warning)]">{t("rt.weekendResumes")}</p>
+          <p className="mb-3 text-[10.5px] font-medium text-[var(--tv-warning)]">
+            {t("rt.weekendResumes")}
+          </p>
         ) : null}
 
         {/* Timeframe */}
-        <div className="mb-4">
+        <div className="mb-3">
           <span className="mb-1 block text-[11px] font-medium text-[var(--tv-text-muted)]">
             {t("rt.timeframe")}
           </span>
@@ -198,7 +193,7 @@ export default function ReplayLaunchModal() {
                   "rounded-lg px-2.5 py-1 text-xs font-semibold transition",
                   tf === f.id
                     ? "tv-accent-fill text-white"
-                    : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)]",
+                    : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
                 )}
               >
                 {f.label}
@@ -206,6 +201,20 @@ export default function ReplayLaunchModal() {
             ))}
           </div>
         </div>
+
+        {/* Semaine d'exemple — voir l'app en action. */}
+        <label className="mb-4 flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
+          <input
+            type="checkbox"
+            checked={seedWeek}
+            onChange={(e) => setSeedWeek(e.target.checked)}
+            className="accent-[var(--tv-accent)]"
+          />
+          <Sparkles className="h-3.5 w-3.5 text-[var(--tv-accent)]" />
+          <span className="text-[11px] font-medium text-[var(--tv-text)]">
+            {t("rt.seedWeek")} <span className="text-[var(--tv-text-muted)]">NQ</span>
+          </span>
+        </label>
 
         <div className="flex items-center gap-2">
           <Button

@@ -15,6 +15,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ReplaySessionState, ReplayTrade } from "@/modules/replay";
 import { deserializeState, serializeState } from "@/modules/replay";
+import {
+  ReplayEngine,
+  createInitialState,
+  processBars,
+  flattenPositions,
+  placeOrder,
+} from "@/modules/replay";
 import { nyDateOf, nyTimeOf } from "@/modules/replay";
 import type { Trade } from "../types";
 import { planLimitFromDbError } from "../utils/planLimits";
@@ -167,20 +174,16 @@ export interface JournalPushResult {
   planLimitReached: boolean;
 }
 
-/**
- * Convertit les trades clos d'une session en lignes `trades` du compte de
- * rejeu, reliées par `replay_session_id`. Batch upsert direct — le quota
- * mensuel ne concerne jamais les sessions (Premium).
- */
-export async function pushReplayTradesToJournal(
+/** Construit les lignes `trades` d'une liste de trades du terminal. */
+function tradeRows(
   userId: string,
-  sessionId: string,
   accountId: string,
+  sessionId: string | null,
   closed: ReplayTrade[],
-): Promise<JournalPushResult> {
-  const rows = closed.map((t) => {
+): Record<string, unknown>[] {
+  return closed.map((t) => {
     const tr = tradeOf(t);
-    return {
+    const row: Record<string, unknown> = {
       id: tr.id,
       user_id: userId,
       account_id: accountId,
@@ -197,16 +200,19 @@ export async function pushReplayTradesToJournal(
       screenshots: [],
       entry_time: tr.entryTime,
       exit_time: tr.exitTime,
-      confluences: ["Replay terminal"],
+      confluences: tr.confluences,
       confidence: 0,
-      replay_session_id: sessionId,
     };
+    if (sessionId) row.replay_session_id = sessionId;
+    return row;
   });
+}
 
+/** Insertion en batch, avec repli ligne à ligne sur échec. */
+async function insertTrades(rows: Record<string, unknown>[]): Promise<JournalPushResult> {
   let saved = 0;
   let failed = 0;
   let planLimitReached = false;
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await sb.from("trades").upsert(rows as any);
   if (!error) {
@@ -217,7 +223,6 @@ export async function pushReplayTradesToJournal(
       planLimitReached = true;
       failed = rows.length;
     }
-    // Repli ligne à ligne : une seule ligne fautive ne doit pas effacer le lot.
     for (const row of rows) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const one = await sb.from("trades").upsert(row as any);
@@ -230,6 +235,122 @@ export async function pushReplayTradesToJournal(
     }
   }
   return { saved, failed, planLimitReached };
+}
+
+/**
+ * Convertit les trades clos d'une session en lignes `trades` du compte de
+ * rejeu, reliées par `replay_session_id`. Le quota mensuel ne concerne jamais
+ * les sessions (Premium).
+ */
+export async function pushReplayTradesToJournal(
+  userId: string,
+  sessionId: string | null,
+  accountId: string,
+  closed: ReplayTrade[],
+): Promise<JournalPushResult> {
+  return insertTrades(tradeRows(userId, accountId, sessionId, closed));
+}
+
+/** Nombre de trades déjà présents sur un compte (pour le seeding d'exemple). */
+export async function countAccountTrades(userId: string, accountId: string): Promise<number> {
+  const { count, error } = await sb
+    .from("trades")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("account_id", accountId);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/**
+ * Semaine d'exemple NQ — réellement SIMULÉE : chaque jour ouvré des 7 derniers
+ * est rejoué par le moteur (ordres au marché + bracket, exécutions
+ * déterministes) et les trades clos rejoignent le compte de rejeu. Le Journal,
+ * le Dashboard et les Analyses ont ainsi une semaine de substance à afficher —
+ * exactement la donnée que le trader veut voir interagir pendant qu'on bâtit
+ * l'environnement.
+ */
+export async function seedReplayWeek(userId: string, accountId: string): Promise<number> {
+  const dates = lastTradingDays(7);
+  const closed: ReplayTrade[] = [];
+
+  for (const date of dates) {
+    try {
+      const engine = new ReplayEngine({ symbol: "NQ", date, startTime: "09:31", timeframe: "1m" });
+      await engine.start();
+      const state = createInitialState({
+        symbol: "NQ",
+        startingBalance: 100_000,
+        now: engine.now,
+        commissionPerContract: 2.5,
+        slippageTicks: 1,
+      });
+      // Direction du jour, déterministe depuis la date.
+      const baseSide: "long" | "short" =
+        date.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 2 === 0 ? "long" : "short";
+      let step = 0;
+      let placed = 0;
+      while (!engine.atEnd && step < 900) {
+        engine.stepForward("1m");
+        state.now = engine.now;
+        processBars(state, engine.data);
+        if (step === 6 && placed === 0) {
+          const m = engine.markPrice();
+          const s = baseSide;
+          placeOrder({
+            state,
+            input: {
+              side: s,
+              type: "market",
+              qty: 1,
+              bracketSl: s === "long" ? m - 35 : m + 35,
+              bracketTp: s === "long" ? m + 70 : m - 70,
+            },
+            bars: engine.data,
+          });
+          placed += 1;
+        } else if (step === 220 && placed === 1) {
+          const m = engine.markPrice();
+          const s: "long" | "short" = baseSide === "long" ? "short" : "long";
+          placeOrder({
+            state,
+            input: {
+              side: s,
+              type: "market",
+              qty: 1,
+              bracketSl: s === "long" ? m - 30 : m + 30,
+              bracketTp: s === "long" ? m + 60 : m - 60,
+            },
+            bars: engine.data,
+          });
+          placed += 1;
+        }
+        step += 1;
+      }
+      flattenPositions(state, engine.data);
+      closed.push(...state.closedTrades);
+    } catch (e) {
+      console.warn("[replay] seed day failed", date, e);
+    }
+  }
+
+  if (closed.length === 0) return 0;
+  const res = await insertTrades(tradeRows(userId, accountId, null, closed));
+  return res.saved;
+}
+
+/** Les derniers jours ouvrés NY (7), du plus ancien au plus récent. */
+function lastTradingDays(n: number): string[] {
+  const out: string[] = [];
+  let cursor = Date.now() - 24 * 3600_000;
+  while (out.length < n) {
+    cursor -= 24 * 3600_000;
+    const stamp = cursor + 12 * 3600_000;
+    const dow = new Date(stamp).getUTCDay();
+    if (dow === 0 || dow === 6) continue;
+    out.unshift(new Date(stamp).toISOString().slice(0, 10));
+  }
+  return out;
 }
 
 /** Mapping d'un trade du terminal vers le type `Trade` du journal. */

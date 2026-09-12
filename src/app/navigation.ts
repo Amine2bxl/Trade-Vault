@@ -87,6 +87,7 @@ export const SECTION_META: Record<SectionId, { labelKey: TKey; icon: typeof Layo
   analysis: { labelKey: "nav.groupAnalysis", icon: BarChart3 },
   coach: { labelKey: "nav.jarvis", icon: Bot },
   strategy: { labelKey: "nav.groupStrategy", icon: Map },
+  backtest: { labelKey: "nav.groupBacktest", icon: History },
   settings: { labelKey: "nav.settings", icon: SettingsIcon },
 };
 
