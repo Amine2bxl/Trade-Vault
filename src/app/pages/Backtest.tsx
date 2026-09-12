@@ -74,7 +74,14 @@ export default function Backtest() {
   }
 
   return (
-    <div ref={boxRef} style={{ height }} className="overflow-hidden rounded-2xl">
+    <div
+      ref={boxRef}
+      // Hauteur DÉFINIE dès le premier rendu : `useAvailableHeight` mesure après
+      // le montage, mais un conteneur sans hauteur ferait s'effondrer la chaîne
+      // flex du graphe (invisible). La valeur mesurée remplace la valeur de repli.
+      style={{ height: height ?? "min(78dvh, 760px)" }}
+      className="overflow-hidden rounded-2xl"
+    >
       {!session.active && !session.finished ? (
         /* Pas encore de session : une carte « entrer » plutôt qu'un écran vide. */
         <div className="flex h-full items-center justify-center">

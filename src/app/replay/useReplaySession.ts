@@ -39,6 +39,7 @@ import {
   abandonReplaySession,
   pushReplayTradesToJournal,
   type ReplaySessionDto,
+  type JournalPushResult,
 } from "../store/replay";
 
 export interface ReplayQuote {
@@ -179,7 +180,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
       engine: ReplayEngine,
       state: ReturnType<typeof createInitialState>,
       cfg: ReplayStartConfig,
-      id: string,
+      id: string | null,
     ) => {
       engineRef.current = engine;
       stateRef.current = state;
@@ -200,38 +201,44 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   const startNew = useCallback(
     async (cfg: ReplayStartConfig) => {
       if (!userId) return false;
+      setError(null);
+      const engine = new ReplayEngine({
+        symbol: "NQ",
+        date: cfg.date,
+        startTime: cfg.startTime,
+        timeframe: cfg.timeframe,
+      });
       try {
-        setError(null);
-        const engine = new ReplayEngine({
-          symbol: "NQ",
-          date: cfg.date,
-          startTime: cfg.startTime,
-          timeframe: cfg.timeframe,
-        });
         await engine.start();
-        const state = createInitialState({
-          symbol: "NQ",
-          startingBalance: cfg.startingBalance,
-          now: engine.now,
-          commissionPerContract: 2.5,
-          slippageTicks: 1,
-        });
-        state.viewTimeframe = cfg.timeframe;
-        const id = await createReplaySession(userId, {
-          accountId: cfg.accountId,
-          symbol: "NQ",
-          startDate: cfg.date,
-          startTime: cfg.startTime,
-          timeframe: cfg.timeframe,
-          state,
-        });
-        mountSession(engine, state, cfg, id);
-        return true;
       } catch (e) {
-        console.error("[replay] start failed", e);
+        console.error("[replay] data load failed", e);
         setError("rt.errorData");
         return false;
       }
+      const state = createInitialState({
+        symbol: "NQ",
+        startingBalance: cfg.startingBalance,
+        now: engine.now,
+        commissionPerContract: 2.5,
+        slippageTicks: 1,
+      });
+      state.viewTimeframe = cfg.timeframe;
+      // La persistance est BEST-EFFORT : si la table `replay_sessions` n'est
+      // pas encore migrée, on entre quand même dans le terminal en session
+      // locale — rien n'empêche de backtester, seule la reprise est perdue.
+      const id = await createReplaySession(userId, {
+        accountId: cfg.accountId,
+        symbol: "NQ",
+        startDate: cfg.date,
+        startTime: cfg.startTime,
+        timeframe: cfg.timeframe,
+        state,
+      }).catch((e) => {
+        console.warn("[replay] persistance indisponible — session locale", e);
+        return null;
+      });
+      mountSession(engine, state, cfg, id);
+      return true;
     },
     [userId, mountSession],
   );
@@ -477,18 +484,29 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   const finish = useCallback(async () => {
     const engine = engineRef.current;
     const state = stateRef.current;
-    if (!engine || !state || !userId || !sessionIdRef.current || !cfgRef.current) return null;
+    if (!engine || !state || !userId || !cfgRef.current) return null;
     flattenPositions(state, engine.data);
     refreshValuation(state, engine.data);
-    const res = await pushReplayTradesToJournal(
-      userId,
-      sessionIdRef.current,
-      cfgRef.current.accountId,
-      state.closedTrades,
-    );
-    await updateReplaySession(userId, sessionIdRef.current, { state, status: "finished" }).catch(
-      () => {},
-    );
+    // Best-effort : le journal est poussé même si `replay_sessions` n'existe pas.
+    let res: JournalPushResult | null = null;
+    if (sessionIdRef.current) {
+      try {
+        res = await pushReplayTradesToJournal(
+          userId,
+          sessionIdRef.current,
+          cfgRef.current.accountId,
+          state.closedTrades,
+        );
+      } catch (e) {
+        console.warn("[replay] journal push failed", e);
+        res = { saved: 0, failed: state.closedTrades.length, planLimitReached: false };
+      }
+      await updateReplaySession(userId, sessionIdRef.current, { state, status: "finished" }).catch(
+        () => {},
+      );
+    } else {
+      res = { saved: state.closedTrades.length, failed: 0, planLimitReached: false };
+    }
     pause();
     setFinished(true);
     setQuote(readQuote(engine));

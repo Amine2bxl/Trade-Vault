@@ -27,6 +27,11 @@ export default function ReplayTransition() {
         ? "rt-overlay-out 1.5s ease forwards"
         : "rt-overlay-in 0.9s ease forwards";
 
+  // En révélation (« in ») le voile s'efface : il ne doit pas bloquer les clics
+  // sur le terminal qui apparaît derrière — c'était le cas, et on ne pouvait
+  // plus ni zoomer ni passer d'ordres.
+  const pointerEvents = transition === "in" ? "none" : "auto";
+
   const title = loading
     ? t("rt.loadingTitle")
     : entering
@@ -47,7 +52,7 @@ export default function ReplayTransition() {
   return (
     <div
       className="fixed inset-0 z-[var(--tv-z-modal)] flex items-center justify-center"
-      style={{ animation }}
+      style={{ animation, pointerEvents }}
     >
       <div className="absolute inset-0 bg-[var(--tv-bg)]" />
       {/* Halo discret qui respire — la seule lumière de l'écran. */}
