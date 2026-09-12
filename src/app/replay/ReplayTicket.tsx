@@ -9,13 +9,26 @@
 import { useMemo, useState } from "react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { NQ, roundToTick, tickValueDollars, pointsDollars } from "@/modules/replay";
+import {
+  instrumentOf,
+  roundToTick,
+  tickValueDollars,
+  pointsDollars,
+  sizeFromRisk,
+  riskOfSize,
+  riskPctOfSize,
+} from "@/modules/replay";
 
 type Side = "long" | "short";
 type OrderType = "market" | "limit" | "stop";
 
 interface Props {
   price: number | null;
+  /** Capital de référence du dimensionnement — l'equity courante. */
+  balance: number;
+  /** Symbole de la séance : le spec vient du registre, jamais d'une constante. */
+  symbol: string;
+  commissionPerContract: number;
   onPlace: (input: {
     side: Side;
     type: OrderType;
@@ -26,7 +39,13 @@ interface Props {
   }) => void;
 }
 
-export default function ReplayTicket({ price, onPlace }: Props) {
+export default function ReplayTicket({
+  price,
+  balance,
+  symbol,
+  commissionPerContract,
+  onPlace,
+}: Props) {
   const { t } = useT();
   const [side, setSide] = useState<Side>("long");
   const [type, setType] = useState<OrderType>("market");
@@ -35,7 +54,9 @@ export default function ReplayTicket({ price, onPlace }: Props) {
   const [sl, setSl] = useState<string>("");
   const [tp, setTp] = useState<string>("");
 
-  const tick = NQ.tickSize;
+  const [riskPct, setRiskPct] = useState<string>("");
+  const spec = useMemo(() => instrumentOf(symbol), [symbol]);
+  const tick = spec.tickSize;
   const mark = price ?? 0;
 
   const limitNumber = type === "market" ? mark : Number(limit);
@@ -51,21 +72,47 @@ export default function ReplayTicket({ price, onPlace }: Props) {
     return { rr: rewPts / riskPts, riskPts, rewPts };
   }, [slNumber, tpNumber, limitNumber, mark]);
 
+  // Le prix d'entrée de référence : la limite saisie, ou le marché.
+  const entryRef = limitNumber || mark;
+
+  /** Ce que l'ordre courant risque réellement, tel qu'il est composé. */
+  const currentRisk = useMemo(() => {
+    if (slNumber == null || !entryRef) return null;
+    return {
+      dollars: riskOfSize(qty, entryRef, slNumber, spec, commissionPerContract),
+      pct: riskPctOfSize(qty, entryRef, slNumber, balance, spec, commissionPerContract),
+    };
+  }, [qty, entryRef, slNumber, balance, spec, commissionPerContract]);
+
+  /** La taille qu'autoriserait le budget de risque saisi. */
+  const sizing = useMemo(() => {
+    const pct = Number(riskPct);
+    if (slNumber == null || !entryRef || !pct) return null;
+    return sizeFromRisk({
+      balance,
+      riskPct: pct,
+      entry: entryRef,
+      stop: slNumber,
+      spec,
+      commissionPerContract,
+    });
+  }, [riskPct, slNumber, entryRef, balance, spec, commissionPerContract]);
+
   const submit = () => {
     const base = { side, type, qty: Math.max(1, Math.round(qty || 1)) };
     onPlace({
       ...base,
-      price: type === "market" ? undefined : roundToTick(Number(limit) || 0, NQ),
-      sl: slNumber != null ? roundToTick(slNumber, NQ) : undefined,
-      tp: tpNumber != null ? roundToTick(tpNumber, NQ) : undefined,
+      price: type === "market" ? undefined : roundToTick(Number(limit) || 0, spec),
+      sl: slNumber != null ? roundToTick(slNumber, spec) : undefined,
+      tp: tpNumber != null ? roundToTick(tpNumber, spec) : undefined,
     });
   };
 
   const bump = (setter: (v: string) => void, current: string, dTick: number) =>
     setter(
       current
-        ? String(roundToTick(Number(current) + dTick * tick, NQ))
-        : String(roundToTick(mark + dTick * tick, NQ)),
+        ? String(roundToTick(Number(current) + dTick * tick, spec))
+        : String(roundToTick(mark + dTick * tick, spec)),
     );
 
   return (
@@ -216,6 +263,66 @@ export default function ReplayTicket({ price, onPlace }: Props) {
         </label>
       </div>
 
+      {/* Dimensionnement par le risque — on décide la perte avant la taille */}
+      <div className="flex flex-col gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
+            {t("rt.sizing")}
+          </span>
+          <div className="flex items-center gap-1">
+            <input
+              value={riskPct}
+              onChange={(e) => setRiskPct(e.target.value)}
+              placeholder="1"
+              inputMode="decimal"
+              aria-label={t("rt.riskTarget")}
+              className="w-12 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 text-center font-mono text-xs text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+            />
+            <span className="text-[11px] text-[var(--tv-text-muted)]">%</span>
+            <button
+              type="button"
+              onClick={() => sizing && setQty(sizing.contracts)}
+              disabled={!sizing || sizing.contracts < 1}
+              className="rounded-lg border border-[var(--tv-border)] px-2 py-1 text-[11px] font-semibold text-[var(--tv-text)] transition disabled:opacity-40"
+            >
+              {t("rt.sizeApply")}
+            </button>
+          </div>
+        </div>
+
+        {slNumber == null ? (
+          <p className="text-[10px] leading-relaxed text-[var(--tv-text-muted)]">
+            {t("rt.riskNeedsStop")}
+          </p>
+        ) : (
+          <>
+            {currentRisk && (
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-[var(--tv-text-muted)]">{t("rt.riskOnOrder")}</span>
+                <span className="font-mono font-semibold text-[var(--tv-text)]">
+                  {currentRisk.dollars.toFixed(0)} $ · {currentRisk.pct.toFixed(2)} %
+                </span>
+              </div>
+            )}
+            {sizing &&
+              (sizing.contracts >= 1 ? (
+                <div className="flex items-center justify-between text-[10px] text-[var(--tv-text-muted)]">
+                  <span>
+                    {t("rt.stopDistance")} {sizing.stopPoints.toFixed(2)} · {sizing.stopTicks} ticks
+                  </span>
+                  <span className="font-mono">
+                    {t("rt.contractsFor").replace("{n}", String(sizing.contracts))}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[10px] leading-relaxed text-[var(--tv-chart-red)]">
+                  {t("rt.riskTooSmall")}
+                </p>
+              ))}
+          </>
+        )}
+      </div>
+
       {/* R:R */}
       {rr && (
         <div className="flex items-center justify-between rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 text-[11px] text-[var(--tv-text-muted)]">
@@ -225,13 +332,13 @@ export default function ReplayTicket({ price, onPlace }: Props) {
           <span>
             Risque{" "}
             <span className="font-mono font-semibold text-[var(--tv-text)]">
-              {pointsDollars(rr.riskPts, qty).toFixed(0)} $
+              {pointsDollars(rr.riskPts, qty, spec).toFixed(0)} $
             </span>
           </span>
           <span>
             Récomp.{" "}
             <span className="font-mono font-semibold text-[var(--tv-text)]">
-              {pointsDollars(rr.rewPts, qty).toFixed(0)} $
+              {pointsDollars(rr.rewPts, qty, spec).toFixed(0)} $
             </span>
           </span>
         </div>
@@ -245,12 +352,14 @@ export default function ReplayTicket({ price, onPlace }: Props) {
           side === "long" ? "bg-[var(--tv-chart-green)]" : "bg-[var(--tv-chart-red)]",
         )}
       >
-        {side === "long" ? `${t("rt.buy")} ${qty || 1} NQ` : `${t("rt.sell")} ${qty || 1} NQ`}
+        {side === "long"
+          ? `${t("rt.buy")} ${qty || 1} ${spec.symbol}`
+          : `${t("rt.sell")} ${qty || 1} ${spec.symbol}`}
       </button>
 
       <p className="text-center text-[10px] leading-relaxed text-[var(--tv-text-muted)]">
-        1 tick = {tickValueDollars(1).toFixed(2)} $ · 1 point = {pointsDollars(1, 1).toFixed(0)} $ ·
-        commissions incluses au remplissage
+        1 tick = {tickValueDollars(1, spec).toFixed(2)} $ · 1 point ={" "}
+        {pointsDollars(1, 1, spec).toFixed(0)} $ · commissions incluses au remplissage
       </p>
     </div>
   );

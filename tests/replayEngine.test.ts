@@ -23,6 +23,10 @@ import {
   markPriceAt,
   roundToTick,
   REPLAY_INSTRUMENTS,
+  sizeFromRisk,
+  riskOfSize,
+  riskPctOfSize,
+  dailyLossState,
   DEFAULT_TIMEFRAME,
 } from "../src/modules/replay";
 
@@ -745,5 +749,103 @@ describe("remplissage intra-bougie", () => {
     // l'interpolation quand la tranche couvre tout.
     expect(state.orders[0].status).toBe("filled");
     expect(state.orders[0].fillPrice).toBe(20_990);
+  });
+});
+
+describe("money-management — la taille découle du risque", () => {
+  test("un budget de risque donne un nombre entier de contrats", () => {
+    // NQ : 20 $/point. Stop à 10 points = 200 $/contrat, hors commissions.
+    const s = sizeFromRisk({ balance: 50_000, riskPct: 1, entry: 21_000, stop: 20_990, spec: NQ });
+    expect(s).not.toBeNull();
+    expect(s!.riskBudget).toBe(500);
+    expect(s!.riskPerContract).toBe(200);
+    // 500 / 200 = 2,5 → on plancher : dépasser le budget n'est pas négociable.
+    expect(s!.contracts).toBe(2);
+    expect(s!.riskUsed).toBe(400);
+    expect(s!.stopPoints).toBe(10);
+    expect(s!.stopTicks).toBe(40);
+  });
+
+  test("les commissions comptent à l'aller ET au retour", () => {
+    const sans = sizeFromRisk({
+      balance: 10_000,
+      riskPct: 2,
+      entry: 21_000,
+      stop: 20_995,
+      spec: NQ,
+    });
+    const avec = sizeFromRisk({
+      balance: 10_000,
+      riskPct: 2,
+      entry: 21_000,
+      stop: 20_995,
+      spec: NQ,
+      commissionPerContract: 2.5,
+    });
+    expect(sans!.riskPerContract).toBe(100); // 5 pts × 20 $
+    expect(avec!.riskPerContract).toBe(105); // + 2 × 2,50 $
+    // Le budget de 200 $ tient 2 contrats sans commissions, 1 seul avec.
+    expect(sans!.contracts).toBe(2);
+    expect(avec!.contracts).toBe(1);
+  });
+
+  test("sans stop, aucune taille n'est proposée", () => {
+    expect(sizeFromRisk({ balance: 50_000, riskPct: 1, entry: 21_000, stop: 21_000 })).toBeNull();
+    expect(sizeFromRisk({ balance: 0, riskPct: 1, entry: 21_000, stop: 20_990 })).toBeNull();
+    expect(sizeFromRisk({ balance: 50_000, riskPct: 0, entry: 21_000, stop: 20_990 })).toBeNull();
+  });
+
+  test("un budget trop mince ne force pas un contrat", () => {
+    // 50 $ de budget pour 200 $ de risque unitaire : la réponse est zéro.
+    const s = sizeFromRisk({ balance: 5_000, riskPct: 1, entry: 21_000, stop: 20_990, spec: NQ });
+    expect(s!.contracts).toBe(0);
+    expect(s!.riskUsed).toBe(0);
+  });
+
+  test("le spec de l'instrument est respecté", () => {
+    const nq = sizeFromRisk({ balance: 50_000, riskPct: 1, entry: 21_000, stop: 20_990, spec: NQ });
+    const micro = sizeFromRisk({
+      balance: 50_000,
+      riskPct: 1,
+      entry: 21_000,
+      stop: 20_990,
+      spec: { ...NQ, id: "MNQ", multiplier: 2, tickValue: 0.5 },
+    });
+    // À 2 $/point au lieu de 20, le même budget tient dix fois plus.
+    expect(nq!.contracts).toBe(2);
+    expect(micro!.contracts).toBe(25);
+  });
+
+  test("lecture inverse : le risque d'une taille donnée", () => {
+    expect(riskOfSize(3, 21_000, 20_990, NQ)).toBe(600);
+    expect(riskPctOfSize(3, 21_000, 20_990, 60_000, NQ)).toBeCloseTo(1, 6);
+    expect(riskOfSize(0, 21_000, 20_990, NQ)).toBe(0);
+    expect(riskOfSize(3, 21_000, 21_000, NQ)).toBe(0);
+  });
+
+  test("la limite de perte journalière compte le P&L ouvert", () => {
+    const state = createInitialState({
+      symbol: "NQ",
+      startingBalance: 50_000,
+      now: 0,
+      commissionPerContract: 0,
+      slippageTicks: 0,
+    });
+    expect(dailyLossState(state, 2)!.limit).toBe(1_000);
+    expect(dailyLossState(state, 2)!.breached).toBe(false);
+
+    // Une position qui perd 1 200 $ dépasse la limite MAINTENANT, pas à sa
+    // clôture — c'est exactement ce que la règle existe pour empêcher.
+    state.account.openPnl = -1_200;
+    const d = dailyLossState(state, 2)!;
+    expect(d.used).toBe(1_200);
+    expect(d.remaining).toBe(0);
+    expect(d.breached).toBe(true);
+    expect(d.ratio).toBe(1);
+
+    // Un gain ne consomme rien du budget.
+    state.account.openPnl = 0;
+    state.account.realizedPnl = 800;
+    expect(dailyLossState(state, 2)!.used).toBe(0);
   });
 });

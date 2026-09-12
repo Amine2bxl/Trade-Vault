@@ -293,7 +293,13 @@ export default function ReplayTerminal(props: TerminalProps) {
 
         {/* Panneau droit */}
         <aside className="hidden w-[300px] shrink-0 flex-col border-l border-[var(--tv-border)] bg-[var(--tv-plate-2)] lg:flex xl:w-[320px]">
-          <ReplayTicket price={q?.mark ?? null} onPlace={props.onPlaceOrder} />
+          <ReplayTicket
+            price={q?.mark ?? null}
+            balance={state?.account.equity ?? 0}
+            symbol={state?.symbol ?? "NQ"}
+            commissionPerContract={state?.commissionPerContract ?? 0}
+            onPlace={props.onPlaceOrder}
+          />
           <div className="flex min-h-0 flex-1 flex-col border-t border-[var(--tv-border)]">
             <ReplayPanels
               state={state}

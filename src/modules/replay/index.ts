@@ -16,4 +16,5 @@ export * from "./market-data";
 export * from "./intrabar";
 export * from "./engine";
 export * from "./orders";
+export * from "./risk";
 export * from "./session";
