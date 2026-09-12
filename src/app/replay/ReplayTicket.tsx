@@ -59,13 +59,17 @@ export default function ReplayTicket({
   const [tp, setTp] = useState<string>("");
 
   const [riskPct, setRiskPct] = useState<string>("");
+  /** Le bracket part-il avec l'ordre ? Éteint, stop et objectif sont ignorés. */
+  const [bracketOn, setBracketOn] = useState(true);
   const spec = useMemo(() => instrumentOf(symbol), [symbol]);
   const tick = spec.tickSize;
   const mark = price ?? 0;
 
   const limitNumber = type === "market" ? mark : Number(limit);
-  const slNumber = sl ? Number(sl) : null;
-  const tpNumber = tp ? Number(tp) : null;
+  // Éteint, le bracket n'existe pas : ni pour l'ordre envoyé, ni pour le R:R,
+  // ni pour le dimensionnement. Un seul interrupteur, une seule vérité.
+  const slNumber = bracketOn && sl ? Number(sl) : null;
+  const tpNumber = bracketOn && tp ? Number(tp) : null;
 
   const rr = useMemo(() => {
     if (!slNumber && !tpNumber) return null;
@@ -247,8 +251,33 @@ export default function ReplayTicket({
         </label>
       )}
 
+      {/* Bracket — interrupteur AVANT les champs : c'est lui qui décide si le
+        stop et l'objectif partent avec l'ordre. Les laisser saisis mais
+        inertes, sans le dire, serait le pire des deux mondes. */}
+      <label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
+        <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
+          {t("rt.positionBracket")}
+        </span>
+        <span className="flex items-center gap-2">
+          <span
+            className={cn(
+              "text-[11px] font-bold",
+              bracketOn ? "text-[var(--tv-accent)]" : "text-[var(--tv-text-muted)]",
+            )}
+          >
+            {bracketOn ? t("rt.enabled") : t("rt.disabled")}
+          </span>
+          <input
+            type="checkbox"
+            checked={bracketOn}
+            onChange={(e) => setBracketOn(e.target.checked)}
+            className="h-4 w-4 accent-[var(--tv-accent)]"
+          />
+        </span>
+      </label>
+
       {/* Bracket */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className={cn("grid grid-cols-2 gap-2", !bracketOn && "pointer-events-none opacity-40")}>
         <label className="flex flex-col gap-1">
           <span className="text-[11px] font-medium text-[var(--tv-chart-red)]">{t("rt.sl")}</span>
           <div className="flex items-center gap-1">

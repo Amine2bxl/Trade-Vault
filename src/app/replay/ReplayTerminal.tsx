@@ -31,13 +31,20 @@ import ReplayTicket from "./ReplayTicket";
 import ReplayPanels from "./ReplayPanels";
 import type { ReplayQuote } from "./useReplaySession";
 import type { Drawing, PlaceOrderInput, ReplaySessionState } from "@/modules/replay";
-import { nyTimeOf } from "@/modules/replay";
+import { nyTimeOf, dailyLossState } from "@/modules/replay";
 
 export interface TerminalProps {
   accountName: string;
   state: ReplaySessionState | null;
   candles: import("@/modules/replay").SimulatedCandle[];
-  bounds: { ethStart: number; ethEnd: number; rthStart: number; rthEnd: number };
+  bounds: {
+    ethStart: number;
+    ethEnd: number;
+    rthStart: number;
+    rthEnd: number;
+    /** Une fenêtre RTH par séance rejouée — l'ombrage du graphe en vit. */
+    rthWindows?: { start: number; end: number }[];
+  };
   quote: ReplayQuote | null;
   playing: boolean;
   atStart: boolean;
@@ -119,6 +126,11 @@ export default function ReplayTerminal(props: TerminalProps) {
 
   const q = props.quote;
   const balanceTone = q && q.equity - q.balance ? pnlTone(q.equity - q.balance) : "neutral";
+  // La limite de perte que le trader s'est fixée au lancement, s'il en a fixé
+  // une. `dailyLossState` compte le P&L OUVERT : une position en cours qui
+  // dépasse le mur le dépasse maintenant, pas à sa clôture.
+  const dailyLoss =
+    state && state.maxDailyLossPct ? dailyLossState(state, state.maxDailyLossPct) : null;
 
   return (
     <div className="flex h-full w-full flex-col bg-[var(--tv-bg)] text-[var(--tv-text)]">
@@ -133,7 +145,7 @@ export default function ReplayTerminal(props: TerminalProps) {
           {t("rt.exit")}
         </button>
         <span className="hidden rounded-lg bg-[var(--tv-surface-hover)] px-2 py-1 text-xs font-bold md:inline">
-          NQ
+          {state?.symbol ?? "NQ"}
         </span>
         <span className="hidden text-xs text-[var(--tv-text-muted)] md:inline">
           {props.accountName}
@@ -153,6 +165,16 @@ export default function ReplayTerminal(props: TerminalProps) {
               value={signed$(q?.realizedPnl)}
               tone={pnlTone(q?.realizedPnl ?? 0)}
             />
+            {/* MLL — ce qu'il reste avant le mur que le trader s'est fixé.
+              Affiché SEULEMENT s'il en a fixé un : inventer une limite qu'on
+              n'a pas demandée en ferait une règle de la maison. */}
+            {dailyLoss && (
+              <HeaderStat
+                label={t("rt.mll")}
+                value={fmt$(dailyLoss.remaining)}
+                tone={dailyLoss.breached ? "down" : dailyLoss.ratio > 0.7 ? "warn" : "neutral"}
+              />
+            )}
           </div>
           <span className="rounded-xl border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-1.5 font-mono text-xs font-bold text-[var(--tv-accent)]">
             {props.clockLabel}
@@ -337,7 +359,8 @@ function HeaderStat({
 }: {
   label: string;
   value: string;
-  tone?: "up" | "down" | "neutral";
+  /** `warn` : on approche d'un seuil sans l'avoir franchi — ni vert, ni rouge. */
+  tone?: "up" | "down" | "warn" | "neutral";
 }) {
   return (
     <div className="text-right">
@@ -351,7 +374,9 @@ function HeaderStat({
             ? "text-[var(--tv-chart-green)]"
             : tone === "down"
               ? "text-[var(--tv-chart-red)]"
-              : "text-[var(--tv-text)]",
+              : tone === "warn"
+                ? "text-[var(--tv-warning)]"
+                : "text-[var(--tv-text)]",
         )}
       >
         {value}

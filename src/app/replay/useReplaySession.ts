@@ -62,6 +62,8 @@ export interface ReplayStartConfig {
   startingBalance: number;
   /** Nombre de séances rejouées d'affilée (1 par défaut). */
   days?: number;
+  /** Perte maximale tolérée sur la séance, en % du capital. */
+  maxDailyLossPct?: number;
 }
 
 export function useReplaySession({ userId }: { userId: string | null }) {
@@ -244,6 +246,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
         commissionPerContract: 2.5,
         slippageTicks: 1,
         days: cfg.days ?? 1,
+        maxDailyLossPct: cfg.maxDailyLossPct,
       });
       state.viewTimeframe = cfg.timeframe;
       // La persistance est BEST-EFFORT : si la table `replay_sessions` n'est
@@ -287,6 +290,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
           commissionPerContract: dto.state.commissionPerContract ?? 2.5,
           slippageTicks: dto.state.slippageTicks ?? 1,
           days: dto.state.days ?? 1,
+          maxDailyLossPct: dto.state.maxDailyLossPct,
         });
         base.orders = dto.state.orders ?? [];
         base.closedTrades = dto.state.closedTrades ?? [];
@@ -306,6 +310,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
             timeframe: dto.timeframe,
             startingBalance: rebuilt.account.startingBalance,
             days: dto.state.days ?? 1,
+            maxDailyLossPct: dto.state.maxDailyLossPct,
           },
           dto.id,
         );

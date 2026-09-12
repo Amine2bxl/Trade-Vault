@@ -159,6 +159,12 @@ export interface ReplaySessionState {
    * réclame aucune migration supplémentaire.
    */
   days?: number;
+  /**
+   * Perte maximale tolérée sur la séance, en % du capital de départ.
+   * `undefined` = aucune limite fixée — on n'invente pas de garde-fou que le
+   * trader n'a pas demandé.
+   */
+  maxDailyLossPct?: number;
   /** Commissions $/contrat (rejouées pour la reconstruction). */
   commissionPerContract: number;
   /** Glissement en ticks (rejoué pour la reconstruction). */

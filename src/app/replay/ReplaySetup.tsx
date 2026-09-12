@@ -69,6 +69,8 @@ export default function ReplaySetup() {
   const [time, setTime] = useState("09:30");
   const [tf, setTf] = useState("5m");
   const [days, setDays] = useState(1);
+  /** Perte max de séance, en % — vide = aucune limite. */
+  const [maxLoss, setMaxLoss] = useState<string>("2");
   const [seedWeek, setSeedWeek] = useState(true);
   const [busy, setBusy] = useState(false);
   /** Échec local du lancement — distinct de `session.error`, qui ne couvre
@@ -100,6 +102,7 @@ export default function ReplaySetup() {
         timeframe: tf,
         startingBalance: Number(balance) || target.startingBalance || 100_000,
         days,
+        maxDailyLossPct: Number(maxLoss) > 0 ? Number(maxLoss) : undefined,
       });
       if (ok) {
         setCreating(false);
@@ -305,6 +308,25 @@ export default function ReplaySetup() {
             </p>
           )}
         </div>
+
+        {/* Perte max de séance — le garde-fou que le trader se fixe AVANT
+          d'ouvrir le terminal, quand il est encore lucide. Laisser vide n'en
+          pose aucun : on n'impose pas une règle que personne n'a demandée. */}
+        <label className="mb-3 flex items-center justify-between gap-2">
+          <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
+            {t("rt.maxDailyLoss")}
+          </span>
+          <span className="flex items-center gap-1">
+            <input
+              value={maxLoss}
+              onChange={(e) => setMaxLoss(e.target.value)}
+              placeholder="—"
+              inputMode="decimal"
+              className="w-16 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1 text-center font-mono text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+            />
+            <span className="text-[11px] text-[var(--tv-text-muted)]">%</span>
+          </span>
+        </label>
 
         {/* Semaine d'exemple — voir l'app en action. */}
         <label className="mb-4 flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
