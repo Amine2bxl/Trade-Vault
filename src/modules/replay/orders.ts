@@ -60,6 +60,7 @@ export function createInitialState(seed: {
   now: number;
   commissionPerContract: number;
   slippageTicks: number;
+  days?: number;
 }): ReplaySessionState {
   return {
     account: {
@@ -86,6 +87,7 @@ export function createInitialState(seed: {
     // minute qui CONTIENT le départ, elle, reste à jouer.
     appliedUpTo: seed.now - 60_000,
     symbol: seed.symbol,
+    days: seed.days ?? 1,
     commissionPerContract: seed.commissionPerContract,
     slippageTicks: seed.slippageTicks,
     drawings: [],
@@ -516,6 +518,7 @@ export function rebuildState(
     now: targetNow,
     commissionPerContract: seed.commissionPerContract,
     slippageTicks: seed.slippageTicks,
+    days: seed.days,
   });
   fresh.viewTimeframe = seed.viewTimeframe;
   fresh.playbackSpeed = seed.playbackSpeed;

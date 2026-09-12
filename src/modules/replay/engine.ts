@@ -17,7 +17,14 @@
 import { OhlcBar } from "./types";
 import { instrumentOf, pnlOf } from "./instruments";
 import { loadSessionBars } from "./market-data";
-import { nyMidnightMs, nyDateOf, nyTimeOf, sessionsOf } from "./calendar";
+import {
+  nyMidnightMs,
+  nyDateOf,
+  nyTimeOf,
+  sessionsOf,
+  tradingDatesFrom,
+  NySessions,
+} from "./calendar";
 import { candleStartOf, timeframeSeconds } from "./timeframes";
 import { intrabarAt, barFraction, visibleBar } from "./intrabar";
 
@@ -31,6 +38,19 @@ export interface ReplayEngineInit {
   date: string;
   startTime: string;
   timeframe: string;
+  /**
+   * Nombre de SÉANCES rejouées d'affilée (1 par défaut).
+   *
+   * On compte en jours de cotation, pas en jours civils : cinq jours depuis un
+   * jeudi couvrent jeudi → mercredi, sans compter le week-end.
+   */
+  days?: number;
+}
+
+/** Une fenêtre de séance officielle, pour l'ombrage du graphe. */
+export interface RthWindow {
+  start: number;
+  end: number;
 }
 
 export class ReplayEngine {
@@ -43,6 +63,10 @@ export class ReplayEngine {
   readonly rthStart: number;
   readonly rthEnd: number;
 
+  /** Les séances rejouées, dans l'ordre. */
+  readonly dates: string[];
+  private sessions: NySessions[];
+
   private bar1m: OhlcBar[] = [];
   /** Horloge canonique, ms epoch simulé. */
   now: number;
@@ -52,22 +76,40 @@ export class ReplayEngine {
     this.symbol = init.symbol;
     this.date = init.date;
     this.startTime = init.startTime;
-    const s = sessionsOf(init.date);
-    this.ethStart = s.ethStart;
-    this.ethEnd = s.ethEnd;
-    this.rthStart = s.rthStart;
-    this.rthEnd = s.rthEnd;
-    this.now = this.clamp(s.ethStart);
+    this.dates = tradingDatesFrom(init.date, init.days ?? 1);
+    this.sessions = this.dates.map(sessionsOf);
+    const first = this.sessions[0];
+    const last = this.sessions[this.sessions.length - 1];
+    // L'enveloppe court du premier ETH au dernier : l'horloge ne connaît qu'une
+    // ligne de temps, les séances n'en sont que le découpage.
+    this.ethStart = first.ethStart;
+    this.ethEnd = last.ethEnd;
+    this.rthStart = first.rthStart;
+    this.rthEnd = first.rthEnd;
+    this.now = this.clamp(first.ethStart);
+  }
+
+  /** Les fenêtres RTH de chaque séance rejouée. */
+  rthWindows(): RthWindow[] {
+    return this.sessions.map((s) => ({ start: s.rthStart, end: s.rthEnd }));
   }
 
   private dayMidnight(ms: number): number {
     return nyMidnightMs(nyDateOf(ms));
   }
 
-  /** Charge les 1m du jour puis fige l'horloge au point de départ choisi. */
+  /** Charge les 1m de toutes les séances, puis fige l'horloge au départ choisi. */
   async start(): Promise<void> {
     const spec = instrumentOf(this.symbol);
-    this.bar1m = await loadSessionBars(this.date, spec);
+    const perDay = await Promise.all(this.dates.map((d) => loadSessionBars(d, spec)));
+    // Les fenêtres ETH de deux séances consécutives se chevauchent sur la soirée
+    // (18 h → minuit appartient au jour de cotation SUIVANT) : dédoublonner par
+    // horodatage est ce qui garde une minute unique et une seule vérité.
+    const seen = new Set<number>();
+    this.bar1m = perDay
+      .flat()
+      .sort((a, b) => a.time - b.time)
+      .filter((b) => (seen.has(b.time) ? false : (seen.add(b.time), true)));
     const hhmm = /^\d{1,2}:\d{2}$/.test(this.startTime.trim()) ? this.startTime.trim() : "09:30";
     const [hh, mm] = hhmm.split(":").map(Number);
     const midnight = nyMidnightMs(this.date);
@@ -88,9 +130,22 @@ export class ReplayEngine {
     return this.now >= this.ethEnd;
   }
 
+  /**
+   * L'avancement dans le TEMPS COTÉ, pas dans le temps civil.
+   *
+   * Sur plusieurs séances, l'enveloppe contient des trous — l'heure morte de
+   * chaque soir, et jusqu'à deux jours pour un week-end. Les compter ferait
+   * bondir la barre de progression pendant que rien ne se passe.
+   */
   progress(): number {
-    if (this.ethEnd <= this.ethStart) return 1;
-    return Math.min(1, Math.max(0, (this.now - this.ethStart) / (this.ethEnd - this.ethStart)));
+    const total = this.sessions.reduce((a, x) => a + (x.ethEnd - x.ethStart), 0);
+    if (total <= 0) return 1;
+    let done = 0;
+    for (const x of this.sessions) {
+      if (this.now >= x.ethEnd) done += x.ethEnd - x.ethStart;
+      else if (this.now > x.ethStart) done += this.now - x.ethStart;
+    }
+    return Math.min(1, Math.max(0, done / total));
   }
 
   /** Le prix « vivant » à l'instant courant, 1m interpolée. */
@@ -154,7 +209,7 @@ export class ReplayEngine {
     const cur = candleStartOf(this.now, tfSec, this.dayMidnight(this.now));
     const span = Math.max(60_000, tfSec * 1000);
     const next = cur + span > this.now ? cur + span : cur + span * 2;
-    this.now = this.clamp(next);
+    this.now = this.skipGap(this.clamp(next), 1);
   }
 
   /** Bougie précédente — la simulation repartira de zéro vers cette cible. */
@@ -163,21 +218,37 @@ export class ReplayEngine {
     const cur = candleStartOf(this.now, tfSec, this.dayMidnight(this.now));
     const span = Math.max(60_000, tfSec * 1000);
     const prev = cur < this.now ? cur : cur - span;
-    this.now = this.clamp(Math.max(this.ethStart, prev));
+    this.now = this.skipGap(this.clamp(Math.max(this.ethStart, prev)), -1);
   }
 
   /** Avance continue (lecture) d'une durée simulée, bornée à la fin. */
   advance(durationMs: number): void {
-    this.now = this.clamp(this.now + Math.max(0, durationMs));
+    this.now = this.skipGap(this.clamp(this.now + Math.max(0, durationMs)), 1);
   }
 
   /** Re-partir d'un timestamp arbitraire (rejeu arrière). */
   jumpTo(ms: number): void {
-    this.now = this.clamp(ms);
+    this.now = this.skipGap(this.clamp(ms), 1);
   }
 
   private clamp(ms: number): number {
     return Math.min(this.ethEnd, Math.max(this.ethStart, ms));
+  }
+
+  /**
+   * Fait franchir à l'horloge l'heure morte qui sépare deux séances.
+   *
+   * Entre 17 h et 18 h le marché est fermé : aucune bougie, aucun prix. Y
+   * laisser l'horloge donnerait une minute figée que le trader regarderait
+   * s'écouler pour rien. `dir` dit vers quel bord la pousser.
+   */
+  private skipGap(ms: number, dir: 1 | -1): number {
+    for (let i = 0; i < this.sessions.length - 1; i++) {
+      const gapStart = this.sessions[i].ethEnd;
+      const gapEnd = this.sessions[i + 1].ethStart;
+      if (ms > gapStart && ms < gapEnd) return dir === 1 ? gapEnd : gapStart;
+    }
+    return ms;
   }
 
   clockLabel(): string {
@@ -185,12 +256,19 @@ export class ReplayEngine {
   }
 
   /** Les bornes de la fenêtre en ms, pour le cadrage du graphe. */
-  sessionBounds(): { ethStart: number; ethEnd: number; rthStart: number; rthEnd: number } {
+  sessionBounds(): {
+    ethStart: number;
+    ethEnd: number;
+    rthStart: number;
+    rthEnd: number;
+    rthWindows: RthWindow[];
+  } {
     return {
       ethStart: this.ethStart,
       ethEnd: this.ethEnd,
       rthStart: this.rthStart,
       rthEnd: this.rthEnd,
+      rthWindows: this.rthWindows(),
     };
   }
 }

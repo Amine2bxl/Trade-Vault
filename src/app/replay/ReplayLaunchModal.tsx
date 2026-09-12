@@ -19,6 +19,13 @@ function todayNy(): string {
   return nyDateOf(Date.now());
 }
 
+/** Les durées proposées, en SÉANCES de cotation. */
+const DURATIONS = [
+  { days: 1, key: "rt.duration1" },
+  { days: 3, key: "rt.duration3" },
+  { days: 5, key: "rt.duration5" },
+] as const;
+
 export default function ReplayLaunchModal() {
   const { t } = useT();
   const { session, launchOpen, closeLaunch, enter, resumeInto, ensureSampleWeek } = useReplayMode();
@@ -29,6 +36,7 @@ export default function ReplayLaunchModal() {
   const [date, setDate] = useState(() => todayNy());
   const [time, setTime] = useState("09:30");
   const [tf, setTf] = useState("5m");
+  const [days, setDays] = useState(1);
   const [seedWeek, setSeedWeek] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -56,6 +64,7 @@ export default function ReplayLaunchModal() {
         startTime: time,
         timeframe: tf,
         startingBalance: Number(balance) || target.startingBalance || 100_000,
+        days,
       });
       if (ok) setCreating(false);
     } finally {
@@ -200,6 +209,35 @@ export default function ReplayLaunchModal() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Durée — on compte en SÉANCES, jamais en jours civils. */}
+        <div className="mb-3">
+          <span className="mb-1 block text-[11px] font-medium text-[var(--tv-text-muted)]">
+            {t("rt.duration")}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {DURATIONS.map((d) => (
+              <button
+                key={d.days}
+                type="button"
+                onClick={() => setDays(d.days)}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-semibold transition",
+                  days === d.days
+                    ? "tv-accent-fill text-white"
+                    : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
+                )}
+              >
+                {t(d.key)}
+              </button>
+            ))}
+          </div>
+          {days > 1 && (
+            <p className="mt-1.5 text-[10px] leading-relaxed text-[var(--tv-text-muted)]">
+              {t("rt.durationHint")}
+            </p>
+          )}
         </div>
 
         {/* Semaine d'exemple — voir l'app en action. */}

@@ -21,6 +21,9 @@ import {
   sessionsOf,
   nyEpochFromHm,
   markPriceAt,
+  nyTimeOf,
+  tradingDatesFrom,
+  nextTradingDate,
   roundToTick,
   REPLAY_INSTRUMENTS,
   sizeFromRisk,
@@ -847,5 +850,108 @@ describe("money-management — la taille découle du risque", () => {
     state.account.openPnl = 0;
     state.account.realizedPnl = 800;
     expect(dailyLossState(state, 2)!.used).toBe(0);
+  });
+});
+
+describe("rejeu long — plusieurs séances d'affilée", () => {
+  test("on compte en séances, jamais en jours civils", () => {
+    // Jeudi 10 sept. 2026 : cinq séances vont jusqu'au mercredi suivant.
+    expect(tradingDatesFrom("2026-09-10", 5)).toEqual([
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-14",
+      "2026-09-15",
+      "2026-09-16",
+    ]);
+    // Un départ posé un samedi glisse sur la séance suivante.
+    expect(tradingDatesFrom("2026-09-12", 2)).toEqual(["2026-09-14", "2026-09-15"]);
+    expect(nextTradingDate("2026-09-11")).toBe("2026-09-14");
+    expect(tradingDatesFrom("2026-09-10", 0)).toEqual(["2026-09-10"]);
+  });
+
+  test("l'enveloppe couvre toutes les séances et leurs bougies", async () => {
+    const one = new ReplayEngine({ symbol: "NQ", date: DATE, startTime: START, timeframe: "5m" });
+    const three = new ReplayEngine({
+      symbol: "NQ",
+      date: DATE,
+      startTime: START,
+      timeframe: "5m",
+      days: 3,
+    });
+    await one.start();
+    await three.start();
+
+    expect(three.dates.length).toBe(3);
+    expect(three.ethStart).toBe(one.ethStart);
+    expect(three.ethEnd).toBeGreaterThan(one.ethEnd);
+    // Trois séances, trois fois plus de minutes — sans doublon d'horodatage.
+    expect(three.data.length).toBe(one.data.length * 3);
+    const times = three.data.map((b) => b.time);
+    expect(new Set(times).size).toBe(times.length);
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+    expect(three.rthWindows().length).toBe(3);
+  });
+
+  test("l'heure morte entre deux séances est franchie, pas vécue", async () => {
+    const e = new ReplayEngine({
+      symbol: "NQ",
+      date: DATE,
+      startTime: START,
+      timeframe: "5m",
+      days: 2,
+    });
+    await e.start();
+    const [first, second] = e.rthWindows();
+
+    // 16 h 30 : la première séance court encore jusqu'à 17 h.
+    e.jumpTo(first.end + 30 * 60_000);
+    const before = e.now;
+    // +1 h tomberait à 17 h 30, en plein marché fermé.
+    e.advance(60 * 60_000);
+    expect(e.now).toBeGreaterThan(before);
+    expect(nyTimeOf(e.now)).toBe("18:00");
+    // Et la séance suivante est bien celle qu'on rejoint.
+    expect(e.now).toBeLessThan(second.start);
+  });
+
+  test("la progression ignore le temps où rien ne cote", async () => {
+    const e = new ReplayEngine({
+      symbol: "NQ",
+      date: DATE,
+      startTime: START,
+      timeframe: "5m",
+      days: 3,
+    });
+    await e.start();
+    e.jumpTo(e.ethStart);
+    expect(e.progress()).toBeCloseTo(0, 6);
+    e.jumpTo(e.ethEnd);
+    expect(e.progress()).toBeCloseTo(1, 6);
+
+    // À la fin de la première séance sur trois : environ un tiers, et surtout
+    // PAS la fraction du temps civil, que le week-end gonflerait.
+    const firstDayEnd = e.rthWindows()[0].end;
+    e.jumpTo(firstDayEnd);
+    const p = e.progress();
+    expect(p).toBeGreaterThan(0.25);
+    expect(p).toBeLessThan(0.4);
+  });
+
+  test("le nombre de séances voyage avec l'état, sans colonne dédiée", () => {
+    const state = createInitialState({
+      symbol: "NQ",
+      startingBalance: 50_000,
+      now: 0,
+      commissionPerContract: 2,
+      slippageTicks: 1,
+      days: 5,
+    });
+    expect(state.days).toBe(5);
+    const back = deserializeState(serializeState(state));
+    expect(back!.days).toBe(5);
+    // Une séance enregistrée avant l'arrivée du champ reste lisible.
+    const legacy = { ...state } as Partial<typeof state>;
+    delete legacy.days;
+    expect(deserializeState(JSON.stringify({ v: 1, ...legacy }))!.days).toBeUndefined();
   });
 });

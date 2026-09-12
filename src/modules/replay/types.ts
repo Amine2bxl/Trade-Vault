@@ -153,6 +153,12 @@ export interface ReplaySessionState {
   appliedUpTo: number | null;
   /** Instrument du rejeu (id dans le registre, ex. `NQ`). */
   symbol: string;
+  /**
+   * Nombre de séances rejouées d'affilée. Rangé DANS l'état plutôt qu'en
+   * colonne : il voyage avec le JSONB, donc la reprise d'un rejeu long ne
+   * réclame aucune migration supplémentaire.
+   */
+  days?: number;
   /** Commissions $/contrat (rejouées pour la reconstruction). */
   commissionPerContract: number;
   /** Glissement en ticks (rejoué pour la reconstruction). */

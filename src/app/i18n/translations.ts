@@ -149,6 +149,12 @@ const en = {
   "rt.date": "Session date",
   "rt.time": "Start time (New York)",
   "rt.timeframe": "Timeframe",
+  "rt.duration": "Duration",
+  "rt.duration1": "1 session",
+  "rt.duration3": "3 sessions",
+  "rt.duration5": "1 week",
+  "rt.durationHint":
+    "Sessions run back to back; the hour the market is closed each evening is skipped, and so are week-ends.",
   "rt.start": "Start replay",
   "rt.resume": "Resume",
   "rt.newSession": "New session",

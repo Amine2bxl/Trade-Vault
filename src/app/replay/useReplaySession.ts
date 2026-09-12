@@ -59,6 +59,8 @@ export interface ReplayStartConfig {
   startTime: string;
   timeframe: string;
   startingBalance: number;
+  /** Nombre de séances rejouées d'affilée (1 par défaut). */
+  days?: number;
 }
 
 export function useReplaySession({ userId }: { userId: string | null }) {
@@ -207,6 +209,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
         date: cfg.date,
         startTime: cfg.startTime,
         timeframe: cfg.timeframe,
+        days: cfg.days ?? 1,
       });
       try {
         await engine.start();
@@ -221,6 +224,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
         now: engine.now,
         commissionPerContract: 2.5,
         slippageTicks: 1,
+        days: cfg.days ?? 1,
       });
       state.viewTimeframe = cfg.timeframe;
       // La persistance est BEST-EFFORT : si la table `replay_sessions` n'est
@@ -252,6 +256,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
           date: dto.startDate,
           startTime: dto.startTime,
           timeframe: dto.timeframe,
+          days: dto.state.days ?? 1,
         });
         await engine.start();
         engine.now = dto.state.now;
@@ -261,6 +266,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
           now: dto.state.now,
           commissionPerContract: dto.state.commissionPerContract ?? 2.5,
           slippageTicks: dto.state.slippageTicks ?? 1,
+          days: dto.state.days ?? 1,
         });
         base.orders = dto.state.orders ?? [];
         base.closedTrades = dto.state.closedTrades ?? [];
@@ -279,6 +285,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
             startTime: dto.startTime,
             timeframe: dto.timeframe,
             startingBalance: rebuilt.account.startingBalance,
+            days: dto.state.days ?? 1,
           },
           dto.id,
         );
@@ -555,9 +562,10 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     atEnd: engineRef.current?.atEnd ?? false,
     bounds: engineRef.current
       ? engineRef.current.sessionBounds()
-      : { ethStart: 0, ethEnd: 1, rthStart: 0, rthEnd: 0 },
+      : { ethStart: 0, ethEnd: 1, rthStart: 0, rthEnd: 0, rthWindows: [] },
     symbol: "NQ",
     date: cfgRef.current?.date ?? "",
+    days: cfgRef.current?.days ?? 1,
     startTime: cfgRef.current?.startTime ?? "",
     // Cycle
     startNew,

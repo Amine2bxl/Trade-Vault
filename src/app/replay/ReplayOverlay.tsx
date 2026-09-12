@@ -53,7 +53,13 @@ interface OverlayProps {
   orders: Order[];
   positions: Position[];
   executions: { at: number; price: number; side: "long" | "short"; qty: number }[];
-  bounds: { ethStart: number; ethEnd: number; rthStart: number; rthEnd: number };
+  bounds: {
+    ethStart: number;
+    ethEnd: number;
+    rthStart: number;
+    rthEnd: number;
+    rthWindows?: { start: number; end: number }[];
+  };
   showRthEth: boolean;
   tool: ReplayTool;
   mark: number;
@@ -611,8 +617,24 @@ export default function ReplayOverlay({
     if (!showRthEth) return [];
     const out: React.ReactNode[] = [];
     for (const [a, b] of [
-      [bounds.ethStart, bounds.rthStart],
-      [bounds.rthEnd, bounds.ethEnd],
+      // Une bande hors-séance AVANT chaque RTH, puis une dernière après le
+      // dernier. Émettre aussi la bande d'après à chaque tour la dessinerait
+      // deux fois, et l'opacité doublerait entre deux séances.
+      ...(bounds.rthWindows && bounds.rthWindows.length > 0
+        ? [
+            ...bounds.rthWindows.map(
+              (w, i, all) =>
+                [i === 0 ? bounds.ethStart : all[i - 1].end, w.start] as [number, number],
+            ),
+            [bounds.rthWindows[bounds.rthWindows.length - 1].end, bounds.ethEnd] as [
+              number,
+              number,
+            ],
+          ]
+        : [
+            [bounds.ethStart, bounds.rthStart] as [number, number],
+            [bounds.rthEnd, bounds.ethEnd] as [number, number],
+          ]),
     ] as const) {
       const x = coord(a, 0).x;
       const x2 = coord(b, 0).x;

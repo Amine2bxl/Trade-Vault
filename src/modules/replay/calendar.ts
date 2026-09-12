@@ -118,6 +118,38 @@ export function previousTradingDate(dateStr: string): string {
   return nyDateOf(out);
 }
 
+/** La session suivante (vendredi → lundi) : les weekends n'ouvrent pas. */
+export function nextTradingDate(dateStr: string): string {
+  const ms = nyMidnightMs(dateStr);
+  let out = ms;
+  for (let i = 0; i < 7; i++) {
+    out += 24 * 3600_000;
+    const dow = new Date(out + 12 * 3600_000).getUTCDay();
+    if (dow !== 0 && dow !== 6) break;
+  }
+  return nyDateOf(out);
+}
+
+/**
+ * Les `count` jours de cotation à partir de `dateStr` inclus.
+ *
+ * Le rejeu long ne compte pas en jours civils mais en SÉANCES : demander cinq
+ * jours depuis un jeudi doit rendre jeudi, vendredi, lundi, mardi, mercredi —
+ * sinon deux des cinq seraient des journées sans cotation.
+ */
+export function tradingDatesFrom(dateStr: string, count: number): string[] {
+  const n = Math.max(1, Math.floor(count));
+  const out: string[] = [];
+  let cur = dateStr;
+  const dow = nyDow(cur);
+  if (dow === 0 || dow === 6) cur = nextTradingDate(cur);
+  for (let i = 0; i < n; i++) {
+    out.push(cur);
+    cur = nextTradingDate(cur);
+  }
+  return out;
+}
+
 /** `YYYY-MM-DD` de la veille NY. */
 export function nyYesterday(dateStr: string): string {
   return nyDateOf(nyMidnightMs(dateStr) - 24 * 3600_000);

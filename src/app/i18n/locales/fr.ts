@@ -122,6 +122,12 @@ const fr: Dict = {
   "rt.date": "Date de la séance",
   "rt.time": "Heure de départ (New York)",
   "rt.timeframe": "Timeframe",
+  "rt.duration": "Durée",
+  "rt.duration1": "1 séance",
+  "rt.duration3": "3 séances",
+  "rt.duration5": "1 semaine",
+  "rt.durationHint":
+    "Les séances s'enchaînent ; l'heure de fermeture de chaque soir est sautée, les week-ends aussi.",
   "rt.start": "Démarrer le rejeu",
   "rt.resume": "Reprendre",
   "rt.newSession": "Nouvelle séance",
