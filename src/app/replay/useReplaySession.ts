@@ -23,7 +23,7 @@ import {
   isTimeframeId,
 } from "@/modules/replay";
 import { createInitialState, processBars, rebuildState, refreshValuation } from "@/modules/replay";
-import { installRemoteProvider } from "./remoteProvider";
+import { installRemoteProvider, lastDataProvider } from "./remoteProvider";
 import {
   closePosition,
   flattenPositions,
@@ -76,6 +76,15 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   const [sessions, setSessions] = useState<ReplaySessionDto[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * D'OÙ VIENNENT LES BOUGIES. `null` = générateur déterministe.
+   *
+   * Le repli sur la synthèse est silencieux par conception — le terminal doit
+   * fonctionner sans abonnement. Mais silencieux ne veut pas dire caché : un
+   * trader qui croit rejouer le vrai NQ alors qu'il regarde une simulation
+   * tire de fausses conclusions de sa séance. L'interface doit pouvoir le dire.
+   */
+  const [dataSource, setDataSource] = useState<string | null>(null);
 
   const engineRef = useRef<ReplayEngine | null>(null);
   const stateRef = useRef<ReturnType<typeof createInitialState> | null>(null);
@@ -239,6 +248,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
         setError("rt.errorData");
         return false;
       }
+      setDataSource(lastDataProvider());
       const state = createInitialState({
         symbol: "NQ",
         startingBalance: cfg.startingBalance,
@@ -282,6 +292,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
           days: dto.state.days ?? 1,
         });
         await engine.start();
+        setDataSource(lastDataProvider());
         engine.now = dto.state.now;
         const base = createInitialState({
           symbol: dto.symbol,
@@ -578,6 +589,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     active,
     finished,
     error,
+    dataSource,
     account,
     sessions,
     replayAccounts,

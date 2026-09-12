@@ -220,6 +220,10 @@ const fr: Dict = {
   "rt.noOrders": "Aucun ordre en carnet.",
   "rt.noHistory": "Aucun trade réalisé pour l'instant.",
   "rt.errorLaunch": "Impossible de démarrer le rejeu.",
+  "rt.dataSimulated": "Simulé",
+  "rt.dataSimulatedHint":
+    "Bougies générées, déterministes — aucun fournisseur de données n'est configuré.",
+  "rt.dataReal": "Données de marché réelles.",
   "rt.errorData": "Impossible de charger les données de cette séance.",
   "rt.weekendResumes": "Week-end — la séance du vendredi sera rejouée.",
   "rt.terminal": "Terminal",

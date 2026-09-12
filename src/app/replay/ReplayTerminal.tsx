@@ -35,6 +35,8 @@ import { nyTimeOf, dailyLossState } from "@/modules/replay";
 
 export interface TerminalProps {
   accountName: string;
+  /** Fournisseur ayant servi les bougies. `null` = générateur déterministe. */
+  dataSource?: string | null;
   state: ReplaySessionState | null;
   candles: import("@/modules/replay").SimulatedCandle[];
   bounds: {
@@ -149,6 +151,22 @@ export default function ReplayTerminal(props: TerminalProps) {
         </span>
         <span className="hidden text-xs text-[var(--tv-text-muted)] md:inline">
           {props.accountName}
+        </span>
+        {/* D'OÙ VIENNENT LES BOUGIES. Le repli sur le générateur est silencieux
+          par conception — le terminal doit tourner sans abonnement — mais il ne
+          doit pas être CACHÉ : croire qu'on rejoue le vrai NQ alors qu'on
+          regarde une simulation fait tirer de fausses conclusions d'une séance.
+          Une pastille ambre quand c'est simulé, neutre quand c'est réel. */}
+        <span
+          title={props.dataSource ? t("rt.dataReal") : t("rt.dataSimulatedHint")}
+          className={cn(
+            "hidden rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide md:inline",
+            props.dataSource
+              ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text-muted)]"
+              : "bg-[rgb(var(--tv-warning-rgb)/0.16)] text-[var(--tv-warning)]",
+          )}
+        >
+          {props.dataSource ?? t("rt.dataSimulated")}
         </span>
 
         <div className="ml-auto flex items-center gap-4">

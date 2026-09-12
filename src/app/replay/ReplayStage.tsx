@@ -86,6 +86,7 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
       ) : (
         <ReplayTerminal
           accountName={session.account?.name ?? "Replay"}
+          dataSource={session.dataSource}
           state={session.state}
           candles={session.candles}
           bounds={session.bounds}

@@ -247,6 +247,10 @@ const en = {
   "rt.noOrders": "No pending orders.",
   "rt.noHistory": "No closed trades yet this session.",
   "rt.errorLaunch": "Could not start the replay.",
+  "rt.dataSimulated": "Simulated",
+  "rt.dataSimulatedHint":
+    "Deterministic generated candles — no market data provider is configured.",
+  "rt.dataReal": "Real market data.",
   "rt.errorData": "Could not load that session's data.",
   "rt.weekendResumes": "Week-end — the Friday session will be replayed.",
   "rt.terminal": "Terminal",
