@@ -21,6 +21,10 @@ import {
   sessionsOf,
   nyEpochFromHm,
   markPriceAt,
+  registerProvider,
+  unregisterProvider,
+  resolveProvider,
+  loadSessionBars,
   nyTimeOf,
   tradingDatesFrom,
   nextTradingDate,
@@ -32,6 +36,7 @@ import {
   dailyLossState,
   DEFAULT_TIMEFRAME,
 } from "../src/modules/replay";
+import { tradingWindowUtc } from "../src/backend/replay-data.server";
 
 const DATE = "2025-01-14"; // un mardi — jour ouvré complet.
 const START = "09:30";
@@ -953,5 +958,84 @@ describe("rejeu long — plusieurs séances d'affilée", () => {
     const legacy = { ...state } as Partial<typeof state>;
     delete legacy.days;
     expect(deserializeState(JSON.stringify({ v: 1, ...legacy }))!.days).toBeUndefined();
+  });
+});
+
+describe("fournisseur de données — branchement et repli", () => {
+  /** Un fournisseur de test, qui rend ce qu'on lui dit. */
+  function fakeProvider(name: string, bars: OhlcBar[], fail = false) {
+    return {
+      name,
+      isAvailable: () => true,
+      fetchBars: async () => {
+        if (fail) throw new Error("service indisponible");
+        return bars;
+      },
+    };
+  }
+
+  const T0 = nyEpochFromHm(DATE, "09:30");
+  const REAL: OhlcBar[] = [
+    { time: T0, open: 1, high: 2, low: 0.5, close: 1.5, volume: 10 },
+    { time: T0 + 60_000, open: 1.5, high: 2.5, low: 1, close: 2, volume: 12 },
+  ];
+
+  test("un fournisseur inscrit passe devant le générateur", async () => {
+    registerProvider(fakeProvider("faux", REAL));
+    try {
+      expect(resolveProvider().name).toBe("faux");
+      const bars = await loadSessionBars(DATE, NQ);
+      expect(bars.length).toBe(2);
+      expect(bars[0].close).toBe(1.5);
+    } finally {
+      unregisterProvider("faux");
+    }
+    // Retiré, le générateur reprend la main — et une vraie séance revient.
+    expect(resolveProvider().name).toBe("synthetic");
+    expect((await loadSessionBars(DATE, NQ)).length).toBeGreaterThan(100);
+  });
+
+  test("un fournisseur qui ne rend rien ne vide pas le terminal", async () => {
+    registerProvider(fakeProvider("vide", []));
+    try {
+      // Repli silencieux : backtester ne dépend d'aucun abonnement.
+      const bars = await loadSessionBars(DATE, NQ);
+      expect(bars.length).toBeGreaterThan(100);
+    } finally {
+      unregisterProvider("vide");
+    }
+  });
+
+  test("un fournisseur en panne ne fait pas tomber la séance", async () => {
+    registerProvider(fakeProvider("panne", [], true));
+    try {
+      const bars = await loadSessionBars(DATE, NQ);
+      expect(bars.length).toBeGreaterThan(100);
+    } finally {
+      unregisterProvider("panne");
+    }
+  });
+
+  test("réinscrire le même nom remplace, sans empiler", async () => {
+    registerProvider(fakeProvider("faux", REAL));
+    registerProvider(fakeProvider("faux", [REAL[0]]));
+    try {
+      expect((await loadSessionBars(DATE, NQ)).length).toBe(1);
+    } finally {
+      unregisterProvider("faux");
+    }
+  });
+
+  test("la fenêtre interrogée est le jour de COTATION, pas le jour civil", () => {
+    // 18 h NY la veille → 17 h NY le jour même. En janvier NY est à UTC−5.
+    const w = tradingWindowUtc("2025-01-14");
+    expect(w.start).toBe("2025-01-13T23:00:00.000Z");
+    expect(w.end).toBe("2025-01-14T22:00:00.000Z");
+
+    // En juillet l'heure d'été décale d'une heure : la fenêtre suit la bourse,
+    // pas un décalage figé dans le code.
+    const summer = tradingWindowUtc("2025-07-15");
+    expect(summer.start).toBe("2025-07-14T22:00:00.000Z");
+    expect(summer.end).toBe("2025-07-15T21:00:00.000Z");
   });
 });

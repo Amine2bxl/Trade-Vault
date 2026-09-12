@@ -23,6 +23,7 @@ import {
   isTimeframeId,
 } from "@/modules/replay";
 import { createInitialState, processBars, rebuildState, refreshValuation } from "@/modules/replay";
+import { installRemoteProvider } from "./remoteProvider";
 import {
   closePosition,
   flattenPositions,
@@ -204,6 +205,10 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     async (cfg: ReplayStartConfig) => {
       if (!userId) return false;
       setError(null);
+      // Les vraies données passent par le serveur ; sans clé configurée, la
+      // requête rend vide et le générateur reprend la main sans que rien ne
+      // change pour le trader.
+      installRemoteProvider();
       const engine = new ReplayEngine({
         symbol: "NQ",
         date: cfg.date,
@@ -250,6 +255,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   const resume = useCallback(
     async (dto: ReplaySessionDto) => {
       if (!dto.state) return false;
+      installRemoteProvider();
       try {
         const engine = new ReplayEngine({
           symbol: dto.symbol,

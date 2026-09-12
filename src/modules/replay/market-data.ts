@@ -37,13 +37,36 @@ class SyntheticProvider implements MarketDataProvider {
 }
 
 // ── Registre ────────────────────────────────────────────────────────────────
-// Ajouter un vrai fournisseur : implémenter `MarketDataProvider` et l'inscrire
-// ici dans l'ordre de préférence. `resolveProvider` rend le premier disponible.
+// Le module reste PUR : il ne connaît ni React, ni Supabase, ni la couche
+// réseau de l'application. Un vrai fournisseur s'inscrit donc de l'extérieur,
+// au démarrage, plutôt que d'être importé ici — sinon le moteur traînerait
+// derrière lui tout le serveur, et les tests avec.
 
-const REGISTERED: MarketDataProvider[] = [new SyntheticProvider()];
+const SYNTHETIC = new SyntheticProvider();
+const REGISTERED: MarketDataProvider[] = [];
+
+/**
+ * Inscrit un fournisseur, prioritaire sur le générateur.
+ *
+ * Le dernier inscrit passe devant : l'application en branche un au démarrage,
+ * un test peut le remplacer sans laisser de trace pour le suivant.
+ */
+export function registerProvider(provider: MarketDataProvider): void {
+  const at = REGISTERED.findIndex((p) => p.name === provider.name);
+  if (at >= 0) REGISTERED.splice(at, 1);
+  REGISTERED.unshift(provider);
+  clearBarsCache();
+}
+
+/** Retire un fournisseur inscrit — le générateur reprend la main. */
+export function unregisterProvider(name: string): void {
+  const at = REGISTERED.findIndex((p) => p.name === name);
+  if (at >= 0) REGISTERED.splice(at, 1);
+  clearBarsCache();
+}
 
 export function resolveProvider(): MarketDataProvider {
-  return REGISTERED.find((p) => p.isAvailable()) ?? REGISTERED[0];
+  return REGISTERED.find((p) => p.isAvailable()) ?? SYNTHETIC;
 }
 
 /** Mémoire des journaux déjà chargés — une date coûte un fetch, jamais deux. */
@@ -54,7 +77,16 @@ export async function loadSessionBars(date: string, spec: InstrumentSpec): Promi
   const hit = cache.get(key);
   if (hit) return hit;
   const provider = resolveProvider();
-  const bars = await provider.fetchBars({ date, spec });
+  // Un fournisseur réel qui ne rend RIEN (clé absente, journée manquante,
+  // service en panne) ne doit pas vider le terminal : le générateur reprend la
+  // main. Backtester ne dépend d'aucun abonnement.
+  let bars = await provider.fetchBars({ date, spec }).catch((e) => {
+    console.warn(`[replay] fournisseur ${provider.name} en échec — repli synthétique`, e);
+    return [] as OhlcBar[];
+  });
+  if (bars.length === 0 && provider !== SYNTHETIC) {
+    bars = await SYNTHETIC.fetchBars({ date, spec });
+  }
   // Tri + déduplication défensifs : la cohérence du rejeu exige une série dont
   // chaque minute est unique et ordonnée.
   const sorted = bars
