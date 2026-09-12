@@ -3784,3 +3784,27 @@ a:focus-visible,
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
+
+/* ── Terminal de rejeu : transitions d'entrée/sortie ────────────────────── */
+@keyframes rt-fade-in {
+  from { opacity: 0; }
+  22% { opacity: 1; }
+  78% { opacity: 1; }
+  to { opacity: 1; }
+}
+@keyframes rt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes rt-progress {
+  from { width: 4%; opacity: 0.9; }
+  60% { opacity: 0.9; }
+  to { width: 100%; opacity: 0.9; }
+}
+.slide-up {
+  animation: rt-enter-panel 320ms var(--tv-ease-out) both;
+}
+@keyframes rt-enter-panel {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -121,7 +121,7 @@ export default function ReplayTerminal(props: TerminalProps) {
   const balanceTone = q && q.equity - q.balance ? pnlTone(q.equity - q.balance) : "neutral";
 
   return (
-    <div className="flex h-dvh w-full flex-col bg-[var(--tv-bg)] text-[var(--tv-text)]">
+    <div className="flex h-full w-full flex-col bg-[var(--tv-bg)] text-[var(--tv-text)]">
       {/* ── En-tête ── */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3">
         <button

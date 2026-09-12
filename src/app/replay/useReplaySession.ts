@@ -1,23 +1,27 @@
 /**
- * useReplaySession — le terminal côté React.
+ * useReplaySession — l'état vivant du rejeu, indépendant des pages.
  *
- * Le moteur (horloge, bougies) vit dans une ref ; l'état du compte (ordres,
- * positions, P&L) dans une autre. Les re-rendus sont pilotés par deux signaux :
- *   • `quote` — prix marqué, P&L ouverts, tické ~10 fois/s pendant la lecture ;
- *   • `version` — l'état du compte (bars traversées, ordres, timeframes).
- * Le terminal reste fluide, le graphe ne se redessine pas 60×/s sur des données
- * inchangées.
+ * Le terminal n'est PAS une page isolée : il vit dans un provider monté avec le
+ * shell, donc changer d'onglet (Journal, Dashboard…) ne détruit ni l'horloge, ni
+ * les ordres, ni les dessins. C'est ce qui fait du rejeu une « app dans l'app ».
  *
- * La persistance est différée : on écrit la session toutes les ~2 secondes et
- * à chaque action structurante (pause, ordre, changement de timeframe, fin).
+ * Le moteur (horloge, bougies) vit dans une ref, l'état du compte dans une autre.
+ * Deux signaux pilotent les re-rendus : `quote` (prix marqué, P&L) et `version`
+ * (barres traversées, ordres, timeframe). La lecture s'arrête dès que le terminal
+ * n'est plus à l'écran — sinon chaque frame repeindrait tout le shell.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAccounts } from "../contexts/AccountContext";
 import type { Account } from "../store";
-import { useT } from "../i18n/LanguageContext";
-import { ReplayEngine, type OhlcBar, type SimulatedCandle, type Drawing } from "@/modules/replay";
-import { TIMEFRAMES, isTimeframeId } from "@/modules/replay";
+import {
+  ReplayEngine,
+  type OhlcBar,
+  type SimulatedCandle,
+  type Drawing,
+  TIMEFRAMES,
+  isTimeframeId,
+} from "@/modules/replay";
 import { createInitialState, processBars, rebuildState, refreshValuation } from "@/modules/replay";
 import {
   closePosition,
@@ -37,8 +41,6 @@ import {
   type ReplaySessionDto,
 } from "../store/replay";
 
-export type ReplayPhase = "loading" | "setup" | "running" | "finished";
-
 export interface ReplayQuote {
   mark: number;
   balance: number;
@@ -50,9 +52,7 @@ export interface ReplayQuote {
   progress: number;
 }
 
-export const REPLAY_SPEEDS = [0.25, 0.5, 1, 2, 5, 10] as const;
-
-interface StartConfig {
+export interface ReplayStartConfig {
   accountId: string;
   date: string;
   startTime: string;
@@ -60,38 +60,35 @@ interface StartConfig {
   startingBalance: number;
 }
 
-export function useReplaySession({
-  userId,
-  onExit,
-}: {
-  userId: string | null;
-  onExit?: () => void;
-}) {
+export function useReplaySession({ userId }: { userId: string | null }) {
   const { accounts, addAccount } = useAccounts();
-  const { t } = useT();
-
   const replayAccounts = useMemo(() => accounts.filter((a) => a.type === "replay"), [accounts]);
 
-  const [phase, setPhase] = useState<ReplayPhase>("loading");
-  const [activeAccount, setActiveAccount] = useState<Account | null>(null);
+  const [active, setActive] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
   const [sessions, setSessions] = useState<ReplaySessionDto[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Moteur + état : mutations dans des refs, signaux dans des states.
   const engineRef = useRef<ReplayEngine | null>(null);
   const stateRef = useRef<ReturnType<typeof createInitialState> | null>(null);
-  const cfgRef = useRef<StartConfig | null>(null);
+  const cfgRef = useRef<ReplayStartConfig | null>(null);
+  const drawingRef = useRef<Drawing[]>([]);
+
   const [version, setVersion] = useState(0);
   const [quote, setQuote] = useState<ReplayQuote | null>(null);
-  const playingRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [viewTf, setViewTfState] = useState("5m");
   const [speed, setSpeed] = useState(1);
+
+  const playingRef = useRef(false);
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  const visibleRef = useRef(true);
   const bump = useCallback(() => setVersion((v) => v + 1), []);
 
-  /** Calcule le « quote » économique courant depuis le moteur. */
-  const readQuote = useCallback((engine: ReplayEngine) => {
+  const readQuote = useCallback((engine: ReplayEngine): ReplayQuote | null => {
     const state = stateRef.current;
     if (!state) return null;
     refreshValuation(state, engine.data);
@@ -109,66 +106,67 @@ export function useReplaySession({
 
   // ── Persistance différée ─────────────────────────────────────────────────
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scheduleSave = useCallback(() => {
-    if (!stateRef.current || !sessionId) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      const state = stateRef.current;
-      const id = sessionId;
-      if (!state || !id || !userId) return;
-      state.viewTimeframe = viewTfRef.current;
-      void updateReplaySession(userId, id, { state, timeframe: viewTfRef.current }).catch((e) =>
-        console.error("[replay] save failed", e),
-      );
-    }, 1500);
-  }, [sessionId, userId]);
-
+  const sessionIdRef = useRef<string | null>(null);
+  sessionIdRef.current = sessionId;
   const viewTfRef = useRef(viewTf);
   viewTfRef.current = viewTf;
 
-  const persistNow = useCallback(() => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    if (!stateRef.current || !sessionId || !userId) return;
+  const persist = useCallback(() => {
+    if (!userId) return;
+    const id = sessionIdRef.current;
     const state = stateRef.current;
-    state.viewTimeframe = viewTf;
-    void updateReplaySession(userId, sessionId, {
-      state,
-      status: phase === "finished" ? "finished" : "active",
-      timeframe: viewTf,
-    }).catch(() => {});
-  }, [sessionId, userId, viewTf, phase]);
+    if (!id || !state) return;
+    state.viewTimeframe = viewTfRef.current;
+    void updateReplaySession(userId, id, { state, timeframe: viewTfRef.current }).catch(() => {});
+  }, [userId]);
+
+  const scheduleSave = useCallback(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(persist, 1500);
+  }, [persist]);
 
   // ── Boucle de lecture ────────────────────────────────────────────────────
   const lastFrame = useRef(0);
-  const frameId = useRef<number>(0);
-
+  const frameId = useRef(0);
   const tick = useCallback(
     (nowMs: number) => {
       frameId.current = requestAnimationFrame(tick);
       const engine = engineRef.current;
-      if (!engine || !playingRef.current) return;
+      if (!engine || !playingRef.current || !visibleRef.current) return;
       const dt = Math.min(500, nowMs - lastFrame.current);
       lastFrame.current = nowMs;
-      const simMs = dt * speedRef.current;
       const before = engine.now;
-      engine.advance(simMs);
+      engine.advance(dt * speedRef.current);
       if (engine.now !== before) {
         processBars(stateRef.current!, engine.data);
         setQuote(readQuote(engine));
         bump();
       }
-      if (engine.atEnd) setPlaying(false);
+      if (engine.atEnd) {
+        playingRef.current = false;
+        setPlaying(false);
+      }
     },
     [bump, readQuote],
   );
 
-  const speedRef = useRef(speed);
-  speedRef.current = speed;
+  useEffect(() => () => cancelAnimationFrame(frameId.current), []);
 
-  // ── Entrée dans le terminal ─────────────────────────────────────────────
+  // ── Entrée / sortie / reprise ────────────────────────────────────────────
+  const teardown = useCallback(() => {
+    playingRef.current = false;
+    setPlaying(false);
+    cancelAnimationFrame(frameId.current);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    engineRef.current = null;
+    stateRef.current = null;
+    drawingRef.current = [];
+    setQuote(null);
+  }, []);
+
   const loadSessionsOf = useCallback(
     async (accountId: string) => {
-      if (!userId) return;
+      if (!userId) return [];
       const list = await loadReplaySessions(userId, accountId).catch(() => []);
       setSessions(list);
       return list;
@@ -176,37 +174,69 @@ export function useReplaySession({
     [userId],
   );
 
-  useEffect(() => {
-    let active = true;
-    async function boot() {
-      if (!userId) return;
-      setPhase("loading");
+  const mountSession = useCallback(
+    (
+      engine: ReplayEngine,
+      state: ReturnType<typeof createInitialState>,
+      cfg: ReplayStartConfig,
+      id: string,
+    ) => {
+      engineRef.current = engine;
+      stateRef.current = state;
+      cfgRef.current = cfg;
+      drawingRef.current = state.drawings ?? [];
+      sessionIdRef.current = id;
+      setSessionId(id);
+      setViewTfState(state.viewTimeframe);
+      setAccount(accounts.find((a) => a.id === cfg.accountId) ?? null);
+      setQuote(readQuote(engine));
+      setFinished(false);
+      setActive(true);
       setError(null);
-      const account = replayAccounts[0] ?? null;
-      if (!account) {
-        if (active) setPhase("setup");
-        return;
-      }
-      setActiveAccount(account);
-      const list = await loadSessionsOf(account.id);
-      const resumable = (list ?? []).find((s) => s.status === "active" && s.state);
-      if (resumable && resumable.state) {
-        if (active) await resumeInternal(resumable);
-      } else if (active) {
-        setPhase("setup");
-      }
-    }
-    void boot().catch(() => setPhase("setup"));
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+    },
+    [accounts, readQuote],
+  );
 
-  useEffect(() => () => cancelAnimationFrame(frameId.current), []);
+  const startNew = useCallback(
+    async (cfg: ReplayStartConfig) => {
+      if (!userId) return false;
+      try {
+        setError(null);
+        const engine = new ReplayEngine({
+          symbol: "NQ",
+          date: cfg.date,
+          startTime: cfg.startTime,
+          timeframe: cfg.timeframe,
+        });
+        await engine.start();
+        const state = createInitialState({
+          symbol: "NQ",
+          startingBalance: cfg.startingBalance,
+          now: engine.now,
+          commissionPerContract: 2.5,
+          slippageTicks: 1,
+        });
+        state.viewTimeframe = cfg.timeframe;
+        const id = await createReplaySession(userId, {
+          accountId: cfg.accountId,
+          symbol: "NQ",
+          startDate: cfg.date,
+          startTime: cfg.startTime,
+          timeframe: cfg.timeframe,
+          state,
+        });
+        mountSession(engine, state, cfg, id);
+        return true;
+      } catch (e) {
+        console.error("[replay] start failed", e);
+        setError("rt.errorData");
+        return false;
+      }
+    },
+    [userId, mountSession],
+  );
 
-  /** Bascule un DTO restauré en moteur + état. */
-  const resumeInternal = useCallback(
+  const resume = useCallback(
     async (dto: ReplaySessionDto) => {
       if (!dto.state) return false;
       try {
@@ -231,36 +261,40 @@ export function useReplaySession({
         base.drawings = dto.state.drawings ?? [];
         base.appliedUpTo = dto.state.appliedUpTo ?? null;
         base.viewTimeframe = isTimeframeId(dto.timeframe) ? dto.timeframe : "5m";
-        base.playbackSpeed = speed ?? 1;
-        // On rejoue l'état en avant à partir des ordres (déterminisme).
         const rebuilt = rebuildState(base, engine.data, dto.state.now);
         rebuilt.drawings = base.drawings;
-        drawingRef.current = base.drawings ?? [];
-        stateRef.current = rebuilt;
-        engineRef.current = engine;
-        cfgRef.current = {
-          accountId: dto.accountId,
-          date: dto.startDate,
-          startTime: dto.startTime,
-          timeframe: dto.timeframe,
-          startingBalance: rebuilt.account.startingBalance,
-        };
-        setSessionId(dto.id);
-        setViewTfState(rebuilt.viewTimeframe);
-        setQuote(readQuote(engine));
-        setPhase("running");
+        mountSession(
+          engine,
+          rebuilt,
+          {
+            accountId: dto.accountId,
+            date: dto.startDate,
+            startTime: dto.startTime,
+            timeframe: dto.timeframe,
+            startingBalance: rebuilt.account.startingBalance,
+          },
+          dto.id,
+        );
         return true;
       } catch (e) {
         console.error("[replay] restore failed", e);
         setError("rt.errorData");
-        setPhase("setup");
         return false;
       }
     },
-    [readQuote, speed],
+    [mountSession],
   );
 
-  // ── Création d'un compte de rejeu ───────────────────────────────────────
+  /** Sortie : on sauvegarde, puis on remet l'état à zéro (le provider restaure
+   *  le compte réel). */
+  const leave = useCallback(async () => {
+    persist();
+    teardown();
+    setActive(false);
+    setFinished(false);
+    setSessionId(null);
+  }, [persist, teardown]);
+
   const createReplayAccount = useCallback(
     async (form: { name: string; startingBalance: number }) => {
       if (!userId) throw new Error("not authenticated");
@@ -270,75 +304,22 @@ export function useReplaySession({
         icon: "history",
         startingBalance: form.startingBalance,
       });
-      setActiveAccount(acc);
       setSessions([]);
-      setPhase("setup");
       return acc;
     },
     [userId, addAccount],
   );
 
-  /** Choisit un compte de rejeu parmi plusieurs et charge ses sessions. */
   const selectAccount = useCallback(
     (accountId: string) => {
       const acc = replayAccounts.find((a) => a.id === accountId) ?? null;
-      setActiveAccount(acc);
+      setAccount(acc);
       if (acc) void loadSessionsOf(acc.id);
-      setPhase("setup");
     },
     [replayAccounts, loadSessionsOf],
   );
 
-  // ── Démarrer une nouvelle séance ────────────────────────────────────────
-  const startNew = useCallback(
-    async (cfg: StartConfig) => {
-      if (!userId) return;
-      try {
-        setError(null);
-        setPhase("loading");
-        const engine = new ReplayEngine({
-          symbol: "NQ",
-          date: cfg.date,
-          startTime: cfg.startTime,
-          timeframe: cfg.timeframe,
-        });
-        await engine.start();
-        const base = createInitialState({
-          symbol: "NQ",
-          startingBalance: cfg.startingBalance,
-          now: engine.now,
-          commissionPerContract: 2.5,
-          slippageTicks: 1,
-        });
-        base.viewTimeframe = cfg.timeframe;
-        engineRef.current = engine;
-        stateRef.current = base;
-        cfgRef.current = cfg;
-        const id = await createReplaySession(userId, {
-          accountId: cfg.accountId,
-          symbol: "NQ",
-          startDate: cfg.date,
-          startTime: cfg.startTime,
-          timeframe: cfg.timeframe,
-          state: base,
-        });
-        setSessionId(id);
-        setActiveAccount(accounts.find((a) => a.id === cfg.accountId) ?? activeAccount);
-        setViewTfState(cfg.timeframe);
-        setPlaying(false);
-        playingRef.current = false;
-        setQuote(readQuote(engine));
-        setPhase("running");
-      } catch (e) {
-        console.error("[replay] start failed", e);
-        setError("rt.errorData");
-        setPhase("setup");
-      }
-    },
-    [userId, accounts, activeAccount, readQuote],
-  );
-
-  // ── Contrôles de lecture ────────────────────────────────────────────────
+  // ── Contrôles ────────────────────────────────────────────────────────────
   const play = useCallback(() => {
     if (!engineRef.current) return;
     playingRef.current = true;
@@ -351,8 +332,8 @@ export function useReplaySession({
     playingRef.current = false;
     setPlaying(false);
     cancelAnimationFrame(frameId.current);
-    persistNow();
-  }, [persistNow]);
+    persist();
+  }, [persist]);
 
   const togglePlay = useCallback(() => (playingRef.current ? pause() : play()), [pause, play]);
 
@@ -370,14 +351,12 @@ export function useReplaySession({
     const state = stateRef.current;
     if (!engine || !state) return;
     engine.stepBack(viewTfRef.current);
-    // Reconstruction déterministe de l'état jusqu'à la nouvelle horloge.
-    stateRef.current = rebuildState(state, engine.data, engine.now);
-    stateRef.current.drawings = drawingRef.current;
+    const rebuilt = rebuildState(state, engine.data, engine.now);
+    rebuilt.drawings = drawingRef.current;
+    stateRef.current = rebuilt;
     setQuote(readQuote(engine));
     bump();
   }, [bump, readQuote]);
-
-  const drawingRef = useRef<Drawing[]>([]);
 
   const setViewTf = useCallback(
     (tf: string) => {
@@ -396,26 +375,33 @@ export function useReplaySession({
     if (stateRef.current) stateRef.current.playbackSpeed = s;
   }, []);
 
-  // ── Ordres ──────────────────────────────────────────────────────────────
+  /** Le terminal signale sa présence : la lecture reprend/s'arrête. */
+  const setVisible = useCallback(
+    (v: boolean) => {
+      visibleRef.current = v;
+      if (!v) pause();
+    },
+    [pause],
+  );
+
+  // ── Ordres ───────────────────────────────────────────────────────────────
   const placeOrderTicket = useCallback(
     (input: PlaceOrderInput) => {
       const engine = engineRef.current;
       const state = stateRef.current;
-      if (!engine || !state) return { ok: false as const };
-      const order = simPlaceOrder({ state, input, bars: engine.data });
+      if (!engine || !state) return;
+      simPlaceOrder({ state, input, bars: engine.data });
       refreshValuation(state, engine.data);
       scheduleSave();
       bump();
-      return { ok: true as const, order };
     },
     [bump, scheduleSave],
   );
 
   const bracketOf = useCallback(
     (posId: string, sl: number | null, tp: number | null) => {
-      const state = stateRef.current;
-      if (!state) return;
-      setPositionBracket(state, posId, sl, tp);
+      if (!stateRef.current) return;
+      setPositionBracket(stateRef.current, posId, sl, tp);
       scheduleSave();
       bump();
     },
@@ -424,9 +410,8 @@ export function useReplaySession({
 
   const moveOrder = useCallback(
     (orderId: string, price: number) => {
-      const state = stateRef.current;
-      if (!state) return;
-      moveWorkingOrder(state, orderId, price);
+      if (!stateRef.current) return;
+      moveWorkingOrder(stateRef.current, orderId, price);
       scheduleSave();
       bump();
     },
@@ -435,9 +420,8 @@ export function useReplaySession({
 
   const cancelOrder = useCallback(
     (orderId: string) => {
-      const state = stateRef.current;
-      if (!state) return;
-      simCancelOrder(state, orderId);
+      if (!stateRef.current) return;
+      simCancelOrder(stateRef.current, orderId);
       scheduleSave();
       bump();
     },
@@ -460,10 +444,9 @@ export function useReplaySession({
   // ── Dessins ─────────────────────────────────────────────────────────────
   const addDrawing = useCallback(
     (d: Drawing) => {
-      const state = stateRef.current;
-      if (!state) return;
+      if (!stateRef.current) return;
       drawingRef.current = [...drawingRef.current, d];
-      state.drawings = drawingRef.current;
+      stateRef.current.drawings = drawingRef.current;
       scheduleSave();
       bump();
     },
@@ -494,115 +477,62 @@ export function useReplaySession({
   const finish = useCallback(async () => {
     const engine = engineRef.current;
     const state = stateRef.current;
-    if (!engine || !state || !userId || !sessionId || !cfgRef.current) return false;
-    // Liquide d'abord au prix marqué pour fermer l'exposition, puis journal.
+    if (!engine || !state || !userId || !sessionIdRef.current || !cfgRef.current) return null;
     flattenPositions(state, engine.data);
     refreshValuation(state, engine.data);
-    const accountId = cfgRef.current.accountId;
-    const res = await pushReplayTradesToJournal(userId, sessionId, accountId, state.closedTrades);
-    await updateReplaySession(userId, sessionId, { state, status: "finished" }).catch(() => {});
-    setPhase("finished");
-    setPlaying(false);
-    playingRef.current = false;
+    const res = await pushReplayTradesToJournal(
+      userId,
+      sessionIdRef.current,
+      cfgRef.current.accountId,
+      state.closedTrades,
+    );
+    await updateReplaySession(userId, sessionIdRef.current, { state, status: "finished" }).catch(
+      () => {},
+    );
+    pause();
+    setFinished(true);
+    setQuote(readQuote(engine));
     return res;
-  }, [sessionId, userId]);
+  }, [userId, pause, readQuote]);
 
   const abandon = useCallback(async () => {
-    if (userId && sessionId) await abandonReplaySession(userId, sessionId).catch(() => {});
-    setPhase("setup");
+    if (userId && sessionIdRef.current)
+      await abandonReplaySession(userId, sessionIdRef.current).catch(() => {});
+    teardown();
+    setActive(false);
+    setFinished(false);
     setSessionId(null);
-    engineRef.current = null;
-    stateRef.current = null;
-    drawingRef.current = [];
-  }, [sessionId, userId]);
+  }, [userId, teardown]);
 
-  /** Revenir à l'écran de configuration après avoir sauvegardé. */
-  const goToSetup = useCallback(() => {
-    persistNow();
-    setPhase("setup");
-    setPlaying(false);
-    playingRef.current = false;
-  }, [persistNow]);
-
-  const beginNew = useCallback(() => {
-    persistNow();
-    setPlaying(false);
-    playingRef.current = false;
-    setPhase("setup");
-    setSessionId(null);
-    engineRef.current = null;
-    stateRef.current = null;
-    drawingRef.current = [];
-  }, [persistNow]);
-
-  // ── Bougies pour le graphe ──────────────────────────────────────────────
-  // `version` avance à chaque tick de lecture/action : c'est le TRIGGER des
-  // bougies révélées (le quote n'en a pas besoin, il bouge avec `version`).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // ── Dérivés pour la vue ─────────────────────────────────────────────────
   const candles: SimulatedCandle[] = useMemo(() => {
     const engine = engineRef.current;
     if (!engine) return [];
     return engine.tfCandles(viewTf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewTf, version]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const bars: OhlcBar[] = useMemo(() => engineRef.current?.data ?? [], [version]);
-
+  const bars: OhlcBar[] = useMemo(() => engineRef.current?.data ?? [], [version]); // eslint-disable-line react-hooks/exhaustive-deps
   const clockLabel = engineRef.current ? engineRef.current.clockLabel() : "";
 
-  // Nettoyage.
-  useEffect(
-    () => () => {
-      cancelAnimationFrame(frameId.current);
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    },
-    [],
-  );
-
   return {
-    phase,
+    active,
+    finished,
     error,
-    account: activeAccount,
+    account,
     sessions,
     replayAccounts,
-    createReplayAccount,
-    selectAccount,
-    loadSessionsOf,
-    startNew,
-    resume: resumeInternal,
-    goToSetup,
-    beginNew,
-    finish,
-    abandon,
-    exit: onExit,
-    engine: engineRef.current,
+    sessionId,
     state: stateRef.current,
     candles,
     bars,
     quote,
     clockLabel,
     playing,
-    togglePlay,
-    play,
-    pause,
-    nextCandle,
-    prevCandle,
     speed,
-    setSpeed: setReplaySpeed,
     viewTf,
-    setViewTf,
     TIMEFRAMES,
-    placeOrderTicket,
-    bracketOf,
-    moveOrder,
-    cancelOrder,
-    closePositionOf,
-    setBracketOnPosition: setPositionBracket,
     drawings: drawingRef.current,
-    addDrawing,
-    updateDrawing,
-    removeDrawing,
-    sessionId,
     atStart: engineRef.current?.atStart ?? true,
     atEnd: engineRef.current?.atEnd ?? false,
     bounds: engineRef.current
@@ -611,6 +541,35 @@ export function useReplaySession({
     symbol: "NQ",
     date: cfgRef.current?.date ?? "",
     startTime: cfgRef.current?.startTime ?? "",
-    t,
+    // Cycle
+    startNew,
+    resume,
+    leave,
+    finish,
+    abandon,
+    createReplayAccount,
+    selectAccount,
+    loadSessionsOf,
+    // Contrôles
+    play,
+    pause,
+    togglePlay,
+    nextCandle,
+    prevCandle,
+    setViewTf,
+    setSpeed: setReplaySpeed,
+    setVisible,
+    // Ordres
+    placeOrderTicket,
+    bracketOf,
+    moveOrder,
+    cancelOrder,
+    closePositionOf,
+    // Dessins
+    addDrawing,
+    updateDrawing,
+    removeDrawing,
   };
 }
+
+export type ReplaySessionApi = ReturnType<typeof useReplaySession>;
