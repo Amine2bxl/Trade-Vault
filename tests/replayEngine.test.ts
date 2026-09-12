@@ -662,3 +662,88 @@ describe("le spec vient du registre, pas d'une constante", () => {
     }
   });
 });
+
+describe("remplissage intra-bougie", () => {
+  // Bougie haussière : le chemin descend d'abord chercher le low, puis monte.
+  //   21000 → 20990 → 21020 → 21010   (distances 10 + 30 + 10 = 50)
+  // Les sommets tombent donc à f = 0,2 et f = 0,8.
+  const T0 = nyEpochFromHm(DATE, "09:30");
+  const BAR: OhlcBar = {
+    time: T0,
+    open: 21_000,
+    high: 21_020,
+    low: 20_990,
+    close: 21_010,
+    volume: 100,
+  };
+  const bars: OhlcBar[] = [BAR, { ...BAR, time: T0 + 60_000 }];
+
+  function stateAt(now: number) {
+    return createInitialState({
+      symbol: "NQ",
+      startingBalance: 50_000,
+      now,
+      commissionPerContract: 0,
+      slippageTicks: 0,
+    });
+  }
+
+  test("un stop touché en cours de minute n'attend pas la clôture", () => {
+    const state = stateAt(T0);
+    placeOrder({ state, input: { side: "long", type: "stop", qty: 1, price: 21_015 }, bars });
+
+    // À 30 s le chemin plafonne à 21 005 : le stop n'est pas encore touché.
+    state.now = T0 + 30_000;
+    processBars(state, bars);
+    expect(state.orders[0].status).toBe("working");
+
+    // À 48 s il a atteint 21 020 : déclenchement, sans attendre 60 s.
+    state.now = T0 + 48_000;
+    processBars(state, bars);
+    expect(state.orders[0].status).toBe("filled");
+    expect(state.orders[0].fillPrice).toBe(21_015);
+    expect(state.orders[0].filledAt).toBe(T0 + 48_000);
+  });
+
+  test("reculer avant le contact défait le remplissage intra-bougie", () => {
+    const state = stateAt(T0);
+    placeOrder({ state, input: { side: "long", type: "stop", qty: 1, price: 21_015 }, bars });
+    state.now = T0 + 48_000;
+    processBars(state, bars);
+    expect(state.positions.length).toBe(1);
+
+    const back = rebuildState(state, bars, T0 + 30_000);
+    expect(back.orders[0].status).toBe("working");
+    expect(back.positions.length).toBe(0);
+
+    // Et rejouer en avant redonne exactement le même remplissage.
+    const fwd = rebuildState(state, bars, T0 + 48_000);
+    expect(fwd.orders[0].status).toBe("filled");
+    expect(fwd.orders[0].fillPrice).toBe(21_015);
+    expect(fwd.positions.length).toBe(1);
+  });
+
+  test("un ordre posé en milieu de minute ignore ce qui a précédé", () => {
+    // Le creux à 20 990 tombe à f = 0,2, soit 12 s. L'ordre arrive à 30 s.
+    const state = stateAt(T0 + 30_000);
+    placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price: 20_995 }, bars });
+    expect(state.orders[0].placedAt).toBe(T0 + 30_000);
+
+    // Même une fois la minute close, ce creux ne lui appartient pas.
+    state.now = T0 + 60_000;
+    processBars(state, bars);
+    expect(state.orders[0].status).toBe("working");
+    expect(state.positions.length).toBe(0);
+  });
+
+  test("une bougie entièrement traversée garde ses extrêmes exacts", () => {
+    const state = stateAt(T0);
+    placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price: 20_990 }, bars });
+    state.now = T0 + 60_000;
+    processBars(state, bars);
+    // Le low de la bougie est atteint au tick près : pas de rabotage par
+    // l'interpolation quand la tranche couvre tout.
+    expect(state.orders[0].status).toBe("filled");
+    expect(state.orders[0].fillPrice).toBe(20_990);
+  });
+});

@@ -23,6 +23,7 @@ import {
 } from "./types";
 import { InstrumentSpec, NQ, instrumentOf, pnlOf, roundToTick } from "./instruments";
 import { markPriceAt } from "./engine";
+import { intrabarSlice } from "./intrabar";
 
 export interface SimContext {
   spec: InstrumentSpec;
@@ -78,11 +79,12 @@ export function createInitialState(seed: {
     viewTimeframe: "5m",
     playbackSpeed: 1,
     finished: false,
-    // Tout ce qui précède l'instant de départ est DÉJÀ de l'histoire. Laisser
-    // `null` faisait rejouer la séance entière depuis 18 h au premier appel de
-    // `processBars` : un ordre posé à 09:31 pouvait se remplir sur une bougie
-    // de la nuit, donc à un prix antérieur à son propre placement.
-    appliedUpTo: seed.now,
+    // Tout ce qui a CLOS avant l'instant de départ est déjà de l'histoire.
+    // Laisser `null` faisait rejouer la séance entière depuis 18 h au premier
+    // appel de `processBars` : un ordre posé à 09:31 pouvait se remplir sur une
+    // bougie de la nuit, donc à un prix antérieur à son propre placement. La
+    // minute qui CONTIENT le départ, elle, reste à jouer.
+    appliedUpTo: seed.now - 60_000,
     symbol: seed.symbol,
     commissionPerContract: seed.commissionPerContract,
     slippageTicks: seed.slippageTicks,
@@ -242,23 +244,67 @@ export function processBars(state: ReplaySessionState, bars: OhlcBar[]): void {
   const c = simContextOf(state);
   const applied = state.appliedUpTo ?? (bars[0] ? bars[0].time - 60_000 : 0);
   const snapshot = [...bars];
+  let forming: OhlcBar | null = null;
   for (const bar of snapshot) {
     if (bar.time <= applied) continue;
-    if (bar.time + 60_000 > state.now) break; // bougie encore en formation
+    if (bar.time + 60_000 > state.now) {
+      // Bougie encore en formation : elle n'est pas « appliquée », mais ce qui
+      // en est DÉJÀ visible peut déclencher un ordre.
+      if (bar.time <= state.now) forming = bar;
+      break;
+    }
     processBar(state, bar, c);
     state.appliedUpTo = bar.time;
   }
+  if (forming) processPartialBar(state, forming, c);
   refreshValuation(state, snapshot);
 }
 
-function processBar(state: ReplaySessionState, bar: OhlcBar, c: SimContext): void {
+/**
+ * Évalue les ordres contre la part VISIBLE de la minute en cours.
+ *
+ * Sans cela, le terminal était incohérent avec lui-même : le graphe montrait la
+ * mèche pousser jusqu'au stop, et l'ordre attendait la clôture de la minute
+ * pour se déclencher. Le prix marqué traversant désormais tout le chemin
+ * intra-bougie, on évalue au même endroit que ce qu'on affiche.
+ *
+ * La bougie n'est jamais marquée « appliquée » : à sa clôture, `processBar` la
+ * traitera normalement, et les ordres déjà remplis n'y sont plus éligibles. Le
+ * déclenchement reste une fonction pure de (bougie, fraction écoulée), donc
+ * `rebuildState` le reproduit à l'identique.
+ */
+function processPartialBar(state: ReplaySessionState, bar: OhlcBar, c: SimContext): void {
+  processBar(state, bar, c, state.now);
+}
+
+/**
+ * Évalue les ordres contre une bougie, jusqu'à l'instant `until`.
+ *
+ * `until` borne ce que la bougie a le droit de déclencher : la fin de la minute
+ * quand elle est close, l'horloge quand elle est en formation. Chaque ordre
+ * n'est confronté qu'à la TRANCHE qu'il a traversée — un ordre posé à 09:31:40
+ * ne peut pas se remplir sur le creux de 09:31:10.
+ */
+function processBar(
+  state: ReplaySessionState,
+  bar: OhlcBar,
+  c: SimContext,
+  until = bar.time + 60_000,
+): void {
+  const end = Math.min(bar.time + 60_000, until);
   const working = state.orders
     .filter((o) => o.status === "working")
     // Les sorties (SL/TP) ont priorité sur les entrées si les deux touchent
     // dans la même bougie : le cas hostile se règle d'abord.
     .sort((a, b) => Number(b.reduceOnly) - Number(a.reduceOnly));
   for (const o of working) {
-    const fillPrice = evalBarFill(o, bar);
+    const from = Math.max(bar.time, o.placedAt);
+    if (from >= end) continue; // l'ordre n'a rien vécu de cette bougie
+    const slice =
+      from > bar.time || end < bar.time + 60_000
+        ? intrabarSlice(bar, (from - bar.time) / 60_000, (end - bar.time) / 60_000)
+        : bar;
+    const fillPrice = evalBarFill(o, slice);
     if (fillPrice == null) continue;
     if (o.reduceOnly) {
       const pos = state.positions.find((p) => p.id === o.parentId);
@@ -575,6 +621,10 @@ export function rebuildState(
   // tout ordre posé depuis la dernière bougie fermée.
   fresh.now = targetNow;
   applyBefore(targetNow + 1);
+
+  // Puis la part visible de cette minute, comme le fait le chemin incrémental.
+  const forming = bars.find((b) => b.time <= targetNow && b.time + 60_000 > targetNow);
+  if (forming) processBar(fresh, forming, c, targetNow);
 
   fresh.now = targetNow;
   fresh.appliedUpTo = applied || null;

@@ -113,3 +113,42 @@ export function visibleBar(bar: OhlcBar, now: number, spanMs = 60_000): OhlcBar 
     volume: Math.max(0, Math.round(bar.volume * f)),
   };
 }
+
+/**
+ * La PORTION de bougie parcourue entre deux fractions, rendue comme une bougie.
+ *
+ * Un ordre posé au milieu d'une minute n'a pas vécu son début : l'évaluer
+ * contre la bougie entière le remplirait sur un mouvement antérieur à son
+ * propre placement. On lui présente donc la seule tranche qu'il a traversée —
+ * son ouverture est le prix au moment du placement, ses extrêmes ceux
+ * réellement atteints depuis.
+ */
+export function intrabarSlice(bar: OhlcBar, f1: number, f2: number): OhlcBar {
+  const a = Math.max(0, Math.min(1, Math.min(f1, f2)));
+  const b = Math.max(0, Math.min(1, Math.max(f1, f2)));
+  const from = intrabarAt(bar, a);
+  const to = intrabarAt(bar, b);
+
+  // Une tranche qui couvre toute la bougie EST la bougie : on rend l'original,
+  // pour que les arrondis d'interpolation ne rabotent jamais un extrême réel.
+  if (a <= 0 && b >= 1) return bar;
+
+  let high = Math.max(from.price, to.price);
+  let low = Math.min(from.price, to.price);
+
+  // Les sommets franchis STRICTEMENT à l'intérieur de la tranche comptent aussi.
+  const n = intrabarNodes(bar);
+  const d = [0, 0, 0, 0];
+  for (let i = 1; i < 4; i++) d[i] = d[i - 1] + Math.abs(n[i] - n[i - 1]);
+  const total = d[3];
+  if (total > 0) {
+    for (let i = 1; i < 3; i++) {
+      const t = d[i] / total;
+      if (t > a && t < b) {
+        if (n[i] > high) high = n[i];
+        if (n[i] < low) low = n[i];
+      }
+    }
+  }
+  return { ...bar, open: from.price, close: to.price, high, low };
+}
