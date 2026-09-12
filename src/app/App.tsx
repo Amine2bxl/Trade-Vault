@@ -115,6 +115,7 @@ import { PageGate, usePageLockState } from "./components/PremiumGate";
 import { ReplayModeProvider } from "./replay/ReplayModeContext";
 import ReplayBanner from "./replay/ReplayBanner";
 import ReplayTransition from "./replay/ReplayTransition";
+import ReplayStage from "./replay/ReplayStage";
 import UpgradeModal from "./components/UpgradeModal";
 import UpgradeSuccessOverlay from "./components/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -1018,6 +1019,12 @@ function AppContent() {
             }}
           />
         )}
+
+        {/* LA SCÈNE DU REJEU — plein écran, au-dessus du produit. Montée ici
+          et non dans la page Backtest : sous le rail de navigation et dans une
+          boîte de 78 % de la hauteur, le terminal ne donnait jamais le
+          sentiment d'avoir changé d'endroit. */}
+        <ReplayStage onGoJournal={() => setPage("journal")} />
 
         {/* Transition d'entrée / sortie du mode rejeu — par-dessus tout. */}
         <ReplayTransition />

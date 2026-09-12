@@ -118,6 +118,7 @@ const fr: Dict = {
   "rt.startingBalance": "Capital de départ",
   "rt.noReplayAccount":
     "Le Backtest est réservé aux abonnés Premium et tourne sur un compte de rejeu dédié : tes statistiques réelles ne sont jamais mélangées à la pratique.",
+  "rt.backToApp": "Retour à TradeVault",
   "rt.setupTitle": "Choisis le point de départ du rejeu",
   "rt.date": "Date de la séance",
   "rt.time": "Heure de départ (New York)",
@@ -200,6 +201,7 @@ const fr: Dict = {
   "rt.noPositions": "Aucune position ouverte.",
   "rt.noOrders": "Aucun ordre en carnet.",
   "rt.noHistory": "Aucun trade réalisé pour l'instant.",
+  "rt.errorLaunch": "Impossible de démarrer le rejeu.",
   "rt.errorData": "Impossible de charger les données de cette séance.",
   "rt.weekendResumes": "Week-end — la séance du vendredi sera rejouée.",
   "rt.terminal": "Terminal",
@@ -209,6 +211,7 @@ const fr: Dict = {
   "rt.modeExitTitle": "Retour à TradeVault",
   "rt.modeExit": "Chaque séance reste sauvegardée",
   "rt.previewTitle": "Rejeu historique NQ",
+  "rt.backToTerminal": "Séance en cours — y retourner.",
   "rt.previewCta": "Choisis une date, puis trade-la en direct.",
   "rt.seedWeek": "Ajouter une semaine d'exemple NQ",
   // Onboarding (refonte 3 moments)

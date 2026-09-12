@@ -18,19 +18,32 @@ import { fetchReplayBars } from "@/backend/replay-data.functions";
 /** Le nom du fournisseur ayant réellement servi la dernière séance. */
 let lastProvider: string | null = null;
 
+/**
+ * Le serveur a-t-il une clé ? `null` tant qu'on ne le sait pas.
+ *
+ * Sans cette mémoire, CHAQUE journée demandée déclenchait son propre
+ * aller-retour — sept pour la semaine d'exemple, cinq de plus pour un rejeu
+ * long — qui devaient tous échouer avant de retomber sur le générateur. Le
+ * terminal mettait des secondes à s'ouvrir, sans rien afficher entre-temps.
+ * Une seule question suffit : la réponse vaut pour toute la durée de l'onglet.
+ */
+let configured: boolean | null = null;
+
 export function lastDataProvider(): string | null {
   return lastProvider;
 }
 
 const remote: MarketDataProvider = {
   name: "remote",
-  // Toujours « disponible » : c'est le SERVEUR qui sait si une clé existe, et
-  // le lui demander par un aller-retour supplémentaire à chaque test de
-  // disponibilité coûterait plus que de tenter la requête. Une réponse vide
-  // vaut « non configuré », et `loadSessionBars` retombe sur le générateur.
-  isAvailable: () => true,
+  // Disponible tant qu'on n'a pas appris le contraire : c'est le SERVEUR qui
+  // sait si une clé existe. Une fois la réponse connue, on cesse de demander.
+  isAvailable: () => configured !== false,
   async fetchBars({ date, spec }): Promise<OhlcBar[]> {
+    if (configured === false) return [];
     const out = await fetchReplayBars({ data: { date, symbol: spec.id } });
+    // Une réponse sans fournisseur vaut « aucune clé » : on le retient, et
+    // `loadSessionBars` passera directement au générateur pour la suite.
+    configured = out.provider != null;
     lastProvider = out.provider;
     if (!out.provider || out.bars.length === 0) return [];
     return out.bars.map((b) => ({

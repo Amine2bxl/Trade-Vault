@@ -1,10 +1,14 @@
 /**
- * ReplayLaunchModal — le « pop-up de pré-confirmation ».
+ * ReplaySetup — le seuil du terminal, en plein écran.
  *
- * Pas d'onboarding : quelques champs minimums (compte de rejeu, date, heure,
- * timeframe, capital) dans une petite fenêtre, à l'instant où le trader entre
- * dans Backtest. Une option propose la semaine d'exemple NQ pour voir l'app en
- * action. Confirmer → la séquence d'entrée jouée, le terminal s'ouvre.
+ * Ce n'était qu'un pop-up posé sur l'application, qui s'ouvrait tout seul en
+ * arrivant sur Backtest : on n'avait rien demandé, et le décor derrière disait
+ * qu'on n'avait pas bougé. C'est désormais le PREMIER écran d'un autre monde —
+ * il occupe la scène entière, sous le thème du rejeu, et on y vient d'un geste
+ * délibéré.
+ *
+ * Toujours pas d'onboarding : le minimum (compte, date, heure, timeframe,
+ * capital, durée), et on entre.
  */
 
 import { useMemo, useState } from "react";
@@ -26,7 +30,7 @@ const DURATIONS = [
   { days: 5, key: "rt.duration5" },
 ] as const;
 
-export default function ReplayLaunchModal() {
+export default function ReplaySetup() {
   const { t } = useT();
   const { session, launchOpen, closeLaunch, enter, resumeInto, ensureSampleWeek } = useReplayMode();
 
@@ -39,6 +43,9 @@ export default function ReplayLaunchModal() {
   const [days, setDays] = useState(1);
   const [seedWeek, setSeedWeek] = useState(true);
   const [busy, setBusy] = useState(false);
+  /** Échec local du lancement — distinct de `session.error`, qui ne couvre
+   *  que le chargement des données une fois la séance créée. */
+  const [failure, setFailure] = useState<string | null>(null);
 
   const account = session.account ?? session.replayAccounts[0] ?? null;
   const usableTfs = useMemo(() => TIMEFRAMES.filter((x) => x.seconds >= 60), []);
@@ -49,6 +56,7 @@ export default function ReplayLaunchModal() {
 
   const confirm = async () => {
     setBusy(true);
+    setFailure(null);
     try {
       let target = account;
       if (creating || !target) {
@@ -57,7 +65,6 @@ export default function ReplayLaunchModal() {
           startingBalance: Number(balance) || 100_000,
         });
       }
-      if (seedWeek) await ensureSampleWeek(target.id).catch(() => {});
       const ok = await enter({
         accountId: target.id,
         date: sessionDateKey(date),
@@ -66,32 +73,63 @@ export default function ReplayLaunchModal() {
         startingBalance: Number(balance) || target.startingBalance || 100_000,
         days,
       });
-      if (ok) setCreating(false);
+      if (ok) {
+        setCreating(false);
+        // La semaine d'exemple garnit le journal, elle ne conditionne pas le
+        // rejeu : la lancer AVANT d'entrer faisait attendre le trader devant un
+        // bouton muet pendant que sept séances se rejouaient. Elle part
+        // maintenant derrière, une fois le terminal ouvert.
+        if (seedWeek) void ensureSampleWeek(target.id).catch(() => {});
+      }
+    } catch (e) {
+      // Il n'y avait AUCUN `catch` ici : créer le compte de rejeu peut lever
+      // (limite du plan, écriture refusée, réseau), l'exception s'échappait, et
+      // le bouton retombait inerte sans un mot. Un échec doit se voir.
+      console.error("[replay] lancement impossible", e);
+      setFailure(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[var(--tv-z-modal)] flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-    >
-      {/* Fond : voile léger, la page reste lisible derrière. */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px]" onClick={closeLaunch} />
-
-      <div className="relative w-full max-w-md rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-5 pt-4 shadow-[var(--tv-elev-3)]">
-        {/* En-tête discret. */}
+    // La scène fournit déjà le plein écran : ici on ne fait que centrer, et
+    // laisser défiler si l'écran est court — un formulaire tronqué serait pire
+    // qu'un formulaire qui défile.
+    <div className="flex h-full w-full items-center justify-center overflow-y-auto p-4">
+      <div className="w-full max-w-lg rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-5 pt-4 shadow-[var(--tv-elev-3)]">
+        {/* En-tête, et la porte de sortie : on est en plein écran, il faut
+          pouvoir revenir à l'application sans entrer. */}
         <div className="mb-4 flex items-center gap-2.5">
           <div className="grid h-9 w-9 place-items-center rounded-xl tv-accent-fill">
             <CalendarClock className="h-4.5 w-4.5" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2 className="text-sm font-bold leading-tight text-[var(--tv-text)]">NQ Backtest</h2>
             <p className="truncate text-[11px] text-[var(--tv-text-muted)]">{t("rt.setupTitle")}</p>
           </div>
+          <button
+            type="button"
+            onClick={closeLaunch}
+            className="rounded-lg border border-[var(--tv-border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)]"
+          >
+            {t("rt.backToApp")}
+          </button>
         </div>
+
+        {/* L'échec ne doit JAMAIS être muet. Sans cette ligne, une séance qui
+          ne démarrait pas laissait le trader devant un bouton inerte, sans un
+          mot — le défaut le plus déroutant du terminal. */}
+        {failure && (
+          <p className="mb-3 rounded-xl border border-[var(--tv-chart-red)]/40 bg-[var(--tv-chart-red)]/10 px-3 py-2 text-[11px] font-medium text-[var(--tv-chart-red)]">
+            {t("rt.errorLaunch")} <span className="font-mono opacity-80">{failure}</span>
+          </p>
+        )}
+        {session.error && (
+          <p className="mb-3 rounded-xl border border-[var(--tv-chart-red)]/40 bg-[var(--tv-chart-red)]/10 px-3 py-2 text-[11px] font-medium text-[var(--tv-chart-red)]">
+            {t(session.error as Parameters<typeof t>[0])}
+          </p>
+        )}
 
         {resumables.length > 0 && (
           <button

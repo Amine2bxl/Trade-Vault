@@ -146,6 +146,7 @@ const en = {
   "rt.noReplayAccount":
     "Backtest is Premium-only and runs on a dedicated Replay account — your live statistics never mix with practice.",
   "rt.setupTitle": "Choose where the replay begins",
+  "rt.backToApp": "Back to TradeVault",
   "rt.date": "Session date",
   "rt.time": "Start time (New York)",
   "rt.timeframe": "Timeframe",
@@ -227,6 +228,7 @@ const en = {
   "rt.noPositions": "No open positions.",
   "rt.noOrders": "No pending orders.",
   "rt.noHistory": "No closed trades yet this session.",
+  "rt.errorLaunch": "Could not start the replay.",
   "rt.errorData": "Could not load that session's data.",
   "rt.weekendResumes": "Week-end — the Friday session will be replayed.",
   "rt.terminal": "Terminal",
@@ -236,6 +238,7 @@ const en = {
   "rt.modeExitTitle": "Back to TradeVault",
   "rt.modeExit": "Every session stays saved",
   "rt.previewTitle": "NQ Historical Replay",
+  "rt.backToTerminal": "Session running — go back in.",
   "rt.previewCta": "Choose a date, then trade it live.",
   "rt.seedWeek": "Add a sample week of NQ trades",
   "common.cancel": "Cancel",
