@@ -33,7 +33,8 @@ interface Ctx {
   closeLaunch: () => void;
   enter: (cfg: ReplayStartConfig) => Promise<boolean>;
   resumeInto: (dto: ReplaySessionDto) => Promise<boolean>;
-  exit: () => Promise<void>;
+  /** Quitte le rejeu. Rend `true` si la séance a réellement été enregistrée. */
+  exit: () => Promise<boolean>;
   /** Semaine d'exemple NQ si le compte est vide — pour voir l'app en action. */
   ensureSampleWeek: (accountId: string) => Promise<number>;
 }
@@ -146,9 +147,13 @@ export function ReplayModeProvider({
     clearTimers();
     setTransition("out");
     restoreUserTheme(currentTheme.current);
-    await session.leave();
+    // `leave` enregistre AVANT de démonter, et dit si l'écriture a eu lieu :
+    // l'appelant peut donc annoncer une reprise possible sans la promettre à
+    // tort quand la séance n'était que locale.
+    const saved = await session.leave();
     if (previousAccount.current) switchAccount(previousAccount.current);
     after(900, () => setTransition(null));
+    return saved;
   }, [session, switchAccount]);
 
   const ensureSampleWeek = useCallback(

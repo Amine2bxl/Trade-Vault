@@ -133,6 +133,8 @@ const en = {
   // ── Replay terminal ──
   "rt.enter": "Enter the Historical Replay terminal",
   "rt.exit": "Exit replay",
+  "rt.sessionSaved": "Session saved — you can pick it up where you left off.",
+  "rt.sessionLocalOnly": "Session closed. It was running locally, so it cannot be resumed.",
   "rt.exitConfirm": "Leave the replay? The session is saved where you left it.",
   "rt.premiumTitle": "Historical Replay Terminal",
   "rt.premiumBenefit":

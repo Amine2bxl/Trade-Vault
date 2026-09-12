@@ -1,24 +1,24 @@
 /**
- * ReplayStage — la scène du rejeu, PAR-DESSUS l'application.
+ * ReplayStage — la scène du rejeu : seuil, terminal, bilan.
  *
- * Le rejeu n'est plus une page dans le cadre TradeVault : entrer change de
- * monde. La scène couvre tout l'écran — rail de navigation, en-tête et marges
- * disparaissent — et le thème bascule. Le trader n'a plus sous les yeux une
- * fonctionnalité de son journal, mais un terminal.
+ * Entrer change de monde sans couper les ponts. La scène prend TOUTE la
+ * fenêtre de contenu — ni marge, ni coins arrondis, ni en-tête de page, et le
+ * thème bascule — mais le rail de navigation garde sa place et reste
+ * cliquable. Deux versions ont raté cet équilibre : la première rendait le
+ * terminal dans la page, sous une boîte de 78 % de la hauteur, et on ne
+ * sentait pas qu'on avait bougé ; la seconde le montait en `fixed inset-0`,
+ * et on ne pouvait plus rejoindre le Journal sans quitter la séance.
+ * C'est `ReplayShellArea` qui arbitre désormais qui occupe la fenêtre.
  *
- * La première version rendait le terminal DANS la page, sous la barre latérale
- * et dans une boîte de 78 % de la hauteur : on restait visiblement au même
- * endroit, et le changement de contexte ne se lisait pas. C'est ce que ce
- * composant corrige.
- *
- * La session, elle, continue de vivre dans `ReplayModeProvider` : quitter la
- * scène ne détruit rien, et les autres pages restent branchées sur le compte
- * de rejeu tant que le mode est actif.
+ * La session vit dans `ReplayModeProvider` : aller sur une autre page ne
+ * détruit rien, et les pages restent branchées sur le compte de rejeu tant que
+ * le mode est actif.
  */
 
 import { useState } from "react";
 import { useT } from "../i18n/LanguageContext";
 import { useConfirm } from "../contexts/ConfirmContext";
+import { useToast } from "../contexts/ToastContext";
 import { useReplayMode } from "./ReplayModeContext";
 import ReplayTerminal from "./ReplayTerminal";
 import ReplayFinish from "./ReplayFinish";
@@ -28,6 +28,7 @@ import type { JournalPushResult } from "../store/replay";
 export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }) {
   const { t } = useT();
   const confirm = useConfirm();
+  const { toast } = useToast();
   const { session, launchOpen, exit } = useReplayMode();
   const [push, setPush] = useState<JournalPushResult | null>(null);
 
@@ -38,6 +39,20 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
     if (!(await confirm(t("rt.finishConfirm")))) return;
     const res = await session.finish();
     if (res) setPush(res);
+  };
+
+  /**
+   * Quitter : on demande, on enregistre, et on DIT ce qui s'est passé.
+   *
+   * La sortie était muette et sans confirmation. Or elle emporte une séance en
+   * cours : le trader méritait d'être prévenu, et de savoir si sa séance est
+   * réellement reprenable — ce qui n'est pas le cas quand la table de
+   * persistance manque et que le rejeu tournait en local.
+   */
+  const confirmExit = async () => {
+    if (!(await confirm(t("rt.exitConfirm")))) return;
+    const saved = await exit();
+    toast(saved ? t("rt.sessionSaved") : t("rt.sessionLocalOnly"), saved ? "success" : "info");
   };
 
   const leaveForJournal = async () => {
@@ -99,7 +114,7 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
           onUpdateDrawing={session.updateDrawing}
           onRemoveDrawing={session.removeDrawing}
           onFinish={() => void confirmFinish()}
-          onExit={() => void exit()}
+          onExit={() => void confirmExit()}
         />
       )}
     </div>

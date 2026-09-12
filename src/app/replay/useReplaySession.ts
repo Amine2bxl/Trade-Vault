@@ -115,13 +115,27 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   const viewTfRef = useRef(viewTf);
   viewTfRef.current = viewTf;
 
-  const persist = useCallback(() => {
-    if (!userId) return;
+  /**
+   * Écrit l'état de la séance, et DIT si l'écriture a eu lieu.
+   *
+   * Elle ne rendait rien : impossible, depuis l'appelant, de distinguer une
+   * sauvegarde réussie d'une séance purement locale (table absente, réseau
+   * coupé). On promettait donc « sauvegardé là où tu t'es arrêté » sans le
+   * savoir. Le booléen permet à l'interface d'être honnête.
+   */
+  const persist = useCallback(async (): Promise<boolean> => {
+    if (!userId) return false;
     const id = sessionIdRef.current;
     const state = stateRef.current;
-    if (!id || !state) return;
+    if (!id || !state) return false;
     state.viewTimeframe = viewTfRef.current;
-    void updateReplaySession(userId, id, { state, timeframe: viewTfRef.current }).catch(() => {});
+    try {
+      await updateReplaySession(userId, id, { state, timeframe: viewTfRef.current });
+      return true;
+    } catch (e) {
+      console.warn("[replay] enregistrement de séance impossible", e);
+      return false;
+    }
   }, [userId]);
 
   const scheduleSave = useCallback(() => {
@@ -308,11 +322,15 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   /** Sortie : on sauvegarde, puis on remet l'état à zéro (le provider restaure
    *  le compte réel). */
   const leave = useCallback(async () => {
-    persist();
+    // ATTENDU, pas lancé puis oublié. L'écriture partait sans être attendue et
+    // le démontage suivait aussitôt : fermer l'onglet dans la foulée pouvait
+    // emporter la séance avec. Quitter, c'est d'abord enregistrer.
+    const saved = await persist();
     teardown();
     setActive(false);
     setFinished(false);
     setSessionId(null);
+    return saved;
   }, [persist, teardown]);
 
   const createReplayAccount = useCallback(

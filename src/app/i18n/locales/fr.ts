@@ -106,6 +106,8 @@ const fr: Dict = {
   // ── Replay terminal ──
   "rt.enter": "Entrer dans le terminal de rejeu historique",
   "rt.exit": "Quitter le rejeu",
+  "rt.sessionSaved": "Séance enregistrée — tu pourras la reprendre où tu t'es arrêté.",
+  "rt.sessionLocalOnly": "Séance fermée. Elle tournait en local : elle n'est pas reprenable.",
   "rt.exitConfirm": "Quitter le rejeu ? La session est sauvegardée là où tu t'es arrêté.",
   "rt.premiumTitle": "Terminal de rejeu historique",
   "rt.premiumBenefit":
