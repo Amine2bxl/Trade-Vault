@@ -47,11 +47,15 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
 
   return (
     <div
-      // `--tv-z-overlay` est le calque « plein écran » du design system, celui
-      // de la démo et de l'assistant : au-dessus du produit, sous les toasts.
-      // La hauteur est une CIBLE (`h-dvh` + `flex`), pas un plafond : le
-      // terminal remplit l'écran sans jamais écraser ses propres panneaux.
-      className="fixed inset-0 z-[var(--tv-z-overlay)] flex h-dvh w-screen flex-col bg-[var(--tv-bg)]"
+      // FRÈRE DE FLEX du rail, pas calque par-dessus lui. `fixed inset-0`
+      // donnait bien l'immersion, mais emportait la navigation avec : on ne
+      // pouvait plus rejoindre le Journal sans quitter la séance. Le terminal
+      // prend donc la fenêtre de contenu — toute la fenêtre, sans marge ni
+      // coins arrondis, pour que la rupture reste franche — et laisse le rail.
+      //
+      // `min-h-0` est indispensable dans une colonne flex : sans lui le
+      // graphe, qui mesure sa place, pousserait ses panneaux hors de l'écran.
+      className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--tv-bg)]"
       role="region"
       aria-label={t("rt.modeTitle")}
     >

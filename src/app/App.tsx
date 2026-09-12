@@ -115,7 +115,7 @@ import { PageGate, usePageLockState } from "./components/PremiumGate";
 import { ReplayModeProvider } from "./replay/ReplayModeContext";
 import ReplayBanner from "./replay/ReplayBanner";
 import ReplayTransition from "./replay/ReplayTransition";
-import ReplayStage from "./replay/ReplayStage";
+import ReplayShellArea from "./replay/ReplayShellArea";
 import UpgradeModal from "./components/UpgradeModal";
 import UpgradeSuccessOverlay from "./components/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "./i18n/LanguageContext";
@@ -808,17 +808,18 @@ function AppContent() {
           page, et c'est cet écart — pas une bordure — qui sépare la navigation
           du produit. Sur mobile le cadre disparaît : l'écran est trop étroit
           pour s'offrir une marge, le contenu va d'un bord à l'autre. */}
-        <main className="app-main app-frame relative z-0 my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-2">
-          {/* Le mode rejeu est actif ? Un bandeau le dit sur TOUTES les pages,
+        <ReplayShellArea page={page} onGoJournal={() => setPage("journal")}>
+          <main className="app-main app-frame relative z-0 my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-2">
+            {/* Le mode rejeu est actif ? Un bandeau le dit sur TOUTES les pages,
             et le bouton ramène au terminal. */}
-          <ReplayBanner onGoTerminal={() => setPage("backtest")} />
-          {/* Onglets de la section courante à gauche, actions mobiles à droite —
+            <ReplayBanner onGoTerminal={() => setPage("backtest")} />
+            {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :
             un bandeau collé par-dessus le produit. Voir `MobileActions`.
             `pb-3` : un écart vertical unique et identique entre la barre
             d'onglets et le contenu, sur toutes les pages. */}
-          {/* LA BARRE DE TÊTE — et le trou qu'elle laissait.
+            {/* LA BARRE DE TÊTE — et le trou qu'elle laissait.
             Quand la section n'a qu'une vue (le Tableau de bord, Jarvis…), la
             moitié gauche est vide : il ne reste qu'un bouton à droite, posé sur
             sa propre bande de 64px, à laquelle s'ajoutent les 24px de marge
@@ -828,39 +829,39 @@ function AppContent() {
             s'y ajouter : le bouton occupe l'espace qui existait déjà. Quand il
             y a des onglets, rien ne change — la bande a alors un contenu qui
             justifie sa hauteur. */}
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 md:px-6",
-              hasSectionTabs ? "pt-3 pb-3" : "pt-3 pb-0 md:-mb-4 md:pt-4",
-            )}
-          >
-            <div className="min-w-0 flex-1">
-              {hasSectionTabs ? (
-                <SectionTabs section={currentSection!} page={page} setPage={setPage} />
-              ) : (
-                pageLead
+            <div
+              className={cn(
+                "flex items-center gap-3 px-4 md:px-6",
+                hasSectionTabs ? "pt-3 pb-3" : "pt-3 pb-0 md:-mb-4 md:pt-4",
               )}
+            >
+              <div className="min-w-0 flex-1">
+                {hasSectionTabs ? (
+                  <SectionTabs section={currentSection!} page={page} setPage={setPage} />
+                ) : (
+                  pageLead
+                )}
+              </div>
+              {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
+              <MobileActions page={page} setPage={setPage} />
             </div>
-            {pageActions && <div className="flex items-center gap-2 shrink-0">{pageActions}</div>}
-            <MobileActions page={page} setPage={setPage} />
-          </div>
-          <PageActionsProvider setActions={setHeaderSlot}>
-            {accountsReady && gateResolved ? (
-              <PageErrorBoundary resetKey={page}>
-                {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
+            <PageActionsProvider setActions={setHeaderSlot}>
+              {accountsReady && gateResolved ? (
+                <PageErrorBoundary resetKey={page}>
+                  {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
               En dessous, le chunk est déjà en mémoire (préchargement au survol
               + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
               gris de deux frames : le signal « ça charge » sans le chargement.
               L'espace, lui, reste réservé, donc rien ne bouge. */}
-                <Suspense
-                  fallback={
-                    <DeferredFallback key={page}>
-                      <SkeletonForPage page={page} />
-                    </DeferredFallback>
-                  }
-                >
-                  {/* PageTransition est DANS le Suspense, pas autour.
+                  <Suspense
+                    fallback={
+                      <DeferredFallback key={page}>
+                        <SkeletonForPage page={page} />
+                      </DeferredFallback>
+                    }
+                  >
+                    {/* PageTransition est DANS le Suspense, pas autour.
                 Autour, il jouait sa transition sur la boîte vide réservée
                 pendant l'attente, puis le contenu réel arrivait après coup,
                 sans aucune animation : on ne voyait donc jamais la transition
@@ -868,82 +869,83 @@ function AppContent() {
                 la page est réellement peinte. Il ne remonte JAMAIS son enfant
                 (voir le composant) : défilement, filtres et lignes dépliées
                 survivent au changement de page. */}
-                  <PageTransition page={page}>
-                    {/* Le verrou premium enveloppe la page rendue : la table
+                    <PageTransition page={page}>
+                      {/* Le verrou premium enveloppe la page rendue : la table
                     `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
                     la facturation. */}
-                    <PageGate page={page} onUpgrade={openUpgrade}>
-                      {page === "dashboard" && (
-                        <Dashboard
-                          trades={trades}
-                          onAddTrade={handleAdd}
-                          tradesLoading={tradesLoading}
-                          onOpenChecklist={() => setPage("checklist")}
-                          onOpenImport={() => setImportOpen(true)}
-                          onEditTrade={handleEdit}
-                          onOpenJournal={() => setPage("journal")}
-                        />
-                      )}
-                      {page === "journal" && (
-                        <Journal
-                          trades={trades}
-                          onEdit={handleEdit}
-                          onQuickEdit={handleQuickEdit}
-                          onDelete={handleDelete}
-                          onDeleteAll={handleDeleteAll}
-                          onAdd={handleAdd}
-                          onOpenMissed={handleOpenMissed}
-                        />
-                      )}
-                      {page === "checklist" && (
-                        <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
-                      )}
-                      {page === "calendar" && (
-                        <CalendarPage trades={trades} onDelete={handleDelete} />
-                      )}
-                      {page === "analytics" && <Analytics trades={shownTrades} />}
-                      {page === "mistakes" && <Mistakes trades={shownTrades} />}
-                      {page === "missed" && <MissedOpportunities />}
-                      {page === "insights" && <Jarvis />}
-                      {page === "news" && <EconomicNews />}
-                      {page === "seasonality" && (
-                        <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
-                      )}
-                      {page === "calculator" && (
-                        <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
-                      )}
-                      {page === "settings" && (
-                        <Settings
-                          trades={trades}
-                          onDeleteAll={handleDeleteAll}
-                          onOpenImport={() => setImportOpen(true)}
-                          onOpenReports={() => setPage("reports")}
-                        />
-                      )}
-                      {page === "reports" && <Reports trades={shownTrades} />}
-                      {page === "goals" && <Goals trades={shownTrades} />}
-                      {page === "tradingplan" && <TradingPlan setPage={setPage} />}
-                      {page === "appearance" && <Appearance />}
-                      {page === "subscription" && <Subscription trades={shownTrades} />}
-                      {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
-                      {page === "backtest" && <Backtest />}
-                      {page === "inbox" && <Inbox />}
-                      {page === "profile" && <Profile trades={trades} />}
-                    </PageGate>
-                  </PageTransition>
-                </Suspense>
-              </PageErrorBoundary>
-            ) : (
-              /* Comptes OU abonnement en chargement : le shell est peint, la
+                      <PageGate page={page} onUpgrade={openUpgrade}>
+                        {page === "dashboard" && (
+                          <Dashboard
+                            trades={trades}
+                            onAddTrade={handleAdd}
+                            tradesLoading={tradesLoading}
+                            onOpenChecklist={() => setPage("checklist")}
+                            onOpenImport={() => setImportOpen(true)}
+                            onEditTrade={handleEdit}
+                            onOpenJournal={() => setPage("journal")}
+                          />
+                        )}
+                        {page === "journal" && (
+                          <Journal
+                            trades={trades}
+                            onEdit={handleEdit}
+                            onQuickEdit={handleQuickEdit}
+                            onDelete={handleDelete}
+                            onDeleteAll={handleDeleteAll}
+                            onAdd={handleAdd}
+                            onOpenMissed={handleOpenMissed}
+                          />
+                        )}
+                        {page === "checklist" && (
+                          <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+                        )}
+                        {page === "calendar" && (
+                          <CalendarPage trades={trades} onDelete={handleDelete} />
+                        )}
+                        {page === "analytics" && <Analytics trades={shownTrades} />}
+                        {page === "mistakes" && <Mistakes trades={shownTrades} />}
+                        {page === "missed" && <MissedOpportunities />}
+                        {page === "insights" && <Jarvis />}
+                        {page === "news" && <EconomicNews />}
+                        {page === "seasonality" && (
+                          <Seasonality trades={shownTrades} tradesLoading={tradesLoading} />
+                        )}
+                        {page === "calculator" && (
+                          <LotSizeCalculator onAddTrade={handleAdd} setPage={setPage} />
+                        )}
+                        {page === "settings" && (
+                          <Settings
+                            trades={trades}
+                            onDeleteAll={handleDeleteAll}
+                            onOpenImport={() => setImportOpen(true)}
+                            onOpenReports={() => setPage("reports")}
+                          />
+                        )}
+                        {page === "reports" && <Reports trades={shownTrades} />}
+                        {page === "goals" && <Goals trades={shownTrades} />}
+                        {page === "tradingplan" && <TradingPlan setPage={setPage} />}
+                        {page === "appearance" && <Appearance />}
+                        {page === "subscription" && <Subscription trades={shownTrades} />}
+                        {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
+                        {page === "backtest" && <Backtest />}
+                        {page === "inbox" && <Inbox />}
+                        {page === "profile" && <Profile trades={trades} />}
+                      </PageGate>
+                    </PageTransition>
+                  </Suspense>
+                </PageErrorBoundary>
+              ) : (
+                /* Comptes OU abonnement en chargement : le shell est peint, la
                page répond avec son squelette contextuel — pas de porte plein
                écran, et surtout aucune donnée peinte avant de savoir LESQUELLES
                peindre (réelles ou démonstration). */
-              <div className="p-4 md:p-5">
-                <SkeletonForPage page={page} />
-              </div>
-            )}
-          </PageActionsProvider>
-        </main>
+                <div className="p-4 md:p-5">
+                  <SkeletonForPage page={page} />
+                </div>
+              )}
+            </PageActionsProvider>
+          </main>
+        </ReplayShellArea>
         {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
         <AccountSwitcher
           variant="fab"
@@ -1019,12 +1021,6 @@ function AppContent() {
             }}
           />
         )}
-
-        {/* LA SCÈNE DU REJEU — plein écran, au-dessus du produit. Montée ici
-          et non dans la page Backtest : sous le rail de navigation et dans une
-          boîte de 78 % de la hauteur, le terminal ne donnait jamais le
-          sentiment d'avoir changé d'endroit. */}
-        <ReplayStage onGoJournal={() => setPage("journal")} />
 
         {/* Transition d'entrée / sortie du mode rejeu — par-dessus tout. */}
         <ReplayTransition />
