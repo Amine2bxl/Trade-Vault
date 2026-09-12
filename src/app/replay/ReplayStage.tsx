@@ -1,14 +1,13 @@
 /**
  * ReplayStage — la scène du rejeu : seuil, terminal, bilan.
  *
- * Entrer change de monde sans couper les ponts. La scène prend TOUTE la
- * fenêtre de contenu — ni marge, ni coins arrondis, ni en-tête de page, et le
- * thème bascule — mais le rail de navigation garde sa place et reste
- * cliquable. Deux versions ont raté cet équilibre : la première rendait le
- * terminal dans la page, sous une boîte de 78 % de la hauteur, et on ne
- * sentait pas qu'on avait bougé ; la seconde le montait en `fixed inset-0`,
- * et on ne pouvait plus rejoindre le Journal sans quitter la séance.
- * C'est `ReplayShellArea` qui arbitre désormais qui occupe la fenêtre.
+ * Entrer change de monde. La scène prend l'écran ENTIER — rail compris, sans
+ * marge ni en-tête de page — et le thème bascule. On trade ici, on ne navigue
+ * pas : la sortie est le bouton du terminal, et elle est explicite.
+ *
+ * C'est `ReplayShellArea` qui arbitre quand cela s'applique. Hors du terminal,
+ * le mode rejeu laisse l'application entièrement normale : rail, pages,
+ * compte de rejeu actif — c'est là qu'on lit son journal.
  *
  * La session vit dans `ReplayModeProvider` : aller sur une autre page ne
  * détruit rien, et les pages restent branchées sur le compte de rejeu tant que
@@ -62,15 +61,14 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
 
   return (
     <div
-      // FRÈRE DE FLEX du rail, pas calque par-dessus lui. `fixed inset-0`
-      // donnait bien l'immersion, mais emportait la navigation avec : on ne
-      // pouvait plus rejoindre le Journal sans quitter la séance. Le terminal
-      // prend donc la fenêtre de contenu — toute la fenêtre, sans marge ni
-      // coins arrondis, pour que la rupture reste franche — et laisse le rail.
+      // L'ÉCRAN ENTIER, rail compris. On trade ici, on ne navigue pas : un rail
+      // visible pendant qu'on passe des ordres invite à partir au mauvais
+      // moment. La sortie est le bouton du terminal, et elle est explicite.
+      // `--tv-z-overlay` est le calque plein écran du design system.
       //
-      // `min-h-0` est indispensable dans une colonne flex : sans lui le
-      // graphe, qui mesure sa place, pousserait ses panneaux hors de l'écran.
-      className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--tv-bg)]"
+      // `min-h-0` est indispensable dans une colonne flex : sans lui le graphe,
+      // qui mesure sa place, pousserait ses panneaux hors de l'écran.
+      className="fixed inset-0 z-[var(--tv-z-overlay)] flex min-h-0 w-screen flex-col bg-[var(--tv-bg)]"
       role="region"
       aria-label={t("rt.modeTitle")}
     >

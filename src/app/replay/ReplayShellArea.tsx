@@ -1,17 +1,19 @@
 /**
- * ReplayShellArea — qui occupe la fenêtre de contenu.
+ * ReplayShellArea — qui occupe l'écran, et quand.
  *
- * Le terminal a besoin de toute la place, mais PAS au prix de la navigation.
- * La première version le montait en `fixed inset-0` : immersif, et le rail
- * disparaissait avec — on ne pouvait plus aller au Journal sans quitter le
- * rejeu. Ici le terminal prend la place du contenu et rien d'autre : il est un
- * FRÈRE de flex du rail, qui garde sa largeur (68 ou 212 px selon qu'il soit
- * replié) et reste cliquable.
+ * LE TERMINAL PREND TOUT, LE MODE REJEU NON. Deux situations qu'il ne faut pas
+ * confondre :
  *
- * La bascule dépend aussi de la page courante. Sans cela, cliquer « Journal »
- * pendant une séance n'aurait rien affiché : le terminal serait resté devant.
- * Le rejeu tient la fenêtre quand on est SUR Backtest, et la rend dès qu'on va
- * ailleurs — la séance, elle, continue de vivre dans le provider.
+ *  • dans le TERMINAL, le rejeu couvre l'écran entier, rail compris. On trade,
+ *    on ne navigue pas — et un rail visible pendant qu'on passe des ordres est
+ *    une invitation à partir au mauvais moment. On en sort par le bouton du
+ *    terminal, pas par la navigation ;
+ *  • HORS du terminal, en mode rejeu, tout redevient normal : rail, pages,
+ *    compte de rejeu actif. C'est là qu'on lit son journal.
+ *
+ * La bascule dépend donc de la page courante ET de l'état de la séance. Le
+ * contenu de l'application reste MONTÉ dessous : revenir d'une séance ne
+ * reconstruit pas la page qu'on avait quittée.
  */
 
 import type { ReactNode } from "react";
@@ -28,7 +30,11 @@ export default function ReplayShellArea({
   children: ReactNode;
 }) {
   const { session, launchOpen } = useReplayMode();
-  const wants = launchOpen || session.active || session.finished;
-  if (!wants || page !== "backtest") return <>{children}</>;
-  return <ReplayStage onGoJournal={onGoJournal} />;
+  const takeover = (launchOpen || session.active || session.finished) && page === "backtest";
+  return (
+    <>
+      {children}
+      {takeover && <ReplayStage onGoJournal={onGoJournal} />}
+    </>
+  );
 }

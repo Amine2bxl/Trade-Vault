@@ -441,7 +441,11 @@ export default function ReplayOverlay({
     .map((o) => {
       const { x, y } = coord(0, o.price!);
       if (x == null || y == null) return null;
-      const color = o.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)";
+      // GRIS TANT QU'IL ATTEND. Colorer un ordre en attente comme une position
+      // ouverte les rendait indiscernables d'un coup d'œil : on croyait être
+      // en position alors qu'on avait seulement un ordre au carnet. La couleur
+      // du sens est réservée à ce qui est RÉELLEMENT engagé.
+      const color = "var(--tv-text-muted)";
       const sideWord = o.side === "long" ? "BUY" : "SELL";
       const kind = o.type === "limit" ? "LMT" : "STP";
       return (
@@ -501,8 +505,62 @@ export default function ReplayOverlay({
 
     return (
       <g key={pos.id} style={{ pointerEvents: "none" }}>
-        {/* Zone de P&L : la bande entre l'entrée et le prix marqué. */}
-        {markY != null && Math.abs(markY - y) > 1 && (
+        {/* LES DEUX ZONES DU BRACKET — ce qu'on risque, ce qu'on vise.
+          Une bande rouge de l'entrée au stop, une verte de l'entrée à
+          l'objectif, chacune bordée de pointillés. C'est la lecture que donne
+          une plateforme de trading : on voit l'engagement sans lire un
+          chiffre, et la proportion entre les deux EST le rapport risque/gain.
+          L'ancienne bande unique, teintée du sens de la position, montrait le
+          P&L courant — une information que l'en-tête donne déjà en clair. */}
+        {slY != null && Math.abs(slY - y) > 1 && (
+          <g>
+            <rect
+              x={0}
+              y={Math.min(y, slY)}
+              width={W}
+              height={Math.abs(slY - y)}
+              fill={SL}
+              opacity={0.12}
+            />
+            <rect
+              x={0.5}
+              y={Math.min(y, slY)}
+              width={W - 1}
+              height={Math.abs(slY - y)}
+              fill="none"
+              stroke={SL}
+              strokeWidth={1}
+              strokeDasharray="4 4"
+              opacity={0.5}
+            />
+          </g>
+        )}
+        {tpY != null && Math.abs(tpY - y) > 1 && (
+          <g>
+            <rect
+              x={0}
+              y={Math.min(y, tpY)}
+              width={W}
+              height={Math.abs(tpY - y)}
+              fill={TP}
+              opacity={0.12}
+            />
+            <rect
+              x={0.5}
+              y={Math.min(y, tpY)}
+              width={W - 1}
+              height={Math.abs(tpY - y)}
+              fill="none"
+              stroke={TP}
+              strokeWidth={1}
+              strokeDasharray="4 4"
+              opacity={0.5}
+            />
+          </g>
+        )}
+
+        {/* Sans bracket, il reste la bande de P&L : entrée → prix marqué. */}
+        {slY == null && tpY == null && markY != null && Math.abs(markY - y) > 1 && (
           <rect
             x={0}
             y={Math.min(y, markY)}
