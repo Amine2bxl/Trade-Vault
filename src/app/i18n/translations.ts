@@ -192,6 +192,7 @@ const en = {
   "rt.stopDistance": "Stop distance",
   "rt.positions": "Positions",
   "rt.orders": "Working orders",
+  "rt.encode": "Log it",
   "rt.history": "History",
   "rt.balance": "Balance",
   "rt.equity": "Equity",

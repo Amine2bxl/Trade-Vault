@@ -165,6 +165,7 @@ const fr: Dict = {
   "rt.stopDistance": "Distance du stop",
   "rt.positions": "Positions",
   "rt.orders": "Ordres en carnet",
+  "rt.encode": "Encoder",
   "rt.history": "Historique",
   "rt.balance": "Solde",
   "rt.equity": "Equity",

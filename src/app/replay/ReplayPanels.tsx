@@ -13,6 +13,7 @@ import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Position, ReplaySessionState } from "@/modules/replay";
 import { roundToTick, NQ } from "@/modules/replay";
+import { requestTradeEncoding } from "../store/replay";
 
 type Tab = "positions" | "orders" | "history";
 
@@ -141,6 +142,7 @@ export default function ReplayPanels({
                     <th className="px-1 py-1 font-medium">Sortie</th>
                     <th className="px-1 py-1 font-medium">R</th>
                     <th className="px-1 py-1 text-right font-medium">P&L</th>
+                    <th className="px-1 py-1" />
                   </tr>
                 </thead>
                 <tbody className="font-mono">
@@ -161,6 +163,20 @@ export default function ReplayPanels({
                       >
                         {tr.realizedPnl >= 0 ? "+" : ""}
                         {tr.realizedPnl.toFixed(2)} $
+                      </td>
+                      {/* Encoder MAINTENANT, pendant que le trade est frais —
+                        plutôt qu'à la fin de séance, quand on ne se souvient
+                        plus de ce qu'on avait en tête. La modale est celle du
+                        journal, déjà remplie de ce que le terminal sait. */}
+                      <td className="px-1 py-1.5 text-right">
+                        <button
+                          type="button"
+                          title={t("rt.encode")}
+                          onClick={() => requestTradeEncoding(tr)}
+                          className="rounded-md border border-[var(--tv-border)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--tv-text-muted)] transition hover:border-[var(--tv-accent)] hover:text-[var(--tv-text)]"
+                        >
+                          {t("rt.encode")}
+                        </button>
                       </td>
                     </tr>
                   ))}

@@ -112,6 +112,7 @@ import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { PageGate, usePageLockState } from "./components/PremiumGate";
+import { ENCODE_TRADE_EVENT } from "./store/replay";
 import { ReplayModeProvider } from "./replay/ReplayModeContext";
 import ReplayBanner from "./replay/ReplayBanner";
 import ReplayTransition from "./replay/ReplayTransition";
@@ -687,6 +688,18 @@ function AppContent() {
     setEditingTrade(trade);
     setModalOpen(true);
   }, []);
+
+  // Le terminal de rejeu demande l'encodage d'un trade : on ouvre LA modale du
+  // journal, pré-remplie. Pas de second formulaire à maintenir — donc aucune
+  // divergence possible entre encoder un trade rejoué et un trade réel.
+  useEffect(() => {
+    const onEncode = (e: Event) => {
+      const trade = (e as CustomEvent<{ trade?: Trade }>).detail?.trade;
+      if (trade) handleEdit(trade);
+    };
+    window.addEventListener(ENCODE_TRADE_EVENT, onEncode);
+    return () => window.removeEventListener(ENCODE_TRADE_EVENT, onEncode);
+  }, [handleEdit]);
   const handleAdd = useCallback(() => {
     setEditingTrade(null);
     setModalOpen(true);

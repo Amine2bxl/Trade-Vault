@@ -72,6 +72,40 @@ const ACCOUNT_TINT = {
   ring: "rgb(var(--tv-accent-rgb) / 0.22)",
 };
 
+/**
+ * LE COMPTE DE REJEU NE SE CONFOND AVEC AUCUN AUTRE.
+ *
+ * Ses trades ne sont pas réels : les ranger visuellement avec le Live et le
+ * Prop invite à lire une performance qui n'a jamais existé. Il porte donc la
+ * teinte ambre du mode rejeu — la même que le terminal — et non celle de
+ * l'accent du thème, partagée par tous les autres.
+ *
+ * `--tv-warning` est un jeton du design system, pas une couleur inventée : le
+ * test de couverture des thèmes interdit les hex de marque en dur, et il a
+ * raison.
+ */
+const REPLAY_TINT = {
+  fg: "var(--tv-warning)",
+  bg: "rgb(var(--tv-warning-rgb) / 0.16)",
+  bgSoft: "rgb(var(--tv-warning-rgb) / 0.10)",
+  border: "rgb(var(--tv-warning-rgb) / 0.35)",
+  ring: "rgb(var(--tv-warning-rgb) / 0.22)",
+};
+
+const tintOf = (a: Account) => (a.type === "replay" ? REPLAY_TINT : ACCOUNT_TINT);
+
+/** La pastille « REPLAY », posée partout où un compte est nommé. */
+function ReplayBadge() {
+  return (
+    <span
+      className="ml-1.5 shrink-0 rounded px-1 py-px text-[9px] font-bold uppercase tracking-wide align-middle"
+      style={{ background: REPLAY_TINT.bg, color: REPLAY_TINT.fg }}
+    >
+      Replay
+    </span>
+  );
+}
+
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   User,
   Building2,
@@ -185,7 +219,7 @@ export default function AccountSwitcher({
               >
                 <span
                   className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
+                  style={{ background: tintOf(a).bg, color: tintOf(a).fg }}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </span>
@@ -197,6 +231,7 @@ export default function AccountSwitcher({
                     )}
                   >
                     {a.name}
+                    {a.type === "replay" && <ReplayBadge />}
                   </span>
                   <span className="block text-[10px] text-slate-500">
                     {t(TYPE_LABEL_KEY[a.type])}
@@ -359,6 +394,7 @@ export default function AccountSwitcher({
                         <span className="min-w-0 pr-6">
                           <span className="block text-sm font-bold text-white truncate">
                             {a.name}
+                            {a.type === "replay" && <ReplayBadge />}
                           </span>
                           <span className="block text-[10px] text-slate-500 truncate">
                             {t(TYPE_LABEL_KEY[a.type])}

@@ -354,7 +354,30 @@ function lastTradingDays(n: number): string[] {
 }
 
 /** Mapping d'un trade du terminal vers le type `Trade` du journal. */
+/** Comment le trade s'est refermé, en clair. */
+const EXIT_LABEL: Record<ReplayTrade["exitReason"], string> = {
+  stop: "stop touché",
+  target: "objectif atteint",
+  manual: "sortie manuelle",
+  "session-end": "clôture de séance",
+};
+
+/**
+ * Un trade de rejeu, traduit en trade de journal.
+ *
+ * Les notes ne disent plus « Replay » : elles portent ce que le terminal SAIT
+ * déjà — sens, quantité, prix d'entrée et de sortie, façon dont c'est sorti.
+ * C'est le pré-remplissage qui rend l'encodage rapide : le trader n'a plus à
+ * retaper des chiffres que la machine a sous la main, il ajoute ce qu'elle ne
+ * peut pas connaître (son intention, ses erreurs, sa capture d'écran).
+ */
 export function tradeOf(t: ReplayTrade): Trade {
+  const side = t.side === "long" ? "Long" : "Short";
+  const factual =
+    `${side} ${t.qty} ${t.symbol} · ${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}` +
+    ` · ${EXIT_LABEL[t.exitReason]}` +
+    (t.stopPrice != null ? ` · stop ${t.stopPrice.toFixed(2)}` : "") +
+    (t.commissions ? ` · commissions ${t.commissions.toFixed(2)} $` : "");
   return {
     id: t.id,
     date: nyDateOf(t.exitTime),
@@ -365,12 +388,30 @@ export function tradeOf(t: ReplayTrade): Trade {
     rMultiple: t.rMultiple,
     strategy: "Replay",
     mistakes: [],
-    setupQuality: 0,
-    notes: "Replay",
+    // Laissé NEUTRE et non à zéro : ce sont des jugements que seul le trader
+    // peut porter, et un zéro se lirait comme une note, pas comme une absence.
+    setupQuality: 3,
+    notes: factual,
     screenshots: [],
     entryTime: nyTimeOf(t.entryTime),
     exitTime: nyTimeOf(t.exitTime),
-    confluences: ["Replay terminal"],
-    confidence: 0,
+    confluences: ["Replay terminal", EXIT_LABEL[t.exitReason]],
+    confidence: 50,
   };
+}
+
+/** L'événement qui porte un trade pré-rempli jusqu'à la modale du journal. */
+export const ENCODE_TRADE_EVENT = "tv:encode-trade";
+
+/**
+ * Ouvre la modale d'encodage du journal sur un trade de rejeu.
+ *
+ * Le terminal vit loin de la modale dans l'arbre React, et la modale est déjà
+ * montée une fois pour toute l'application : un événement les relie, comme le
+ * fait déjà la navigation (`tv:navigate`). Aucune seconde modale à maintenir,
+ * donc aucune divergence possible avec le formulaire du journal.
+ */
+export function requestTradeEncoding(t: ReplayTrade): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(ENCODE_TRADE_EVENT, { detail: { trade: tradeOf(t) } }));
 }
