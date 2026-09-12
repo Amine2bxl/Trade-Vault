@@ -18,6 +18,7 @@ import { useEffect, useRef, useState, type MutableRefObject, type PointerEvent }
 import type { UTCTimestamp } from "lightweight-charts";
 import type { ChartView } from "./ReplayChart";
 import type { Drawing, Order, Position } from "@/modules/replay";
+import { instrumentOf, pnlOf } from "@/modules/replay";
 
 export type ReplayTool =
   | "cursor"
@@ -47,6 +48,12 @@ const PLACING: Record<string, boolean> = {
 };
 const ONE_CLICK = new Set(["hline", "vline", "text"]);
 
+/** Un montant signé, court, tel qu'une plateforme l'affiche sur une ligne. */
+function money$(n: number): string {
+  const sign = n >= 0 ? "+" : "−";
+  return `~ ${sign}$${Math.abs(n).toFixed(2)}`;
+}
+
 interface OverlayProps {
   view: MutableRefObject<ChartView>;
   drawings: Drawing[];
@@ -66,6 +73,8 @@ interface OverlayProps {
   onAddDrawing: (d: Drawing) => void;
   onUpdateDrawing: (d: Drawing) => void;
   onMoveOrder: (orderId: string, price: number) => void;
+  /** Annuler depuis le graphe : la croix des étiquettes d'ordre. */
+  onCancelOrder: (orderId: string) => void;
 }
 
 /**
@@ -79,20 +88,28 @@ function PriceTag({
   color,
   label,
   value,
+  money,
   drag,
+  onCancel,
 }: {
   x: number;
   y: number;
   color: string;
   label: string;
   value: string;
+  /** Ce que l'ordre rapporterait ou coûterait s'il se remplissait maintenant. */
+  money?: string | null;
   drag?: {
     onDown: (ev: React.PointerEvent<SVGElement>) => void;
     onMove: (ev: React.PointerEvent<SVGElement>) => void;
     onUp: (ev: React.PointerEvent<SVGElement>) => void;
   };
+  /** Annuler l'ordre sans quitter le graphe. */
+  onCancel?: () => void;
 }) {
-  const w = 112;
+  // La plaquette s'élargit de ce qu'elle porte en plus : le montant, puis la
+  // croix. Une largeur fixe aurait tronqué l'un ou chevauché l'autre.
+  const w = 112 + (money ? 54 : 0) + (onCancel ? 18 : 0);
   return (
     <g
       style={drag ? { pointerEvents: "auto", cursor: "ns-resize" } : { pointerEvents: "none" }}
@@ -124,8 +141,23 @@ function PriceTag({
       >
         {label}
       </text>
+      {/* Le montant en jeu, entre le libellé et le prix. « ~ » parce que c'est
+        une ESTIMATION au prix du bracket, pas un résultat acquis. */}
+      {money && (
+        <text
+          x={x + w - (onCancel ? 18 : 0) - 62}
+          y={y + 3.2}
+          fill="var(--tv-text)"
+          fontSize={9.5}
+          fontWeight={700}
+          textAnchor="end"
+          fontFamily="ui-monospace, SFMono-Regular, monospace"
+        >
+          {money}
+        </text>
+      )}
       <text
-        x={x + w - 9}
+        x={x + w - (onCancel ? 18 : 0) - 9}
         y={y + 3.2}
         fill="var(--tv-text)"
         fontSize={9.5}
@@ -135,6 +167,27 @@ function PriceTag({
       >
         {value}
       </text>
+      {/* Annuler sans quitter le graphe : le geste est là où se trouve l'ordre,
+        pas dans un panneau qu'il faut aller chercher. `stopPropagation` évite
+        que le clic démarre un glissement de l'étiquette. */}
+      {onCancel && (
+        <g
+          style={{ pointerEvents: "auto", cursor: "pointer" }}
+          onPointerDown={(ev) => {
+            ev.stopPropagation();
+            onCancel();
+          }}
+        >
+          <rect x={x + w - 18} y={y - 9.5} width={18} height={19} fill="transparent" />
+          <path
+            d={`M ${x + w - 13} ${y - 4} l 8 8 M ${x + w - 5} ${y - 4} l -8 8`}
+            stroke={color}
+            strokeWidth={1.4}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </g>
+      )}
     </g>
   );
 }
@@ -173,6 +226,7 @@ export default function ReplayOverlay({
   onAddDrawing,
   onUpdateDrawing,
   onMoveOrder,
+  onCancelOrder,
 }: OverlayProps) {
   const [pane, setPane] = useState<{ w: number; h: number } | null>(null);
   const [draft, setDraft] = useState<Drawing | null>(null);
@@ -462,7 +516,7 @@ export default function ReplayOverlay({
             opacity={0.6}
           />
           <PriceTag
-            x={W - 112}
+            x={W - 130}
             y={y}
             color={color}
             label={`${sideWord} ${o.qty} · ${kind}`}
@@ -472,12 +526,14 @@ export default function ReplayOverlay({
               onMove: handleMove,
               onUp: handleUp,
             }}
+            onCancel={() => onCancelOrder(o.id)}
           />
         </g>
       );
     });
 
   const positionShapes = positions.map((pos) => {
+    const spec = instrumentOf(pos.symbol);
     const { y } = coord(0, pos.avgEntry);
     if (y == null) return null;
     const color = pos.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)";
@@ -593,11 +649,13 @@ export default function ReplayOverlay({
               color={SL}
               label="SL"
               value={pos.stop.price.toFixed(2)}
+              money={money$(pnlOf(pos.side, pos.qty, pos.avgEntry, pos.stop.price, spec))}
               drag={{
                 onDown: handleDown({ orderId: pos.stop.id }),
                 onMove: handleMove,
                 onUp: handleUp,
               }}
+              onCancel={() => onCancelOrder(pos.stop!.id)}
             />
             {bracketHandle(slY, pos.stop.id)}
           </>
@@ -620,11 +678,13 @@ export default function ReplayOverlay({
               color={TP}
               label="TP"
               value={pos.target.price.toFixed(2)}
+              money={money$(pnlOf(pos.side, pos.qty, pos.avgEntry, pos.target.price, spec))}
               drag={{
                 onDown: handleDown({ orderId: pos.target.id }),
                 onMove: handleMove,
                 onUp: handleUp,
               }}
+              onCancel={() => onCancelOrder(pos.target!.id)}
             />
             {bracketHandle(tpY, pos.target.id)}
           </>

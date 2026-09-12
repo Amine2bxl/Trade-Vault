@@ -312,6 +312,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               onAddDrawing={props.onAddDrawing}
               onUpdateDrawing={props.onUpdateDrawing}
               onMoveOrder={props.onMoveOrder}
+              onCancelOrder={props.onCancelOrder}
             />
             {hover && (
               <div className="pointer-events-none absolute left-2 top-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 font-mono text-[10px] text-[var(--tv-text-muted)]">
