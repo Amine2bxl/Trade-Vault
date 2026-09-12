@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { planLimitFromDbError } from "../utils/planLimits";
 
 // ── Sub-accounts ──
-export type AccountType = "personal" | "prop" | "demo" | "live";
+export type AccountType = "personal" | "prop" | "demo" | "live" | "replay";
 export interface Account {
   id: string;
   name: string;

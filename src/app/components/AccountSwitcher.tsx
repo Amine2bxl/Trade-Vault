@@ -4,6 +4,7 @@ import {
   Building2,
   FlaskConical,
   Zap,
+  History,
   Check,
   ChevronDown,
   Plus,
@@ -38,12 +39,14 @@ const TYPE_ICON: Record<AccountType, typeof User> = {
   prop: Building2,
   demo: FlaskConical,
   live: Zap,
+  replay: History,
 };
 const TYPE_LABEL_KEY = {
   personal: "account.typePersonal",
   prop: "account.typeProp",
   demo: "account.typeDemo",
   live: "account.typeLive",
+  replay: "rt.account",
 } as const;
 
 /**
