@@ -28,6 +28,7 @@ export const PAGES = [
   "appearance",
   "subscription",
   "montecarlo",
+  "backtest",
 ] as const;
 
 export type Page = (typeof PAGES)[number];
@@ -54,7 +55,7 @@ export const SECTIONS = [
     pages: ["checklist", "calculator", "news"],
   },
   { id: "journal", pages: ["journal", "calendar", "mistakes", "missed"] },
-  { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo"] },
+  { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo", "backtest"] },
   { id: "coach", pages: ["insights"] },
   { id: "strategy", pages: ["tradingplan", "goals"] },
   { id: "settings", pages: ["settings", "profile", "appearance", "subscription"] },

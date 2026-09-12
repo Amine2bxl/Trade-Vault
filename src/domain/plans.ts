@@ -180,6 +180,7 @@ export type Capability =
   | "reports"
   | "montecarlo"
   | "seasonality"
+  | "replay"
   | "patterns"
   | "automation"
   | "pushAlerts"
@@ -199,6 +200,9 @@ export const CAPABILITY_TIER: Record<Capability, Tier> = {
   reports: "pro",
   montecarlo: "pro",
   seasonality: "pro",
+  // Le terminal de rejeu est un différentiateur du produit : il n'est pas
+  // dans l'offre gratuite, contrairement au journal.
+  replay: "pro",
   // Elite n'ouvre aucune page : elle enlève les limites.
   patterns: "elite",
   automation: "elite",

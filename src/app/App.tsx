@@ -42,6 +42,7 @@ import {
   Subscription,
   Inbox,
   MonteCarlo,
+  Backtest,
   preloadPage,
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
@@ -780,6 +781,21 @@ function AppContent() {
     return (
       <Suspense fallback={<LoadingScreen message={t("app.loadingOnboarding")} />}>
         <Onboarding userId={user.id} onDone={handleOnboardingDone} />
+      </Suspense>
+    );
+  }
+
+  // ── LE TERMINAL DE REJEU PREND POSSESSION DE TOUT L'ÉCRAN ───────────────
+  // Backtest n'est pas une page dans le shell : c'est un ENVIRONNEMENT. Son
+  // entrée bascule toute l'application (le rail, la navigation, les modales du
+  // journal) dans le terminal historique ; l'utilisateur en ressort aussi
+  // facilement qu'il y est entré.
+  if (page === "backtest") {
+    return (
+      <Suspense fallback={<LoadingScreen message={t("rt.enter")} />}>
+        <div className="h-dvh w-full overflow-hidden">
+          <Backtest userId={user?.id ?? null} onExit={() => setPage(DEFAULT_PAGE)} />
+        </div>
       </Suspense>
     );
   }
