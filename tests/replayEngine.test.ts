@@ -21,6 +21,8 @@ import {
   sessionsOf,
   nyEpochFromHm,
   markPriceAt,
+  roundToTick,
+  REPLAY_INSTRUMENTS,
   DEFAULT_TIMEFRAME,
 } from "../src/modules/replay";
 
@@ -219,7 +221,15 @@ describe("simulation d'ordres", () => {
     await e.start();
     e.now = e.rthStart;
     const state = makeState(e.now);
-    const price = e.markPrice() - 50;
+    // La limite se pose sous le marché, MAIS dans la zone réellement parcourue
+    // par les dix minutes à venir. L'ancienne version visait 50 points plus bas
+    // sans le vérifier : elle ne se remplissait que parce que `processBars`
+    // rejouait alors la séance de nuit, bien antérieure au placement.
+    const window = bars.filter((b) => b.time >= e.now && b.time < e.now + 10 * 60_000);
+    const mark = e.markPrice();
+    const lowest = Math.min(...window.map((b) => b.low));
+    const price = roundToTick((mark + lowest) / 2, NQ);
+    expect(price).toBeLessThan(mark);
     placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price }, bars });
     // On avance de 10 minutes : la bougie doit croiser bas la limite.
     e.advance(10 * 60_000);
@@ -383,5 +393,272 @@ describe("résumé de fin de session", () => {
     expect(s.tradesCount).toBe(1);
     expect(s.netPnl).toBeGreaterThan(0);
     expect(s.winRate).toBe(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Non-régressions : quatre défauts trouvés en revue, chacun reproduit ici avant
+// correction. Ils touchent tous à la promesse centrale du terminal — ne jamais
+// montrer ni exploiter ce qui n'a pas encore eu lieu.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("fuite du futur — la minute en cours", () => {
+  test("au tout début d'une minute, rien n'est révélé que son ouverture", async () => {
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart; // pile sur le bord : la minute n'a pas commencé
+    const head = e.tfCandles("1m").at(-1)!;
+    const real = e.data.find((b) => b.time === e.rthStart)!;
+
+    expect(head.open).toBe(real.open);
+    expect(head.high).toBe(real.open);
+    expect(head.low).toBe(real.open);
+    expect(head.close).toBe(real.open);
+    expect(head.forming).toBe(true);
+    // La bougie réelle a une amplitude : c'est bien elle que l'on masque.
+    expect(real.high).toBeGreaterThan(real.low);
+  });
+
+  test("les extrêmes d'une bougie en formation ne font que s'écarter", async () => {
+    const e = engine("1m");
+    await e.start();
+    let prevHigh = -Infinity;
+    let prevLow = Infinity;
+    // On reste DANS la minute : à 60 s la tête de série est déjà la suivante.
+    for (let s = 0; s < 60; s += 5) {
+      e.now = e.rthStart + s * 1000;
+      const head = e.tfCandles("1m").at(-1)!;
+      expect(head.high).toBeGreaterThanOrEqual(prevHigh);
+      expect(head.low).toBeLessThanOrEqual(prevLow);
+      prevHigh = head.high;
+      prevLow = head.low;
+    }
+    // À la clôture, la bougie partielle rejoint exactement la vraie.
+    const real = e.data.find((b) => b.time === e.rthStart)!;
+    e.now = e.rthStart + 60_000;
+    const closed = e.tfCandles("1m").find((b) => b.time === e.rthStart)!;
+    expect(closed.high).toBe(real.high);
+    expect(closed.low).toBe(real.low);
+    expect(closed.close).toBe(real.close);
+    expect(closed.high).toBeGreaterThanOrEqual(prevHigh);
+    expect(closed.low).toBeLessThanOrEqual(prevLow);
+  });
+
+  test("le volume ne s'affiche pas d'avance", async () => {
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart;
+    expect(e.tfCandles("1m").at(-1)!.volume).toBe(0);
+    e.now = e.rthStart + 60_000;
+    const real = e.data.find((b) => b.time === e.rthStart)!;
+    expect(e.tfCandles("1m").at(-2)!.volume).toBe(real.volume);
+  });
+
+  test("le prix marqué atteint réellement les extrêmes de la minute", async () => {
+    const e = engine("1m");
+    await e.start();
+    const real = e.data.find((b) => b.time === e.rthStart)!;
+    let hi = -Infinity;
+    let lo = Infinity;
+    for (let s = 0; s <= 60; s++) {
+      e.now = e.rthStart + s * 1000;
+      const m = e.markPrice();
+      hi = Math.max(hi, m);
+      lo = Math.min(lo, m);
+      // Jamais hors des bornes réelles de la minute.
+      expect(m).toBeLessThanOrEqual(real.high + 1e-9);
+      expect(m).toBeGreaterThanOrEqual(real.low - 1e-9);
+    }
+    // L'interpolation droite d'autrefois ne touchait ni le high ni le low :
+    // un stop posé sur la mèche était inatteignable avant la clôture.
+    expect(hi).toBeCloseTo(real.high, 6);
+    expect(lo).toBeCloseTo(real.low, 6);
+  });
+});
+
+describe("reconstruction — on rejoue des gestes, pas des résultats", () => {
+  /** Série plate à 21 000, avec un unique creux à 20 900 à la 40e minute. */
+  function flatWithDip(): { t0: number; bars: OhlcBar[] } {
+    const t0 = nyEpochFromHm(DATE, "09:30");
+    const bars: OhlcBar[] = Array.from({ length: 60 }, (_, i) => ({
+      time: t0 + i * 60_000,
+      open: 21_000,
+      high: 21_002,
+      low: i === 40 ? 20_900 : 20_998,
+      close: 21_000,
+      volume: 100,
+    }));
+    return { t0, bars };
+  }
+
+  test("reculer avant un remplissage le défait vraiment", () => {
+    const { t0, bars } = flatWithDip();
+    const state = createInitialState({
+      symbol: "NQ",
+      startingBalance: 50_000,
+      now: t0,
+      commissionPerContract: 2,
+      slippageTicks: 1,
+    });
+    placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price: 20_950 }, bars });
+    for (let i = 1; i <= 59; i++) {
+      state.now = t0 + i * 60_000;
+      processBars(state, bars);
+    }
+    expect(state.orders[0].status).toBe("filled");
+
+    // Avant le creux : l'ordre attend encore, et aucune position n'existe.
+    for (const min of [10, 30, 39]) {
+      const back = rebuildState(state, bars, t0 + min * 60_000);
+      expect(back.orders[0]?.status).toBe("working");
+      expect(back.orders[0]?.filledAt ?? null).toBeNull();
+      expect(back.positions.length).toBe(0);
+    }
+    // Après le creux : le remplissage est de nouveau là.
+    const after = rebuildState(state, bars, t0 + 42 * 60_000);
+    expect(after.orders[0].status).toBe("filled");
+    expect(after.positions.length).toBe(1);
+  });
+
+  test("les brackets ne se dupliquent pas à chaque reconstruction", () => {
+    const { t0, bars } = flatWithDip();
+    const state = createInitialState({
+      symbol: "NQ",
+      startingBalance: 50_000,
+      now: t0,
+      commissionPerContract: 2,
+      slippageTicks: 0,
+    });
+    placeOrder({
+      state,
+      input: {
+        side: "long",
+        type: "market",
+        qty: 2,
+        price: null,
+        bracketSl: 20_800,
+        bracketTp: 21_100,
+      },
+      bars,
+    });
+    for (let i = 1; i <= 20; i++) {
+      state.now = t0 + i * 60_000;
+      processBars(state, bars);
+    }
+    const live = (s: typeof state) =>
+      s.orders.filter((o) => o.reduceOnly && o.status === "working");
+    expect(live(state).length).toBe(2);
+
+    // Une position de 2 contrats ne doit jamais porter 4 ordres de sortie :
+    // elle se refermerait deux fois.
+    let cur = state;
+    for (let round = 0; round < 3; round++) {
+      cur = rebuildState(cur, bars, t0 + 10 * 60_000);
+      expect(live(cur).length).toBe(2);
+      expect(cur.positions[0].qty).toBe(2);
+    }
+  });
+
+  test("un ordre posé depuis la dernière bougie close survit au recul", () => {
+    const { t0, bars } = flatWithDip();
+    const state = createInitialState({
+      symbol: "NQ",
+      startingBalance: 50_000,
+      now: t0,
+      commissionPerContract: 2,
+      slippageTicks: 1,
+    });
+    // Placé PILE sur la cible du recul : il n'a encore produit aucun fill, mais
+    // il existe. L'omettre le faisait disparaître du carnet.
+    placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price: 20_500 }, bars });
+    const back = rebuildState(state, bars, t0);
+    expect(back.orders.length).toBe(1);
+    expect(back.orders[0].status).toBe("working");
+    expect(back.orders[0].price).toBe(20_500);
+  });
+
+  test("une annulation est rejouée à SA date, pas à celle du placement", () => {
+    const { t0, bars } = flatWithDip();
+    const state = createInitialState({
+      symbol: "NQ",
+      startingBalance: 50_000,
+      now: t0,
+      commissionPerContract: 2,
+      slippageTicks: 1,
+    });
+    placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price: 20_950 }, bars });
+    state.now = t0 + 20 * 60_000;
+    cancelOrder(state, state.orders[0].id);
+
+    // Avant l'annulation, l'ordre est encore au carnet.
+    const before = rebuildState(state, bars, t0 + 10 * 60_000);
+    expect(before.orders[0].status).toBe("working");
+    // Après, il est annulé — et le creux de la 40e n'ouvre aucune position.
+    const after = rebuildState(state, bars, t0 + 45 * 60_000);
+    expect(after.orders[0].status).toBe("cancelled");
+    expect(after.positions.length).toBe(0);
+  });
+});
+
+describe("un ordre ne se remplit pas dans son passé", () => {
+  test("les bougies antérieures au placement ne déclenchent rien", async () => {
+    const e = engine("1m");
+    await e.start();
+    const bars = e.data;
+    // Départ en plein RTH : toute la nuit précédente est déjà de l'histoire.
+    e.now = e.rthStart + 60_000;
+    const state = makeState(e.now);
+    const overnightLow = Math.min(...bars.filter((b) => b.time < e.rthStart).map((b) => b.low));
+    const mark = e.markPrice();
+    // Une limite sous le plus bas de la nuit : si la nuit était rejouée, elle
+    // se remplirait instantanément à un prix antérieur à son propre placement.
+    const price = roundToTick(Math.min(overnightLow, mark) - 5, NQ);
+    placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price }, bars });
+    processBars(state, bars);
+    expect(state.orders[0].status).toBe("working");
+    expect(state.positions.length).toBe(0);
+  });
+});
+
+describe("le spec vient du registre, pas d'une constante", () => {
+  test("un second instrument utilise SON multiplicateur, pas celui du NQ", () => {
+    const MES: typeof NQ = {
+      id: "MES",
+      symbol: "MES",
+      name: "Micro E-mini S&P",
+      exchange: "CME",
+      tickSize: 0.25,
+      tickValue: 1.25,
+      multiplier: 5, // NQ vaut 20 : l'écart doit se voir dans le P&L.
+      typicalRange: { min: 4_000, max: 7_000 },
+    };
+    REPLAY_INSTRUMENTS.push(MES);
+    try {
+      const t0 = nyEpochFromHm(DATE, "09:30");
+      const bars: OhlcBar[] = Array.from({ length: 10 }, (_, i) => ({
+        time: t0 + i * 60_000,
+        open: 5_000,
+        high: 5_010,
+        low: 4_990,
+        close: 5_000,
+        volume: 10,
+      }));
+      const state = createInitialState({
+        symbol: "MES",
+        startingBalance: 10_000,
+        now: t0,
+        commissionPerContract: 0,
+        slippageTicks: 0,
+      });
+      placeOrder({ state, input: { side: "long", type: "market", qty: 1 }, bars });
+      const entry = state.positions[0].avgEntry;
+      state.now = t0 + 5 * 60_000;
+      refreshValuation(state, bars);
+      const mark = markPriceAt(bars, state.now);
+      // 5 $ le point (MES) et non 20 $ (NQ).
+      expect(state.account.openPnl).toBeCloseTo((mark - entry) * 5, 6);
+    } finally {
+      REPLAY_INSTRUMENTS.pop();
+    }
   });
 });

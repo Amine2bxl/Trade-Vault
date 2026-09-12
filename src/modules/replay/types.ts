@@ -39,6 +39,13 @@ export interface Order {
   placedAt: number;
   /** Ms epoch simulé de l'exécution, `null` tant que l'ordre n'est pas exécuté. */
   filledAt: number | null;
+  /**
+   * Ms epoch simulé de l'annulation. Sans cette date, reconstruire l'état
+   * passé forcerait à annuler l'ordre dès son placement : un ordre annulé à la
+   * 50e minute disparaîtrait du carnet à la 10e. Optionnel — les séances
+   * enregistrées avant son introduction ne le portent pas.
+   */
+  cancelledAt?: number | null;
   /** Prix d'exécution effectif (avec glissement), `null` tant que working. */
   fillPrice: number | null;
   /** Qté réellement exécutée (partials possibles). */

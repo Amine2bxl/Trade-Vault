@@ -19,6 +19,7 @@ import { instrumentOf, pnlOf } from "./instruments";
 import { loadSessionBars } from "./market-data";
 import { nyMidnightMs, nyDateOf, nyTimeOf, sessionsOf } from "./calendar";
 import { candleStartOf, timeframeSeconds } from "./timeframes";
+import { intrabarAt, barFraction, visibleBar } from "./intrabar";
 
 export interface SimulatedCandle extends OhlcBar {
   /** Vrai si la bougie est encore en formation (close = prix marqué). */
@@ -112,9 +113,13 @@ export class ReplayEngine {
     let prevBucket = -1;
     let cur: SimulatedCandle | null = null;
 
-    for (const b of this.bar1m) {
-      if (b.time > now) break;
-      const bucket = candleStartOf(b.time, tfSec, this.dayMidnight(b.time));
+    for (const raw of this.bar1m) {
+      if (raw.time > now) break;
+      // La minute en cours n'est connue qu'à hauteur du temps écoulé : on
+      // agrège sa VUE PARTIELLE, jamais son OHLC complet. Sans quoi la tête de
+      // série livrerait le high et le low d'une minute qui n'a pas eu lieu.
+      const b = visibleBar(raw, now);
+      const bucket = candleStartOf(raw.time, tfSec, this.dayMidnight(raw.time));
       if (bucket !== prevBucket) {
         if (cur) out.push(cur);
         cur = {
@@ -135,10 +140,9 @@ export class ReplayEngine {
     }
 
     if (cur) {
-      if (now > cur.time) {
-        cur.close = this.markPrice();
-        cur.forming = true;
-      }
+      // En formation tant que le bord droit du seau dépasse l'horloge.
+      const span = Math.max(60_000, tfSec * 1000);
+      if (now < cur.time + span) cur.forming = true;
       out.push(cur);
     }
     return out;
@@ -191,7 +195,14 @@ export class ReplayEngine {
   }
 }
 
-/** Le prix vivant à `now` : la 1m en cours est interpolée entre ses bornes. */
+/**
+ * Le prix vivant à `now`, sur le chemin intra-bougie de la 1m en cours.
+ *
+ * L'interpolation droite open→close d'autrefois ne pouvait JAMAIS toucher le
+ * high ni le low de la minute : un stop posé sur la mèche n'était atteignable
+ * qu'à la clôture de la bougie. Le chemin visite les deux extrêmes, donc le
+ * prix marqué passe réellement là où le marché est passé.
+ */
 export function markPriceAt(bars: OhlcBar[], now: number): number {
   if (bars.length === 0) return 0;
   let last: OhlcBar | null = null;
@@ -200,10 +211,8 @@ export function markPriceAt(bars: OhlcBar[], now: number): number {
     else break;
   }
   if (!last) return bars[0].open;
-  const end = last.time + 60_000;
-  if (now >= end) return last.close;
-  const f = Math.max(0, Math.min(1, (now - last.time) / 60_000));
-  return last.open + (last.close - last.open) * f;
+  if (now >= last.time + 60_000) return last.close;
+  return intrabarAt(last, barFraction(last, now)).price;
 }
 
 /** Open P&L du compte, en $, à un prix marqué donné. */

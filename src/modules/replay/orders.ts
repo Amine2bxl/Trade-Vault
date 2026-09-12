@@ -21,7 +21,7 @@ import {
   ReplaySessionState,
   ReplayTrade,
 } from "./types";
-import { InstrumentSpec, NQ, pnlOf, roundToTick } from "./instruments";
+import { InstrumentSpec, NQ, instrumentOf, pnlOf, roundToTick } from "./instruments";
 import { markPriceAt } from "./engine";
 
 export interface SimContext {
@@ -38,8 +38,11 @@ export function nextId(prefix: string): string {
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+// Le spec vient du REGISTRE, pas d'une constante : figer NQ ici rendait
+// silencieusement faux tout P&L, tout arrondi au tick et tout glissement dès
+// l'inscription d'un second instrument (ES, YM, RTY…).
 const ctx = (symbol: string, commission: number, slippage: number): SimContext => ({
-  spec: NQ,
+  spec: instrumentOf(symbol),
   commissionPerContract: commission,
   slippageTicks: slippage,
 });
@@ -75,7 +78,11 @@ export function createInitialState(seed: {
     viewTimeframe: "5m",
     playbackSpeed: 1,
     finished: false,
-    appliedUpTo: null,
+    // Tout ce qui précède l'instant de départ est DÉJÀ de l'histoire. Laisser
+    // `null` faisait rejouer la séance entière depuis 18 h au premier appel de
+    // `processBars` : un ordre posé à 09:31 pouvait se remplir sur une bougie
+    // de la nuit, donc à un prix antérieur à son propre placement.
+    appliedUpTo: seed.now,
     symbol: seed.symbol,
     commissionPerContract: seed.commissionPerContract,
     slippageTicks: seed.slippageTicks,
@@ -152,6 +159,7 @@ export function cancelOrder(state: ReplaySessionState, orderId: string): void {
   const o = state.orders.find((x) => x.id === orderId);
   if (!o || o.status !== "working") return;
   o.status = "cancelled";
+  o.cancelledAt = state.now;
   // Si c'est un bracket, la position le perd.
   for (const p of state.positions) {
     if (p.stop?.id === o.id) p.stop = null;
@@ -419,7 +427,7 @@ export function flattenPositions(state: ReplaySessionState, bars: OhlcBar[]): vo
 /** Recalcule balance, open P&L, equity et risque depuis l'état courant. */
 export function refreshValuation(state: ReplaySessionState, bars: OhlcBar[]): void {
   const mark = markPriceAt(bars, state.now);
-  const spec = NQ;
+  const spec = instrumentOf(state.symbol);
   let open = 0;
   let activeRisk = 0;
   let realized = 0;
@@ -455,6 +463,7 @@ export function rebuildState(
   bars: OhlcBar[],
   targetNow: number,
 ): ReplaySessionState {
+  const c = simContextOf(seed);
   const fresh = createInitialState({
     symbol: seed.symbol,
     startingBalance: seed.account.startingBalance,
@@ -464,81 +473,115 @@ export function rebuildState(
   });
   fresh.viewTimeframe = seed.viewTimeframe;
   fresh.playbackSpeed = seed.playbackSpeed;
+  fresh.drawings = seed.drawings;
 
-  const timeline = [...seed.orders]
-    .filter((o) => o.placedAt <= targetNow)
-    .sort((a, b) => a.placedAt - b.placedAt);
+  // ── Les intentions, jamais les résultats ─────────────────────────────────
+  // Rejouer les exécutions ENREGISTRÉES faisait remonter le futur dans le
+  // passé : reculer à la 10e minute ressuscitait une position ouverte à la
+  // 41e, au prix de la 41e. Seuls les GESTES du trader sont rejoués ; fills,
+  // positions et brackets sont recalculés à partir des bougies.
+  const entries = seed.orders
+    .filter((o) => !o.reduceOnly && o.placedAt <= targetNow)
+    .map((o) => ({ at: o.placedAt, rank: 0, order: o }));
+
+  // Les brackets d'une position sont posés d'un seul geste (SL et TP partagent
+  // leur `placedAt`) : on regroupe pour rejouer la pose, pas les deux ordres —
+  // les republier tels quels les DOUBLAIT à chaque reconstruction.
+  const poses = new Map<
+    string,
+    { at: number; parentId: string; sl: number | null; tp: number | null }
+  >();
+  for (const o of seed.orders) {
+    if (!o.reduceOnly || o.parentId == null || o.placedAt > targetNow) continue;
+    const key = `${o.parentId}@${o.placedAt}`;
+    const g = poses.get(key) ?? { at: o.placedAt, parentId: o.parentId, sl: null, tp: null };
+    if (o.label === "SL") g.sl = o.price;
+    else g.tp = o.price;
+    poses.set(key, g);
+  }
+  const brackets = [...poses.values()].map((g) => ({ at: g.at, rank: 1, bracket: g }));
+
+  // Une annulation n'a de sens qu'à sa date : sans elle, l'ordre disparaissait
+  // du carnet dès son placement.
+  const cancels = seed.orders
+    .filter((o) => o.status === "cancelled" && o.cancelledAt != null && o.cancelledAt <= targetNow)
+    .map((o) => ({ at: o.cancelledAt as number, rank: 2, orderId: o.id }));
+
+  type Intent = (typeof entries)[number] | (typeof brackets)[number] | (typeof cancels)[number];
+  // `rank` départage les gestes simultanés : une entrée crée la position que
+  // le bracket vise, et l'annulation vient après ce qu'elle annule.
+  const intents: Intent[] = [...entries, ...brackets, ...cancels].sort(
+    (a, b) => a.at - b.at || a.rank - b.rank,
+  );
+
   let idx = 0;
-
-  const activate = (bar: OhlcBar) => {
-    const end = bar.time + 60_000;
-    while (idx < timeline.length && timeline[idx].placedAt < end) {
-      const src = timeline[idx];
-      idx += 1;
-      if (src.status === "cancelled") {
-        fresh.orders.push({ ...src });
-        continue;
-      }
-      // Filled : on rejoue l'exécution avec le prix déjà enregistré.
-      if (src.status === "filled" && src.fillPrice != null) {
-        const o: Order = { ...src, filledQty: 0, status: "working" };
-        fresh.orders.push(o);
-        o.fillPrice = null;
-        o.filledAt = null;
-        if (o.reduceOnly) {
-          const pos = fresh.positions.find((p) => p.id === o.parentId);
-          if (!pos) {
-            o.status = "cancelled";
-            continue;
-          }
-          // `filledQty = 0` ENSUITE : fillReduce calcule le reste à partir de
-          // `qty - filledQty`, sinon la réduction était comptée d'avance.
-          o.status = "filled";
-          o.filledAt = src.filledAt;
-          o.fillPrice = src.fillPrice;
-          o.filledQty = 0;
-          fillReduce(
-            fresh,
-            pos,
-            o,
-            o.fillPrice,
-            simContextOf(seed),
-            o.label === "SL" ? "stop" : "target",
-          );
-        } else {
-          o.status = "filled";
-          o.filledAt = src.filledAt;
-          o.fillPrice = src.fillPrice;
-          o.filledQty = 0; // fillEntry recompute le remplissage
-          fillEntry(fresh, o, simContextOf(seed));
-        }
-        continue;
-      }
-      // Working : on remet l'ordre au carnet à sa date de placement.
-      const o: Order = { ...src, status: "working" };
+  const apply = (it: Intent): void => {
+    fresh.now = it.at;
+    if ("order" in it) {
+      const src = it.order;
+      // L'ordre repart VIERGE de toute exécution : ce qui doit arriver sera
+      // décidé par les bougies, pas recopié.
+      const o: Order = {
+        ...src,
+        status: "working",
+        filledAt: null,
+        fillPrice: null,
+        filledQty: 0,
+        cancelledAt: null,
+      };
       fresh.orders.push(o);
-      if (o.reduceOnly) {
-        const pos = fresh.positions.find((p) => p.id === o.parentId);
-        if (pos) {
-          if (o.label === "SL") pos.stop = o;
-          else pos.target = o;
-        }
+      // Seul l'ordre au marché se remplit à l'instant du geste ; son prix est
+      // recalculé depuis les bougies, donc identique à l'original.
+      if (o.type === "market") {
+        const mark = markPriceAt(bars, it.at);
+        const slide = c.slippageTicks * c.spec.tickSize;
+        o.fillPrice = roundToTick(o.side === "long" ? mark + slide : mark - slide, c.spec);
+        o.filledAt = it.at;
+        o.status = "filled";
+        fillEntry(fresh, o, c);
       }
+      return;
+    }
+    if ("bracket" in it) {
+      const g = it.bracket;
+      // Idempotent : `setPositionBracket` annule la pose précédente avant de
+      // reposer, donc rejouer la pose initiale puis ses ajustements converge.
+      if (fresh.positions.some((p) => p.id === g.parentId)) {
+        setPositionBracket(fresh, g.parentId, g.sl, g.tp);
+      }
+      return;
+    }
+    cancelOrder(fresh, it.orderId);
+  };
+
+  const applyBefore = (until: number): void => {
+    while (idx < intents.length && intents[idx].at < until) {
+      apply(intents[idx]);
+      idx += 1;
     }
   };
 
+  let applied = 0;
   for (const bar of bars) {
     if (bar.time + 60_000 > targetNow) break;
-    activate(bar);
-    processBar(fresh, bar, simContextOf(seed));
+    applyBefore(bar.time + 60_000);
+    fresh.now = bar.time + 60_000;
+    processBar(fresh, bar, c);
+    applied = bar.time;
   }
-  fresh.appliedUpTo = bars.reduce((a, b) => (b.time + 60_000 <= targetNow ? b.time : a), 0);
+
+  // La dernière minute n'est pas close : ses gestes n'ont encore produit aucun
+  // remplissage, mais ils existent. Les omettre faisait DISPARAÎTRE du carnet
+  // tout ordre posé depuis la dernière bougie fermée.
+  fresh.now = targetNow;
+  applyBefore(targetNow + 1);
+
+  fresh.now = targetNow;
+  fresh.appliedUpTo = applied || null;
   refreshValuation(fresh, bars);
   return fresh;
 }
 
-// ── Vue historique ─────────────────────────────────────────────────────────
-/** Ligne d'historique humaine d'un ordre (toutes les exécutions connues). */
 export function orderHistory(state: ReplaySessionState): OrderHistoryRow[] {
   return state.orders.map((o) => ({
     id: o.id,
