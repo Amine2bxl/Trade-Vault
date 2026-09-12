@@ -4,6 +4,11 @@
  * Entrée au marché / limite / stop, avec quantité et bracket posé dans le même
  * geste. Le R:R se calcule en direct, ticks et points compris — déplacer un
  * prix (ou le bracket, sur le graphe) met tout à jour immédiatement.
+ *
+ * La disposition suit celle des plateformes de trading : contrat et cotation en
+ * tête, type d'ordre, paliers de quantité, puis DEUX boutons d'exécution qui
+ * portent chacun leur sens. Le couple « sélecteur de sens + bouton d'envoi »
+ * demandait deux gestes et un état à vérifier avant de cliquer.
  */
 
 import { useMemo, useState } from "react";
@@ -47,7 +52,6 @@ export default function ReplayTicket({
   onPlace,
 }: Props) {
   const { t } = useT();
-  const [side, setSide] = useState<Side>("long");
   const [type, setType] = useState<OrderType>("market");
   const [qty, setQty] = useState(1);
   const [limit, setLimit] = useState<string>("");
@@ -98,14 +102,39 @@ export default function ReplayTicket({
     });
   }, [riskPct, slNumber, entryRef, balance, spec, commissionPerContract]);
 
-  const submit = () => {
-    const base = { side, type, qty: Math.max(1, Math.round(qty || 1)) };
+  /**
+   * Le SENS est porté par le bouton, pas par un sélecteur en amont.
+   *
+   * Il fallait auparavant choisir « Acheter » en haut, puis appuyer sur un
+   * bouton d'envoi en bas : deux gestes, et un état à vérifier avant de
+   * cliquer. Les plateformes de trading — Project X compris — donnent deux
+   * boutons qui font ce qu'ils disent. Un clic, aucune ambiguïté sur le sens.
+   */
+  const submit = (s: Side) => {
     onPlace({
-      ...base,
+      side: s,
+      type,
+      qty: Math.max(1, Math.round(qty || 1)),
       price: type === "market" ? undefined : roundToTick(Number(limit) || 0, spec),
       sl: slNumber != null ? roundToTick(slNumber, spec) : undefined,
       tp: tpNumber != null ? roundToTick(tpNumber, spec) : undefined,
     });
+  };
+
+  /** Les paliers de quantité usuels, à un clic — comme sur Project X. */
+  const QTY_PRESETS = [1, 2, 3, 5, 10, 15];
+
+  /**
+   * Une cotation DÉDUITE, pas un carnet.
+   *
+   * Le rejeu ne dispose que d'OHLC : il n'existe aucune profondeur de marché à
+   * afficher. On encadre donc le prix marqué d'un demi-tick de chaque côté —
+   * ce qui donne le spread d'un tick, celui du NQ en séance. Le jour où des
+   * données tick arriveront, c'est ici que le vrai bid/ask se branchera.
+   */
+  const bidAsk = {
+    bid: roundToTick(mark - tick / 2, spec),
+    ask: roundToTick(mark + tick / 2, spec),
   };
 
   const bump = (setter: (v: string) => void, current: string, dTick: number) =>
@@ -117,32 +146,24 @@ export default function ReplayTicket({
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      {/* Buy / Sell */}
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setSide("long")}
-          className={cn(
-            "rounded-xl py-2.5 text-sm font-bold transition",
-            side === "long"
-              ? "bg-[var(--tv-chart-green)] text-[#04121c]"
-              : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)]",
-          )}
-        >
-          {t("rt.buy")} · {t("rt.long")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setSide("short")}
-          className={cn(
-            "rounded-xl py-2.5 text-sm font-bold transition",
-            side === "short"
-              ? "bg-[var(--tv-chart-red)] text-[#04121c]"
-              : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)]",
-          )}
-        >
-          {t("rt.sell")} · {t("rt.short")}
-        </button>
+      {/* Contrat — ce qu'on trade, affiché avant comment on le trade. */}
+      <div className="flex items-center justify-between rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
+            {t("rt.contract")}
+          </div>
+          <div className="truncate text-sm font-bold text-[var(--tv-text)]">{spec.symbol}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
+            {t("rt.bidAsk")}
+          </div>
+          <div className="font-mono text-xs font-semibold">
+            <span className="text-[var(--tv-chart-red)]">{bidAsk.bid.toFixed(2)}</span>
+            <span className="mx-1 text-[var(--tv-text-muted)]">/</span>
+            <span className="text-[var(--tv-chart-green)]">{bidAsk.ask.toFixed(2)}</span>
+          </div>
+        </div>
       </div>
 
       {/* Type */}
@@ -160,6 +181,25 @@ export default function ReplayTicket({
             )}
           >
             {ty === "market" ? t("rt.market") : ty === "limit" ? t("rt.limit") : t("rt.stop")}
+          </button>
+        ))}
+      </div>
+
+      {/* Paliers de quantité — un clic, pas six sur « + ». */}
+      <div className="flex flex-wrap gap-1">
+        {QTY_PRESETS.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setQty(n)}
+            className={cn(
+              "min-w-8 rounded-lg px-2 py-1 text-xs font-bold transition",
+              qty === n
+                ? "tv-accent-fill text-white"
+                : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
+            )}
+          >
+            {n}
           </button>
         ))}
       </div>
@@ -344,18 +384,31 @@ export default function ReplayTicket({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={submit}
-        className={cn(
-          "rounded-xl py-2.5 text-sm font-bold text-[#04121c] transition disabled:opacity-40",
-          side === "long" ? "bg-[var(--tv-chart-green)]" : "bg-[var(--tv-chart-red)]",
-        )}
-      >
-        {side === "long"
-          ? `${t("rt.buy")} ${qty || 1} ${spec.symbol}`
-          : `${t("rt.sell")} ${qty || 1} ${spec.symbol}`}
-      </button>
+      {/* LES DEUX BOUTONS D'EXÉCUTION — chacun porte son sens.
+        Ils remplacent le couple « sélecteur de sens + bouton d'envoi » : un
+        seul geste, et rien à vérifier avant de cliquer. */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => submit("long")}
+          className="rounded-xl bg-[var(--tv-chart-green)] py-3 text-sm font-bold text-[#04121c] transition hover:brightness-110"
+        >
+          {t("rt.buy")} +{qty || 1}
+          <span className="block text-[10px] font-semibold opacity-80">
+            @ {type === "market" ? t("rt.market") : type === "limit" ? t("rt.limit") : t("rt.stop")}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => submit("short")}
+          className="rounded-xl bg-[var(--tv-chart-red)] py-3 text-sm font-bold text-[#04121c] transition hover:brightness-110"
+        >
+          {t("rt.sell")} −{qty || 1}
+          <span className="block text-[10px] font-semibold opacity-80">
+            @ {type === "market" ? t("rt.market") : type === "limit" ? t("rt.limit") : t("rt.stop")}
+          </span>
+        </button>
+      </div>
 
       <p className="text-center text-[10px] leading-relaxed text-[var(--tv-text-muted)]">
         1 tick = {tickValueDollars(1, spec).toFixed(2)} $ · 1 point ={" "}

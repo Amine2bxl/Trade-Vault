@@ -149,6 +149,8 @@ const fr: Dict = {
   "rt.eth": "ETH",
   "rt.long": "Long",
   "rt.short": "Short",
+  "rt.contract": "Contrat",
+  "rt.bidAsk": "Bid / Ask",
   "rt.qty": "Qté",
   "rt.market": "Marché",
   "rt.limit": "Limite",

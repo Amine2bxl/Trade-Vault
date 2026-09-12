@@ -176,6 +176,8 @@ const en = {
   "rt.eth": "ETH",
   "rt.long": "Long",
   "rt.short": "Short",
+  "rt.contract": "Contract",
+  "rt.bidAsk": "Bid / Ask",
   "rt.qty": "Qty",
   "rt.market": "Market",
   "rt.limit": "Limit",
