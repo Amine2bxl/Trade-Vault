@@ -39,6 +39,14 @@ grant all on public.replay_sessions to service_role;
 
 alter table public.replay_sessions enable row level security;
 
+-- Postgres ne connaît pas `create policy if not exists` : sans ce nettoyage,
+-- rejouer la migration échouerait alors que tout le reste du fichier est
+-- idempotent. On retire avant de poser.
+drop policy if exists "replay_sessions_select_own" on public.replay_sessions;
+drop policy if exists "replay_sessions_insert_own" on public.replay_sessions;
+drop policy if exists "replay_sessions_update_own" on public.replay_sessions;
+drop policy if exists "replay_sessions_delete_own" on public.replay_sessions;
+
 create policy "replay_sessions_select_own"
   on public.replay_sessions for select to authenticated
   using (auth.uid() = user_id);
