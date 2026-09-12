@@ -12,7 +12,7 @@ import { CircleX, Pencil, Trash2, X } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { Position, ReplaySessionState } from "@/modules/replay";
-import { roundToTick, NQ } from "@/modules/replay";
+import { roundToTick, NQ, nyTimeOf } from "@/modules/replay";
 import { requestTradeEncoding } from "../store/replay";
 
 type Tab = "positions" | "orders" | "history";
@@ -85,46 +85,68 @@ export default function ReplayPanels({
             </div>
           ))}
 
+        {/* LE CARNET, EN TABLEAU — comme sur une plateforme de trading.
+          Les cartes empilées obligeaient à lire chaque ordre séparément pour
+          comparer deux prix. Un tableau aligne les colonnes : on balaye. */}
         {tab === "orders" &&
           (working.length === 0 ? (
             <Empty label={t("rt.noOrders")} />
           ) : (
-            <div className="flex flex-col gap-2">
-              {working.map((o) => (
-                <div
-                  key={o.id}
-                  className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-2.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={cn(
-                        "text-xs font-bold",
-                        o.side === "long"
-                          ? "text-[var(--tv-chart-green)]"
-                          : "text-[var(--tv-chart-red)]",
-                      )}
-                    >
-                      {o.label} {o.side === "long" ? t("rt.long") : t("rt.short")} {o.qty}
-                    </span>
-                    <span className="font-mono text-xs text-[var(--tv-text)]">
-                      {o.price?.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className="text-[10px] text-[var(--tv-text-muted)]">
-                      {o.type} · en attente
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onCancelOrder(o.id)}
-                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--tv-danger)]"
-                    >
-                      <X className="h-3 w-3" />
-                      {t("rt.cancelOrder")}
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[11px]">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
+                    <th className="px-1 py-1 font-medium">{t("rt.colTime")}</th>
+                    <th className="px-1 py-1 font-medium">{t("rt.colAction")}</th>
+                    <th className="px-1 py-1 font-medium">{t("rt.colType")}</th>
+                    <th className="px-1 py-1 font-medium">{t("rt.colSize")}</th>
+                    <th className="px-1 py-1 text-right font-medium">{t("rt.colPrice")}</th>
+                    <th className="px-1 py-1" />
+                  </tr>
+                </thead>
+                <tbody className="font-mono">
+                  {working.map((o) => (
+                    <tr key={o.id} className="border-t border-[var(--tv-border)]/60">
+                      <td className="px-1 py-1.5 text-[var(--tv-text-muted)]">
+                        {nyTimeOf(o.placedAt)}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-1 py-1.5 font-bold",
+                          o.side === "long"
+                            ? "text-[var(--tv-chart-green)]"
+                            : "text-[var(--tv-chart-red)]",
+                        )}
+                      >
+                        {o.side === "long" ? t("rt.buy") : t("rt.sell")}
+                        {/* Un bracket se distingue d'une entrée : il REFERME. */}
+                        {o.reduceOnly && (
+                          <span className="ml-1 text-[9px] font-semibold text-[var(--tv-text-muted)]">
+                            {o.label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-1 py-1.5 uppercase text-[var(--tv-text-muted)]">
+                        {o.type}
+                      </td>
+                      <td className="px-1 py-1.5">{o.qty}</td>
+                      <td className="px-1 py-1.5 text-right text-[var(--tv-text)]">
+                        {o.price?.toFixed(2) ?? "—"}
+                      </td>
+                      <td className="px-1 py-1.5 text-right">
+                        <button
+                          type="button"
+                          title={t("rt.cancelOrder")}
+                          onClick={() => onCancelOrder(o.id)}
+                          className="grid h-5 w-5 place-items-center rounded text-[var(--tv-danger)] transition hover:bg-[var(--tv-danger)]/15"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ))}
 
@@ -136,10 +158,13 @@ export default function ReplayPanels({
               <table className="w-full text-left text-[11px]">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
-                    <th className="px-1 py-1 font-medium">Side</th>
-                    <th className="px-1 py-1 font-medium">Qty</th>
-                    <th className="px-1 py-1 font-medium">Entrée</th>
-                    <th className="px-1 py-1 font-medium">Sortie</th>
+                    {/* Ces en-têtes mélangeaient l'anglais et le français en
+                      dur, dans la même ligne. R et P&L restent tels quels :
+                      ils se lisent pareil dans les deux langues. */}
+                    <th className="px-1 py-1 font-medium">{t("rt.colSide")}</th>
+                    <th className="px-1 py-1 font-medium">{t("rt.colSize")}</th>
+                    <th className="px-1 py-1 font-medium">{t("rt.colEntry")}</th>
+                    <th className="px-1 py-1 font-medium">{t("rt.colExit")}</th>
                     <th className="px-1 py-1 font-medium">R</th>
                     <th className="px-1 py-1 text-right font-medium">P&L</th>
                     <th className="px-1 py-1" />
