@@ -318,10 +318,15 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   const createReplayAccount = useCallback(
     async (form: { name: string; startingBalance: number }) => {
       if (!userId) throw new Error("not authenticated");
+      // PAS D'ICÔNE ICI. `createAccount` prend soin de n'envoyer `icon` que
+      // s'il est fourni, précisément parce que la colonne peut manquer en base
+      // (elle arrive avec `billing_and_quota_hardening`, qui n'est pas appliquée
+      // partout). Passer « history » défaisait cette précaution : PostgREST
+      // refusait l'insert avec un PGRST204, le compte de rejeu n'était jamais
+      // créé, et le terminal ne démarrait pas.
       const acc = await addAccount({
         name: form.name || "NQ Backtest",
         type: "replay",
-        icon: "history",
         startingBalance: form.startingBalance,
       });
       setSessions([]);

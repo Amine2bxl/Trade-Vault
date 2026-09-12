@@ -23,6 +23,34 @@ function todayNy(): string {
   return nyDateOf(Date.now());
 }
 
+/**
+ * Un message LISIBLE à partir de n'importe quoi.
+ *
+ * Ce qui remonte de Supabase n'est pas une `Error` mais un objet nu
+ * (`{ code, message, details, hint }`) : `String(e)` en faisait
+ * « [object Object] », c'est-à-dire un message d'échec qui n'apprenait rien à
+ * personne — ni au trader, ni à celui qui doit corriger. On lit les champs
+ * utiles, et on tombe sur du JSON avant de tomber sur « [object Object] ».
+ */
+function describeError(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    const parts = [o.message, o.error_description, o.details, o.hint].filter(
+      (x): x is string => typeof x === "string" && x.length > 0,
+    );
+    const code = typeof o.code === "string" ? o.code : null;
+    if (parts.length > 0) return code ? `${code} · ${parts.join(" · ")}` : parts.join(" · ");
+    try {
+      return JSON.stringify(o);
+    } catch {
+      return "unknown error";
+    }
+  }
+  return String(e);
+}
+
 /** Les durées proposées, en SÉANCES de cotation. */
 const DURATIONS = [
   { days: 1, key: "rt.duration1" },
@@ -86,7 +114,7 @@ export default function ReplaySetup() {
       // (limite du plan, écriture refusée, réseau), l'exception s'échappait, et
       // le bouton retombait inerte sans un mot. Un échec doit se voir.
       console.error("[replay] lancement impossible", e);
-      setFailure(e instanceof Error ? e.message : String(e));
+      setFailure(describeError(e));
     } finally {
       setBusy(false);
     }
