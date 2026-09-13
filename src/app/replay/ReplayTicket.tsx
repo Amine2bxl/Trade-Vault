@@ -1,14 +1,22 @@
 /**
  * ReplayTicket — la salle des marchés du terminal.
  *
- * Entrée au marché / limite / stop, avec quantité et bracket posé dans le même
- * geste. Le R:R se calcule en direct, ticks et points compris — déplacer un
- * prix (ou le bracket, sur le graphe) met tout à jour immédiatement.
+ * Entrée au marché / limite / stop, quantité, et bracket posé dans le même
+ * geste. Deux boutons d'exécution qui portent chacun leur sens : le couple
+ * « sélecteur de sens + bouton d'envoi » demandait deux gestes et un état à
+ * vérifier avant de cliquer.
  *
- * La disposition suit celle des plateformes de trading : contrat et cotation en
- * tête, type d'ordre, paliers de quantité, puis DEUX boutons d'exécution qui
- * portent chacun leur sens. Le couple « sélecteur de sens + bouton d'envoi »
- * demandait deux gestes et un état à vérifier avant de cliquer.
+ * LE BRACKET SE MESURE EN TICKS, PAS EN PRIX.
+ * C'est la grammaire de Project X, et ce n'est pas un détail d'affichage : un
+ * stop saisi en prix absolu est inutilisable au marché — le temps de taper
+ * « 24 837,50 », le marché est ailleurs, et le nombre qu'on vient d'écrire ne
+ * veut plus rien dire. Une DISTANCE, elle, reste vraie quel que soit le prix
+ * d'entrée, vaut pour l'achat comme pour la vente (elle se retourne toute
+ * seule), et c'est de toute façon en distance qu'un trader pense son risque :
+ * « je mets quarante ticks », jamais « je mets 24 837,50 ».
+ *
+ * Les prix résultants sont affichés à côté, en clair : la distance est ce
+ * qu'on règle, le prix reste ce qu'on vérifie.
  */
 
 import { useMemo, useState } from "react";
@@ -44,6 +52,12 @@ interface Props {
   }) => void;
 }
 
+/** Les paliers de quantité usuels, à un clic — comme sur Project X. */
+const QTY_PRESETS = [1, 2, 3, 5, 10];
+
+/** Un pas de réglage pour les distances de bracket, en ticks. */
+const TICK_STEPS = [-20, -4, 4, 20];
+
 export default function ReplayTicket({
   price,
   balance,
@@ -55,8 +69,9 @@ export default function ReplayTicket({
   const [type, setType] = useState<OrderType>("market");
   const [qty, setQty] = useState(1);
   const [limit, setLimit] = useState<string>("");
-  const [sl, setSl] = useState<string>("");
-  const [tp, setTp] = useState<string>("");
+  /** Distances du bracket, EN TICKS depuis l'entrée. */
+  const [slTicks, setSlTicks] = useState<string>("40");
+  const [tpTicks, setTpTicks] = useState<string>("80");
 
   const [riskPct, setRiskPct] = useState<string>("");
   /** Le bracket part-il avec l'ordre ? Éteint, stop et objectif sont ignorés. */
@@ -65,123 +80,157 @@ export default function ReplayTicket({
   const tick = spec.tickSize;
   const mark = price ?? 0;
 
-  const limitNumber = type === "market" ? mark : Number(limit);
-  // Éteint, le bracket n'existe pas : ni pour l'ordre envoyé, ni pour le R:R,
-  // ni pour le dimensionnement. Un seul interrupteur, une seule vérité.
-  const slNumber = bracketOn && sl ? Number(sl) : null;
-  const tpNumber = bracketOn && tp ? Number(tp) : null;
+  /** Le prix d'entrée de référence : la limite saisie, ou le marché. */
+  const entryRef = type === "market" ? mark : Number(limit) || mark;
 
-  const rr = useMemo(() => {
-    if (!slNumber && !tpNumber) return null;
-    const entryVal = limitNumber || mark;
-    const riskPts = slNumber ? Math.abs(entryVal - slNumber) : 0;
-    const rewPts = tpNumber ? Math.abs(tpNumber - entryVal) : 0;
-    if (riskPts <= 0) return null;
-    return { rr: rewPts / riskPts, riskPts, rewPts };
-  }, [slNumber, tpNumber, limitNumber, mark]);
+  const slN = bracketOn ? Math.abs(Number(slTicks)) || 0 : 0;
+  const tpN = bracketOn ? Math.abs(Number(tpTicks)) || 0 : 0;
 
-  // Le prix d'entrée de référence : la limite saisie, ou le marché.
-  const entryRef = limitNumber || mark;
-
-  /** Ce que l'ordre courant risque réellement, tel qu'il est composé. */
-  const currentRisk = useMemo(() => {
-    if (slNumber == null || !entryRef) return null;
+  /**
+   * Les prix du bracket POUR UN SENS DONNÉ.
+   *
+   * Un même réglage donne deux trades symétriques : le stop d'un achat est
+   * sous l'entrée, celui d'une vente au-dessus. C'est le bouton cliqué qui
+   * tranche — et c'est pour ça que le réglage en distance tient : il n'a pas
+   * à choisir le sens à l'avance.
+   */
+  const bracketFor = (side: Side, entry: number) => {
+    const dir = side === "long" ? 1 : -1;
     return {
-      dollars: riskOfSize(qty, entryRef, slNumber, spec, commissionPerContract),
-      pct: riskPctOfSize(qty, entryRef, slNumber, balance, spec, commissionPerContract),
+      sl: slN > 0 ? roundToTick(entry - dir * slN * tick, spec) : undefined,
+      tp: tpN > 0 ? roundToTick(entry + dir * tpN * tick, spec) : undefined,
     };
-  }, [qty, entryRef, slNumber, balance, spec, commissionPerContract]);
+  };
+
+  /** L'aperçu s'affiche à l'achat : le sens exact se décide au clic. */
+  const preview = bracketFor("long", entryRef);
+
+  const rr = slN > 0 && tpN > 0 ? tpN / slN : null;
+  const riskDollars = slN > 0 ? pointsDollars(slN * tick, qty || 1, spec) : null;
+  const rewardDollars = tpN > 0 ? pointsDollars(tpN * tick, qty || 1, spec) : null;
+
+  /** Ce que l'ordre courant risque réellement, commissions comprises. */
+  const currentRisk = useMemo(() => {
+    if (slN <= 0 || !entryRef) return null;
+    const stop = entryRef - slN * tick;
+    return {
+      dollars: riskOfSize(qty, entryRef, stop, spec, commissionPerContract),
+      pct: riskPctOfSize(qty, entryRef, stop, balance, spec, commissionPerContract),
+    };
+  }, [qty, entryRef, slN, tick, balance, spec, commissionPerContract]);
 
   /** La taille qu'autoriserait le budget de risque saisi. */
   const sizing = useMemo(() => {
     const pct = Number(riskPct);
-    if (slNumber == null || !entryRef || !pct) return null;
+    if (slN <= 0 || !entryRef || !pct) return null;
     return sizeFromRisk({
       balance,
       riskPct: pct,
       entry: entryRef,
-      stop: slNumber,
+      stop: entryRef - slN * tick,
       spec,
       commissionPerContract,
     });
-  }, [riskPct, slNumber, entryRef, balance, spec, commissionPerContract]);
+  }, [riskPct, slN, tick, entryRef, balance, spec, commissionPerContract]);
 
-  /**
-   * Le SENS est porté par le bouton, pas par un sélecteur en amont.
-   *
-   * Il fallait auparavant choisir « Acheter » en haut, puis appuyer sur un
-   * bouton d'envoi en bas : deux gestes, et un état à vérifier avant de
-   * cliquer. Les plateformes de trading — Project X compris — donnent deux
-   * boutons qui font ce qu'ils disent. Un clic, aucune ambiguïté sur le sens.
-   */
   const submit = (s: Side) => {
+    const entry = type === "market" ? mark : roundToTick(Number(limit) || 0, spec);
+    const b = bracketFor(s, entry);
     onPlace({
       side: s,
       type,
       qty: Math.max(1, Math.round(qty || 1)),
-      price: type === "market" ? undefined : roundToTick(Number(limit) || 0, spec),
-      sl: slNumber != null ? roundToTick(slNumber, spec) : undefined,
-      tp: tpNumber != null ? roundToTick(tpNumber, spec) : undefined,
+      price: type === "market" ? undefined : entry,
+      sl: b.sl,
+      tp: b.tp,
     });
   };
-
-  /** Les paliers de quantité usuels, à un clic — comme sur Project X. */
-  const QTY_PRESETS = [1, 2, 3, 5, 10, 15];
 
   /**
    * Une cotation DÉDUITE, pas un carnet.
    *
    * Le rejeu ne dispose que d'OHLC : il n'existe aucune profondeur de marché à
    * afficher. On encadre donc le prix marqué d'un demi-tick de chaque côté —
-   * ce qui donne le spread d'un tick, celui du NQ en séance. Le jour où des
-   * données tick arriveront, c'est ici que le vrai bid/ask se branchera.
+   * ce qui donne le spread d'un tick, celui du NQ en séance.
    */
-  const bidAsk = {
-    bid: roundToTick(mark - tick / 2, spec),
-    ask: roundToTick(mark + tick / 2, spec),
+  const bid = roundToTick(mark - tick / 2, spec);
+  const ask = roundToTick(mark + tick / 2, spec);
+
+  const stepTicks = (cur: string, set: (v: string) => void, d: number) =>
+    set(String(Math.max(0, (Math.abs(Number(cur)) || 0) + d)));
+
+  /** Une jambe du bracket : distance en ticks, prix visé, montant en jeu. */
+  const legRow = (
+    which: "sl" | "tp",
+    value: string,
+    set: (v: string) => void,
+    money: number | null,
+    target: number | undefined,
+  ) => {
+    const color = which === "sl" ? "var(--tv-chart-red)" : "var(--tv-chart-green)";
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="w-6 shrink-0 text-[10px] font-bold uppercase" style={{ color }}>
+          {which === "sl" ? "SL" : "TP"}
+        </span>
+        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-0.5">
+          {TICK_STEPS.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => stepTicks(value, set, d)}
+              className="rounded px-1 text-[10px] font-bold text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+            >
+              {d > 0 ? `+${d}` : d}
+            </button>
+          ))}
+        </div>
+        <input
+          value={value}
+          onChange={(e) => set(e.target.value)}
+          inputMode="numeric"
+          aria-label={which === "sl" ? t("rt.sl") : t("rt.tp")}
+          className="w-12 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5 py-1 text-center tv-figure text-xs text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+        />
+        <span className="shrink-0 text-[10px] text-[var(--tv-text-muted)]">{t("rt.ticks")}</span>
+        <span className="ml-auto flex min-w-0 flex-col items-end leading-tight">
+          <span className="tv-figure text-[11px] font-bold" style={{ color }}>
+            {money == null ? "—" : `${which === "sl" ? "−" : "+"}$${Math.abs(money).toFixed(0)}`}
+          </span>
+          <span className="tv-figure text-[9px] text-[var(--tv-text-muted)]">
+            {target == null ? "—" : target.toFixed(2)}
+          </span>
+        </span>
+      </div>
+    );
   };
 
-  const bump = (setter: (v: string) => void, current: string, dTick: number) =>
-    setter(
-      current
-        ? String(roundToTick(Number(current) + dTick * tick, spec))
-        : String(roundToTick(mark + dTick * tick, spec)),
-    );
-
   return (
-    <div className="flex flex-col gap-3 p-3">
-      {/* Contrat — ce qu'on trade, affiché avant comment on le trade. */}
-      <div className="flex items-center justify-between rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
-        <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
-            {t("rt.contract")}
-          </div>
-          <div className="truncate text-sm font-bold text-[var(--tv-text)]">{spec.symbol}</div>
-        </div>
-        <div className="text-right">
-          <div className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
-            {t("rt.bidAsk")}
-          </div>
-          <div className="tv-figure text-xs font-semibold">
-            <span className="text-[var(--tv-chart-red)]">{bidAsk.bid.toFixed(2)}</span>
-            <span className="mx-1 text-[var(--tv-text-muted)]">/</span>
-            <span className="text-[var(--tv-chart-green)]">{bidAsk.ask.toFixed(2)}</span>
-          </div>
-        </div>
+    <div className="flex flex-col gap-2.5 p-3">
+      {/* Contrat et cotation — ce qu'on trade, avant comment on le trade. */}
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="truncate text-sm font-extrabold tracking-tight text-[var(--tv-text)]">
+          {spec.symbol}
+        </span>
+        <span className="tv-figure text-xs font-semibold">
+          <span className="text-[var(--tv-chart-red)]">{bid.toFixed(2)}</span>
+          <span className="mx-1 text-[var(--tv-text-muted)]">/</span>
+          <span className="text-[var(--tv-chart-green)]">{ask.toFixed(2)}</span>
+        </span>
       </div>
 
-      {/* Type */}
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-[var(--tv-plate-1)] p-1">
+      {/* Type d'ordre */}
+      <div className="grid grid-cols-3 gap-0.5 rounded-xl bg-[var(--tv-plate-1)] p-0.5">
         {(["market", "limit", "stop"] as const).map((ty) => (
           <button
             key={ty}
             type="button"
             onClick={() => setType(ty)}
             className={cn(
-              "rounded-lg py-1.5 text-xs font-semibold transition",
+              "rounded-[10px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition",
               type === ty
                 ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
-                : "text-[var(--tv-text-muted)]",
+                : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
             )}
           >
             {ty === "market" ? t("rt.market") : ty === "limit" ? t("rt.limit") : t("rt.stop")}
@@ -189,15 +238,57 @@ export default function ReplayTicket({
         ))}
       </div>
 
-      {/* Paliers de quantité — un clic, pas six sur « + ». */}
-      <div className="flex flex-wrap gap-1">
+      {type !== "market" && (
+        <label className="flex items-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-1.5">
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[var(--tv-text-muted)]">
+            {type === "limit" ? t("rt.limit") : t("rt.stop")}
+          </span>
+          <input
+            value={limit}
+            onChange={(e) => setLimit(e.target.value)}
+            placeholder={mark ? mark.toFixed(2) : "0.00"}
+            inputMode="decimal"
+            className="min-w-0 flex-1 bg-transparent text-right tv-figure text-sm text-[var(--tv-text)] outline-none placeholder:text-[var(--tv-text-muted)]"
+          />
+        </label>
+      )}
+
+      {/* QUANTITÉ — le réglage le plus fréquent, donc le plus gros.
+        Les paliers à un clic évitent six appuis sur « + ». */}
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setQty((n) => Math.max(1, n - 1))}
+          aria-label="−1"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-base font-bold text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)]"
+        >
+          −
+        </button>
+        <input
+          type="number"
+          min={1}
+          value={qty}
+          onChange={(e) => setQty(Number(e.target.value))}
+          aria-label={t("rt.qty")}
+          className="h-9 min-w-0 flex-1 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 text-center tv-figure text-base text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+        />
+        <button
+          type="button"
+          onClick={() => setQty((n) => n + 1)}
+          aria-label="+1"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-base font-bold text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)]"
+        >
+          +
+        </button>
+      </div>
+      <div className="grid grid-cols-5 gap-1">
         {QTY_PRESETS.map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => setQty(n)}
             className={cn(
-              "min-w-8 rounded-lg px-2 py-1 text-xs font-bold transition",
+              "rounded-lg py-1 text-[11px] font-bold transition",
               qty === n
                 ? "tv-accent-fill text-white"
                 : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
@@ -208,134 +299,42 @@ export default function ReplayTicket({
         ))}
       </div>
 
-      {/* Quantité */}
-      <label className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">{t("rt.qty")}</span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className="grid h-7 w-7 place-items-center rounded-lg border border-[var(--tv-border)] text-sm"
-          >
-            −
-          </button>
-          <input
-            type="number"
-            min={1}
-            value={qty}
-            onChange={(e) => setQty(Number(e.target.value))}
-            className="w-14 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1 text-center tv-figure text-sm text-[var(--tv-text)] outline-none"
-          />
-          <button
-            type="button"
-            onClick={() => setQty((q) => q + 1)}
-            className="grid h-7 w-7 place-items-center rounded-lg border border-[var(--tv-border)] text-sm"
-          >
-            +
-          </button>
-        </div>
-      </label>
-
-      {type !== "market" && (
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
-            {type === "limit" ? t("rt.limit") : t("rt.stop")} {t("rt.mark")}
+      {/* BRACKET — en distance, avec ses prix et ses montants en regard. */}
+      <div className="flex flex-col gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-2">
+        <label className="flex cursor-pointer items-center justify-between gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--tv-text-muted)]">
+            {t("rt.positionBracket")}
           </span>
-          <input
-            value={limit}
-            onChange={(e) => setLimit(e.target.value)}
-            placeholder={mark ? mark.toFixed(2) : "0.00"}
-            inputMode="decimal"
-            className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 tv-figure text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
-          />
-        </label>
-      )}
-
-      {/* Bracket — interrupteur AVANT les champs : c'est lui qui décide si le
-        stop et l'objectif partent avec l'ordre. Les laisser saisis mais
-        inertes, sans le dire, serait le pire des deux mondes. */}
-      <label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
-        <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
-          {t("rt.positionBracket")}
-        </span>
-        <span className="flex items-center gap-2">
-          <span
-            className={cn(
-              "text-[11px] font-bold",
-              bracketOn ? "text-[var(--tv-accent)]" : "text-[var(--tv-text-muted)]",
+          <span className="flex items-center gap-2">
+            {rr != null && bracketOn && (
+              <span className="tv-figure rounded-md bg-[var(--tv-plate-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--tv-text)]">
+                {rr.toFixed(2)} R
+              </span>
             )}
-          >
-            {bracketOn ? t("rt.enabled") : t("rt.disabled")}
+            <input
+              type="checkbox"
+              checked={bracketOn}
+              onChange={(e) => setBracketOn(e.target.checked)}
+              aria-label={t("rt.positionBracket")}
+              className="h-4 w-4 accent-[var(--tv-accent)]"
+            />
           </span>
-          <input
-            type="checkbox"
-            checked={bracketOn}
-            onChange={(e) => setBracketOn(e.target.checked)}
-            className="h-4 w-4 accent-[var(--tv-accent)]"
-          />
-        </span>
-      </label>
-
-      {/* Bracket */}
-      <div className={cn("grid grid-cols-2 gap-2", !bracketOn && "pointer-events-none opacity-40")}>
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] font-medium text-[var(--tv-chart-red)]">{t("rt.sl")}</span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => bump(setSl, sl, -5)}
-              className="px-1 text-xs text-[var(--tv-text-muted)]"
-            >
-              −5
-            </button>
-            <input
-              value={sl}
-              onChange={(e) => setSl(e.target.value)}
-              placeholder="—"
-              inputMode="decimal"
-              className="min-w-0 flex-1 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 tv-figure text-xs text-[var(--tv-text)] outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => bump(setSl, sl, 5)}
-              className="px-1 text-xs text-[var(--tv-text-muted)]"
-            >
-              +5
-            </button>
-          </div>
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] font-medium text-[var(--tv-chart-green)]">{t("rt.tp")}</span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => bump(setTp, tp, -5)}
-              className="px-1 text-xs text-[var(--tv-text-muted)]"
-            >
-              −5
-            </button>
-            <input
-              value={tp}
-              onChange={(e) => setTp(e.target.value)}
-              placeholder="—"
-              inputMode="decimal"
-              className="min-w-0 flex-1 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 tv-figure text-xs text-[var(--tv-text)] outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => bump(setTp, tp, 5)}
-              className="px-1 text-xs text-[var(--tv-text-muted)]"
-            >
-              +5
-            </button>
-          </div>
-        </label>
+        <div
+          className={cn("flex flex-col gap-1.5", !bracketOn && "pointer-events-none opacity-40")}
+        >
+          {legRow("sl", slTicks, setSlTicks, riskDollars, preview.sl)}
+          {legRow("tp", tpTicks, setTpTicks, rewardDollars, preview.tp)}
+        </div>
+        <p className="text-[9px] leading-tight text-[var(--tv-text-muted)]">
+          {t("rt.bracketHint")}
+        </p>
       </div>
 
-      {/* Dimensionnement par le risque — on décide la perte avant la taille */}
-      <div className="flex flex-col gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2">
+      {/* Dimensionnement par le risque — on décide la perte avant la taille. */}
+      <div className="flex flex-col gap-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-2">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] font-medium text-[var(--tv-text-muted)]">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--tv-text-muted)]">
             {t("rt.sizing")}
           </span>
           <div className="flex items-center gap-1">
@@ -345,30 +344,29 @@ export default function ReplayTicket({
               placeholder="1"
               inputMode="decimal"
               aria-label={t("rt.riskTarget")}
-              className="w-12 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 text-center tv-figure text-xs text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+              className="w-10 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1 py-1 text-center tv-figure text-[11px] text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
             />
-            <span className="text-[11px] text-[var(--tv-text-muted)]">%</span>
+            <span className="text-[10px] text-[var(--tv-text-muted)]">%</span>
             <button
               type="button"
               onClick={() => sizing && setQty(sizing.contracts)}
               disabled={!sizing || sizing.contracts < 1}
-              className="rounded-lg border border-[var(--tv-border)] px-2 py-1 text-[11px] font-semibold text-[var(--tv-text)] transition disabled:opacity-40"
+              className="rounded-lg border border-[var(--tv-border)] px-2 py-1 text-[10px] font-bold text-[var(--tv-text)] transition hover:bg-[var(--tv-surface-hover)] disabled:opacity-40"
             >
               {t("rt.sizeApply")}
             </button>
           </div>
         </div>
-
-        {slNumber == null ? (
-          <p className="text-[10px] leading-relaxed text-[var(--tv-text-muted)]">
+        {slN <= 0 ? (
+          <p className="text-[10px] leading-tight text-[var(--tv-text-muted)]">
             {t("rt.riskNeedsStop")}
           </p>
         ) : (
           <>
             {currentRisk && (
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-[10px]">
                 <span className="text-[var(--tv-text-muted)]">{t("rt.riskOnOrder")}</span>
-                <span className="tv-figure font-semibold text-[var(--tv-text)]">
+                <span className="tv-figure font-bold text-[var(--tv-text)]">
                   {currentRisk.dollars.toFixed(0)} $ · {currentRisk.pct.toFixed(2)} %
                 </span>
               </div>
@@ -377,14 +375,14 @@ export default function ReplayTicket({
               (sizing.contracts >= 1 ? (
                 <div className="flex items-center justify-between text-[10px] text-[var(--tv-text-muted)]">
                   <span>
-                    {t("rt.stopDistance")} {sizing.stopPoints.toFixed(2)} · {sizing.stopTicks} ticks
+                    {t("rt.stopDistance")} {sizing.stopPoints.toFixed(2)}
                   </span>
                   <span className="tv-figure">
                     {t("rt.contractsFor").replace("{n}", String(sizing.contracts))}
                   </span>
                 </div>
               ) : (
-                <p className="text-[10px] leading-relaxed text-[var(--tv-chart-red)]">
+                <p className="text-[10px] leading-tight text-[var(--tv-chart-red)]">
                   {t("rt.riskTooSmall")}
                 </p>
               ))}
@@ -392,56 +390,36 @@ export default function ReplayTicket({
         )}
       </div>
 
-      {/* R:R */}
-      {rr && (
-        <div className="flex items-center justify-between rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 text-[11px] text-[var(--tv-text-muted)]">
-          <span>
-            R <span className="font-bold text-[var(--tv-text)]">{rr.rr.toFixed(2)}</span>
-          </span>
-          <span>
-            Risque{" "}
-            <span className="tv-figure font-semibold text-[var(--tv-text)]">
-              {pointsDollars(rr.riskPts, qty, spec).toFixed(0)} $
-            </span>
-          </span>
-          <span>
-            Récomp.{" "}
-            <span className="tv-figure font-semibold text-[var(--tv-text)]">
-              {pointsDollars(rr.rewPts, qty, spec).toFixed(0)} $
-            </span>
-          </span>
-        </div>
-      )}
-
       {/* LES DEUX BOUTONS D'EXÉCUTION — chacun porte son sens.
-        Ils remplacent le couple « sélecteur de sens + bouton d'envoi » : un
-        seul geste, et rien à vérifier avant de cliquer. */}
+        Texte blanc, et non sombre : c'est la couleur qui porte le sens, le
+        texte n'a qu'à rester lisible. Un libellé sombre sur un vert de thème
+        change de contraste d'un thème à l'autre ; le blanc, non. */}
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => submit("long")}
-          className="rounded-xl bg-[var(--tv-chart-green)] py-3 text-sm font-bold text-[#04121c] transition hover:brightness-110"
+          className="rounded-xl bg-[var(--tv-chart-green)] py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-[var(--tv-elev-1)] transition hover:brightness-110 active:brightness-95"
         >
-          {t("rt.buy")} +{qty || 1}
-          <span className="block text-[10px] font-semibold opacity-80">
-            @ {type === "market" ? t("rt.market") : type === "limit" ? t("rt.limit") : t("rt.stop")}
+          {t("rt.buy")} {qty || 1}
+          <span className="block text-[9px] font-bold uppercase tracking-wide opacity-85">
+            {type === "market" ? t("rt.market") : type === "limit" ? t("rt.limit") : t("rt.stop")}
           </span>
         </button>
         <button
           type="button"
           onClick={() => submit("short")}
-          className="rounded-xl bg-[var(--tv-chart-red)] py-3 text-sm font-bold text-[#04121c] transition hover:brightness-110"
+          className="rounded-xl bg-[var(--tv-chart-red)] py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-[var(--tv-elev-1)] transition hover:brightness-110 active:brightness-95"
         >
-          {t("rt.sell")} −{qty || 1}
-          <span className="block text-[10px] font-semibold opacity-80">
-            @ {type === "market" ? t("rt.market") : type === "limit" ? t("rt.limit") : t("rt.stop")}
+          {t("rt.sell")} {qty || 1}
+          <span className="block text-[9px] font-bold uppercase tracking-wide opacity-85">
+            {type === "market" ? t("rt.market") : type === "limit" ? t("rt.limit") : t("rt.stop")}
           </span>
         </button>
       </div>
 
-      <p className="text-center text-[10px] leading-relaxed text-[var(--tv-text-muted)]">
-        1 tick = {tickValueDollars(1, spec).toFixed(2)} $ · 1 point ={" "}
-        {pointsDollars(1, 1, spec).toFixed(0)} $ · commissions incluses au remplissage
+      <p className="text-center text-[9px] leading-tight text-[var(--tv-text-muted)]">
+        1 tick = {tickValueDollars(1, spec).toFixed(2)} $ · 1 pt ={" "}
+        {pointsDollars(1, 1, spec).toFixed(0)} $
       </p>
     </div>
   );

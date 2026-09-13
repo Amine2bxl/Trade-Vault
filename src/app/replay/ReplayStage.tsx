@@ -106,6 +106,7 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
           onPlaceOrder={(input) => session.placeOrderTicket(input)}
           onBracket={session.bracketOf}
           onMoveOrder={session.moveOrder}
+          onMoveOrderBracket={session.moveOrderBracket}
           onCancelOrder={session.cancelOrder}
           onClosePos={session.closePositionOf}
           drawings={session.drawings}

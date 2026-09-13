@@ -13,6 +13,7 @@ import {
   rebuildState,
   cancelOrder,
   moveWorkingOrder,
+  setOrderBracket,
   generateSyntheticSession,
   sessionDateKey,
   summarize,
@@ -336,6 +337,68 @@ describe("simulation d'ordres", () => {
     placeOrder({ state, input: { side: "long", type: "stop", qty: 1, price: 20_000 }, bars });
     moveWorkingOrder(state, state.orders[0].id, 19_500);
     expect(state.orders[0].price).toBe(19_500);
+  });
+
+  test("déplacer une entrée emmène son bracket : la distance est préservée", async () => {
+    const state = makeState(0);
+    const bars = generateSyntheticSession(DATE, NQ);
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart;
+    state.now = e.now;
+    placeOrder({
+      state,
+      input: {
+        side: "long",
+        type: "limit",
+        qty: 1,
+        price: 20_000,
+        bracketSl: 19_950,
+        bracketTp: 20_100,
+      },
+      bars,
+    });
+    const o = state.orders[0];
+    moveWorkingOrder(state, o.id, 20_050);
+    // Le risque choisi valait 50 points, le gain visé 100 : après le
+    // déplacement, ils valent toujours ça. C'est l'intention du trader, pas
+    // les nombres, qui doit survivre au glissement.
+    expect(o.price).toBe(20_050);
+    expect(o.bracketSl).toBe(20_000);
+    expect(o.bracketTp).toBe(20_150);
+  });
+
+  test("le bracket d'un ordre en carnet refuse de passer du mauvais côté", async () => {
+    const state = makeState(0);
+    const bars = generateSyntheticSession(DATE, NQ);
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart;
+    state.now = e.now;
+    placeOrder({
+      state,
+      input: {
+        side: "long",
+        type: "limit",
+        qty: 1,
+        price: 20_000,
+        bracketSl: 19_950,
+        bracketTp: 20_100,
+      },
+      bars,
+    });
+    const o = state.orders[0];
+    // Un stop d'achat AU-DESSUS de l'entrée se déclencherait au remplissage.
+    setOrderBracket(state, o.id, 20_040, undefined);
+    expect(o.bracketSl).toBe(19_950);
+    // `undefined` ne touche à rien : glisser le stop n'efface pas l'objectif.
+    setOrderBracket(state, o.id, 19_900, undefined);
+    expect(o.bracketSl).toBe(19_900);
+    expect(o.bracketTp).toBe(20_100);
+    // `null`, lui, retire bien la jambe visée — et elle seule.
+    setOrderBracket(state, o.id, null, undefined);
+    expect(o.bracketSl).toBeNull();
+    expect(o.bracketTp).toBe(20_100);
   });
 });
 

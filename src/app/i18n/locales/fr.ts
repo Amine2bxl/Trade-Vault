@@ -164,6 +164,9 @@ const fr: Dict = {
   "rt.tp": "Take profit",
   "rt.buy": "Acheter",
   "rt.sell": "Vendre",
+  "rt.ticks": "ticks",
+  "rt.bracketHint":
+    "Distance depuis l'entrée — elle se retourne avec le sens, le même réglage vaut à l'achat comme à la vente.",
   "rt.sizing": "Dimensionnement",
   "rt.riskTarget": "Risque par trade",
   "rt.sizeApply": "Dimensionner",

@@ -191,6 +191,9 @@ const en = {
   "rt.tp": "Take profit",
   "rt.buy": "Buy",
   "rt.sell": "Sell",
+  "rt.ticks": "ticks",
+  "rt.bracketHint":
+    "Distance from entry — it flips with the side, so the same setting works for a buy and a sell.",
   "rt.sizing": "Position sizing",
   "rt.riskTarget": "Risk per trade",
   "rt.sizeApply": "Size it",

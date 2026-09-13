@@ -78,8 +78,19 @@ interface OverlayProps {
   /** Supprimer UN dessin — depuis sa propre fiche, pas depuis le rail. */
   onRemoveDrawing: (id: string) => void;
   onMoveOrder: (orderId: string, price: number) => void;
+  /**
+   * Déplacer le bracket d'un ordre encore en carnet.
+   * `undefined` sur une jambe = on n'y touche pas ; `null` = on la retire.
+   */
+  onMoveOrderBracket: (
+    orderId: string,
+    sl: number | null | undefined,
+    tp: number | null | undefined,
+  ) => void;
   /** Annuler depuis le graphe : la croix des étiquettes d'ordre. */
   onCancelOrder: (orderId: string) => void;
+  /** Le contrat de la séance — donne le spec pour chiffrer un bracket. */
+  symbol: string;
   /** Couleur des dessins À VENIR. Les dessins déjà posés gardent la leur. */
   drawColor: string;
   /** Les couleurs proposées pour reteinter un dessin déjà posé. */
@@ -251,6 +262,63 @@ function PriceTag({
   );
 }
 
+/**
+ * LES DEUX ZONES D'UN BRACKET — ce qu'on risque, ce qu'on vise.
+ *
+ * Une bande rouge de l'entrée au stop, une verte de l'entrée à l'objectif,
+ * chacune bordée de pointillés. C'est la lecture que donne une plateforme de
+ * trading : l'engagement se voit sans lire un chiffre, et la proportion entre
+ * les deux EST le rapport risque/gain.
+ *
+ * La même forme sert pour une position ouverte et pour un ordre encore en
+ * carnet — parce que c'est la même chose à un remplissage près. Seule
+ * l'intensité change (`pending`) : un bracket qui n'a pas encore d'existence
+ * ne doit pas peser autant à l'œil qu'un risque réellement pris.
+ */
+function BracketZones({
+  W,
+  entryY,
+  slY,
+  tpY,
+  pending = false,
+}: {
+  W: number;
+  entryY: number;
+  slY: number | null;
+  tpY: number | null;
+  pending?: boolean;
+}) {
+  const zone = (yy: number, color: string) => (
+    <g>
+      <rect
+        x={0}
+        y={Math.min(entryY, yy)}
+        width={W}
+        height={Math.abs(yy - entryY)}
+        fill={color}
+        opacity={pending ? 0.07 : 0.12}
+      />
+      <rect
+        x={0.5}
+        y={Math.min(entryY, yy)}
+        width={W - 1}
+        height={Math.abs(yy - entryY)}
+        fill="none"
+        stroke={color}
+        strokeWidth={1}
+        strokeDasharray="4 4"
+        opacity={pending ? 0.32 : 0.5}
+      />
+    </g>
+  );
+  return (
+    <>
+      {slY != null && Math.abs(slY - entryY) > 1 && zone(slY, SL)}
+      {tpY != null && Math.abs(tpY - entryY) > 1 && zone(tpY, TP)}
+    </>
+  );
+}
+
 /** Petit losange de fill — la signature des exécutions. */
 function FillDiamond({ cx, cy, color }: { cx: number; cy: number; color: string }) {
   return (
@@ -270,6 +338,15 @@ interface DragState {
   orderId?: string;
   drawingId?: string;
   anchor?: number;
+  /**
+   * Glissement du bracket d'un ordre ENCORE EN CARNET.
+   *
+   * Distinct de `orderId` : tant que l'entrée n'est pas remplie, son stop et
+   * son objectif ne sont pas des ordres qu'on déplace, mais deux nombres
+   * portés par l'entrée.
+   */
+  bracketOrderId?: string;
+  leg?: "sl" | "tp";
 }
 
 export default function ReplayOverlay({
@@ -286,7 +363,9 @@ export default function ReplayOverlay({
   onUpdateDrawing,
   onRemoveDrawing,
   onMoveOrder,
+  onMoveOrderBracket,
   onCancelOrder,
+  symbol,
   drawColor,
   palette,
   onToolDone,
@@ -443,6 +522,16 @@ export default function ReplayOverlay({
     if (!drag) return;
     const m = toMarket(ev);
     if (!m) return;
+    if (drag.bracketOrderId) {
+      // Une seule jambe bouge : l'autre passe en `undefined`, qui veut dire
+      // « n'y touche pas ». Passer `null` l'aurait effacée.
+      onMoveOrderBracket(
+        drag.bracketOrderId,
+        drag.leg === "sl" ? m.price : undefined,
+        drag.leg === "tp" ? m.price : undefined,
+      );
+      return;
+    }
     if (drag.orderId) {
       const o = orders.find((x) => x.id === drag.orderId);
       if (o && o.price != null) onMoveOrder(drag.orderId, m.price);
@@ -666,8 +755,91 @@ export default function ReplayOverlay({
       const color = "var(--tv-text-muted)";
       const sideWord = o.side === "long" ? "BUY" : "SELL";
       const kind = o.type === "limit" ? "LMT" : "STP";
+      // LE BRACKET VOYAGE AVEC SON ENTRÉE. Tant qu'elle attend, le stop et
+      // l'objectif ne sont pas des ordres : ce sont deux nombres qu'elle
+      // porte. Ils se dessinent quand même — c'est tout l'intérêt de poser un
+      // bracket avant d'être rempli : VOIR le trade avant de le prendre.
+      const slY = o.bracketSl != null ? coord(0, o.bracketSl).y : null;
+      const tpY = o.bracketTp != null ? coord(0, o.bracketTp).y : null;
+      const spec = instrumentOf(symbol);
+      const rail = [slY, tpY, y].filter((v): v is number => v != null);
+
+      const leg = (
+        yy: number,
+        price: number,
+        which: "sl" | "tp",
+        legColor: string,
+        label: string,
+      ) => (
+        <>
+          <line
+            x1={0}
+            y1={yy}
+            x2={W}
+            y2={yy}
+            stroke={legColor}
+            strokeWidth={1}
+            strokeDasharray="5 4"
+            opacity={0.6}
+          />
+          <PriceTag
+            x={8}
+            y={yy}
+            color={legColor}
+            label={label}
+            value={price.toFixed(2)}
+            money={money$(pnlOf(o.side, o.qty, o.price!, price, spec))}
+            drag={{
+              onDown: handleDown({ bracketOrderId: o.id, leg: which }),
+              onMove: handleMove,
+              onUp: handleUp,
+            }}
+            onCancel={() =>
+              onMoveOrderBracket(
+                o.id,
+                which === "sl" ? null : undefined,
+                which === "tp" ? null : undefined,
+              )
+            }
+          />
+          {/* La poignée du bord droit — celle qu'on attrape sans viser
+            l'étiquette, exactement comme pour une position ouverte. */}
+          <rect
+            x={W - 11}
+            y={yy - 10}
+            width={8}
+            height={20}
+            fill="transparent"
+            style={{ pointerEvents: "auto", cursor: "ns-resize" }}
+            onPointerDown={handleDown({ bracketOrderId: o.id, leg: which })}
+            onPointerMove={handleMove}
+            onPointerUp={handleUp}
+          />
+        </>
+      );
+
       return (
         <g key={o.id} style={{ pointerEvents: "none" }}>
+          <BracketZones W={W} entryY={y} slY={slY} tpY={tpY} pending />
+          {slY != null && o.bracketSl != null && leg(slY, o.bracketSl, "sl", SL, "SL")}
+          {tpY != null && o.bracketTp != null && leg(tpY, o.bracketTp, "tp", TP, "TP")}
+          {/* Le rail vertical qui relie les trois niveaux — il dit d'un coup
+            d'œil que ces traits forment UN ordre, et pas trois. */}
+          {rail.length > 1 && (
+            <>
+              <line
+                x1={W - 3.5}
+                y1={Math.min(...rail)}
+                x2={W - 3.5}
+                y2={Math.max(...rail)}
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="3 3"
+                opacity={0.55}
+              />
+              <rect x={W - 5.5} y={y - 1.5} width={4} height={3} fill={color} />
+            </>
+          )}
           {/* Ligne pointillée fine — l'ordre attend. */}
           <line
             x1={0}
@@ -725,59 +897,11 @@ export default function ReplayOverlay({
 
     return (
       <g key={pos.id} style={{ pointerEvents: "none" }}>
-        {/* LES DEUX ZONES DU BRACKET — ce qu'on risque, ce qu'on vise.
-          Une bande rouge de l'entrée au stop, une verte de l'entrée à
-          l'objectif, chacune bordée de pointillés. C'est la lecture que donne
-          une plateforme de trading : on voit l'engagement sans lire un
-          chiffre, et la proportion entre les deux EST le rapport risque/gain.
+        {/* Les deux zones du bracket — la même forme que pour un ordre en
+          carnet, à ceci près que le risque, lui, est réellement pris.
           L'ancienne bande unique, teintée du sens de la position, montrait le
           P&L courant — une information que l'en-tête donne déjà en clair. */}
-        {slY != null && Math.abs(slY - y) > 1 && (
-          <g>
-            <rect
-              x={0}
-              y={Math.min(y, slY)}
-              width={W}
-              height={Math.abs(slY - y)}
-              fill={SL}
-              opacity={0.12}
-            />
-            <rect
-              x={0.5}
-              y={Math.min(y, slY)}
-              width={W - 1}
-              height={Math.abs(slY - y)}
-              fill="none"
-              stroke={SL}
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              opacity={0.5}
-            />
-          </g>
-        )}
-        {tpY != null && Math.abs(tpY - y) > 1 && (
-          <g>
-            <rect
-              x={0}
-              y={Math.min(y, tpY)}
-              width={W}
-              height={Math.abs(tpY - y)}
-              fill={TP}
-              opacity={0.12}
-            />
-            <rect
-              x={0.5}
-              y={Math.min(y, tpY)}
-              width={W - 1}
-              height={Math.abs(tpY - y)}
-              fill="none"
-              stroke={TP}
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              opacity={0.5}
-            />
-          </g>
-        )}
+        <BracketZones W={W} entryY={y} slY={slY} tpY={tpY} />
 
         {/* Sans bracket, il reste la bande de P&L : entrée → prix marqué. */}
         {slY == null && tpY == null && markY != null && Math.abs(markY - y) > 1 && (

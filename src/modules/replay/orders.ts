@@ -173,11 +173,63 @@ export function cancelOrder(state: ReplaySessionState, orderId: string): void {
   }
 }
 
-/** Déplace un ordre en carnet (drag sur le graphe ou édition du ticket). */
+/**
+ * Déplace un ordre en carnet (drag sur le graphe ou édition du ticket).
+ *
+ * LE BRACKET SUIT L'ENTRÉE. Déplacer un ordre limite de vingt points sans
+ * emmener son stop, c'est changer le risque du trade à l'insu du trader : la
+ * distance qu'il avait choisie n'existe plus. On translate donc le stop et
+ * l'objectif du même écart — c'est ce que fait Project X, et c'est la seule
+ * lecture qui préserve l'intention.
+ */
 export function moveWorkingOrder(state: ReplaySessionState, orderId: string, price: number): void {
   const o = state.orders.find((x) => x.id === orderId);
   if (!o || o.status !== "working" || o.type === "market") return;
-  o.price = roundToTick(price, simContextOf(state).spec);
+  const spec = simContextOf(state).spec;
+  const next = roundToTick(price, spec);
+  const delta = o.price != null ? next - o.price : 0;
+  o.price = next;
+  if (delta !== 0) {
+    if (o.bracketSl != null) o.bracketSl = roundToTick(o.bracketSl + delta, spec);
+    if (o.bracketTp != null) o.bracketTp = roundToTick(o.bracketTp + delta, spec);
+  }
+}
+
+/**
+ * Change le bracket d'un ordre ENCORE EN CARNET.
+ *
+ * Tant que l'entrée n'est pas remplie, son stop et son objectif ne sont pas
+ * des ordres : ce sont deux nombres portés par l'entrée, qui deviendront des
+ * ordres au remplissage (`fillEntry` → `setPositionBracket`). Les déplacer se
+ * fait donc ici, et non en passant par la position — qui n'existe pas encore.
+ *
+ * Le côté est contraint : un stop d'achat est SOUS l'entrée, son objectif
+ * au-dessus. Accepter l'inverse aurait produit un ordre qui se déclenche à
+ * l'instant même du remplissage.
+ *
+ * Trois valeurs, trois sens : un nombre pose le niveau, `null` le retire,
+ * `undefined` n'y touche pas. Glisser le stop ne doit pas effacer l'objectif
+ * qu'on n'a pas touché.
+ */
+export function setOrderBracket(
+  state: ReplaySessionState,
+  orderId: string,
+  sl: number | null | undefined,
+  tp: number | null | undefined,
+): void {
+  const o = state.orders.find((x) => x.id === orderId);
+  if (!o || o.status !== "working" || o.reduceOnly) return;
+  const spec = simContextOf(state).spec;
+  const entry = o.price;
+  const isBuy = o.side === "long";
+  const ok = (v: number, wantBelow: boolean): boolean =>
+    entry == null || (wantBelow ? v < entry : v > entry);
+  // `null` retire le niveau ; un prix du mauvais côté est IGNORÉ plutôt que
+  // corrigé — le trait s'arrête au bord de l'entrée, il ne saute pas.
+  if (sl === null) o.bracketSl = null;
+  else if (sl !== undefined && ok(sl, isBuy)) o.bracketSl = roundToTick(sl, spec);
+  if (tp === null) o.bracketTp = null;
+  else if (tp !== undefined && ok(tp, !isBuy)) o.bracketTp = roundToTick(tp, spec);
 }
 
 // ── Bracket d'une position ─────────────────────────────────────────────────

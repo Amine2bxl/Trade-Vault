@@ -64,6 +64,11 @@ export interface TerminalProps {
   onPlaceOrder: (input: PlaceOrderInput) => void;
   onBracket: (posId: string, sl: number | null, tp: number | null) => void;
   onMoveOrder: (orderId: string, price: number) => void;
+  onMoveOrderBracket: (
+    orderId: string,
+    sl: number | null | undefined,
+    tp: number | null | undefined,
+  ) => void;
   onCancelOrder: (orderId: string) => void;
   onClosePos: (posId: string) => void;
   drawings: Drawing[];
@@ -157,7 +162,7 @@ export default function ReplayTerminal(props: TerminalProps) {
       .filter(
         (o) => o.status === "working" && o.price != null && o.label !== "SL" && o.label !== "TP",
       )
-      .map((o) => `o${o.id}:${o.price}`),
+      .map((o) => `o${o.id}:${o.price}:${o.bracketSl}:${o.bracketTp}`),
     ...positions.flatMap((p) => [
       `p${p.id}:${p.avgEntry}:${p.side}`,
       `s${p.stop?.id ?? ""}:${p.stop?.price ?? ""}`,
@@ -174,6 +179,12 @@ export default function ReplayTerminal(props: TerminalProps) {
       if (o.status !== "working" || o.price == null) continue;
       if (o.label === "SL" || o.label === "TP") continue;
       out.push({ id: `ord:${o.id}`, price: o.price, color: "var(--tv-text-muted)" });
+      // Le bracket d'un ordre en carnet compte lui aussi : ce sont les prix
+      // qu'on s'apprête à engager, donc ceux qu'on veut lire sur l'axe.
+      if (o.bracketSl != null)
+        out.push({ id: `obsl:${o.id}`, price: o.bracketSl, color: "var(--tv-chart-red)" });
+      if (o.bracketTp != null)
+        out.push({ id: `obtp:${o.id}`, price: o.bracketTp, color: "var(--tv-chart-green)" });
     }
     for (const p of positions) {
       const side = p.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)";
@@ -433,7 +444,9 @@ export default function ReplayTerminal(props: TerminalProps) {
               onUpdateDrawing={props.onUpdateDrawing}
               onRemoveDrawing={props.onRemoveDrawing}
               onMoveOrder={props.onMoveOrder}
+              onMoveOrderBracket={props.onMoveOrderBracket}
               onCancelOrder={props.onCancelOrder}
+              symbol={state?.symbol ?? "NQ"}
               drawColor={drawColor}
               palette={DRAW_COLORS}
               onToolDone={() => setTool("cursor")}

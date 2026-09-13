@@ -28,6 +28,7 @@ import {
   closePosition,
   flattenPositions,
   moveWorkingOrder,
+  setOrderBracket,
   setPositionBracket,
   placeOrder as simPlaceOrder,
   cancelOrder as simCancelOrder,
@@ -477,6 +478,17 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     [bump, scheduleSave],
   );
 
+  /** Le bracket d'un ordre ENCORE EN CARNET — glissé depuis le graphe. */
+  const moveOrderBracket = useCallback(
+    (orderId: string, sl: number | null | undefined, tp: number | null | undefined) => {
+      if (!stateRef.current) return;
+      setOrderBracket(stateRef.current, orderId, sl, tp);
+      scheduleSave();
+      bump();
+    },
+    [bump, scheduleSave],
+  );
+
   const cancelOrder = useCallback(
     (orderId: string) => {
       if (!stateRef.current) return;
@@ -635,6 +647,7 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     placeOrderTicket,
     bracketOf,
     moveOrder,
+    moveOrderBracket,
     cancelOrder,
     closePositionOf,
     // Dessins
