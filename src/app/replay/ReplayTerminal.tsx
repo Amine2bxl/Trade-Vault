@@ -7,7 +7,7 @@
  * `useReplaySession` et des props.
  */
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Eraser,
   Flag,
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import type { ChartView } from "./ReplayChart";
+import type { ChartLevel, ChartView } from "./ReplayChart";
 import ReplayChart from "./ReplayChart";
 import ReplayOverlay, { type ReplayTool } from "./ReplayOverlay";
 import ReplayControls from "./ReplayControls";
@@ -142,6 +142,56 @@ export default function ReplayTerminal(props: TerminalProps) {
     state?.executions ??
     ([] as { at: number; price: number; side: "long" | "short"; qty: number }[]);
   const drawings = props.drawings ?? [];
+
+  // ── Ce que l'ÉCHELLE DE PRIX doit répéter ────────────────────────────────
+  // Les niveaux tracés et les prix engagés remontent sur l'axe de droite, à la
+  // manière de TradingView : le chiffre se lit sans survoler le trait, et reste
+  // lisible quand celui-ci sort du champ. La clé sert de mémo : l'état de la
+  // séance est muté en place, comparer les références ne dirait rien, alors
+  // qu'une signature courte dit exactement ce qui a bougé.
+  const levelKey = [
+    ...drawings
+      .filter((d) => d.kind === "hline")
+      .map((d) => `d${d.id}:${d.points[0]?.y}:${d.color}`),
+    ...orders
+      .filter(
+        (o) => o.status === "working" && o.price != null && o.label !== "SL" && o.label !== "TP",
+      )
+      .map((o) => `o${o.id}:${o.price}`),
+    ...positions.flatMap((p) => [
+      `p${p.id}:${p.avgEntry}:${p.side}`,
+      `s${p.stop?.id ?? ""}:${p.stop?.price ?? ""}`,
+      `t${p.target?.id ?? ""}:${p.target?.price ?? ""}`,
+    ]),
+  ].join("|");
+  const levels = useMemo<ChartLevel[]>(() => {
+    const out: ChartLevel[] = [];
+    for (const d of drawings) {
+      if (d.kind !== "hline" || d.points[0] == null) continue;
+      out.push({ id: `drw:${d.id}`, price: d.points[0].y, color: d.color });
+    }
+    for (const o of orders) {
+      if (o.status !== "working" || o.price == null) continue;
+      if (o.label === "SL" || o.label === "TP") continue;
+      out.push({ id: `ord:${o.id}`, price: o.price, color: "var(--tv-text-muted)" });
+    }
+    for (const p of positions) {
+      const side = p.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)";
+      out.push({ id: `pos:${p.id}`, price: p.avgEntry, color: side });
+      if (p.stop?.price != null)
+        out.push({ id: `sl:${p.stop.id}`, price: p.stop.price, color: "var(--tv-chart-red)" });
+      if (p.target?.price != null)
+        out.push({
+          id: `tp:${p.target.id}`,
+          price: p.target.price,
+          color: "var(--tv-chart-green)",
+        });
+    }
+    return out;
+    // La signature SUFFIT, et les tableaux ne suffiraient pas : mutés en place
+    // par le moteur, ils gardent la même référence après un changement de prix.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levelKey]);
 
   const fitChart = () => viewRef.current.chart?.timeScale().fitContent();
   const resetChart = () => viewRef.current.chart?.timeScale().resetTimeScale();
@@ -366,6 +416,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               candles={props.candles}
               refsView={viewRef}
               viewTf={props.viewTf}
+              levels={levels}
               onCrosshair={setHover}
             />
             <ReplayOverlay
@@ -380,9 +431,12 @@ export default function ReplayTerminal(props: TerminalProps) {
               mark={props.quote?.mark ?? 0}
               onAddDrawing={props.onAddDrawing}
               onUpdateDrawing={props.onUpdateDrawing}
+              onRemoveDrawing={props.onRemoveDrawing}
               onMoveOrder={props.onMoveOrder}
               onCancelOrder={props.onCancelOrder}
               drawColor={drawColor}
+              palette={DRAW_COLORS}
+              onToolDone={() => setTool("cursor")}
             />
             {hover && (
               <div className="pointer-events-none absolute left-2 top-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 tv-figure text-[10px] text-[var(--tv-text-muted)]">

@@ -8,6 +8,10 @@
  *
  * L'état du graphe (chart + séries) est exposé à l'extérieur via `refsView` :
  * l'overlay de dessins l'utilise pour convertir prix/temps → pixels.
+ *
+ * Le graphe possède aussi l'ÉCHELLE DE PRIX, donc c'est lui qui y répercute
+ * les niveaux (`levels`) : ce que l'overlay trace dans la zone, l'axe le
+ * chiffre sur son bord droit.
  */
 
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
@@ -17,7 +21,9 @@ import {
   CrosshairMode,
   CandlestickSeries,
   HistogramSeries,
+  LineStyle,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
   type UTCTimestamp,
   type MouseEventParams,
@@ -35,6 +41,36 @@ function cssVar(name: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
+}
+
+/**
+ * Une couleur UTILISABLE PAR UN CANVAS.
+ *
+ * Le reste du produit écrit ses couleurs en jetons de thème — `var(--tv-…)` —
+ * et c'est ce que portent les dessins et les ordres. Un canvas, lui, ne résout
+ * rien : il lui faut la valeur. On la lui donne au moment du tracé, sans figer
+ * la palette, donc sans casser le changement de thème.
+ */
+function resolveColor(c: string, fallback = "#94a3b8"): string {
+  const m = /^var\(\s*(--[a-z0-9-]+)\s*\)$/i.exec(c.trim());
+  return m ? cssVar(m[1], fallback) : c;
+}
+
+/**
+ * Un niveau répercuté sur l'ÉCHELLE DE PRIX.
+ *
+ * Un trait tracé dans le graphe dit « ici » ; il ne dit pas « à combien ».
+ * TradingView répond en posant le prix du niveau sur l'échelle de droite, à
+ * sa hauteur : le chiffre est lisible sans survoler, et reste lisible quand le
+ * trait sort du champ par la gauche. C'est cette pastille-là qu'on reproduit,
+ * et on la fait porter par la librairie plutôt que par l'overlay SVG : c'est
+ * elle qui possède l'échelle, sa largeur et son empilement d'étiquettes.
+ */
+export interface ChartLevel {
+  id: string;
+  price: number;
+  /** Jeton de thème ou hex — résolu au tracé. */
+  color: string;
 }
 
 /** « 14:32 » en fuseau NY, format axis. */
@@ -61,13 +97,21 @@ export interface ReplayChartProps {
   refsView: MutableRefObject<ChartView>;
   /** Timeframe de vue — sert à réinitialiser l'échelle à chaque changement. */
   viewTf: string;
+  /** Niveaux à répercuter sur l'échelle de prix (dessins, ordres, brackets). */
+  levels?: ChartLevel[];
   /** Saisie du curseur : {time, ohlc} ou null. */
   onCrosshair?: (
     info: { time: number; o: number; h: number; l: number; c: number; v: number } | null,
   ) => void;
 }
 
-export default function ReplayChart({ candles, refsView, viewTf, onCrosshair }: ReplayChartProps) {
+export default function ReplayChart({
+  candles,
+  refsView,
+  viewTf,
+  levels,
+  onCrosshair,
+}: ReplayChartProps) {
   const { active } = useTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -252,6 +296,48 @@ export default function ReplayChart({ candles, refsView, viewTf, onCrosshair }: 
       },
     });
   }, [themeKey]);
+
+  // ── Les niveaux sur l'échelle de prix ───────────────────────────────────
+  // On RÉCONCILIE plutôt qu'on ne reconstruit : les lignes de prix déjà posées
+  // sont mises à jour, celles qui ont disparu sont retirées. Tout effacer pour
+  // tout recréer à chaque image aurait fait clignoter l'échelle à chaque
+  // déplacement d'un trait.
+  const priceLinesRef = useRef<Map<string, IPriceLine>>(new Map());
+  useEffect(() => {
+    const series = candlesRef.current;
+    if (!series) return;
+    const plate = cssVar("--tv-plate-2", "#1d2125");
+    const keep = new Set<string>();
+    for (const lv of levels ?? []) {
+      if (!Number.isFinite(lv.price)) continue;
+      keep.add(lv.id);
+      const color = resolveColor(lv.color);
+      const opts = {
+        price: lv.price,
+        color,
+        lineWidth: 1 as const,
+        lineStyle: LineStyle.Dotted,
+        // Le TRAIT est déjà dessiné par l'overlay, avec sa couleur, son style
+        // et ses poignées. Le doubler d'une ligne de la librairie l'aurait
+        // épaissi sans rien ajouter : on ne garde que l'étiquette d'axe.
+        lineVisible: false,
+        axisLabelVisible: true,
+        title: "",
+        // Pastille sombre, texte teinté : lisible sur tous les thèmes, là où
+        // un aplat de couleur aurait rendu certains chiffres illisibles.
+        axisLabelColor: plate,
+        axisLabelTextColor: color,
+      };
+      const prev = priceLinesRef.current.get(lv.id);
+      if (prev) prev.applyOptions(opts);
+      else priceLinesRef.current.set(lv.id, series.createPriceLine(opts));
+    }
+    for (const [id, line] of priceLinesRef.current) {
+      if (keep.has(id)) continue;
+      series.removePriceLine(line);
+      priceLinesRef.current.delete(id);
+    }
+  }, [levels, themeKey]);
 
   // ── Réinitialiser la vue quand le timeframe change ──────────────────────
   const prevTf = useRef(viewTf);

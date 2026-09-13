@@ -47,9 +47,6 @@ export default function ReplayPanels({
   const working = (state?.orders ?? []).filter((o) => o.status === "working");
   const history = [...(state?.closedTrades ?? [])].sort((a, b) => b.exitTime - a.exitTime);
 
-  const pnlColor = (n: number) =>
-    n >= 0 ? "text-[var(--tv-chart-green)]" : "text-[var(--tv-chart-red)]";
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Onglets */}

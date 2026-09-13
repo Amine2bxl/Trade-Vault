@@ -8,14 +8,18 @@
  *   • les positions (prix d'entrée moyen) et les exécutions ;
  *   • les ombrages ETH/RTH.
  *
- * En mode curseur, la couche est transparente : le graphe pilote zoom/pan, et
- * seules les pp poignées (ancres, étiquettes d'ordres, curseurs de bracket)
- * sont interactives. En mode dessin, la couche capture les clics pour poser
- * les ancres du nouvel outil.
+ * En mode curseur, la couche est transparente SAUF là où quelque chose se
+ * saisit : les poignées (ancres, étiquettes d'ordres, curseurs de bracket) et
+ * les bandes de prise des dessins, qui ouvrent leur fiche — nom, couleur,
+ * suppression. Partout ailleurs le graphe garde zoom et déplacement. En mode
+ * dessin, la couche capture les clics pour poser les ancres du nouvel outil.
  */
 
 import { useEffect, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
 import type { UTCTimestamp } from "lightweight-charts";
+import { Trash2, X } from "lucide-react";
+import { useT } from "../i18n/LanguageContext";
+import { cn } from "../utils/cn";
 import type { ChartView } from "./ReplayChart";
 import type { Drawing, Order, Position } from "@/modules/replay";
 import { instrumentOf, pnlOf } from "@/modules/replay";
@@ -71,11 +75,65 @@ interface OverlayProps {
   mark: number;
   onAddDrawing: (d: Drawing) => void;
   onUpdateDrawing: (d: Drawing) => void;
+  /** Supprimer UN dessin — depuis sa propre fiche, pas depuis le rail. */
+  onRemoveDrawing: (id: string) => void;
   onMoveOrder: (orderId: string, price: number) => void;
   /** Annuler depuis le graphe : la croix des étiquettes d'ordre. */
   onCancelOrder: (orderId: string) => void;
   /** Couleur des dessins À VENIR. Les dessins déjà posés gardent la leur. */
   drawColor: string;
+  /** Les couleurs proposées pour reteinter un dessin déjà posé. */
+  palette: readonly string[];
+  /**
+   * Le dessin est posé — l'outil a fini son travail.
+   *
+   * Le terminal en profite pour revenir au curseur, comme toute plateforme de
+   * graphes : sans ça, chaque clic suivant poserait un dessin de plus, et le
+   * clic qu'on voulait faire POUR EN SÉLECTIONNER UN en créerait un autre.
+   */
+  onToolDone?: () => void;
+}
+
+/**
+ * L'étiquette d'un dessin — « PDH », « BSL », « SSL ».
+ *
+ * Un niveau sans nom oblige à se rappeler POURQUOI on l'a tracé ; au bout de
+ * trois traits, on ne s'en souvient plus. Le nom se pose sur le trait, à
+ * gauche, comme sur TradingView, et il est cerné d'un liseré de la couleur du
+ * fond (`paintOrder: stroke`) pour rester lisible quand une bougie passe
+ * dessous.
+ */
+function DrawingLabel({
+  x,
+  y,
+  color,
+  text,
+  anchor = "start",
+}: {
+  x: number;
+  y: number;
+  color: string;
+  text: string;
+  anchor?: "start" | "middle";
+}) {
+  return (
+    <text
+      x={x}
+      y={y}
+      fill={color}
+      fontSize={10}
+      fontWeight={800}
+      letterSpacing={0.5}
+      textAnchor={anchor}
+      stroke="var(--tv-plate-0)"
+      strokeWidth={3}
+      strokeLinejoin="round"
+      paintOrder="stroke"
+      style={{ pointerEvents: "none" }}
+    >
+      {text}
+    </text>
+  );
 }
 
 /**
@@ -226,12 +284,18 @@ export default function ReplayOverlay({
   mark,
   onAddDrawing,
   onUpdateDrawing,
+  onRemoveDrawing,
   onMoveOrder,
   onCancelOrder,
   drawColor,
+  palette,
+  onToolDone,
 }: OverlayProps) {
+  const { t } = useT();
   const [pane, setPane] = useState<{ w: number; h: number } | null>(null);
   const [draft, setDraft] = useState<Drawing | null>(null);
+  /** Le dessin dont la fiche est ouverte — nom, couleur, suppression. */
+  const [selected, setSelected] = useState<string | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -258,6 +322,27 @@ export default function ReplayOverlay({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Changer d'outil, c'est changer d'intention : la fiche du dessin précédent
+  // n'a plus lieu d'être ouverte au-dessus du trait qu'on s'apprête à poser.
+  useEffect(() => {
+    // L'ébauche en cours meurt avec l'outil qui l'a commencée : garder un
+    // point posé pour un rectangle qu'on ne veut plus le ferait apparaître au
+    // premier clic de l'outil suivant.
+    setDraft(null);
+    if (tool !== "cursor") setSelected(null);
+  }, [tool]);
+
+  // Échap referme la fiche. Sur un graphe, on ne veut pas avoir à VISER une
+  // croix pour se débarrasser d'un panneau : la touche est toujours là.
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected]);
 
   const coord = (tMs: number, price: number): { x: number | null; y: number | null } => {
     if (!chart || !candles) return { x: null, y: null };
@@ -293,6 +378,25 @@ export default function ReplayOverlay({
     const m = toMarket(ev);
     if (!m) return;
     if (!draft) {
+      // UN CLIC SUFFIT là où un seul point définit la forme. Demander un
+      // second clic pour un niveau horizontal laissait le trait invisible
+      // entre les deux, posé au premier point et non au dernier : on croyait
+      // l'avoir raté, on recliquait, et on en avait deux.
+      if (ONE_CLICK.has(tool)) {
+        const id = nextDrawId();
+        onAddDrawing({
+          id,
+          kind: tool as Drawing["kind"],
+          color: drawColor,
+          points: [{ x: m.ms, y: m.price }],
+        });
+        // La fiche s'ouvre dans la foulée : on vient de poser un niveau, le
+        // geste suivant est de le NOMMER (« PDH », « BSL »). Pour l'outil
+        // texte, c'est même la seule façon d'écrire quoi que ce soit.
+        setSelected(id);
+        onToolDone?.();
+        return;
+      }
       setDraft({
         id: "draft",
         kind: tool as Drawing["kind"],
@@ -301,16 +405,18 @@ export default function ReplayOverlay({
       });
       return;
     }
-    if (ONE_CLICK.has(draft.kind) || draft.points.length >= 2) {
-      onAddDrawing({
-        ...draft,
-        points: [...draft.points, { x: m.ms, y: m.price }],
-        id: nextDrawId(),
-      });
-      setDraft(null);
-    } else {
-      setDraft({ ...draft, points: [...draft.points, { x: m.ms, y: m.price }] });
-    }
+    // Deuxième clic : la forme tient dans son premier point et celui-ci. On
+    // REMPLACE le point de prévisualisation au lieu de l'empiler — l'ancien
+    // code gardait la dernière position survolée et posait une troisième
+    // ancre, invisible car superposée, mais bien là quand on essayait de
+    // saisir la deuxième.
+    onAddDrawing({
+      ...draft,
+      points: [draft.points[0], { x: m.ms, y: m.price }],
+      id: nextDrawId(),
+    });
+    setDraft(null);
+    onToolDone?.();
   };
 
   const onPlaceMove = (ev: PointerEvent<SVGRectElement>) => {
@@ -372,6 +478,9 @@ export default function ReplayOverlay({
       );
     });
 
+  /** En mode curseur, un dessin s'ATTRAPE : le clic ouvre sa fiche. */
+  const pickable = tool === "cursor";
+
   const shapes = drawings.map((d) => {
     const pt = (i: number) => {
       const p = d.points[i] ?? d.points[0];
@@ -382,24 +491,41 @@ export default function ReplayOverlay({
     const [x1, y1] = pt(1);
     if (x0 == null || y0 == null) return null;
     let body: React.ReactNode = null;
+    // La zone de PRISE : la même géométrie, en transparent et bien plus
+    // épaisse. Viser un trait d'un pixel à la souris est une loterie ; c'est
+    // la bande invisible qu'on attrape, pas le trait.
+    let grab: React.ReactNode = null;
+    // L'étiquette du dessin, posée là où elle se lit — sur le trait, au bord.
+    let label: React.ReactNode = null;
 
     switch (d.kind) {
       case "hline":
         body = <line x1={0} y1={y0 as number} x2={W} y2={y0 as number} />;
+        grab = <line x1={0} y1={y0 as number} x2={W} y2={y0 as number} />;
+        if (d.text)
+          label = <DrawingLabel x={6} y={(y0 as number) - 5} color={d.color} text={d.text} />;
         break;
       case "vline":
         body = <line x1={x0} y1={0} x2={x0} y2={H} strokeDasharray="3 3" />;
+        grab = <line x1={x0} y1={0} x2={x0} y2={H} />;
+        if (d.text) label = <DrawingLabel x={x0 + 5} y={12} color={d.color} text={d.text} />;
         break;
       case "trend":
         if (x1 == null || y1 == null) break;
         body = <line x1={x0} y1={y0} x2={x1} y2={y1} />;
+        grab = <line x1={x0} y1={y0} x2={x1} y2={y1} />;
+        if (d.text) label = <DrawingLabel x={x0 + 6} y={y0 - 6} color={d.color} text={d.text} />;
         break;
       case "ray": {
         if (x1 == null || y1 == null) break;
         const dx = x1 - x0;
         const dy = y1 - y0;
         const ln = Math.hypot(dx, dy) || 1;
-        body = <line x1={x0} y1={y0} x2={x0 + (dx / ln) * W * 4} y2={y0 + (dy / ln) * W * 4} />;
+        const ex = x0 + (dx / ln) * W * 4;
+        const ey = y0 + (dy / ln) * W * 4;
+        body = <line x1={x0} y1={y0} x2={ex} y2={ey} />;
+        grab = <line x1={x0} y1={y0} x2={ex} y2={ey} />;
+        if (d.text) label = <DrawingLabel x={x0 + 6} y={y0 - 6} color={d.color} text={d.text} />;
         break;
       }
       case "measured": {
@@ -419,6 +545,7 @@ export default function ReplayOverlay({
             </text>
           </>
         );
+        grab = <line x1={x0} y1={y0} x2={x1} y2={y1} />;
         break;
       }
       case "rect":
@@ -426,17 +553,23 @@ export default function ReplayOverlay({
         if (x1 == null || y1 == null) break;
         const x = Math.min(x0, x1);
         const y = Math.min(y0, y1);
+        const w = Math.abs(x1 - x0);
+        const h = Math.abs(y1 - y0);
         body = (
           <rect
             x={x}
             y={y}
-            width={Math.abs(x1 - x0)}
-            height={Math.abs(y1 - y0)}
+            width={w}
+            height={h}
             fill={d.kind === "zone" ? d.color : "none"}
             fillOpacity={0.1}
             stroke={d.color}
           />
         );
+        // LE CONTOUR SEULEMENT. Rendre l'intérieur d'une zone cliquable
+        // aurait volé au graphe le glissement partout où elle s'étend.
+        grab = <rect x={x} y={y} width={w} height={h} fill="none" />;
+        if (d.text) label = <DrawingLabel x={x + 5} y={y - 5} color={d.color} text={d.text} />;
         break;
       }
       case "text":
@@ -445,16 +578,45 @@ export default function ReplayOverlay({
             {d.text || "A"}
           </text>
         );
+        grab = <rect x={x0 - 3} y={y0 - 16} width={72} height={18} fill="none" />;
         break;
     }
     if (body == null) return null;
+    const isSel = d.id === selected;
     return (
-      <g key={d.id} stroke={d.color} strokeWidth={1.1}>
+      <g key={d.id} stroke={d.color} strokeWidth={isSel ? 1.9 : 1.1}>
         {body}
+        {label}
+        {grab && pickable && (
+          <g
+            stroke="transparent"
+            strokeWidth={12}
+            fill="none"
+            style={{ pointerEvents: "auto", cursor: "pointer" }}
+            onPointerDown={(ev) => {
+              ev.stopPropagation();
+              setSelected(d.id);
+            }}
+          >
+            {grab}
+          </g>
+        )}
         {anchorsOf(d)}
       </g>
     );
   });
+
+  /** Le dessin ouvert, et où poser sa fiche sans sortir du graphe. */
+  const sheet = (() => {
+    const d = drawings.find((x) => x.id === selected);
+    if (!d || !pane) return null;
+    const p = d.points[0];
+    const c = coord(p.x, p.y);
+    if (c.y == null) return null;
+    const left = Math.max(8, Math.min((c.x ?? 12) + 10, W - 268));
+    const top = Math.max(8, Math.min(c.y + 12, H - 52));
+    return { d, left, top };
+  })();
 
   function priceAt(d: Drawing, index: number): number {
     return d.points[index]?.y ?? d.points[0]?.y ?? 0;
@@ -789,32 +951,94 @@ export default function ReplayOverlay({
   ) : null;
 
   return (
-    <svg
-      ref={svgRef}
-      className="absolute inset-0"
-      width={W}
-      height={H}
-      style={{ pointerEvents: "none", overflow: "visible" }}
-    >
-      {shading}
-      {shapes}
-      {draftShape}
-      {orderLines}
-      {positionShapes}
-      {execs}
-      {showRthEth && (
-        <text
-          x={8}
-          y={12}
-          fill="var(--tv-text-muted)"
-          fontSize={9}
-          style={{ pointerEvents: "none" }}
+    <div className="absolute inset-0" style={{ pointerEvents: "none" }}>
+      <svg
+        ref={svgRef}
+        className="absolute inset-0"
+        width={W}
+        height={H}
+        style={{ pointerEvents: "none", overflow: "visible" }}
+      >
+        {shading}
+        {shapes}
+        {draftShape}
+        {orderLines}
+        {positionShapes}
+        {execs}
+        {showRthEth && (
+          <text
+            x={8}
+            y={12}
+            fill="var(--tv-text-muted)"
+            fontSize={9}
+            style={{ pointerEvents: "none" }}
+          >
+            RTH 09:30–16:00 ET · ETH 18:00–17:00
+          </text>
+        )}
+        {capture}
+      </svg>
+
+      {/* LA FICHE DU DESSIN — nommer, reteinter, supprimer.
+        Elle s'ouvre au contact du trait, pas dans un panneau à l'autre bout de
+        l'écran : la décision se prend là où se trouve l'objet. C'est aussi la
+        seule façon de changer la couleur d'un dessin DÉJÀ POSÉ — le rail, lui,
+        ne décide que de la couleur des prochains. */}
+      {sheet && (
+        <div
+          className="absolute flex items-center gap-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 p-1.5 shadow-[var(--tv-elev-2)] backdrop-blur"
+          style={{ left: sheet.left, top: sheet.top, pointerEvents: "auto" }}
         >
-          RTH 09:30–16:00 ET · ETH 18:00–17:00
-        </text>
+          <input
+            value={sheet.d.text ?? ""}
+            onChange={(e) => onUpdateDrawing({ ...sheet.d, text: e.target.value })}
+            placeholder={t("rt.drawName")}
+            aria-label={t("rt.drawName")}
+            autoFocus
+            className="w-28 rounded-lg bg-[var(--tv-plate-1)] px-2 py-1 text-[11px] font-semibold text-[var(--tv-text)] outline-none placeholder:text-[var(--tv-text-muted)] focus:ring-1 focus:ring-[var(--tv-border-strong)]"
+          />
+          <div className="flex items-center gap-1">
+            {palette.map((c) => (
+              <button
+                key={c}
+                type="button"
+                title={t("rt.drawColor")}
+                aria-label={t("rt.drawColor")}
+                onClick={() => onUpdateDrawing({ ...sheet.d, color: c })}
+                className={cn(
+                  "h-4 w-4 rounded-full border transition",
+                  sheet.d.color === c
+                    ? "scale-110 border-[var(--tv-text)]"
+                    : "border-transparent opacity-70 hover:opacity-100",
+                )}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            title={t("rt.drawDelete")}
+            aria-label={t("rt.drawDelete")}
+            onClick={() => {
+              onRemoveDrawing(sheet.d.id);
+              setSelected(null);
+            }}
+            className="grid h-6 w-6 place-items-center rounded-lg text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-danger)]"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title={t("rt.drawClose")}
+            aria-label={t("rt.drawClose")}
+            onClick={() => setSelected(null)}
+            className="grid h-6 w-6 place-items-center rounded-lg text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       )}
-      {capture}
-    </svg>
+    </div>
   );
 }
 
