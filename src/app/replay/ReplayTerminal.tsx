@@ -29,6 +29,7 @@ import ReplayOverlay, { type ReplayTool } from "./ReplayOverlay";
 import ReplayControls from "./ReplayControls";
 import ReplayTicket from "./ReplayTicket";
 import ReplayPanels from "./ReplayPanels";
+import ReplayDashboard from "./ReplayDashboard";
 import type { ReplayQuote } from "./useReplaySession";
 import type { Drawing, PlaceOrderInput, ReplaySessionState } from "@/modules/replay";
 import { nyTimeOf, dailyLossState } from "@/modules/replay";
@@ -105,6 +106,8 @@ export default function ReplayTerminal(props: TerminalProps) {
   const { t } = useT();
   const [tool, setTool] = useState<ReplayTool>("cursor");
   const [showRthEth, setShowRthEth] = useState(true);
+  /** Ce qu'occupe la zone centrale : le marché, ou le bilan de la séance. */
+  const [view, setView] = useState<"chart" | "stats">("chart");
   const viewRef = useRef<ChartView>({ chart: null, candles: null });
   const [hover, setHover] = useState<{
     time: number;
@@ -291,8 +294,35 @@ export default function ReplayTerminal(props: TerminalProps) {
                   {tf.label}
                 </button>
               ))}
+            {/* GRAPHE / ANALYTICS. La bascule est au bout de la barre qui
+              commande la zone centrale, et non dans l'en-tête du compte : on
+              range un contrôle avec ce qu'il change. Le ticket et les panneaux
+              restent en place, donc consulter son bilan n'oblige pas à quitter
+              le carnet. */}
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              {(["chart", "stats"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  className={cn(
+                    "shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold transition",
+                    view === v
+                      ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
+                      : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
+                  )}
+                >
+                  {v === "chart" ? t("rt.viewChart") : t("rt.viewStats")}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="relative min-h-0 flex-1 bg-[var(--tv-plate-0)]">
+          <div
+            className={cn(
+              "relative min-h-0 flex-1 bg-[var(--tv-plate-0)]",
+              view === "stats" && "hidden",
+            )}
+          >
             <ReplayChart
               candles={props.candles}
               refsView={viewRef}
@@ -330,6 +360,14 @@ export default function ReplayTerminal(props: TerminalProps) {
               </div>
             )}
           </div>
+
+          {/* Le bilan de la SÉANCE — mêmes grandeurs que la page Analytics,
+            calculées sur les seuls trades de ce rejeu. */}
+          {view === "stats" && (
+            <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--tv-plate-0)]">
+              <ReplayDashboard state={state} />
+            </div>
+          )}
         </main>
 
         {/* Panneau droit */}
