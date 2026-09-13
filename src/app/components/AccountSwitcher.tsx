@@ -4,6 +4,7 @@ import {
   Building2,
   FlaskConical,
   Zap,
+  History,
   Check,
   ChevronDown,
   Plus,
@@ -38,12 +39,14 @@ const TYPE_ICON: Record<AccountType, typeof User> = {
   prop: Building2,
   demo: FlaskConical,
   live: Zap,
+  replay: History,
 };
 const TYPE_LABEL_KEY = {
   personal: "account.typePersonal",
   prop: "account.typeProp",
   demo: "account.typeDemo",
   live: "account.typeLive",
+  replay: "rt.account",
 } as const;
 
 /**
@@ -68,6 +71,40 @@ const ACCOUNT_TINT = {
   border: "rgb(var(--tv-accent-rgb) / 0.30)",
   ring: "rgb(var(--tv-accent-rgb) / 0.22)",
 };
+
+/**
+ * LE COMPTE DE REJEU NE SE CONFOND AVEC AUCUN AUTRE.
+ *
+ * Ses trades ne sont pas réels : les ranger visuellement avec le Live et le
+ * Prop invite à lire une performance qui n'a jamais existé. Il porte donc la
+ * teinte ambre du mode rejeu — la même que le terminal — et non celle de
+ * l'accent du thème, partagée par tous les autres.
+ *
+ * `--tv-warning` est un jeton du design system, pas une couleur inventée : le
+ * test de couverture des thèmes interdit les hex de marque en dur, et il a
+ * raison.
+ */
+const REPLAY_TINT = {
+  fg: "var(--tv-warning)",
+  bg: "rgb(var(--tv-warning-rgb) / 0.16)",
+  bgSoft: "rgb(var(--tv-warning-rgb) / 0.10)",
+  border: "rgb(var(--tv-warning-rgb) / 0.35)",
+  ring: "rgb(var(--tv-warning-rgb) / 0.22)",
+};
+
+const tintOf = (a: Account) => (a.type === "replay" ? REPLAY_TINT : ACCOUNT_TINT);
+
+/** La pastille « REPLAY », posée partout où un compte est nommé. */
+function ReplayBadge() {
+  return (
+    <span
+      className="ml-1.5 shrink-0 rounded px-1 py-px text-[9px] font-bold uppercase tracking-wide align-middle"
+      style={{ background: REPLAY_TINT.bg, color: REPLAY_TINT.fg }}
+    >
+      Replay
+    </span>
+  );
+}
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   User,
@@ -182,7 +219,7 @@ export default function AccountSwitcher({
               >
                 <span
                   className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
+                  style={{ background: tintOf(a).bg, color: tintOf(a).fg }}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </span>
@@ -194,6 +231,7 @@ export default function AccountSwitcher({
                     )}
                   >
                     {a.name}
+                    {a.type === "replay" && <ReplayBadge />}
                   </span>
                   <span className="block text-[10px] text-slate-500">
                     {t(TYPE_LABEL_KEY[a.type])}
@@ -356,6 +394,7 @@ export default function AccountSwitcher({
                         <span className="min-w-0 pr-6">
                           <span className="block text-sm font-bold text-white truncate">
                             {a.name}
+                            {a.type === "replay" && <ReplayBadge />}
                           </span>
                           <span className="block text-[10px] text-slate-500 truncate">
                             {t(TYPE_LABEL_KEY[a.type])}
@@ -795,6 +834,18 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
           icon: selectedIcon ?? undefined,
           startingBalance: Number(balance) || 0,
         });
+        // CRÉER UN COMPTE DE REJEU, C'EST VOULOIR REJOUER. Le laisser dans la
+        // liste sans rien ouvrir obligeait à deviner qu'il faut ensuite aller
+        // dans Backtest : le geste et son intention étaient séparés. On y
+        // emmène directement, comme le choix du type l'annonçait.
+        if (type === "replay") {
+          window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "backtest" } }));
+          // Et on ouvre le seuil. Deux événements plutôt qu'un : naviguer et
+          // lancer sont deux intentions distinctes, et arriver sur Backtest ne
+          // doit PAS déclencher le rejeu en général — seulement quand on vient
+          // de demander un compte de rejeu.
+          window.dispatchEvent(new CustomEvent("tv:open-replay"));
+        }
       }
       onClose();
     } catch (e) {

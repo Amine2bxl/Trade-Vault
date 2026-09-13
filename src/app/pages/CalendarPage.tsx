@@ -524,15 +524,28 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                         </div>
                       )}
 
-                      {/* Footer: trade count + RR */}
+                      {/* Pied : nombre de trades, taux de réussite, R moyen.
+                        Le TAUX manquait, alors que la journée le calcule déjà
+                        (`wins` sur `count`) : un montant seul ne dit pas s'il
+                        vient d'une série propre ou d'un gros trade qui a
+                        rattrapé trois pertes. C'est la lecture des calendriers
+                        de journal — le chiffre sous le montant.
+                        Les jours entièrement à l'équilibre n'ont pas de taux à
+                        montrer : n'ayant ni gagné ni perdu, « 0 % » se lirait
+                        comme un échec. */}
                       {data && (
                         <div className="tv-figure flex items-center gap-1.5 text-[11px]">
                           <span className="text-slate-400">
                             {data.count}{" "}
                             {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
                           </span>
+                          {data.count > data.breakEven && (
+                            <span className="text-slate-300">
+                              {Math.round((data.wins / (data.count - data.breakEven)) * 100)}%
+                            </span>
+                          )}
                           {data.avgRR > 0 && (
-                            <span className="text-cyan-400/80 hidden md:inline">
+                            <span className="hidden text-[var(--tv-accent)]/80 md:inline">
                               {data.avgRR.toFixed(1)}R
                             </span>
                           )}

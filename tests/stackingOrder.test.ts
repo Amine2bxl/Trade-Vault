@@ -52,6 +52,7 @@ describe("l'échelle est déclarée en un seul endroit", () => {
         "modal-top",
         "nav",
         "overlay",
+        "overlay-modal",
         "rail",
         "sheet",
         "toast",
@@ -73,6 +74,7 @@ describe("l'échelle est déclarée en un seul endroit", () => {
       "modal-nested",
       "modal-top",
       "overlay",
+      "overlay-modal",
       "top",
       "toast",
     ];

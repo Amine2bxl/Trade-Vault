@@ -1,0 +1,268 @@
+/**
+ * ReplayMode — le mode « app dans l'app ».
+ *
+ * Le terminal de rejeu est un MODE de l'application, pas un écran à part :
+ *   • le compte actif devient le compte de rejeu → Journal, Dashboard,
+ *     Analytics, Calendrier et Rapports affichent les données du rejeu ;
+ *   • la session (horloge, ordres, dessins) survit à la navigation ;
+ *   • l'identité visuelle bascule vers le thème Replay le temps du mode.
+ *
+ * L'entrée joue une séquence immersive : thème changé, voile de chargement,
+ * puis révélation du terminal. La sortie restaure le thème réel.
+ */
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useAccounts } from "../contexts/AccountContext";
+import { useTheme } from "../contexts/ThemeContext";
+import {
+  useReplaySession,
+  type ReplaySessionApi,
+  type ReplayStartConfig,
+} from "./useReplaySession";
+import { applyReplayTheme, restoreUserTheme } from "./replayTheme";
+import { countAccountTrades, seedReplayWeek, type ReplaySessionDto } from "../store/replay";
+import type { Account } from "../store";
+
+export type ReplayOverlayStage = "loading" | "in" | "out" | null;
+
+interface Ctx {
+  session: ReplaySessionApi;
+  /** Le MODE rejeu est-il posé sur TOUT le site (thème + bandeau) ?
+   *  Dès que le compte de rejeu est sélectionné, oui — même sans séance. */
+  modeActive: boolean;
+  transition: ReplayOverlayStage;
+  pending: ReplayStartConfig | null;
+  launchOpen: boolean;
+  openLaunch: () => void;
+  closeLaunch: () => void;
+  enter: (cfg: ReplayStartConfig) => Promise<boolean>;
+  resumeInto: (dto: ReplaySessionDto) => Promise<boolean>;
+  /** Quitte le rejeu. Rend `true` si la séance a réellement été enregistrée. */
+  exit: () => Promise<boolean>;
+  /** Semaine d'exemple NQ si le compte est vide — pour voir l'app en action. */
+  ensureSampleWeek: (accountId: string) => Promise<number>;
+}
+
+const ReplayModeCtx = createContext<Ctx | null>(null);
+
+export function useReplayMode(): Ctx {
+  const ctx = useContext(ReplayModeCtx);
+  if (!ctx) throw new Error("useReplayMode must be used within ReplayModeProvider");
+  return ctx;
+}
+
+/**
+ * La même chose, mais qui REND `null` au lieu de lever.
+ *
+ * Pour les composants de châssis — le rail, par exemple — qui veulent afficher
+ * l'état du rejeu sans en dépendre. Ils doivent continuer de fonctionner si on
+ * les monte un jour hors du provider : une marque décorative ne justifie pas
+ * de faire tomber la navigation.
+ */
+export function useReplayModeOptional(): Ctx | null {
+  return useContext(ReplayModeCtx);
+}
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export function ReplayModeProvider({
+  userId,
+  children,
+}: {
+  userId: string | null;
+  children: ReactNode;
+}) {
+  const { activeId, switchAccount, accounts } = useAccounts();
+  const { active: userTheme } = useTheme();
+  const session = useReplaySession({ userId });
+  const [transition, setTransition] = useState<ReplayOverlayStage>(null);
+  const [pending, setPending] = useState<ReplayStartConfig | null>(null);
+  const [launchOpen, setLaunchOpen] = useState(false);
+  const [modeActive, setModeActive] = useState(false);
+  /** Le dernier compte RÉEL vu — celui qu'on restaure en quittant le rejeu. */
+  const realAccount = useRef<string | null>(null);
+  const modeRef = useRef(false);
+  const activeRef = useRef(false);
+  activeRef.current = session.active;
+  const currentTheme = useRef(userTheme);
+  currentTheme.current = userTheme;
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearTimers = () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  };
+  const after = (ms: number, fn: () => void) => {
+    timers.current.push(setTimeout(fn, ms));
+  };
+
+  const openLaunch = useCallback(() => {
+    const target = session.account?.id ?? session.replayAccounts[0]?.id;
+    if (target) void session.loadSessionsOf(target);
+    setLaunchOpen(true);
+  }, [session]);
+
+  /**
+   * Pose le MODE rejeu sur tout le site — thème, bandeau, compte rejoué.
+   *
+   * C'est ce que le trader demande : choisir le sous-compte de rejeu bascule
+   * l'application entière, sans passer par un popup ni un écran. S'il existe
+   * une séance encore en cours pour ce compte, elle est reprise dans la foulée.
+   */
+  const enterModeForAccount = useCallback(
+    async (account: Account) => {
+      if (modeRef.current) return;
+      modeRef.current = true;
+      setModeActive(true);
+      applyReplayTheme();
+      const list = await session.loadSessionsOf(account.id);
+      const resumable = list?.find((s) => s.status === "active" && s.state);
+      if (resumable?.state && !activeRef.current) {
+        setTransition("loading");
+        const ok = await session.resume(resumable);
+        setTransition(ok ? "in" : null);
+        after(1400, () => setTransition(null));
+      } else if (!activeRef.current) {
+        session.selectAccount(account.id);
+      }
+    },
+    [session.loadSessionsOf, session.resume, session.selectAccount],
+  );
+
+  /** Dépose le mode rejeu : thème réel restauré, séance sauvegardée. */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const leaveMode = useCallback(async () => {
+    if (!modeRef.current) return;
+    modeRef.current = false;
+    setModeActive(false);
+    restoreUserTheme(currentTheme.current);
+    if (activeRef.current) await session.leave();
+  }, [session.leave]);
+
+  // Le MOT d'entrée du mode : dès que le compte actif devient un compte de
+  // rejeu, tout le site bascule. Le retour à un compte réel le dépose.
+  useEffect(() => {
+    if (!userId) return;
+    const acc = accounts.find((a) => a.id === activeId);
+    if (!acc) return;
+    if (acc.type === "replay") {
+      void enterModeForAccount(acc);
+    } else {
+      realAccount.current = activeId;
+      void leaveMode();
+    }
+  }, [userId, activeId, accounts, enterModeForAccount, leaveMode]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const enter = useCallback(
+    async (cfg: ReplayStartConfig) => {
+      clearTimers();
+      applyReplayTheme();
+      setPending(cfg);
+      setTransition("loading");
+      // Battement immersif : les données se préparent pendant que l'écran est
+      // déjà passé en thème rejeu.
+      await wait(700);
+      const ok = await session.startNew(cfg);
+      if (!ok) {
+        restoreUserTheme(currentTheme.current);
+        setTransition(null);
+        setPending(null);
+        return false;
+      }
+      switchAccount(cfg.accountId);
+      setLaunchOpen(false);
+      setTransition("in");
+      after(1500, () => {
+        setTransition(null);
+        setPending(null);
+      });
+      return true;
+    },
+    [session.startNew, switchAccount],
+  );
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const resumeInto = useCallback(
+    async (dto: ReplaySessionDto) => {
+      clearTimers();
+      applyReplayTheme();
+      setPending({
+        accountId: dto.accountId,
+        date: dto.startDate,
+        startTime: dto.startTime,
+        timeframe: dto.timeframe,
+        startingBalance: dto.state?.account.startingBalance ?? 100_000,
+      });
+      setTransition("loading");
+      await wait(600);
+      const ok = await session.resume(dto);
+      if (!ok) {
+        restoreUserTheme(currentTheme.current);
+        setTransition(null);
+        setPending(null);
+        return false;
+      }
+      switchAccount(dto.accountId);
+      setLaunchOpen(false);
+      setTransition("in");
+      after(1500, () => {
+        setTransition(null);
+        setPending(null);
+      });
+      return true;
+    },
+    [session.resume, switchAccount],
+  );
+
+  const exit = useCallback(async () => {
+    clearTimers();
+    setTransition("out");
+    // `leave` enregistre AVANT de démonter, et dit si l'écriture a eu lieu :
+    // l'appelant peut donc annoncer une reprise possible sans la promettre à
+    // tort quand la séance n'était que locale.
+    const saved = await session.leave();
+    await leaveMode();
+    if (realAccount.current) switchAccount(realAccount.current);
+    after(900, () => setTransition(null));
+    return saved;
+  }, [session.leave, leaveMode, switchAccount]);
+
+  const ensureSampleWeek = useCallback(
+    async (accountId: string) => {
+      if (!userId) return 0;
+      const n = await countAccountTrades(userId, accountId);
+      if (n > 0) return 0;
+      return seedReplayWeek(userId, accountId);
+    },
+    [userId],
+  );
+
+  return (
+    <ReplayModeCtx.Provider
+      value={{
+        session,
+        modeActive,
+        transition,
+        pending,
+        launchOpen,
+        openLaunch,
+        closeLaunch: () => setLaunchOpen(false),
+        enter,
+        resumeInto,
+        exit,
+        ensureSampleWeek,
+      }}
+    >
+      {children}
+    </ReplayModeCtx.Provider>
+  );
+}

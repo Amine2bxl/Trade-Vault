@@ -328,7 +328,7 @@ export default function Dashboard({
         )}
       </Button>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [onAddTrade, hasDraft, t],
   );
   usePageActions(headerActions);
