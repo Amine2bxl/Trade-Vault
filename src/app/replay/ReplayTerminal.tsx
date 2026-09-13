@@ -16,6 +16,7 @@ import {
   MousePointer2,
   Move,
   Ruler,
+  Settings2,
   Square,
   StretchHorizontal,
   TrendingUp,
@@ -30,6 +31,8 @@ import ReplayControls from "./ReplayControls";
 import ReplayTicket from "./ReplayTicket";
 import ReplayPanels from "./ReplayPanels";
 import ReplayDashboard from "./ReplayDashboard";
+import ReplayChartSettings from "./ReplayChartSettings";
+import { loadChartPrefs, saveChartPrefs, type ChartPrefs } from "./chartPrefs";
 import type { ReplayQuote } from "./useReplaySession";
 import type { Drawing, PlaceOrderInput, ReplaySessionState } from "@/modules/replay";
 import { nyTimeOf, dailyLossState } from "@/modules/replay";
@@ -130,6 +133,18 @@ export default function ReplayTerminal(props: TerminalProps) {
   const [view, setView] = useState<"chart" | "stats">("chart");
   /** Couleur des PROCHAINS dessins. Ceux déjà posés gardent la leur. */
   const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
+  /**
+   * L'apparence du graphe, lue au premier rendu et écrite à chaque réglage.
+   *
+   * L'initialiseur paresseux de `useState` évite de relire le stockage à
+   * chaque rendu du terminal — c'est-à-dire à chaque battement de l'horloge.
+   */
+  const [chartPrefs, setChartPrefs] = useState<ChartPrefs>(loadChartPrefs);
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const applyPrefs = (next: ChartPrefs) => {
+    setChartPrefs(next);
+    saveChartPrefs(next);
+  };
   const viewRef = useRef<ChartView>({ chart: null, candles: null });
   const [hover, setHover] = useState<{
     time: number;
@@ -400,6 +415,24 @@ export default function ReplayTerminal(props: TerminalProps) {
               restent en place, donc consulter son bilan n'oblige pas à quitter
               le carnet. */}
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              {/* L'apparence se règle DEPUIS le graphe, comme sur TradingView :
+                l'engrenage est au bout de la barre qui commande la zone
+                centrale, et le panneau s'ouvre par-dessus ce qu'il modifie —
+                on voit le résultat en même temps qu'on le règle. */}
+              <button
+                type="button"
+                onClick={() => setPrefsOpen((v) => !v)}
+                title={t("rt.chartSettings")}
+                aria-label={t("rt.chartSettings")}
+                className={cn(
+                  "grid h-6 w-6 shrink-0 place-items-center rounded-lg transition",
+                  prefsOpen
+                    ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
+                    : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
+                )}
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+              </button>
               {(["chart", "stats"] as const).map((v) => (
                 <button
                   key={v}
@@ -428,6 +461,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               refsView={viewRef}
               viewTf={props.viewTf}
               levels={levels}
+              prefs={chartPrefs}
               onCrosshair={setHover}
             />
             <ReplayOverlay
@@ -451,6 +485,13 @@ export default function ReplayTerminal(props: TerminalProps) {
               palette={DRAW_COLORS}
               onToolDone={() => setTool("cursor")}
             />
+            {prefsOpen && (
+              <ReplayChartSettings
+                prefs={chartPrefs}
+                onChange={applyPrefs}
+                onClose={() => setPrefsOpen(false)}
+              />
+            )}
             {hover && (
               <div className="pointer-events-none absolute left-2 top-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 tv-figure text-[10px] text-[var(--tv-text-muted)]">
                 <span className="text-[var(--tv-text)]">{nyTimeOf(hover.time)}</span> · O{" "}

@@ -30,6 +30,7 @@ import {
   type Time,
 } from "lightweight-charts";
 import { useTheme } from "../contexts/ThemeContext";
+import { CHART_PREFS_DEFAULT, type ChartPrefs } from "./chartPrefs";
 import type { SimulatedCandle } from "@/modules/replay";
 
 export interface ChartView {
@@ -73,21 +74,42 @@ export interface ChartLevel {
   color: string;
 }
 
-/** « 14:32 » en fuseau NY, format axis. */
-function nyTick(time: Time): string {
+/**
+ * « 09-12 14:32 » dans le fuseau choisi, format axe.
+ *
+ * Le fuseau n'est qu'une LANGUE : les horodatages restent les mêmes instants,
+ * et les séances restent calées sur New York. Lire l'axe en heure de Bruxelles
+ * ne déplace pas l'ouverture de 09:30, ça la dit autrement.
+ *
+ * Un fuseau invalide ne doit pas faire tomber le graphe : `Intl` lève sur un
+ * identifiant inconnu, et un axe muet vaut mieux qu'un écran blanc.
+ */
+function tickIn(time: Time, timeZone: string): string {
   if (typeof time === "object" && time !== null && "year" in time) {
     const b = time as { year: number; month: number; day: number };
     return `${String(b.month).padStart(2, "0")}-${String(b.day).padStart(2, "0")}`;
   }
   const t = new Date((time as number) * 1000);
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    hour12: false,
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).formatToParts(t);
+  let parts: Intl.DateTimeFormatPart[];
+  try {
+    parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour12: false,
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).formatToParts(t);
+  } catch {
+    parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      hour12: false,
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).formatToParts(t);
+  }
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
   return `${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
 }
@@ -99,6 +121,8 @@ export interface ReplayChartProps {
   viewTf: string;
   /** Niveaux à répercuter sur l'échelle de prix (dessins, ordres, brackets). */
   levels?: ChartLevel[];
+  /** L'apparence réglée par le trader — couleurs, grille, viseur, fuseau. */
+  prefs?: ChartPrefs;
   /** Saisie du curseur : {time, ohlc} ou null. */
   onCrosshair?: (
     info: { time: number; o: number; h: number; l: number; c: number; v: number } | null,
@@ -110,6 +134,7 @@ export default function ReplayChart({
   refsView,
   viewTf,
   levels,
+  prefs = CHART_PREFS_DEFAULT,
   onCrosshair,
 }: ReplayChartProps) {
   const { active } = useTheme();
@@ -118,6 +143,10 @@ export default function ReplayChart({
   const candlesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const [ready, setReady] = useState(false);
+  // Les formateurs de l'axe vivent aussi longtemps que le graphe : ils lisent
+  // le fuseau dans une ref, sinon ils resteraient collés à celui du montage.
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
 
   const themeKey = `${active.id}:${active.primary}:${active.secondary}:${active.highlight}`;
 
@@ -163,10 +192,10 @@ export default function ReplayChart({
         secondsVisible: true,
         rightOffset: 8,
         minBarSpacing: 1.5,
-        tickMarkFormatter: nyTick,
+        tickMarkFormatter: (t: Time) => tickIn(t, prefsRef.current.timezone),
       },
       localization: {
-        timeFormatter: (t: Time) => nyTick(t),
+        timeFormatter: (t: Time) => tickIn(t, prefsRef.current.timezone),
       },
     });
 
@@ -266,36 +295,61 @@ export default function ReplayChart({
 
   const keyOfRef = useRef<string>("");
 
-  // ── Le thème repaint les couleurs (sans recréer le graphe) ──────────────
+  // ── L'APPARENCE — thème du produit ET réglages du trader ────────────────
+  // Un seul effet pour les deux : ce sont deux sources pour une même image, et
+  // les séparer aurait laissé la dernière écraser l'autre selon l'ordre des
+  // rendus. Rien n'est recréé, tout est ré-appliqué.
   useEffect(() => {
     const chart = chartRef.current;
     const candles = candlesRef.current;
     const vol = volRef.current;
     if (!chart || !candles || !vol) return;
+    const up = resolveColor(prefs.up, "#22c55e");
+    const down = resolveColor(prefs.down, "#ef4444");
+    const cross = resolveColor(prefs.crosshair, "#5e6ad2");
+    const grid = resolveColor(prefs.gridColor, "#17212b");
     candles.applyOptions({
-      upColor: cssVar("--tv-chart-green", "#22c55e"),
-      downColor: cssVar("--tv-chart-red", "#ef4444"),
-      wickUpColor: cssVar("--tv-chart-green", "#22c55e"),
-      wickDownColor: cssVar("--tv-chart-red", "#ef4444"),
+      upColor: up,
+      downColor: down,
+      wickUpColor: up,
+      wickDownColor: down,
     });
+    // Le volume se coupe sans se démonter : le rallumer doit être immédiat, et
+    // reconstruire la série aurait redemandé toutes les données.
+    vol.applyOptions({ visible: prefs.volume });
     chart.applyOptions({
-      layout: { textColor: cssVar("--tv-text-secondary", "#94a3b8") },
+      layout: {
+        textColor: cssVar("--tv-text-secondary", "#94a3b8"),
+        // « transparent » laisse le fond du terminal traverser : c'est le
+        // défaut, et c'est ce qui garde le graphe solidaire du thème.
+        background: {
+          type: ColorType.Solid,
+          color:
+            prefs.background === "transparent" ? "transparent" : resolveColor(prefs.background),
+        },
+      },
       grid: {
-        vertLines: { color: cssVar("--tv-border", "#17212b") },
-        horzLines: { color: cssVar("--tv-border", "#17212b") },
+        vertLines: { color: grid, visible: prefs.grid },
+        horzLines: { color: grid, visible: prefs.grid },
       },
       crosshair: {
         vertLine: {
-          color: cssVar("--tv-accent", "#5e6ad2"),
-          labelBackgroundColor: cssVar("--tv-accent", "#5e6ad2"),
+          color: cross,
+          labelBackgroundColor: cross,
+          style: prefs.crosshairDashed ? LineStyle.LargeDashed : LineStyle.Solid,
         },
         horzLine: {
-          color: cssVar("--tv-accent", "#5e6ad2"),
-          labelBackgroundColor: cssVar("--tv-accent", "#5e6ad2"),
+          color: cross,
+          labelBackgroundColor: cross,
+          style: prefs.crosshairDashed ? LineStyle.LargeDashed : LineStyle.Solid,
         },
       },
+      // Closures neuves à chaque changement : c'est ce qui force la librairie
+      // à repeindre l'axe quand seul le fuseau a bougé.
+      timeScale: { tickMarkFormatter: (t: Time) => tickIn(t, prefs.timezone) },
+      localization: { timeFormatter: (t: Time) => tickIn(t, prefs.timezone) },
     });
-  }, [themeKey]);
+  }, [themeKey, prefs]);
 
   // ── Les niveaux sur l'échelle de prix ───────────────────────────────────
   // On RÉCONCILIE plutôt qu'on ne reconstruit : les lignes de prix déjà posées
