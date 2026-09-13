@@ -140,6 +140,19 @@ export interface ReplaySessionState {
     price: number;
     qty: number;
     side: OrderSide;
+    /**
+     * L'exécution OUVRE-T-ELLE ou REFERME-T-ELLE ?
+     *
+     * Le graphe marque les deux, et ce ne sont pas les mêmes marques : un
+     * chevron d'entrée dit « je suis rentré ici », un carré de sortie dit
+     * « j'en suis sorti là ». Les confondre rend la relecture d'une séance
+     * impossible — on ne sait plus lire une série de marques.
+     *
+     * Optionnel : les séances enregistrées avant son introduction ne le
+     * portent pas, et sont alors traitées comme des sorties, ce qu'elles
+     * étaient toutes (seule la réduction inscrivait une exécution).
+     */
+    kind?: "entry" | "exit";
   }[];
   /** Horloge canonique simulée, ms epoch. */
   now: number;

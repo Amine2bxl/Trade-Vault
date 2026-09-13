@@ -87,7 +87,13 @@ interface OverlayProps {
   drawings: Drawing[];
   orders: Order[];
   positions: Position[];
-  executions: { at: number; price: number; side: "long" | "short"; qty: number }[];
+  executions: {
+    at: number;
+    price: number;
+    side: "long" | "short";
+    qty: number;
+    kind?: "entry" | "exit";
+  }[];
   bounds: {
     ethStart: number;
     ethEnd: number;
@@ -362,8 +368,45 @@ function BracketZones({
   );
 }
 
-/** Petit losange de fill — la signature des exécutions. */
-function FillDiamond({ cx, cy, color }: { cx: number; cy: number; color: string }) {
+/**
+ * LA MARQUE D'UNE EXÉCUTION.
+ *
+ * Deux formes, parce que ce sont deux faits différents :
+ *
+ *  • ENTRÉE — un chevron qui pointe DANS LE SENS de la position. Il dit
+ *    « je suis rentré ici, et dans cette direction » ; c'est la première chose
+ *    qu'on cherche en relisant une séance.
+ *  • SORTIE — le losange, la signature d'un fill qui referme.
+ *
+ * Les deux portent un liseré de la couleur du fond : une marque posée sur une
+ * mèche doit rester lisible, et un aplat nu s'y noierait.
+ */
+function FillMark({
+  cx,
+  cy,
+  color,
+  kind,
+  side,
+}: {
+  cx: number;
+  cy: number;
+  color: string;
+  kind: "entry" | "exit";
+  side: "long" | "short";
+}) {
+  if (kind === "entry") {
+    // Pointe vers le haut pour un achat, vers le bas pour une vente.
+    const d = side === "long" ? -1 : 1;
+    return (
+      <path
+        d={`M ${cx} ${cy + d * 6} L ${cx + 5} ${cy - d * 3} L ${cx - 5} ${cy - d * 3} Z`}
+        fill={color}
+        stroke="var(--tv-plate-0)"
+        strokeWidth={1}
+        strokeLinejoin="round"
+      />
+    );
+  }
   return (
     <rect
       x={cx - 3}
@@ -372,6 +415,8 @@ function FillDiamond({ cx, cy, color }: { cx: number; cy: number; color: string 
       height={6}
       rx={1}
       fill={color}
+      stroke="var(--tv-plate-0)"
+      strokeWidth={1}
       transform={`rotate(45 ${cx} ${cy})`}
     />
   );
@@ -1180,11 +1225,15 @@ export default function ReplayOverlay({
     const { x, y } = coord(ex.at, ex.price);
     if (x == null || y == null) return null;
     return (
-      <FillDiamond
+      <FillMark
         key={i}
         cx={x}
         cy={y}
         color={ex.side === "long" ? "var(--tv-chart-green)" : "var(--tv-chart-red)"}
+        // Les séances enregistrées avant que l'entrée soit inscrite ne portent
+        // que des sorties : sans `kind`, c'en est une.
+        kind={ex.kind ?? "exit"}
+        side={ex.side}
       />
     );
   });

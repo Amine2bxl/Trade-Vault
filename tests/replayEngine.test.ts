@@ -455,6 +455,51 @@ describe("simulation d'ordres", () => {
   });
 });
 
+describe("les exécutions marquent l'ENTRÉE autant que la sortie", () => {
+  test("ouvrir une position inscrit une exécution d'entrée", async () => {
+    const bars = generateSyntheticSession(DATE, NQ);
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart + 2 * 60_000;
+    const state = makeState(e.now);
+    expect(state.executions.length).toBe(0);
+    placeOrder({ state, input: { side: "long", type: "market", qty: 2 }, bars });
+    // Seules les SORTIES s'inscrivaient : le graphe marquait donc les points
+    // d'arrivée sans jamais les points de départ.
+    expect(state.executions.length).toBe(1);
+    const entry = state.executions[0];
+    expect(entry.kind).toBe("entry");
+    expect(entry.side).toBe("long");
+    expect(entry.qty).toBe(2);
+    expect(entry.price).toBeCloseTo(state.positions[0].avgEntry, 5);
+  });
+
+  test("refermer inscrit une exécution de sortie, distincte de l'entrée", async () => {
+    const bars = generateSyntheticSession(DATE, NQ);
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart + 2 * 60_000;
+    const state = makeState(e.now);
+    placeOrder({ state, input: { side: "long", type: "market", qty: 1 }, bars });
+    closePosition(state, state.positions[0].id, e.markPrice(), "manual");
+    const kinds = state.executions.map((x) => x.kind);
+    expect(kinds).toEqual(["entry", "exit"]);
+  });
+
+  test("renforcer une position inscrit une seconde entrée", async () => {
+    const bars = generateSyntheticSession(DATE, NQ);
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart + 2 * 60_000;
+    const state = makeState(e.now);
+    placeOrder({ state, input: { side: "long", type: "market", qty: 1 }, bars });
+    placeOrder({ state, input: { side: "long", type: "market", qty: 1 }, bars });
+    expect(state.positions.length).toBe(1);
+    expect(state.positions[0].qty).toBe(2);
+    expect(state.executions.filter((x) => x.kind === "entry").length).toBe(2);
+  });
+});
+
 describe("reconstruction (bougie précédente) — déterminisme", () => {
   test("l'état reconstruit coïncide avec le chemin incrémental", async () => {
     const bars = generateSyntheticSession(DATE, NQ);

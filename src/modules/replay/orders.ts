@@ -434,6 +434,7 @@ function fillEntry(state: ReplaySessionState, order: Order, c: SimContext): void
     const total = same.qty + remaining;
     same.avgEntry = (same.avgEntry * same.qty + price * remaining) / total;
     same.qty = total;
+    markEntry(state, order, price, remaining, c);
     return;
   }
   const pos: Position = {
@@ -454,11 +455,39 @@ function fillEntry(state: ReplaySessionState, order: Order, c: SimContext): void
   };
   state.positions.push(pos);
   order.opensPositionId = pos.id;
+  markEntry(state, order, price, remaining, c);
   if (order.bracketSl != null || order.bracketTp != null) {
     const p = order.price ?? price;
     void p;
     setPositionBracket(state, pos.id, order.bracketSl, order.bracketTp);
   }
+}
+
+/**
+ * INSCRIT L'ENTRÉE DANS L'HISTORIQUE DES EXÉCUTIONS.
+ *
+ * Seules les SORTIES y étaient inscrites : le graphe marquait donc l'endroit
+ * où un trade s'était refermé, jamais celui où il s'était ouvert. Relire une
+ * séance revenait à voir des points d'arrivée sans points de départ — et le
+ * premier geste d'une relecture, justement, est de regarder OÙ on est rentré.
+ */
+function markEntry(
+  state: ReplaySessionState,
+  order: Order,
+  price: number,
+  qty: number,
+  c: SimContext,
+): void {
+  if (qty <= 0) return;
+  state.executions.push({
+    id: nextId("ex"),
+    orderId: order.id,
+    at: order.filledAt ?? state.now,
+    price: roundToTick(price, c.spec),
+    qty,
+    side: order.side,
+    kind: "entry",
+  });
 }
 
 function fillReduce(
@@ -492,6 +521,7 @@ function fillReduce(
     price: roundToTick(fillPrice, c.spec),
     qty,
     side: order.side,
+    kind: "exit",
   });
 
   if (pos.qty <= 0) closePositionFully(state, pos, reason);
@@ -512,12 +542,28 @@ export function closePosition(
   const fee = pos.qty * c.commissionPerContract;
   pos.realizedPnl += gross - fee;
   pos.commissions += fee;
+  const closedQty = pos.qty;
   pos.totalClosedQty += pos.qty;
   pos.closedWeightedPrice = (pos.closedWeightedPrice ?? 0) + price * pos.qty;
   pos.qty = 0;
   for (const o of state.orders) {
     if (o.parentId === pos.id && o.status === "working") o.status = "cancelled";
   }
+  // Une sortie MANUELLE est une exécution comme une autre : elle doit marquer
+  // le graphe. Sans cela, refermer à la main laissait un trade dont on voyait
+  // l'entrée et jamais la sortie — l'inverse exact du défaut qu'on vient de
+  // corriger. Aucun ordre ne la porte, d'où l'identifiant synthétique.
+  state.executions.push({
+    id: nextId("ex"),
+    orderId: `manual:${pos.id}`,
+    at: state.now,
+    price: roundToTick(price, c.spec),
+    qty: closedQty,
+    // Le sens de l'EXÉCUTION est l'inverse de celui de la position : refermer
+    // un long, c'est vendre.
+    side: pos.side === "long" ? "short" : "long",
+    kind: "exit",
+  });
   closePositionFully(state, pos, reason);
 }
 
