@@ -1,13 +1,20 @@
 /**
  * ReplayFinish — le bilan de la séance terminée.
  *
- * Après « Terminer & exporter », le trader voit exactement ce que sa journée a
- * produit — nombre de trades, P&L net, win rate, meilleur/pire trade, R moyen —
- * et rejoint le journal d'un clic. Les trades sont déjà dans la table `trades`
- * reliés au compte de rejeu et à la session.
+ * Après « Terminer & exporter », le trader voit trois choses, dans cet ordre :
+ *
+ *  1. CE QUI EST ARRIVÉ À SES TRADES. Un bandeau qui dit combien de lignes ont
+ *     rejoint le journal, ou pourquoi elles ne l'ont pas fait. C'est la
+ *     première question qu'on se pose en appuyant sur ce bouton, donc la
+ *     première réponse qu'on doit lire — pas une conclusion à déduire d'un
+ *     libellé de bouton.
+ *  2. CE QUE SA JOURNÉE A PRODUIT — trades, P&L net, win rate, meilleur et
+ *     pire trade, R moyen, puis le détail ligne à ligne.
+ *  3. OÙ ALLER ENSUITE : le journal, une nouvelle séance, ou la sortie. Trois
+ *     boutons qui disent chacun où ils mènent.
  */
 
-import { BookOpen, CheckCircle2, Flag, RotateCcw } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, LogOut, RotateCcw } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { Button } from "@/shared/ui";
 import { summarize, type ReplaySessionState } from "@/modules/replay";
@@ -34,12 +41,10 @@ function Stat({
 }) {
   return (
     <div className="rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-3">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-[var(--tv-text-muted)]">
-        {label}
-      </div>
+      <div className="tv-label text-[10px] text-[var(--tv-text-muted)]">{label}</div>
       <div
         className={cn(
-          "mt-1 text-lg font-bold",
+          "mt-1 tv-figure text-lg font-bold",
           tone === "up"
             ? "text-[var(--tv-chart-green)]"
             : tone === "down"
@@ -63,11 +68,27 @@ export default function ReplayFinish({
 }: Props) {
   const { t } = useT();
   const summary = state ? summarize(state) : null;
-  const pushMsg = summary
-    ? t("rt.journalPushed")
-        .replace("{n}", String(summary.tradesCount))
-        .replace("{account}", accountName)
-    : "";
+
+  /**
+   * LE BANDEAU DE RÉSULTAT — ce que l'export a réellement fait.
+   *
+   * Trois cas, trois messages, trois couleurs. Le cas « rien à exporter » n'est
+   * pas un échec : une séance peut se terminer sans trade clos, et l'écrire en
+   * rouge ferait croire à une panne.
+   */
+  const banner = (() => {
+    if (!push) return null;
+    if (push.failed > 0 && push.saved === 0)
+      return { tone: "danger" as const, text: t("rt.exportFailed") };
+    if (push.saved > 0)
+      return {
+        tone: "ok" as const,
+        text: t("rt.journalPushed")
+          .replace("{n}", String(push.saved))
+          .replace("{account}", accountName),
+      };
+    return { tone: "info" as const, text: t("rt.exportedNone") };
+  })();
 
   return (
     <div className="flex h-full w-full items-center justify-center overflow-y-auto bg-[var(--tv-bg)] px-4 py-8">
@@ -82,9 +103,24 @@ export default function ReplayFinish({
           </div>
         </div>
 
-        {push && !push.saved && push.failed > 0 && (
-          <div className="mb-4 rounded-xl border border-[var(--tv-danger)]/40 bg-[var(--tv-danger)]/10 px-3 py-2 text-xs font-medium text-[var(--tv-danger)]">
-            {push.failed} {t("rt.trades")} {t("rt.journalNoTrades")}
+        {banner && (
+          <div
+            className={cn(
+              "mb-4 flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium",
+              banner.tone === "ok" &&
+                "border-[var(--tv-chart-green)]/40 bg-[rgb(var(--tv-chart-green-rgb)/0.1)] text-[var(--tv-chart-green)]",
+              banner.tone === "danger" &&
+                "border-[var(--tv-danger)]/40 bg-[rgb(var(--tv-danger-rgb)/0.1)] text-[var(--tv-danger)]",
+              banner.tone === "info" &&
+                "border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[var(--tv-text-muted)]",
+            )}
+          >
+            {banner.tone === "ok" ? (
+              <CheckCircle2 className="mt-px h-4 w-4 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
+            )}
+            <span>{banner.text}</span>
           </div>
         )}
 
@@ -124,10 +160,10 @@ export default function ReplayFinish({
                 <table className="w-full text-left tv-figure text-[11px]">
                   <thead className="sticky top-0 bg-[var(--tv-plate-2)] text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
                     <tr>
-                      <th className="px-3 py-2 font-medium">Side</th>
-                      <th className="px-3 py-2 font-medium">Qty</th>
-                      <th className="px-3 py-2 font-medium">Entrée</th>
-                      <th className="px-3 py-2 font-medium">Sortie</th>
+                      <th className="px-3 py-2 font-medium">{t("rt.colAction")}</th>
+                      <th className="px-3 py-2 font-medium">{t("rt.colSize")}</th>
+                      <th className="px-3 py-2 font-medium">{t("rt.colPrice")}</th>
+                      <th className="px-3 py-2 font-medium">{t("rt.mark")}</th>
                       <th className="px-3 py-2 font-medium">R</th>
                       <th className="px-3 py-2 text-right font-medium">P&L</th>
                     </tr>
@@ -135,7 +171,9 @@ export default function ReplayFinish({
                   <tbody>
                     {state.closedTrades.map((tr) => (
                       <tr key={tr.id} className="border-t border-[var(--tv-border)]/60">
-                        <td className="px-3 py-1.5">{tr.side === "long" ? "LONG" : "SHORT"}</td>
+                        <td className="px-3 py-1.5">
+                          {tr.side === "long" ? t("rt.long") : t("rt.short")}
+                        </td>
                         <td className="px-3 py-1.5">{tr.qty}</td>
                         <td className="px-3 py-1.5">{tr.entryPrice.toFixed(2)}</td>
                         <td className="px-3 py-1.5">{tr.exitPrice.toFixed(2)}</td>
@@ -167,17 +205,22 @@ export default function ReplayFinish({
               </div>
             )}
 
+            {/* OÙ ALLER ENSUITE. Chaque bouton porte sa destination, pas le
+              résultat de l'export — celui-ci est déjà dit dans le bandeau. Le
+              libellé « 12 trades ajoutés… » servait auparavant de BOUTON, ce
+              qui laissait croire qu'il fallait cliquer pour que l'export ait
+              lieu. */}
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Button variant="accent" onClick={onGoJournal} className="gap-2">
                 <BookOpen className="h-4 w-4" />
-                {pushMsg}
+                {t("rt.goJournal")}
               </Button>
               <Button variant="ghost" onClick={onNew} className="gap-2">
                 <RotateCcw className="h-4 w-4" />
                 {t("rt.newSession")}
               </Button>
               <Button variant="ghost" onClick={() => onExit?.()} className="gap-2">
-                <Flag className="h-4 w-4" />
+                <LogOut className="h-4 w-4" />
                 {t("rt.exit")}
               </Button>
             </div>

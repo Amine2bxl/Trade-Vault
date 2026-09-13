@@ -552,6 +552,12 @@
   --tv-z-modal-top: 110; /* confirmation, paywall : au-dessus de tout dialogue */
   --tv-z-overlay: 120; /* plein écran : démo, célébration, assistant */
   --tv-z-overlay-modal: 130; /* dialogue ouvert DEPUIS un mode plein écran */
+  /* CONFIRMATION — au-dessus des dialogues ET des modes plein écran.
+     `--tv-z-modal-top` (110) passait SOUS le terminal de rejeu (120) :
+     confirmer « Terminer la séance » depuis le plein écran ouvrait une
+     boîte invisible, et le bouton paraissait mort. Une confirmation qui
+     ne se voit pas est pire qu'une absence de confirmation. */
+  --tv-z-confirm: 140;
   --tv-z-top: 200; /* visionneuse, inscription, bandeau de consentement */
   --tv-z-toast: 300; /* retour transitoire — AU-DESSUS DE TOUT */
 

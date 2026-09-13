@@ -70,6 +70,18 @@ function money$(n: number): string {
   return `~ ${sign}$${Math.abs(n).toFixed(2)}`;
 }
 
+/**
+ * Le même montant, mais ACQUIS À L'INSTANT — le P&L ouvert.
+ *
+ * Sans le « ~ » : ce n'est pas une estimation à un prix qu'on vise, c'est ce
+ * que la position vaut maintenant, au prix marqué. Confondre les deux
+ * lectures sur la même ligne serait le pire des deux mondes.
+ */
+function live$(n: number): string {
+  const sign = n >= 0 ? "+" : "−";
+  return `${sign}$${Math.abs(n).toFixed(2)}`;
+}
+
 interface OverlayProps {
   view: MutableRefObject<ChartView>;
   drawings: Drawing[];
@@ -84,6 +96,16 @@ interface OverlayProps {
     rthWindows?: { start: number; end: number }[];
   };
   showRthEth: boolean;
+  /**
+   * Les ordres, positions et exécutions sont-ils tracés ?
+   *
+   * Réglage du graphe, pas du carnet : couper l'affichage ne touche à aucun
+   * ordre. Cela sert à relire une structure de prix sans ses propres traits
+   * par-dessus — ce que toute plateforme permet.
+   */
+  showOrders?: boolean;
+  /** Le `<svg>` de la couche, exposé pour la capture d'un trade clôturé. */
+  exportRef?: MutableRefObject<SVGSVGElement | null>;
   tool: ReplayTool;
   mark: number;
   onAddDrawing: (d: Drawing) => void;
@@ -177,6 +199,7 @@ function PriceTag({
   label,
   value,
   money,
+  moneyColor,
   drag,
   onCancel,
 }: {
@@ -187,6 +210,8 @@ function PriceTag({
   value: string;
   /** Ce que l'ordre rapporterait ou coûterait s'il se remplissait maintenant. */
   money?: string | null;
+  /** Teinte du montant — le signe du P&L, quand il en porte un. */
+  moneyColor?: string;
   drag?: {
     onDown: (ev: React.PointerEvent<SVGElement>) => void;
     onMove: (ev: React.PointerEvent<SVGElement>) => void;
@@ -235,7 +260,7 @@ function PriceTag({
         <text
           x={x + w - (onCancel ? 18 : 0) - 62}
           y={y + 3.2}
-          fill="var(--tv-text)"
+          fill={moneyColor ?? "var(--tv-text)"}
           fontSize={9.5}
           fontWeight={700}
           textAnchor="end"
@@ -384,6 +409,8 @@ export default function ReplayOverlay({
   executions,
   bounds,
   showRthEth,
+  showOrders = true,
+  exportRef,
   tool,
   mark,
   onAddDrawing,
@@ -996,6 +1023,9 @@ export default function ReplayOverlay({
     const rail = [slY, tpY, y].filter((v): v is number => v != null);
     const top = rail.length ? Math.min(...rail) : y;
     const bot = rail.length ? Math.max(...rail) : y;
+    // Le P&L OUVERT, au prix marqué de l'instant. `mark` remonte du moteur à
+    // chaque battement d'horloge, donc ce nombre vit avec le marché.
+    const openPnl = mark > 0 ? pnlOf(pos.side, pos.qty, pos.avgEntry, mark, spec) : 0;
 
     const bracketHandle = (yy: number | null, orderId: string | null | undefined) =>
       yy != null && orderId ? (
@@ -1127,13 +1157,20 @@ export default function ReplayOverlay({
           </>
         )}
 
-        {/* L'étiquette de position — à droite, plaquette pleine teinte. */}
+        {/* L'ÉTIQUETTE DE POSITION — sens, taille, entrée, et LE P&L OUVERT.
+          Le montant vit ici parce que c'est ici qu'on regarde pendant qu'un
+          trade court : les yeux sont sur la ligne d'entrée et sur le prix, pas
+          sur la barre du haut. Il prend la couleur de son SIGNE, pas celle du
+          sens de la position — un long qui perd est rouge, comme partout
+          ailleurs dans le produit. */}
         <PriceTag
-          x={W - 112}
+          x={W - 166}
           y={y}
           color={color}
           label={`${pos.side.toUpperCase()} ${pos.qty}`}
           value={pos.avgEntry.toFixed(2)}
+          money={live$(openPnl)}
+          moneyColor={openPnl >= 0 ? "var(--tv-chart-green)" : "var(--tv-chart-red)"}
         />
       </g>
     );
@@ -1210,7 +1247,10 @@ export default function ReplayOverlay({
   return (
     <div className="absolute inset-0" style={{ pointerEvents: "none" }}>
       <svg
-        ref={svgRef}
+        ref={(el) => {
+          svgRef.current = el;
+          if (exportRef) exportRef.current = el;
+        }}
         className="absolute inset-0"
         width={W}
         height={H}
@@ -1219,9 +1259,9 @@ export default function ReplayOverlay({
         {shading}
         {shapes}
         {draftShape}
-        {orderLines}
-        {positionShapes}
-        {execs}
+        {showOrders && orderLines}
+        {showOrders && positionShapes}
+        {showOrders && execs}
         {showRthEth && (
           <text
             x={8}

@@ -1,20 +1,30 @@
 /**
  * ReplayTerminal — la coque du terminal de rejeu.
  *
- * En-tête (instrument, compte, horloge, solde, sortie), rail d'outils à gauche,
- * colonne de timeframes, graphe + overlay au centre, ticket + panneaux à droite,
- * transport en bas. La mise en page ne porte aucune logique : tout vient du hook
- * `useReplaySession` et des props.
+ * Quatre bandes et trois colonnes, la disposition d'une plateforme de
+ * trading :
+ *
+ *   ┌──────────────────── en-tête : compte, chiffres, horloge, sortie ──────┐
+ *   │ outils │  barre du graphe (unités de temps, type, études, réglages)   │
+ *   │        │  ─────────────────────────────────────────────  │  ticket   │
+ *   │        │  graphe + légende + couche d'ordres             │  carnet   │
+ *   └──────────────── transport : lecture, vitesse, progression ────────────┘
+ *
+ * La mise en page ne porte AUCUNE logique de marché : tout vient du hook
+ * `useReplaySession` et des props. Ce qui vit ici, ce sont les décisions
+ * d'écran — quel outil est actif, quelles études sont posées, quel panneau est
+ * ouvert — et une seule décision de produit : À LA CLÔTURE D'UN TRADE, LE
+ * JOURNAL S'OUVRE (voir `useAutoJournal`).
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  BookOpenCheck,
   BoxSelect,
   ChartLine,
   Eraser,
   Flag,
-  History,
-  LogOut,
+  Maximize2,
   MousePointer2,
   Move,
   MoveUpRight,
@@ -24,21 +34,28 @@ import {
   StretchHorizontal,
   TrendingUp,
   Type,
+  X,
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import { useT } from "../i18n/LanguageContext";
+import type { TKey } from "../i18n/translations";
 import { cn } from "../utils/cn";
-import type { ChartLevel, ChartView } from "./ReplayChart";
+import type { ChartLevel, ChartView, LegendInfo } from "./ReplayChart";
 import ReplayChart from "./ReplayChart";
+import ReplayLegend from "./ReplayLegend";
 import ReplayOverlay, { type ReplayTool } from "./ReplayOverlay";
 import ReplayControls from "./ReplayControls";
 import ReplayTicket from "./ReplayTicket";
 import ReplayPanels from "./ReplayPanels";
 import ReplayDashboard from "./ReplayDashboard";
 import ReplayChartSettings from "./ReplayChartSettings";
-import { loadChartPrefs, saveChartPrefs, type ChartPrefs } from "./chartPrefs";
+import ReplayIndicators from "./ReplayIndicators";
+import { useAutoJournal } from "./useAutoJournal";
+import { CHART_TYPES, loadChartPrefs, saveChartPrefs, type ChartPrefs } from "./chartPrefs";
 import type { ReplayQuote } from "./useReplaySession";
 import type { Drawing, OrderType, PlaceOrderInput, ReplaySessionState } from "@/modules/replay";
-import { nyTimeOf, dailyLossState } from "@/modules/replay";
+import { dailyLossState } from "@/modules/replay";
 
 export interface TerminalProps {
   accountName: string;
@@ -65,6 +82,8 @@ export interface TerminalProps {
   speed: number;
   setSpeed: (s: number) => void;
   onTogglePlay: () => void;
+  /** Suspendre la lecture SANS la relancer — ce que fait l'encodage d'un trade. */
+  onPause: () => void;
   onNext: () => void;
   onPrev: () => void;
   onPlaceOrder: (input: PlaceOrderInput) => void;
@@ -88,7 +107,7 @@ export interface TerminalProps {
 const TOOLS: {
   id: ReplayTool;
   icon: React.ComponentType<{ className?: string }>;
-  label: string;
+  label: TKey;
 }[] = [
   { id: "cursor", icon: MousePointer2, label: "rt.tool.cursor" },
   { id: "hline", icon: HLineIcon, label: "rt.tool.hline" },
@@ -131,8 +150,9 @@ function VLineIcon({ className }: { className?: string }) {
 
 export default function ReplayTerminal(props: TerminalProps) {
   const { t } = useT();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [tool, setTool] = useState<ReplayTool>("cursor");
-  const [showRthEth, setShowRthEth] = useState(true);
   /** Ce qu'occupe la zone centrale : le marché, ou le bilan de la séance. */
   const [view, setView] = useState<"chart" | "stats">("chart");
   /** Couleur des PROCHAINS dessins. Ceux déjà posés gardent la leur. */
@@ -143,21 +163,43 @@ export default function ReplayTerminal(props: TerminalProps) {
    * L'initialiseur paresseux de `useState` évite de relire le stockage à
    * chaque rendu du terminal — c'est-à-dire à chaque battement de l'horloge.
    */
-  const [chartPrefs, setChartPrefs] = useState<ChartPrefs>(loadChartPrefs);
-  const [prefsOpen, setPrefsOpen] = useState(false);
+  const [prefs, setPrefs] = useState<ChartPrefs>(loadChartPrefs);
+  const [panel, setPanel] = useState<"none" | "settings" | "indicators">("none");
+  /** L'encodage automatique à la clôture — armé par défaut, coupable d'un clic. */
+  const [autoLog, setAutoLog] = useState(true);
   const applyPrefs = (next: ChartPrefs) => {
-    setChartPrefs(next);
+    setPrefs(next);
     saveChartPrefs(next);
   };
   const viewRef = useRef<ChartView>({ chart: null, candles: null });
-  const [hover, setHover] = useState<{
-    time: number;
-    o: number;
-    h: number;
-    l: number;
-    c: number;
-    v: number;
-  } | null>(null);
+  const overlayRef = useRef<SVGSVGElement | null>(null);
+  const [legend, setLegend] = useState<LegendInfo | null>(null);
+
+  const state = props.state;
+  const orders = useMemo(() => state?.orders ?? [], [state]);
+  const positions = useMemo(() => state?.positions ?? [], [state]);
+  const executions = useMemo(
+    () =>
+      state?.executions ??
+      ([] as { at: number; price: number; side: "long" | "short"; qty: number }[]),
+    [state],
+  );
+  const drawings = props.drawings ?? [];
+  const closedTrades = state?.closedTrades ?? [];
+
+  // ── LE JOURNAL S'OUVRE À LA CLÔTURE ─────────────────────────────────────
+  // C'est la promesse du terminal : on ne sort pas du rejeu pour encoder, et
+  // on n'attend pas la fin de séance pour se souvenir de ce qu'on pensait.
+  const journal = useAutoJournal({
+    userId: user?.id ?? null,
+    enabled: autoLog,
+    closedTrades,
+    chart: () => viewRef.current.chart,
+    overlay: overlayRef,
+    onPause: props.onPause,
+    notify: toast,
+    labels: { shot: t("rt.logShot"), shotFailed: t("rt.logShotFailed") },
+  });
 
   // ── Clic droit sur le graphe → passer un ordre au prix visé ─────────────
   const chartBoxRef = useRef<HTMLDivElement | null>(null);
@@ -201,14 +243,6 @@ export default function ReplayTerminal(props: TerminalProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [ctxMenu]);
 
-  const state = props.state;
-  const orders = state?.orders ?? [];
-  const positions = state?.positions ?? [];
-  const executions =
-    state?.executions ??
-    ([] as { at: number; price: number; side: "long" | "short"; qty: number }[]);
-  const drawings = props.drawings ?? [];
-
   // ── Ce que l'ÉCHELLE DE PRIX doit répéter ────────────────────────────────
   // Les niveaux tracés et les prix engagés remontent sur l'axe de droite, à la
   // manière de TradingView : le chiffre se lit sans survoler le trait, et reste
@@ -216,6 +250,7 @@ export default function ReplayTerminal(props: TerminalProps) {
   // séance est muté en place, comparer les références ne dirait rien, alors
   // qu'une signature courte dit exactement ce qui a bougé.
   const levelKey = [
+    prefs.showOrders ? "1" : "0",
     ...drawings
       .filter((d) => d.kind === "hline")
       .map((d) => `d${d.id}:${d.points[0]?.y}:${d.color}`),
@@ -236,6 +271,10 @@ export default function ReplayTerminal(props: TerminalProps) {
       if (d.kind !== "hline" || d.points[0] == null) continue;
       out.push({ id: `drw:${d.id}`, price: d.points[0].y, color: d.color });
     }
+    // Les prix engagés ne remontent sur l'axe que si le graphe montre les
+    // ordres : couper l'affichage à moitié laisserait des étiquettes
+    // orphelines sur l'échelle, sans trait auquel les rattacher.
+    if (!prefs.showOrders) return out;
     for (const o of orders) {
       if (o.status !== "working" || o.price == null) continue;
       if (o.label === "SL" || o.label === "TP") continue;
@@ -276,20 +315,17 @@ export default function ReplayTerminal(props: TerminalProps) {
   const dailyLoss =
     state && state.maxDailyLossPct ? dailyLossState(state, state.maxDailyLossPct) : null;
 
+  const symbol = state?.symbol ?? "NQ";
+  const tfLabel =
+    props.timeframes.find((tf) => tf.id === props.viewTf)?.label ?? props.viewTf.toUpperCase();
+  const indicatorCount = prefs.indicators.filter((i) => i.visible).length;
+
   return (
     <div className="flex h-full w-full flex-col bg-[var(--tv-bg)] text-[var(--tv-text)]">
       {/* ── En-tête ── */}
       <header className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5">
-        <button
-          type="button"
-          onClick={props.onExit}
-          className="flex items-center gap-1.5 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-1.5 text-xs font-semibold text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          {t("rt.exit")}
-        </button>
-        <span className="hidden rounded-md bg-[var(--tv-surface-hover)] px-2 py-1 text-xs font-bold md:inline">
-          {state?.symbol ?? "NQ"}
+        <span className="rounded-md bg-[var(--tv-surface-hover)] px-2 py-1 text-xs font-bold">
+          {symbol}
         </span>
         <span className="hidden text-xs text-[var(--tv-text-muted)] md:inline">
           {props.accountName}
@@ -339,13 +375,29 @@ export default function ReplayTerminal(props: TerminalProps) {
           <span className="rounded-md border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-1.5 tv-figure text-xs font-bold text-[var(--tv-accent)]">
             {props.clockLabel}
           </span>
+
+          {/* LES DEUX SORTIES, CÔTE À CÔTE ET DISTINCTES.
+            « Terminer » clôt la séance et pousse ce qui reste au journal ;
+            « Quitter » range la séance et revient au produit. Deux gestes
+            différents, deux boutons différents, et le plein rappelle lequel
+            est l'aboutissement de la séance. */}
           <button
             type="button"
             onClick={props.onFinish}
+            title={t("rt.finish")}
             className="inline-flex items-center gap-1.5 rounded-md tv-accent-fill px-3 py-1.5 text-xs font-bold text-white"
           >
             <Flag className="h-3.5 w-3.5" />
-            {t("rt.finish")}
+            <span className="hidden sm:inline">{t("rt.finishShort")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={props.onExit}
+            title={t("rt.exit")}
+            aria-label={t("rt.exit")}
+            className="grid h-8 w-8 place-items-center rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] transition hover:border-[var(--tv-danger)]/50 hover:text-[var(--tv-danger)]"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
       </header>
@@ -360,7 +412,8 @@ export default function ReplayTerminal(props: TerminalProps) {
               <button
                 key={tp.id}
                 type="button"
-                title={t(tp.label as never)}
+                title={t(tp.label)}
+                aria-label={t(tp.label)}
                 onClick={() => setTool(tp.id)}
                 className={cn(
                   "relative grid h-8 w-8 place-items-center rounded-[3px] transition",
@@ -396,43 +449,14 @@ export default function ReplayTerminal(props: TerminalProps) {
             ))}
           </div>
           <div className="my-1 h-px w-6 bg-[var(--tv-border)]" />
-          <button
-            type="button"
-            title={t("rt.eth")}
-            onClick={() => setShowRthEth((v) => !v)}
-            className={cn(
-              "grid h-9 w-9 place-items-center rounded-md text-[10px] font-bold transition",
-              showRthEth
-                ? "tv-accent-fill text-white"
-                : "text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)]",
-            )}
-          >
-            R/E
-          </button>
-          <button
-            type="button"
-            title="Fit"
-            onClick={fitChart}
-            className="grid h-9 w-9 place-items-center rounded-md text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
-          >
-            <History className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            title="Reset"
-            onClick={resetChart}
-            className="grid h-9 w-9 place-items-center rounded-md text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
-          >
-            <Move className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            title={t("rt.erase")}
+          <RailButton label={t("rt.fit")} icon={Maximize2} onClick={fitChart} />
+          <RailButton label={t("rt.resetView")} icon={Move} onClick={resetChart} />
+          <RailButton
+            label={t("rt.erase")}
+            icon={Eraser}
+            danger
             onClick={() => drawings.forEach((d) => props.onRemoveDrawing(d.id))}
-            className="grid h-9 w-9 place-items-center rounded-md text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-danger)]"
-          >
-            <Eraser className="h-4 w-4" />
-          </button>
+          />
         </aside>
 
         {/* Timeframes + graphe */}
@@ -455,24 +479,83 @@ export default function ReplayTerminal(props: TerminalProps) {
                   {tf.label}
                 </button>
               ))}
-            {/* GRAPHE / ANALYTICS. La bascule est au bout de la barre qui
-              commande la zone centrale, et non dans l'en-tête du compte : on
-              range un contrôle avec ce qu'il change. Le ticket et les panneaux
-              restent en place, donc consulter son bilan n'oblige pas à quitter
-              le carnet. */}
+
+            <div className="mx-1 h-4 w-px shrink-0 bg-[var(--tv-border)]" />
+
+            {/* LE TYPE DE GRAPHE, à côté des unités de temps — ce sont les deux
+              réglages qu'on change le plus souvent, et une plateforme les pose
+              toujours ensemble, à portée immédiate. */}
+            <select
+              value={prefs.chartType}
+              onChange={(e) =>
+                applyPrefs({ ...prefs, chartType: e.target.value as ChartPrefs["chartType"] })
+              }
+              aria-label={t("rt.chartType")}
+              title={t("rt.chartType")}
+              className="shrink-0 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-1.5 py-[3px] text-[11px] font-semibold text-[var(--tv-text)]"
+            >
+              {CHART_TYPES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {t(c.labelKey as TKey)}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setPanel(panel === "indicators" ? "none" : "indicators")}
+              title={t("rt.indicators")}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition",
+                panel === "indicators"
+                  ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
+                  : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
+              )}
+            >
+              <ChartLine className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">{t("rt.indicators")}</span>
+              {indicatorCount > 0 && (
+                <span className="tv-figure rounded-full bg-[var(--tv-accent)]/20 px-1.5 text-[9.5px] text-[var(--tv-accent)]">
+                  {indicatorCount}
+                </span>
+              )}
+            </button>
+
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              {/* L'ENCODAGE AUTOMATIQUE — l'interrupteur est ici, visible, parce
+                que c'est un comportement qui INTERROMPT la lecture. Un
+                comportement qui s'impose doit pouvoir se couper sans chercher. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setAutoLog((v) => !v);
+                  toast(autoLog ? t("rt.autoLogOff") : t("rt.autoLogOn"), "info");
+                }}
+                title={t("rt.autoLog")}
+                aria-pressed={autoLog}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition",
+                  autoLog
+                    ? "bg-[rgb(var(--tv-chart-green-rgb)/0.16)] text-[var(--tv-chart-green)]"
+                    : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
+                )}
+              >
+                <BookOpenCheck className="h-3.5 w-3.5" />
+                <span className="hidden xl:inline">{t("rt.autoLog")}</span>
+              </button>
+
               {/* L'apparence se règle DEPUIS le graphe, comme sur TradingView :
                 l'engrenage est au bout de la barre qui commande la zone
                 centrale, et le panneau s'ouvre par-dessus ce qu'il modifie —
                 on voit le résultat en même temps qu'on le règle. */}
               <button
                 type="button"
-                onClick={() => setPrefsOpen((v) => !v)}
+                onClick={() => setPanel(panel === "settings" ? "none" : "settings")}
                 title={t("rt.chartSettings")}
                 aria-label={t("rt.chartSettings")}
                 className={cn(
                   "grid h-6 w-6 shrink-0 place-items-center rounded-md transition",
-                  prefsOpen
+                  panel === "settings"
                     ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
                     : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
                 )}
@@ -509,8 +592,8 @@ export default function ReplayTerminal(props: TerminalProps) {
               refsView={viewRef}
               viewTf={props.viewTf}
               levels={levels}
-              prefs={chartPrefs}
-              onCrosshair={setHover}
+              prefs={prefs}
+              onCrosshair={setLegend}
             />
             <ReplayOverlay
               view={viewRef}
@@ -519,7 +602,9 @@ export default function ReplayTerminal(props: TerminalProps) {
               positions={positions}
               executions={executions}
               bounds={props.bounds}
-              showRthEth={showRthEth}
+              showRthEth={prefs.sessionShading}
+              showOrders={prefs.showOrders}
+              exportRef={overlayRef}
               tool={tool}
               mark={props.quote?.mark ?? 0}
               onAddDrawing={props.onAddDrawing}
@@ -529,31 +614,39 @@ export default function ReplayTerminal(props: TerminalProps) {
               onMoveOrderBracket={props.onMoveOrderBracket}
               onCancelOrder={props.onCancelOrder}
               onBracket={props.onBracket}
-              symbol={state?.symbol ?? "NQ"}
+              symbol={symbol}
               drawColor={drawColor}
               palette={DRAW_COLORS}
               onToolDone={() => setTool("cursor")}
             />
-            {prefsOpen && (
-              <ReplayChartSettings
-                prefs={chartPrefs}
-                onChange={applyPrefs}
-                onClose={() => setPrefsOpen(false)}
+            {prefs.legend && (
+              <ReplayLegend
+                symbol={symbol}
+                timeframe={tfLabel}
+                info={legend}
+                indicators={prefs.indicators}
               />
             )}
-            {hover && (
-              <div className="pointer-events-none absolute left-2 top-2 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 tv-figure text-[10px] text-[var(--tv-text-muted)]">
-                <span className="text-[var(--tv-text)]">{nyTimeOf(hover.time)}</span> · O{" "}
-                {hover.o.toFixed(2)} H {hover.h.toFixed(2)} L {hover.l.toFixed(2)} C{" "}
-                <span
-                  className={
-                    hover.c >= hover.o
-                      ? "text-[var(--tv-chart-green)]"
-                      : "text-[var(--tv-chart-red)]"
-                  }
-                >
-                  {hover.c.toFixed(2)}
-                </span>
+            {panel === "settings" && (
+              <ReplayChartSettings
+                prefs={prefs}
+                onChange={applyPrefs}
+                onClose={() => setPanel("none")}
+              />
+            )}
+            {panel === "indicators" && (
+              <ReplayIndicators
+                indicators={prefs.indicators}
+                onChange={(indicators) => applyPrefs({ ...prefs, indicators })}
+                onClose={() => setPanel("none")}
+              />
+            )}
+
+            {/* Ce qui attend encore son formulaire — quand deux trades se
+              referment d'un coup, il faut dire qu'il en reste un. */}
+            {journal.queued > 0 && (
+              <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-3 py-1 text-[10.5px] font-semibold text-[var(--tv-text-muted)] shadow-[var(--tv-elev-2)]">
+                {journal.queued} · {t("rt.logTradeTitle")}
               </div>
             )}
 
@@ -620,7 +713,7 @@ export default function ReplayTerminal(props: TerminalProps) {
           <ReplayTicket
             price={q?.mark ?? null}
             balance={state?.account.equity ?? 0}
-            symbol={state?.symbol ?? "NQ"}
+            symbol={symbol}
             commissionPerContract={state?.commissionPerContract ?? 0}
             onPlace={props.onPlaceOrder}
           />
@@ -631,6 +724,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               onClosePos={props.onClosePos}
               onCancelOrder={props.onCancelOrder}
               onChangeBracket={props.onBracket}
+              onLogTrade={journal.logNow}
             />
           </div>
         </aside>
@@ -648,9 +742,37 @@ export default function ReplayTerminal(props: TerminalProps) {
         setSpeed={props.setSpeed}
         progress={q?.progress ?? 0}
         clockLabel={props.clockLabel}
-        viewTf={props.viewTf}
+        viewTf={tfLabel}
       />
     </div>
+  );
+}
+
+/** Un bouton du rail — icône seule, libellé au survol. */
+function RailButton({
+  label,
+  icon: Icon,
+  onClick,
+  danger,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={cn(
+        "grid h-9 w-9 place-items-center rounded-md text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)]",
+        danger ? "hover:text-[var(--tv-danger)]" : "hover:text-[var(--tv-text)]",
+      )}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
   );
 }
 

@@ -112,7 +112,7 @@ import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
 import PageErrorBoundary from "./components/PageErrorBoundary";
 import { PageGate, usePageLockState } from "./components/PremiumGate";
-import { ENCODE_TRADE_EVENT } from "./store/replay";
+import { ENCODE_TRADE_EVENT, notifyTradeEncodingDone } from "./store/replay";
 import { ReplayModeProvider } from "./replay/ReplayModeContext";
 import ReplayBanner from "./replay/ReplayBanner";
 import ReplayTransition from "./replay/ReplayTransition";
@@ -549,6 +549,7 @@ function AppContent() {
       if (!canLogTrade(tier, trades, isEdit)) {
         setModalOpen(false);
         setEditingTrade(null);
+        notifyTradeEncodingDone();
         toast(
           lang === "fr"
             ? "Limite de 10 trades par mois atteinte — passe à Pro pour encoder sans limite."
@@ -560,6 +561,10 @@ function AppContent() {
       }
       setModalOpen(false);
       setEditingTrade(null);
+      // Enregistrer referme aussi le formulaire : la file du terminal doit
+      // avancer, sinon un second trade clôturé sur la même bougie n'ouvrirait
+      // jamais le sien.
+      notifyTradeEncodingDone();
       let snapshot: Trade[] = [];
       setTrades((prev) => {
         snapshot = prev;
@@ -707,6 +712,10 @@ function AppContent() {
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
     setEditingTrade(null);
+    // Le terminal de rejeu met les trades en file quand plusieurs se referment
+    // sur la même bougie : c'est la fermeture du formulaire qui appelle le
+    // suivant. Le signal part d'ici, le seul endroit qui SAIT que c'est fini.
+    notifyTradeEncodingDone();
   }, []);
   // Stable — évite un nouveau nœud à chaque rendu (boucle `usePageActions`).
   const handleOpenMissed = useCallback(() => setPage("missed"), []);

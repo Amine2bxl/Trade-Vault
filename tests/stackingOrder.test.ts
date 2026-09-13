@@ -45,6 +45,7 @@ describe("l'échelle est déclarée en un seul endroit", () => {
   test("elle couvre tout le produit, du rail au toast", () => {
     expect(Object.keys(scale).sort()).toEqual(
       [
+        "confirm",
         "fab",
         "float",
         "modal",
@@ -75,6 +76,10 @@ describe("l'échelle est déclarée en un seul endroit", () => {
       "modal-top",
       "overlay",
       "overlay-modal",
+      // La confirmation passe au-dessus des modes plein écran : posée à
+      // `modal-top` (110), elle s'ouvrait DERRIÈRE le terminal de rejeu (120),
+      // et le bouton qui l'appelait paraissait mort.
+      "confirm",
       "top",
       "toast",
     ];

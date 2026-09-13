@@ -12,6 +12,15 @@
  * La session vit dans `ReplayModeProvider` : aller sur une autre page ne
  * détruit rien, et les pages restent branchées sur le compte de rejeu tant que
  * le mode est actif.
+ *
+ * LES DEUX SORTIES SONT DISTINCTES, et c'est tout l'objet de ce fichier :
+ *
+ *  • TERMINER & EXPORTER ferme la séance et écrit les trades au journal. C'est
+ *    l'aboutissement. On annonce ce qui va être écrit AVANT, et ce qui a été
+ *    écrit APRÈS — un export qui ne dit rien ne se distingue pas d'un export
+ *    qui n'a pas eu lieu, et c'est exactement ce qui se passait.
+ *  • QUITTER range la séance et revient au produit, sans rien exporter. Elle
+ *    reste reprenable, et on le dit.
  */
 
 import { useState } from "react";
@@ -30,28 +39,66 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
   const { toast } = useToast();
   const { session, launchOpen, exit } = useReplayMode();
   const [push, setPush] = useState<JournalPushResult | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const showSetup = launchOpen && !session.active && !session.finished;
   if (!showSetup && !session.active && !session.finished) return null;
 
+  const accountName = session.account?.name ?? "Replay";
+
+  /**
+   * Terminer : on DIT ce qui va être écrit, on l'écrit, puis on DIT ce qui
+   * l'a été.
+   *
+   * Le message de confirmation portait auparavant une phrase générique. Un
+   * trader qui a fermé neuf trades veut lire « neuf » : c'est le seul chiffre
+   * qui lui permet de vérifier, après coup, que l'export a bien eu lieu.
+   */
   const confirmFinish = async () => {
-    if (!(await confirm(t("rt.finishConfirm")))) return;
-    const res = await session.finish();
-    if (res) setPush(res);
+    if (busy) return;
+    const n = session.state?.closedTrades.length ?? 0;
+    const message =
+      n === 0
+        ? t("rt.finishNothing")
+        : t("rt.finishBody").replace("{n}", String(n)).replace("{account}", accountName);
+    if (!(await confirm(message))) return;
+    setBusy(true);
+    try {
+      const res = await session.finish();
+      if (!res) {
+        toast(t("rt.exportFailed"), "error");
+        return;
+      }
+      setPush(res);
+      if (res.saved > 0) {
+        toast(t("rt.exported").replace("{n}", String(res.saved)), "success");
+      } else if (res.failed > 0) {
+        toast(t("rt.exportFailed"), "error");
+      } else {
+        toast(t("rt.exportedNone"), "info");
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   /**
    * Quitter : on demande, on enregistre, et on DIT ce qui s'est passé.
    *
-   * La sortie était muette et sans confirmation. Or elle emporte une séance en
-   * cours : le trader méritait d'être prévenu, et de savoir si sa séance est
-   * réellement reprenable — ce qui n'est pas le cas quand la table de
-   * persistance manque et que le rejeu tournait en local.
+   * La sortie emporte une séance en cours : le trader mérite d'être prévenu,
+   * et de savoir si sa séance est réellement reprenable — ce qui n'est pas le
+   * cas quand la table de persistance manque et que le rejeu tournait en local.
    */
   const confirmExit = async () => {
+    if (busy) return;
     if (!(await confirm(t("rt.exitConfirm")))) return;
-    const saved = await exit();
-    toast(saved ? t("rt.sessionSaved") : t("rt.sessionLocalOnly"), saved ? "success" : "info");
+    setBusy(true);
+    try {
+      const saved = await exit();
+      toast(saved ? t("rt.sessionSaved") : t("rt.sessionLocalOnly"), saved ? "success" : "info");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const leaveForJournal = async () => {
@@ -77,7 +124,7 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
       ) : session.finished ? (
         <ReplayFinish
           state={session.state}
-          accountName={session.account?.name ?? "Replay"}
+          accountName={accountName}
           push={push}
           onNew={() => setPush(null)}
           onGoJournal={() => void leaveForJournal()}
@@ -85,7 +132,7 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
         />
       ) : (
         <ReplayTerminal
-          accountName={session.account?.name ?? "Replay"}
+          accountName={accountName}
           dataSource={session.dataSource}
           state={session.state}
           candles={session.candles}
@@ -101,6 +148,7 @@ export default function ReplayStage({ onGoJournal }: { onGoJournal: () => void }
           speed={session.speed}
           setSpeed={session.setSpeed}
           onTogglePlay={session.togglePlay}
+          onPause={session.pause}
           onNext={session.nextCandle}
           onPrev={session.prevCandle}
           onPlaceOrder={(input) => session.placeOrderTicket(input)}

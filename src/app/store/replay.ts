@@ -208,13 +208,26 @@ function tradeRows(
   });
 }
 
-/** Insertion en batch, avec repli ligne à ligne sur échec. */
+/**
+ * Insertion en batch, avec repli ligne à ligne sur échec.
+ *
+ * `ignoreDuplicates` N'EST PAS UN DÉTAIL. Depuis que le terminal ouvre le
+ * formulaire du journal à la clôture de chaque trade, une partie de la séance
+ * est DÉJÀ encodée quand on appuie sur « Terminer » — avec les notes du
+ * trader, sa capture d'écran, son erreur cochée. Un `upsert` ordinaire aurait
+ * réécrit ces lignes par-dessus avec le pré-remplissage automatique : le
+ * travail de la séance effacé par le bouton censé le sauvegarder.
+ *
+ * L'export ne complète donc que ce qui manque, et ne touche jamais à ce qui
+ * existe.
+ */
 async function insertTrades(rows: Record<string, unknown>[]): Promise<JournalPushResult> {
   let saved = 0;
   let failed = 0;
   let planLimitReached = false;
+  const OPTS = { onConflict: "id", ignoreDuplicates: true } as const;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await sb.from("trades").upsert(rows as any);
+  const { error } = await sb.from("trades").upsert(rows as any, OPTS);
   if (!error) {
     saved = rows.length;
   } else {
@@ -225,7 +238,7 @@ async function insertTrades(rows: Record<string, unknown>[]): Promise<JournalPus
     }
     for (const row of rows) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const one = await sb.from("trades").upsert(row as any);
+      const one = await sb.from("trades").upsert(row as any, OPTS);
       if (one.error) {
         if (planLimitFromDbError(one.error)) planLimitReached = true;
         failed += 1;
@@ -404,6 +417,22 @@ export function tradeOf(t: ReplayTrade): Trade {
 export const ENCODE_TRADE_EVENT = "tv:encode-trade";
 
 /**
+ * La modale d'encodage s'est refermée.
+ *
+ * Le terminal en a besoin : quand deux trades se referment sur la même bougie,
+ * il les met en file et n'ouvre le second qu'une fois le premier traité. Sans
+ * ce signal, la file resterait bloquée ou les deux formulaires se
+ * chevaucheraient.
+ */
+export const ENCODE_DONE_EVENT = "tv:encode-trade-done";
+
+/** Prévient le terminal que le formulaire du journal est refermé. */
+export function notifyTradeEncodingDone(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(ENCODE_DONE_EVENT));
+}
+
+/**
  * Ouvre la modale d'encodage du journal sur un trade de rejeu.
  *
  * Le terminal vit loin de la modale dans l'arbre React, et la modale est déjà
@@ -411,7 +440,11 @@ export const ENCODE_TRADE_EVENT = "tv:encode-trade";
  * fait déjà la navigation (`tv:navigate`). Aucune seconde modale à maintenir,
  * donc aucune divergence possible avec le formulaire du journal.
  */
-export function requestTradeEncoding(t: ReplayTrade): void {
+export function requestTradeEncoding(t: ReplayTrade, screenshots: string[] = []): void {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent(ENCODE_TRADE_EVENT, { detail: { trade: tradeOf(t) } }));
+  // La capture du graphe arrive du terminal, pas d'ici : c'est lui qui possède
+  // le canvas. On la joint au trade pré-rempli pour que la modale s'ouvre avec
+  // l'image DÉJÀ attachée — le trader n'a plus qu'à vérifier.
+  const trade = { ...tradeOf(t), screenshots };
+  window.dispatchEvent(new CustomEvent(ENCODE_TRADE_EVENT, { detail: { trade } }));
 }

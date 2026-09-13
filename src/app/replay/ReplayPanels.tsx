@@ -11,9 +11,8 @@ import { useState } from "react";
 import { CircleX, Pencil, Trash2, X } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import type { Position, ReplaySessionState } from "@/modules/replay";
+import type { Position, ReplaySessionState, ReplayTrade } from "@/modules/replay";
 import { roundToTick, NQ, nyTimeOf } from "@/modules/replay";
-import { requestTradeEncoding } from "../store/replay";
 
 /** Comment le trade s'est refermé, en clair — le même vocabulaire que le journal. */
 const EXIT_LABEL: Record<"stop" | "target" | "manual" | "session-end", string> = {
@@ -31,6 +30,14 @@ interface Props {
   onClosePos: (posId: string) => void;
   onCancelOrder: (orderId: string) => void;
   onChangeBracket: (posId: string, sl: number | null, tp: number | null) => void;
+  /**
+   * Encoder ce trade au journal.
+   *
+   * L'appel passe par le TERMINAL et non plus directement par la couche de
+   * stockage : lui seul possède le graphe, donc lui seul peut y joindre une
+   * capture, et lui seul tient la file quand plusieurs formulaires sont dus.
+   */
+  onLogTrade: (trade: ReplayTrade) => void;
 }
 
 export default function ReplayPanels({
@@ -39,6 +46,7 @@ export default function ReplayPanels({
   onClosePos,
   onCancelOrder,
   onChangeBracket,
+  onLogTrade,
 }: Props) {
   const { t } = useT();
   const [tab, setTab] = useState<Tab>("positions");
@@ -215,7 +223,7 @@ export default function ReplayPanels({
                         journal, déjà remplie de ce que le terminal sait. */}
                       <button
                         type="button"
-                        onClick={() => requestTradeEncoding(tr)}
+                        onClick={() => onLogTrade(tr)}
                         className="ml-auto rounded-md border border-[var(--tv-border)] px-1.5 py-0.5 font-semibold transition hover:border-[var(--tv-accent)] hover:text-[var(--tv-text)]"
                       >
                         {t("rt.encode")}
