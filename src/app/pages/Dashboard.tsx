@@ -29,6 +29,9 @@ import { PageContainer, Metric, Card, Button, StreakCard, density } from "@/shar
 import type { StreakPeriod } from "@/shared/ui";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 import CopilotBlock from "./dashboard/CopilotBlock";
+import TradingCalendarCard from "../components/TradingCalendarCard";
+import TradingHistoryCard from "../components/TradingHistoryCard";
+import { useAccountRules } from "../hooks/useAccountRules";
 import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
@@ -38,6 +41,10 @@ import { computeChecklistStreakStats, recentChecklistPeriods } from "../utils/ch
 // (landing page), but the equity chart — below the fold — is code-split so it
 // no longer weighs on the initial bundle.
 const EquityChart = lazy(() => import("../components/EquityChart"));
+// La carte de santé trace une courbe : elle tire `recharts`, et doit donc
+// rester HORS du bundle d'entrée, comme la courbe d'equity. Le test
+// `eagerBundle` monte la garde.
+const AccountHealthCard = lazy(() => import("../components/AccountHealthCard"));
 
 interface DashboardProps {
   trades: Trade[];
@@ -112,6 +119,10 @@ export default function Dashboard({
   // % de période, objectif) une seconde plus tard — le « chargement en deux
   // temps » du tableau de bord. La valeur est la même (même colonne `starting_balance`).
   const startingBalance = activeAccount?.startingBalance ?? 0;
+  // Les règles du compte — plancher, cible — telles que le trader les a
+  // saisies dans le simulateur. `null` tant qu'il n'en a saisi aucune : la
+  // carte de santé affiche alors la courbe sans inventer de limite.
+  const accountRules = useAccountRules(activeAccount?.id ?? null);
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
   const hasDraft = useHasTradeDraft(user?.id);
 
@@ -716,6 +727,41 @@ export default function Dashboard({
                     t("streak.howItWorks.i3"),
                   ]}
                   className="animate-fade-in-up stagger-1"
+                />
+              </div>
+
+              {/* ── 4. LE COMPTE ET SON MOIS ──
+                Trois cartes qui répondent, dans l'ordre, aux trois questions
+                qu'on se pose en ouvrant l'application : où en est le compte
+                par rapport à ses règles, comment va le mois, et qu'est-ce que
+                mes dernières journées ont donné.
+
+                ELLES NE CONNAISSENT PAS L'ENVIRONNEMENT. Elles reçoivent les
+                trades du compte actif : en mode rejeu, ce sont ceux du
+                backtest ; en réel, ceux du journal. Un seul code, deux mondes,
+                aucune divergence possible entre les deux tableaux de bord. */}
+              <div className="mb-4 grid grid-cols-1 gap-4 md:mb-6 md:gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+                <Suspense
+                  fallback={<div className="h-[340px] animate-pulse rounded-2xl bg-white/[0.03]" />}
+                >
+                  <AccountHealthCard
+                    trades={trades}
+                    startingBalance={startingBalance}
+                    rules={accountRules}
+                    className="animate-fade-in-up"
+                  />
+                </Suspense>
+                <TradingCalendarCard
+                  trades={trades}
+                  onSelectDay={() => onOpenJournal?.()}
+                  className="animate-fade-in-up stagger-1"
+                />
+              </div>
+              <div className="mb-4 md:mb-6">
+                <TradingHistoryCard
+                  trades={trades}
+                  onSelectDay={() => onOpenJournal?.()}
+                  className="animate-fade-in-up stagger-2"
                 />
               </div>
 
