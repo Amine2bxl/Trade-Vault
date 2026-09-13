@@ -12,11 +12,9 @@ export type BadgeVariant = "neutral" | "profit" | "loss" | "warning" | "accent";
 
 const VARIANT: Record<BadgeVariant, string> = {
   neutral: "bg-[var(--tv-plate-2)] border-[var(--tv-border-strong)] text-slate-300",
-  profit:
-    "bg-[rgb(var(--tv-chart-green-rgb)/0.14)] border-[rgb(var(--tv-chart-green-rgb)/0.28)] text-[var(--tv-chart-green)]",
-  loss: "bg-[rgb(var(--tv-chart-red-rgb)/0.14)] border-[rgb(var(--tv-chart-red-rgb)/0.28)] text-[var(--tv-chart-red)]",
-  warning:
-    "bg-[rgb(var(--tv-warning-rgb)/0.10)] border-[rgb(var(--tv-warning-rgb)/0.25)] text-[var(--tv-warning)]",
+  profit: "bg-emerald-500/15 border-emerald-500/25 text-emerald-400",
+  loss: "bg-red-500/15 border-red-500/25 text-red-400",
+  warning: "bg-amber-500/10 border-amber-500/25 text-amber-400",
   accent:
     "bg-[rgb(var(--tv-accent-rgb)/0.16)] border-[var(--tv-border-accent)] text-[var(--tv-highlight)]",
 };
@@ -30,7 +28,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
         VARIANT[variant],
         className,
       )}

@@ -161,7 +161,7 @@ export default function ReplayChart({
     const up = cssVar("--tv-chart-green", "#22c55e");
     const down = cssVar("--tv-chart-red", "#ef4444");
     const accent = cssVar("--tv-accent", "#5e6ad2");
-    const font = `'Manrope','Inter',ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif`;
+    const font = `'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif`;
 
     const chart = createChart(el, {
       autoSize: true,

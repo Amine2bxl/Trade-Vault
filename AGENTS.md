@@ -29,8 +29,8 @@ The landing stores its explicit choice as `tv.landing.lang`; the app as `tv.lang
 
 ## Theme system & design language
 
-- Default theme = **vault** (émeraude menthe sur noir AMOLED — l'identité fintech) via `DEFAULT_THEME_ID` in `src/app/utils/themes.ts`. Per-device storage keys: `tv-themes-v2` (store) + `tv-theme-vars-v2` (resolved CSS vars); both are purged on logout (`session-purge.ts`).
-- The `:root` palette in `styles.css` is the SSR/no-JS fallback and must match the default theme — keep `--tv-accent*` in sync with vault when the default changes (relancer `computeThemeVars(vault)` plutôt que d'ajuster à l'estime).
+- Default theme = **graphite** via `DEFAULT_THEME_ID` in `src/app/utils/themes.ts`. Per-device storage keys: `tv-themes-v2` (store) + `tv-theme-vars-v2` (resolved CSS vars); both are purged on logout (`session-purge.ts`).
+- The `:root` palette in `styles.css` is the SSR/no-JS fallback and must match the default theme — keep `--tv-accent*` in sync with graphite when the default changes.
 - Surface grammar (styles.css): `.glass`, `.glass-strong`, `.panel`, `.stat-card*` all render the SAME plate; depth comes from surface VALUE + hairline, **never shadows, halos, blur or `animate-ping`** ("rien ne rayonne, la couleur est rare"). P&L keeps its own green/red (`--tv-chart-green/red`) regardless of theme.
 - Shared UI: `src/shared/ui` (`Kpi`, `KpiGrid`, `SubNav`, `Sheet`, `Button`, `PageToolbar`…) — reuse rather than restyle.
 

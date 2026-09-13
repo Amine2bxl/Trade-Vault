@@ -41,8 +41,8 @@ export interface ThemeDef {
 }
 
 /** Valeurs d'origine — le rendu sans thème personnalisé, à l'identique. */
-export const DEFAULT_BACKGROUND = "#050607";
-export const DEFAULT_TEXT = "#f4f5f5";
+export const DEFAULT_BACKGROUND = "#0a0b0d";
+export const DEFAULT_TEXT = "#e6e8ea";
 
 export type ThemeVars = Record<string, string>;
 
@@ -168,19 +168,16 @@ function oklchToHex(L: number, C: number, H: number): string {
 
 export const BUILTIN_THEMES: ThemeDef[] = [
   {
-    /* L'identité Trade Vault — et le DÉFAUT. Émeraude menthe sur noir AMOLED :
-       la lecture que font les prop firms modernes (Lucid, Topstep, FX Replay) :
-       le vert est déjà la couleur du gain, l'accent parle donc la langue du
-       métier. L'accent de la DONNÉE (courbes, P&L) reste vert menthe fixe ;
-       l'accent d'ACTION est un émeraude profond (boutons, états actifs). */
+    /* L'identité émeraude. Émeraude sobre sur noir neutre — la lecture
+       que font les plateformes de prop firm (Lucid, Topstep) : le vert est
+       déjà la couleur du gain, l'accent parle donc la langue du métier.
+       Plus le défaut — Graphite l'est désormais — mais un choix courant. */
     id: "vault",
     name: "Vault",
     builtin: true,
-    primary: "#51d88a",
-    secondary: "#2fa96b",
-    highlight: "#7be8a8",
-    background: "#050607",
-    text: "#f4f5f5",
+    primary: "#10b981",
+    secondary: "#059669",
+    highlight: "#34d399",
   },
   {
     /* Gris pur, aucune teinte — l'identité PAR DÉFAUT. Pour qui ne veut
@@ -236,12 +233,12 @@ export const BUILTIN_THEMES: ThemeDef[] = [
 
 /// ---- default theme ----
 
-/* Vault — l'identité PAR DÉFAUT du produit : émeraude menthe sur noir
-   AMOLED, la lecture des prop firms modernes. Le P&L ne suit pas l'accent
-   (il reste le vert menthe fixe de la donnée) mais l'accent d'action et les
-   états actifs portent la même famille. L'utilisateur reste libre de choisir
-   Graphite / Steel / Amber… dans Réglages. */
-export const DEFAULT_THEME_ID = "vault";
+/* Graphite : l'identité PAR DÉFAUT du produit. Gris pur, aucune teinte — la
+   version la plus austère, celle qui ne montre AUCUNE couleur en dehors du
+   P&L lui-même (vert = gain, rouge = perte). Parfait pour une interface qui
+   doit rester neutre et lisible quelle que soit la couleur qui suit le chiffre.
+   L'utilisateur reste libre de choisir Vault / Steel / Amber… dans Réglages. */
+export const DEFAULT_THEME_ID = "graphite";
 
 // ---- persistence (localStorage; per device, restored before paint) -----
 
