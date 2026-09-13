@@ -90,6 +90,21 @@ const TOOLS: {
   { id: "zone", icon: StretchHorizontal, label: "rt.tool.measured" },
 ];
 
+/**
+ * La palette de dessin — des JETONS du thème, pas des couleurs inventées.
+ *
+ * Le test de couverture des thèmes interdit les hex de marque en dur, et il a
+ * raison : une couleur écrite à la main ignore le thème choisi et jure dès
+ * qu'on en change. Ces cinq-là suivent le thème, y compris celui du rejeu.
+ */
+const DRAW_COLORS = [
+  "var(--tv-accent)",
+  "var(--tv-chart-green)",
+  "var(--tv-chart-red)",
+  "var(--tv-warning)",
+  "var(--tv-text)",
+] as const;
+
 function HLineIcon({ className }: { className?: string }) {
   return <StretchHorizontal className={className} />;
 }
@@ -108,6 +123,8 @@ export default function ReplayTerminal(props: TerminalProps) {
   const [showRthEth, setShowRthEth] = useState(true);
   /** Ce qu'occupe la zone centrale : le marché, ou le bilan de la séance. */
   const [view, setView] = useState<"chart" | "stats">("chart");
+  /** Couleur des PROCHAINS dessins. Ceux déjà posés gardent la leur. */
+  const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
   const viewRef = useRef<ChartView>({ chart: null, candles: null });
   const [hover, setHover] = useState<{
     time: number;
@@ -234,6 +251,28 @@ export default function ReplayTerminal(props: TerminalProps) {
               </button>
             );
           })}
+          {/* La couleur se choisit là où l'outil se choisit : au même endroit,
+            dans le même geste. La poser dans un réglage aurait séparé deux
+            décisions qui se prennent ensemble. */}
+          <div className="my-1 h-px w-6 bg-[var(--tv-border)]" />
+          <div className="grid grid-cols-2 gap-1 px-1 pb-1">
+            {DRAW_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                title={t("rt.drawColor")}
+                aria-label={t("rt.drawColor")}
+                onClick={() => setDrawColor(c)}
+                className={cn(
+                  "h-4 w-4 rounded-full border transition",
+                  drawColor === c
+                    ? "border-[var(--tv-text)] scale-110"
+                    : "border-transparent opacity-70 hover:opacity-100",
+                )}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
           <div className="my-1 h-px w-6 bg-[var(--tv-border)]" />
           <button
             type="button"
@@ -343,6 +382,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               onUpdateDrawing={props.onUpdateDrawing}
               onMoveOrder={props.onMoveOrder}
               onCancelOrder={props.onCancelOrder}
+              drawColor={drawColor}
             />
             {hover && (
               <div className="pointer-events-none absolute left-2 top-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 tv-figure text-[10px] text-[var(--tv-text-muted)]">

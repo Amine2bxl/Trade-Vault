@@ -243,6 +243,7 @@ const en = {
   "rt.cancelOrder": "Cancel",
   "rt.finish": "Finish & export to journal",
   "rt.finishConfirm": "Finish this replay? Your trades will land in this account's journal.",
+  "rt.drawColor": "Drawing colour",
   "rt.tools": "Drawing tools",
   "rt.tool.hline": "Horizontal line",
   "rt.tool.trend": "Trendline",

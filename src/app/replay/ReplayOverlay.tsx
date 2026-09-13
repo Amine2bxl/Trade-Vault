@@ -32,7 +32,6 @@ export type ReplayTool =
   | "zone"
   | "erase";
 
-const ACCENT = "var(--tv-accent)";
 const SL = "var(--tv-chart-red)";
 const TP = "var(--tv-chart-green)";
 
@@ -75,6 +74,8 @@ interface OverlayProps {
   onMoveOrder: (orderId: string, price: number) => void;
   /** Annuler depuis le graphe : la croix des étiquettes d'ordre. */
   onCancelOrder: (orderId: string) => void;
+  /** Couleur des dessins À VENIR. Les dessins déjà posés gardent la leur. */
+  drawColor: string;
 }
 
 /**
@@ -227,6 +228,7 @@ export default function ReplayOverlay({
   onUpdateDrawing,
   onMoveOrder,
   onCancelOrder,
+  drawColor,
 }: OverlayProps) {
   const [pane, setPane] = useState<{ w: number; h: number } | null>(null);
   const [draft, setDraft] = useState<Drawing | null>(null);
@@ -294,7 +296,7 @@ export default function ReplayOverlay({
       setDraft({
         id: "draft",
         kind: tool as Drawing["kind"],
-        color: ACCENT,
+        color: drawColor,
         points: [{ x: m.ms, y: m.price }],
       });
       return;
@@ -474,14 +476,14 @@ export default function ReplayOverlay({
         height={Math.abs(p1.y - p0.y)}
         fill={draft.kind === "zone" ? draft.color : "none"}
         fillOpacity={0.08}
-        stroke={ACCENT}
+        stroke={draft.color}
         strokeDasharray="4 3"
       />
     ) : (
       <line x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} strokeDasharray="4 3" />
     );
     return (
-      <g stroke={ACCENT} strokeWidth={1.1}>
+      <g stroke={draft.color} strokeWidth={1.1}>
         {body}
         <circle cx={p0.x} cy={p0.y} r={4} />
       </g>

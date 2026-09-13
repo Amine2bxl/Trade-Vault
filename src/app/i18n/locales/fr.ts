@@ -216,6 +216,7 @@ const fr: Dict = {
   "rt.cancelOrder": "Annuler",
   "rt.finish": "Terminer & exporter au journal",
   "rt.finishConfirm": "Terminer ce rejeu ? Tes trades rejoindront le journal de ce compte.",
+  "rt.drawColor": "Couleur du dessin",
   "rt.tools": "Outils de dessin",
   "rt.tool.hline": "Ligne horizontale",
   "rt.tool.trend": "Tendance",

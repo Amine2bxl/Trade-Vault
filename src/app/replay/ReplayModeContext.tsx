@@ -47,6 +47,18 @@ export function useReplayMode(): Ctx {
   return ctx;
 }
 
+/**
+ * La même chose, mais qui REND `null` au lieu de lever.
+ *
+ * Pour les composants de châssis — le rail, par exemple — qui veulent afficher
+ * l'état du rejeu sans en dépendre. Ils doivent continuer de fonctionner si on
+ * les monte un jour hors du provider : une marque décorative ne justifie pas
+ * de faire tomber la navigation.
+ */
+export function useReplayModeOptional(): Ctx | null {
+  return useContext(ReplayModeCtx);
+}
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function ReplayModeProvider({
