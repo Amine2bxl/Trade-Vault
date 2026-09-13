@@ -66,6 +66,15 @@ interface TradeModalProps {
   trade: Trade | null;
   onClose: () => void;
   onSave: (trade: Trade, meta: TradeJournalMeta) => void;
+  /**
+   * Ouverte DEPUIS un mode plein écran — le terminal de rejeu.
+   *
+   * Une modale s'affiche par défaut à la hauteur des dialogues de page. Le
+   * terminal, lui, occupe la couche « plein écran », au-dessus : encoder un
+   * trade depuis le rejeu ouvrait donc le formulaire DERRIÈRE le terminal,
+   * invisible, et le bouton « Encoder » semblait ne rien faire.
+   */
+  topLayer?: boolean;
 }
 
 const defaultForm = {
@@ -117,7 +126,7 @@ const REASON_LABELS: Record<ReflectionReason, string> = {
   other: "trade.reason.other",
 };
 
-export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) {
+export default function TradeModal({ trade, onClose, onSave, topLayer }: TradeModalProps) {
   const { user } = useAuth();
   const userId = user?.id || "";
   const { t, lang } = useT();
@@ -509,6 +518,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         // geste accidentel qui faisait perdre une note écrite d'un jet. Sans
         // modification en attente, le comportement habituel reste.
         closeOnBackdrop={!dirty}
+        wrapperClassName={topLayer ? "z-[var(--tv-z-overlay-modal)]" : undefined}
         className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
       >
         {/* Le liseré du haut dit le SIGNE de la saisie en cours : vert si elle

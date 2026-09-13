@@ -10,6 +10,7 @@ import {
   CreditCard,
   Crosshair,
   FileText,
+  History,
   LayoutDashboard,
   Map,
   Newspaper,
@@ -74,6 +75,8 @@ export const PAGE_META: Record<Page, { labelKey: TKey; icon: typeof LayoutDashbo
   // section entière : trois entrées identiques dans une rangée de quatre. Le
   // tirage aléatoire de trajectoires se lit mieux en brassage.
   montecarlo: { labelKey: "nav.montecarlo", icon: Shuffle },
+  // Le terminal de rejeu — History dit l'essentiel : on rejoue le passé.
+  backtest: { labelKey: "nav.backtest", icon: History },
 };
 
 /** Libellé + icône de chaque section. */
@@ -84,6 +87,7 @@ export const SECTION_META: Record<SectionId, { labelKey: TKey; icon: typeof Layo
   analysis: { labelKey: "nav.groupAnalysis", icon: BarChart3 },
   coach: { labelKey: "nav.jarvis", icon: Bot },
   strategy: { labelKey: "nav.groupStrategy", icon: Map },
+  backtest: { labelKey: "nav.groupBacktest", icon: History },
   settings: { labelKey: "nav.settings", icon: SettingsIcon },
 };
 

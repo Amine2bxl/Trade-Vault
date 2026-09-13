@@ -16,6 +16,7 @@ import { useAccounts } from "../contexts/AccountContext";
 import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
+import { useReplayModeOptional } from "../replay/ReplayModeContext";
 import { useUnreadCount } from "../hooks/useUnreadCount";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Modal, BrandWord } from "@/shared/ui";
@@ -30,6 +31,13 @@ interface SidebarProps {
 export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t } = useT();
+  // LE RAIL DIT DANS QUEL MONDE ON EST. Le bandeau de page et le thème ambre
+  // marquaient déjà le mode rejeu, mais le rail — le seul élément présent sur
+  // absolument toutes les pages, et celui qu'on regarde pour se repérer —
+  // restait identique. On pouvait donc naviguer en croyant être sur son vrai
+  // journal.
+  const replay = useReplayModeOptional();
+  const inReplay = Boolean(replay?.session.active && !replay.session.finished);
   const { activeAccount } = useAccounts();
   const unread = useUnreadCount(user?.id);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
@@ -184,6 +192,31 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
             </button>
           )}
         </div>
+
+        {/* La marque du mode rejeu — sur toutes les pages, puisque le rail y
+          est. Repliée, elle se réduit à un point : sur 68 px, un mot ne tient
+          pas, mais l'information doit rester. */}
+        {inReplay && (
+          <div
+            className={cn(
+              "mx-3 mt-2 flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1",
+              collapsed && "justify-center px-0",
+            )}
+            style={{
+              background: "rgb(var(--tv-warning-rgb) / 0.16)",
+              color: "var(--tv-warning)",
+            }}
+            title={t("rt.modeTitle")}
+          >
+            <span
+              className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ background: "var(--tv-warning)" }}
+            />
+            {!collapsed && (
+              <span className="tv-label truncate text-[10px]">{t("rt.modeTitle")}</span>
+            )}
+          </div>
+        )}
 
         {/* ── NAVIGATION ── */}
         <nav ref={navRef} className="relative min-h-0 flex-1 px-2.5 py-3">

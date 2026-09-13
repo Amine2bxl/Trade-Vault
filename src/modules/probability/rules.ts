@@ -102,8 +102,15 @@ export interface AccountState {
   trades: number;
 }
 
-/** Le plancher de perte, selon le type de drawdown et le profit déjà réalisé. */
-function computeFloor(rules: AccountRules, peak: number, peakEod: number): number {
+/**
+ * Le plancher de perte, selon le type de drawdown et le profit déjà réalisé.
+ *
+ * Exporté : le tableau de bord en a besoin pour tracer la ligne « minimum »
+ * sous la courbe de solde. Recalculer ce plancher ailleurs, à la main, aurait
+ * produit deux vérités pour une seule règle — et c'est exactement le genre de
+ * divergence qui fait croire à un trader qu'il lui reste de la marge.
+ */
+export function computeFloor(rules: AccountRules, peak: number, peakEod: number): number {
   const dd = rules.maxDrawdown;
   if (!dd || dd <= 0) return Number.NEGATIVE_INFINITY; // aucune règle : jamais perdu
   const start = rules.startingBalance;

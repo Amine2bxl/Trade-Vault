@@ -277,7 +277,7 @@ export default function Journal({
         </Button>
       </div>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [trades, onDeleteAll, onAdd, onOpenMissed, t],
   );
   usePageActions(headerActions);

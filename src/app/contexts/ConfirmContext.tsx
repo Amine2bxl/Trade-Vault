@@ -41,9 +41,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           open
           onClose={() => settle(false)}
           size="sm"
-          // Passe au-dessus de toute autre modale — `--tv-z-modal-top` — avec un
-          // fond plus sombre.
-          wrapperClassName="z-[var(--tv-z-modal-top)]"
+          // Passe au-dessus de toute autre modale ET de tout plein écran —
+          // `--tv-z-confirm` — avec un fond plus sombre. Le terminal de rejeu
+          // occupe la couche `--tv-z-overlay` : une confirmation posée plus bas
+          // s'ouvrirait derrière lui, invisible.
+          wrapperClassName="z-[var(--tv-z-confirm)]"
           backdropClassName="bg-black/70"
         >
           <div className="p-6">

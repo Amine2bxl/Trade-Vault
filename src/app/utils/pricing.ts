@@ -85,6 +85,7 @@ export const PAGE_TIER: Partial<Record<Page, Tier>> = {
   reports: "pro",
   montecarlo: "pro",
   seasonality: "pro",
+  backtest: "pro",
 };
 
 /**
@@ -157,6 +158,13 @@ export const PAGE_VALUE: Partial<Record<Page, { title: Bi; benefit: Bi }>> = {
     benefit: {
       fr: "Tes heures et tes jours rentables — et ceux à ne plus trader.",
       en: "Your profitable hours and days — and the ones to stop trading.",
+    },
+  },
+  backtest: {
+    title: { fr: "Rejeu historique", en: "Historical Replay" },
+    benefit: {
+      fr: "Rejoue une séance NQ passée en direct, puis importe tes trades dans le journal.",
+      en: "Replay a past NQ session live, then bring your trades into your journal.",
     },
   },
 };
