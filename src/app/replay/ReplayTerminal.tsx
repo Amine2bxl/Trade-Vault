@@ -23,7 +23,12 @@ import {
   BoxSelect,
   ChartLine,
   Eraser,
+  Eye,
+  EyeOff,
   Flag,
+  Lock,
+  LockOpen,
+  Magnet,
   Maximize2,
   MousePointer2,
   Move,
@@ -249,8 +254,10 @@ export default function ReplayTerminal(props: TerminalProps) {
     const price = s.coordinateToPrice(y);
     if (price == null) return;
     setCtxMenu({
-      left: Math.max(0, Math.min(x, box.width - 176)),
-      top: Math.max(0, Math.min(y, box.height - 156)),
+      left: Math.max(0, Math.min(x, Math.max(0, box.width - 216))),
+      // Le menu porte maintenant les actions du graphe EN PLUS du carnet : sa
+      // hauteur de garde suit, sinon il s'ouvrirait à cheval sur le bord bas.
+      top: Math.max(0, Math.min(y, Math.max(0, box.height - 300))),
       price,
     });
   };
@@ -585,6 +592,30 @@ export default function ReplayTerminal(props: TerminalProps) {
             ))}
           </div>
           <div className="my-1 h-px w-6 bg-[var(--tv-border)]" />
+          {/* LES TROIS RÉGLAGES DU DESSIN — aimant, verrou, œil.
+            Ils ne posent aucune forme : ils changent la façon dont on en pose.
+            D'où leur place, entre les outils et les commandes de vue, et leur
+            état ALLUMÉ quand ils sont actifs — un réglage invisible qui modifie
+            le geste est un piège. */}
+          <RailToggle
+            label={t("rt.magnet")}
+            icon={Magnet}
+            on={prefs.magnet}
+            onClick={() => applyPrefs({ ...prefs, magnet: !prefs.magnet })}
+          />
+          <RailToggle
+            label={t("rt.lockTool")}
+            icon={prefs.lockTool ? Lock : LockOpen}
+            on={prefs.lockTool}
+            onClick={() => applyPrefs({ ...prefs, lockTool: !prefs.lockTool })}
+          />
+          <RailToggle
+            label={prefs.hideDrawings ? t("rt.showDrawings") : t("rt.hideDrawings")}
+            icon={prefs.hideDrawings ? EyeOff : Eye}
+            on={prefs.hideDrawings}
+            onClick={() => applyPrefs({ ...prefs, hideDrawings: !prefs.hideDrawings })}
+          />
+          <div className="my-1 h-px w-6 bg-[var(--tv-border)]" />
           <RailButton label={t("rt.fit")} icon={Maximize2} onClick={fitChart} />
           <RailButton label={t("rt.resetView")} icon={Move} onClick={resetChart} />
           <RailButton
@@ -751,6 +782,9 @@ export default function ReplayTerminal(props: TerminalProps) {
               bounds={props.bounds}
               showRthEth={prefs.sessionShading}
               showOrders={prefs.showOrders}
+              bars={props.candles}
+              magnet={prefs.magnet}
+              hideDrawings={prefs.hideDrawings}
               exportRef={overlayRef}
               tool={tool}
               mark={props.quote?.mark ?? 0}
@@ -764,7 +798,12 @@ export default function ReplayTerminal(props: TerminalProps) {
               symbol={symbol}
               drawColor={drawColor}
               palette={DRAW_COLORS}
-              onToolDone={() => setTool("cursor")}
+              // LE VERROU TIENT L'OUTIL. Sans lui on retombe sur le curseur
+              // après chaque forme — ce qu'on veut quand on en pose une, et
+              // pas quand on en pose douze.
+              onToolDone={() => {
+                if (!prefs.lockTool) setTool("cursor");
+              }}
             />
             {prefs.legend && (
               <ReplayLegend
@@ -802,11 +841,43 @@ export default function ReplayTerminal(props: TerminalProps) {
               choisit le sens et le type. L'ordre part à CE prix, pas au mark. */}
             {ctxMenu && (
               <div
-                className="absolute z-10 w-44 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-1 shadow-[var(--tv-elev-3)]"
+                className="absolute z-10 max-h-[min(420px,calc(100%-1rem))] w-52 overflow-y-auto rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-1 shadow-[var(--tv-elev-3)]"
                 style={{ left: ctxMenu.left, top: ctxMenu.top }}
                 role="menu"
                 aria-label={t("rt.ctxOrder")}
               >
+                {/* LES ACTIONS DU GRAPHE D'ABORD.
+                  Le menu ne portait que des ordres : clic droit pour cadrer la
+                  vue ou poser une étude renvoyait au menu du navigateur. Sur
+                  une plateforme de graphes, le clic droit EST le chemin court
+                  vers ces trois gestes — ils passent donc devant, séparés du
+                  carnet par un filet, parce qu'un « réinitialiser la vue »
+                  collé à un « vendre au marché » est un accident qui attend. */}
+                <p className="px-2 pb-1 pt-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--tv-text-muted)]">
+                  {t("rt.ctxChart")}
+                </p>
+                {(
+                  [
+                    { key: "rt.resetView" as const, run: resetChart },
+                    { key: "rt.fit" as const, run: fitChart },
+                    { key: "rt.ctxAddIndicator" as const, run: () => setPanel("indicators") },
+                    { key: "rt.ctxSettings" as const, run: () => setPanel("settings") },
+                  ] as const
+                ).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      item.run();
+                      setCtxMenu(null);
+                    }}
+                    className="flex w-full items-center rounded-md px-2 py-1.5 text-[11px] font-semibold text-[var(--tv-text)] transition hover:bg-[var(--tv-surface-hover)]"
+                  >
+                    {t(item.key)}
+                  </button>
+                ))}
+                <div className="my-1 h-px bg-[var(--tv-border)]" />
                 <p className="px-2 pb-1 pt-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--tv-text-muted)]">
                   {t("rt.ctxOrder")} · <span className="tv-figure">{ctxMenu.price.toFixed(2)}</span>
                 </p>
@@ -902,6 +973,43 @@ export default function ReplayTerminal(props: TerminalProps) {
         viewTf={tfLabel}
       />
     </div>
+  );
+}
+
+/**
+ * Une BASCULE du rail — un réglage qui reste allumé tant qu'il agit.
+ *
+ * Distincte de `RailButton`, qui déclenche une action et ne garde aucun état :
+ * un aimant actif doit se voir sans avoir à survoler, sinon on trace en se
+ * demandant pourquoi les traits se collent.
+ */
+function RailToggle({
+  label,
+  icon: Icon,
+  on,
+  onClick,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  on: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={on}
+      onClick={onClick}
+      className={cn(
+        "grid h-8 w-8 place-items-center rounded-[3px] transition",
+        on
+          ? "bg-[var(--tv-surface-hover)] text-[var(--tv-accent)]"
+          : "text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]",
+      )}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
   );
 }
 

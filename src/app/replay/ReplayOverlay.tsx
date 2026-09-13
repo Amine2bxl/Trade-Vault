@@ -21,8 +21,9 @@ import { Trash2, X } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { ChartView } from "./ReplayChart";
-import type { Drawing, Order, Position } from "@/modules/replay";
+import type { Drawing, OhlcBar, Order, Position } from "@/modules/replay";
 import { instrumentOf, pnlOf } from "@/modules/replay";
+import { snapToBar } from "./magnet";
 
 export type ReplayTool =
   | "cursor"
@@ -110,6 +111,19 @@ interface OverlayProps {
    * par-dessus — ce que toute plateforme permet.
    */
   showOrders?: boolean;
+  /**
+   * Les bougies révélées — UNIQUEMENT pour l'aimant.
+   *
+   * La couche n'en dessine aucune : c'est la librairie qui trace le prix. Elle
+   * a besoin de leurs OHLC pour savoir à quoi coller une ancre. Nommées `bars`
+   * et non `candles` : dans ce composant, `candles` désigne déjà la SÉRIE du
+   * graphe, et deux sens pour un mot est le début d'un bug.
+   */
+  bars?: readonly OhlcBar[];
+  /** L'aimant : les ancres se collent à l'OHLC de la bougie visée. */
+  magnet?: boolean;
+  /** Masquer les dessins sans en supprimer aucun. */
+  hideDrawings?: boolean;
   /** Le `<svg>` de la couche, exposé pour la capture d'un trade clôturé. */
   exportRef?: MutableRefObject<SVGSVGElement | null>;
   tool: ReplayTool;
@@ -455,6 +469,9 @@ export default function ReplayOverlay({
   bounds,
   showRthEth,
   showOrders = true,
+  bars,
+  magnet = false,
+  hideDrawings = false,
   exportRef,
   tool,
   mark,
@@ -569,7 +586,8 @@ export default function ReplayOverlay({
     const timeSec = c.timeScale().coordinateToTime(x) as number | null;
     const price = s.coordinateToPrice(y);
     if (timeSec == null || price == null) return null;
-    return { ms: timeSec * 1000, price };
+    const ms = timeSec * 1000;
+    return { ms, price: magnet ? snapToBar(ms, price, bars, s) : price };
   };
 
   // ── Placement d'un nouveau dessin (mode dessin) ─────────────────────────
@@ -1306,8 +1324,8 @@ export default function ReplayOverlay({
         style={{ pointerEvents: "none", overflow: "visible" }}
       >
         {shading}
-        {shapes}
-        {draftShape}
+        {!hideDrawings && shapes}
+        {!hideDrawings && draftShape}
         {showOrders && orderLines}
         {showOrders && positionShapes}
         {showOrders && execs}
@@ -1330,7 +1348,7 @@ export default function ReplayOverlay({
         l'écran : la décision se prend là où se trouve l'objet. C'est aussi la
         seule façon de changer la couleur d'un dessin DÉJÀ POSÉ — le rail, lui,
         ne décide que de la couleur des prochains. */}
-      {sheet && (
+      {sheet && !hideDrawings && (
         <div
           className="absolute flex items-center gap-1.5 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 p-1.5 shadow-[var(--tv-elev-2)] backdrop-blur"
           style={{ left: sheet.left, top: sheet.top, pointerEvents: "auto" }}

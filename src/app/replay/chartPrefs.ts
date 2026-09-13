@@ -89,6 +89,30 @@ export interface ChartPrefs {
   /** Les marques d'exécution et les lignes d'ordres sur le graphe. */
   showOrders: boolean;
   /**
+   * L'AIMANT — les ancres d'un dessin se collent à l'OHLC de la bougie visée.
+   *
+   * Sans lui, poser une ligne « sur le haut » revient à viser un pixel : on
+   * tombe à un tick près, et le niveau qu'on relit trois bougies plus tard
+   * n'est pas celui qu'on croyait tracer. C'est le réglage le plus utile de
+   * toute la barre d'outils, et c'est pour ça qu'il y a sa place.
+   */
+  magnet: boolean;
+  /**
+   * L'outil RESTE ACTIF après avoir posé une forme.
+   *
+   * Par défaut on retombe sur le curseur — c'est ce qu'on veut quand on pose
+   * un trait de temps en temps. Quand on en pose douze d'affilée, c'est douze
+   * allers-retours dans le rail : le verrou supprime ce va-et-vient.
+   */
+  lockTool: boolean;
+  /**
+   * Masquer TOUS les dessins, sans en supprimer aucun.
+   *
+   * Pour relire une structure de prix nue puis retrouver ses traits. La
+   * gomme, elle, détruit — les deux gestes ne doivent pas se confondre.
+   */
+  hideDrawings: boolean;
+  /**
    * Le fuseau d'AFFICHAGE de l'axe des temps.
    *
    * Il ne déplace RIEN : les séances, l'ouverture, la clôture et l'ombrage
@@ -122,6 +146,9 @@ export const CHART_PREFS_DEFAULT: ChartPrefs = {
   legend: true,
   sessionShading: true,
   showOrders: true,
+  magnet: false,
+  lockTool: false,
+  hideDrawings: false,
   timezone: "America/New_York",
   indicators: [],
 };
