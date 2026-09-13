@@ -23,8 +23,8 @@ const VARIANT: Record<ButtonVariant, string> = {
     "bg-transparent font-medium text-slate-400 transition " +
     "hover:border-[var(--tv-border-strong)] hover:bg-white/[0.04] hover:text-white",
   danger:
-    "inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 " +
-    "bg-transparent font-medium text-red-400/90 transition hover:bg-red-500/10 hover:text-red-300",
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-[rgb(var(--tv-danger-rgb)/0.35)] " +
+    "bg-transparent font-medium text-[var(--tv-danger)] transition hover:bg-[rgb(var(--tv-danger-rgb)/0.12)] hover:text-[var(--tv-danger)]",
   /* LE BARREAU DU MILIEU.
      Entre `subtle` (filet gris, texte gris) et `primary` (vert plein, texte
      blanc), il manquait la marche : un bouton qui se lit comme l'action

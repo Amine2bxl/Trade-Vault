@@ -74,7 +74,7 @@
    * Roboto Mono sert aux rares données techniques (codes, heures).
    * ---------------------------------------------------------------- */
   --font-sans:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    "Manrope", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono:
     "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     monospace;
@@ -106,8 +106,8 @@
   --color-slate-200: #e3e5e7;
   --color-slate-300: #c8ccd0;
   --color-slate-400: #9ba1a6;
-  --color-slate-500: #8b9196;
-  --color-slate-600: #848a90;
+  --color-slate-500: #8c9098;
+  --color-slate-600: #767b84;
   --color-slate-700: #3f4448;
   --color-slate-800: #26292c;
   --color-slate-900: #171a1c;
@@ -122,8 +122,8 @@
   --color-surface: #16191c;
   --color-surface-light: #1d2125;
   --color-surface-lighter: #23282d;
-  --color-profit: #10b981;
-  --color-loss: #ef4444;
+  --color-profit: #51d88a;
+  --color-loss: #d75b6a;
 
   /* ----------------------------------------------------------------
    * LE VERT ET LE ROUGE DE LA DONNÉE, en utilitaires Tailwind.
@@ -160,9 +160,9 @@
    *     soit le thème choisi — y compris un thème clair ou pastel, où l'accent
    *     seul aurait rendu le bouton illisible.
    * ---------------------------------------------------------------- */
-  --tv-cta: oklch(0.52 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-cta-hover: oklch(0.58 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-cta-active: oklch(0.46 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+  --tv-cta: oklch(0.46 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+  --tv-cta-hover: oklch(0.51 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+  --tv-cta-active: oklch(0.41 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
 
   /* ----------------------------------------------------------------
    * Themeable accent ramps.
@@ -323,7 +323,7 @@
      classe du même nom. H1–H6, `.font-display`, `.metric-display` et la marque
      de la sidebar l'utilisent. */
   --font-display:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    "Manrope", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   /* Default identity = "Graphite" neutral gray — matches the public landing
      page so the signed-in app and the marketing site share one identity. */
   /* Surfaces et textes — extraits en variables pour que le studio de thème
@@ -351,13 +351,13 @@
    * L'accent n'a plus de « halo » : `--tv-glow-accent` reste défini pour
    * compatibilité, mais vaut `none` (voir le bloc élévation plus bas).
    * ──────────────────────────────────────────────────────────────── */
-  --tv-bg: #07090a;
+  --tv-bg: #050607;
   /* Le même noir, en triplet : un dégradé qui doit s'ÉTEINDRE dans le fond a
      besoin de la couleur avec alpha 0, et `transparent` vaut du noir
      transparent — ce qui donne un voile gris sur toute couleur de fond qui
      n'est pas noire. */
-  --tv-bg-rgb: 7 9 10;
-  --tv-text: #e6e8ea;
+  --tv-bg-rgb: 5 6 7;
+  --tv-text: #f4f5f5;
   /* Graphite — gris neutre. L'accent du thème par défaut est une encre, pas une
      diode : il ne porte le sens que par la valeur.
      ────────────────────────────────────────────────────────────────────────
@@ -380,16 +380,16 @@
      Vérifié par le calcul sur `computeThemeVars(graphite)`. Si les ancres du
      thème changent, relancer le calcul plutôt que d'ajuster ces nombres à
      l'estime. */
-  --tv-primary-h: 256.8;
-  --tv-primary-c: 0.35;
-  --tv-secondary-h: 257.4;
-  --tv-secondary-c: 0.35;
-  --tv-accent: #94a3b8;
-  --tv-accent-2: #64748b;
-  --tv-highlight: #cbd5e1;
-  --tv-accent-rgb: 148 163 184;
-  --tv-accent-2-rgb: 100 116 139;
-  --tv-highlight-rgb: 203 213 225;
+  --tv-primary-h: 154.5;
+  --tv-primary-c: 1.16;
+  --tv-secondary-h: 156.2;
+  --tv-secondary-c: 1.007;
+  --tv-accent: #51d88a;
+  --tv-accent-2: #2fa96b;
+  --tv-highlight: #7be8a8;
+  --tv-accent-rgb: 81 216 138;
+  --tv-accent-2-rgb: 47 169 107;
+  --tv-highlight-rgb: 123 232 168;
 
   /* ── LE VERT DE LA DONNÉE ──
    *
@@ -406,10 +406,10 @@
    * unique de la courbe, de son dégradé, de sa légende et de ses pastilles.
    * `--tv-chart-red` en est le pendant pour la perte et pour le repère de
    * plancher. */
-  --tv-chart-green: #34d399;
-  --tv-chart-green-rgb: 52 211 153;
-  --tv-chart-red: #f87171;
-  --tv-chart-red-rgb: 248 113 113;
+  --tv-chart-green: #51d88a;
+  --tv-chart-green-rgb: 81 216 138;
+  --tv-chart-red: #d75b6a;
+  --tv-chart-red-rgb: 215 91 106;
 
   /* ── L'ÉCHELLE DE PROFONDEUR ──
    *
@@ -428,11 +428,11 @@
    * Les valeurs sont écrites en dur, jamais en voiles blancs : un voile
    * translucide sur un fond presque noir vire au gris sale dès la deuxième
    * superposition, et deux cartes côte à côte ne se ressemblent plus. */
-  --tv-plate-0: #0c0e10;
-  --tv-plate-1: #16191c;
-  --tv-plate-1-rgb: 22 25 28;
-  --tv-plate-2: #1d2125;
-  --tv-plate-3: #23282d;
+  --tv-plate-0: #0a0c0f;
+  --tv-plate-1: #101216;
+  --tv-plate-1-rgb: 16 18 22;
+  --tv-plate-2: #16181d;
+  --tv-plate-3: #1c1f25;
 
   /* ══════════════════════════════════════════════════════════════════
    * SEMANTIC LAYER — the TradeVault visual language.
@@ -453,7 +453,7 @@
   --tv-surface-1: var(--tv-plate-1);
   --tv-surface-2: var(--tv-plate-2);
   --tv-surface-3: var(--tv-plate-3);
-  --tv-surface-hover: #282d33;
+  --tv-surface-hover: #23262c;
   /* ── LE RAIL ──
    *
    * C'est la seule surface de l'application qui n'est PAS neutre, et c'est
@@ -475,9 +475,10 @@
   /* Borders — a hairline is structure, not decoration. Three weights only.
      Elles remontent (0.06 → 0.08) : sur un fond neutre quasi noir, c'est le
      liseré qui dessine la grille, puisque plus aucune ombre ne le fait. */
-  --tv-border: rgb(255 255 255 / 0.08);
-  --tv-border-strong: rgb(255 255 255 / 0.14);
-  --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.35);
+  --tv-border: #202329;
+  --tv-border-strong: #2b2f37;
+  --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.32);
+  --tv-border-positive: rgb(var(--tv-chart-green-rgb) / 0.35);
 
   /* Text — three steps. Anything below `muted` is not readable content.
    *
@@ -491,17 +492,26 @@
    * un plancher de lisibilité que sa propre valeur ne tenait pas. Le palier est
    * remonté au lieu d'être documenté comme illisible — c'est le dernier cran de
    * texte réel, pas de la décoration. */
-  --tv-text-primary: #f4f5f6;
-  --tv-text-secondary: #9ba1a6;
-  --tv-text-muted: #8f959b;
+  --tv-text-primary: #f4f5f5;
+  --tv-text-secondary: #8c9098;
+  --tv-text-muted: #7a7f87;
+  --tv-text-faint: #5b6068;
 
   /* L5 data emphasis / L6 risk / L7 discipline */
-  --tv-success: #10b981;
-  --tv-warning: #f59e0b;
-  --tv-danger: #ef4444;
-  --tv-success-rgb: 16 185 129;
-  --tv-warning-rgb: 245 158 11;
-  --tv-danger-rgb: 239 68 68;
+  --tv-success: #51d88a;
+  --tv-warning: #f0a33e;
+  --tv-danger: #d75b6a;
+  --tv-info: #56a7e8;
+  --tv-success-rgb: 81 216 138;
+  --tv-warning-rgb: 240 163 62;
+  --tv-danger-rgb: 215 91 106;
+  --tv-info-rgb: 86 167 232;
+  --tv-success-soft: #143d2c;
+  --tv-success-soft-rgb: 20 61 44;
+  --tv-danger-soft: rgb(215 91 106 / 0.13);
+  --tv-info-soft: rgb(86 167 232 / 0.13);
+  --tv-on-accent: #06160d;
+  --tv-ring: rgb(var(--tv-accent-rgb) / 0.55);
 
   /* Élévation — trois crans, et le premier est « rien ».
    *
@@ -764,6 +774,8 @@ body {
   /* Inter — l'identité complète (body + UI + titres), même voix des
      deux côtés du mur de connexion. */
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
   font-weight: 400;
   font-size: 15px;
   line-height: 1.55;
@@ -2232,6 +2244,20 @@ a:focus-visible,
   }
 }
 
+/* L'état actif SOUPLE — fond vert sombre translucide, texte vert lumineux.
+   C'est la signature des onglets et sélections actifs : l'accent s'affiche
+   comme une zone vivante, rare et réglée, jamais comme un plein strident. */
+.tv-accent-soft {
+  background: rgb(var(--tv-success-soft-rgb) / 0.85);
+  border: 1px solid var(--tv-border-positive);
+  color: var(--tv-accent);
+}
+@media (hover: hover) {
+  .tv-accent-soft:hover {
+    background: rgb(var(--tv-success-soft-rgb) / 1);
+  }
+}
+
 /* ══ LE CHIFFRE ══
  *
  * C'est le « Capital » de la page Calculatrice de lot, mot pour mot :
@@ -2453,8 +2479,9 @@ a:focus-visible,
    lit par le contraste, comme un onglet de classeur, et n'a donc besoin ni de
    teinte d'accent ni d'ombre colorée. */
 .section-tab-active {
-  color: var(--tv-text-primary);
-  background: var(--tv-plate-3);
+  color: var(--tv-accent);
+  background: var(--tv-success-soft);
+  border: 1px solid var(--tv-border-positive);
   box-shadow: none;
 }
 .section-tab:focus-visible {
@@ -3534,8 +3561,8 @@ a:focus-visible,
 }
 .tv-subnav-item-active,
 .tv-subnav-item-active:hover {
-  color: var(--tv-text-primary);
-  background: var(--tv-plate-3);
+  color: var(--tv-accent);
+  background: var(--tv-success-soft);
 }
 .tv-subnav-item:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);

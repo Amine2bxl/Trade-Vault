@@ -201,7 +201,7 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
                 className={cn("section-tab", active ? "section-tab-active" : "section-tab-idle")}
               >
                 <Icon
-                  className={cn("h-4 w-4 shrink-0", active ? "text-cyan-300" : "text-slate-500")}
+                  className={cn("h-4 w-4 shrink-0", active ? "text-[var(--tv-accent)]" : "text-slate-500")}
                   strokeWidth={active ? 2.2 : 1.9}
                 />
                 {/* Mobile : icônes seules (le texte revient dès md) — un label sur

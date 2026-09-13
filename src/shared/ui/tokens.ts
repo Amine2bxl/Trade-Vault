@@ -28,9 +28,9 @@
  *  de police. */
 export const font = {
   /** Inter body stack (applied to `body` in styles.css). */
-  body: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
-  /** Inter display stack — use via the `font-display` utility class. */
-  display: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  body: '"Manrope","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  /** Manrope display stack — use via the `font-display` utility class. */
+  display: '"Manrope","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
   /** Roboto Mono stack for the rare technical spots (codes, session times). */
   mono: '"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
   /** Utility class for display emphasis (headings + hero metrics). */
