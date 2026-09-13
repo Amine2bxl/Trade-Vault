@@ -193,7 +193,8 @@ export type DrawingKind =
   | "horizontalRay"
   | "measured"
   | "text"
-  | "zone";
+  | "zone"
+  | "fib";
 
 /** Aperçu d'un ordre pour l'historique de la session. */
 export interface OrderHistoryRow {

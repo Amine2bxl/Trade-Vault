@@ -23,6 +23,11 @@ function todayNy(): string {
   return nyDateOf(Date.now());
 }
 
+/** Cinq ans en arrière — la profondeur d'historique que le rejeu propose. */
+function fiveYearsAgo(): string {
+  return new Date(Date.now() - 5 * 365.25 * 24 * 3600_000).toISOString().slice(0, 10);
+}
+
 /**
  * Un message LISIBLE à partir de n'importe quoi.
  *
@@ -218,7 +223,7 @@ export default function ReplaySetup() {
             </span>
             <input
               type="date"
-              min="2020-01-01"
+              min={fiveYearsAgo()}
               max={todayNy()}
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -254,7 +259,11 @@ export default function ReplaySetup() {
           <p className="mb-3 text-[10.5px] font-medium text-[var(--tv-warning)]">
             {t("rt.weekendResumes")}
           </p>
-        ) : null}
+        ) : (
+          <p className="mb-3 text-[10px] text-[var(--tv-text-muted)]">
+            {t("rt.historyYears").replace("{min}", fiveYearsAgo())}
+          </p>
+        )}
 
         {/* Timeframe */}
         <div className="mb-3">

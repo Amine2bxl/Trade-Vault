@@ -7,9 +7,10 @@
  * `useReplaySession` et des props.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BoxSelect,
+  ChartLine,
   Eraser,
   Flag,
   History,
@@ -36,7 +37,7 @@ import ReplayDashboard from "./ReplayDashboard";
 import ReplayChartSettings from "./ReplayChartSettings";
 import { loadChartPrefs, saveChartPrefs, type ChartPrefs } from "./chartPrefs";
 import type { ReplayQuote } from "./useReplaySession";
-import type { Drawing, PlaceOrderInput, ReplaySessionState } from "@/modules/replay";
+import type { Drawing, OrderType, PlaceOrderInput, ReplaySessionState } from "@/modules/replay";
 import { nyTimeOf, dailyLossState } from "@/modules/replay";
 
 export interface TerminalProps {
@@ -98,6 +99,7 @@ const TOOLS: {
   { id: "text", icon: Type, label: "rt.tool.text" },
   { id: "measured", icon: Ruler, label: "rt.tool.measured" },
   { id: "zone", icon: BoxSelect, label: "rt.tool.zone" },
+  { id: "fib", icon: ChartLine, label: "rt.tool.fib" },
 ];
 
 /**
@@ -156,6 +158,48 @@ export default function ReplayTerminal(props: TerminalProps) {
     c: number;
     v: number;
   } | null>(null);
+
+  // ── Clic droit sur le graphe → passer un ordre au prix visé ─────────────
+  const chartBoxRef = useRef<HTMLDivElement | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{
+    left: number;
+    top: number;
+    price: number;
+  } | null>(null);
+  const openCtxMenu = (ev: React.MouseEvent) => {
+    if (view !== "chart") return;
+    ev.preventDefault();
+    const box = chartBoxRef.current?.getBoundingClientRect();
+    const s = viewRef.current.candles;
+    if (!box || !s) return;
+    const x = ev.clientX - box.left;
+    const y = ev.clientY - box.top;
+    const price = s.coordinateToPrice(y);
+    if (price == null) return;
+    setCtxMenu({
+      left: Math.max(0, Math.min(x, box.width - 176)),
+      top: Math.max(0, Math.min(y, box.height - 156)),
+      price,
+    });
+  };
+  const placeFromCtx = (side: "long" | "short", type: OrderType) => {
+    if (!ctxMenu) return;
+    props.onPlaceOrder({
+      side,
+      type,
+      qty: 1,
+      price: type === "market" ? undefined : ctxMenu.price,
+    });
+    setCtxMenu(null);
+  };
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCtxMenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ctxMenu]);
 
   const state = props.state;
   const orders = state?.orders ?? [];
@@ -453,6 +497,8 @@ export default function ReplayTerminal(props: TerminalProps) {
             </div>
           </div>
           <div
+            ref={chartBoxRef}
+            onContextMenu={openCtxMenu}
             className={cn(
               "relative min-h-0 flex-1 bg-[var(--tv-plate-0)]",
               view === "stats" && "hidden",
@@ -508,6 +554,54 @@ export default function ReplayTerminal(props: TerminalProps) {
                 >
                   {hover.c.toFixed(2)}
                 </span>
+              </div>
+            )}
+
+            {/* MENU DU CLIC DROIT — passer un ordre au prix visé, comme sur
+              une plateforme de trading : on vise le niveau, on clic droit, on
+              choisit le sens et le type. L'ordre part à CE prix, pas au mark. */}
+            {ctxMenu && (
+              <div
+                className="absolute z-10 w-44 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-1 shadow-[var(--tv-elev-3)]"
+                style={{ left: ctxMenu.left, top: ctxMenu.top }}
+                role="menu"
+                aria-label={t("rt.ctxOrder")}
+              >
+                <p className="px-2 pb-1 pt-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--tv-text-muted)]">
+                  {t("rt.ctxOrder")} · <span className="tv-figure">{ctxMenu.price.toFixed(2)}</span>
+                </p>
+                {(["long", "short"] as const).map((side) => (
+                  <div key={side}>
+                    <p
+                      className={`px-2 pb-0.5 pt-1 text-[8.5px] font-bold uppercase tracking-wider ${
+                        side === "long"
+                          ? "text-[var(--tv-chart-green)]"
+                          : "text-[var(--tv-chart-red)]"
+                      }`}
+                    >
+                      {side === "long" ? t("rt.buy") : t("rt.sell")}
+                    </p>
+                    {(["market", "limit", "stop"] as const).map((ty) => (
+                      <button
+                        key={ty}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => placeFromCtx(side, ty)}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[11px] font-semibold text-[var(--tv-text)] transition hover:bg-[var(--tv-surface-hover)]"
+                      >
+                        {t(ty === "market" ? "rt.market" : ty === "limit" ? "rt.limit" : "rt.stop")}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+                <div className="my-1 h-px bg-[var(--tv-border)]" />
+                <button
+                  type="button"
+                  onClick={() => setCtxMenu(null)}
+                  className="w-full rounded-md px-2 py-1.5 text-left text-[11px] font-semibold text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+                >
+                  {t("common.cancel")}
+                </button>
               </div>
             )}
           </div>

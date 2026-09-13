@@ -14,8 +14,11 @@ import { useReplayMode } from "./ReplayModeContext";
 
 export default function ReplayBanner({ onGoTerminal }: { onGoTerminal: () => void }) {
   const { t } = useT();
-  const { session, exit } = useReplayMode();
-  if (!session.active || session.finished) return null;
+  const { session, modeActive, exit } = useReplayMode();
+  // Le bandeau suit le MODE, pas la séance : dès que le compte de rejeu est
+  // sélectionné, tout le site vit en rejeu — même avant d'avoir lancé une
+  // séance.
+  if (!modeActive) return null;
 
   const pnl = session.quote?.realizedPnl ?? 0;
   const pnlTone = pnl >= 0 ? "text-[var(--tv-chart-green)]" : "text-[var(--tv-chart-red)]";
@@ -30,12 +33,14 @@ export default function ReplayBanner({ onGoTerminal }: { onGoTerminal: () => voi
         {session.account?.name ?? t("rt.modeTitle")}
       </span>
       <span className="hidden tv-figure text-[var(--tv-text-muted)] sm:inline">
-        {session.clockLabel || "–"}
+        {session.active ? session.clockLabel || "–" : "—"}
       </span>
-      <span className={cn2("hidden tv-figure font-semibold sm:inline", pnlTone)}>
-        {pnl >= 0 ? "+" : ""}
-        {pnl.toFixed(0)} $
-      </span>
+      {session.active && (
+        <span className={cn2("hidden tv-figure font-semibold sm:inline", pnlTone)}>
+          {pnl >= 0 ? "+" : ""}
+          {pnl.toFixed(0)} $
+        </span>
+      )}
       <span className="ml-auto flex items-center gap-1.5">
         <button
           type="button"

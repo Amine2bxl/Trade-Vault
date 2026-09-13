@@ -274,6 +274,10 @@ const fr: Dict = {
   "rt.backToTerminal": "Séance en cours — y retourner.",
   "rt.previewCta": "Choisis une date, puis trade-la en direct.",
   "rt.seedWeek": "Ajouter une semaine d'exemple NQ",
+  "rt.historyYears": "5 ans d'historique NQ disponibles — n'importe quel jour ouvré depuis {min}.",
+  "rt.tool.fib": "Fibonacci",
+  "rt.ctxOrder": "Ordre à",
+  "rt.ctxFilter": "Passer un ordre à ce prix",
   // Onboarding (refonte 3 moments)
   "onb.nameTitle": "Comment t'appelles-tu ?",
   "onb.nameSub": "Jarvis te parlera par ton prénom — la voix, les rappels, tout.",

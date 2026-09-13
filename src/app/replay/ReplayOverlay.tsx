@@ -34,10 +34,22 @@ export type ReplayTool =
   | "text"
   | "measured"
   | "zone"
+  | "fib"
   | "erase";
 
 const SL = "var(--tv-chart-red)";
 const TP = "var(--tv-chart-green)";
+
+/** Les retracements de Fibonacci — les niveaux de la plateforme de référence. */
+const FIB_LEVELS: { ratio: number; label: string }[] = [
+  { ratio: 0, label: "0" },
+  { ratio: 0.236, label: "23.6" },
+  { ratio: 0.382, label: "38.2" },
+  { ratio: 0.5, label: "50" },
+  { ratio: 0.618, label: "61.8" },
+  { ratio: 0.786, label: "78.6" },
+  { ratio: 1, label: "1" },
+];
 
 const PLACING: Record<string, boolean> = {
   hline: true,
@@ -48,6 +60,7 @@ const PLACING: Record<string, boolean> = {
   text: true,
   measured: true,
   zone: true,
+  fib: true,
 };
 const ONE_CLICK = new Set(["hline", "vline", "text"]);
 
@@ -682,6 +695,60 @@ export default function ReplayOverlay({
             >
               {Math.abs(priceAt(d, 0) - priceAt(d, 1)).toFixed(1)} pts
             </text>
+          </>
+        );
+        grab = <line x1={x0} y1={y0} x2={x1} y2={y1} />;
+        break;
+      }
+      case "fib": {
+        if (x1 == null || y1 == null) break;
+        const p0 = d.points[0];
+        const p1 = d.points[1];
+        const diff = p1.y - p0.y;
+        const levels = FIB_LEVELS.map((lvl) => {
+          const price = p0.y + diff * lvl.ratio;
+          const cy = coord(0, price).y;
+          if (cy == null) return null;
+          const strong = lvl.ratio === 0 || lvl.ratio === 0.5 || lvl.ratio === 1;
+          return (
+            <g key={lvl.label} opacity={strong ? 0.85 : 0.5}>
+              <line
+                x1={0}
+                y1={cy}
+                x2={W}
+                y2={cy}
+                stroke={d.color}
+                strokeWidth={0.75}
+                strokeDasharray="4 4"
+              />
+              <text
+                x={W - 34}
+                y={cy + 3}
+                fill={d.color}
+                fontSize={8.5}
+                fontWeight={strong ? 800 : 600}
+                textAnchor="middle"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {lvl.label}
+              </text>
+              <text
+                x={W - 4}
+                y={cy + 3}
+                fill={d.color}
+                fontSize={8.5}
+                textAnchor="end"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {price.toFixed(2)}
+              </text>
+            </g>
+          );
+        });
+        body = (
+          <>
+            <line x1={x0} y1={y0} x2={x1} y2={y1} />
+            {levels}
           </>
         );
         grab = <line x1={x0} y1={y0} x2={x1} y2={y1} />;
