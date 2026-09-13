@@ -30,6 +30,49 @@ import type { ReplaySessionState, ReplayTrade } from "@/modules/replay";
 const money = (n: number) => `${n < 0 ? "−" : ""}$${Math.abs(n).toFixed(2)}`;
 const signed = (n: number) => `${n >= 0 ? "+" : "−"}$${Math.abs(n).toFixed(2)}`;
 
+/**
+ * Une jauge en arc — la forme d'un TAUX.
+ *
+ * Un pourcentage écrit ne dit rien de sa place sur l'échelle : 64 % est-il bon ?
+ * L'arc répond avant la lecture du chiffre, parce qu'il montre ce qui reste à
+ * parcourir. Réservé à ce qui est réellement borné (un taux, un facteur ramené
+ * à son échelle) : mettre un arc sur un montant, qui n'a pas de maximum,
+ * inventerait une limite qui n'existe pas.
+ *
+ * Dessiné en SVG plutôt qu'en image : il suit le thème, se redimensionne sans
+ * flou, et ne coûte aucune requête.
+ */
+function Gauge({ ratio, tone }: { ratio: number; tone: "pos" | "neg" | "neutral" }) {
+  const r = 16;
+  const c = Math.PI * r; // demi-cercle
+  const filled = Math.max(0, Math.min(1, ratio)) * c;
+  const stroke =
+    tone === "pos"
+      ? "var(--tv-chart-green)"
+      : tone === "neg"
+        ? "var(--tv-chart-red)"
+        : "var(--tv-accent)";
+  return (
+    <svg viewBox="0 0 40 22" className="h-5 w-9 shrink-0" aria-hidden>
+      <path
+        d={`M 4 20 A ${r} ${r} 0 0 1 36 20`}
+        fill="none"
+        stroke="var(--tv-border)"
+        strokeWidth={3.5}
+        strokeLinecap="round"
+      />
+      <path
+        d={`M 4 20 A ${r} ${r} 0 0 1 36 20`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={3.5}
+        strokeLinecap="round"
+        strokeDasharray={`${filled} ${c}`}
+      />
+    </svg>
+  );
+}
+
 /** Une durée en clair : « 8 min 44 s ». */
 function duration(ms: number): string {
   if (!Number.isFinite(ms) || ms <= 0) return "—";
@@ -99,10 +142,30 @@ export default function ReplayDashboard({ state }: { state: ReplaySessionState |
           value={signed(stats.totalPnl)}
           tone={pnlTone(stats.totalPnl)}
         />
-        <Kpi label={t("rt.dashWinRate")} value={`${stats.winRate.toFixed(1)} %`} />
+        <Kpi
+          label={t("rt.dashWinRate")}
+          value={`${stats.winRate.toFixed(1)} %`}
+          adornment={
+            <Gauge
+              ratio={stats.winRate / 100}
+              tone={stats.winRate >= 50 ? "pos" : stats.winRate > 0 ? "neg" : "neutral"}
+            />
+          }
+        />
         <Kpi
           label={t("rt.dashProfitFactor")}
           value={Number.isFinite(stats.profitFactor) ? stats.profitFactor.toFixed(2) : "—"}
+          adornment={
+            Number.isFinite(stats.profitFactor) ? (
+              // Un facteur de profit n'a pas de maximum : on borne l'arc à 3,
+              // au-delà duquel la nuance ne dit plus rien. 1 — le seuil de
+              // rentabilité — tombe donc au tiers de l'arc.
+              <Gauge
+                ratio={stats.profitFactor / 3}
+                tone={stats.profitFactor >= 1 ? "pos" : "neg"}
+              />
+            ) : undefined
+          }
         />
       </KpiGrid>
 

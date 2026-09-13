@@ -449,6 +449,20 @@ export default function ReplayTerminal(props: TerminalProps) {
   );
 }
 
+/**
+ * Une statistique d'en-tête, en PASTILLE `LIBELLÉ : valeur`.
+ *
+ * L'empilement libellé-au-dessus-valeur prenait deux lignes et laissait
+ * flotter les chiffres sans limite : sur une barre qui en aligne cinq, le
+ * regard ne savait pas où commençait l'un et finissait l'autre. La pastille
+ * borne chaque grandeur — c'est la lecture des plateformes de prop firm
+ * (« BAL: », « MLL: », « RP&L: »), et le design system nomme déjà cette
+ * convention à propos de `.tv-label`.
+ *
+ * Une pastille prend un FOND quand sa valeur porte un signe : un P&L positif
+ * ou négatif se remarque alors sans être lu. Les grandeurs neutres — le solde,
+ * l'equity — restent sobres, sinon tout serait mis en avant, donc rien.
+ */
 function HeaderStat({
   label,
   value,
@@ -459,14 +473,25 @@ function HeaderStat({
   /** `warn` : on approche d'un seuil sans l'avoir franchi — ni vert, ni rouge. */
   tone?: "up" | "down" | "warn" | "neutral";
 }) {
+  const filled = tone === "up" || tone === "down" || tone === "warn";
+  const hue =
+    tone === "up"
+      ? "var(--tv-chart-green-rgb)"
+      : tone === "down"
+        ? "var(--tv-chart-red-rgb)"
+        : "var(--tv-warning-rgb)";
   return (
-    <div className="text-right">
-      <div className="text-[9.5px] font-medium uppercase tracking-wide text-[var(--tv-text-muted)]">
-        {label}
-      </div>
-      <div
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1",
+        !filled && "border border-[var(--tv-border)] bg-[var(--tv-plate-1)]",
+      )}
+      style={filled ? { background: `rgb(${hue} / 0.16)` } : undefined}
+    >
+      <span className="tv-label text-[9.5px] text-[var(--tv-text-muted)]">{label}</span>
+      <span
         className={cn(
-          "tv-figure text-xs font-bold",
+          "tv-figure text-xs",
           tone === "up"
             ? "text-[var(--tv-chart-green)]"
             : tone === "down"
@@ -477,8 +502,8 @@ function HeaderStat({
         )}
       >
         {value}
-      </div>
-    </div>
+      </span>
+    </span>
   );
 }
 

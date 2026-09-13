@@ -15,6 +15,14 @@ import type { Position, ReplaySessionState } from "@/modules/replay";
 import { roundToTick, NQ, nyTimeOf } from "@/modules/replay";
 import { requestTradeEncoding } from "../store/replay";
 
+/** Comment le trade s'est refermé, en clair — le même vocabulaire que le journal. */
+const EXIT_LABEL: Record<"stop" | "target" | "manual" | "session-end", string> = {
+  stop: "Stop touché",
+  target: "Objectif atteint",
+  manual: "Sortie manuelle",
+  "session-end": "Clôture de séance",
+};
+
 type Tab = "positions" | "orders" | "history";
 
 interface Props {
@@ -150,63 +158,75 @@ export default function ReplayPanels({
             </div>
           ))}
 
+        {/* L'HISTORIQUE EN LIGNES, PAS EN TABLEAU.
+          Sept colonnes serrées dans un panneau de 300 px obligeaient à lire
+          chiffre par chiffre pour reconstituer un trade. Une ligne raconte
+          maintenant le trade dans l'ordre où on le pense : le sens, puis le
+          chemin du prix — entrée → sortie —, puis le résultat en pastille, et
+          comment c'est sorti. C'est la lecture des relevés de plateforme. */}
         {tab === "history" &&
           (history.length === 0 ? (
             <Empty label={t("rt.noHistory")} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-[11px]">
-                <thead>
-                  <tr className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
-                    {/* Ces en-têtes mélangeaient l'anglais et le français en
-                      dur, dans la même ligne. R et P&L restent tels quels :
-                      ils se lisent pareil dans les deux langues. */}
-                    <th className="px-1 py-1 font-medium">{t("rt.colSide")}</th>
-                    <th className="px-1 py-1 font-medium">{t("rt.colSize")}</th>
-                    <th className="px-1 py-1 font-medium">{t("rt.colEntry")}</th>
-                    <th className="px-1 py-1 font-medium">{t("rt.colExit")}</th>
-                    <th className="px-1 py-1 font-medium">R</th>
-                    <th className="px-1 py-1 text-right font-medium">P&L</th>
-                    <th className="px-1 py-1" />
-                  </tr>
-                </thead>
-                <tbody className="tv-figure">
-                  {history.map((tr) => (
-                    <tr key={tr.id} className="border-t border-[var(--tv-border)]/60">
-                      <td className="px-1 py-1.5">{tr.side === "long" ? "L" : "S"}</td>
-                      <td className="px-1 py-1.5">{tr.qty}</td>
-                      <td className="px-1 py-1.5">{tr.entryPrice.toFixed(2)}</td>
-                      <td className="px-1 py-1.5">{tr.exitPrice.toFixed(2)}</td>
-                      <td className={cn("px-1 py-1.5", pnlColor(tr.rMultiple))}>
-                        {tr.rMultiple.toFixed(2)}R
-                      </td>
-                      <td
+            <div className="flex flex-col gap-1.5">
+              {history.map((tr) => {
+                const win = tr.realizedPnl >= 0;
+                return (
+                  <div
+                    key={tr.id}
+                    className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
                         className={cn(
-                          "px-1 py-1.5 text-right font-semibold",
-                          pnlColor(tr.realizedPnl),
+                          "tv-label shrink-0 rounded px-1 py-px text-[9px]",
+                          tr.side === "long"
+                            ? "bg-[rgb(var(--tv-chart-green-rgb)/0.16)] text-[var(--tv-chart-green)]"
+                            : "bg-[rgb(var(--tv-chart-red-rgb)/0.16)] text-[var(--tv-chart-red)]",
                         )}
                       >
-                        {tr.realizedPnl >= 0 ? "+" : ""}
-                        {tr.realizedPnl.toFixed(2)} $
-                      </td>
+                        {tr.side === "long" ? t("rt.long") : t("rt.short")} {tr.qty}
+                      </span>
+
+                      {/* Le chemin du prix, d'un coup d'œil. */}
+                      <span className="tv-figure min-w-0 flex-1 truncate text-[11px] text-[var(--tv-text)]">
+                        {tr.entryPrice.toFixed(2)}
+                        <span className="mx-1 text-[var(--tv-text-muted)]">&rarr;</span>
+                        {tr.exitPrice.toFixed(2)}
+                      </span>
+
+                      {/* Le résultat, en pastille : il se remarque sans être lu. */}
+                      <span
+                        className={cn(
+                          "tv-figure shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
+                          win
+                            ? "bg-[rgb(var(--tv-chart-green-rgb)/0.16)] text-[var(--tv-chart-green)]"
+                            : "bg-[rgb(var(--tv-chart-red-rgb)/0.16)] text-[var(--tv-chart-red)]",
+                        )}
+                      >
+                        {win ? "+" : "−"}${Math.abs(tr.realizedPnl).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--tv-text-muted)]">
+                      <span>{EXIT_LABEL[tr.exitReason]}</span>
+                      <span className="tv-figure">{tr.rMultiple.toFixed(2)} R</span>
+                      <span className="tv-figure">{nyTimeOf(tr.exitTime)}</span>
                       {/* Encoder MAINTENANT, pendant que le trade est frais —
-                        plutôt qu'à la fin de séance, quand on ne se souvient
-                        plus de ce qu'on avait en tête. La modale est celle du
+                        plutôt qu'en fin de séance, quand on ne se souvient plus
+                        de ce qu'on avait en tête. La modale est celle du
                         journal, déjà remplie de ce que le terminal sait. */}
-                      <td className="px-1 py-1.5 text-right">
-                        <button
-                          type="button"
-                          title={t("rt.encode")}
-                          onClick={() => requestTradeEncoding(tr)}
-                          className="rounded-md border border-[var(--tv-border)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--tv-text-muted)] transition hover:border-[var(--tv-accent)] hover:text-[var(--tv-text)]"
-                        >
-                          {t("rt.encode")}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      <button
+                        type="button"
+                        onClick={() => requestTradeEncoding(tr)}
+                        className="ml-auto rounded-md border border-[var(--tv-border)] px-1.5 py-0.5 font-semibold transition hover:border-[var(--tv-accent)] hover:text-[var(--tv-text)]"
+                      >
+                        {t("rt.encode")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ))}
       </div>
