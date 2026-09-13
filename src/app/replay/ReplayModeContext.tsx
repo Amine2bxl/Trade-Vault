@@ -116,36 +116,68 @@ export function ReplayModeProvider({
    * C'est ce que le trader demande : choisir le sous-compte de rejeu bascule
    * l'application entière, sans passer par un popup ni un écran. S'il existe
    * une séance encore en cours pour ce compte, elle est reprise dans la foulée.
+   *
+   * LA TRANSITION SE JOUE DANS TOUS LES CAS, et c'est ce qui manquait. Elle ne
+   * se déclenchait qu'à la reprise d'une séance : choisir un compte de rejeu
+   * vierge faisait basculer le thème du produit entier d'un coup, sans
+   * prévenir — un écran qui change de couleur sous les yeux sans qu'on sache
+   * pourquoi. Or c'est précisément le moment qu'il faut marquer : on quitte le
+   * journal réel pour un bac à sable, et les chiffres qu'on lira ensuite n'ont
+   * plus le même sens.
    */
   const enterModeForAccount = useCallback(
     async (account: Account) => {
       if (modeRef.current) return;
       modeRef.current = true;
+      clearTimers();
       setModeActive(true);
+      setTransition("loading");
       applyReplayTheme();
       const list = await session.loadSessionsOf(account.id);
       const resumable = list?.find((s) => s.status === "active" && s.state);
       if (resumable?.state && !activeRef.current) {
-        setTransition("loading");
         const ok = await session.resume(resumable);
         setTransition(ok ? "in" : null);
-        after(1400, () => setTransition(null));
-      } else if (!activeRef.current) {
-        session.selectAccount(account.id);
+        if (ok) after(1400, () => setTransition(null));
+        return;
       }
+      if (!activeRef.current) session.selectAccount(account.id);
+      // Un battement, le temps que le thème se pose : passer de « loading » à
+      // « in » dans la même image ne laisserait rien voir de la séquence.
+      after(450, () => {
+        setTransition("in");
+        after(1200, () => setTransition(null));
+      });
     },
     [session.loadSessionsOf, session.resume, session.selectAccount],
   );
 
-  /** Dépose le mode rejeu : thème réel restauré, séance sauvegardée. */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const leaveMode = useCallback(async () => {
-    if (!modeRef.current) return;
-    modeRef.current = false;
-    setModeActive(false);
-    restoreUserTheme(currentTheme.current);
-    if (activeRef.current) await session.leave();
-  }, [session.leave]);
+  /**
+   * Dépose le mode rejeu : thème réel restauré, séance sauvegardée.
+   *
+   * La sortie est aussi une transition. `exit()` la jouait déjà, mais revenir
+   * au réel EN CHANGEANT DE COMPTE dans le sélecteur ne passait pas par là :
+   * le thème ambre disparaissait sans un mot. Les deux chemins jouent
+   * maintenant la même séquence, parce que c'est le même franchissement.
+   */
+  const leaveMode = useCallback(
+    async (alreadyLeft = false) => {
+      if (!modeRef.current) return;
+      modeRef.current = false;
+      clearTimers();
+      setModeActive(false);
+      setTransition("out");
+      restoreUserTheme(currentTheme.current);
+      // `alreadyLeft` vient de `exit`, qui a besoin du booléen de `leave` pour
+      // dire si la séance est reprenable : il l'appelle donc lui-même, et sans
+      // ce drapeau on l'appellerait une seconde fois ici. `activeRef` ne peut
+      // pas l'éviter — il se met à jour au rendu, pas dans l'instant.
+      if (!alreadyLeft && activeRef.current) await session.leave();
+      after(900, () => setTransition(null));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [session.leave],
+  );
 
   // Le MOT d'entrée du mode : dès que le compte actif devient un compte de
   // rejeu, tout le site bascule. Le retour à un compte réel le dépose.
@@ -230,9 +262,10 @@ export function ReplayModeProvider({
     // l'appelant peut donc annoncer une reprise possible sans la promettre à
     // tort quand la séance n'était que locale.
     const saved = await session.leave();
-    await leaveMode();
+    // `leaveMode` porte la séquence de sortie — thème, voile, minuterie. La
+    // refaire ici en poserait une seconde par-dessus.
+    await leaveMode(true);
     if (realAccount.current) switchAccount(realAccount.current);
-    after(900, () => setTransition(null));
     return saved;
   }, [session.leave, leaveMode, switchAccount]);
 

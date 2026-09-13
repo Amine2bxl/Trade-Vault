@@ -31,7 +31,9 @@ import { useToast } from "../contexts/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { isPlanLimitError } from "../utils/planLimits";
 import { cn } from "../utils/cn";
+import { accountsOf, type TradingEnvironment } from "../replay/environment";
 import type { Account, AccountType } from "../store";
+import type { TKey } from "../i18n/translations";
 import { Modal, FIELD_BASE, Chip, CHIP_ROW } from "@/shared/ui";
 
 const TYPE_ICON: Record<AccountType, typeof User> = {
@@ -93,6 +95,12 @@ const REPLAY_TINT = {
 };
 
 const tintOf = (a: Account) => (a.type === "replay" ? REPLAY_TINT : ACCOUNT_TINT);
+
+/** Les deux environnements, dans l'ordre où on les présente. */
+const ENVIRONMENT_SECTIONS: { env: TradingEnvironment; titleKey: TKey }[] = [
+  { env: "live", titleKey: "env.sectionLive" },
+  { env: "replay", titleKey: "env.sectionReplay" },
+];
 
 /** La pastille « REPLAY », posée partout où un compte est nommé. */
 function ReplayBadge() {
@@ -170,6 +178,67 @@ export default function AccountSwitcher({
   // enregistrement. Un seul geste d'édition, un seul chemin de code.
 
   /**
+   * UNE RANGÉE DE COMPTE.
+   *
+   * Extraite de la boucle parce que la liste est désormais rendue DEUX
+   * fois — une par environnement. Le corps n'a pas changé d'un caractère :
+   * seul l'endroit d'où on l'appelle a bougé.
+   */
+  const renderAccountRow = (a: Account, onClose: () => void) => {
+    const Icon = getAccountIcon(a);
+    const active = a.id === activeAccount?.id;
+    return (
+      <div
+        key={a.id}
+        className={cn(
+          "group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors",
+          active ? "bg-cyan-500/15" : "hover:bg-white/[0.06]",
+        )}
+      >
+        <button
+          onClick={() => {
+            switchAccount(a.id);
+            onClose();
+          }}
+          className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
+        >
+          <span
+            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: tintOf(a).bg, color: tintOf(a).fg }}
+          >
+            <Icon className="w-3.5 h-3.5" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span
+              className={cn(
+                "block text-sm font-medium truncate",
+                active ? "text-white" : "text-slate-300",
+              )}
+            >
+              {a.name}
+              {a.type === "replay" && <ReplayBadge />}
+            </span>
+            <span className="block text-[10px] text-slate-500">{t(TYPE_LABEL_KEY[a.type])}</span>
+          </span>
+        </button>
+        {accounts.length > 1 && (
+          <button
+            onClick={() => {
+              setDeleting(a);
+              onClose();
+            }}
+            aria-label={t("account.delete")}
+            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+        {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
+      </div>
+    );
+  };
+
+  /**
    * AccountSheet — sélecteur de comptes dans un Modal PARTAGÉ (portal vers
    * document.body). C'est ce qui rend le changement de compte fiable partout :
    * un dropdown `absolute`/`fixed` rendu dans le panneau du Modal Jarvis
@@ -199,61 +268,30 @@ export default function AccountSwitcher({
         </div>
       </div>
       <div className="p-3 max-h-[60vh] overflow-y-auto">
-        {accounts.map((a) => {
-          const Icon = getAccountIcon(a);
-          const active = a.id === activeAccount?.id;
+        {/* DEUX MONDES, DEUX LISTES.
+          Les comptes de rejeu étaient mêlés aux comptes réels, séparés par
+          une seule pastille. Or passer de l'un à l'autre ne change pas de
+          compte : cela change d'ENVIRONNEMENT — le thème bascule, et les
+          chiffres qu'on lira ensuite ne veulent plus dire la même chose.
+          Une liste continue faisait de ce franchissement un clic comme un
+          autre. */}
+        {ENVIRONMENT_SECTIONS.map(({ env, titleKey }) => {
+          const rows = accountsOf(accounts, env);
+          if (rows.length === 0) return null;
           return (
-            <div
-              key={a.id}
-              className={cn(
-                "group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors",
-                active ? "bg-cyan-500/15" : "hover:bg-white/[0.06]",
-              )}
-            >
-              <button
-                onClick={() => {
-                  switchAccount(a.id);
-                  onClose();
-                }}
-                className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
-              >
-                <span
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: tintOf(a).bg, color: tintOf(a).fg }}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span
-                    className={cn(
-                      "block text-sm font-medium truncate",
-                      active ? "text-white" : "text-slate-300",
-                    )}
-                  >
-                    {a.name}
-                    {a.type === "replay" && <ReplayBadge />}
-                  </span>
-                  <span className="block text-[10px] text-slate-500">
-                    {t(TYPE_LABEL_KEY[a.type])}
-                  </span>
-                </span>
-              </button>
-              {accounts.length > 1 && (
-                <button
-                  onClick={() => {
-                    setDeleting(a);
-                    onClose();
-                  }}
-                  aria-label={t("account.delete")}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
+            <div key={env} className="mb-1 last:mb-0">
+              <p className="tv-label px-2.5 pb-1 pt-1.5 text-[9.5px] text-slate-500">
+                {t(titleKey)}
+              </p>
+              {rows.map((a) => renderAccountRow(a, onClose))}
             </div>
           );
         })}
+        {/* Ce que la séparation GARANTIT, écrit là où le choix se fait.
+          Sans cette phrase, l'étanchéité reste une intuition. */}
+        <p className="px-2.5 pb-1 pt-1 text-[10px] leading-snug text-slate-600">
+          {t("env.separate")}
+        </p>
         <div className="h-px bg-white/[0.06] my-1.5 mx-1" />
         {canAddAccount ? (
           <button
