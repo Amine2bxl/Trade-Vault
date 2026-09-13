@@ -173,6 +173,8 @@ export default function ReplayTerminal(props: TerminalProps) {
   };
   const viewRef = useRef<ChartView>({ chart: null, candles: null });
   const overlayRef = useRef<SVGSVGElement | null>(null);
+  /** La boîte du graphe : elle porte le clic droit ET l'échelle de la capture. */
+  const chartBoxRef = useRef<HTMLDivElement | null>(null);
   const [legend, setLegend] = useState<LegendInfo | null>(null);
 
   const state = props.state;
@@ -193,16 +195,19 @@ export default function ReplayTerminal(props: TerminalProps) {
   const journal = useAutoJournal({
     userId: user?.id ?? null,
     enabled: autoLog,
+    // La séance n'existe pas au premier rendu d'une reprise : s'amorcer avant
+    // elle rouvrirait tous ses trades déjà clos.
+    ready: state != null,
     closedTrades,
     chart: () => viewRef.current.chart,
     overlay: overlayRef,
+    container: chartBoxRef,
     onPause: props.onPause,
     notify: toast,
     labels: { shot: t("rt.logShot"), shotFailed: t("rt.logShotFailed") },
   });
 
   // ── Clic droit sur le graphe → passer un ordre au prix visé ─────────────
-  const chartBoxRef = useRef<HTMLDivElement | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{
     left: number;
     top: number;

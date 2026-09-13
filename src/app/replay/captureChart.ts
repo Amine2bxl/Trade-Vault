@@ -54,12 +54,28 @@ async function rasterizeOverlay(svg: SVGSVGElement, w: number, h: number) {
 /**
  * Capture le graphe et son overlay en un seul fichier JPEG.
  *
- * `overlay` est facultatif : sans lui, on rend le graphe nu, ce qui reste
- * utile. `null` en sortie = rien n'a pu être capturé.
+ * `overlay` et `container` sont facultatifs : sans eux, on rend le graphe nu,
+ * ce qui reste utile. `null` en sortie = rien n'a pu être capturé.
+ *
+ * LES DEUX IMAGES NE SONT PAS À LA MÊME ÉCHELLE, et c'est le piège de cette
+ * composition :
+ *
+ *  • `takeScreenshot()` rend un canvas en pixels PHYSIQUES (× le ratio de
+ *    l'écran) couvrant TOUT le graphe — zone de tracé, échelle de prix à
+ *    droite, axe des temps en bas ;
+ *  • l'overlay, lui, est un SVG en pixels CSS aux dimensions de la SEULE zone
+ *    de tracé du volet du prix.
+ *
+ * Étirer le second sur le premier décalerait chaque ordre et chaque trait de
+ * la largeur de l'échelle de prix — une capture pire qu'aucune capture, parce
+ * qu'elle aurait l'air juste. On calcule donc le facteur d'échelle à partir de
+ * la largeur CSS du conteneur, et on pose l'overlay à sa taille réelle, à son
+ * origine réelle : le coin haut-gauche, qu'il partage avec le graphe.
  */
 export async function captureChart(
   chart: IChartApi | null,
   overlay: SVGSVGElement | null,
+  container: HTMLElement | null,
   name = "replay",
 ): Promise<File | null> {
   if (!chart || typeof document === "undefined") return null;
@@ -84,8 +100,14 @@ export async function captureChart(
     ctx.drawImage(base, 0, 0);
 
     if (overlay) {
-      const img = await rasterizeOverlay(overlay, w, h);
-      if (img) ctx.drawImage(img, 0, 0, w, h);
+      const cssWidth = container?.getBoundingClientRect().width ?? 0;
+      const scale = cssWidth > 0 ? w / cssWidth : 1;
+      const ow = Number(overlay.getAttribute("width")) || overlay.clientWidth;
+      const oh = Number(overlay.getAttribute("height")) || overlay.clientHeight;
+      if (ow > 0 && oh > 0) {
+        const img = await rasterizeOverlay(overlay, ow, oh);
+        if (img) ctx.drawImage(img, 0, 0, ow * scale, oh * scale);
+      }
     }
 
     const blob = await new Promise<Blob | null>((res) => out.toBlob(res, "image/jpeg", QUALITY));

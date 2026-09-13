@@ -514,21 +514,46 @@ export default function ReplayChart({
   }, [shown, shapeKey]);
 
   // ── Pousser les valeurs des études ──────────────────────────────────────
+  //
+  // `setData` REDONNE TOUTE LA SÉRIE à la librairie, qui la revalide et la
+  // recale. Pendant la lecture, cet effet se rejoue à chaque image — la bougie
+  // en cours se forme en continu — et repousser mille points par ligne, dix
+  // lignes, soixante fois par seconde, suffit à faire saccader le graphe.
+  //
+  // Or entre deux images, seule la DERNIÈRE valeur a bougé : tant que le
+  // nombre de bougies et l'horodatage de la dernière ne changent pas, une
+  // simple `update` du dernier point dit exactement la même chose, pour un
+  // coût constant. La série entière n'est renvoyée que quand une bougie
+  // apparaît, que l'unité de temps change, ou que l'étude est reconstruite.
+  const studyKeyRef = useRef<string>("");
   useEffect(() => {
     const map = studyRef.current;
     if (!map.size) return;
+    const len = shown.length;
+    const lastTime = len ? shown[len - 1].time : 0;
+    const key = `${shapeKey}:${len}:${lastTime}`;
+    const sameBar = studyKeyRef.current === key;
+    studyKeyRef.current = key;
+
     for (const { cfg, lines } of studies) {
       lines.forEach((line, i) => {
         const series = map.get(`${cfg.id}#${i}`);
         if (!series) return;
-        series.setData(
-          line.points
-            .filter((pt) => pt.value != null)
-            .map((pt) => ({ time: (pt.time / 1000) as UTCTimestamp, value: pt.value as number })),
-        );
+        const points = line.points
+          .filter((pt) => pt.value != null)
+          .map((pt) => ({ time: (pt.time / 1000) as UTCTimestamp, value: pt.value as number }));
+        const last = points[points.length - 1];
+        // L'étude doit AVOIR une valeur sur la dernière bougie pour qu'une
+        // mise à jour ponctuelle suffise : une EMA encore en chauffe n'en a
+        // pas, et c'est alors la série entière qu'il faut redonner.
+        if (sameBar && last && last.time === ((lastTime / 1000) as UTCTimestamp)) {
+          series.update(last);
+          return;
+        }
+        series.setData(points);
       });
     }
-  }, [studies]);
+  }, [studies, shown, shapeKey]);
 
   // ── L'APPARENCE — thème du produit ET réglages du trader ────────────────
   // Un seul effet pour les deux : ce sont deux sources pour une même image, et

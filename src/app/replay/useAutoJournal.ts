@@ -35,11 +35,35 @@ export interface AutoJournalOptions {
   userId: string | null;
   /** L'encodage automatique est-il armé ? Le trader peut le couper. */
   enabled: boolean;
-  /** Les trades clos de la séance — la source des nouveautés. */
+  /**
+   * La séance est-elle réellement montée ?
+   *
+   * À la REPRISE, le terminal se rend une première fois AVANT que l'état de
+   * séance existe : les trades clos y sont encore inconnus. S'amorcer sur ce
+   * rendu-là reviendrait à déclarer « rien de clos jusqu'ici », puis à traiter
+   * les douze trades de la séance reprise comme des nouveautés — douze
+   * formulaires ouverts à la file pour avoir rechargé la page.
+   */
+  ready: boolean;
+  /**
+   * Les trades clos de la séance.
+   *
+   * ATTENTION : c'est un tableau MUTÉ EN PLACE par le moteur. Sa référence ne
+   * change jamais, donc il ne peut pas servir de dépendance d'effet — c'est sa
+   * LONGUEUR qui dit qu'un trade s'est refermé.
+   */
   closedTrades: ReplayTrade[];
-  /** Le graphe et la couche d'ordres, pour la capture. */
+  /** Le graphe, la couche d'ordres et leur boîte — de quoi composer la capture. */
   chart: () => IChartApi | null;
   overlay: MutableRefObject<SVGSVGElement | null>;
+  /**
+   * La boîte qui contient les deux.
+   *
+   * Elle donne la largeur CSS du graphe, sans laquelle on ne peut pas savoir à
+   * quelle échelle la capture a été rendue — et donc pas composer l'overlay
+   * dessus sans le décaler.
+   */
+  container: MutableRefObject<HTMLElement | null>;
   /** Mettre la lecture en pause avant d'ouvrir le formulaire. */
   onPause: () => void;
   /** Un mot au trader — capture jointe, capture ratée. */
@@ -58,9 +82,11 @@ export interface AutoJournalApi {
 export function useAutoJournal({
   userId,
   enabled,
+  ready,
   closedTrades,
   chart,
   overlay,
+  container,
   onPause,
   notify,
   labels,
@@ -75,15 +101,23 @@ export function useAutoJournal({
   // Les options changent à chaque rendu du terminal (closures neuves) : on les
   // lit dans une ref pour que les effets ci-dessous ne se relancent pas à
   // chaque battement de l'horloge.
-  const deps = useRef({ userId, chart, overlay, onPause, notify, labels });
-  deps.current = { userId, chart, overlay, onPause, notify, labels };
+  const deps = useRef({ userId, chart, overlay, container, onPause, notify, labels });
+  deps.current = { userId, chart, overlay, container, onPause, notify, labels };
+  /** Le tableau vivant du moteur, lu par l'effet qui se déclenche sur sa taille. */
+  const tradesRef = useRef(closedTrades);
+  tradesRef.current = closedTrades;
 
   const open = useCallback(async (trade: ReplayTrade) => {
     busy.current = true;
     const d = deps.current;
     d.onPause();
     let shots: string[] = [];
-    const file = await captureChart(d.chart(), d.overlay.current, "replay-trade");
+    const file = await captureChart(
+      d.chart(),
+      d.overlay.current,
+      d.container.current,
+      "replay-trade",
+    );
     if (file && d.userId) {
       try {
         shots = [await uploadScreenshot(d.userId, file)];
@@ -100,21 +134,29 @@ export function useAutoJournal({
   }, []);
 
   // ── Repérer les nouveautés ──────────────────────────────────────────────
+  //
+  // La dépendance est la LONGUEUR, pas le tableau : le moteur pousse dans le
+  // même tableau à chaque clôture, donc sa référence est immuable et un effet
+  // qui en dépendrait ne se rejouerait jamais.
+  const closedCount = closedTrades.length;
   useEffect(() => {
+    if (!ready) return;
+    const trades = tradesRef.current;
     if (!primed.current) {
-      // Première lecture : tout ce qui est déjà clos appartient au passé.
-      for (const t of closedTrades) seen.current.add(t.id);
+      // Première lecture d'une séance montée : tout ce qui est déjà clos
+      // appartient au passé.
+      for (const t of trades) seen.current.add(t.id);
       primed.current = true;
       return;
     }
-    const fresh = closedTrades.filter((t) => !seen.current.has(t.id));
+    const fresh = trades.filter((t) => !seen.current.has(t.id));
     if (fresh.length === 0) return;
     for (const t of fresh) seen.current.add(t.id);
     // Même sans encodage automatique, les trades sont marqués vus : les
     // rallumer plus tard ne doit pas déverser toute la séance d'un coup.
     if (!enabled) return;
     setQueue((q) => [...q, ...fresh]);
-  }, [closedTrades, enabled]);
+  }, [closedCount, enabled, ready]);
 
   // ── Servir la file, un formulaire à la fois ─────────────────────────────
   useEffect(() => {
