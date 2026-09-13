@@ -110,21 +110,37 @@ export interface TerminalProps {
   onExit: () => void;
 }
 
-const TOOLS: {
+interface ToolDef {
   id: ReplayTool;
   icon: React.ComponentType<{ className?: string }>;
   label: TKey;
-}[] = [
-  { id: "cursor", icon: MousePointer2, label: "rt.tool.cursor" },
-  { id: "hline", icon: HLineIcon, label: "rt.tool.hline" },
-  { id: "trend", icon: TrendingUp, label: "rt.tool.trend" },
-  { id: "ray", icon: MoveUpRight, label: "rt.tool.ray" },
-  { id: "rect", icon: Square, label: "rt.tool.rect" },
-  { id: "vline", icon: VLineIcon, label: "rt.tool.vline" },
-  { id: "text", icon: Type, label: "rt.tool.text" },
-  { id: "measured", icon: Ruler, label: "rt.tool.measured" },
-  { id: "zone", icon: BoxSelect, label: "rt.tool.zone" },
-  { id: "fib", icon: ChartLine, label: "rt.tool.fib" },
+}
+
+/**
+ * LE RAIL D'OUTILS, GROUPÉ — l'ordre de la plateforme de référence.
+ *
+ * Dix icônes à la file forment une colonne indifférenciée où l'on cherche à
+ * chaque fois. Groupées par NATURE de tracé — curseur, droites, formes,
+ * mesures, annotation — et séparées d'un filet, elles se retrouvent d'un coup
+ * d'œil : on sait dans quel tiers regarder avant même d'avoir lu les icônes.
+ */
+const TOOL_GROUPS: ToolDef[][] = [
+  [{ id: "cursor", icon: MousePointer2, label: "rt.tool.cursor" }],
+  [
+    { id: "trend", icon: TrendingUp, label: "rt.tool.trend" },
+    { id: "ray", icon: MoveUpRight, label: "rt.tool.ray" },
+    { id: "hline", icon: HLineIcon, label: "rt.tool.hline" },
+    { id: "vline", icon: VLineIcon, label: "rt.tool.vline" },
+  ],
+  [
+    { id: "rect", icon: Square, label: "rt.tool.rect" },
+    { id: "zone", icon: BoxSelect, label: "rt.tool.zone" },
+  ],
+  [
+    { id: "fib", icon: ChartLine, label: "rt.tool.fib" },
+    { id: "measured", icon: Ruler, label: "rt.tool.measured" },
+  ],
+  [{ id: "text", icon: Type, label: "rt.tool.text" }],
 ];
 
 /**
@@ -437,10 +453,11 @@ export default function ReplayTerminal(props: TerminalProps) {
     <div className="flex h-full w-full flex-col bg-[var(--tv-bg)] text-[var(--tv-text)]">
       {/* ── En-tête ── */}
       <header className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5">
-        <span className="rounded-md bg-[var(--tv-surface-hover)] px-2 py-1 text-xs font-bold">
-          {symbol}
-        </span>
-        <span className="hidden text-xs text-[var(--tv-text-muted)] md:inline">
+        {/* Le SYMBOLE n'est plus ici : sa place est dans la barre du graphe,
+          en tête, comme sur toute plateforme — c'est un réglage de ce qu'on
+          REGARDE, pas une propriété du compte. Cette barre-ci ne parle que du
+          compte : son nom, ses chiffres, son horloge, ses sorties. */}
+        <span className="truncate text-xs font-semibold text-[var(--tv-text-secondary)]">
           {props.accountName}
         </span>
         {/* D'OÙ VIENNENT LES BOUGIES. Le repli sur le générateur est silencieux
@@ -519,26 +536,32 @@ export default function ReplayTerminal(props: TerminalProps) {
       <div className="flex min-h-0 flex-1">
         {/* Rail d'outils */}
         <aside className="hidden w-11 shrink-0 flex-col items-center gap-0.5 border-r border-[var(--tv-border)] bg-[var(--tv-plate-2)] py-1.5 md:flex">
-          {TOOLS.map((tp) => {
-            const Icon = tp.icon;
-            return (
-              <button
-                key={tp.id}
-                type="button"
-                title={t(tp.label)}
-                aria-label={t(tp.label)}
-                onClick={() => setTool(tp.id)}
-                className={cn(
-                  "relative grid h-8 w-8 place-items-center rounded-[3px] transition",
-                  tool === tp.id
-                    ? "bg-[var(--tv-surface-hover)] text-[var(--tv-accent)] before:absolute before:left-[-6px] before:h-4 before:w-[2px] before:rounded-full before:bg-[var(--tv-accent)]"
-                    : "text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            );
-          })}
+          {TOOL_GROUPS.map((group, gi) => (
+            <div key={gi} className="flex w-full flex-col items-center gap-0.5">
+              {gi > 0 && <div className="my-0.5 h-px w-5 bg-[var(--tv-border)]" />}
+              {group.map((tp) => {
+                const Icon = tp.icon;
+                return (
+                  <button
+                    key={tp.id}
+                    type="button"
+                    title={t(tp.label)}
+                    aria-label={t(tp.label)}
+                    aria-pressed={tool === tp.id}
+                    onClick={() => setTool(tp.id)}
+                    className={cn(
+                      "relative grid h-8 w-8 place-items-center rounded-[3px] transition",
+                      tool === tp.id
+                        ? "bg-[var(--tv-surface-hover)] text-[var(--tv-accent)] before:absolute before:left-[-6px] before:h-4 before:w-[2px] before:rounded-full before:bg-[var(--tv-accent)]"
+                        : "text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                );
+              })}
+            </div>
+          ))}
           {/* La couleur se choisit là où l'outil se choisit : au même endroit,
             dans le même geste. La poser dans un réglage aurait séparé deux
             décisions qui se prennent ensemble. */}
@@ -574,7 +597,17 @@ export default function ReplayTerminal(props: TerminalProps) {
 
         {/* Timeframes + graphe */}
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-8 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5">
+          <div className="flex h-9 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5">
+            {/* SYMBOLE — la première chose de la barre, comme sur la plateforme
+              de référence. Il n'est pas cliquable : le rejeu ne sert qu'un
+              contrat à la fois, et un bouton qui n'ouvre rien ment. */}
+            <span
+              title={symbol}
+              className="mr-1 shrink-0 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1 text-[11.5px] font-bold text-[var(--tv-text)]"
+            >
+              {symbol}
+            </span>
+            <div className="mx-0.5 h-4 w-px shrink-0 bg-[var(--tv-border)]" />
             {props.timeframes
               .filter((tf) => tf.id !== "1s")
               .map((tf) => (
@@ -582,10 +615,11 @@ export default function ReplayTerminal(props: TerminalProps) {
                   key={tf.id}
                   type="button"
                   onClick={() => props.setViewTf(tf.id)}
+                  aria-pressed={props.viewTf === tf.id}
                   className={cn(
                     "shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold transition",
                     props.viewTf === tf.id
-                      ? "tv-accent-fill text-white"
+                      ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
                       : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
                   )}
                 >
