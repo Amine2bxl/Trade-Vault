@@ -96,6 +96,14 @@ export default function ReplayControls({
         ))}
       </div>
 
+      {/* LES RACCOURCIS, ÉCRITS.
+        Un raccourci que personne ne connaît n'existe pas. Il tient sur une
+        ligne, à côté des contrôles qu'il double — c'est là qu'on le cherche,
+        et nulle part ailleurs. Masqué sous 1280 px, où la place manque. */}
+      <span className="hidden min-w-0 truncate text-[10px] text-[var(--tv-text-muted)] xl:inline">
+        {t("rt.shortcutsHint")}
+      </span>
+
       {/* Horloge + progression */}
       <div className="ml-auto flex min-w-0 items-center gap-3">
         <div className="hidden text-right sm:block">

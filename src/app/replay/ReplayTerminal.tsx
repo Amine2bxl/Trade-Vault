@@ -37,6 +37,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { useToast } from "../contexts/ToastContext";
 import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
@@ -48,6 +49,7 @@ import ReplayOverlay, { type ReplayTool } from "./ReplayOverlay";
 import ReplayControls from "./ReplayControls";
 import ReplayTicket from "./ReplayTicket";
 import ReplayPanels from "./ReplayPanels";
+import ReplayOrderBar from "./ReplayOrderBar";
 import ReplayDashboard from "./ReplayDashboard";
 import ReplayChartSettings from "./ReplayChartSettings";
 import ReplayIndicators from "./ReplayIndicators";
@@ -96,6 +98,10 @@ export interface TerminalProps {
   ) => void;
   onCancelOrder: (orderId: string) => void;
   onClosePos: (posId: string) => void;
+  /** Les trois gestes d'urgence de la barre d'exécution. */
+  onFlattenAll: () => void;
+  onReverse: () => void;
+  onCancelAll: () => void;
   drawings: Drawing[];
   onAddDrawing: (d: Drawing) => void;
   onUpdateDrawing: (d: Drawing) => void;
@@ -152,7 +158,10 @@ export default function ReplayTerminal(props: TerminalProps) {
   const { t } = useT();
   const { user } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [tool, setTool] = useState<ReplayTool>("cursor");
+  /** La taille de la barre d'exécution — celle que portent ses boutons. */
+  const [orderQty, setOrderQty] = useState(1);
   /** Ce qu'occupe la zone centrale : le marché, ou le bilan de la séance. */
   const [view, setView] = useState<"chart" | "stats">("chart");
   /** Couleur des PROCHAINS dessins. Ceux déjà posés gardent la leur. */
@@ -319,6 +328,105 @@ export default function ReplayTerminal(props: TerminalProps) {
   // dépasse le mur le dépasse maintenant, pas à sa clôture.
   const dailyLoss =
     state && state.maxDailyLossPct ? dailyLossState(state, state.maxDailyLossPct) : null;
+
+  // ── LA BARRE D'EXÉCUTION ────────────────────────────────────────────────
+  const openPositions = positions.filter((p) => p.qty > 0).length;
+  const workingOrders = orders.filter((o) => o.status === "working").length;
+  const marketReady = (props.quote?.mark ?? 0) > 0;
+
+  const placeMarket = (side: "long" | "short") => {
+    if (!marketReady) return;
+    props.onPlaceOrder({ side, type: "market", qty: Math.max(1, Math.round(orderQty || 1)) });
+  };
+
+  /**
+   * Les gestes d'urgence DEMANDENT. Ils ferment des positions et annulent des
+   * ordres : ce sont les seules actions du terminal qu'on ne peut pas défaire.
+   */
+  const flattenAll = async () => {
+    if (openPositions === 0) return;
+    if (await confirm(t("rt.flattenConfirm"), { danger: true })) props.onFlattenAll();
+  };
+  const reverseAll = async () => {
+    if (openPositions === 0) return;
+    if (await confirm(t("rt.reverseConfirm"), { danger: true })) props.onReverse();
+  };
+  const cancelAll = async () => {
+    if (workingOrders === 0) return;
+    if (await confirm(t("rt.cancelAllConfirm"), { danger: true })) props.onCancelAll();
+  };
+
+  /** Les props de la barre — une seule définition, deux points de montage. */
+  const orderBar = {
+    qty: orderQty,
+    setQty: setOrderQty,
+    openPositions,
+    workingOrders,
+    onBuy: () => placeMarket("long" as const),
+    onSell: () => placeMarket("short" as const),
+    onFlatten: () => void flattenAll(),
+    onReverse: () => void reverseAll(),
+    onCancelAll: () => void cancelAll(),
+    ready: marketReady,
+  };
+
+  // ── LES RACCOURCIS ──────────────────────────────────────────────────────
+  //
+  // Ce sont ceux de toute plateforme de trading, et c'est justement pourquoi
+  // ils comptent dans un simulateur : on y vient pour acquérir des réflexes
+  // qui serviront ailleurs. Les mêmes touches, donc.
+  //
+  // Rien ne se déclenche pendant une SAISIE : le champ « période » d'un
+  // indicateur contient des lettres, et taper « s » dedans ne doit pas vendre
+  // deux contrats. Un modificateur (Ctrl/Cmd/Alt) rend la touche au système.
+  const shortcutsRef = useRef({ placeMarket, flattenAll, reverseAll, cancelAll, props });
+  shortcutsRef.current = { placeMarket, flattenAll, reverseAll, cancelAll, props };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) {
+        return;
+      }
+      const k = shortcutsRef.current;
+      switch (e.key.toLowerCase()) {
+        case "b":
+          k.placeMarket("long");
+          break;
+        case "s":
+          k.placeMarket("short");
+          break;
+        case "f":
+          void k.flattenAll();
+          break;
+        case "r":
+          void k.reverseAll();
+          break;
+        case "c":
+          void k.cancelAll();
+          break;
+        case " ":
+          // La barre d'espace fait défiler la page par défaut : dans un
+          // terminal plein écran, elle commande la lecture.
+          e.preventDefault();
+          k.props.onTogglePlay();
+          break;
+        case "arrowright":
+          e.preventDefault();
+          k.props.onNext();
+          break;
+        case "arrowleft":
+          e.preventDefault();
+          k.props.onPrev();
+          break;
+        default:
+          return;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const symbol = state?.symbol ?? "NQ";
   const tfLabel =
@@ -722,6 +830,9 @@ export default function ReplayTerminal(props: TerminalProps) {
             commissionPerContract={state?.commissionPerContract ?? 0}
             onPlace={props.onPlaceOrder}
           />
+          {/* LA BARRE D'EXÉCUTION, sous le ticket : le geste le plus fréquent
+            est le plus accessible, et il porte sa taille. */}
+          <ReplayOrderBar {...orderBar} />
           <div className="flex min-h-0 flex-1 flex-col border-t border-[var(--tv-border)]">
             <ReplayPanels
               state={state}
@@ -733,6 +844,13 @@ export default function ReplayTerminal(props: TerminalProps) {
             />
           </div>
         </aside>
+      </div>
+
+      {/* SOUS 1024 px, LE PANNEAU DROIT DISPARAÎT — et avec lui le seul moyen
+        de passer un ordre. La barre remonte donc ici, pleine largeur : un
+        terminal où l'on ne peut pas acheter n'est pas un terminal. */}
+      <div className="lg:hidden">
+        <ReplayOrderBar {...orderBar} />
       </div>
 
       {/* ── Transport ── */}

@@ -524,6 +524,71 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     [bump, scheduleSave],
   );
 
+  /**
+   * TOUT APLATIR — les trois gestes d'urgence d'un terminal.
+   *
+   * Ils existent sur toute plateforme de trading, au même endroit et avec les
+   * mêmes mots (« FLATTEN ALL », « REVERSE POSITION », « CANCEL ALL »), pour
+   * une raison simple : quand on en a besoin, on n'a pas le temps de fermer
+   * trois positions une par une dans un panneau latéral. Ils étaient absents
+   * du rejeu, où l'on apprend pourtant précisément ces réflexes.
+   */
+  const flattenAll = useCallback(() => {
+    const engine = engineRef.current;
+    const state = stateRef.current;
+    if (!engine || !state) return;
+    flattenPositions(state, engine.data);
+    refreshValuation(state, engine.data);
+    scheduleSave();
+    bump();
+  }, [bump, scheduleSave]);
+
+  /** Annule tous les ordres encore en carnet. Les positions ne bougent pas. */
+  const cancelAllOrders = useCallback(() => {
+    const state = stateRef.current;
+    if (!state) return;
+    // Une COPIE, non par nécessité — `cancelOrder` bascule un statut, il ne
+    // retire rien du tableau — mais pour que cette boucle ne dépende pas de ce
+    // détail : le jour où l'annulation retirera l'ordre, elle tiendra encore.
+    for (const o of [...state.orders]) {
+      if (o.status === "working") simCancelOrder(state, o.id);
+    }
+    scheduleSave();
+    bump();
+  }, [bump, scheduleSave]);
+
+  /**
+   * RETOURNE la position : on ferme, et on repart dans l'autre sens, même
+   * taille.
+   *
+   * Deux gestes en un, et c'est tout l'intérêt : les faire séparément laisse
+   * un trou entre la sortie et l'entrée, pendant lequel le marché bouge. La
+   * taille est lue AVANT la fermeture — après, la position vaut zéro.
+   */
+  const reversePosition = useCallback(() => {
+    const engine = engineRef.current;
+    const state = stateRef.current;
+    if (!engine || !state) return;
+    const open = state.positions.filter((p) => p.qty > 0);
+    if (open.length === 0) return;
+    const plan = open.map((p) => ({
+      side: (p.side === "long" ? "short" : "long") as "long" | "short",
+      qty: p.qty,
+      id: p.id,
+    }));
+    for (const p of plan) closePosition(state, p.id, engine.markPrice(), "manual");
+    for (const p of plan) {
+      simPlaceOrder({
+        state,
+        input: { side: p.side, type: "market", qty: p.qty },
+        bars: engine.data,
+      });
+    }
+    refreshValuation(state, engine.data);
+    scheduleSave();
+    bump();
+  }, [bump, scheduleSave]);
+
   // ── Dessins ─────────────────────────────────────────────────────────────
   const addDrawing = useCallback(
     (d: Drawing) => {
@@ -672,6 +737,9 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     moveOrderBracket,
     cancelOrder,
     closePositionOf,
+    flattenAll,
+    cancelAllOrders,
+    reversePosition,
     // Dessins
     addDrawing,
     updateDrawing,
