@@ -834,6 +834,18 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
           icon: selectedIcon ?? undefined,
           startingBalance: Number(balance) || 0,
         });
+        // CRÉER UN COMPTE DE REJEU, C'EST VOULOIR REJOUER. Le laisser dans la
+        // liste sans rien ouvrir obligeait à deviner qu'il faut ensuite aller
+        // dans Backtest : le geste et son intention étaient séparés. On y
+        // emmène directement, comme le choix du type l'annonçait.
+        if (type === "replay") {
+          window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "backtest" } }));
+          // Et on ouvre le seuil. Deux événements plutôt qu'un : naviguer et
+          // lancer sont deux intentions distinctes, et arriver sur Backtest ne
+          // doit PAS déclencher le rejeu en général — seulement quand on vient
+          // de demander un compte de rejeu.
+          window.dispatchEvent(new CustomEvent("tv:open-replay"));
+        }
       }
       onClose();
     } catch (e) {

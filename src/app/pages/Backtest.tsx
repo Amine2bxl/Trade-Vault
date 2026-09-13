@@ -12,6 +12,7 @@
  * clic qui fait basculer.
  */
 
+import { useEffect } from "react";
 import { CalendarClock, Play } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { usePageLock } from "../components/PremiumGate";
@@ -21,6 +22,17 @@ export default function Backtest() {
   const { t } = useT();
   const licked = usePageLock("backtest");
   const { session, openLaunch } = useReplayMode();
+
+  // Ouverture SUR DEMANDE. Créer un compte de rejeu, c'est vouloir rejouer :
+  // ce geste-là ouvre le seuil. Arriver sur la page par la navigation, non —
+  // on ne jette personne dans un plein écran qu'il n'a pas demandé.
+  useEffect(() => {
+    const open = () => {
+      if (!licked) openLaunch();
+    };
+    window.addEventListener("tv:open-replay", open);
+    return () => window.removeEventListener("tv:open-replay", open);
+  }, [licked, openLaunch]);
 
   // Verrou Premium : la page est rendue derrière le mur d'aperçu (PageGate).
   // On fournit un corps illustratif — l'aperçu doit montrer quelque chose.
