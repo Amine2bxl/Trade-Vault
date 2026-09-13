@@ -140,7 +140,7 @@ export default function ReplayChartSettings({
   return (
     <div
       ref={ref}
-      className="absolute right-2 top-2 z-10 flex w-64 flex-col gap-3 rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/97 p-3 shadow-[var(--tv-elev-3)] backdrop-blur"
+      className="absolute right-2 top-2 z-10 flex w-64 flex-col gap-3 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/97 p-3 shadow-[var(--tv-elev-3)] backdrop-blur"
     >
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--tv-text)]">
@@ -152,7 +152,7 @@ export default function ReplayChartSettings({
             onClick={() => onChange(CHART_PREFS_DEFAULT)}
             title={t("rt.chartReset")}
             aria-label={t("rt.chartReset")}
-            className="grid h-6 w-6 place-items-center rounded-lg text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+            className="grid h-6 w-6 place-items-center rounded-md text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
@@ -161,7 +161,7 @@ export default function ReplayChartSettings({
             onClick={onClose}
             title={t("rt.drawClose")}
             aria-label={t("rt.drawClose")}
-            className="grid h-6 w-6 place-items-center rounded-lg text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+            className="grid h-6 w-6 place-items-center rounded-md text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -208,7 +208,7 @@ export default function ReplayChartSettings({
         <select
           value={prefs.timezone}
           onChange={(e) => set("timezone", e.target.value)}
-          className="rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 text-[11px] font-semibold text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+          className="rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 text-[11px] font-semibold text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
         >
           {CHART_TIMEZONES.map((tz) => (
             <option key={tz.id} value={tz.id}>

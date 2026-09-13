@@ -9,12 +9,14 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
+  BoxSelect,
   Eraser,
   Flag,
   History,
   LogOut,
   MousePointer2,
   Move,
+  MoveUpRight,
   Ruler,
   Settings2,
   Square,
@@ -90,12 +92,12 @@ const TOOLS: {
   { id: "cursor", icon: MousePointer2, label: "rt.tool.cursor" },
   { id: "hline", icon: HLineIcon, label: "rt.tool.hline" },
   { id: "trend", icon: TrendingUp, label: "rt.tool.trend" },
-  { id: "ray", icon: Move, label: "rt.tool.ray" },
+  { id: "ray", icon: MoveUpRight, label: "rt.tool.ray" },
   { id: "rect", icon: Square, label: "rt.tool.rect" },
   { id: "vline", icon: VLineIcon, label: "rt.tool.vline" },
   { id: "text", icon: Type, label: "rt.tool.text" },
   { id: "measured", icon: Ruler, label: "rt.tool.measured" },
-  { id: "zone", icon: StretchHorizontal, label: "rt.tool.measured" },
+  { id: "zone", icon: BoxSelect, label: "rt.tool.zone" },
 ];
 
 /**
@@ -233,16 +235,16 @@ export default function ReplayTerminal(props: TerminalProps) {
   return (
     <div className="flex h-full w-full flex-col bg-[var(--tv-bg)] text-[var(--tv-text)]">
       {/* ── En-tête ── */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3">
+      <header className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5">
         <button
           type="button"
           onClick={props.onExit}
-          className="flex items-center gap-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-1.5 text-xs font-semibold text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]"
+          className="flex items-center gap-1.5 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-1.5 text-xs font-semibold text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]"
         >
           <LogOut className="h-3.5 w-3.5" />
           {t("rt.exit")}
         </button>
-        <span className="hidden rounded-lg bg-[var(--tv-surface-hover)] px-2 py-1 text-xs font-bold md:inline">
+        <span className="hidden rounded-md bg-[var(--tv-surface-hover)] px-2 py-1 text-xs font-bold md:inline">
           {state?.symbol ?? "NQ"}
         </span>
         <span className="hidden text-xs text-[var(--tv-text-muted)] md:inline">
@@ -256,7 +258,7 @@ export default function ReplayTerminal(props: TerminalProps) {
         <span
           title={props.dataSource ? t("rt.dataReal") : t("rt.dataSimulatedHint")}
           className={cn(
-            "hidden rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide md:inline",
+            "hidden rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide md:inline",
             props.dataSource
               ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text-muted)]"
               : "bg-[rgb(var(--tv-warning-rgb)/0.16)] text-[var(--tv-warning)]",
@@ -265,8 +267,8 @@ export default function ReplayTerminal(props: TerminalProps) {
           {props.dataSource ?? t("rt.dataSimulated")}
         </span>
 
-        <div className="ml-auto flex items-center gap-4">
-          <div className="hidden items-center gap-4 md:flex">
+        <div className="ml-auto flex items-center gap-2">
+          <div className="hidden items-center gap-1.5 md:flex">
             <HeaderStat label={t("rt.balance")} value={fmt$(q?.balance)} />
             <HeaderStat label={t("rt.equity")} value={fmt$(q?.equity)} tone={balanceTone} />
             <HeaderStat
@@ -290,13 +292,13 @@ export default function ReplayTerminal(props: TerminalProps) {
               />
             )}
           </div>
-          <span className="rounded-xl border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-1.5 tv-figure text-xs font-bold text-[var(--tv-accent)]">
+          <span className="rounded-md border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-1.5 tv-figure text-xs font-bold text-[var(--tv-accent)]">
             {props.clockLabel}
           </span>
           <button
             type="button"
             onClick={props.onFinish}
-            className="inline-flex items-center gap-1.5 rounded-xl tv-accent-fill px-3 py-1.5 text-xs font-bold text-white"
+            className="inline-flex items-center gap-1.5 rounded-md tv-accent-fill px-3 py-1.5 text-xs font-bold text-white"
           >
             <Flag className="h-3.5 w-3.5" />
             {t("rt.finish")}
@@ -307,7 +309,7 @@ export default function ReplayTerminal(props: TerminalProps) {
       {/* ── Corps ── */}
       <div className="flex min-h-0 flex-1">
         {/* Rail d'outils */}
-        <aside className="hidden w-12 shrink-0 flex-col items-center gap-1 border-r border-[var(--tv-border)] bg-[var(--tv-plate-2)] py-2 md:flex">
+        <aside className="hidden w-11 shrink-0 flex-col items-center gap-0.5 border-r border-[var(--tv-border)] bg-[var(--tv-plate-2)] py-1.5 md:flex">
           {TOOLS.map((tp) => {
             const Icon = tp.icon;
             return (
@@ -317,9 +319,9 @@ export default function ReplayTerminal(props: TerminalProps) {
                 title={t(tp.label as never)}
                 onClick={() => setTool(tp.id)}
                 className={cn(
-                  "grid h-9 w-9 place-items-center rounded-xl transition",
+                  "relative grid h-8 w-8 place-items-center rounded-[3px] transition",
                   tool === tp.id
-                    ? "tv-accent-fill text-white"
+                    ? "bg-[var(--tv-surface-hover)] text-[var(--tv-accent)] before:absolute before:left-[-6px] before:h-4 before:w-[2px] before:rounded-full before:bg-[var(--tv-accent)]"
                     : "text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]",
                 )}
               >
@@ -355,7 +357,7 @@ export default function ReplayTerminal(props: TerminalProps) {
             title={t("rt.eth")}
             onClick={() => setShowRthEth((v) => !v)}
             className={cn(
-              "grid h-9 w-9 place-items-center rounded-xl text-[10px] font-bold transition",
+              "grid h-9 w-9 place-items-center rounded-md text-[10px] font-bold transition",
               showRthEth
                 ? "tv-accent-fill text-white"
                 : "text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)]",
@@ -367,7 +369,7 @@ export default function ReplayTerminal(props: TerminalProps) {
             type="button"
             title="Fit"
             onClick={fitChart}
-            className="grid h-9 w-9 place-items-center rounded-xl text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+            className="grid h-9 w-9 place-items-center rounded-md text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
           >
             <History className="h-4 w-4" />
           </button>
@@ -375,7 +377,7 @@ export default function ReplayTerminal(props: TerminalProps) {
             type="button"
             title="Reset"
             onClick={resetChart}
-            className="grid h-9 w-9 place-items-center rounded-xl text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+            className="grid h-9 w-9 place-items-center rounded-md text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
           >
             <Move className="h-4 w-4" />
           </button>
@@ -383,7 +385,7 @@ export default function ReplayTerminal(props: TerminalProps) {
             type="button"
             title={t("rt.erase")}
             onClick={() => drawings.forEach((d) => props.onRemoveDrawing(d.id))}
-            className="grid h-9 w-9 place-items-center rounded-xl text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-danger)]"
+            className="grid h-9 w-9 place-items-center rounded-md text-[var(--tv-text-muted)] hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-danger)]"
           >
             <Eraser className="h-4 w-4" />
           </button>
@@ -391,7 +393,7 @@ export default function ReplayTerminal(props: TerminalProps) {
 
         {/* Timeframes + graphe */}
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-9 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2">
+          <div className="flex h-8 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5">
             {props.timeframes
               .filter((tf) => tf.id !== "1s")
               .map((tf) => (
@@ -400,7 +402,7 @@ export default function ReplayTerminal(props: TerminalProps) {
                   type="button"
                   onClick={() => props.setViewTf(tf.id)}
                   className={cn(
-                    "shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold transition",
+                    "shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold transition",
                     props.viewTf === tf.id
                       ? "tv-accent-fill text-white"
                       : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
@@ -425,7 +427,7 @@ export default function ReplayTerminal(props: TerminalProps) {
                 title={t("rt.chartSettings")}
                 aria-label={t("rt.chartSettings")}
                 className={cn(
-                  "grid h-6 w-6 shrink-0 place-items-center rounded-lg transition",
+                  "grid h-6 w-6 shrink-0 place-items-center rounded-md transition",
                   prefsOpen
                     ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
                     : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
@@ -439,7 +441,7 @@ export default function ReplayTerminal(props: TerminalProps) {
                   type="button"
                   onClick={() => setView(v)}
                   className={cn(
-                    "shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold transition",
+                    "shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold transition",
                     view === v
                       ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
                       : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
@@ -494,7 +496,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               />
             )}
             {hover && (
-              <div className="pointer-events-none absolute left-2 top-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 tv-figure text-[10px] text-[var(--tv-text-muted)]">
+              <div className="pointer-events-none absolute left-2 top-2 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 tv-figure text-[10px] text-[var(--tv-text-muted)]">
                 <span className="text-[var(--tv-text)]">{nyTimeOf(hover.time)}</span> · O{" "}
                 {hover.o.toFixed(2)} H {hover.h.toFixed(2)} L {hover.l.toFixed(2)} C{" "}
                 <span
@@ -592,7 +594,7 @@ function HeaderStat({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1",
         !filled && "border border-[var(--tv-border)] bg-[var(--tv-plate-1)]",
       )}
       style={filled ? { background: `rgb(${hue} / 0.16)` } : undefined}

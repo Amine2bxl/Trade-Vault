@@ -182,7 +182,7 @@ export default function ReplayTicket({
         <span className="w-6 shrink-0 text-[10px] font-bold uppercase" style={{ color }}>
           {which === "sl" ? "SL" : "TP"}
         </span>
-        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-0.5">
+        <div className="flex items-center gap-0.5 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-0.5">
           {TICK_STEPS.map((d) => (
             <button
               key={d}
@@ -199,7 +199,7 @@ export default function ReplayTicket({
           onChange={(e) => set(e.target.value)}
           inputMode="numeric"
           aria-label={which === "sl" ? t("rt.sl") : t("rt.tp")}
-          className="w-12 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5 py-1 text-center tv-figure text-xs text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+          className="w-12 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5 py-1 text-center tv-figure text-xs text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
         />
         <span className="shrink-0 text-[10px] text-[var(--tv-text-muted)]">{t("rt.ticks")}</span>
         <span className="ml-auto flex min-w-0 flex-col items-end leading-tight">
@@ -229,14 +229,14 @@ export default function ReplayTicket({
       </div>
 
       {/* Type d'ordre */}
-      <div className="grid grid-cols-3 gap-0.5 rounded-xl bg-[var(--tv-plate-1)] p-0.5">
+      <div className="grid grid-cols-3 gap-0.5 rounded-md bg-[var(--tv-plate-1)] p-0.5">
         {(["market", "limit", "stop"] as const).map((ty) => (
           <button
             key={ty}
             type="button"
             onClick={() => setType(ty)}
             className={cn(
-              "rounded-[10px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition",
+              "rounded-md py-1.5 text-[11px] font-bold uppercase tracking-wide transition",
               type === ty
                 ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
                 : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
@@ -248,7 +248,7 @@ export default function ReplayTicket({
       </div>
 
       {type !== "market" && (
-        <label className="flex items-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-1.5">
+        <label className="flex items-center gap-2 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-1.5">
           <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[var(--tv-text-muted)]">
             {type === "limit" ? t("rt.limit") : t("rt.stop")}
           </span>
@@ -269,7 +269,7 @@ export default function ReplayTicket({
           type="button"
           onClick={() => setQty((n) => Math.max(1, n - 1))}
           aria-label="−1"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-base font-bold text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)]"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-base font-bold text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)]"
         >
           −
         </button>
@@ -279,13 +279,13 @@ export default function ReplayTicket({
           value={qty}
           onChange={(e) => setQty(Number(e.target.value))}
           aria-label={t("rt.qty")}
-          className="h-9 min-w-0 flex-1 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 text-center tv-figure text-base text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+          className="h-9 min-w-0 flex-1 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 text-center tv-figure text-base text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
         />
         <button
           type="button"
           onClick={() => setQty((n) => n + 1)}
           aria-label="+1"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-base font-bold text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)]"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-base font-bold text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)]"
         >
           +
         </button>
@@ -297,7 +297,7 @@ export default function ReplayTicket({
             type="button"
             onClick={() => setQty(n)}
             className={cn(
-              "rounded-lg py-1 text-[11px] font-bold transition",
+              "rounded-md py-1 text-[11px] font-bold transition",
               qty === n
                 ? "tv-accent-fill text-white"
                 : "border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",
@@ -309,7 +309,7 @@ export default function ReplayTicket({
       </div>
 
       {/* BRACKET — en distance, avec ses prix et ses montants en regard. */}
-      <div className="flex flex-col gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-2">
+      <div className="flex flex-col gap-2 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-2">
         <label className="flex cursor-pointer items-center justify-between gap-2">
           <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--tv-text-muted)]">
             {t("rt.positionBracket")}
@@ -341,7 +341,7 @@ export default function ReplayTicket({
       </div>
 
       {/* Dimensionnement par le risque — on décide la perte avant la taille. */}
-      <div className="flex flex-col gap-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-2">
+      <div className="flex flex-col gap-1.5 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--tv-text-muted)]">
             {t("rt.sizing")}
@@ -353,14 +353,14 @@ export default function ReplayTicket({
               placeholder="1"
               inputMode="decimal"
               aria-label={t("rt.riskTarget")}
-              className="w-10 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1 py-1 text-center tv-figure text-[11px] text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+              className="w-10 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1 py-1 text-center tv-figure text-[11px] text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
             />
             <span className="text-[10px] text-[var(--tv-text-muted)]">%</span>
             <button
               type="button"
               onClick={() => sizing && setQty(sizing.contracts)}
               disabled={!sizing || sizing.contracts < 1}
-              className="rounded-lg border border-[var(--tv-border)] px-2 py-1 text-[10px] font-bold text-[var(--tv-text)] transition hover:bg-[var(--tv-surface-hover)] disabled:opacity-40"
+              className="rounded-md border border-[var(--tv-border)] px-2 py-1 text-[10px] font-bold text-[var(--tv-text)] transition hover:bg-[var(--tv-surface-hover)] disabled:opacity-40"
             >
               {t("rt.sizeApply")}
             </button>
@@ -407,7 +407,7 @@ export default function ReplayTicket({
         <button
           type="button"
           onClick={() => submit("long")}
-          className="rounded-xl bg-[var(--tv-chart-green)] py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-[var(--tv-elev-1)] transition hover:brightness-110 active:brightness-95"
+          className="rounded-md bg-[var(--tv-chart-green)] py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-[var(--tv-elev-1)] transition hover:brightness-110 active:brightness-95"
         >
           {t("rt.buy")} {qty || 1}
           <span className="block text-[9px] font-bold uppercase tracking-wide opacity-85">
@@ -417,7 +417,7 @@ export default function ReplayTicket({
         <button
           type="button"
           onClick={() => submit("short")}
-          className="rounded-xl bg-[var(--tv-chart-red)] py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-[var(--tv-elev-1)] transition hover:brightness-110 active:brightness-95"
+          className="rounded-md bg-[var(--tv-chart-red)] py-3 text-sm font-extrabold uppercase tracking-wide text-white shadow-[var(--tv-elev-1)] transition hover:brightness-110 active:brightness-95"
         >
           {t("rt.sell")} {qty || 1}
           <span className="block text-[9px] font-bold uppercase tracking-wide opacity-85">

@@ -563,9 +563,19 @@ export function useReplaySession({ userId }: { userId: string | null }) {
     if (!engine || !state || !userId || !cfgRef.current) return null;
     flattenPositions(state, engine.data);
     refreshValuation(state, engine.data);
-    // Best-effort : le journal est poussé même si `replay_sessions` n'existe pas.
+    // LE JOURNAL EST POUSSÉ DANS TOUS LES CAS.
+    //
+    // Le commentaire promettait déjà « même si `replay_sessions` n'existe
+    // pas » — le code faisait l'inverse : sans ligne de séance, on sautait
+    // l'écriture ET on annonçait autant de trades enregistrés qu'il y en avait
+    // de clos. C'était un mensonge net : « Terminer & exporter au journal »
+    // rendait la main, tout avait l'air d'avoir marché, et le journal restait
+    // vide. Les deux écritures sont maintenant indépendantes : les trades
+    // partent au journal, et la séance est marquée terminée SI elle existe.
     let res: JournalPushResult | null = null;
-    if (sessionIdRef.current) {
+    if (state.closedTrades.length === 0) {
+      res = { saved: 0, failed: 0, planLimitReached: false };
+    } else {
       try {
         res = await pushReplayTradesToJournal(
           userId,
@@ -577,11 +587,11 @@ export function useReplaySession({ userId }: { userId: string | null }) {
         console.warn("[replay] journal push failed", e);
         res = { saved: 0, failed: state.closedTrades.length, planLimitReached: false };
       }
+    }
+    if (sessionIdRef.current) {
       await updateReplaySession(userId, sessionIdRef.current, { state, status: "finished" }).catch(
         () => {},
       );
-    } else {
-      res = { saved: state.closedTrades.length, failed: 0, planLimitReached: false };
     }
     pause();
     setFinished(true);

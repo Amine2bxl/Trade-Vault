@@ -1176,7 +1176,7 @@ export default function ReplayOverlay({
         ne décide que de la couleur des prochains. */}
       {sheet && (
         <div
-          className="absolute flex items-center gap-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 p-1.5 shadow-[var(--tv-elev-2)] backdrop-blur"
+          className="absolute flex items-center gap-1.5 rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 p-1.5 shadow-[var(--tv-elev-2)] backdrop-blur"
           style={{ left: sheet.left, top: sheet.top, pointerEvents: "auto" }}
         >
           <input
@@ -1185,7 +1185,7 @@ export default function ReplayOverlay({
             placeholder={t("rt.drawName")}
             aria-label={t("rt.drawName")}
             autoFocus
-            className="w-28 rounded-lg bg-[var(--tv-plate-1)] px-2 py-1 text-[11px] font-semibold text-[var(--tv-text)] outline-none placeholder:text-[var(--tv-text-muted)] focus:ring-1 focus:ring-[var(--tv-border-strong)]"
+            className="w-28 rounded-md bg-[var(--tv-plate-1)] px-2 py-1 text-[11px] font-semibold text-[var(--tv-text)] outline-none placeholder:text-[var(--tv-text-muted)] focus:ring-1 focus:ring-[var(--tv-border-strong)]"
           />
           <div className="flex items-center gap-1">
             {palette.map((c) => (
@@ -1213,7 +1213,7 @@ export default function ReplayOverlay({
               onRemoveDrawing(sheet.d.id);
               setSelected(null);
             }}
-            className="grid h-6 w-6 place-items-center rounded-lg text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-danger)]"
+            className="grid h-6 w-6 place-items-center rounded-md text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-danger)]"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -1222,7 +1222,7 @@ export default function ReplayOverlay({
             title={t("rt.drawClose")}
             aria-label={t("rt.drawClose")}
             onClick={() => setSelected(null)}
-            className="grid h-6 w-6 place-items-center rounded-lg text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
+            className="grid h-6 w-6 place-items-center rounded-md text-[var(--tv-text-muted)] transition hover:bg-[var(--tv-surface-hover)] hover:text-[var(--tv-text)]"
           >
             <X className="h-3.5 w-3.5" />
           </button>

@@ -50,7 +50,7 @@ export default function ReplayControls({
           onClick={onPrev}
           disabled={atStart}
           title={t("rt.prev")}
-          className="grid h-9 w-9 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)] disabled:opacity-35"
+          className="grid h-9 w-9 place-items-center rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)] disabled:opacity-35"
         >
           <SkipBack className="h-4 w-4" />
         </button>
@@ -60,7 +60,7 @@ export default function ReplayControls({
           disabled={atEnd}
           title={playing ? t("rt.pause") : t("rt.play")}
           className={cn(
-            "grid h-11 w-11 place-items-center rounded-2xl text-white transition",
+            "grid h-11 w-11 place-items-center rounded-lg text-white transition",
             playing ? "bg-[var(--tv-text-secondary)]" : "tv-accent-fill",
           )}
         >
@@ -71,7 +71,7 @@ export default function ReplayControls({
           onClick={onNext}
           disabled={atEnd}
           title={t("rt.next")}
-          className="grid h-9 w-9 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)] disabled:opacity-35"
+          className="grid h-9 w-9 place-items-center rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[var(--tv-text-muted)] transition hover:text-[var(--tv-text)] disabled:opacity-35"
         >
           <SkipForward className="h-4 w-4" />
         </button>
@@ -85,7 +85,7 @@ export default function ReplayControls({
             type="button"
             onClick={() => setSpeed(s)}
             className={cn(
-              "rounded-lg px-2 py-1 text-[11px] font-semibold transition",
+              "rounded-md px-2 py-1 text-[11px] font-semibold transition",
               speed === s
                 ? "bg-[var(--tv-surface-hover)] text-[var(--tv-text)]"
                 : "text-[var(--tv-text-muted)] hover:text-[var(--tv-text)]",

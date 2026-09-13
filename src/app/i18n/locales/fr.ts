@@ -239,6 +239,7 @@ const fr: Dict = {
   "rt.tool.rect": "Rectangle / zone",
   "rt.tool.vline": "Ligne verticale",
   "rt.tool.text": "Texte",
+  "rt.tool.zone": "Zone",
   "rt.tool.measured": "Mesure",
   "rt.tool.cursor": "Sélection / déplacement",
   "rt.erase": "Effacer les dessins",

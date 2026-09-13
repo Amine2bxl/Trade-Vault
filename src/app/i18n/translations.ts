@@ -266,6 +266,7 @@ const en = {
   "rt.tool.rect": "Rectangle / zone",
   "rt.tool.vline": "Vertical line",
   "rt.tool.text": "Text",
+  "rt.tool.zone": "Zone",
   "rt.tool.measured": "Measured move",
   "rt.tool.cursor": "Select / move",
   "rt.erase": "Clear drawings",
