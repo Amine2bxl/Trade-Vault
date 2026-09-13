@@ -29,10 +29,10 @@ export default function ReplayBanner({ onGoTerminal }: { onGoTerminal: () => voi
       <span className="text-[var(--tv-text-muted)]">
         {session.account?.name ?? t("rt.modeTitle")}
       </span>
-      <span className="hidden font-mono text-[var(--tv-text-muted)] sm:inline">
+      <span className="hidden tv-figure text-[var(--tv-text-muted)] sm:inline">
         {session.clockLabel || "–"}
       </span>
-      <span className={cn2("hidden font-mono font-semibold sm:inline", pnlTone)}>
+      <span className={cn2("hidden tv-figure font-semibold sm:inline", pnlTone)}>
         {pnl >= 0 ? "+" : ""}
         {pnl.toFixed(0)} $
       </span>

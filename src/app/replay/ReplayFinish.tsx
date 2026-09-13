@@ -121,7 +121,7 @@ export default function ReplayFinish({
 
             {state.closedTrades.length > 0 && (
               <div className="mt-4 max-h-56 overflow-y-auto rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)]">
-                <table className="w-full text-left font-mono text-[11px]">
+                <table className="w-full text-left tv-figure text-[11px]">
                   <thead className="sticky top-0 bg-[var(--tv-plate-2)] text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
                     <tr>
                       <th className="px-3 py-2 font-medium">Side</th>

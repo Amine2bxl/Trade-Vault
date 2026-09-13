@@ -137,7 +137,7 @@ function PriceTag({
         fontSize={9.5}
         fontWeight={800}
         letterSpacing={0.4}
-        fontFamily="ui-monospace, SFMono-Regular, monospace"
+        style={{ fontVariantNumeric: "tabular-nums" }}
       >
         {label}
       </text>
@@ -151,7 +151,7 @@ function PriceTag({
           fontSize={9.5}
           fontWeight={700}
           textAnchor="end"
-          fontFamily="ui-monospace, SFMono-Regular, monospace"
+          style={{ fontVariantNumeric: "tabular-nums" }}
         >
           {money}
         </text>
@@ -163,7 +163,7 @@ function PriceTag({
         fontSize={9.5}
         fontWeight={700}
         textAnchor="end"
-        fontFamily="ui-monospace, SFMono-Regular, monospace"
+        style={{ fontVariantNumeric: "tabular-nums" }}
       >
         {value}
       </text>
@@ -411,7 +411,7 @@ export default function ReplayOverlay({
               fill={d.color}
               fontSize={10}
               textAnchor="middle"
-              fontFamily="ui-monospace, monospace"
+              style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {Math.abs(priceAt(d, 0) - priceAt(d, 1)).toFixed(1)} pts
             </text>

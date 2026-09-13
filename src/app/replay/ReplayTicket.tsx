@@ -162,7 +162,7 @@ export default function ReplayTicket({
           <div className="text-[10px] uppercase tracking-wide text-[var(--tv-text-muted)]">
             {t("rt.bidAsk")}
           </div>
-          <div className="font-mono text-xs font-semibold">
+          <div className="tv-figure text-xs font-semibold">
             <span className="text-[var(--tv-chart-red)]">{bidAsk.bid.toFixed(2)}</span>
             <span className="mx-1 text-[var(--tv-text-muted)]">/</span>
             <span className="text-[var(--tv-chart-green)]">{bidAsk.ask.toFixed(2)}</span>
@@ -224,7 +224,7 @@ export default function ReplayTicket({
             min={1}
             value={qty}
             onChange={(e) => setQty(Number(e.target.value))}
-            className="w-14 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1 text-center font-mono text-sm text-[var(--tv-text)] outline-none"
+            className="w-14 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1 text-center tv-figure text-sm text-[var(--tv-text)] outline-none"
           />
           <button
             type="button"
@@ -246,7 +246,7 @@ export default function ReplayTicket({
             onChange={(e) => setLimit(e.target.value)}
             placeholder={mark ? mark.toFixed(2) : "0.00"}
             inputMode="decimal"
-            className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 font-mono text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+            className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2 tv-figure text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
           />
         </label>
       )}
@@ -293,7 +293,7 @@ export default function ReplayTicket({
               onChange={(e) => setSl(e.target.value)}
               placeholder="—"
               inputMode="decimal"
-              className="min-w-0 flex-1 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 font-mono text-xs text-[var(--tv-text)] outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 tv-figure text-xs text-[var(--tv-text)] outline-none"
             />
             <button
               type="button"
@@ -319,7 +319,7 @@ export default function ReplayTicket({
               onChange={(e) => setTp(e.target.value)}
               placeholder="—"
               inputMode="decimal"
-              className="min-w-0 flex-1 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 font-mono text-xs text-[var(--tv-text)] outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1.5 tv-figure text-xs text-[var(--tv-text)] outline-none"
             />
             <button
               type="button"
@@ -345,7 +345,7 @@ export default function ReplayTicket({
               placeholder="1"
               inputMode="decimal"
               aria-label={t("rt.riskTarget")}
-              className="w-12 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 text-center font-mono text-xs text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+              className="w-12 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 text-center tv-figure text-xs text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
             />
             <span className="text-[11px] text-[var(--tv-text-muted)]">%</span>
             <button
@@ -368,7 +368,7 @@ export default function ReplayTicket({
             {currentRisk && (
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-[var(--tv-text-muted)]">{t("rt.riskOnOrder")}</span>
-                <span className="font-mono font-semibold text-[var(--tv-text)]">
+                <span className="tv-figure font-semibold text-[var(--tv-text)]">
                   {currentRisk.dollars.toFixed(0)} $ · {currentRisk.pct.toFixed(2)} %
                 </span>
               </div>
@@ -379,7 +379,7 @@ export default function ReplayTicket({
                   <span>
                     {t("rt.stopDistance")} {sizing.stopPoints.toFixed(2)} · {sizing.stopTicks} ticks
                   </span>
-                  <span className="font-mono">
+                  <span className="tv-figure">
                     {t("rt.contractsFor").replace("{n}", String(sizing.contracts))}
                   </span>
                 </div>
@@ -400,13 +400,13 @@ export default function ReplayTicket({
           </span>
           <span>
             Risque{" "}
-            <span className="font-mono font-semibold text-[var(--tv-text)]">
+            <span className="tv-figure font-semibold text-[var(--tv-text)]">
               {pointsDollars(rr.riskPts, qty, spec).toFixed(0)} $
             </span>
           </span>
           <span>
             Récomp.{" "}
-            <span className="font-mono font-semibold text-[var(--tv-text)]">
+            <span className="tv-figure font-semibold text-[var(--tv-text)]">
               {pointsDollars(rr.rewPts, qty, spec).toFixed(0)} $
             </span>
           </span>

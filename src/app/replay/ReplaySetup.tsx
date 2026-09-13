@@ -153,7 +153,7 @@ export default function ReplaySetup() {
           mot — le défaut le plus déroutant du terminal. */}
         {failure && (
           <p className="mb-3 rounded-xl border border-[var(--tv-chart-red)]/40 bg-[var(--tv-chart-red)]/10 px-3 py-2 text-[11px] font-medium text-[var(--tv-chart-red)]">
-            {t("rt.errorLaunch")} <span className="font-mono opacity-80">{failure}</span>
+            {t("rt.errorLaunch")} <span className="tv-figure opacity-80">{failure}</span>
           </p>
         )}
         {session.error && (
@@ -245,7 +245,7 @@ export default function ReplaySetup() {
               step={1000}
               value={balance}
               onChange={(e) => setBalance(Number(e.target.value))}
-              className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-2 text-right font-mono text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+              className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2.5 py-2 text-right tv-figure text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
             />
           </label>
         </div>
@@ -322,7 +322,7 @@ export default function ReplaySetup() {
               onChange={(e) => setMaxLoss(e.target.value)}
               placeholder="—"
               inputMode="decimal"
-              className="w-16 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1 text-center font-mono text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
+              className="w-16 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1 text-center tv-figure text-sm text-[var(--tv-text)] outline-none focus:border-[var(--tv-accent)]"
             />
             <span className="text-[11px] text-[var(--tv-text-muted)]">%</span>
           </span>

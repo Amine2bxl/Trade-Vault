@@ -66,7 +66,7 @@ export default function ReplayTransition() {
         <div>
           <div className="text-lg font-bold text-[var(--tv-text)]">{title}</div>
           {subtitle && (
-            <div className="mt-1 font-mono text-xs text-[var(--tv-text-muted)]">{subtitle}</div>
+            <div className="mt-1 tv-figure text-xs text-[var(--tv-text-muted)]">{subtitle}</div>
           )}
         </div>
 

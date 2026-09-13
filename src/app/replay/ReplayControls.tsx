@@ -102,7 +102,7 @@ export default function ReplayControls({
           <div className="text-[10px] font-medium uppercase tracking-wider text-[var(--tv-text-muted)]">
             {t("rt.clock")} · {viewTf}
           </div>
-          <div className="font-mono text-sm font-bold text-[var(--tv-text)]">{clockLabel}</div>
+          <div className="tv-figure text-sm font-bold text-[var(--tv-text)]">{clockLabel}</div>
         </div>
         <div className="w-40">
           <div className="mb-1 flex justify-between text-[10px] text-[var(--tv-text-muted)]">

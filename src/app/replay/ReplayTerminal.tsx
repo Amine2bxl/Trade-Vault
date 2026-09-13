@@ -194,7 +194,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               />
             )}
           </div>
-          <span className="rounded-xl border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-1.5 font-mono text-xs font-bold text-[var(--tv-accent)]">
+          <span className="rounded-xl border border-[var(--tv-accent)]/40 bg-[var(--tv-accent)]/10 px-3 py-1.5 tv-figure text-xs font-bold text-[var(--tv-accent)]">
             {props.clockLabel}
           </span>
           <button
@@ -315,7 +315,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               onCancelOrder={props.onCancelOrder}
             />
             {hover && (
-              <div className="pointer-events-none absolute left-2 top-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 font-mono text-[10px] text-[var(--tv-text-muted)]">
+              <div className="pointer-events-none absolute left-2 top-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]/95 px-2 py-1 tv-figure text-[10px] text-[var(--tv-text-muted)]">
                 <span className="text-[var(--tv-text)]">{nyTimeOf(hover.time)}</span> · O{" "}
                 {hover.o.toFixed(2)} H {hover.h.toFixed(2)} L {hover.l.toFixed(2)} C{" "}
                 <span
@@ -388,7 +388,7 @@ function HeaderStat({
       </div>
       <div
         className={cn(
-          "font-mono text-xs font-bold",
+          "tv-figure text-xs font-bold",
           tone === "up"
             ? "text-[var(--tv-chart-green)]"
             : tone === "down"

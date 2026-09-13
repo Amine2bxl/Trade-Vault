@@ -104,7 +104,7 @@ export default function ReplayPanels({
                     <th className="px-1 py-1" />
                   </tr>
                 </thead>
-                <tbody className="font-mono">
+                <tbody className="tv-figure">
                   {working.map((o) => (
                     <tr key={o.id} className="border-t border-[var(--tv-border)]/60">
                       <td className="px-1 py-1.5 text-[var(--tv-text-muted)]">
@@ -170,7 +170,7 @@ export default function ReplayPanels({
                     <th className="px-1 py-1" />
                   </tr>
                 </thead>
-                <tbody className="font-mono">
+                <tbody className="tv-figure">
                   {history.map((tr) => (
                     <tr key={tr.id} className="border-t border-[var(--tv-border)]/60">
                       <td className="px-1 py-1.5">{tr.side === "long" ? "L" : "S"}</td>
@@ -255,16 +255,16 @@ function PositionRow({
           />
           <span className="text-xs font-bold text-[var(--tv-text)]">
             {pos.side === "long" ? t("rt.long") : t("rt.short")} NQ ·{" "}
-            <span className="font-mono">{pos.qty}</span>
+            <span className="tv-figure">{pos.qty}</span>
           </span>
         </span>
-        <span className={cn("font-mono text-xs font-bold", pnlColor)}>
+        <span className={cn("tv-figure text-xs font-bold", pnlColor)}>
           {pnl >= 0 ? "+" : ""}
           {pnl.toFixed(0)} $
         </span>
       </div>
 
-      <div className="mt-1.5 grid grid-cols-3 gap-1 text-center font-mono text-[11px]">
+      <div className="mt-1.5 grid grid-cols-3 gap-1 text-center tv-figure text-[11px]">
         <div className="rounded-lg bg-[var(--tv-surface-3)] px-1 py-1">
           <div className="text-[9px] uppercase text-[var(--tv-text-muted)]">Entrée</div>
           <div className="font-semibold text-[var(--tv-text)]">{pos.avgEntry.toFixed(2)}</div>
@@ -285,13 +285,13 @@ function PositionRow({
             value={sl}
             onChange={(e) => setSl(e.target.value)}
             placeholder="SL"
-            className="w-full min-w-0 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 font-mono text-[11px] text-[var(--tv-text)] outline-none"
+            className="w-full min-w-0 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 tv-figure text-[11px] text-[var(--tv-text)] outline-none"
           />
           <input
             value={tp}
             onChange={(e) => setTp(e.target.value)}
             placeholder="TP"
-            className="w-full min-w-0 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 font-mono text-[11px] text-[var(--tv-text)] outline-none"
+            className="w-full min-w-0 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2 py-1 tv-figure text-[11px] text-[var(--tv-text)] outline-none"
           />
           <button
             type="button"
