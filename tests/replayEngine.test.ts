@@ -368,6 +368,59 @@ describe("simulation d'ordres", () => {
     expect(o.bracketTp).toBe(20_150);
   });
 
+  test("traîner une entrée de l'autre côté du marché la retourne", async () => {
+    const state = makeState(0);
+    const bars = generateSyntheticSession(DATE, NQ);
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart;
+    state.now = e.now;
+    const mark = 20_000;
+    // Un achat limite posé SOUS le marché : c'est la seule limite d'achat
+    // valable.
+    placeOrder({
+      state,
+      input: {
+        side: "long",
+        type: "limit",
+        qty: 1,
+        price: 19_900,
+        bracketSl: 19_850,
+        bracketTp: 20_000,
+      },
+      bars,
+    });
+    const o = state.orders[0];
+    moveWorkingOrder(state, o.id, 20_100, mark);
+    // Au-dessus du marché, une limite ne peut être qu'une VENTE : sans cette
+    // bascule, l'ordre serait impossible (il se remplirait à l'instant même).
+    expect(o.side).toBe("short");
+    // Le bracket s'est retourné AUTOUR de l'entrée en gardant ses distances :
+    // cinquante points de risque, cent d'objectif, comme avant.
+    expect(Math.abs(o.bracketSl! - o.price!)).toBe(50);
+    expect(Math.abs(o.bracketTp! - o.price!)).toBe(100);
+    expect(o.bracketSl!).toBeGreaterThan(o.price!); // stop d'une vente : au-dessus
+    expect(o.bracketTp!).toBeLessThan(o.price!);
+    // Et le retour en arrière redonne un achat.
+    moveWorkingOrder(state, o.id, 19_800, mark);
+    expect(o.side).toBe("long");
+  });
+
+  test("un ordre limite sans prix est refusé, pas posé à zéro", async () => {
+    const state = makeState(0);
+    const bars = generateSyntheticSession(DATE, NQ);
+    const e = engine("1m");
+    await e.start();
+    e.now = e.rthStart;
+    state.now = e.now;
+    // Un champ de prix laissé vide arrivait ici à 0 : l'ordre s'inscrivait au
+    // carnet, ne se remplissait jamais, et se dessinait hors du graphe.
+    expect(() =>
+      placeOrder({ state, input: { side: "long", type: "limit", qty: 1, price: 0 }, bars }),
+    ).toThrow();
+    expect(state.orders.length).toBe(0);
+  });
+
   test("le bracket d'un ordre en carnet refuse de passer du mauvais côté", async () => {
     const state = makeState(0);
     const bars = generateSyntheticSession(DATE, NQ);

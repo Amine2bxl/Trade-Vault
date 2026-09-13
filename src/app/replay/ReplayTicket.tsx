@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import {
+  type PlaceOrderInput,
   instrumentOf,
   roundToTick,
   tickValueDollars,
@@ -42,14 +43,17 @@ interface Props {
   /** Symbole de la séance : le spec vient du registre, jamais d'une constante. */
   symbol: string;
   commissionPerContract: number;
-  onPlace: (input: {
-    side: Side;
-    type: OrderType;
-    qty: number;
-    price?: number;
-    sl?: number;
-    tp?: number;
-  }) => void;
+  /**
+   * LE MÊME VOCABULAIRE QUE LE MOTEUR, exprès.
+   *
+   * Le ticket parlait auparavant de `sl`/`tp` quand le moteur attend
+   * `bracketSl`/`bracketTp`. TypeScript laissait passer — un objet qui porte
+   * des champs en trop reste assignable — et le bracket était donc
+   * silencieusement JETÉ : on cliquait « Buy » avec un stop et un objectif
+   * réglés, et la position s'ouvrait nue. Un seul nom pour une seule chose,
+   * et la compilation redevient un garde-fou.
+   */
+  onPlace: (input: PlaceOrderInput) => void;
 }
 
 /** Les paliers de quantité usuels, à un clic — comme sur Project X. */
@@ -134,15 +138,20 @@ export default function ReplayTicket({
   }, [riskPct, slN, tick, entryRef, balance, spec, commissionPerContract]);
 
   const submit = (s: Side) => {
-    const entry = type === "market" ? mark : roundToTick(Number(limit) || 0, spec);
+    // UN PRIX VIDE VAUT LE MARCHÉ, jamais zéro. Le champ laissé vide donnait
+    // `Number("") || 0` → un ordre posé à 0, qui ne se remplit jamais et
+    // n'apparaît nulle part sur le graphe : de l'extérieur, « rien ne se
+    // passe », et il reste pourtant au carnet.
+    const entry = type === "market" ? mark : roundToTick(Number(limit) || mark, spec);
+    if (!entry) return;
     const b = bracketFor(s, entry);
     onPlace({
       side: s,
       type,
       qty: Math.max(1, Math.round(qty || 1)),
       price: type === "market" ? undefined : entry,
-      sl: b.sl,
-      tp: b.tp,
+      bracketSl: b.sl ?? null,
+      bracketTp: b.tp ?? null,
     });
   };
 

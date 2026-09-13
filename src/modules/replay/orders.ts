@@ -124,6 +124,13 @@ export function placeOrder(call: PlaceOrderCall): Order {
   const c = simContextOf(state);
   const now = state.now;
   if (input.qty <= 0) throw new Error("qty <= 0");
+  // UN ORDRE EN CARNET A BESOIN D'UN PRIX RÉEL. Sans cette garde, un champ de
+  // prix laissé vide arrivait ici à 0 : l'ordre s'inscrivait au carnet, ne se
+  // remplissait jamais, et se dessinait si loin sous le graphe qu'il en
+  // devenait invisible. Refuser tout de suite vaut mieux qu'un ordre fantôme.
+  if (input.type !== "market" && !(Number(input.price) > 0)) {
+    throw new Error("un ordre limite ou stop exige un prix strictement positif");
+  }
   const isBuy = input.side === "long";
 
   const base: Order = {
@@ -182,7 +189,16 @@ export function cancelOrder(state: ReplaySessionState, orderId: string): void {
  * l'objectif du même écart — c'est ce que fait Project X, et c'est la seule
  * lecture qui préserve l'intention.
  */
-export function moveWorkingOrder(state: ReplaySessionState, orderId: string, price: number): void {
+export function moveWorkingOrder(
+  state: ReplaySessionState,
+  orderId: string,
+  price: number,
+  /**
+   * Le prix courant du marché. Fourni, il fait BASCULER le sens d'un ordre
+   * d'entrée qu'on traîne de l'autre côté du marché (voir plus bas).
+   */
+  mark?: number,
+): void {
   const o = state.orders.find((x) => x.id === orderId);
   if (!o || o.status !== "working" || o.type === "market") return;
   const spec = simContextOf(state).spec;
@@ -193,6 +209,25 @@ export function moveWorkingOrder(state: ReplaySessionState, orderId: string, pri
     if (o.bracketSl != null) o.bracketSl = roundToTick(o.bracketSl + delta, spec);
     if (o.bracketTp != null) o.bracketTp = roundToTick(o.bracketTp + delta, spec);
   }
+
+  // ── LE SENS SUIT LE CÔTÉ DU MARCHÉ ───────────────────────────────────────
+  // Traîner une entrée de l'autre côté du prix la retourne : au-dessus du
+  // marché, une limite ne peut être qu'une VENTE ; en dessous, qu'un ACHAT.
+  // (Pour un stop, c'est l'inverse : il se déclenche dans le sens de la
+  // cassure.) Sans cette bascule, on obtenait un ordre impossible — un achat
+  // limite posé au-dessus du marché se remplirait à l'instant même — et il
+  // fallait l'annuler pour en reposer un dans l'autre sens.
+  if (mark == null || !Number.isFinite(mark) || o.reduceOnly) return;
+  const wanted: OrderSide =
+    o.type === "limit" ? (next > mark ? "short" : "long") : next > mark ? "long" : "short";
+  if (wanted === o.side) return;
+  o.side = wanted;
+  // Le bracket se retourne AUTOUR DE L'ENTRÉE en gardant ses distances : le
+  // trader a choisi « quarante ticks de risque », pas « un stop à tel prix ».
+  const mirror = (v: number | null): number | null =>
+    v == null ? null : roundToTick(2 * next - v, spec);
+  o.bracketSl = mirror(o.bracketSl);
+  o.bracketTp = mirror(o.bracketTp);
 }
 
 /**

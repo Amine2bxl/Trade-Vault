@@ -480,6 +480,7 @@ export default function ReplayTerminal(props: TerminalProps) {
               onMoveOrder={props.onMoveOrder}
               onMoveOrderBracket={props.onMoveOrderBracket}
               onCancelOrder={props.onCancelOrder}
+              onBracket={props.onBracket}
               symbol={state?.symbol ?? "NQ"}
               drawColor={drawColor}
               palette={DRAW_COLORS}

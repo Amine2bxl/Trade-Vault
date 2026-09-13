@@ -450,7 +450,17 @@ export function useReplaySession({ userId }: { userId: string | null }) {
       const engine = engineRef.current;
       const state = stateRef.current;
       if (!engine || !state) return;
-      simPlaceOrder({ state, input, bars: engine.data });
+      try {
+        simPlaceOrder({ state, input, bars: engine.data });
+      } catch (e) {
+        // Un ordre refusé par le moteur — prix manquant, quantité nulle — doit
+        // le DIRE. Laisser l'exception filer dans le gestionnaire de clic
+        // donnait exactement l'impression que le trader décrit : on appuie, et
+        // rien ne se passe.
+        setError(e instanceof Error ? e.message : String(e));
+        return;
+      }
+      setError(null);
       refreshValuation(state, engine.data);
       scheduleSave();
       bump();
@@ -471,7 +481,9 @@ export function useReplaySession({ userId }: { userId: string | null }) {
   const moveOrder = useCallback(
     (orderId: string, price: number) => {
       if (!stateRef.current) return;
-      moveWorkingOrder(stateRef.current, orderId, price);
+      // Le prix courant accompagne le geste : c'est lui qui décide si l'ordre
+      // qu'on traîne change de sens en passant de l'autre côté du marché.
+      moveWorkingOrder(stateRef.current, orderId, price, engineRef.current?.markPrice());
       scheduleSave();
       bump();
     },

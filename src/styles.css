@@ -551,6 +551,7 @@
   --tv-z-modal-nested: 100; /* dialogue ouvert DEPUIS un dialogue */
   --tv-z-modal-top: 110; /* confirmation, paywall : au-dessus de tout dialogue */
   --tv-z-overlay: 120; /* plein écran : démo, célébration, assistant */
+  --tv-z-overlay-modal: 130; /* dialogue ouvert DEPUIS un mode plein écran */
   --tv-z-top: 200; /* visionneuse, inscription, bandeau de consentement */
   --tv-z-toast: 300; /* retour transitoire — AU-DESSUS DE TOUT */
 

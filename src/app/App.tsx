@@ -972,7 +972,15 @@ function AppContent() {
         </Suspense>
         <Suspense fallback={null}>
           {modalOpen && (
-            <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
+            <TradeModal
+              trade={editingTrade}
+              onClose={handleCloseModal}
+              onSave={handleSave}
+              // Sur la page de backtest, le terminal occupe la couche plein
+              // écran : la modale doit passer AU-DESSUS, sinon elle s'ouvre
+              // derrière lui et le trader ne voit rien venir.
+              topLayer={page === "backtest"}
+            />
           )}
         </Suspense>
         <Suspense fallback={null}>

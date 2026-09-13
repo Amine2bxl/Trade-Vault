@@ -89,6 +89,11 @@ interface OverlayProps {
   ) => void;
   /** Annuler depuis le graphe : la croix des étiquettes d'ordre. */
   onCancelOrder: (orderId: string) => void;
+  /**
+   * Poser ou déplacer le bracket d'une POSITION OUVERTE (`null` = pas de
+   * jambe). Sert au glissement depuis la ligne d'entrée.
+   */
+  onBracket: (posId: string, sl: number | null, tp: number | null) => void;
   /** Le contrat de la séance — donne le spec pour chiffrer un bracket. */
   symbol: string;
   /** Couleur des dessins À VENIR. Les dessins déjà posés gardent la leur. */
@@ -347,6 +352,15 @@ interface DragState {
    */
   bracketOrderId?: string;
   leg?: "sl" | "tp";
+  /**
+   * Glissement DEPUIS UNE POSITION OUVERTE.
+   *
+   * Le geste le plus direct qui soit : on attrape sa position et on tire. Vers
+   * la perte, on pose le stop ; vers le gain, l'objectif. Le sens décide donc
+   * de la jambe, et non un menu — ce qui, pour un long, met le stop en bas, et
+   * pour un short, en haut, sans rien avoir à choisir.
+   */
+  positionId?: string;
 }
 
 export default function ReplayOverlay({
@@ -365,6 +379,7 @@ export default function ReplayOverlay({
   onMoveOrder,
   onMoveOrderBracket,
   onCancelOrder,
+  onBracket,
   symbol,
   drawColor,
   palette,
@@ -381,26 +396,47 @@ export default function ReplayOverlay({
   const chart = view.current.chart;
   const candles = view.current.candles;
 
-  // ── Mesure du pane (graphe + resize) ────────────────────────────────────
+  // ── L'OVERLAY SUIT LA PROJECTION DU GRAPHE ──────────────────────────────
+  //
+  // Tout ce qui est dessiné ici est converti prix/temps → pixels À CHAQUE
+  // RENDU. Encore faut-il qu'un rendu ait lieu quand la projection change :
+  // sinon les ordres, les brackets et les traits restent collés à leurs
+  // anciens pixels pendant qu'on zoome ou qu'on déplace le graphe — ils se
+  // décrochent des bougies, ce qui est exactement ce qu'il ne faut pas.
+  //
+  // On échantillonne donc la projection à chaque image : la plage logique
+  // visible (axe des temps), la taille du pane, et deux prix lus à deux
+  // hauteurs (axe des prix, que la librairie n'expose par aucun événement).
+  // Ces cinq nombres décrivent entièrement la transformation ; dès que l'un
+  // bouge, on redessine, et jamais autrement.
+  const [projection, setProjection] = useState(0);
   useEffect(() => {
-    const c = view.current.chart;
-    if (!c) return;
-    const measure = () => {
+    let raf = 0;
+    let sig = "";
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      const c = view.current.chart;
+      const s = view.current.candles;
+      if (!c || !s) return;
+      let next: string;
+      try {
+        const range = c.timeScale().getVisibleLogicalRange();
+        const size = c.paneSize();
+        next = `${range?.from ?? 0}|${range?.to ?? 0}|${size.width}|${size.height}|${s.coordinateToPrice(0) ?? 0}|${s.coordinateToPrice(100) ?? 0}`;
+      } catch {
+        return; // graphe en cours de démontage
+      }
+      if (next === sig) return;
+      sig = next;
       const size = c.paneSize();
       setPane({ w: size.width, h: size.height });
+      setProjection((n) => n + 1);
     };
-    measure();
-    try {
-      c.timeScale().subscribeVisibleLogicalRangeChange(measure);
-    } catch {
-      /* abonnement facultatif */
-    }
-    window.addEventListener("resize", measure);
-    return () => {
-      window.removeEventListener("resize", measure);
-    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  void projection;
 
   // Changer d'outil, c'est changer d'intention : la fiche du dessin précédent
   // n'a plus lieu d'être ouverte au-dessus du trait qu'on s'apprête à poser.
@@ -522,6 +558,20 @@ export default function ReplayOverlay({
     if (!drag) return;
     const m = toMarket(ev);
     if (!m) return;
+    if (drag.positionId) {
+      const pos = positions.find((p) => p.id === drag.positionId);
+      if (!pos) return;
+      // De quel côté de l'entrée le doigt se trouve-t-il ? C'est ce qui dit
+      // s'il dessine un risque ou un objectif.
+      const isSl = pos.side === "long" ? m.price < pos.avgEntry : m.price > pos.avgEntry;
+      const existing = isSl ? pos.stop : pos.target;
+      // La jambe existe déjà : on la DÉPLACE. La recréer à chaque image
+      // aurait laissé derrière elle une traînée d'ordres annulés.
+      if (existing) onMoveOrder(existing.id, m.price);
+      else if (isSl) onBracket(pos.id, m.price, pos.target?.price ?? null);
+      else onBracket(pos.id, pos.stop?.price ?? null, m.price);
+      return;
+    }
     if (drag.bracketOrderId) {
       // Une seule jambe bouge : l'autre passe en `undefined`, qui veut dire
       // « n'y touche pas ». Passer `null` l'aurait effacée.
@@ -917,6 +967,22 @@ export default function ReplayOverlay({
 
         {/* Ligne d'entrée — pleine, discrète. */}
         <line x1={0} y1={y} x2={W} y2={y} stroke={color} strokeWidth={1} opacity={0.5} />
+        {/* LA POIGNÉE DE LA POSITION. Rester appuyé sur son entrée et tirer :
+          vers la perte, on pose le stop ; vers le gain, l'objectif. C'est le
+          geste qui manquait — il fallait jusqu'ici passer par le ticket pour
+          protéger un trade déjà ouvert. La bande fait vingt pixels de haut :
+          on l'attrape sans viser, et le graphe garde tout le reste. */}
+        <rect
+          x={0}
+          y={y - 10}
+          width={W - 12}
+          height={20}
+          fill="transparent"
+          style={{ pointerEvents: "auto", cursor: "ns-resize" }}
+          onPointerDown={handleDown({ positionId: pos.id })}
+          onPointerMove={handleMove}
+          onPointerUp={handleUp}
+        />
 
         {/* Brackets SL / TP : lignes pointillées + étiquettes draggables. */}
         {slY != null && pos.stop?.price != null && (
