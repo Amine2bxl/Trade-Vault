@@ -1,4 +1,4 @@
-import { PointerEvent as RPointerEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 // Les cinq logos de réseaux sociaux ont quitté cet import avec les liens morts
 // qu'ils portaient : voir le pied de page plus bas.
 import { PlayCircle, Check } from "lucide-react";
@@ -8,6 +8,7 @@ import { ShotOuVisuel } from "./landing/ProductShot";
 import { AuthModal } from "./landing/AuthModal";
 import { FeaturesBento } from "./landing/FeaturesBento";
 import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
+import { AncrageDePrix, SectionEdgeScore, SectionPreuve } from "./landing/Proof";
 import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
 import { faqPageJsonLd } from "@/shared/seo";
@@ -70,6 +71,7 @@ type FooterLink = { k: LandingKey; href: string };
 
 const FOOTER_PRODUCT: FooterLink[] = [
   { k: "footer.f1", href: "#problem" },
+  { k: "footer.f5", href: "#edge" },
   { k: "footer.f2", href: "#ai" },
   { k: "footer.f3", href: "#features" },
   { k: "footer.f4", href: "#pricing" },
@@ -191,105 +193,167 @@ const ANALYTICS_D = buildSpline([
 ]);
 
 /* ─────────────────────────── HERO — THE PRODUCT ─────────────────────────── */
+/**
+ * L'ILLUSTRATION DU HÉROS — le tableau de bord, mené par ce qu'il montre en
+ * premier dans le produit.
+ *
+ * Elle menait avec « +$4,218.50 · +16.9 % » : une courbe qui monte et un gain
+ * en gros, c'est-à-dire exactement la promesse que le produit refuse de faire
+ * (`docs/product/PRODUCT.md` §2 — « la discipline avant le profit », aucun
+ * classement par P&L, aucune promesse de gain). La première image de la page
+ * de vente contredisait la philosophie du produit et la section « le vrai
+ * problème » située trois écrans plus bas.
+ *
+ * Elle mène maintenant avec l'Edge Score et la règle du jour — les deux
+ * premiers blocs du vrai tableau de bord — et la courbe passe en dessous, sans
+ * montant. Le montant inventé ne subsiste que dans le repli de la section
+ * analytics, où il illustre un rapport mensuel.
+ */
 function HeroProductVisual() {
   const { t } = useLandingT();
   return (
-    <div className="relative">
-      {/* La plaque produit — la même matière qu'une carte de l'app. */}
-      <div className="lp-panel p-5">
-        <div className="mb-4 flex items-start justify-between">
-          <div>
-            <p className="tv-label text-slate-500">{t("hero.eq")}</p>
-            <p className="tv-figure mt-1 text-2xl tabular-nums text-[var(--tv-chart-green)]">
-              +$4,218.50
+    <>
+      {/* Le conteneur de POSITIONNEMENT ne contient que la plaque et les deux
+          cartes flottantes : les cartes s'ancrent sur ses bords (`-bottom-14`,
+          `-top-7`), donc tout ce qu'on y ajoute les déplace. La mention
+          d'illustration vit en dehors, plus bas. */}
+      <div className="relative">
+        {/* La plaque produit — la même matière qu'une carte de l'app.
+            Le rembourrage bas est plus généreux que les trois autres côtés :
+            c'est la réserve dans laquelle la carte du coach vient se poser.
+            Sans elle, la vignette mordait sur la valeur du « WIN RATE ». */}
+        <div className="lp-panel p-5 pb-8 sm:pb-14">
+          {/* ── L'Edge Score : le chiffre qui ouvre le produit ── */}
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="tv-label text-slate-500">{t("hero.edge")}</p>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="tv-figure text-[2rem] leading-none tabular-nums text-white">
+                  78
+                </span>
+                <span className="text-[11px] text-slate-500">{t("hero.edge.sub")}</span>
+              </div>
+            </div>
+            <span className="mt-1 shrink-0 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+              {t("bento.edge.ready")}
+            </span>
+          </div>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[.05]">
+            <div
+              className="h-full rounded-full bg-[var(--tv-highlight)]/70"
+              style={{ width: "78%" }}
+            />
+          </div>
+
+          {/* ── La règle du jour : ce que le produit IMPOSE, et qui n'existe
+             nulle part ailleurs sur le marché du journal. ── */}
+          <div className="lp-card-inset mt-4 px-3.5 py-3">
+            <p className="tv-label text-[var(--tv-highlight)]">{t("hero.rule")}</p>
+            <p className="mt-1 text-[12.5px] leading-5 text-slate-200">{t("hero.rule.d")}</p>
+          </div>
+
+          <p className="tv-label mt-5 text-slate-500">{t("hero.eq")}</p>
+          <div className="mt-2 h-24 w-full">
+            <svg viewBox="0 0 376 145" className="h-full w-full" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1">
+                  <stop stopColor="var(--tv-chart-green)" stopOpacity=".22" />
+                  <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {[34, 74, 114].map((yy) => (
+                <path key={yy} d={`M0 ${yy}H376`} stroke="rgba(148,163,184,.09)" />
+              ))}
+              <path d={`${HERO_D} L376,145 L0,145 Z`} fill="url(#hf)" />
+              <path
+                d="M0 138H376"
+                stroke="var(--tv-chart-red)"
+                strokeWidth="1.5"
+                strokeDasharray="6 5"
+              />
+              <path
+                d={HERO_D}
+                fill="none"
+                stroke="var(--tv-chart-green)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                className="chart-line"
+              />
+            </svg>
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-3 border-t border-white/[.08] pt-4">
+            {[
+              [t("hero.winrate"), "64%"],
+              [t("hero.pf"), "2.31"],
+              [t("hero.sharpe"), "1.96"],
+            ].map(([l, v]) => (
+              <div key={l} className="text-center">
+                <p className="tv-label text-slate-500">{l}</p>
+                <p className="mt-1 font-display text-base font-bold tabular-nums text-white">{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Le coach — une vraie remarque sur des données réelles.
+            Elle descend de 28 à 56px sous la plaque : celle-ci a raccourci en
+            perdant son gros montant, et la carte se posait sur la valeur du
+            « WIN RATE ». Une statistique à moitié cachée derrière une vignette
+            ne se lit pas comme une superposition voulue, mais comme un défaut
+            de mise en page. */}
+        <div className="absolute -bottom-14 -left-3 z-10 hidden w-[236px] sm:block">
+          <div className="lp-card p-3.5">
+            <div className="mb-2 flex items-center gap-2">
+              <div className="tv-accent-fill grid h-6 w-6 place-items-center rounded-md">
+                <Icon n="brain" cls="h-3.5 w-3.5" />
+              </div>
+              <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
+              <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
+              </span>
+            </div>
+            <p className="text-[11px] leading-4 text-slate-300">
+              {t("hero.coach.tip")}{" "}
+              <span className="text-[var(--tv-highlight)] font-semibold">
+                {t("hero.coach.action")}
+              </span>
             </p>
           </div>
-          <span className="tv-figure mt-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] tabular-nums text-emerald-300">
-            +16.9%
-          </span>
         </div>
 
-        <div className="h-32 w-full">
-          <svg viewBox="0 0 376 145" className="h-full w-full" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1">
-                <stop stopColor="var(--tv-chart-green)" stopOpacity=".22" />
-                <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            {[34, 74, 114].map((yy) => (
-              <path key={yy} d={`M0 ${yy}H376`} stroke="rgba(148,163,184,.09)" />
-            ))}
-            <path d={`${HERO_D} L376,145 L0,145 Z`} fill="url(#hf)" />
-            <path
-              d="M0 138H376"
-              stroke="var(--tv-chart-red)"
-              strokeWidth="1.5"
-              strokeDasharray="6 5"
-            />
-            <path
-              d={HERO_D}
-              fill="none"
-              stroke="var(--tv-chart-green)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-              className="chart-line"
-            />
-          </svg>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-3 border-t border-white/[.08] pt-4">
-          {[
-            [t("hero.winrate"), "64%"],
-            [t("hero.pf"), "2.31"],
-            [t("hero.sharpe"), "1.96"],
-          ].map(([l, v]) => (
-            <div key={l} className="text-center">
-              <p className="tv-label text-slate-500">{l}</p>
-              <p className="mt-1 font-display text-base font-bold tabular-nums text-white">{v}</p>
+        {/* Le pattern détecté. */}
+        <div className="absolute -top-7 -right-3 z-10 hidden w-[200px] md:block">
+          <div className="lp-card p-3.5">
+            <div className="mb-1.5 flex items-center gap-2">
+              <Icon n="radar" cls="h-3.5 w-3.5 text-[var(--tv-highlight)]" />
+              <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
             </div>
-          ))}
+            <p className="text-[11px] leading-4 text-slate-300">
+              <span className="text-[var(--tv-highlight)] font-semibold">
+                {t("hero.pattern.tip")}
+              </span>
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Le coach — une vraie remarque sur des données réelles. */}
-      <div className="absolute -bottom-7 -left-3 z-10 hidden w-[236px] sm:block">
-        <div className="lp-card p-3.5">
-          <div className="mb-2 flex items-center gap-2">
-            <div className="tv-accent-fill grid h-6 w-6 place-items-center rounded-md">
-              <Icon n="brain" cls="h-3.5 w-3.5" />
-            </div>
-            <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
-            <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
-            </span>
-          </div>
-          <p className="text-[11px] leading-4 text-slate-300">
-            {t("hero.coach.tip")}{" "}
-            <span className="text-[var(--tv-highlight)] font-semibold">
-              {t("hero.coach.action")}
-            </span>
-          </p>
-        </div>
-      </div>
+      {/* CE DESSIN DIT QU'IL EST UN DESSIN.
+          Un visiteur ne distingue pas une illustration soignée d'une capture ;
+          tant que `dashboard.png` n'est pas déposé, la mention est la seule
+          chose qui empêche ces chiffres de se lire comme le compte de
+          quelqu'un. Elle disparaît avec le dessin.
 
-      {/* Le pattern détecté. */}
-      <div className="absolute -top-7 -right-3 z-10 hidden w-[200px] md:block">
-        <div className="lp-card p-3.5">
-          <div className="mb-1.5 flex items-center gap-2">
-            <Icon n="radar" cls="h-3.5 w-3.5 text-[var(--tv-highlight)]" />
-            <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
-          </div>
-          <p className="text-[11px] leading-4 text-slate-300">
-            <span className="text-[var(--tv-highlight)] font-semibold">
-              {t("hero.pattern.tip")}
-            </span>
-          </p>
-        </div>
-      </div>
-    </div>
+          La carte du coach déborde SOUS la plaque, à gauche. Dès qu'elle est
+          montée (`sm`), la mention passe à DROITE : jouer sur la marge
+          verticale ne suffisait pas — la carte et la ligne se chevauchaient
+          encore, et c'est la ligne qui ne doit jamais être illisible. */}
+      <p className="tv-label mt-5 text-center text-slate-600 sm:mt-10 sm:text-right">
+        {t("hero.illustration")}
+      </p>
+    </>
   );
 }
 
@@ -366,7 +430,7 @@ function CoreValueSection() {
           sub={t("journey.sub")}
         />
         <div className="reveal mx-auto grid max-w-[860px] gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((s, i) => (
+          {steps.map((s) => (
             <div key={s.n} className="journey-step">
               <span className="journey-num">{s.n}</span>
               <div>
@@ -648,9 +712,17 @@ function AlternativeSection() {
 }
 
 /* ─────────────────────────── NAV ─────────────────────────── */
+/**
+ * LES SECTIONS SUIVIES PAR LE SCROLLSPY.
+ *
+ * Elles doivent correspondre EXACTEMENT aux liens de `MegaNav` : une section
+ * suivie ici mais absente de la barre rendrait `activeSec` égal à un identifiant
+ * qu'aucun lien ne porte — donc aucun lien actif pendant toute la traversée de
+ * cette section, ce qui se lit comme un bug de navigation.
+ */
 const NAV: [string, string][] = [
   ["nav.problem", "problem"],
-  ["nav.analytics", "analytics"],
+  ["nav.edge", "edge"],
   ["nav.features", "features"],
   ["pricing.tag", "pricing"],
   ["faq.tag", "faq"],
@@ -677,11 +749,16 @@ function LandingPage() {
     { n: "radar" as IName, t: t("ai.f2.t"), d: t("ai.f2.d") },
     { n: "err" as IName, t: t("ai.f3.t"), d: t("ai.f3.d") },
   ];
+  // Six objections, dans l'ordre où elles viennent. Ce tableau alimente À LA
+  // FOIS l'accordéon et le balisage `FAQPage` : les deux ne peuvent pas
+  // diverger.
   const faqs = [
     { q: t("faq.q1"), a: t("faq.a1") },
     { q: t("faq.q2"), a: t("faq.a2") },
     { q: t("faq.q3"), a: t("faq.a3") },
     { q: t("faq.q4"), a: t("faq.a4") },
+    { q: t("faq.q5"), a: t("faq.a5") },
+    { q: t("faq.q6"), a: t("faq.a6") },
   ];
   const scrollLockRef = useRef(false);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -729,8 +806,20 @@ function LandingPage() {
           <div className="lp-container">
             <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
               <div className="text-center lg:text-left">
-                <h1 className="fade-up font-display text-[clamp(2.6rem,5.2vw,4.4rem)] font-semibold leading-[1.04] tracking-[-0.035em] text-white">
-                  {t("hero.h1a")} <span className="text-accent">{t("hero.h1b")}</span>
+                {/* Le titre se lit en DEUX TEMPS : la capacité, puis la faille.
+                    Le passage à la ligne n'est pas une mise en page, c'est la
+                    respiration qui fait porter le second membre — mis bout à
+                    bout, les deux propositions se lisaient comme une seule
+                    phrase et le contre-temps disparaissait. */}
+                {/* La taille plafonne à 3.2rem, pas 4.2 : la colonne de texte
+                    fait ~600px, et à 67px la première proposition passait
+                    elle-même à la ligne — le titre montait à quatre lignes et
+                    le passage à la ligne VOULU ne se distinguait plus des
+                    passages subis. À 51px, chaque proposition tient sa place. */}
+                <h1 className="fade-up font-display text-[clamp(2.1rem,4.1vw,3.2rem)] font-semibold leading-[1.06] tracking-[-0.03em] text-white">
+                  {t("hero.h1a")}
+                  <br />
+                  <span className="text-accent">{t("hero.h1b")}</span>
                 </h1>
                 <p className="fade-up d2 mt-6 max-w-[540px] text-[17px] leading-7 text-slate-400">
                   {t("hero.sub")}
@@ -811,8 +900,17 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── CORE VALUE — 4 temps ── */}
+        {/* ── CORE VALUE — la boucle en 4 temps ── */}
         <CoreValueSection />
+
+        {/* ── CLAIM → EVIDENCE ──
+            Placée juste après la boucle et AVANT toute section « IA » : elle
+            répond à l'objection que le mot « IA » lève désormais de lui-même
+            (« ça invente »), avant qu'on ait demandé au visiteur d'y croire. */}
+        <SectionPreuve />
+
+        {/* ── EDGE SCORE ── */}
+        <SectionEdgeScore />
 
         {/* ── ANALYTICS ── */}
         <AnalyticsSection />
@@ -909,6 +1007,12 @@ function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── ANCRAGE DE PRIX ──
+            COLLÉE à la grille tarifaire, et dans cet ordre : un ancrage lu deux
+            sections avant le prix n'ancre plus rien. C'est la dernière chose
+            qu'on lit avant de voir un montant. */}
+        <AncrageDePrix />
 
         {/* ── PRICING ── */}
         <section id="pricing" className="relative section-divider py-14 lg:py-20">

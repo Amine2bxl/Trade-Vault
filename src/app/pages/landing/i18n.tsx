@@ -227,6 +227,7 @@ const M: Record<string, Msg> = {
   "nav.problem": { en: "Problem", fr: "Problème" },
   "nav.features": { en: "Features", fr: "Fonctionnalités" },
   "nav.analytics": { en: "Analytics", fr: "Analytics" },
+  "nav.edge": { en: "Edge Score", fr: "Edge Score" },
   "nav.alternative": { en: "Excel vs Notion", fr: "Excel vs Notion" },
   "nav.signin": { en: "Sign in", fr: "Se connecter" },
   "nav.cta": { en: "Start free", fr: "Commencer gratuitement" },
@@ -264,11 +265,25 @@ const M: Record<string, Msg> = {
     en: "TradeVault · The AI coach for traders",
     fr: "TradeVault · Le coach IA des traders",
   },
-  "hero.h1a": { en: "Your trades already contain", fr: "Tes trades contiennent déjà" },
-  "hero.h1b": { en: "the answer.", fr: "la réponse." },
+  // ── LE HÉROS ────────────────────────────────────────────────────────────
+  //
+  // L'accroche nommait un journal (« tes trades contiennent la réponse ») sur
+  // un marché — journal + analytics — déjà saturé et indifférencié. Elle vend
+  // maintenant ce que le produit fait RÉELLEMENT de différent, et ce que
+  // `docs/POSITIONNEMENT.md` désigne comme la douleur centrale de la cible :
+  // « je sais trader, je n'arrive pas à être discipliné quand ça compte ».
+  //
+  // Le contre-temps du titre est la promesse entière : on ne dit pas au trader
+  // qu'il est mauvais, on lui dit qu'il se saborde — ce qu'il sait déjà, et
+  // que personne ne lui chiffre.
+  "hero.h1a": { en: "You know how to trade.", fr: "Tu sais trader." },
+  "hero.h1b": {
+    en: "You break your own rules when it counts.",
+    fr: "Tu casses tes propres règles quand ça compte.",
+  },
   "hero.sub": {
-    en: "TradeVault is an AI trading journal that reads your history, surfaces the patterns behind your results and turns raw data into a clear picture of your trading — so your next decision beats your last.",
-    fr: "TradeVault est un journal de trading à coach IA qui lit ton historique, fait remonter les tendances derrière tes résultats et transforme tes données brutes en une image claire de ton trading — pour que ta prochaine décision batte la précédente.",
+    en: "TradeVault reads your history and puts a number on what indiscipline costs you — size drift after a loss, overtrading, off-plan entries — then hands you one rule to hold tomorrow.",
+    fr: "TradeVault lit ton historique et chiffre ce que l'indiscipline te coûte — dérive de taille après une perte, overtrading, entrées hors plan — puis te donne une seule règle à tenir demain.",
   },
   "hero.cta": { en: "Start for free", fr: "Commencer gratuitement" },
   "hero.demo": { en: "or watch a 2-min demo", fr: "ou regarde une démo de 2 min" },
@@ -282,11 +297,11 @@ const M: Record<string, Msg> = {
   "hero.trust": { en: "Verified reviews on", fr: "Avis vérifiés sur" },
 
   /* analytics */
-  "analytics.title.a": { en: "Raw data in.", fr: "Données brutes in." },
-  "analytics.title.b": { en: "Understanding out.", fr: "Compréhension out." },
+  "analytics.title.a": { en: "The numbers exist", fr: "Les chiffres existent" },
+  "analytics.title.b": { en: "to serve the diagnosis.", fr: "pour servir le diagnostic." },
   "analytics.sub": {
-    en: "Twenty-plus metrics computed on your real history — an equity curve that tells the truth, drawdown you can measure, expectancy you can trust.",
-    fr: "Plus de vingt métriques calculées sur ton historique réel — une courbe d'equity qui dit la vérité, un drawdown mesurable, une expectancy fiable.",
+    en: "Twenty-plus metrics computed on your real history — not to decorate a dashboard, but to show where your edge lives and where it dies.",
+    fr: "Plus de vingt métriques calculées sur ton historique réel — pas pour décorer un tableau de bord, mais pour montrer où vit ton edge et où il meurt.",
   },
   "analytics.c1.t": { en: "Equity curve", fr: "Courbe d'equity" },
   "analytics.c1.d": {
@@ -310,14 +325,11 @@ const M: Record<string, Msg> = {
   },
 
   /* mistakes / psychology */
-  "mistakes.title.a": {
-    en: "It's not about your win rate.",
-    fr: "Ce n'est pas ton taux de réussite.",
-  },
-  "mistakes.title.b": { en: "It's about what costs you.", fr: "C'est ce qui te coûte." },
+  "mistakes.title.a": { en: "Your biggest leak", fr: "Ta plus grosse fuite" },
+  "mistakes.title.b": { en: "has a name and a price.", fr: "a un nom et un prix." },
   "mistakes.sub": {
-    en: "Your history can answer the questions you haven't asked it yet.",
-    fr: "Ton historique peut répondre aux questions que tu ne lui as pas encore posées.",
+    en: "Recurring mistakes and missed setups, counted and priced — month after month, on your own data. Your history can answer the questions you've never asked it.",
+    fr: "Erreurs récurrentes et setups manqués, comptés et chiffrés — mois après mois, sur tes propres données. Ton historique peut répondre aux questions que tu ne lui as jamais posées.",
   },
   "mistakes.q1": {
     en: "When do I actually trade well?",
@@ -334,22 +346,26 @@ const M: Record<string, Msg> = {
   },
 
   /* use cases */
-  "uses.title.a": { en: "Built for the way", fr: "Conçu pour la façon dont" },
-  "uses.title.b": { en: "you actually trade.", fr: "tu trades réellement." },
-  "uses.u1.t": { en: "Futures traders", fr: "Traders futures" },
+  // Les trois cartes ne listent plus des STYLES de trading (futures, day, ICT)
+  // — le produit les sert tous et ça ne distingue rien. Elles nomment les trois
+  // situations où tenir une règle a un coût immédiat et mesurable : c'est le
+  // cœur de cible de `docs/product/PRODUCT.md` §4.
+  "uses.title.a": { en: "Built for the trader", fr: "Conçu pour le trader" },
+  "uses.title.b": { en: "who has rules to hold.", fr: "qui a des règles à tenir." },
+  "uses.u1.t": { en: "Prop firm challenge", fr: "Challenge prop firm" },
   "uses.u1.d": {
-    en: "Performance per contract, R-multiples, drawdown you can measure in ticks.",
-    fr: "Performance par contrat, R-multiples, drawdown mesurable en ticks.",
+    en: "Daily loss, max drawdown, consistency. The rules that end a challenge are the ones TradeVault watches.",
+    fr: "Perte journalière, drawdown max, régularité. Les règles qui font échouer un challenge sont celles que TradeVault surveille.",
   },
-  "uses.u2.t": { en: "Day traders", fr: "Day traders" },
+  "uses.u2.t": { en: "Funded account", fr: "Compte financé" },
   "uses.u2.d": {
-    en: "A daily review with Jarvis, so every session ends with a verdict.",
-    fr: "Une revue quotidienne avec Jarvis, pour que chaque séance se termine par un verdict.",
+    en: "Keeping it is a discipline problem, not a strategy problem. The Edge Score moves before the balance does.",
+    fr: "Le garder est un problème de discipline, pas de stratégie. L'Edge Score bouge avant le solde.",
   },
-  "uses.u3.t": { en: "ICT traders", fr: "Traders ICT" },
+  "uses.u3.t": { en: "Serious retail", fr: "Retail sérieux" },
   "uses.u3.d": {
-    en: "Setup, confluences and the patterns you replay every day — tracked as data.",
-    fr: "Setup, confluences et les patterns que tu rejoues chaque jour — suivis en données.",
+    en: "Futures, forex, indices — several trades a week. Enough data for the patterns to surface.",
+    fr: "Futures, forex, indices — plusieurs trades par semaine. Assez de données pour que les schémas sortent.",
   },
 
   /* excel / notion */
@@ -358,8 +374,8 @@ const M: Record<string, Msg> = {
     fr: "Les tableurs t'ont donné la liberté.",
   },
   "alt.title.b": {
-    en: "They also gave you a full-time job.",
-    fr: "Ils t'ont aussi donné un travail à temps plein.",
+    en: "They never once told you to stop.",
+    fr: "Ils ne t'ont jamais dit d'arrêter.",
   },
   "alt.sub": {
     en: "The short version of it.",
@@ -382,25 +398,24 @@ const M: Record<string, Msg> = {
     en: "Equity curve & drawdown out of the box",
     fr: "Courbe d'equity & drawdown prêts à l'emploi",
   },
-  "alt.r3": { en: "Recurring-mistake analysis", fr: "Analyse des erreurs récurrentes" },
-  "alt.r4": {
-    en: "Jarvis, your AI coach, on your data",
-    fr: "Jarvis, ton coach IA, sur tes données",
+  "alt.r3": {
+    en: "Your own rules checked on every trade",
+    fr: "Tes propres règles vérifiées à chaque trade",
   },
+  "alt.r4": { en: "Recurring mistakes, priced", fr: "Erreurs récurrentes, chiffrées" },
   "alt.r5": {
-    en: "R-multiples, expectancy, seasonality",
-    fr: "R-multiples, expectancy, saisonnalité",
+    en: "Jarvis, grounded in your own history",
+    fr: "Jarvis, ancré dans ton propre historique",
   },
   "alt.r6": { en: "Your data, exportable anytime", fr: "Tes données, exportables à tout moment" },
 
   /* cta final */
-  "cta.title.a": {
-    en: "Your trades already contain the data.",
-    fr: "Tes trades contiennent déjà les données.",
-  },
+  // Le CTA final joue le seul moment que le produit existe pour tenir : celui
+  // d'APRÈS la perte. C'est la promesse du héros, refermée.
+  "cta.title.a": { en: "Your next loss is coming.", fr: "Ta prochaine perte arrive." },
   "cta.title.b": {
-    en: "TradeVault helps you understand it.",
-    fr: "TradeVault t'aide à les comprendre.",
+    en: "Decide now what you'll do after it.",
+    fr: "Décide maintenant ce que tu feras après.",
   },
   "cta.buttonShort": { en: "Start for free", fr: "Commencer gratuitement" },
 
@@ -417,19 +432,47 @@ const M: Record<string, Msg> = {
     fr: "Le rapport mensuel : la performance détaillée mois par mois.",
   },
   "shot.reports.cap": { en: "Monthly reports", fr: "Les rapports mensuels" },
+  "shot.edge.alt": {
+    en: "The Edge Score dial on the dashboard, with the four behaviour components below it.",
+    fr: "Le cadran de l'Edge Score sur le tableau de bord, avec ses quatre composantes de comportement.",
+  },
+  "shot.edge.cap": { en: "The Edge Score", fr: "L'Edge Score" },
 
   /* hero product visual */
+  // L'illustration du héros mène désormais avec ce que le tableau de bord
+  // montre EN PREMIER dans le produit — l'Edge Score et la règle du jour —
+  // et non avec une courbe qui monte. Une courbe qui monte est une promesse de
+  // gain ; l'Edge Score est une promesse de discipline, et c'est celle-là qu'on
+  // tient. La mention « illustration » est obligatoire tant que la vraie
+  // capture n'est pas déposée : un visiteur ne distingue pas un dessin soigné
+  // d'une capture.
+  "hero.illustration": {
+    en: "Illustration — not a client result",
+    fr: "Illustration — pas un résultat client",
+  },
+  "hero.edge": { en: "Edge Score", fr: "Edge Score" },
+  "hero.edge.sub": { en: "Behaviour, not P&L", fr: "Le comportement, pas le P&L" },
+  "hero.rule": { en: "Today's rule", fr: "Ta règle du jour" },
+  "hero.rule.d": {
+    en: "Two trades max. Stop after one loss.",
+    fr: "Deux trades max. Stop après une perte.",
+  },
   "hero.eq": { en: "Equity curve", fr: "Courbe de capital" },
   "hero.winrate": { en: "Win rate", fr: "Réussite" },
   "hero.pf": { en: "Profit Factor", fr: "Profit Factor" },
   "hero.sharpe": { en: "Sharpe", fr: "Sharpe" },
   "hero.coach": { en: "AI Coach", fr: "Coach IA" },
-  "hero.coach.tip": { en: "You overtrade after a loss.", fr: "Tu surtrades après une perte." },
-  "hero.coach.action": { en: "Cap it at 3 setups tomorrow.", fr: "Limite à 3 setups demain." },
+  "hero.coach.tip": {
+    en: "You size up after every loss.",
+    fr: "Tu montes en taille après chaque perte.",
+  },
+  "hero.coach.action": { en: "Fixed size tomorrow.", fr: "Taille fixe demain." },
   "hero.pattern": { en: "Pattern detected", fr: "Pattern détecté" },
+  // Le pattern affiché n'est PLUS un taux de réussite flatteur : c'est une
+  // fuite. C'est ce que le produit sait dire et que les journaux ne disent pas.
   "hero.pattern.tip": {
-    en: "Your VWAP setups: 71% win rate.",
-    fr: "Tes setups VWAP : 71% de réussite.",
+    en: "Risk +80% on the trade after a loss.",
+    fr: "Risque +80 % sur le trade qui suit une perte.",
   },
 
   /* platforms — les VRAIES portes d'entrée des trades (aucune prétention de
@@ -445,55 +488,188 @@ const M: Record<string, Msg> = {
   "platforms.i4": { en: "Demo trades", fr: "Trades de démo" },
 
   /* problem */
+  // ── LE PROBLÈME ─────────────────────────────────────────────────────────
+  //
+  // Les trois symptômes ne sont plus des généralités sur « l'émotion » : ce
+  // sont les trois comportements que le moteur déterministe sait RÉELLEMENT
+  // détecter et chiffrer (`computeBehaviorSignals`, flags `revenge_window`,
+  // `oversized_risk`, `overtrading_day`). Une section problème dont le produit
+  // ne sait pas mesurer les symptômes ne vend rien.
   "problem.tag": { en: "The real problem", fr: "Le vrai problème" },
-  "problem.title.a": { en: "It's not your strategy", fr: "Ce n'est pas ta stratégie" },
-  "problem.title.b": { en: "that makes you lose.", fr: "qui te fait perdre." },
+  "problem.title.a": { en: "It's not your setup", fr: "Ce n'est pas ton setup" },
+  "problem.title.b": { en: "that blows the account.", fr: "qui fait sauter le compte." },
   "problem.sub": {
-    en: "It's the lack of memory and feedback. Three symptoms you know:",
-    fr: "C'est l'absence de mémoire et de feedback. Trois symptômes que tu connais :",
+    en: "It's the twenty minutes after a loss. Three symptoms you already recognise:",
+    fr: "Ce sont les vingt minutes après une perte. Trois symptômes que tu reconnais déjà :",
   },
-  "problem.p1.t": { en: "You repeat the same mistakes", fr: "Tu répètes les mêmes erreurs" },
+  "problem.p1.t": { en: "You size up after a loss", fr: "Tu montes en taille après une perte" },
   "problem.p1.d": {
-    en: "Without structured memory, the same mistake comes back — and costs money.",
-    fr: "Sans mémoire structurée, la même erreur revient — et coûte cher.",
+    en: "The plan said 1%. The next trade went in at 1.8%. Nobody ever tells you, so it happens again.",
+    fr: "Le plan disait 1 %. Le trade suivant est parti à 1,8 %. Personne ne te le dit, donc ça recommence.",
   },
-  "problem.p2.t": { en: "You trade on emotion", fr: "Tu trades sous émotion" },
+  "problem.p2.t": {
+    en: "You take trades your plan never allowed",
+    fr: "Tu prends des trades que ton plan n'autorise pas",
+  },
   "problem.p2.d": {
-    en: "FOMO, revenge trading, feel-based sizing. Emotion kills more accounts than bad setups.",
-    fr: "FOMO, revenge trading, sizing au feeling. L'émotion détruit plus de comptes que les mauvais setups.",
+    en: "FOMO, boredom, the need to win it back. The setup was on no list — and there was nothing to stop you.",
+    fr: "FOMO, ennui, besoin de se refaire. Le setup n'était sur aucune liste — et rien ne t'a arrêté.",
   },
-  "problem.p3.t": { en: "You don't know why you lose", fr: "Tu ne sais pas pourquoi tu perds" },
+  "problem.p3.t": { en: "You have no idea what it costs", fr: "Tu ignores ce que ça te coûte" },
   "problem.p3.d": {
-    en: "No data, no diagnosis. You change strategy at random.",
-    fr: "Pas de data, pas de diagnostic. Tu changes de stratégie au hasard.",
+    en: "The account bleeds, but no number ever names the habit responsible. So you change strategy instead.",
+    fr: "Le compte saigne, mais aucun chiffre ne nomme l'habitude responsable. Alors tu changes de stratégie.",
   },
 
   /* journey */
-  "journey.tag": { en: "The journey", fr: "Le parcours" },
-  "journey.title.a": { en: "From raw trades to", fr: "De tes trades bruts à de" },
-  "journey.title.b": { en: "better decisions.", fr: "meilleures décisions." },
-  "journey.sub": {
-    en: "TradeVault turns your history into actionable intelligence — not just numbers.",
-    fr: "TradeVault transforme ton historique en intelligence actionnable — pas seulement des chiffres.",
+  // ── LA MÉCANIQUE ────────────────────────────────────────────────────────
+  //
+  // Les quatre temps ne décrivent plus un pipeline de données
+  // (trades → data → patterns → insights), qui ne dit rien au trader : ils
+  // décrivent SA journée. C'est la boucle du produit telle que la navigation
+  // l'organise déjà (Préparation → Journal → Analyse → Jarvis), et c'est ce qui
+  // rend la discipline crédible : elle se tient à des moments, pas en général.
+  "journey.tag": { en: "The loop", fr: "La boucle" },
+  "journey.title.a": {
+    en: "Discipline isn't a promise.",
+    fr: "La discipline n'est pas une promesse.",
   },
-  "journey.s1.t": { en: "Trades", fr: "Trades" },
-  "journey.s1.d": { en: "You log in 45s", fr: "Tu journalises en 45 s" },
-  "journey.s2.t": { en: "Data", fr: "Data" },
-  "journey.s2.d": { en: "20+ metrics computed", fr: "20+ métriques calculées" },
-  "journey.s3.t": { en: "Patterns", fr: "Patterns" },
-  "journey.s3.d": { en: "Recurring patterns detected", fr: "Schémas récurrents détectés" },
-  "journey.s4.t": { en: "Insights", fr: "Insights" },
-  "journey.s4.d": { en: "The coach names your biases", fr: "Le coach nomme tes biais" },
-  "journey.s5.t": { en: "Decisions", fr: "Décisions" },
-  "journey.s5.d": { en: "You fix, you improve", fr: "Tu corriges, tu progresses" },
+  "journey.title.b": { en: "It's a loop.", fr: "C'est une boucle." },
+  "journey.sub": {
+    en: "Four moments, every trading day. TradeVault holds all four — most journals only show up for the third.",
+    fr: "Quatre moments, chaque jour de marché. TradeVault tient les quatre — la plupart des journaux n'arrivent qu'au troisième.",
+  },
+  "journey.s1.t": { en: "Before", fr: "Avant" },
+  "journey.s1.d": {
+    en: "Pre-market checklist, five steps, today's rule in front of you",
+    fr: "Checklist pré-market en 5 étapes, ta règle du jour sous les yeux",
+  },
+  "journey.s2.t": { en: "During", fr: "Pendant" },
+  "journey.s2.d": {
+    en: "A trade logged in 45 seconds, your own rules checked on each one",
+    fr: "Un trade noté en 45 secondes, tes règles vérifiées sur chacun",
+  },
+  "journey.s3.t": { en: "After", fr: "Après" },
+  "journey.s3.d": {
+    en: "The engine prices the gap between your plan and what you did",
+    fr: "Le moteur chiffre l'écart entre ton plan et ce que tu as fait",
+  },
+  "journey.s4.t": { en: "Tomorrow", fr: "Demain" },
+  "journey.s4.d": {
+    en: "One priority — not a wall of statistics",
+    fr: "Une seule priorité — pas un mur de statistiques",
+  },
+
+  /* ── CLAIM → EVIDENCE ─────────────────────────────────────────────────
+   *
+   * La section qui n'existait pas, et qui porte le seul argument qu'aucun
+   * concurrent ne peut reprendre sans refaire son architecture : Jarvis reçoit
+   * des statistiques PRÉCALCULÉES par des moteurs purs et n'a pas le droit de
+   * produire un chiffre qu'il n'a pas reçu (règle `ANTI_HALLUCINATION`,
+   * `docs/product/JARVIS.md` §5).
+   *
+   * En 2026, « IA » sur une page de vente est un signal de bruit. La preuve
+   * qu'on ne raconte pas d'histoires vaut plus que l'annonce qu'on a une IA. */
+  "evidence.title.a": { en: "A coach that isn't allowed", fr: "Un coach qui n'a pas le droit" },
+  "evidence.title.b": { en: "to make things up.", fr: "d'inventer." },
+  "evidence.sub": {
+    en: "Every sentence Jarvis writes carries its numbers, its period and its sample size. The claim, then the evidence — and a link to the trades it read.",
+    fr: "Chaque phrase de Jarvis porte ses chiffres, sa période et la taille de son échantillon. L'affirmation, puis la preuve — et un lien vers les trades qu'il a lus.",
+  },
+  "evidence.claim.l": { en: "The claim", fr: "L'affirmation" },
+  "evidence.claim": {
+    en: "Your risk drifts up after a loss.",
+    fr: "Ton risque dérive à la hausse après une perte.",
+  },
+  "evidence.proof.l": { en: "The evidence", fr: "La preuve" },
+  "evidence.r1.l": { en: "Risk planned", fr: "Risque prévu" },
+  "evidence.r2.l": { en: "Risk taken after a loss", fr: "Risque pris après une perte" },
+  "evidence.r3.l": { en: "Sample", fr: "Échantillon" },
+  "evidence.r3.v": { en: "12 trades", fr: "12 trades" },
+  "evidence.r4.l": { en: "Period", fr: "Période" },
+  "evidence.r4.v": { en: "Last 30 days", fr: "30 derniers jours" },
+  "evidence.link": { en: "See the 12 trades", fr: "Voir les 12 trades" },
+  "evidence.b1": {
+    en: "No number Jarvis wasn't given",
+    fr: "Aucun chiffre que Jarvis n'a pas reçu",
+  },
+  "evidence.b2": { en: "No market prediction, ever", fr: "Aucune prédiction de marché, jamais" },
+  "evidence.b3": {
+    en: "No conclusion on a thin sample — it says so instead",
+    fr: "Aucune conclusion sur un échantillon faible — il le dit à la place",
+  },
+  "evidence.guard": {
+    en: "Only 4 trades this month. Not enough to conclude — I'll wait.",
+    fr: "Seulement 4 trades ce mois-ci. Pas assez pour conclure — j'attends.",
+  },
+  "evidence.guard.l": { en: "Statistical safety", fr: "Sécurité statistique" },
+
+  /* ── EDGE SCORE ────────────────────────────────────────────────────────
+   *
+   * Le différenciateur le plus court à expliquer et le plus difficile à
+   * copier : un score de comportement dont le P&L est VOLONTAIREMENT absent
+   * (`app/utils/edgeScore.ts`). Il dit la philosophie du produit — la
+   * discipline avant le profit — en un seul chiffre. */
+  "edge.title.a": { en: "A score that doesn't look", fr: "Un score qui ne regarde pas" },
+  "edge.title.b": { en: "at your P&L.", fr: "ton P&L." },
+  "edge.sub": {
+    en: "The Edge Score rates behaviour, not results: plan followed, risk held, clean days, routine. A green week you got by luck scores badly. That's the whole point.",
+    fr: "L'Edge Score note le comportement, pas le résultat : plan respecté, risque tenu, jours propres, routine. Une semaine verte obtenue par chance note mal. C'est tout l'intérêt.",
+  },
+  "edge.c1": { en: "Plan followed", fr: "Plan respecté" },
+  "edge.c2": { en: "Risk held", fr: "Risque tenu" },
+  "edge.c3": { en: "Clean days", fr: "Jours propres" },
+  "edge.c4": { en: "Routine", fr: "Routine" },
+  "edge.excluded": { en: "P&L — deliberately excluded", fr: "P&L — volontairement exclu" },
+  "edge.note": {
+    en: "Computed over your last 10 traded days. Any component it can't measure is dropped and the weights re-normalised — never guessed.",
+    fr: "Calculé sur tes 10 derniers jours tradés. Toute composante non mesurable est retirée et les poids renormalisés — jamais devinés.",
+  },
+  "edge.why": {
+    en: "Why it matters in a challenge",
+    fr: "Pourquoi ça compte en challenge",
+  },
+  "edge.why.d": {
+    en: "A challenge is lost on rules, not on setups. The score moves the day before the account does.",
+    fr: "Un challenge se perd sur des règles, pas sur des setups. Le score bouge la veille du compte.",
+  },
+
+  /* ── ANCRAGE DE PRIX ───────────────────────────────────────────────────
+   *
+   * On ne se compare pas aux journaux à 20–30 $/mois : c'est le marché qu'on
+   * refuse. On se compare au coût que la cible PAIE DÉJÀ — le challenge qu'elle
+   * repasse (`docs/POSITIONNEMENT.md` §5). Le prix affiché vient du catalogue,
+   * jamais d'une constante recopiée ici. */
+  "anchor.title.a": { en: "Compare us to the right thing.", fr: "Compare-nous à la bonne chose." },
+  "anchor.title.b": { en: "Not to a cheaper journal.", fr: "Pas à un journal moins cher." },
+  "anchor.sub": {
+    en: "A prop firm challenge is paid again on every reset. Most resets are not a strategy failure — they're one rule broken after a loss.",
+    fr: "Un challenge prop firm se repaie à chaque reset. La plupart des resets ne sont pas un échec de stratégie — c'est une règle cassée après une perte.",
+  },
+  "anchor.a.l": { en: "One challenge reset", fr: "Un reset de challenge" },
+  "anchor.a.v": { en: "$200–600", fr: "200–600 $" },
+  "anchor.a.d": {
+    en: "Paid again, every time, market price.",
+    fr: "Repayé à chaque fois, prix du marché.",
+  },
+  "anchor.b.l": { en: "TradeVault Pro", fr: "TradeVault Pro" },
+  "anchor.b.d": {
+    en: "Everything unlocked. Cancel in one click.",
+    fr: "Tout débloqué. Annulation en un clic.",
+  },
+  "anchor.b.per": { en: "/ month", fr: "/ mois" },
+  "anchor.punch": {
+    en: "One reset avoided pays for years.",
+    fr: "Un reset évité paie des années.",
+  },
 
   /* ai */
   "ai.tag": { en: "The solution", fr: "La solution" },
   "ai.title.a": { en: "An AI coach who knows", fr: "Un coach IA qui connaît" },
   "ai.title.b": { en: "every one of your trades.", fr: "chacun de tes trades." },
   "ai.sub": {
-    en: "It reads your real history, spots what costs you money and tells you exactly what to fix.",
-    fr: "Il lit ton historique réel, détecte ce qui te coûte et te dit exactement quoi corriger.",
+    en: "He reads your real history, names the habit costing you the most, and gives you one thing to fix — not a report to read.",
+    fr: "Il lit ton historique réel, nomme l'habitude qui te coûte le plus, et te donne une seule chose à corriger — pas un rapport à lire.",
   },
   "ai.head.a": { en: "A mentor who knows", fr: "Un mentor qui connaît" },
   "ai.head.b": { en: "every one of your trades.", fr: "chacun de tes trades." },
@@ -542,12 +718,12 @@ const M: Record<string, Msg> = {
 
   /* features */
   "features.tag": { en: "Features", fr: "Fonctionnalités" },
-  "features.title.a": { en: "Everything to", fr: "Tout pour" },
-  "features.title.b": { en: "improve.", fr: "progresser." },
-  "features.title.c": { en: "Nothing useless.", fr: "Rien d'inutile." },
+  "features.title.a": { en: "Everything that serves", fr: "Tout ce qui sert" },
+  "features.title.b": { en: "discipline.", fr: "la discipline." },
+  "features.title.c": { en: "Nothing else.", fr: "Rien d'autre." },
   "features.sub": {
-    en: "Each tool serves one thing: better decisions, trade after trade.",
-    fr: "Chaque outil sert une seule chose : de meilleures décisions, trade après trade.",
+    en: "Each tool answers one question: what am I about to do, and should I?",
+    fr: "Chaque outil répond à une seule question : qu'est-ce que je m'apprête à faire, et est-ce que je devrais ?",
   },
   "features.cta": { en: "Create my free account", fr: "Créer mon compte gratuit" },
   "features.cta.sub": {
@@ -599,8 +775,8 @@ const M: Record<string, Msg> = {
   "proof.title.a": { en: "Built by a trader,", fr: "Conçu par un trader," },
   "proof.title.b": { en: "for traders.", fr: "pour les traders." },
   "proof.body": {
-    en: "TradeVault isn't another spreadsheet. It's the tool I wanted when I kept repeating mistakes without seeing them.",
-    fr: "TradeVault n'est pas un tableur de plus. C'est l'outil que je voulais avoir quand je répétais les mêmes erreurs sans les voir.",
+    en: "TradeVault isn't another spreadsheet. It's the tool I wanted the year I kept breaking the same rule and calling it bad luck.",
+    fr: "TradeVault n'est pas un tableur de plus. C'est l'outil que je voulais l'année où je cassais la même règle en appelant ça de la malchance.",
   },
   "proof.f1.v": { en: "20+", fr: "20+" },
   "proof.f1.l": { en: "metrics per trade", fr: "métriques calculées sur chaque trade" },
@@ -609,8 +785,8 @@ const M: Record<string, Msg> = {
   "proof.f3.v": { en: "24/7", fr: "24/7" },
   "proof.f3.l": { en: "AI coach available", fr: "coach IA disponible" },
   "proof.quote": {
-    en: "I built TradeVault because no journal told me why I was losing. It doesn't promise gains: it shows you what your data says, and lets you decide.",
-    fr: "J'ai construit TradeVault parce qu'aucun journal ne me disait pourquoi je perdais. Il ne te promet pas de gains : il te montre ce que tes données disent, et te laisse décider.",
+    en: "I built TradeVault because no journal ever told me why I was losing. It doesn't promise gains — it shows what your data says, names the habit behind it, and leaves the decision to you.",
+    fr: "J'ai construit TradeVault parce qu'aucun journal ne m'a jamais dit pourquoi je perdais. Il ne promet pas de gains — il montre ce que tes données disent, nomme l'habitude derrière, et te laisse décider.",
   },
   "proof.author": { en: "TradeVault's creator", fr: "Le créateur de TradeVault" },
   "proof.author.sub": { en: "Trader, and first user", fr: "Trader, et premier utilisateur" },
@@ -648,12 +824,12 @@ const M: Record<string, Msg> = {
   /* pricing */
   "pricing.tag": { en: "Pricing", fr: "Tarifs" },
   "pricing.title": {
-    en: "An investment that pays for itself in one trade",
-    fr: "Un investissement qui se rembourse en un trade",
+    en: "One broken rule costs more than a year of Pro",
+    fr: "Une règle cassée coûte plus qu'une année de Pro",
   },
   "pricing.sub": {
-    en: "Start free. Go Premium when you're ready.",
-    fr: "Commence gratuitement. Passe Premium quand tu es prêt.",
+    en: "Start free, with no time limit. Go Pro when the free plan stops being enough.",
+    fr: "Commence gratuitement, sans limite de temps. Passe Pro quand le gratuit ne suffit plus.",
   },
   "pricing.save": {
     // Conservé pour d'éventuels usages hors grille. Aucun montant en dur : le
@@ -764,38 +940,65 @@ const M: Record<string, Msg> = {
 
   /* faq */
   "faq.tag": { en: "FAQ", fr: "FAQ" },
+  // ── LA FAQ RÉPOND AUX OBJECTIONS, DANS L'ORDRE OÙ ELLES VIENNENT ────────
+  //
+  // Elle en couvrait quatre et laissait passer les deux qui bloquent le plus :
+  // « c'est encore un journal ? » et « est-ce que ça prédit le marché ? ». La
+  // seconde est la plus importante de la page : un visiteur qui croit acheter
+  // des signaux sera déçu, et un visiteur qui craint d'acheter des signaux part.
+  // Répondre non, franchement, qualifie dans les deux sens.
+  //
+  // Le balisage `FAQPage` est construit à partir du MÊME tableau que
+  // l'accordéon rendu (`Landing.tsx`) : ajouter une entrée ici la publie aussi
+  // en données structurées, sans recopie possible.
   "faq.title": { en: "Everything you need to know", fr: "Tout ce que tu dois savoir" },
   "faq.q1": {
-    en: "How is it better than a simple journal?",
-    fr: "En quoi c'est mieux qu'un simple journal ?",
+    en: "Is this just another trading journal?",
+    fr: "C'est encore un journal de trading ?",
   },
   "faq.a1": {
-    en: "A journal records. TradeVault understands: it analyzes your data, spots your patterns and tells you what to fix.",
-    fr: "Un journal enregistre. TradeVault comprend : il analyse tes données, détecte tes schémas et te dit quoi corriger.",
+    en: "A journal records. TradeVault diagnoses: it checks your own rules on every trade, prices your recurring mistakes, scores your discipline out of 100 and gives you one thing to fix.",
+    fr: "Un journal enregistre. TradeVault diagnostique : il vérifie tes propres règles à chaque trade, chiffre tes erreurs récurrentes, note ta discipline sur 100 et te donne une seule chose à corriger.",
   },
   "faq.q2": {
+    en: "Does it predict the market or give signals?",
+    fr: "Est-ce que ça prédit le marché ou donne des signaux ?",
+  },
+  "faq.a2": {
+    en: "No, and it never will. Jarvis analyses your own past and nothing else: no forecast, no financial advice, no orders, and no write access to your broker. TradeVault reads a file, never your account.",
+    fr: "Non, et ça n'arrivera pas. Jarvis analyse ton passé et rien d'autre : aucune prévision, aucun conseil financier, aucun ordre, aucun accès en écriture à ton courtier. TradeVault lit un fichier, jamais ton compte.",
+  },
+  "faq.q3": {
+    en: "I'm in a prop firm challenge. What does it actually do for me?",
+    fr: "Je suis en challenge prop firm. Concrètement, ça me sert à quoi ?",
+  },
+  "faq.a3": {
+    en: "It watches the behaviours that end challenges: size drift after a loss, over-traded days, off-plan entries. You get what each one costs you, a discipline score out of 100, and one rule for the next session.",
+    fr: "Il surveille les comportements qui font échouer un challenge : dérive de taille après une perte, journées sur-tradées, entrées hors plan. Tu obtiens le coût de chacun, un score de discipline sur 100, et une règle pour la séance suivante.",
+  },
+  "faq.q4": {
     en: "Is the free plan really free?",
     fr: "L'offre gratuite est-elle vraiment gratuite ?",
   },
-  "faq.a2": {
+  "faq.a4": {
     en: "Yes — no time limit, no credit card. Your journal, dashboard, calendar, checklist and plan stay free for good. Paid plans add the analysis tools.",
     fr: "Oui — sans limite de temps ni carte bancaire. Ton journal, ton tableau de bord, ton calendrier, ta checklist et ton plan restent gratuits pour toujours. Les offres payantes ajoutent les outils d'analyse.",
   },
-  "faq.q3": {
+  "faq.q5": {
     en: "Is my trading data secure?",
     fr: "Mes données de trading sont-elles sécurisées ?",
   },
-  "faq.a3": {
-    en: "Encrypted in transit and at rest. Stripe payments. We never touch your broker account.",
-    fr: "Chiffrées en transit et au repos. Paiements Stripe. On ne touche jamais à ton compte de courtage.",
+  "faq.a5": {
+    en: "Encrypted in transit and at rest. Stripe payments. We never touch your broker account, and your full history is exportable at any time.",
+    fr: "Chiffrées en transit et au repos. Paiements Stripe. On ne touche jamais à ton compte de courtage, et ton historique complet est exportable à tout moment.",
   },
-  "faq.q4": {
+  "faq.q6": {
     en: "Can I import my existing history?",
     fr: "Puis-je importer mon historique existant ?",
   },
-  "faq.a4": {
-    en: "Yes. Import a CSV from your broker, TradeVault structures it automatically.",
-    fr: "Oui. Importe un CSV depuis ton courtier, TradeVault structure tout automatiquement.",
+  "faq.a6": {
+    en: "Yes. Import a CSV from your broker and TradeVault structures it automatically — or paste, log by hand, or start with demo trades.",
+    fr: "Oui. Importe un CSV depuis ton courtier et TradeVault structure tout automatiquement — ou colle, saisis à la main, ou démarre avec des trades de démo.",
   },
 
   /* final cta */
@@ -832,6 +1035,7 @@ const M: Record<string, Msg> = {
   "footer.f2": { en: "Jarvis — AI coach", fr: "Jarvis — Coach IA" },
   "footer.f3": { en: "Features", fr: "Fonctionnalités" },
   "footer.f4": { en: "Pricing", fr: "Tarifs" },
+  "footer.f5": { en: "Edge Score", fr: "Edge Score" },
   "footer.r1": { en: "Guided demo", fr: "Démo guidée" },
   "footer.r2": { en: "Video demo", fr: "Démo en vidéo" },
   "footer.r3": { en: "FAQ", fr: "FAQ" },

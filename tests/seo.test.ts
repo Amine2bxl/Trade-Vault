@@ -299,9 +299,18 @@ describe("maillage interne", () => {
     const targets = [...landing.matchAll(/\{ k: "footer\.[fr]\d", href: "([^"]+)" \}/g)].map(
       (m) => m[1],
     );
-    expect(targets.length).toBe(8);
+    expect(targets.length).toBe(9);
 
-    const sectionIds = [...landing.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
+    // LES ANCRES NE VIVENT PLUS TOUTES DANS `Landing.tsx`.
+    //
+    // Les sections « preuve », « Edge Score » et « ancrage de prix » sont
+    // montées depuis `landing/Proof.tsx` ; ne lire que `Landing.tsx` ferait
+    // échouer ce test sur des ancres parfaitement valides — et, pire, pousserait
+    // à supprimer le lien plutôt qu'à élargir la recherche. L'intention du
+    // garde-fou est inchangée : tout lien de pied de page désigne quelque chose
+    // qui existe.
+    const sources = landing + stripComments(read("../src/app/pages/landing/Proof.tsx"));
+    const sectionIds = [...sources.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
     const routes = ["/demo", "/demo-site", "/contact", "/privacy", "/terms", "/cgu", "/"];
     for (const href of targets) {
       const ok = href.startsWith("#") ? sectionIds.includes(href.slice(1)) : routes.includes(href);

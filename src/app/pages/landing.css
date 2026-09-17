@@ -110,6 +110,36 @@
   }
 }
 
+/* ── La couture entre deux sections ──
+ *
+ * `section-divider` était posée sur TREIZE sections et définie NULLE PART :
+ * une classe morte, donc treize sections qui se touchaient sans rien pour dire
+ * où l'une finissait. Sur un fond quasi noir, deux blocs de texte séparés par
+ * du vide se lisent comme un seul bloc mal aéré — c'est précisément ce que la
+ * charte règle par un liseré plutôt que par une ombre : « la profondeur vient
+ * de la VALEUR et du LISERÉ ».
+ *
+ * Un trait d'un pixel, qui ne va pas jusqu'aux bords : il s'éteint sur les
+ * côtés, donc il ponctue sans encadrer. Le dégradé n'est pas décoratif — un
+ * trait plein bord à bord aurait donné à la page un air de facture. */
+.section-divider {
+  position: relative;
+}
+.section-divider::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--tv-border-strong) 18%,
+    var(--tv-border-strong) 82%,
+    transparent
+  );
+}
+
 /* ── Accents ── */
 .text-accent {
   color: var(--tv-highlight);
