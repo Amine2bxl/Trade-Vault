@@ -13,6 +13,7 @@ Le nom du fichier, **sans son extension**, est l'identifiant. Formats acceptés 
 | Fichier            | Où il apparaît                       | Écran à capturer                       |
 | ------------------ | ------------------------------------ | -------------------------------------- |
 | `dashboard`        | Héros — la première image de la page | Le tableau de bord, sidebar comprise   |
+| `edge-score`       | Section « Edge Score »               | Le cadran Edge Score et ses composantes |
 | `monthly-reports`  | Section « Analytics »                | Analyse → Rapports mensuels            |
 | `journal`          | Section « Le produit »               | Le journal de trades                   |
 | `analytics`        | Section « Analytics »                | La page Analyses                       |

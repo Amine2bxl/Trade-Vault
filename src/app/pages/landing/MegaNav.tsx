@@ -20,12 +20,12 @@ interface MegaNavProps {
 }
 
 const LINKS: {
-  key: "nav.features" | "nav.problem" | "nav.analytics" | "pricing.tag" | "faq.tag";
+  key: "nav.features" | "nav.problem" | "nav.edge" | "nav.analytics" | "pricing.tag" | "faq.tag";
   id: string;
 }[] = [
-  { key: "nav.features", id: "features" },
   { key: "nav.problem", id: "problem" },
-  { key: "nav.analytics", id: "analytics" },
+  { key: "nav.edge", id: "edge" },
+  { key: "nav.features", id: "features" },
   { key: "pricing.tag", id: "pricing" },
   { key: "faq.tag", id: "faq" },
 ];
@@ -44,10 +44,14 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
     return () => document.removeEventListener("click", onClick);
   }, []);
 
+  // Chaque entrée mène à la section qui parle RÉELLEMENT de son sujet. Trois
+  // des quatre pointaient sur « features » — y compris « Analytics », alors que
+  // la page porte une section analytics entière. Un menu produit qui envoie
+  // trois fois au même endroit n'est pas un menu, c'est un bouton.
   const productItems = [
     { icon: Bot, title: t("nav.p.jarvis"), desc: t("nav.p.jarvis.d"), id: "ai" },
-    { icon: Shield, title: t("nav.p.discipline"), desc: t("nav.p.discipline.d"), id: "features" },
-    { icon: BarChart3, title: t("nav.p.analytics"), desc: t("nav.p.analytics.d"), id: "features" },
+    { icon: Shield, title: t("nav.p.discipline"), desc: t("nav.p.discipline.d"), id: "edge" },
+    { icon: BarChart3, title: t("nav.p.analytics"), desc: t("nav.p.analytics.d"), id: "analytics" },
     { icon: BookOpen, title: t("nav.p.journal"), desc: t("nav.p.journal.d"), id: "features" },
   ];
 
@@ -75,8 +79,10 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
         ref={ref}
         className="mx-auto flex h-[60px] max-w-[1280px] items-center justify-between px-4 md:px-6"
       >
-        {/* Logo */}
-        <a href="#" className="flex items-center gap-2.5 shrink-0">
+        {/* Logo — `/`, pas `#`. Le logo est le lien de retour à l'accueil le plus
+            universellement compris du web ; pointé sur `#`, il ne désignait
+            rien. Le pied de page avait déjà été corrigé, pas la barre. */}
+        <a href="/" className="flex items-center gap-2.5 shrink-0">
           <img
             src={logoSrc}
             alt="TradeVault"
