@@ -17,6 +17,7 @@ import {
   EQUITY_GRID,
   EQUITY_LINE,
   CHART_GREEN,
+  CHART_RED,
   formatAxisDate,
   formatAxisMoney,
   niceEquityScale,
@@ -146,8 +147,11 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* La légende, au-dessus et à gauche — deux pastilles, deux mots. */}
-      <div className="mb-2 flex items-center gap-4 pl-1">
+      {/* LA LÉGENDE EST CENTRÉE, et c'est la règle de la référence.
+          Collée à gauche, elle se lisait comme un titre de carte — or la carte
+          a déjà le sien, juste au-dessus. Centrée, elle devient ce qu'elle est :
+          la clé de lecture du tracé, rattachée au graphe et non à l'en-tête. */}
+      <div className="mb-2 flex items-center justify-center gap-4">
         <span className="flex items-center gap-1.5">
           <span
             className="h-2 w-2 shrink-0 rounded-full"
@@ -278,7 +282,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                     cx={props.cx}
                     cy={props.cy}
                     r={3.5}
-                    fill={below ? "#ef4444" : accent}
+                    fill={below ? CHART_RED : accent}
                     stroke="var(--tv-plate-1)"
                     strokeWidth={1}
                   />
