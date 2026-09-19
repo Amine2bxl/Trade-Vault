@@ -89,6 +89,15 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
      décident ce que la page affirme, et une règle de classement écrite dans du
      JSX ne se teste pas. Voir `tests/mistakePlan.test.ts`. */
   const plan = useMemo(() => buildMistakePlan(trades), [trades]);
+  /* LA PENTE DE CHAQUE ERREUR, semaine par semaine.
+     Elle vient de `computeBehavioral`, déjà calculé au-dessus : la ventilation
+     hebdomadaire y existe pour toutes les erreurs sur un axe unique, et la
+     recalculer ici en produirait une seconde, qui divergerait le jour où l'une
+     des deux changerait de fenêtre. */
+  const semainesDe = useMemo(() => {
+    const parErreur = new Map(b.rows.map((r) => [r.mistake, r.weekly]));
+    return (mistake: string) => parErreur.get(mistake) ?? [];
+  }, [b.rows]);
   const streak = useMemo(() => computeCleanStreak(trades), [trades]);
   const rate = useMemo(() => computeIncidentRate(trades), [trades]);
   /* DEUX LENTILLES DE PLUS, SANS UNE CARTE DE PLUS.
@@ -193,6 +202,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               items={plan.banish}
               vide={t("mistakes.laneEmptyBanish")}
               tipDe={tipDe}
+              semainesDe={semainesDe}
               /* La première consigne de la voie la plus grave est OUVERTE :
                  c'est la seule action qu'on demande maintenant. */
               ouvrirPremier
@@ -204,6 +214,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               items={plan.work}
               vide={t("mistakes.laneEmptyWork")}
               tipDe={tipDe}
+              semainesDe={semainesDe}
               ouvrirPremier={plan.banish.length === 0}
             />
             <Voie
@@ -213,6 +224,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               items={plan.stopped}
               vide={t("mistakes.laneEmptyStopped")}
               tipDe={tipDe}
+              semainesDe={semainesDe}
             />
           </div>
 
@@ -514,6 +526,7 @@ function Voie({
   items,
   vide,
   tipDe,
+  semainesDe,
   ouvrirPremier = false,
 }: {
   ton: keyof typeof TON_VOIE;
@@ -522,6 +535,8 @@ function Voie({
   items: PlanItem[];
   vide: string;
   tipDe: (mistake: string) => string;
+  /** La série hebdomadaire d'une erreur, sur l'axe commun à la page. */
+  semainesDe: (mistake: string) => number[];
   ouvrirPremier?: boolean;
 }) {
   const { Icone, texte, pastille } = TON_VOIE[ton];
@@ -544,6 +559,7 @@ function Voie({
             <ItemPlan
               key={item.mistake}
               item={item}
+              semaines={semainesDe(item.mistake)}
               pastille={pastille}
               tip={tipDe(item.mistake)}
               /* La consigne ne s'affiche pas partout : douze erreurs × deux
@@ -573,14 +589,77 @@ function Voie({
  * chose qu'on ne peut pas changer : il décrit un passé. Il reste lisible dans
  * le journal, où il qualifie des trades.
  */
+/**
+ * LA PENTE — huit semaines, huit barres.
+ *
+ * ── POURQUOI UN DESSIN PLUTÔT QU'UN POURCENTAGE ─────────────────────────────
+ *
+ * « −40 % » est un verdict : on le lit, on le croit ou non, on l'oublie. Une
+ * suite de barres qui descendent est une HISTOIRE, et c'est elle qui donne
+ * envie de tenir la semaine suivante. Cette page est la seule du produit dont
+ * le but est d'encourager : elle doit montrer le chemin parcouru, pas
+ * seulement l'écart entre deux moyennes.
+ *
+ * ── CE QUI EST VOLONTAIRE ───────────────────────────────────────────────────
+ *
+ *  • L'AXE EST PARTAGÉ avec toutes les autres erreurs (voir `axeSemaines` dans
+ *    `behavioral.ts`) : deux pentes côte à côte couvrent les mêmes semaines,
+ *    sinon la comparaison qu'elles invitent à faire serait fausse.
+ *  • UNE SEMAINE SANS ERREUR EST UNE BARRE À ZÉRO, pas une barre absente. Un
+ *    trou se lit comme une donnée manquante ; un socle vide se lit comme une
+ *    semaine réussie — et c'est bien de cela qu'il s'agit.
+ *  • LA COULEUR SUIT LE SENS, pas la gravité : la dernière semaine sous la
+ *    précédente teinte la série en vert. Le rouge reste possible, parce qu'une
+ *    page qui ne sait dire que « bravo » ne se lit plus.
+ *  • AUCUNE ÉCHELLE AFFICHÉE. C'est une forme, pas une mesure ; le compte
+ *    exact vit dans l'infobulle et dans le « n× » juste à côté.
+ */
+function Pente({ semaines, legende }: { semaines: number[]; legende: string }) {
+  // Sous trois semaines, il n'y a pas de pente — il y a deux points. On se tait
+  // plutôt que de dessiner une tendance que la donnée ne porte pas.
+  if (semaines.length < 3) return null;
+  const max = Math.max(...semaines);
+  if (max === 0) return null;
+
+  const dernier = semaines[semaines.length - 1];
+  const avant = semaines[semaines.length - 2];
+  const ton =
+    dernier < avant
+      ? "bg-[var(--tv-chart-green)]/70"
+      : dernier > avant
+        ? "bg-[var(--tv-chart-red)]/60"
+        : "bg-slate-600";
+
+  return (
+    <span
+      className="flex h-4 shrink-0 items-end gap-[2px]"
+      title={`${legende} : ${semaines.join(" · ")}`}
+      aria-label={`${legende} : ${semaines.join(", ")}`}
+    >
+      {semaines.map((n, i) => (
+        <span
+          key={i}
+          className={cn("w-[3px] rounded-[1px]", n === 0 ? "bg-white/[.07]" : ton)}
+          /* Une occurrence ne doit pas rendre une barre invisible : le plancher
+             à 2px dit « il s'est passé quelque chose », la hauteur dit combien. */
+          style={{ height: n === 0 ? 2 : `${Math.max(2, (n / max) * 16)}px` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function ItemPlan({
   item,
+  semaines,
   pastille,
   tip,
   ouvert: ouvertParDefaut,
   consigne,
 }: {
   item: PlanItem;
+  /** Les occurrences semaine par semaine — l'axe est commun à toute la page. */
+  semaines: number[];
   pastille: string;
   tip: string;
   ouvert: boolean;
@@ -600,6 +679,7 @@ function ItemPlan({
         {item.mistake}
       </span>
       <span className="tv-figure shrink-0 text-xs text-slate-500">{compte}×</span>
+      <Pente semaines={semaines} legende={t("mistakes.weeklySlope")} />
       {/* LA TENDANCE — la seule information de cette page qui dise si l'on
           progresse. Elle était calculée pour chaque erreur et affichée pour
           trois. */}

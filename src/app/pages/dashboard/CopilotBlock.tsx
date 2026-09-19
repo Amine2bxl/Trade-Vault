@@ -230,7 +230,7 @@ function CopilotBlock({
         <span>{t("copilot.title")}</span>
       </div>
       {/* Le « en une ligne » : on dit d'abord quoi c'est, avant les chiffres. */}
-      <p className="mb-4 text-[12.5px] leading-relaxed text-slate-400">{t("copilot.intro")}</p>
+      <p className="mb-4 text-[13px] leading-relaxed text-slate-400">{t("copilot.intro")}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-5 md:gap-7 items-center">
         {/* Left — Edge dial + clean-days bar */}
@@ -266,7 +266,7 @@ function CopilotBlock({
           {/* Le « c'est quoi ce chiffre » — c'est ce qui manquait pour lire
               le score comme une information plutôt que comme un jauge. */}
           {hasScore && (
-            <p className="tv-caption mt-1 max-w-[170px] text-center text-[10.5px] leading-relaxed text-slate-600">
+            <p className="tv-caption mt-1 max-w-[170px] text-center text-[11px] leading-relaxed text-slate-600">
               {t("copilot.explain")}
             </p>
           )}

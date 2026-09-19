@@ -82,7 +82,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
             <h2 className="font-display text-sm font-bold tracking-tight text-white">
               {fr ? "Débloque TradeVault" : "Unlock TradeVault"}
             </h2>
-            <p className="mt-0.5 text-[12.5px] text-slate-500">
+            <p className="mt-0.5 text-[13px] text-slate-500">
               {fr
                 ? "Toutes les analyses, tes erreurs chiffrées, Monte-Carlo."
                 : "Full analytics, your mistakes priced, Monte Carlo."}
@@ -145,7 +145,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                 )}
               >
                 {tier === "pro" && (
-                  <span className="absolute right-3 top-3 rounded-full bg-emerald-400 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#041018]">
+                  <span className="absolute right-3 top-3 rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#041018]">
                     {fr ? "Recommandé" : "Recommended"}
                   </span>
                 )}
@@ -170,7 +170,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                   <span className="tv-figure text-3xl text-white">{perMonth(tier)}</span>
                   <span className="text-sm text-slate-400">{fr ? "/mois" : "/mo"}</span>
                 </div>
-                <p className="mt-0.5 text-[11.5px] text-slate-500">
+                <p className="mt-0.5 text-[11px] text-slate-500">
                   {interval === "yearly"
                     ? fr
                       ? `Facturé ${eur(def.yearly)}/an · ${monthsFree(tier)} mois offerts`
@@ -283,7 +283,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
           </div>
         )}
 
-        <p className="mt-3 text-center text-[10.5px] text-slate-600">
+        <p className="mt-3 text-center text-[11px] text-slate-600">
           {fr
             ? "Sans engagement · Annulation en 1 clic · Ton journal reste gratuit"
             : "No commitment · Cancel in one click · Your journal stays free"}

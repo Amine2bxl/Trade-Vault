@@ -238,7 +238,7 @@ function PlanColumn({
 
       <p
         className={cn(
-          "mt-4 text-[13.5px] font-medium leading-5",
+          "mt-4 text-[13px] font-medium leading-5",
           isPro ? "text-white" : "text-slate-300",
         )}
       >
@@ -298,7 +298,7 @@ function PlanColumn({
             <button
               onClick={() => onCrypto(plan)}
               disabled={busy != null}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-[11.5px] font-medium text-slate-500 transition hover:text-slate-300 disabled:opacity-60"
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-[11px] font-medium text-slate-500 transition hover:text-slate-300 disabled:opacity-60"
             >
               <Bitcoin className="h-3 w-3" />
               {fr ? "ou payer en crypto" : "or pay with crypto"}
@@ -334,7 +334,7 @@ function PlanColumn({
                   return (
                     <p
                       key={page}
-                      className="flex items-start gap-2 text-[12.5px] leading-snug text-slate-300"
+                      className="flex items-start gap-2 text-[13px] leading-snug text-slate-300"
                     >
                       <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
                       <span>{v.title[fr ? "fr" : "en"]}</span>

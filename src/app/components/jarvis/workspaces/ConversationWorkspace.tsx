@@ -893,7 +893,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           <div className="mb-2.5 rounded-xl border border-amber-500/25 bg-gradient-to-r from-amber-500/[0.08] to-amber-500/[0.03] px-3.5 py-3 flex items-start gap-2.5">
             <Zap className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[12.5px] font-semibold text-amber-200 leading-snug">
+              <p className="text-[13px] font-semibold text-amber-200 leading-snug">
                 {t("credits.exhausted")}
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">

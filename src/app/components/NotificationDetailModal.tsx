@@ -149,7 +149,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
         {/* Résumé */}
         <div>
           <h3 className="tv-title leading-snug">{n.title}</h3>
-          <p className="text-[13.5px] text-slate-300 leading-relaxed mt-1.5">{n.body}</p>
+          <p className="text-[13px] text-slate-300 leading-relaxed mt-1.5">{n.body}</p>
         </div>
 
         {/* L'essentiel, chiffré */}
@@ -157,7 +157,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] divide-y divide-white/[0.05]">
             {rows.map(([k, v]) => (
               <div key={k} className="flex items-center justify-between px-3.5 py-2">
-                <span className="text-[11.5px] text-slate-500">{k}</span>
+                <span className="text-[11px] text-slate-500">{k}</span>
                 <span className="tv-figure text-[13px] text-white">{v}</span>
               </div>
             ))}
@@ -169,7 +169,7 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
           <Lightbulb className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
           <div>
             <div className="tv-label text-cyan-400/80 mb-0.5">{t("inbox.plan")}</div>
-            <p className="text-[12.5px] text-slate-300 leading-relaxed">{plan}</p>
+            <p className="text-[13px] text-slate-300 leading-relaxed">{plan}</p>
           </div>
         </div>
       </div>

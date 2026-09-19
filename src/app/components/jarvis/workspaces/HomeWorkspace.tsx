@@ -533,7 +533,7 @@ export default function HomeWorkspace({ context }: JarvisWorkspaceProps) {
            pas une carte. */
         <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2">
           <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
-          <p className="text-[12.5px] text-emerald-300">{t("jarvisHome.ruleAdded")}</p>
+          <p className="text-[13px] text-emerald-300">{t("jarvisHome.ruleAdded")}</p>
         </div>
       )}
 

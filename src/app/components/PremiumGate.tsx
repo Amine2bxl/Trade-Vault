@@ -121,7 +121,7 @@ export function PreviewWall({
               <p className="line-clamp-2 text-sm font-bold leading-snug text-white">
                 {benefit ?? (fr ? "Cette page, avec tes trades." : "This page, with your trades.")}
               </p>
-              <p className="mt-1 text-[11.5px] font-medium text-slate-400">
+              <p className="mt-1 text-[11px] font-medium text-slate-400">
                 {tier.name[fr ? "fr" : "en"]} ·{" "}
                 <span className="tv-figure text-white">{perMonth}</span>
                 {fr ? "/mois" : "/month"}
@@ -141,7 +141,7 @@ export function PreviewWall({
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10.5px] text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-slate-500">
             <span className="inline-flex items-center gap-1">
               <Eye className="h-3 w-3" />
               {fr ? "Aperçu — données d'exemple" : "Preview — sample data"}
@@ -183,7 +183,7 @@ export function PageGate({
   // seulement derrière le mur : un abonné qui ouvre Monte-Carlo pour la
   // première fois a le même besoin de comprendre que le visiteur qui hésite.
   const purpose = value ? (
-    <p className="px-4 pt-3 text-[12.5px] leading-snug text-slate-400 md:px-5">
+    <p className="px-4 pt-3 text-[13px] leading-snug text-slate-400 md:px-5">
       <span className="font-semibold text-slate-200">{value.title[fr ? "fr" : "en"]}</span>
       <span className="mx-1.5 text-slate-600">·</span>
       {value.benefit[fr ? "fr" : "en"]}

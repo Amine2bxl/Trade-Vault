@@ -49,16 +49,14 @@ export function TraderProof({ onStart }: { onStart: () => void }) {
           <br />
           {t("proof.title.b")}
         </h2>
-        <p className="mt-4 max-w-[420px] text-[14.5px] leading-7 text-slate-400">
-          {t("proof.body")}
-        </p>
+        <p className="mt-4 max-w-[420px] text-[14px] leading-7 text-slate-400">{t("proof.body")}</p>
         <div className="mt-8 grid grid-cols-3 gap-4">
           {FACTS.map((f) => (
             <div key={f.v}>
               <p className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tabular-nums text-[var(--tv-highlight)]">
                 {f.v}
               </p>
-              <p className="mt-1 text-[11.5px] leading-5 text-slate-500">{t(f.l)}</p>
+              <p className="mt-1 text-[11px] leading-5 text-slate-500">{t(f.l)}</p>
             </div>
           ))}
         </div>
@@ -74,7 +72,7 @@ export function TraderProof({ onStart }: { onStart: () => void }) {
           </div>
           <div>
             <p className="text-[13px] font-bold text-white">{t("proof.author")}</p>
-            <p className="text-[11.5px] text-slate-500">{t("proof.author.sub")}</p>
+            <p className="text-[11px] text-slate-500">{t("proof.author.sub")}</p>
           </div>
         </div>
       </div>
@@ -85,7 +83,7 @@ export function TraderProof({ onStart }: { onStart: () => void }) {
         <p className="mt-2 text-[13px] leading-6 text-slate-400">{t("proof.cta.d")}</p>
         <ul className="mt-5 space-y-2.5">
           {CTA_POINTS.map((point) => (
-            <li key={point} className="flex items-start gap-2 text-[12.5px] text-slate-300">
+            <li key={point} className="flex items-start gap-2 text-[13px] text-slate-300">
               <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
               {t(point)}
             </li>
@@ -114,7 +112,7 @@ export function TrustStrip() {
           <Ico className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
           <div>
             <p className="text-[13px] font-bold text-white">{t(titleKey)}</p>
-            <p className="mt-0.5 text-[11.5px] leading-5 text-slate-500">{t(descKey)}</p>
+            <p className="mt-0.5 text-[11px] leading-5 text-slate-500">{t(descKey)}</p>
           </div>
         </div>
       ))}

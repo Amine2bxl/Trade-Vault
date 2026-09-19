@@ -57,7 +57,7 @@ export default function JarvisSidebar({
         <button
           type="button"
           onClick={onNew}
-          className="flex h-8 w-full items-center gap-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5 text-[12.5px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)] hover:text-white"
+          className="flex h-8 w-full items-center gap-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5 text-[13px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)] hover:text-white"
         >
           <Plus className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{t("jarvisSide.new")}</span>
@@ -91,7 +91,7 @@ export default function JarvisSidebar({
                     }}
                     autoFocus
                     maxLength={64}
-                    className="flex-1 min-w-0 bg-transparent text-[12.5px] text-white focus:outline-none placeholder-slate-600"
+                    className="flex-1 min-w-0 bg-transparent text-[13px] text-white focus:outline-none placeholder-slate-600"
                   />
                   <button
                     onClick={commitRename}
@@ -130,7 +130,7 @@ export default function JarvisSidebar({
                     c.pinned ? "text-cyan-400" : "text-slate-700",
                   )}
                 />
-                <span className="flex-1 min-w-0 text-[12.5px] text-slate-300 truncate">
+                <span className="flex-1 min-w-0 text-[13px] text-slate-300 truncate">
                   {c.title}
                 </span>
                 <button

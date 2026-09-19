@@ -156,7 +156,7 @@ export function PushNotificationSettings() {
               <div className="text-xs font-bold text-white">
                 {lang === "fr" ? "Alertes push — offre Elite" : "Push alerts — Elite plan"}
               </div>
-              <p className="mt-0.5 text-[11.5px] leading-snug text-slate-500">
+              <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
                 {lang === "fr"
                   ? "Les alertes push et les rappels de session sont réservés à l'offre Elite."
                   : "Push alerts and session reminders are reserved for the Elite plan."}

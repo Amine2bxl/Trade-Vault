@@ -194,3 +194,86 @@ describe("categoryOf — un progrès n'est pas un risque", () => {
     expect(categoryOf("risk_max_loss", "success")).toBe("risk");
   });
 });
+
+/**
+ * LES RÈGLES QUI INTERROMPENT NE SE RÉPÈTENT PAS TOUS LES JOURS.
+ *
+ * C'est le défaut que ces tests verrouillent : les deux règles `error`
+ * portaient la date du jour dans leur clé, et le journal de déduplication se
+ * vide à minuit. Une condition qui DURE — trois pertes d'affilée, une erreur
+ * répétée dans les quinze derniers trades — repartait donc à chaque nouvelle
+ * journée, et le trader recevait le même popup à chaque connexion pendant des
+ * semaines, pour un fait qui n'avait pas bougé.
+ *
+ * Deux garanties, et elles sont indissociables : la clé décrit l'ÉVÉNEMENT
+ * (donc elle ne change pas tant que rien ne se produit), et la règle est
+ * marquée `once` (donc son journal survit au changement de jour). L'une sans
+ * l'autre ne suffit pas.
+ */
+describe("ce qui a le droit d'ouvrir un popup", () => {
+  const jourIl_y_a = (n: number) =>
+    new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+
+  const interrompantes = (ctx: RuleContext) =>
+    evaluateNotificationRules(ctx).filter((r) => r.input.severity === "error");
+
+  it("marque `once` toute règle de sévérité error", () => {
+    for (const r of interrompantes(baseContext())) {
+      expect(r.once, `${r.key} interrompt sans être marquée once`).toBe(true);
+    }
+  });
+
+  it("ne date pas la clé du jour — sinon elle repart demain", () => {
+    for (const r of interrompantes(baseContext())) {
+      expect(r.key).not.toContain(new Date().toISOString().slice(0, 10) + ":");
+    }
+  });
+
+  it("garde une clé IDENTIQUE tant que rien de nouveau n'arrive", () => {
+    // Même trader, mêmes trades : la clé ne doit pas bouger, sans quoi le
+    // journal de déduplication ne peut rien retenir.
+    const ctx = baseContext();
+    const a = interrompantes(ctx).map((r) => r.key);
+    const b = interrompantes(ctx).map((r) => r.key);
+    expect(a).toEqual(b);
+    expect(a.length).toBeGreaterThan(0);
+  });
+
+  it("change de clé quand la série s'allonge", () => {
+    const hier = jourIl_y_a(1);
+    const trois = baseContext({
+      trades: [
+        { date: hier, pnl: -10, mistakes: [] },
+        { date: hier, pnl: -20, mistakes: [] },
+        { date: hier, pnl: -30, mistakes: [] },
+      ],
+    });
+    const quatre = baseContext({
+      trades: [
+        { date: jourIl_y_a(0), pnl: -5, mistakes: [] },
+        { date: hier, pnl: -10, mistakes: [] },
+        { date: hier, pnl: -20, mistakes: [] },
+        { date: hier, pnl: -30, mistakes: [] },
+      ],
+    });
+    const cle = (c: RuleContext) =>
+      evaluateNotificationRules(c).find((r) => r.key.startsWith("risk_loss_streak"))?.key;
+    expect(cle(trois)).toBeDefined();
+    expect(cle(quatre)).toBeDefined();
+    expect(cle(trois)).not.toBe(cle(quatre));
+  });
+
+  it("se tait sur un fait trop vieux pour mériter l'écran", () => {
+    // Un compte rouvert après deux semaines n'accueille pas son propriétaire
+    // par une alerte sur des trades qu'il a oubliés.
+    const vieux = jourIl_y_a(20);
+    const ctx = baseContext({
+      trades: [
+        { date: vieux, pnl: -120, mistakes: ["overtrading"] },
+        { date: vieux, pnl: -80, mistakes: ["overtrading"] },
+        { date: vieux, pnl: -55, mistakes: ["overtrading"] },
+      ],
+    });
+    expect(interrompantes(ctx)).toHaveLength(0);
+  });
+});

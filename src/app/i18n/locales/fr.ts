@@ -1039,6 +1039,7 @@ const fr: Dict = {
   "mistakes.sev_high": "Grave",
   "mistakes.sev_medium": "Moyenne",
   "mistakes.sev_low": "Faible",
+  "mistakes.weeklySlope": "Occurrences par semaine (8 dernières)",
   "mistakes.trendWindow": "vs 30 jours précédents",
   "mistakes.adherence": "Tes règles — à quel point tu les tiens",
   "mistakes.adherenceSub":

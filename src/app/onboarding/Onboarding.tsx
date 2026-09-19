@@ -160,10 +160,7 @@ function OptionCard({
         </span>
       )}
       <div
-        className={cn(
-          "text-[13.5px] font-semibold pr-6",
-          selected ? "text-white" : "text-slate-300",
-        )}
+        className={cn("text-[13px] font-semibold pr-6", selected ? "text-white" : "text-slate-300")}
       >
         {label}
       </div>
@@ -455,7 +452,16 @@ export default function Onboarding({
           {/* ── 2 · STYLE ── */}
           {step === "style" && (
             <ScreenShell icon={Compass} title={c.styleTitle} subtitle={c.styleSub}>
-              <div className="grid grid-cols-3 gap-2.5 onb-in">
+              {/* UNE COLONNE SUR TÉLÉPHONE, trois à partir de 640px.
+                  Trois `OptionCard` côte à côte sur un écran de 360px laissent
+                  environ 77px de texte par carte, rembourrage déduit — assez
+                  pour le libellé, pas pour la description qui l'accompagne :
+                  elle partait sur quatre ou cinq lignes, et les trois cartes
+                  prenaient des hauteurs différentes. Empilées, elles se lisent
+                  comme les lignes d'un sélecteur natif, ce qui est exactement
+                  ce qu'elles sont. Les autres grilles de cet écran tiennent en
+                  deux colonnes ; celle-ci est la seule à en demander trois. */}
+              <div className="grid grid-cols-1 gap-2.5 onb-in sm:grid-cols-3">
                 {(
                   [
                     ["scalping", c.sScalper, c.sScalperD],
@@ -740,7 +746,7 @@ export default function Onboarding({
 
               {saveError && (
                 <div className="mb-4 rounded-xl border border-red-500/25 bg-red-500/[0.08] px-3.5 py-3 flex items-center gap-2.5">
-                  <p className="flex-1 text-[12.5px] text-red-300">{t("onb.saveError")}</p>
+                  <p className="flex-1 text-[13px] text-red-300">{t("onb.saveError")}</p>
                   <button
                     onClick={() => setSaveError(false)}
                     className="text-xs font-bold text-red-200 hover:text-white transition-colors"

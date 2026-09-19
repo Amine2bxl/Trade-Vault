@@ -62,7 +62,39 @@ const MIN_SAMPLE = 3;
 export interface CodedRule {
   key: string;
   input: NotificationInput;
+  /**
+   * UNE RÈGLE QUI INTERROMPT NE SE RÉPÈTE PAS TOUS LES JOURS.
+   *
+   * ── LE DÉFAUT QUE CE DRAPEAU CORRIGE ───────────────────────────────────
+   *
+   * Le journal de déduplication est remis à zéro chaque jour, et les clés des
+   * deux règles `error` portaient la DATE (`…:${today}`). Conséquence : une
+   * condition qui DURE — trois pertes d'affilée, une erreur répétée dans les
+   * quinze derniers trades — repartait à chaque nouvelle journée. Le trader
+   * recevait donc le même popup interrompant à chaque connexion, parfois
+   * pendant des semaines, pour un fait qui n'avait pas bougé. Le popup a
+   * cessé de vouloir dire « regarde ça » pour devenir « bonjour ».
+   *
+   * Un popup se mérite : il doit signaler qu'une chose vient d'ARRIVER, pas
+   * qu'une chose reste vraie. Les règles marquées `once` sont donc dédupliquées
+   * sur une clé qui décrit l'ÉVÉNEMENT (sa magnitude, sa date d'occurrence) et
+   * dans un journal qui SURVIT au changement de jour. Tant que rien de nouveau
+   * ne se produit, la clé est identique et rien ne repart ; dès que la série
+   * s'allonge ou que l'erreur est refaite, la clé change et l'alerte revient.
+   */
+  once?: boolean;
 }
+
+/**
+ * Au-delà de ce nombre de jours, un fait ne justifie plus d'interrompre.
+ *
+ * Une série de pertes vieille de trois semaines est de l'histoire : elle a sa
+ * place dans la boîte de réception et dans les statistiques, pas dans un
+ * popup au milieu de l'écran. Sans ce garde-fou, un compte laissé de côté puis
+ * rouvert accueillait son propriétaire par une alerte sur des trades qu'il
+ * avait oubliés.
+ */
+const INTERRUPT_MAX_AGE_DAYS = 3;
 
 function isFr(): boolean {
   if (typeof window === "undefined") return false;
@@ -117,9 +149,13 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
     else break;
     if (streak >= 3) break;
   }
-  if (streak >= 3) {
+  // La série n'interrompt QUE si elle est fraîche, et sa clé porte la date de
+  // la dernière perte : la même série reste silencieuse, une perte de plus la
+  // rallonge et redéclenche, une nouvelle série plus tard redéclenche aussi.
+  if (streak >= 3 && daysAgo(sorted[0].date) <= INTERRUPT_MAX_AGE_DAYS) {
     rules.push({
-      key: `risk_loss_streak:${today}`,
+      once: true,
+      key: `risk_loss_streak:${streak}:${sorted[0].date}`,
       input: jarvis({
         kind: "risk_loss_streak",
         title: fr ? "Série de pertes détectée" : "Losing streak detected",
@@ -190,9 +226,17 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
     .filter(([, n]) => n >= 3)
     .sort((a, b) => b[1] - a[1])
     .map(([name, n]) => ({ name, n }))[0];
-  if (repeated) {
+  // La date de la DERNIÈRE fois où cette erreur a été commise — c'est elle qui
+  // identifie l'événement. Tant que le trader ne la refait pas, la clé ne
+  // bouge pas et le popup reste fermé ; il la refait, la clé change, l'alerte
+  // repart. C'est exactement le moment où elle sert à quelque chose.
+  const derniereOccurrence = repeated
+    ? (sorted.find((t) => t.mistakes.includes(repeated.name))?.date ?? "")
+    : "";
+  if (repeated && derniereOccurrence && daysAgo(derniereOccurrence) <= INTERRUPT_MAX_AGE_DAYS) {
     rules.push({
-      key: `recurring_mistake:${repeated.name}:${today}`,
+      once: true,
+      key: `recurring_mistake:${repeated.name}:${derniereOccurrence}`,
       input: jarvis({
         kind: "recurring_mistake",
         title: fr
@@ -397,8 +441,32 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
 }
 
 const LOG_KEY = "tv.notif.coded";
+/**
+ * Le journal des règles qui INTERROMPENT — celui qui ne se vide pas à minuit.
+ *
+ * Borné : une clé par événement, et seules les plus récentes sont conservées.
+ * Sans plafond, le stockage local d'un trader actif depuis deux ans finirait
+ * par porter des milliers d'entrées mortes.
+ */
+const ONCE_KEY = "tv.notif.once";
+const ONCE_MAX = 200;
 
-/** Le runner déduplique par jour et livre via l'engine (persist → inbox). */
+function lireJournalUnique(): string[] {
+  try {
+    const raw = localStorage.getItem(ONCE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Le runner déduplique et livre via l'engine (persist → inbox).
+ *
+ *  DEUX JOURNAUX, parce qu'il y a deux natures de notification :
+ *   • les ordinaires se rappellent une fois par JOUR — c'est une cadence ;
+ *   • celles qui ouvrent un popup se rappellent une fois par ÉVÉNEMENT, et
+ *     l'événement ne se périme pas à minuit (voir `CodedRule.once`). */
 export async function dispatchCodedNotifications(
   userId: string,
   ctx: RuleContext,
@@ -416,13 +484,15 @@ export async function dispatchCodedNotifications(
   } catch {
     /* best-effort */
   }
+  const once = lireJournalUnique();
 
   let sent = 0;
   for (const rule of candidates) {
-    if (log.keys.includes(rule.key)) continue;
+    const journal = rule.once ? once : log.keys;
+    if (journal.includes(rule.key)) continue;
     try {
       await notify(userId, rule.input);
-      log.keys.push(rule.key);
+      journal.push(rule.key);
       sent += 1;
     } catch (e) {
       console.error("[notifications] coded rule failed", e);
@@ -430,6 +500,7 @@ export async function dispatchCodedNotifications(
   }
   try {
     localStorage.setItem(LOG_KEY, JSON.stringify(log));
+    localStorage.setItem(ONCE_KEY, JSON.stringify(once.slice(-ONCE_MAX)));
   } catch {
     /* best-effort */
   }

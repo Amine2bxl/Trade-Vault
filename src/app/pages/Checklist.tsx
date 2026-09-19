@@ -1630,14 +1630,14 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                         {t("chk.recommended")}
                       </span>
                     </div>
-                    <p className="text-[11.5px] text-slate-400 leading-relaxed mb-2.5">
+                    <p className="text-[11px] text-slate-400 leading-relaxed mb-2.5">
                       {t("chk.recommendedSub")}
                     </p>
                     <ul className="space-y-1 mb-3">
                       {generated.items.slice(0, 4).map((it) => (
                         <li
                           key={it.title}
-                          className="flex items-center gap-1.5 text-[11.5px] text-slate-300"
+                          className="flex items-center gap-1.5 text-[11px] text-slate-300"
                         >
                           <span className="w-1 h-1 rounded-full bg-[var(--tv-accent)] shrink-0" />
                           {it.title}

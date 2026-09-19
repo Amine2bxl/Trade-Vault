@@ -143,7 +143,7 @@ export default function PlanMatrix() {
             </div>
             {rows.map((row) => (
               <div key={row.id} className={cn(GRILLE, "items-center py-1")}>
-                <span className="text-[12.5px] leading-snug text-slate-300">{tr(row.label)}</span>
+                <span className="text-[13px] leading-snug text-slate-300">{tr(row.label)}</span>
                 {row.in.map((has, i) => (
                   <span key={i} className="justify-self-center">
                     {has ? (

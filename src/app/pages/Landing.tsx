@@ -249,16 +249,22 @@ function HeroProductVisual() {
              nulle part ailleurs sur le marché du journal. ── */}
           <div className="lp-card-inset mt-4 px-3.5 py-3">
             <p className="tv-label text-[var(--tv-highlight)]">{t("hero.rule")}</p>
-            <p className="mt-1 text-[12.5px] leading-5 text-slate-200">{t("hero.rule.d")}</p>
+            <p className="mt-1 text-[13px] leading-5 text-slate-200">{t("hero.rule.d")}</p>
           </div>
 
           <p className="tv-label mt-5 text-slate-500">{t("hero.eq")}</p>
           <div className="mt-2 h-24 w-full">
             <svg viewBox="0 0 376 145" className="h-full w-full" preserveAspectRatio="none">
+              {/* LES MÊMES RÉGLAGES QUE LA VRAIE COURBE — `chartTheme.ts`.
+                  Trois paliers de dégradé qui ne s'éteignent pas tout à fait en
+                  bas (la masse fait un volume, pas un voile), un trait fin, et
+                  un zéro en points courts et rapprochés qui se lit comme une
+                  graduation plutôt que comme une suite de tirets. */}
               <defs>
                 <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1">
-                  <stop stopColor="var(--tv-chart-green)" stopOpacity=".22" />
-                  <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
+                  <stop stopColor="var(--tv-chart-green)" stopOpacity=".32" />
+                  <stop offset=".5" stopColor="var(--tv-chart-green)" stopOpacity=".17" />
+                  <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity=".05" />
                 </linearGradient>
               </defs>
               {[34, 74, 114].map((yy) => (
@@ -268,14 +274,15 @@ function HeroProductVisual() {
               <path
                 d="M0 138H376"
                 stroke="var(--tv-chart-red)"
-                strokeWidth="1.5"
-                strokeDasharray="6 5"
+                strokeWidth="1.25"
+                strokeDasharray="2 3.5"
+                vectorEffect="non-scaling-stroke"
               />
               <path
                 d={HERO_D}
                 fill="none"
                 stroke="var(--tv-chart-green)"
-                strokeWidth="2.5"
+                strokeWidth="2.25"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
@@ -311,7 +318,7 @@ function HeroProductVisual() {
                 <Icon n="brain" cls="h-3.5 w-3.5" />
               </div>
               <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
-              <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-emerald-300">
+              <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
               </span>
             </div>
@@ -435,7 +442,7 @@ function CoreValueSection() {
               <span className="journey-num">{s.n}</span>
               <div>
                 <p className="font-display text-[15px] font-bold text-white">{s.t}</p>
-                <p className="mt-1 text-[12.5px] leading-5 text-slate-400">{s.d}</p>
+                <p className="mt-1 text-[13px] leading-5 text-slate-400">{s.d}</p>
               </div>
             </div>
           ))}
@@ -469,7 +476,7 @@ function AnalyticsSection() {
                   <span className="mt-1.5 grid h-2 w-2 shrink-0 place-items-center rounded-full bg-[var(--tv-highlight)]" />
                   <div>
                     <p className="text-sm font-semibold text-white">{c.t}</p>
-                    <p className="mt-0.5 text-[12.5px] leading-5 text-slate-400">{c.d}</p>
+                    <p className="mt-0.5 text-[13px] leading-5 text-slate-400">{c.d}</p>
                   </div>
                 </div>
               ))}
@@ -495,8 +502,9 @@ function AnalyticsSection() {
                     <svg viewBox="0 0 280 100" className="h-full w-full" preserveAspectRatio="none">
                       <defs>
                         <linearGradient id="aa" x1="0" x2="0" y1="0" y2="1">
-                          <stop stopColor="var(--tv-chart-green)" stopOpacity=".2" />
-                          <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity="0" />
+                          <stop stopColor="var(--tv-chart-green)" stopOpacity=".32" />
+                          <stop offset=".5" stopColor="var(--tv-chart-green)" stopOpacity=".17" />
+                          <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity=".05" />
                         </linearGradient>
                       </defs>
                       {[24, 50, 76].map((yy) => (
@@ -506,14 +514,15 @@ function AnalyticsSection() {
                       <path
                         d="M0 96H280"
                         stroke="var(--tv-chart-red)"
-                        strokeWidth="1.5"
-                        strokeDasharray="6 5"
+                        strokeWidth="1.25"
+                        strokeDasharray="2 3.5"
+                        vectorEffect="non-scaling-stroke"
                       />
                       <path
                         d={ANALYTICS_D}
                         fill="none"
                         stroke="var(--tv-chart-green)"
-                        strokeWidth="2.5"
+                        strokeWidth="2.25"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         vectorEffect="non-scaling-stroke"
@@ -666,7 +675,7 @@ function AlternativeSection() {
               <p className="cmp-col cmp-tv">{t("alt.h.tv")}</p>
             </div>
             <div className="cmp-row">
-              <p className="text-[12.5px] text-slate-200">{t("alt.excel.d")}</p>
+              <p className="text-[13px] text-slate-200">{t("alt.excel.d")}</p>
               <p className="cmp-col text-slate-500">—</p>
               <p className="cmp-col text-slate-500">~</p>
               <p className="cmp-col cmp-tv">
@@ -674,7 +683,7 @@ function AlternativeSection() {
               </p>
             </div>
             <div className="cmp-row">
-              <p className="text-[12.5px] text-slate-200">{t("alt.notion.d")}</p>
+              <p className="text-[13px] text-slate-200">{t("alt.notion.d")}</p>
               <p className="cmp-col text-slate-500">~</p>
               <p className="cmp-col text-slate-500">—</p>
               <p className="cmp-col cmp-tv">
