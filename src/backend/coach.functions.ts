@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireProAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
+import { ensureJarvisTools } from "@/backend/ai-tools";
 import { fallbackCoachAnswer } from "@/modules/ai/fallback-coach";
 import { recordAgentRun } from "./telemetry.server";
 import {
@@ -26,6 +27,14 @@ import { AI_LIMITS } from "@/domain/ai-limits";
 const CoachAskShape = z.object({
   question: z.string().min(1).max(AI_LIMITS.question),
   language: z.string().min(2).max(8).optional(),
+  /**
+   * Le sous-compte que le trader regarde. Il ne sert PAS à filtrer le contexte
+   * poussé (le client l'a déjà filtré) : il cloisonne les OUTILS, qui lisent la
+   * base directement. Sans lui, une question posée depuis le compte prop
+   * recevrait des chiffres agrégés sur tous les comptes — vrais, et faux pour
+   * la question.
+   */
+  accountId: z.string().max(64).optional(),
   stats: StatsSchema.optional(),
   trades: TradesSchema.optional(),
   mistakes: z
@@ -194,7 +203,24 @@ export const askCoach = createServerFn({ method: "POST" })
     // from the very same payload — zero cost, same grounding rules, no error
     // bubble in the conversation.
     try {
-      const res = await runCoach(data, { onUsage });
+      /* LES OUTILS — ce qui fait que Jarvis peut répondre à une question dont la
+         réponse n'était pas dans le paquet envoyé.
+
+         Ils ne sont remis au modèle que si l'utilisateur est identifié : un outil
+         sans `userId` n'a aucun journal à lire, et lui en donner un par défaut
+         serait exactement la faille à ne pas ouvrir. Sans identité, on garde le
+         chemin historique — le contexte poussé par le client suffit à répondre.
+
+         COUPE-CIRCUIT : `AI_TOOLS=off` désactive la boucle sans redéploiement de
+         code. Le tool-calling multiplie les allers-retours modèle, donc le coût
+         d'une question ; il faut pouvoir l'éteindre en une variable le jour où la
+         facture le demande. */
+      const outils = userId && process.env.AI_TOOLS !== "off" ? ensureJarvisTools() : [];
+      const res = await runCoach(data, {
+        onUsage,
+        tools: outils,
+        toolContext: userId ? { userId, accountId: data.accountId ?? null } : undefined,
+      });
       const text = res.text?.trim();
       if (text) {
         track("ok");
