@@ -8,7 +8,12 @@
  * and identical whether the underlying model is Gemini, Claude, or an MCP-
  * bridged external tool.
  *
- * FOUNDATION ONLY: contracts + an empty registry. No tool is implemented.
+ * CE MODULE NE CONTIENT QUE LES CONTRATS ET LE REGISTRE — délibérément vide au
+ * chargement. Les outils réels vivent côté serveur (`backend/ai-tools/`), parce
+ * qu'ils lisent la base avec le client de service : les mettre ici les
+ * rendrait importables depuis le navigateur, où ils n'auraient aucune raison
+ * d'exister. Le registre se remplit par un appel explicite, jamais par un effet
+ * d'import.
  */
 
 export type ToolName = string;
@@ -20,6 +25,19 @@ export type ToolInputSchema = Record<string, unknown>;
 export interface ToolContext {
   /** The tool always runs on behalf of exactly one authenticated user. */
   userId: string;
+  /**
+   * Le sous-compte actif du trader, quand il en a plusieurs.
+   *
+   * Il vit dans le CONTEXTE et non dans les arguments d'outil, délibérément :
+   * le modèle ne doit pas pouvoir changer de compte, pas plus qu'il ne peut
+   * changer d'utilisateur. Un outil qui répondrait sur le compte prop alors que
+   * le trader regarde son compte perso citerait des chiffres réels, vrais, et
+   * faux pour lui — la pire sorte d'erreur dans un produit d'analyse.
+   *
+   * `null`/absent = tous les comptes, ce qui est la règle de lecture du
+   * journal côté client (`app/store/trades.ts`).
+   */
+  accountId?: string | null;
   /** Correlates the call to an agent run for telemetry/audit. */
   runId?: string;
 }

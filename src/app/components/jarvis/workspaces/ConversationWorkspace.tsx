@@ -106,7 +106,7 @@ type SimulationSummary = NonNullable<CoachV1Payload["simulation"]>;
 
 export default function ConversationWorkspace({ context, initialPrompt }: JarvisWorkspaceProps) {
   const { t, lang } = useT();
-  const { activeAccount } = useAccounts();
+  const { activeAccount, activeId: activeAccountId } = useAccounts();
   // Contexte d'échelle transmis à Jarvis. `null` — donc bloc absent du prompt —
   // tant que l'historique est à son échelle d'origine.
   const calibration = useMemo(() => {
@@ -601,7 +601,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         incrementAiUsage(userId);
         let res;
         try {
-          res = await askCoach({ data: { question: query, ...payload } });
+          res = await askCoach({
+            data: { question: query, accountId: activeAccountId ?? undefined, ...payload },
+          });
         } catch (firstErr) {
           // Une erreur 4xx (quota, validation, session) ne se résout pas avec un
           // retry — on ne double pas la consommation de quota.
@@ -611,7 +613,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           // (5xx/réseau). 1,5 s s'ajoutait à une attente déjà longue pour un
           // gain de fiabilité nul — 400 ms absorbe un pic réseau tout autant.
           await new Promise((r) => setTimeout(r, 400));
-          res = await askCoach({ data: { question: query, ...payload } });
+          res = await askCoach({
+            data: { question: query, accountId: activeAccountId ?? undefined, ...payload },
+          });
         }
         // Le serveur indique déjà si la réponse vient de l'IA ou du moteur
         // déterministe — on ne le devine pas, on lit `source`.
@@ -691,6 +695,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       rules,
       userId,
       signals,
+      activeAccountId,
     ],
   );
 
