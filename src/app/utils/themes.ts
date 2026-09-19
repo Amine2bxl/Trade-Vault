@@ -180,7 +180,23 @@ export const BUILTIN_THEMES: ThemeDef[] = [
     highlight: "#34d399",
   },
   {
-    /* Gris pur, aucune teinte — l'identité PAR DÉFAUT. Pour qui ne veut
+    /* LUCID — l'identité par défaut du produit.
+       Le vert menthe est l'ACCENT, pas seulement la donnée : bouton, onglet
+       actif, pastille, bouton `+`, anneau de focus. C'est le renversement
+       décrit dans `docs/design/LUCID.md` §2, et la raison pour laquelle
+       l'accent est ici plus CLAIR et plus saturé que `--tv-chart-green` : les
+       deux verts doivent rester distinguables côte à côte, sans quoi le vert
+       ne dit plus ni « gain » ni « action ». */
+    id: "lucid",
+    name: "Lucid",
+    builtin: true,
+    primary: "#22e08a",
+    secondary: "#12b981",
+    highlight: "#5bf0ab",
+    background: "#07080a",
+  },
+  {
+    /* Gris pur, aucune teinte — l'ancienne identité par défaut. Pour qui ne veut
        AUCUNE couleur en dehors du P&L lui-même — la version la plus austère
        du produit. Le P&L ne suit pas l'accent : il reste vert/rouge. */
     id: "graphite",
@@ -238,7 +254,7 @@ export const BUILTIN_THEMES: ThemeDef[] = [
    P&L lui-même (vert = gain, rouge = perte). Parfait pour une interface qui
    doit rester neutre et lisible quelle que soit la couleur qui suit le chiffre.
    L'utilisateur reste libre de choisir Vault / Steel / Amber… dans Réglages. */
-export const DEFAULT_THEME_ID = "graphite";
+export const DEFAULT_THEME_ID = "lucid";
 
 // ---- persistence (localStorage; per device, restored before paint) -----
 

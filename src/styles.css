@@ -351,12 +351,12 @@
    * L'accent n'a plus de « halo » : `--tv-glow-accent` reste défini pour
    * compatibilité, mais vaut `none` (voir le bloc élévation plus bas).
    * ──────────────────────────────────────────────────────────────── */
-  --tv-bg: #07090a;
+  --tv-bg: #07080a;
   /* Le même noir, en triplet : un dégradé qui doit s'ÉTEINDRE dans le fond a
      besoin de la couleur avec alpha 0, et `transparent` vaut du noir
      transparent — ce qui donne un voile gris sur toute couleur de fond qui
      n'est pas noire. */
-  --tv-bg-rgb: 7 9 10;
+  --tv-bg-rgb: 7 8 10;
   --tv-text: #e6e8ea;
   /* Graphite — gris neutre. L'accent du thème par défaut est une encre, pas une
      diode : il ne porte le sens que par la valeur.
@@ -380,16 +380,16 @@
      Vérifié par le calcul sur `computeThemeVars(graphite)`. Si les ancres du
      thème changent, relancer le calcul plutôt que d'ajuster ces nombres à
      l'estime. */
-  --tv-primary-h: 256.8;
-  --tv-primary-c: 0.35;
-  --tv-secondary-h: 257.4;
-  --tv-secondary-c: 0.35;
-  --tv-accent: #94a3b8;
-  --tv-accent-2: #64748b;
-  --tv-highlight: #cbd5e1;
-  --tv-accent-rgb: 148 163 184;
-  --tv-accent-2-rgb: 100 116 139;
-  --tv-highlight-rgb: 203 213 225;
+  --tv-primary-h: 156.4;
+  --tv-primary-c: 1.3;
+  --tv-secondary-h: 162.4;
+  --tv-secondary-c: 1.063;
+  --tv-accent: #22e08a;
+  --tv-accent-2: #12b981;
+  --tv-highlight: #5bf0ab;
+  --tv-accent-rgb: 34 224 138;
+  --tv-accent-2-rgb: 18 185 129;
+  --tv-highlight-rgb: 91 240 171;
 
   /* ── LE VERT DE LA DONNÉE ──
    *
@@ -428,11 +428,11 @@
    * Les valeurs sont écrites en dur, jamais en voiles blancs : un voile
    * translucide sur un fond presque noir vire au gris sale dès la deuxième
    * superposition, et deux cartes côte à côte ne se ressemblent plus. */
-  --tv-plate-0: #0c0e10;
-  --tv-plate-1: #16191c;
-  --tv-plate-1-rgb: 22 25 28;
-  --tv-plate-2: #1d2125;
-  --tv-plate-3: #23282d;
+  --tv-plate-0: #0d0e10;
+  --tv-plate-1: #131416;
+  --tv-plate-1-rgb: 19 20 22;
+  --tv-plate-2: #1a1c1e;
+  --tv-plate-3: #212426;
 
   /* ══════════════════════════════════════════════════════════════════
    * SEMANTIC LAYER — the TradeVault visual language.
@@ -453,7 +453,7 @@
   --tv-surface-1: var(--tv-plate-1);
   --tv-surface-2: var(--tv-plate-2);
   --tv-surface-3: var(--tv-plate-3);
-  --tv-surface-hover: #282d33;
+  --tv-surface-hover: #24272a;
   /* ── LE RAIL ──
    *
    * C'est la seule surface de l'application qui n'est PAS neutre, et c'est
@@ -475,8 +475,8 @@
   /* Borders — a hairline is structure, not decoration. Three weights only.
      Elles remontent (0.06 → 0.08) : sur un fond neutre quasi noir, c'est le
      liseré qui dessine la grille, puisque plus aucune ombre ne le fait. */
-  --tv-border: rgb(255 255 255 / 0.08);
-  --tv-border-strong: rgb(255 255 255 / 0.14);
+  --tv-border: rgb(255 255 255 / 0.05);
+  --tv-border-strong: rgb(255 255 255 / 0.1);
   --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.35);
 
   /* Text — three steps. Anything below `muted` is not readable content.
