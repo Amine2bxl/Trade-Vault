@@ -136,3 +136,41 @@ export function useEconomicCalendar(weekStart: Date): EconomicCalendarState {
     stale: primary.data?.stale ?? false,
   };
 }
+
+/**
+ * Les événements d'UN MOIS — pour le calendrier du tableau de bord.
+ *
+ * Le hook ci-dessus est calé sur la SEMAINE : c'est la maille de la page
+ * « Actualité économique », où l'on lit des horaires. Le calendrier du tableau
+ * de bord, lui, montre un mois d'un coup et ne demande qu'une chose par jour :
+ * y a-t-il eu du lourd ? Appeler le hook hebdomadaire cinq fois pour le
+ * savoir aurait multiplié les requêtes par cinq et forcé un nombre d'appels de
+ * hooks variable — ce que React interdit.
+ *
+ * Pas de repli local ici, à dessein : une case vide dit « rien de prévu », ce
+ * qui est faux si le réseau a échoué. On préfère ne rien afficher du tout, et
+ * `loading` permet à l'appelant de le dire.
+ */
+export function useEconomicMonth(
+  year: number,
+  month: number,
+): {
+  events: CalendarEvent[];
+  loading: boolean;
+} {
+  const from = useMemo(() => new Date(Date.UTC(year, month, 1)), [year, month]);
+  const to = useMemo(() => new Date(Date.UTC(year, month + 1, 1)), [year, month]);
+  const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+
+  const q = useQuery({
+    queryKey: ["economic-calendar-month", key],
+    queryFn: () =>
+      fetchEconomicCalendar({ data: { from: from.toISOString(), to: to.toISOString() } }),
+    // Un mois passé ne bouge plus ; le mois courant se rafraîchit à la demande.
+    staleTime: 15 * MINUTE,
+    placeholderData: (previous) => previous,
+    retry: 1,
+  });
+
+  return { events: q.data?.events ?? [], loading: q.isLoading };
+}

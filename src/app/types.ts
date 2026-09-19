@@ -28,6 +28,7 @@ export const PAGES = [
   "appearance",
   "subscription",
   "montecarlo",
+  "backtest",
 ] as const;
 
 export type Page = (typeof PAGES)[number];
@@ -57,6 +58,9 @@ export const SECTIONS = [
   { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo"] },
   { id: "coach", pages: ["insights"] },
   { id: "strategy", pages: ["tradingplan", "goals"] },
+  // Le terminal de rejeu a SA section : un environnement à part, pas un outil
+  // rangé dans « Analyse ».
+  { id: "backtest", pages: ["backtest"] },
   { id: "settings", pages: ["settings", "profile", "appearance", "subscription"] },
 ] as const satisfies readonly { id: string; pages: readonly Page[] }[];
 
