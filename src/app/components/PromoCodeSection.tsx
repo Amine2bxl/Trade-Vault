@@ -330,7 +330,7 @@ export default function PromoCodeSection() {
                             {r.email}
                           </span>
                           <span
-                            className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase ${
+                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase ${
                               r.kind === "owner"
                                 ? "bg-amber-400/10 text-amber-300"
                                 : "bg-white/[0.05] text-slate-400"

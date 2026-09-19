@@ -1,0 +1,13 @@
+-- ============ VERROUILLAGE DE `enforce_proposal_budget` ============
+--
+-- Même verrouillage que `handle_new_user_billing`
+-- (`20260718150000_lockdown_trigger_functions.sql`), et pour la même raison :
+-- Postgres accorde `EXECUTE` à `public` sur toute fonction nouvellement créée.
+-- Une fonction de TRIGGER en `SECURITY DEFINER` devient donc appelable en RPC
+-- par `anon` et `authenticated` via `/rest/v1/rpc/…` — l'advisor Supabase la
+-- signale (0028/0029), et il a raison : rien ne justifie qu'un client puisse
+-- l'invoquer.
+--
+-- Le trigger continue de fonctionner : il exécute la fonction avec les droits
+-- de son propriétaire, sans passer par les droits d'exécution du rôle appelant.
+revoke all on function public.enforce_proposal_budget() from public, anon, authenticated;

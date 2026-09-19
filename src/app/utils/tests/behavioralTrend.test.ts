@@ -95,3 +95,62 @@ describe("tendance par erreur", () => {
     expect(computeBehavioral([]).rows).toEqual([]);
   });
 });
+
+/**
+ * LA PENTE HEBDOMADAIRE — ce que la page Erreurs dessine sur chaque ligne.
+ *
+ * `trend` rend un verdict (« −40 % ») ; la pente rend une FORME, et c'est elle
+ * qui encourage. Trois invariants, et chacun correspond à une manière précise
+ * de mentir avec un graphique :
+ *
+ *  • même axe pour toutes les erreurs — sinon deux pentes voisines couvrent
+ *    des périodes différentes tout en se ressemblant ;
+ *  • une semaine sans occurrence vaut ZÉRO, elle n'est pas omise — un trou se
+ *    lit comme une donnée manquante, un socle vide comme une semaine réussie ;
+ *  • l'ordre est chronologique — une série lue à l'envers montre une
+ *    aggravation là où il y a un progrès.
+ */
+describe("pente hebdomadaire par erreur", () => {
+  it("partage exactement l'axe de la tendance globale", () => {
+    const trades = [
+      ...[2, 9, 16, 23].map((n) => trade(daysBefore(REF, n), ["Overtrading"])),
+      ...[5, 12].map((n) => trade(daysBefore(REF, n), ["FOMO entry"])),
+    ];
+    const b = computeBehavioral(trades);
+    expect(b.weeklyTrend.length).toBeGreaterThan(0);
+    for (const row of b.rows) {
+      expect(row.weekly).toHaveLength(b.weeklyTrend.length);
+    }
+  });
+
+  it("compte zéro pour une semaine sans cette erreur, au lieu de l'omettre", () => {
+    // « FOMO entry » n'apparaît qu'une fois ; les autres semaines de l'axe
+    // doivent exister et valoir 0.
+    const trades = [
+      ...[2, 9, 16, 23].map((n) => trade(daysBefore(REF, n), ["Overtrading"])),
+      trade(daysBefore(REF, 9), ["FOMO entry"]),
+    ];
+    const b = computeBehavioral(trades);
+    const fomo = b.rows.find((r) => r.mistake === "FOMO entry")!;
+    expect(fomo.weekly).toHaveLength(b.weeklyTrend.length);
+    expect(fomo.weekly.filter((n) => n === 0).length).toBeGreaterThan(0);
+    expect(fomo.weekly.reduce((s, n) => s + n, 0)).toBe(1);
+  });
+
+  it("va du plus ancien au plus récent", () => {
+    // Trois occurrences la semaine la plus ancienne, une seule la plus récente :
+    // la série doit DESCENDRE. Lue à l'envers, elle raconterait l'inverse.
+    const trades = [
+      ...[21, 22, 23].map((n) => trade(daysBefore(REF, n), ["Overtrading"])),
+      trade(daysBefore(REF, 1), ["Overtrading"]),
+    ];
+    const serie = computeBehavioral(trades).rows.find((r) => r.mistake === "Overtrading")!.weekly;
+    expect(serie[0]).toBeGreaterThan(serie[serie.length - 1]);
+  });
+
+  it("totalise exactement les occurrences de l'erreur sur l'axe", () => {
+    const trades = [2, 9, 16].map((n) => trade(daysBefore(REF, n), ["Revenge trade"]));
+    const row = computeBehavioral(trades).rows.find((r) => r.mistake === "Revenge trade")!;
+    expect(row.weekly.reduce((s, n) => s + n, 0)).toBe(row.count);
+  });
+});

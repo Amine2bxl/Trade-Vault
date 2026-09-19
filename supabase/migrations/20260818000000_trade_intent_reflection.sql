@@ -21,13 +21,20 @@
 -- un même mot partout, sinon deux mots pour le même état rendent toute
 -- corrélation intraitable.
 
+-- ── `trade_id` EST EN TEXT, PAS EN UUID ────────────────────────────────────
+-- `public.trades.id` est un `text` (defaut `(gen_random_uuid())::text`), pas un
+-- `uuid`. Declaree en `uuid`, la cle etrangere est REJETEE par Postgres pour
+-- types incompatibles — et c'est ce qui a empeche cette migration de passer en
+-- production : les deux tables n'ont jamais existe, et toute route serveur qui
+-- les interrogeait repondait 500.
+
 create table if not exists public.trade_intent (
   id           uuid primary key default gen_random_uuid(),
   user_id      uuid not null references auth.users(id) on delete cascade,
   -- L'intention est reliée à son trade. `on delete cascade` : effacer un trade
   -- emporte son intention, qui n'a plus de sens sans lui. NOT NULL car, dans ce
   -- flux, le trade est toujours enregistré avant l'intention (l'upsert en dépend).
-  trade_id     uuid not null references public.trades(id) on delete cascade,
+  trade_id     text not null references public.trades(id) on delete cascade,
   -- Snapshot du setup au moment de l'entrée (la stratégie du trade).
   setup        text,
   -- « Pourquoi j'entre » — court, libre.
@@ -82,7 +89,7 @@ create policy "trade_intent_delete_own"
 create table if not exists public.trade_reflection (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references auth.users(id) on delete cascade,
-  trade_id       uuid not null references public.trades(id) on delete cascade,
+  trade_id       text not null references public.trades(id) on delete cascade,
   -- « Mon plan a-t-il été respecté ? » — la question qui mesure la discipline,
   -- pas le résultat.
   plan_respected text check (plan_respected in ('yes','partial','no')),

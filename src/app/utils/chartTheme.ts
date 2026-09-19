@@ -28,8 +28,13 @@ export const EQUITY_ANIMATION = {
 // bouts ronds, aucun halo. Il passe de 2 à 3px — sur une courbe très lissée,
 // un trait fin se lit comme un fil de fer ; c'est l'épaisseur qui donne la
 // sensation de fluide.
+// 2.25px, pas 3. Un trait de 3px sur une courbe d'equity donne un tracé de
+// feutre : il épaissit les creux, arrondit les cassures et fait perdre les
+// petites oscillations qui disent justement si la progression est régulière ou
+// nerveuse. Les terminaux de référence tracent fin — la lisibilité vient du
+// CONTRASTE avec le fond et du dégradé sous la courbe, pas de l'épaisseur.
 export const EQUITY_LINE = {
-  strokeWidth: 3,
+  strokeWidth: 2.25,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };
@@ -82,10 +87,17 @@ export const EQUITY_GRID = {
 // Elle peut être rouge sans ambiguïté parce que la COURBE, elle, est toujours
 // verte (voir `EquityChart`) : les deux pastilles de la légende ne peuvent
 // plus se confondre comme lorsque la courbe virait au rouge en perte.
+//
+// LE GRAIN DU POINTILLÉ compte autant que sa couleur. Des tirets de 7px à 2px
+// d'épaisseur, c'est une ligne DISCONTINUE : l'œil lit sept petits segments
+// rouges posés là, et chacun attire le regard pour lui-même. Des points courts
+// et rapprochés, plus fins, se lisent comme UNE graduation continue — le
+// repère d'une règle, pas une série de marques. C'est la sensation de zone
+// d'ancrage : présente sur toute la largeur, jamais bruyante.
 export const EQUITY_FLOOR = {
   stroke: "var(--tv-chart-red)",
-  strokeWidth: 2,
-  strokeDasharray: "7 7",
+  strokeWidth: 1.25,
+  strokeDasharray: "2 3.5",
 } as const;
 
 /**
@@ -109,11 +121,18 @@ export const CHART_RED = "var(--tv-chart-red)";
  * `id` doit être unique par graphe rendu — deux `<defs>` portant le même id
  * dans un même document, et le second est ignoré.
  */
+// LA MASSE DESCEND PLUS BAS. Le troisième palier tombait à zéro : le dégradé
+// s'éteignait avant d'atteindre le bas du cadre, et la courbe paraissait
+// posée sur du vide plutôt que remplie. En gardant un fond de teinte jusqu'en
+// bas (et en relevant le palier médian), la surface sous la courbe devient un
+// VOLUME — ce qui donne à la montée son poids, comme sur les terminaux de
+// référence. Le palier haut ne bouge pas : c'est lui qui pourrait salir le
+// trait.
 export function areaGradientStops(color: string) {
   return [
-    { offset: "0%", opacity: 0.3 },
-    { offset: "55%", opacity: 0.1 },
-    { offset: "100%", opacity: 0 },
+    { offset: "0%", opacity: 0.32 },
+    { offset: "50%", opacity: 0.17 },
+    { offset: "100%", opacity: 0.05 },
   ].map((s) => ({ ...s, color }));
 }
 

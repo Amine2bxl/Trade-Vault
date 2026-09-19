@@ -1113,6 +1113,7 @@ const en = {
   "mistakes.sev_high": "High",
   "mistakes.sev_medium": "Medium",
   "mistakes.sev_low": "Low",
+  "mistakes.weeklySlope": "Weekly occurrences (last 8 weeks)",
   "mistakes.trendWindow": "vs previous 30 days",
   "mistakes.adherence": "Your rules — how well you hold them",
   "mistakes.adherenceSub":

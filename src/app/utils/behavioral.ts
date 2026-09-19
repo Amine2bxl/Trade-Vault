@@ -57,6 +57,22 @@ interface MistakeRow {
    * vient d'apparaître serait faux.
    */
   trend: MistakeTrend | null;
+  /**
+   * LA DÉGRESSION, SEMAINE PAR SEMAINE — le seul affichage qui récompense.
+   *
+   * `trend` compare deux fenêtres et rend un pourcentage : c'est un verdict,
+   * et un verdict ne se ressent pas. Ce que le trader veut voir, c'est la
+   * PENTE — six barres qui descendent, puis une septième plus basse que lui
+   * doit à son propre travail. C'est ce qui donne envie de continuer, là où
+   * « −40 % » se lit et s'oublie.
+   *
+   * L'axe est celui de `weeklyTrend`, EXACTEMENT : mêmes semaines, même ordre,
+   * y compris celles où l'erreur n'est pas apparue (à zéro). Deux séries qui
+   * ne partagent pas leur axe ne se comparent pas, et une semaine propre
+   * simplement absente de la série se lirait comme une semaine manquante au
+   * lieu d'une semaine réussie.
+   */
+  weekly: number[];
 }
 
 interface BehavioralReport {
@@ -115,6 +131,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
   const bySession: Record<TradingSession, number> = { london: 0, newyork: 0, asia: 0 };
   const byDay: Record<number, number> = {};
   const weekMap: Record<string, { count: number; cost: number }> = {};
+  const weekByMistake: Record<string, Record<string, number>> = {};
 
   let weightedInfractions = 0;
 
@@ -135,6 +152,10 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
       if (!weekMap[wk]) weekMap[wk] = { count: 0, cost: 0 };
       weekMap[wk].count++;
       weekMap[wk].cost += t.pnl;
+      // La même ventilation, mais PAR ERREUR : c'est elle qui portera la pente
+      // affichée sur chaque ligne de la page Erreurs.
+      if (!weekByMistake[m]) weekByMistake[m] = {};
+      weekByMistake[m][wk] = (weekByMistake[m][wk] ?? 0) + 1;
     }
   }
 
@@ -172,6 +193,14 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
     }
   }
 
+  /* L'AXE DES SEMAINES — calculé une fois, partagé par tout le monde.
+     Les huit dernières semaines PRÉSENTES dans les données. C'est le même axe
+     pour la tendance globale et pour la pente de chaque erreur : sans cela,
+     deux séries voisines sur le même écran couvriraient des périodes
+     différentes tout en se ressemblant, ce qui est pire que de ne rien
+     afficher. */
+  const axeSemaines = Object.keys(weekMap).sort().slice(-8);
+
   const rows: MistakeRow[] = Object.entries(agg)
     .map(([mistake, d]) => ({
       mistake,
@@ -180,6 +209,9 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
       totalPnl: Math.round(d.totalPnl * 100) / 100,
       avgPnl: Math.round((d.totalPnl / d.count) * 100) / 100,
       trend: trendByMistake[mistake] ?? null,
+      // Les semaines sans occurrence valent ZÉRO, elles ne sont pas omises :
+      // une semaine propre est un résultat, pas un trou dans la donnée.
+      weekly: axeSemaines.map((wk) => weekByMistake[mistake]?.[wk] ?? 0),
     }))
     // worst first: severity weight × cost magnitude
     .sort((a, b) => SEVERITY_WEIGHT[b.severity] * b.count - SEVERITY_WEIGHT[a.severity] * a.count);
@@ -207,15 +239,12 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
       ? 100
       : Math.max(0, Math.min(100, Math.round(100 - (weightedInfractions / trades.length) * 22)));
 
-  // Last 8 weeks present in the data, chronological
-  const weeklyTrend = Object.entries(weekMap)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-8)
-    .map(([week, d]) => ({
-      week: week.slice(5),
-      count: d.count,
-      cost: Math.round(d.cost * 100) / 100,
-    }));
+  // Le même axe que la pente de chaque erreur — voir `axeSemaines`.
+  const weeklyTrend = axeSemaines.map((week) => ({
+    week: week.slice(5),
+    count: weekMap[week].count,
+    cost: Math.round(weekMap[week].cost * 100) / 100,
+  }));
 
   return {
     rows,

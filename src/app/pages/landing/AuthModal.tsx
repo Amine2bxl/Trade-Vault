@@ -371,7 +371,7 @@ export function AuthModal({
                 </button>
               </p>
 
-              <p className="mt-4 text-center text-[10.5px] leading-4 text-slate-600">
+              <p className="mt-4 text-center text-[11px] leading-4 text-slate-600">
                 {t("auth.legal.prefix")}{" "}
                 <a href="/terms" className="underline hover:text-slate-400">
                   {t("auth.legal.terms")}

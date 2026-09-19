@@ -80,7 +80,7 @@ export function SectionPreuve() {
             <p className="mt-4 max-w-xl leading-7 text-slate-400">{t("evidence.sub")}</p>
             <ul className="mt-8 space-y-3">
               {PREUVE_POINTS.map((k) => (
-                <li key={k} className="flex items-start gap-3 text-[14.5px] text-slate-300">
+                <li key={k} className="flex items-start gap-3 text-[14px] text-slate-300">
                   <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]">
                     <Check className="h-3 w-3" />
                   </span>
@@ -109,7 +109,7 @@ export function SectionPreuve() {
                       key={l}
                       className="flex items-baseline justify-between gap-4 rounded-lg border border-white/[.05] bg-white/[.02] px-3.5 py-2.5"
                     >
-                      <dt className="text-[12.5px] text-slate-400">{t(l)}</dt>
+                      <dt className="text-[13px] text-slate-400">{t(l)}</dt>
                       <dd
                         className={`tv-figure text-[13px] tabular-nums ${
                           fort ? "text-[var(--tv-chart-red)]" : "text-slate-200"
@@ -120,7 +120,7 @@ export function SectionPreuve() {
                     </div>
                   ))}
                 </dl>
-                <p className="mt-3.5 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--tv-highlight)]">
+                <p className="mt-3.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--tv-highlight)]">
                   <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
                   {t("evidence.link")}
                 </p>
@@ -139,9 +139,7 @@ export function SectionPreuve() {
                 />
                 <div>
                   <p className="tv-label text-slate-500">{t("evidence.guard.l")}</p>
-                  <p className="mt-1 text-[12.5px] leading-5 text-slate-300">
-                    {t("evidence.guard")}
-                  </p>
+                  <p className="mt-1 text-[13px] leading-5 text-slate-300">{t("evidence.guard")}</p>
                 </div>
               </div>
             </div>
@@ -216,7 +214,7 @@ export function SectionEdgeScore() {
                     <div className="mt-6 space-y-2.5 border-t border-white/[.08] pt-5">
                       {EDGE_PARTS.map(({ l, poids }) => (
                         <div key={l}>
-                          <div className="flex items-baseline justify-between text-[12.5px]">
+                          <div className="flex items-baseline justify-between text-[13px]">
                             <span className="text-slate-300">{t(l)}</span>
                             <span className="tv-figure text-[11px] tabular-nums text-slate-500">
                               {poids} %
@@ -232,7 +230,7 @@ export function SectionEdgeScore() {
                       ))}
 
                       {/* La ligne qui dit tout : la composante ABSENTE. */}
-                      <div className="flex items-baseline justify-between border-t border-white/[.06] pt-3 text-[12.5px]">
+                      <div className="flex items-baseline justify-between border-t border-white/[.06] pt-3 text-[13px]">
                         <span className="text-slate-600 line-through">{t("edge.excluded")}</span>
                         <span className="tv-figure text-[11px] tabular-nums text-slate-600">
                           0 %
@@ -257,7 +255,7 @@ export function SectionEdgeScore() {
               <p className="mt-1.5 text-[13px] leading-6 text-slate-400">{t("edge.why.d")}</p>
             </div>
 
-            <p className="mt-5 text-[12.5px] leading-6 text-slate-500">{t("edge.note")}</p>
+            <p className="mt-5 text-[13px] leading-6 text-slate-500">{t("edge.note")}</p>
           </div>
         </div>
       </div>

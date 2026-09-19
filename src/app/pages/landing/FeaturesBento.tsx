@@ -171,9 +171,12 @@ export function FeaturesBento() {
             </div>
             <svg viewBox="0 0 320 80" className="mt-3 h-16 w-full" preserveAspectRatio="none">
               <defs>
+                {/* Le même dégradé à trois paliers que la courbe du produit
+                    (`chartTheme.ts`) : la masse garde du corps jusqu'en bas. */}
                 <linearGradient id="featEq" x1="0" y1="0" x2="0" y2="1">
-                  <stop stopColor="var(--tv-highlight)" stopOpacity="0.18" />
-                  <stop offset="1" stopColor="var(--tv-highlight)" stopOpacity="0" />
+                  <stop stopColor="var(--tv-highlight)" stopOpacity="0.3" />
+                  <stop offset="0.5" stopColor="var(--tv-highlight)" stopOpacity="0.16" />
+                  <stop offset="1" stopColor="var(--tv-highlight)" stopOpacity="0.05" />
                 </linearGradient>
               </defs>
               <polygon
@@ -184,7 +187,10 @@ export function FeaturesBento() {
                 points="0,70 40,56 80,62 120,40 160,50 200,28 240,38 280,18 320,10"
                 fill="none"
                 stroke="var(--tv-highlight)"
-                strokeWidth="2"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
               />
             </svg>
           </div>

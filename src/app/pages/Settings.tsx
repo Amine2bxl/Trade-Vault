@@ -252,7 +252,7 @@ export default function Settings({
                     aria-selected={active}
                     onClick={() => setPane(id)}
                     className={cn(
-                      "group flex h-11 shrink-0 items-center gap-3 rounded-xl px-3 text-[13.5px] font-medium",
+                      "group flex h-11 shrink-0 items-center gap-3 rounded-xl px-3 text-[13px] font-medium",
                       "transition-colors duration-200 lg:w-full",
                       active
                         ? danger

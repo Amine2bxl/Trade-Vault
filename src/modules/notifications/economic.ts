@@ -138,11 +138,20 @@ export function reglesEconomiques(
       // La clé porte l'ÉVÉNEMENT et le PRÉAVIS : réévaluer toutes les minutes
       // ne produit donc pas soixante alertes pour la même publication.
       key: `economic_event:${a.event.id}:${a.preavis}`,
+      /* LE PRÉAVIS DE QUINZE MINUTES OUVRE LE POPUP — et lui seul.
+         C'est la seule notification du produit qui porte une HEURE LIMITE :
+         quinze minutes avant une publication à fort impact, un toast qui
+         s'efface en trois secondes rate précisément sa cible. Comme sa clé
+         désigne déjà un événement unique et daté, elle ne peut pas se répéter :
+         la promouvoir en `error` n'ajoute aucun bruit, là où une règle d'état
+         en ajouterait tous les jours. Le préavis d'une heure, lui, reste une
+         information — il n'interrompt rien. */
+      once: urgent,
       input: {
         kind: "economic_event" as const,
         title,
         body,
-        severity: urgent ? ("warning" as const) : ("info" as const),
+        severity: urgent ? ("error" as const) : ("info" as const),
         category: "economic" as const,
         channels: urgent
           ? (["dashboard", "toast", "push"] as const).slice()
