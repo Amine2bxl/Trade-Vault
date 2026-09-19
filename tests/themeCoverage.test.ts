@@ -153,3 +153,61 @@ describe("les écrans d'accueil portent le thème du trader", () => {
     }
   });
 });
+
+/**
+ * LES DEUX VERTS DU TABLEAU DE BORD — le lot pilote du langage Lucid.
+ *
+ * Tout le langage repose sur le fait qu'il n'y a QUE DEUX verts et qu'ils se
+ * distinguent : `--tv-accent` (#22e08a) dit « ceci agit », `--tv-chart-green`
+ * (#34d399) dit « ceci est un gain ». Si un troisième vert s'invite, la
+ * distinction ne tient plus, et le vert cesse de vouloir dire quoi que ce soit.
+ *
+ * Or le tableau de bord — la PREMIÈRE page que le trader voit — en peignait un
+ * troisième : `#10b981` (emerald-500) sur l'anneau du taux de réussite, sur les
+ * jauges de profit factor et de R moyen, et sur le cadran de l'Edge Score. Un
+ * anneau d'un vert, le chiffre qu'il entoure d'un autre. Idem côté perte, avec
+ * `#ef4444` (red-500) contre `#f87171`.
+ *
+ * Ce test tient la surface du lot pilote, et elle seule. `Analytics`,
+ * `Mistakes` et `TradeModal` portent le même défaut et ne sont PAS ici : ils
+ * appartiennent aux lots suivants, et un test qui échouerait sur du travail non
+ * commencé ne protège rien — il apprend à désactiver les tests.
+ */
+describe("le tableau de bord ne connaît que les deux verts du langage", () => {
+  /** Emerald-500 et red-500 : voisins des couleurs de donnée, donc invisibles
+   *  en relecture de code et parfaitement visibles à l'écran. */
+  const FAUX_PL = /#(?:10b981|ef4444)/gi;
+
+  const SURFACE = [
+    "pages/Dashboard.tsx",
+    "pages/dashboard/CopilotBlock.tsx",
+    "components/EquityChart.tsx",
+  ];
+
+  for (const file of SURFACE) {
+    test(`${file} n'écrit aucune couleur de P&L en dur`, () => {
+      const code = stripComments(read(join(APP, file)));
+      expect(code.match(FAUX_PL) ?? []).toEqual([]);
+    });
+  }
+
+  test("les jauges et le cadran passent par les tokens de la donnée", () => {
+    // La présence des tokens, et pas seulement l'absence des hex : supprimer la
+    // couleur ferait passer le test ci-dessus tout en effaçant le signe.
+    for (const file of SURFACE) {
+      const code = stripComments(read(join(APP, file)));
+      expect(code, file).toContain("CHART_GREEN");
+      expect(code, file).toContain("CHART_RED");
+    }
+  });
+
+  test("le cadran de l'Edge Score ne rayonne pas, et ne calcule plus de halo", () => {
+    /* `glow` était produit dans les quatre branches de `scoreTone` et lu nulle
+       part. Du code mort, mais pas anodin : il gardait vivante l'idée d'un halo
+       coloré, que `DESIGN.md` comme `LUCID.md` interdisent (« rien ne
+       rayonne »), et le commentaire du cadran en promettait encore l'effet. */
+    const code = stripComments(read(join(APP, "pages/dashboard/CopilotBlock.tsx")));
+    expect(code).not.toContain("glow");
+    expect(code).not.toContain("rgba(16,185,129");
+  });
+});

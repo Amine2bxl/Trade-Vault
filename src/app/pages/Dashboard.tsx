@@ -10,6 +10,7 @@ import {
   directionBadgeClass,
 } from "../utils/tradeCalcs";
 import { computeQuantStats } from "../utils/quantStats";
+import { CHART_GREEN, CHART_RED } from "../utils/chartTheme";
 import { loadOnboarding } from "../store/profile";
 import { deriveDailyRule } from "../utils/edgeScore";
 import { useEdgeScore } from "../hooks/useEdgeScore";
@@ -642,7 +643,7 @@ export default function Dashboard({
                   visual={{
                     kind: "radial",
                     pct: stats.winRate,
-                    color: stats.winRate >= 0.5 ? "#10b981" : "#ef4444",
+                    color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
                     center: `${stats.wins}/${stats.losses}`,
                   }}
                   delay={0}
@@ -660,7 +661,7 @@ export default function Dashboard({
                   visual={{
                     kind: "bar",
                     pct: Math.min(stats.profitFactor / 3, 1),
-                    color: stats.profitFactor >= 1 ? "#10b981" : "#ef4444",
+                    color: stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
                   }}
                   delay={40}
                 />
@@ -671,7 +672,7 @@ export default function Dashboard({
                   visual={{
                     kind: "bar",
                     pct: Math.min(stats.avgRR / 3, 1),
-                    color: stats.avgRR >= 1 ? "#10b981" : "#ef4444",
+                    color: stats.avgRR >= 1 ? CHART_GREEN : CHART_RED,
                   }}
                   delay={80}
                 />

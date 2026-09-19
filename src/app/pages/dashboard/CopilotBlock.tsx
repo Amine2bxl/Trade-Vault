@@ -37,17 +37,35 @@ interface CopilotBlockProps {
   onOpenChecklist?: () => void;
 }
 
-function scoreTone(score: number): { ring: string; text: string; glow: string } {
-  if (score >= 75)
-    return { ring: "#10b981", text: "text-emerald-400", glow: "rgba(16,185,129,0.35)" };
+/**
+ * La rampe du cadran, en TOKENS — et les seuils ne bougent pas.
+ *
+ * Trois défauts se cumulaient ici, dont deux invisibles en lecture du code :
+ *
+ * 1. `#10b981` et `#ef4444` sont emerald-500 et red-500 — PAS les couleurs de
+ *    la donnée du produit (`#34d399` / `#f87171`). L'anneau était donc d'un
+ *    vert franchement différent du chiffre qu'il entoure, sur la première
+ *    page que le trader voit.
+ * 2. La bande 50–74 rendait un anneau `--tv-highlight` avec un texte cyan.
+ *    Depuis le passage au langage Lucid, `--tv-highlight` est le vert menthe
+ *    CLAIR — c'est-à-dire la couleur de l'ACTION. Un cadran de score la
+ *    portait donc pour dire « moyen », pendant que son propre libellé était
+ *    cyan : deux couleurs qui ne se parlent pas, dont l'une ment sur la
+ *    nature de l'objet. Un score moyen n'est ni un gain ni un bouton : il est
+ *    NEUTRE, et c'est déjà la règle du primitif `Metric`.
+ * 3. `glow` était calculé dans les quatre branches et lu NULLE PART. Du halo
+ *    mort — interdit par `DESIGN.md` comme par `LUCID.md` (« rien ne
+ *    rayonne »), et dont le commentaire du cadran promettait encore l'effet.
+ */
+function scoreTone(score: number): { ring: string; text: string } {
+  if (score >= 75) return { ring: CHART_GREEN, text: "text-emerald-400" };
   if (score >= 50)
-    return { ring: "var(--tv-highlight)", text: "text-cyan-300", glow: "rgba(34,211,238,0.30)" };
-  if (score >= 25)
-    return { ring: "#f59e0b", text: "text-amber-400", glow: "rgba(245,158,11,0.30)" };
-  return { ring: "#ef4444", text: "text-red-400", glow: "rgba(239,68,68,0.30)" };
+    return { ring: "var(--tv-text-secondary)", text: "text-[var(--tv-text-primary)]" };
+  if (score >= 25) return { ring: "var(--tv-warning)", text: "text-amber-400" };
+  return { ring: CHART_RED, text: "text-red-400" };
 }
 
-/** Circular 0–100 dial with a subtle glow. Pure SVG, no chart lib. */
+/** Circular 0–100 dial. Pure SVG, no chart lib — et rien ne rayonne. */
 function EdgeDial({ score }: { score: number }) {
   const R = 46;
   const C = 2 * Math.PI * R;
