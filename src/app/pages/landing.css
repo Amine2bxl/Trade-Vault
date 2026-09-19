@@ -140,9 +140,23 @@
   );
 }
 
-/* ── Accents ── */
+/* ── Le CONTRE-TEMPS d'un titre ──
+ *
+ * Ce n'est PAS l'accent, et c'est un changement voulu depuis l'adoption du
+ * langage Lucid (`docs/design/LUCID.md`). Là-bas le vert appartient aux
+ * VALEURS et aux ACTIONS — un solde, un bouton, un onglet actif — et jamais à
+ * du texte de titre. Peindre une phrase entière en vert menthe fait deux
+ * dégâts d'un coup : le titre crie, et le vert cesse de vouloir dire « ceci
+ * agit » puisqu'il dit aussi « ceci est un titre ».
+ *
+ * Il y a une seconde raison, propre à cette page : le second membre de
+ * l'accroche énonce le PROBLÈME (« tu casses tes propres règles »). L'habiller
+ * de la couleur du succès est un contresens.
+ *
+ * Le gris sourd garde donc la lecture en deux temps — une proposition tenue,
+ * une proposition qui retombe — sans dépenser la couleur rare de la page. */
 .text-accent {
-  color: var(--tv-highlight);
+  color: var(--tv-text-secondary);
 }
 
 /* ── Nav ── */
