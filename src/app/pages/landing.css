@@ -875,3 +875,40 @@
     --shot-ar: 5 / 9;
   }
 }
+
+/* ══ LA LIGNE QUI SE TRACE ══
+ *
+ * `pathLength` n'est pas utilisé : on fixe un `stroke-dasharray` plus grand
+ * que la courbe (≈ 1000 px de développé) et on ramène l'offset à zéro. Le
+ * tracé part donc du bord gauche et court jusqu'au bout, à la même durée et
+ * au même easing que le reveal des blocs voisins — c'est ce qui le fait lire
+ * comme un geste de la page, pas comme une animation rapportée.
+ *
+ * L'opacité reste basse : cette ligne est une respiration entre deux
+ * sections, pas un élément à regarder. Elle doit se remarquer une fois, en
+ * défilant, et jamais retenir l'œil. */
+.landing-root .tv-draw-wrap {
+  margin: 0 auto;
+  width: min(100%, 900px);
+  padding: 0 1rem;
+}
+.landing-root .tv-draw-svg {
+  display: block;
+  width: 100%;
+  height: clamp(48px, 7vw, 96px);
+  overflow: visible;
+}
+.landing-root .tv-draw-path {
+  opacity: 0.32;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .tv-draw-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+  }
+  /* `.reveal-visible` est posée par l'`IntersectionObserver` de `useReveal` :
+     le tracé partage donc EXACTEMENT le déclencheur du reveal des blocs. */
+  .landing-root .reveal-visible .tv-draw-path {
+    animation: chart-draw 1100ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  }
+}

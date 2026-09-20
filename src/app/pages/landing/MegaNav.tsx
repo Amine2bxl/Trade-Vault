@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Bot, Shield, BarChart3, BookOpen, ArrowRight, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { LANDING_LANGS, useLandingT } from "./i18n";
 import { LIENS_NAV as LINKS } from "./nav";
@@ -7,9 +7,20 @@ import { LIENS_NAV as LINKS } from "./nav";
 /**
  * Navbar de la landing — stable, calme, traduite.
  *
- * Un seul menu déroulant (Produit), des liens plats, un toggle de langue et
- * deux actions à droite. Les états sont subtils : pas de surbrillance, pas de
- * bruit — on sait toujours où l'on est.
+ * ── LE MENU DÉROULANT « PRODUIT » A ÉTÉ RETIRÉ ────────────────────────────
+ *
+ * La barre affichait « Product ⌄ » (le déclencheur du menu) ET « Product »
+ * (un lien plat) côte à côte : le MÊME libellé deux fois, à 60 px d'écart,
+ * parce que les deux lisaient la clé `nav.product`.
+ *
+ * Le menu ne justifiait pas sa place : ses quatre entrées ne désignaient que
+ * TROIS ancres — `product`, `edge`, `problem` — toutes déjà présentes comme
+ * liens plats juste à côté. Un menu qui cache ce qui est visible à côté de
+ * lui ajoute un clic et une ambiguïté, rien d'autre.
+ *
+ * Reste donc : les liens plats, le sélecteur de langue et deux actions. Le
+ * brief demandait une barre « simple, intuitive, légère » — c'est ce qu'elle
+ * devient en enlevant, pas en ajoutant.
  */
 
 interface MegaNavProps {
@@ -22,33 +33,9 @@ interface MegaNavProps {
 
 export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
   const { t, lang, setLang } = useLandingT();
-  const [openMenu, setOpenMenu] = useState(false);
   const [mobile, setMobile] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as HTMLElement)) setOpenMenu(false);
-    };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
-  }, []);
-
-  /* Trois des quatre entrées désignaient des ancres SUPPRIMÉES (`ai`,
-     `analytics`, `features`) : la visite du produit les a absorbées. Un menu
-     dont les trois quarts renvoient en bas de page est pire qu'un menu absent,
-     parce qu'on y a cliqué en confiance. Les quatre pointent maintenant sur
-     des sections qui existent — ce que `seo.test.ts` vérifie pour le pied de
-     page, et que la liste partagée `nav.ts` garantit pour la barre. */
-  const productItems = [
-    { icon: Bot, title: t("nav.p.jarvis"), desc: t("nav.p.jarvis.d"), id: "product" },
-    { icon: Shield, title: t("nav.p.discipline"), desc: t("nav.p.discipline.d"), id: "edge" },
-    { icon: BarChart3, title: t("nav.p.analytics"), desc: t("nav.p.analytics.d"), id: "product" },
-    { icon: BookOpen, title: t("nav.p.journal"), desc: t("nav.p.journal.d"), id: "problem" },
-  ];
 
   const goTo = (id: string) => {
-    setOpenMenu(false);
     setMobile(false);
     go(id);
   };
@@ -67,10 +54,9 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
         style={{ transform: `scaleX(${pct})` }}
       />
 
-      <div
-        ref={ref}
-        className="mx-auto flex h-[60px] max-w-[1280px] items-center justify-between px-4 md:px-6"
-      >
+      {/* Plus de `ref` ici : il ne servait qu'à détecter le clic hors du menu
+          déroulant, qui n'existe plus. */}
+      <div className="mx-auto flex h-[60px] max-w-[1280px] items-center justify-between px-4 md:px-6">
         {/* Logo — `/`, pas `#`. Le logo est le lien de retour à l'accueil le plus
             universellement compris du web ; pointé sur `#`, il ne désignait
             rien. Le pied de page avait déjà été corrigé, pas la barre. */}
@@ -89,40 +75,6 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-0.5">
-          {/* Produit dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setOpenMenu((v) => !v)}
-              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] font-medium text-slate-400 hover:text-white transition-colors"
-            >
-              {t("nav.product")}
-              <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform ${openMenu ? "rotate-180" : ""}`}
-              />
-            </button>
-            {openMenu && (
-              <div className="absolute left-0 top-full mt-2 w-[360px] rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-1.5 shadow-[var(--tv-elev-3)]">
-                {productItems.map((item) => (
-                  <button
-                    key={item.title}
-                    onClick={() => goTo(item.id)}
-                    className="flex w-full gap-3 items-start rounded-lg p-2.5 text-left hover:bg-white/[.04] transition-colors"
-                  >
-                    <div className="h-9 w-9 shrink-0 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] flex items-center justify-center text-[var(--tv-highlight)]">
-                      <item.icon className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[13px] font-medium text-white">{item.title}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                        {item.desc}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           {LINKS.map((l) => (
             <button
               key={l.id}
@@ -220,16 +172,6 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
       {mobile && (
         <div className="lg:hidden border-t border-[var(--tv-border)] bg-[var(--tv-bg)] px-5 py-4">
           <div className="flex flex-col">
-            <p className="tv-label text-slate-600 mb-2 px-1">{t("nav.product")}</p>
-            {productItems.map((item) => (
-              <button
-                key={item.title}
-                onClick={() => goTo(item.id)}
-                className="mobile-nav-link flex items-center gap-2.5 text-left"
-              >
-                <item.icon className="w-4 h-4 text-slate-400 shrink-0" /> {item.title}
-              </button>
-            ))}
             {LINKS.map((l) => (
               <button key={l.id} onClick={() => goTo(l.id)} className="mobile-nav-link">
                 {t(l.key)}

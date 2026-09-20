@@ -11,6 +11,7 @@ import { TRUSTPILOT_URL } from "@/shared/site";
 import { AncrageDePrix, SectionEdgeScore } from "./landing/Proof";
 import { TourProduit } from "./landing/Tour";
 import { CursorOrb } from "./landing/CursorOrb";
+import { DrawnLine } from "./landing/DrawnLine";
 import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
@@ -742,13 +743,31 @@ function LandingPage() {
               {/* Le titre monte à 4.4rem : centré sur 3xl, chaque proposition
                   tient sa ligne, et l'accroche pèse enfin ce qu'elle doit
                   peser en haut d'une page de vente. */}
+              {/* À QUI ON PARLE — la ligne qui manquait.
+                  Le héros disait ce que le produit fait et à quelle douleur il
+                  répond, jamais POUR QUI. Un trader en challenge prop-firm ne
+                  se reconnaissait qu'au bout de trois sections ; un
+                  investisseur long terme, lui, descendait toute la page avant
+                  de comprendre qu'elle ne lui était pas destinée. Une ligne
+                  sourde au-dessus du titre suffit à faire les deux tris, et
+                  elle ne coûte rien à la lecture de l'accroche. */}
+              <p className="fade-up tv-label mb-5 text-[var(--tv-text-secondary)]">
+                {t("v2.hero.eyebrow")}
+              </p>
               <h1 className="fade-up font-display text-[clamp(2.3rem,5.4vw,4.4rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-white">
                 {t("hero.h1a")}
                 <br />
                 <span className="text-accent">{t("hero.h1b")}</span>
               </h1>
+              {/* LA VERSION COURTE DU SOUS-TITRE.
+                  L'ancienne énumérait les trois symptômes — dérive de taille,
+                  overtrading, entrées hors plan. C'est exactement le travail
+                  de la section « Le problème », 400px plus bas : deux blocs
+                  répondaient à la même objection, et le héros payait la
+                  redite en 37 mots. Ici on garde la mécanique (lit, chiffre,
+                  donne une règle) ; les symptômes se lisent juste après. */}
               <p className="fade-up d2 mx-auto mt-7 max-w-[600px] text-[17px] leading-7 text-slate-400">
-                {t("hero.sub")}
+                {t("v2.hero.sub")}
               </p>
               {/* UN SEUL BOUTON. Le second appel — « or watch a 2-min demo » —
                   est un lien discret, pas une action concurrente : deux
@@ -802,6 +821,11 @@ function LandingPage() {
             <PlatformsStrip />
           </div>
         </section>
+
+        {/* La seule ligne tracée de la page, posée à la charnière entre « voici
+            le produit » et « voici ton problème ». Sans axe ni chiffre : voir
+            l'en-tête de `DrawnLine.tsx`. */}
+        <DrawnLine className="-mb-4 mt-2 lg:-mb-6" />
 
         {/* ── PROBLÈME ── */}
         <section id="problem" className="relative section-divider py-10 sm:py-14 lg:py-20">
