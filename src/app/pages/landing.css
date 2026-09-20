@@ -1064,3 +1064,48 @@
     transform: translateY(-6px);
   }
 }
+
+/* ══ LES CARTES RÉPONDENT AU SURVOL ══
+ *
+ * Elles ne faisaient qu'éclaircir leur liseré : un changement de couleur d'un
+ * pixel, qu'on ne remarque pas. Une page « vivante » ne l'est pas parce
+ * qu'elle bouge beaucoup, elle l'est parce que ce qu'on survole RÉPOND.
+ *
+ * Deux pixels d'élévation, pas six. À six, la carte saute et on regarde
+ * l'animation ; à deux, on ne voit rien bouger mais la surface devient
+ * tangible - c'est la différence entre un effet et une sensation.
+ *
+ * `transform` et `border-color` uniquement, et les propriétés sont CITÉES :
+ * `transition: all` transitionnerait aussi la mise en page et se
+ * déclencherait au moindre changement de classe.
+ *
+ * 160ms : sous le plafond de 300 de la loi du mouvement, et assez court pour
+ * que le survol suive la souris au lieu de la rattraper. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .glass-card,
+  .landing-root .card-premium,
+  .landing-root .lp-card {
+    transition-property: transform, border-color;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .landing-root .glass-card:hover,
+  .landing-root .card-premium:hover,
+  .landing-root .lp-card:hover {
+    transform: translateY(-2px);
+  }
+
+  /* La capture de la visite, elle, ne se soulève PAS : elle porte déjà la
+     vignette téléphone qui monte au survol de la scène. Deux objets qui
+     bougent ensemble dans la même carte se lisent comme un défaut de
+     calage. Le cadre se contente d'éclaircir sa lueur. */
+  .landing-root .tour-scene .shot-frame {
+    transition: box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .landing-root .tour-scene:hover .shot-frame {
+    box-shadow:
+      0 32px 80px -24px rgb(0 0 0 / 0.85),
+      0 0 140px -28px rgb(var(--tv-accent-rgb) / 0.42),
+      inset 0 1px 0 rgb(255 255 255 / 0.09);
+  }
+}
