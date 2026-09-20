@@ -1212,3 +1212,81 @@
     background: transparent;
   }
 }
+
+/* ══ LA COURBE EXPONENTIELLE ══
+ *
+ * `cubic-bezier(0.16, 1, 0.3, 1)` part vite et freine longtemps : c'est déjà
+ * un ease-out marqué, et c'est l'easing signature du produit. Sur la vitrine
+ * on veut un cran de plus - un départ quasi instantané puis une décélération
+ * très longue, qui donne l'impression que l'élément SE POSE au lieu
+ * d'arriver.
+ *
+ * `0.19, 1, 0.22, 1` est cette courbe. La différence ne se décrit pas, elle
+ * se sent : à durée égale, le mouvement paraît plus rapide ET plus doux,
+ * parce que 80 % de la distance est parcourue dans le premier tiers du
+ * temps. C'est ce qui fait « fluide » plutôt que « animé ». */
+.landing-root,
+.auth-veil {
+  --lp-expo: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* ══ L'ENTRÉE DE L'ÉCRAN DE CONNEXION ══
+ *
+ * `.modal-in` était posée sur le conteneur et définie NULLE PART : la classe
+ * existait, l'animation non. L'écran apparaissait d'un coup.
+ *
+ * Deux temps volontairement décalés : le fond opaque monte en premier
+ * (240ms), le contenu suit avec 60ms de retard et une très légère montée.
+ * C'est ce décalage qui fait lire un PASSAGE - si les deux arrivent
+ * ensemble, on voit un remplacement.
+ *
+ * Pas de `scale` sur le conteneur : à plein écran, un agrandissement même
+ * faible fait bouger le texte du formulaire pendant qu'il arrive, et un
+ * champ qui tremble à l'ouverture donne une impression de fragilité. */
+@media (prefers-reduced-motion: no-preference) {
+  .auth-veil {
+    animation: auth-veil-in 240ms var(--lp-expo) both;
+  }
+  .modal-in {
+    animation: auth-contenu-in 520ms 60ms var(--lp-expo) both;
+  }
+}
+@keyframes auth-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes auth-contenu-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ══ LE REVEAL PASSE À L'EXPONENTIELLE ══
+ *
+ * Même course, même durée : seule la courbe change. On gagne la sensation de
+ * « posé » sans allonger l'attente, ce qui est exactement le contraire de la
+ * facilité habituelle (rallonger la durée pour faire plus doux, et rendre la
+ * page lente). */
+@media (prefers-reduced-motion: no-preference) {
+  .js-reveal .reveal {
+    transition:
+      opacity 0.62s var(--lp-expo),
+      transform 0.62s var(--lp-expo);
+  }
+  .landing-root .glass-card,
+  .landing-root .card-premium,
+  .landing-root .lp-card,
+  .landing-root .btn-primary,
+  .landing-root .tour-tel {
+    transition-timing-function: var(--lp-expo);
+  }
+}

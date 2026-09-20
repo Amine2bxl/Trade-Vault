@@ -120,7 +120,12 @@ export function AuthModal({
        Le clic sur le fond ne ferme plus : sur un plein écran il n'y a pas de
        « fond », et fermer par mégarde au milieu d'une saisie coûterait le
        mot de passe déjà tapé. La croix reste, et elle est le seul chemin. */
-    <div className="fixed inset-0 z-[var(--tv-z-top)] overflow-y-auto bg-[var(--tv-bg)]">
+    /* `auth-veil` et `modal-in` portent la TRANSITION D'ENTRÉE.
+       `modal-in` était déjà posée ici et n'était définie NULLE PART : la
+       classe existait, l'animation non. L'écran de connexion apparaissait
+       donc d'un coup, sans transition - ce qui se lit comme un changement de
+       page raté plutôt que comme un passage. */
+    <div className="auth-veil fixed inset-0 z-[var(--tv-z-top)] overflow-y-auto bg-[var(--tv-bg)]">
       <div className="modal-in relative min-h-full">
         <button
           onClick={onClose}
