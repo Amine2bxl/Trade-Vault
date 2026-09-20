@@ -609,8 +609,43 @@ const M: Record<string, Msg> = {
   },
 
   /* ── La visite du produit — une phrase par écran, pas un paragraphe ── */
+  "v2.tour.eyebrow": { en: "The product", fr: "Le produit" },
+  /* La grille compacte : quatre ecrans reels, une ligne chacun. */
+  "v2.tour.more.t": {
+    en: "Four more screens, same data.",
+    fr: "Quatre écrans de plus, les mêmes données.",
+  },
+  "v2.tour.more.d": {
+    en: "What you skipped, what you check before the open, what could still happen, and what the calendar has in store.",
+    fr: "Ce que tu n'as pas pris, ce que tu vérifies avant l'ouverture, ce qui peut encore arriver, et ce que le calendrier te réserve.",
+  },
+  "v2.s8.t": { en: "The trades you didn't take", fr: "Les trades que tu n'as pas pris" },
+  "v2.s8.d": {
+    en: "Nobody counts those. Here they cost R, like the others.",
+    fr: "Personne ne les compte. Ici ils coûtent des R, comme les autres.",
+  },
+  "v2.s9.t": { en: "The week's releases", fr: "Les publications de la semaine" },
+  "v2.s9.d": {
+    en: "Impact, currency, local time. Before you size, not after.",
+    fr: "Impact, devise, heure locale. Avant de dimensionner, pas après.",
+  },
+  "shot.missed.alt": {
+    en: "TradeVault Missed Setups screen, listing A+ setups that were not taken and the R they represented",
+    fr: "Écran Setups manqués de TradeVault, listant les setups A+ non pris et les R qu'ils représentaient",
+  },
+  "shot.news.alt": {
+    en: "TradeVault economic calendar screen, showing the week's releases by impact and currency",
+    fr: "Écran calendrier économique de TradeVault, montrant les publications de la semaine par impact et par devise",
+  },
+  /* « en cinq écrans » n'était plus vrai : la visite en montre neuf, en cinq
+     TEMPS. Et le compte n'était de toute façon pas l'argument - l'ordre l'est.
+     Le titre dit maintenant ce que le fil montre : ces écrans ne sont pas un
+     catalogue, c'est le trajet d'un trade. */
   "v2.tour.title.a": { en: "The whole product,", fr: "Le produit en entier," },
-  "v2.tour.title.b": { en: "in five screens.", fr: "en cinq écrans." },
+  "v2.tour.title.b": {
+    en: "in the order you use it.",
+    fr: "dans l'ordre où tu t'en sers.",
+  },
 
   "v2.s1.t": {
     en: "Your biggest leak has a name and a price.",
@@ -1239,6 +1274,11 @@ const M: Record<string, Msg> = {
     en: "Start free, with no time limit. Go Pro when the free plan stops being enough.",
     fr: "Commence gratuitement, sans limite de temps. Passe Pro quand le gratuit ne suffit plus.",
   },
+  /* Le bloc tarifs de la LANDING n'est plus la grille : c'est une porte vers
+     `/pricing`. Deux actions, et elles ne disent pas la même chose - l'une
+     va comparer, l'autre commence tout de suite. */
+  "pricing.cta": { en: "See the plans", fr: "Voir les offres" },
+  "pricing.cta2": { en: "Start on the free plan", fr: "Commencer sur l'offre gratuite" },
   "pricing.save": {
     // Conservé pour d'éventuels usages hors grille. Aucun montant en dur : le
     // nombre de mois offerts est calculé depuis le catalogue et affiché sur la

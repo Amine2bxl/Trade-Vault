@@ -1059,54 +1059,226 @@
   border-radius: 16px;
 }
 
-/* ══ LA VISITE DU PRODUIT - pleine largeur, avec chevauchement ══
+/* ══ LA VISITE DU PRODUIT — CINQ COMPOSITIONS, UN SEUL SYSTÈME ══
  *
- * Le titre et sa phrase au-dessus, la capture en dessous sur toute la
- * largeur. La raison est arithmétique : en deux colonnes, la capture tombait
- * à 602px sur un écran de 1440 alors que sa mise en page avait été calculée
- * sur 1352px - échelle 0,45, texte du produit à 6px. En pleine largeur elle
- * fait ~1200px, soit 0,89 : on lit ce qu'on montre.
+ * Six rangées identiques se lisaient comme un gabarit, et un gabarit se
+ * saute : passé la deuxième, on ne lit plus, on défile. Les compositions
+ * varient donc d'un temps à l'autre — et rien d'autre ne varie. Même cadre,
+ * même lueur, même échelle typographique, même rythme vertical.
  *
- * Le numéro de rangée n'est pas une décoration. Une visite en cinq écrans
- * sans repère se parcourt sans qu'on sache où l'on en est ; numérotée, elle
- * se lit comme un parcours qui avance et qui finit. */
-.landing-root .tour-entete {
-  max-width: 62ch;
-}
-.landing-root .tour-num {
-  display: block;
-  margin-bottom: 0.65rem;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--tv-accent);
-}
+ * La contrainte de lisibilité, elle, ne bouge pas : une capture dans une
+ * demi-colonne tombe à ~600px sur un écran de 1440 alors que sa mise en page
+ * est calculée sur 1352 — échelle 0,45, texte du produit à 6px. Les deux
+ * rangées en deux colonnes font donc DÉBORDER la capture vers le bord de la
+ * fenêtre, ce qui lui rend ~250px. */
 
-.landing-root .tour-scene {
+/* ── LE FIL ──
+ * Un trait d'un pixel dans la gouttière, un point numéroté par temps. Le
+ * dégradé l'éteint aux deux bouts : une ligne franche qui commence et
+ * s'arrête net se lit comme une bordure oubliée, une ligne qui s'efface se
+ * lit comme un parcours. */
+.landing-root .tour-fil {
   position: relative;
-  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4.5rem;
+  padding-left: 2.25rem;
+}
+.landing-root .tour-fil::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--tv-border-strong) 8%,
+    var(--tv-border-strong) 92%,
+    transparent
+  );
+}
+.landing-root .tour-etape {
+  position: relative;
+}
+.landing-root .tour-pastille {
+  position: absolute;
+  left: -2.25rem;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 999px;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-bg);
+  color: var(--tv-text-secondary);
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 @media (min-width: 1024px) {
-  .landing-root .tour-scene {
-    margin-top: 2.75rem;
+  .landing-root .tour-fil {
+    gap: 7rem;
+    padding-left: 3.5rem;
+  }
+  .landing-root .tour-fil::before {
+    left: 13px;
+  }
+  .landing-root .tour-pastille {
+    left: -3.5rem;
+    width: 27px;
+    height: 27px;
+    font-size: 10px;
   }
 }
 
-/* LE TÉLÉPHONE POSÉ SUR LE COIN.
- *
- * Deux captures RÉELLES du même écran, l'une de bureau, l'autre de téléphone.
- * Le cadre reprend la matière du grand (liseré clair sur l'arête haute,
- * ombre basse franche) pour qu'on lise « deux vues du même produit » et non
- * « une image collée sur une autre ».
- *
- * `object-position: top` : on montre le HAUT de l'écran mobile, là où ces
- * pages posent leur argument. Le bas est coupé, ce qui se lit comme un écran
- * qu'on n'a pas fini de faire défiler - c'est vrai, et ça n'induit personne
- * en erreur.
- *
- * Invisible sous `lg` : à cette largeur elle recouvrirait la capture qu'elle
- * est censée compléter. */
+/* ── TITRE ET PHRASE, PARTOUT LES MÊMES ── */
+.landing-root .tour-titre {
+  font-family: var(--tv-font-display, inherit);
+  font-size: clamp(1.4rem, 2.7vw, 2rem);
+  font-weight: 600;
+  line-height: 1.13;
+  letter-spacing: -0.028em;
+  color: #fff;
+}
+.landing-root .tour-phrase {
+  margin-top: 0.85rem;
+  max-width: 54ch;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--tv-text-secondary);
+}
+
+/* ── 1 et 2 : DEUX COLONNES, CAPTURE DÉBORDANTE ── */
+.landing-root .tour-duo {
+  display: grid;
+  gap: 2.25rem;
+}
+.landing-root .tour-duo-scene {
+  position: relative;
+}
+@media (min-width: 1024px) {
+  .landing-root .tour-duo {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    align-items: center;
+    gap: 3.5rem;
+  }
+  /* Le débordement. `width` dépasse la colonne et `margin` négatif tire la
+     capture vers le bord : elle gagne ~250px, soit la différence entre une
+     capture qu'on déchiffre et une texture entre deux paragraphes. Borné par
+     `overflow-x: clip` sur la racine, donc aucun défilement horizontal. */
+  .landing-root .tour-duo--droite .tour-duo-scene {
+    width: calc(100% + 5vw);
+    margin-right: -5vw;
+  }
+  .landing-root .tour-duo--gauche .tour-duo-texte {
+    order: 2;
+  }
+  .landing-root .tour-duo--gauche .tour-duo-scene {
+    order: 1;
+    width: calc(100% + 5vw);
+    margin-left: -5vw;
+  }
+}
+
+/* ── 3 : PLEINE LARGEUR ──
+   Le moment le plus large de la page, réservé à l'argument le plus
+   singulier. Le titre est centré : c'est le seul de la visite à l'être, et
+   c'est ce qui signale la rupture de rythme. */
+.landing-root .tour-pleine-texte {
+  text-align: center;
+  max-width: 44rem;
+  margin-inline: auto;
+}
+
+/* ── 4 : LA GRILLE COMPACTE ──
+   Quatre écrans réels à l'échelle réduite. On n'y lit pas les chiffres, on y
+   reconnaît des écrans — d'où la ligne de légende sous chacun, qui dit ce
+   qu'on y verrait. Deux colonnes dès 640px : à une colonne, quatre tuiles
+   font une cinquième rangée déguisée. */
+.landing-root .tour-grille-cases {
+  margin-top: 2rem;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .landing-root .tour-grille-cases {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+.landing-root .tour-case figcaption {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.landing-root .tour-case-titre {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.landing-root .tour-case-texte {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--tv-text-secondary);
+}
+/* Les tuiles portent un cadre plus léger : à cette taille, le biseau et
+   l'ombre de la grande capture deviennent du bruit.
+
+   Et elles ont TOUTES LE MÊME RAPPORT. Les quatre captures n'ont pas la
+   même hauteur (une liste de six lignes contre une checklist en cinq
+   étapes) : laissées libres, les tuiles finissaient à des hauteurs
+   différentes et les légendes ne s'alignaient plus d'une colonne à
+   l'autre. Une grille dont les lignes de base zigzaguent se lit comme une
+   grille cassée. L'image est ancrée EN HAUT : c'est là que chaque écran
+   pose son argument. */
+.landing-root .tour-case-shot .shot-frame {
+  padding: 4px;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  box-shadow:
+    0 14px 34px -20px rgb(0 0 0 / 0.8),
+    inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+.landing-root .tour-case-shot .shot-frame > picture,
+.landing-root .tour-case-shot .shot-frame > picture > img,
+.landing-root .tour-case-shot .shot-frame > img {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 12px;
+}
+.landing-root .tour-case-shot.shot-halo::before {
+  opacity: 0.55;
+}
+
+/* ── 5 : LE DÉNOUEMENT ──
+   Resserré et centré. Après trois compositions qui occupent toute la
+   largeur, un bloc plus étroit se lit comme une conclusion. */
+.landing-root .tour-final-texte {
+  text-align: center;
+  max-width: 40rem;
+  margin-inline: auto;
+}
+.landing-root .tour-final-scene {
+  position: relative;
+  margin-top: 2.25rem;
+  max-width: 62rem;
+  margin-inline: auto;
+}
+
+/* La vignette téléphone, posée sur le coin de la capture de bureau. Les deux
+   sont des captures RÉELLES du même écran : les voir ensemble dit « ça
+   marche aussi dans ta poche » sans une ligne de texte. Elle ne s'affiche
+   qu'à partir de `lg` — en dessous, elle recouvrirait ce qu'elle complète. */
 .landing-root .tour-tel {
   display: none;
 }
@@ -1114,77 +1286,18 @@
   .landing-root .tour-tel {
     display: block;
     position: absolute;
-    bottom: -2.25rem;
-    width: clamp(132px, 13%, 186px);
-    aspect-ratio: 13 / 24;
-    object-fit: cover;
-    object-position: top;
-    border-radius: 20px;
-    border: 1px solid rgb(255 255 255 / 0.1);
-    background: var(--tv-plate-1);
-    padding: 4px;
-    box-shadow:
-      0 26px 60px -18px rgb(0 0 0 / 0.9),
-      inset 0 1px 0 rgb(255 255 255 / 0.09);
+    bottom: -2.5rem;
+    width: 150px;
+    border-radius: 18px;
+    border: 1px solid var(--tv-border-strong);
+    box-shadow: 0 26px 52px -22px rgb(0 0 0 / 0.92);
+    transition: transform 420ms var(--lp-expo);
   }
   .landing-root .tour-tel--droite {
-    right: 3.5%;
+    right: -1.25rem;
   }
-  .landing-root .tour-tel--gauche {
-    left: 3.5%;
-  }
-}
-@media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
-  .landing-root .tour-tel {
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .landing-root .tour-scene:hover .tour-tel {
+  .landing-root .tour-final-scene:hover .tour-tel {
     transform: translateY(-6px);
-  }
-}
-
-/* ══ LES CARTES RÉPONDENT AU SURVOL ══
- *
- * Elles ne faisaient qu'éclaircir leur liseré : un changement de couleur d'un
- * pixel, qu'on ne remarque pas. Une page « vivante » ne l'est pas parce
- * qu'elle bouge beaucoup, elle l'est parce que ce qu'on survole RÉPOND.
- *
- * Deux pixels d'élévation, pas six. À six, la carte saute et on regarde
- * l'animation ; à deux, on ne voit rien bouger mais la surface devient
- * tangible - c'est la différence entre un effet et une sensation.
- *
- * `transform` et `border-color` uniquement, et les propriétés sont CITÉES :
- * `transition: all` transitionnerait aussi la mise en page et se
- * déclencherait au moindre changement de classe.
- *
- * 160ms : sous le plafond de 300 de la loi du mouvement, et assez court pour
- * que le survol suive la souris au lieu de la rattraper. */
-@media (prefers-reduced-motion: no-preference) {
-  .landing-root .glass-card,
-  .landing-root .card-premium,
-  .landing-root .lp-card {
-    transition-property: transform, border-color;
-    transition-duration: 160ms;
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .landing-root .glass-card:hover,
-  .landing-root .card-premium:hover,
-  .landing-root .lp-card:hover {
-    transform: translateY(-2px);
-  }
-
-  /* La capture de la visite, elle, ne se soulève PAS : elle porte déjà la
-     vignette téléphone qui monte au survol de la scène. Deux objets qui
-     bougent ensemble dans la même carte se lisent comme un défaut de
-     calage. Le cadre se contente d'éclaircir sa lueur. */
-  .landing-root .tour-scene .shot-frame {
-    transition: box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .landing-root .tour-scene:hover .shot-frame {
-    box-shadow:
-      0 32px 80px -24px rgb(0 0 0 / 0.85),
-      0 0 140px -28px rgb(var(--tv-accent-rgb) / 0.42),
-      inset 0 1px 0 rgb(255 255 255 / 0.09);
   }
 }
 

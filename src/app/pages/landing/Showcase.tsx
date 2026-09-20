@@ -10,25 +10,11 @@ import { useLandingT, type LandingKey } from "./i18n";
  * d'entrée — import CSV universel, copier-coller, saisie rapide, démo.
  */
 
-export function PlatformsStrip() {
-  const { t } = useLandingT();
-  const items: LandingKey[] = ["platforms.i1", "platforms.i2", "platforms.i3", "platforms.i4"];
-  return (
-    <div className="reveal rounded-2xl border border-white/[.07] bg-white/[.02] px-6 py-6 backdrop-blur-md">
-      <p className="tv-label text-center text-slate-500">{t("platforms.label")}</p>
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-        {items.map((k) => (
-          <span
-            key={k}
-            className="font-display text-base font-bold tracking-tight text-slate-300/90 sm:text-lg"
-          >
-            {t(k)}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
+/* `PlatformsStrip` a ete RETIRE. Les quatre portes d'entree vivent
+   desormais dans `BandeConfiance` (`Landing.tsx`), fusionnees avec le lien
+   Trustpilot : deux plaques centrees l'une sur l'autre disaient la meme
+   chose - « ca rentre vite, et d'autres l'utilisent » - pour 190px de page.
+   Le composant n'avait plus qu'un appelant, et cet appelant a disparu. */
 
 const FACTS: { v: string; l: LandingKey }[] = [
   { v: "20+", l: "proof.f1.l" },

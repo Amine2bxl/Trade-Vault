@@ -6,11 +6,10 @@ import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { ShotOuVisuel } from "./landing/ProductShot";
 import { AuthModal } from "./landing/AuthModal";
-import { PlatformsStrip, TrustStrip } from "./landing/Showcase";
+import { TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
-import { AncrageDePrix, SectionEdgeScore } from "./landing/Proof";
+import { SectionEdgeScore } from "./landing/Proof";
 import { TourProduit } from "./landing/Tour";
-import { Benefices } from "./landing/Benefices";
 import { CursorOrb } from "./landing/CursorOrb";
 import { DrawnLine } from "./landing/DrawnLine";
 import { LIENS_NAV } from "./landing/nav";
@@ -18,7 +17,6 @@ import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";
 import { CookieConsent } from "../components/CookieConsent";
 import { faqPageJsonLd } from "@/shared/seo";
-import PricingPlans from "../components/pricing/PricingPlans";
 import {
   LandingLangProvider,
   useLandingT,
@@ -151,33 +149,59 @@ function TrustpilotStar() {
 }
 
 /**
- * LE LIEN TRUSTPILOT - remonté juste sous le héros.
+ * LA BANDE DE CONFIANCE — une seule plaque, deux informations.
  *
- * Il vivait à mi-page, dans la section « confiance », après la visite du
- * produit. C'est tard : la preuve sociale sert à faire CONTINUER quelqu'un
- * qui hésite encore, donc elle doit arriver pendant qu'il hésite, pas une
- * fois qu'il a tout lu.
+ * Il y en avait DEUX, empilées : les quatre portes d'entrée dans une carte,
+ * puis le lien Trustpilot dans une autre, 32px plus bas. Deux plaques
+ * centrées l'une sur l'autre pour dire la même chose — « ça rentre vite, et
+ * d'autres l'utilisent » — c'est 190px de page pour une idée, et deux fois
+ * le même geste de lecture.
  *
- * Toujours aucune note, aucun nombre d'avis. Les cinq carrés sont le LOGO de
+ * Fusionnées : comment les trades entrent à gauche, la preuve à droite. On
+ * lit la bande d'un coup au lieu de la parcourir deux fois.
+ *
+ * AUCUNE NOTE, AUCUN NOMBRE D'AVIS. Les cinq carrés sont le LOGO de
  * Trustpilot, pas un 5/5 : le lien mène à la vraie fiche, où le visiteur lit
  * ce qui s'y trouve réellement. C'est la seule preuve sociale honnête dont
- * on dispose, et l'inventer est la première ligne que `landing-copy` interdit.
+ * on dispose, et l'inventer est la première ligne que `landing-copy`
+ * interdit.
+ *
+ * Le carré vert `#00b67a` est la marque déposée de Trustpilot, et
+ * `AGENTS.md` la déclare ZONE GELÉE : elle ne suit aucun thème.
  */
-function LienTrustpilot({ t }: { t: (k: LandingKey) => string }) {
+function BandeConfiance({ t }: { t: (k: LandingKey) => string }) {
+  const portes: LandingKey[] = ["platforms.i1", "platforms.i2", "platforms.i3", "platforms.i4"];
   return (
-    <a
-      href={TRUSTPILOT_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="lp-card inline-flex items-center gap-2.5 px-5 py-3 text-[13px] text-slate-400 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white"
-    >
-      <span className="flex items-center gap-1" aria-hidden>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <TrustpilotStar key={i} />
-        ))}
-      </span>
-      {t("v2.trust.reviews")} <span className="font-semibold text-white">Trustpilot</span>
-    </a>
+    <div className="reveal flex flex-col gap-6 rounded-2xl border border-white/[.07] bg-white/[.02] px-6 py-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:px-8">
+      <div className="min-w-0">
+        <p className="tv-label text-slate-500">{t("platforms.label")}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-7 gap-y-2">
+          {portes.map((k) => (
+            <span key={k} className="text-[15px] font-semibold text-slate-300">
+              {t(k)}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Le filet vertical ne sépare qu'à partir de `lg` : empilées, les deux
+          moitiés n'ont pas besoin d'être séparées, elles le sont déjà. */}
+      <span className="hidden h-12 w-px shrink-0 bg-white/[.08] lg:block" />
+
+      <a
+        href={TRUSTPILOT_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex shrink-0 items-center gap-2.5 text-[13px] text-slate-400 transition-colors hover:text-white"
+      >
+        <span className="flex items-center gap-1" aria-hidden>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <TrustpilotStar key={i} />
+          ))}
+        </span>
+        {t("v2.trust.reviews")} <span className="font-semibold text-white">Trustpilot</span>
+      </a>
+    </div>
   );
 }
 
@@ -701,7 +725,7 @@ function MistakesSection() {
 
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
-  const { t, lang } = useLandingT();
+  const { t } = useLandingT();
   const [auth, setAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [authPlan, setAuthPlan] = useState<string | undefined>();
@@ -729,7 +753,11 @@ function LandingPage() {
     { q: t("faq.q1"), a: t("faq.a1") },
     { q: t("faq.q2"), a: t("faq.a2") },
     { q: t("faq.q3"), a: t("faq.a3") },
-    { q: t("faq.q4"), a: t("faq.a4") },
+    /* « Le gratuit est-il vraiment gratuit ? » a quitté cette liste : c'est
+       maintenant la première question de `/pricing`, où elle arrive au
+       moment où on se la pose vraiment. La garder ici la faisait poser deux
+       fois, à deux endroits, avec le risque que les deux réponses divergent
+       le jour où l'offre change. */
     { q: t("faq.q5"), a: t("faq.a5") },
     { q: t("faq.q6"), a: t("faq.a6") },
   ];
@@ -918,21 +946,23 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── PLATEFORMES + PREUVE SOCIALE ──
-            Trustpilot est remonté ICI, juste sous le héros. Il vivait à
-            mi-page : une preuve sociale sert à faire continuer quelqu'un qui
-            hésite encore, donc elle doit arriver pendant qu'il hésite. */}
+        {/* ── UNE SEULE BANDE DE CONFIANCE ──
+            Il y en avait DEUX, empilées : les quatre portes d'entrée dans
+            une carte, puis le lien Trustpilot dans une autre, 32px plus bas.
+            Deux plaques centrées l'une sur l'autre pour dire la même chose —
+            « ça rentre vite, et d'autres l'utilisent » — c'est 190px de page
+            pour une seule idée, et deux fois le même geste de lecture.
+
+            Fusionnées, elles se lisent d'un coup : ce qui te fait entrer à
+            gauche, la preuve que tu n'es pas le premier à droite. */}
         <section className="relative pb-12 lg:pb-16">
           <div className="lp-container">
-            <PlatformsStrip />
-            <div className="reveal mt-8 flex justify-center">
-              <LienTrustpilot t={t} />
-            </div>
+            <BandeConfiance t={t} />
           </div>
         </section>
 
-        {/* La seule ligne tracée de la page, posée à la charnière entre « voici
-            le produit » et « voici ton problème ». Sans axe ni chiffre : voir
+        {/* La seule ligne tracée de la page, à la charnière entre « voici le
+            produit » et « voici ton problème ». Sans axe ni chiffre : voir
             l'en-tête de `DrawnLine.tsx`. */}
         <DrawnLine className="-mb-4 mt-2 lg:-mb-6" />
 
@@ -974,73 +1004,56 @@ function LandingPage() {
         <SectionEdgeScore />
 
         <TourProduit
-          ecrans={[
-            {
-              nom: "mistakes",
-              titre: "v2.s1.t",
-              texte: "v2.s1.d",
-              alt: "shot.mistakes.alt",
-              repli: <MistakesSection />,
-            },
-            {
-              nom: "jarvis",
-              titre: "v2.s2.t",
-              texte: "v2.s2.d",
-              alt: "shot.jarvis.alt",
-              repli: <AIConversation />,
-            },
-            {
-              nom: "analytics",
-              titre: "v2.s3.t",
-              texte: "v2.s3.d",
-              alt: "shot.analytics.alt",
-              repli: <AnalyticsSection />,
-            },
-            /* La checklist prend la place du calendrier. Le calendrier
-               montrait « ton mois jour par jour », ce que la rangée Journal
-               dit déjà autrement ; la checklist est le SEUL écran du produit
-               qui agit avant le trade, et rien d'autre ne porte cet
-               argument. */
-            {
-              nom: "checklist",
-              titre: "v2.s6.t",
-              texte: "v2.s6.d",
-              alt: "shot.checklist.alt",
-              repli: null,
-            },
-            {
-              nom: "montecarlo",
-              titre: "v2.s7.t",
-              texte: "v2.s7.d",
-              alt: "shot.montecarlo.alt",
-              repli: null,
-            },
-            {
-              nom: "journal",
-              titre: "v2.s5.t",
-              texte: "v2.s5.d",
-              alt: "shot.journal.alt",
-              repli: null,
-            },
+          /* L'ORDRE EST UN TRAJET, PAS UN CATALOGUE.
+             Le trade entre (Journal), on le mesure (Analytics), on voit ce
+             qu'il coûte (Erreurs), on voit ce qu'on n'a pas pris et ce qui
+             arrive (la grille), et Jarvis lit l'ensemble. Chaque temps a sa
+             propre composition ; c'est `Tour.tsx` qui les porte. */
+          journal={{
+            nom: "journal",
+            titre: "v2.s5.t",
+            texte: "v2.s5.d",
+            alt: "shot.journal.alt",
+            repli: null,
+          }}
+          analytics={{
+            nom: "analytics",
+            titre: "v2.s3.t",
+            texte: "v2.s3.d",
+            alt: "shot.analytics.alt",
+            repli: <AnalyticsSection />,
+          }}
+          erreurs={{
+            nom: "mistakes",
+            titre: "v2.s1.t",
+            texte: "v2.s1.d",
+            alt: "shot.mistakes.alt",
+            repli: <MistakesSection />,
+          }}
+          /* Quatre écrans qui portent chacun un argument que rien d'autre ne
+             porte, et qui ne méritent pas une rangée entière chacun : ce
+             serait quatre écrans de page en plus pour quatre phrases. */
+          secondaires={[
+            { nom: "missed", titre: "v2.s8.t", texte: "v2.s8.d", alt: "shot.missed.alt" },
+            { nom: "checklist", titre: "v2.s6.t", texte: "v2.s6.d", alt: "shot.checklist.alt" },
+            { nom: "montecarlo", titre: "v2.s7.t", texte: "v2.s7.d", alt: "shot.montecarlo.alt" },
+            { nom: "news", titre: "v2.s9.t", texte: "v2.s9.d", alt: "shot.news.alt" },
           ]}
+          jarvis={{
+            nom: "jarvis",
+            titre: "v2.s2.t",
+            texte: "v2.s2.d",
+            alt: "shot.jarvis.alt",
+            repli: <AIConversation />,
+          }}
         />
 
-        {/* Le résumé, juste après la démonstration : on a MONTRÉ cinq écrans,
-            on dit en quatre lignes ce qu'on en retire, puis on parle prix. */}
-        <Benefices />
-
         {/* ── CONFIANCE ──
-            `TraderProof` (« Construit par un trader, pour des traders » — 128
-            mots, 622 px, aucune capture) est parti : c'est du récit sur nous,
-            posé entre deux démonstrations du produit, et il ne répondait à
-            aucune objection que le reste de la page ne traite déjà.
-
-            Ce qui reste est vérifiable : les trois engagements de sécurité, et
-            le lien Trustpilot. Pas de note, pas de nombre d'avis, pas
-            d'étoiles — nous n'en avons pas, et les inventer est la ligne que
-            `landing-copy` interdit en premier. Un lien vers le vrai profil
-            laisse le visiteur vérifier lui-même ; c'est la seule preuve
-            sociale honnête dont on dispose aujourd'hui. */}
+            Ce qui reste est vérifiable : les trois engagements de sécurité.
+            Pas de note, pas de nombre d'avis, pas d'étoiles - nous n'en
+            avons pas, et les inventer est la ligne que `landing-copy`
+            interdit en premier. Le lien vers la vraie fiche est remonté dans
+            la bande sous le héros, là où il sert encore à décider. */}
         <section id="trust" className="relative section-divider py-10 sm:py-14 lg:py-20">
           <div className="lp-container">
             <SectionHead title={t("v2.trust.title")} sub={t("v2.trust.sub")} />
@@ -1050,37 +1063,59 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── ANCRAGE DE PRIX ──
-            COLLÉE à la grille tarifaire, et dans cet ordre : un ancrage lu deux
-            sections avant le prix n'ancre plus rien. C'est la dernière chose
-            qu'on lit avant de voir un montant. */}
-        <AncrageDePrix />
+        {/* ── LE PRIX, EN UN BLOC, QUI MÈNE À /pricing ──
+            La grille complète vivait ICI, et elle vit maintenant sur sa
+            propre adresse. La garder aux deux endroits, c'était présenter
+            deux fois la même décision : une fois au bout d'un parcours, une
+            fois sur une page qu'on ouvre AVEC la question. Et c'était 900px
+            de landing pour un composant qui se partage mieux seul.
 
-        {/* ── PRICING ── */}
-        <section id="pricing" className="relative section-divider py-10 sm:py-14 lg:py-20">
+            Ce qui reste est ce qu'il faut pour décider de CLIQUER : l'ancrage
+            (on se compare à un challenge raté, jamais à un journal moins
+            cher), le montant d'entrée, et le fait que le gratuit n'expire
+            pas. Le reste est à un clic. */}
+        <section id="pricing" className="relative section-divider py-12 sm:py-16 lg:py-24">
           <div className="lp-container">
-            <SectionHead title={t("pricing.title")} sub={t("pricing.sub")} />
-            <div className="reveal">
-              <PricingPlans
-                lang={lang}
-                onChoose={(plan) => open("signup", `TradeVault - ${plan}`)}
-                onFree={() => open("signup", "Free")}
-              />
-            </div>
-            <div className="reveal mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-              {[
-                ["shield", "pricing.trust1"],
-                ["lock", "pricing.trust2"],
-                ["check", "pricing.trust3"],
-              ].map(([ic, s]) => (
-                <span
-                  key={s}
-                  className="flex items-center gap-2 text-sm font-medium text-slate-500"
+            <div className="reveal mx-auto max-w-[760px] text-center">
+              <p className="tv-label text-[var(--tv-highlight)]">{t("pricing.tag")}</p>
+              <h2 className="mt-4 font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
+                {t("pricing.title")}
+              </h2>
+              <p className="mx-auto mt-5 max-w-[580px] text-[15px] leading-7 text-slate-400">
+                {t("anchor.sub")}
+              </p>
+
+              {/* Les deux bornes de l'offre, pas la grille. Le montant vient
+                  du catalogue (`@/domain/plans`), jamais d'une constante
+                  recopiée : c'est la seule façon qu'il ne diverge pas de
+                  `/pricing` et de Stripe. */}
+              <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-3">
+                <a href="/pricing" className="btn-primary w-full sm:w-auto">
+                  {t("pricing.cta")} <Icon n="arrow" cls="h-4 w-4" />
+                </a>
+                <button
+                  onClick={() => open("signup", "Free")}
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-[var(--tv-border)] px-5 text-sm font-semibold text-slate-300 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white sm:w-auto"
                 >
-                  <Icon n={ic as IName} cls="h-4 w-4 text-[var(--tv-chart-green)]" />
-                  {t(s)}
-                </span>
-              ))}
+                  {t("pricing.cta2")}
+                </button>
+              </div>
+
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+                {[
+                  ["shield", "pricing.trust1"],
+                  ["lock", "pricing.trust2"],
+                  ["check", "pricing.trust3"],
+                ].map(([ic, s2]) => (
+                  <span
+                    key={s2}
+                    className="flex items-center gap-2 text-[13px] font-medium text-slate-500"
+                  >
+                    <Icon n={ic as IName} cls="h-4 w-4 text-[var(--tv-chart-green)]" />
+                    {t(s2 as LandingKey)}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </section>

@@ -29,7 +29,10 @@ export const LIENS_NAV: readonly LienNav[] = [
   { key: "nav.problem", id: "problem" },
   { key: "nav.product", id: "product" },
   { key: "nav.edge", id: "edge" },
-  { key: "v2.bul.title", id: "benefits" },
+  /* « Ce que tu obtiens vraiment » est parti AVEC sa section : elle résumait
+     en quatre puces ce que la visite venait de MONTRER en cinq écrans, donc
+     elle répondait deux fois à la même objection. Cinq entrées au lieu de
+     six - une barre se juge à ce qu'on peut en retirer. */
   /* Les tarifs ne sont plus une ancre mais une PAGE. Le lien mène donc
      ailleurs, pas plus bas - et c'est justement ce qu'on veut : la grille
      noyée en bas d'une page de vente ne se démarquait pas. `href` gagne
