@@ -1,27 +1,33 @@
 import type { ReactNode } from "react";
 import { ShotOuVisuel } from "./ProductShot";
+import { shot } from "./shots";
 import { useLandingT, type LandingKey } from "./i18n";
 
 /**
- * LA VISITE DU PRODUIT — cinq écrans, une phrase chacun.
+ * LA VISITE DU PRODUIT - cinq écrans, une phrase chacun.
  *
- * ── CE QUE CETTE SECTION REMPLACE ──────────────────────────────────────────
+ * ── POURQUOI LA CAPTURE EST PASSÉE EN PLEINE LARGEUR ──────────────────────
  *
- * Six sections séparées, chacune avec son titre, son sous-titre, son
- * paragraphe et sa grille de trois cartes : 4 300 px pour dire ce que le
- * produit fait. Le visiteur qui défile n'en lisait aucune en entier — et deux
- * d'entre elles répétaient un argument déjà donné plus haut.
+ * Elle vivait dans une colonne, en alternance gauche/droite. C'était joli et
+ * illisible : mesurée, la capture tombait à 602px sur un écran de 1440 alors
+ * que sa mise en page avait été calculée sur 1352px. Échelle 0,45 - le texte
+ * du produit passait de 13px à 6px. Une capture qu'on ne déchiffre pas ne
+ * prouve rien ; elle fait une texture entre deux paragraphes.
  *
- * Ici, chaque écran a DROIT À UNE PHRASE et à une seule. Si la capture ne se
- * suffit pas avec une phrase, ce n'est pas la phrase qui manque : c'est que
- * l'écran n'avait rien à faire sur une page de vente.
+ * Le titre et sa phrase montent donc AU-DESSUS, et la capture prend toute la
+ * largeur en dessous (~1200px, échelle 0,89). C'est la disposition de toutes
+ * les vitrines qui vendent un logiciel visuel, et c'est la seule qui laisse
+ * lire ce qu'on montre.
  *
- * ── L'ALTERNANCE ───────────────────────────────────────────────────────────
+ * ── LE CHEVAUCHEMENT ──────────────────────────────────────────────────────
  *
- * La capture change de côté à chaque rangée. Ce n'est pas décoratif : cinq
- * blocs identiques empilés se lisent comme une liste qu'on saute, alors que
- * l'alternance oblige l'œil à traverser la page et marque la séparation entre
- * deux écrans sans avoir besoin d'un filet.
+ * La capture TÉLÉPHONE du même écran se pose sur le coin de la capture de
+ * bureau. Ce n'est pas un ornement : les deux sont des captures RÉELLES du
+ * même produit, et les voir ensemble dit « ça marche aussi dans ta poche »
+ * sans une ligne de texte. Rien n'est redessiné, rien n'est simulé.
+ *
+ * Elle ne s'affiche qu'à partir de `lg` : en dessous, elle recouvrirait la
+ * capture qu'elle est censée compléter.
  */
 
 export interface EcranProduit {
@@ -36,36 +42,39 @@ export interface EcranProduit {
 
 function Rangee({ e, index }: { e: EcranProduit; index: number }) {
   const { t } = useLandingT();
-  // Les rangées impaires renvoient la capture à droite.
-  const inverse = index % 2 === 1;
+  const tel = shot(`${e.nom}-m`);
+  /* Le chevauchement change de côté d'une rangée à l'autre. Cinq vignettes au
+     même coin se liraient comme un gabarit ; en alternant, l'œil retraverse
+     la page à chaque écran. */
+  const aDroite = index % 2 === 0;
 
-  /* L'ALTERNANCE SE JOUE EN CSS, PAS EN CLASSES UTILITAIRES.
-   *
-   * La première version combinait `order-*` et `col-start-*` sur les mêmes
-   * éléments : deux mécanismes de placement de grille qui se contredisent, et
-   * la capture sortait de sa colonne. Surtout, déplacer la capture en colonne
-   * 2 la faisait atterrir dans la piste ÉTROITE (0.85fr) — l'alternance
-   * changeait donc sa taille d'une rangée à l'autre.
-   *
-   * `.tour-row--flip` inverse le GABARIT de colonnes en même temps que
-   * l'ordre : la capture garde sa largeur, quel que soit son côté. */
   return (
-    <div className={`tour-row reveal${inverse ? " tour-row--flip" : ""}`}>
-      <div className="tour-shot-col">
-        <ShotOuVisuel
-          nom={e.nom}
-          alt={t(e.alt)}
-          /* Pas de légende : le titre de la rangée, à côté, dit déjà ce que
-             l'écran montre. Deux textes pour une image, c'est un de trop. */
-          repli={e.repli}
-          className="tour-shot"
-        />
-      </div>
-      <div className="tour-text-col">
-        <h3 className="font-display text-[clamp(1.35rem,2.4vw,1.75rem)] font-semibold leading-[1.15] tracking-[-0.025em] text-white">
+    <div className="tour-bloc reveal">
+      <div className="tour-entete">
+        <span className="tour-num" aria-hidden>
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <h3 className="font-display text-[clamp(1.45rem,2.8vw,2.05rem)] font-semibold leading-[1.12] tracking-[-0.028em] text-white">
           {t(e.titre)}
         </h3>
-        <p className="mt-3 max-w-[46ch] text-[15px] leading-7 text-slate-400">{t(e.texte)}</p>
+        <p className="mt-3 max-w-[58ch] text-[15px] leading-7 text-slate-400">{t(e.texte)}</p>
+      </div>
+
+      <div className="tour-scene">
+        <ShotOuVisuel nom={e.nom} alt={t(e.alt)} repli={e.repli} className="tour-shot" />
+        {tel && (
+          /* `alt=""` : cette vignette ne dit rien que la capture principale ne
+             dise déjà, et la doubler dans un lecteur d'écran serait du bruit.
+             C'est le cas prévu pour une image décorative. */
+          <img
+            src={tel}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            decoding="async"
+            className={`tour-tel ${aDroite ? "tour-tel--droite" : "tour-tel--gauche"}`}
+          />
+        )}
       </div>
     </div>
   );
@@ -74,13 +83,13 @@ function Rangee({ e, index }: { e: EcranProduit; index: number }) {
 export function TourProduit({ ecrans }: { ecrans: EcranProduit[] }) {
   const { t } = useLandingT();
   return (
-    <section id="product" className="relative section-divider py-11 sm:py-16 lg:py-24">
+    <section id="product" className="section-divider relative py-11 sm:py-16 lg:py-24">
       <div className="lp-container">
         <h2 className="reveal mx-auto max-w-2xl text-center font-display text-[clamp(1.75rem,3.4vw,2.6rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
           {t("v2.tour.title.a")}{" "}
           <span className="text-[var(--tv-text-secondary)]">{t("v2.tour.title.b")}</span>
         </h2>
-        <div className="mt-10 space-y-12 sm:mt-14 sm:space-y-16 lg:mt-20 lg:space-y-24">
+        <div className="mt-12 space-y-16 lg:mt-20 lg:space-y-28">
           {ecrans.map((e, i) => (
             <Rangee key={e.nom} e={e} index={i} />
           ))}

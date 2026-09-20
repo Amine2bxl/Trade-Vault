@@ -100,12 +100,19 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
                 onClick={() => setLang(l.id)}
                 aria-label={l.label}
                 aria-pressed={lang === l.id}
-                className={`flex h-8 min-w-[34px] items-center justify-center rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                className={`flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-semibold transition-colors ${
                   lang === l.id
                     ? "bg-[rgb(var(--tv-accent-rgb)/0.14)] text-white"
                     : "text-slate-500 hover:text-slate-300"
                 }`}
               >
+                {/* Le drapeau accélère la reconnaissance ; le code la garantit.
+                    Un pavillon seul désigne un PAYS, pas une langue, et il ne
+                    dit rien à un lecteur d'écran : `aria-hidden` sur l'émoji,
+                    `aria-label` sur le bouton. */}
+                <span aria-hidden className="text-[13px] leading-none">
+                  {l.drapeau}
+                </span>
                 {l.short}
               </button>
             ))}
@@ -183,12 +190,16 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
                   key={l.id}
                   onClick={() => setLang(l.id)}
                   aria-pressed={lang === l.id}
-                  className={`flex-1 rounded-lg border py-2 text-[12px] font-semibold transition-colors ${
+                  aria-label={l.label}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-2.5 text-[12px] font-semibold transition-colors ${
                     lang === l.id
                       ? "border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.08)] text-[var(--tv-highlight)]"
                       : "border-[var(--tv-border)] text-slate-400"
                   }`}
                 >
+                  <span aria-hidden className="text-[15px] leading-none">
+                    {l.drapeau}
+                  </span>
                   {l.label}
                 </button>
               ))}

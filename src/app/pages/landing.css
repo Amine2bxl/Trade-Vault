@@ -461,15 +461,11 @@
   pointer-events: none;
   background:
     /* La menthe, très haut : elle n'éclaire que le héros. */
-    radial-gradient(
-      68rem 42rem at 72% -8%,
-      rgb(var(--tv-accent-rgb) / 0.085),
-      transparent 62%
-    ),
+    radial-gradient(68rem 42rem at 72% -8%, rgb(var(--tv-accent-rgb) / 0.085), transparent 62%),
     /* L'indigo, à gauche et plus bas : il donne au noir une TEMPÉRATURE.
        Sans lui le fond est mort ; avec lui il a un volume, sans qu'on
        puisse nommer la couleur. */
-      radial-gradient(56rem 40rem at 6% 18%, rgb(86 96 210 / 0.07), transparent 60%),
+    radial-gradient(56rem 40rem at 6% 18%, rgb(86 96 210 / 0.07), transparent 60%),
     radial-gradient(70rem 50rem at 50% 108%, rgb(86 96 210 / 0.05), transparent 62%);
 }
 
@@ -720,39 +716,6 @@
  * Sous 1024px, tout s'empile et le TEXTE PASSE DEVANT : sur un téléphone, on
  * lit ce qu'on va regarder, puis on le regarde. L'alternance n'a aucun sens
  * sur une colonne unique, elle disparaît d'elle-même. */
-.landing-root .tour-row {
-  display: grid;
-  gap: 1.75rem;
-}
-.landing-root .tour-shot,
-.landing-root .tour-shot-col {
-  min-width: 0;
-}
-@media (max-width: 1023px) {
-  .landing-root .tour-shot-col {
-    order: 2;
-  }
-  .landing-root .tour-text-col {
-    order: 1;
-  }
-}
-@media (min-width: 1024px) {
-  .landing-root .tour-row {
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 4rem;
-    align-items: center;
-  }
-  .landing-root .tour-row--flip {
-    grid-template-columns: 0.85fr 1.15fr;
-  }
-  .landing-root .tour-row--flip .tour-shot-col {
-    order: 2;
-  }
-  .landing-root .tour-row--flip .tour-text-col {
-    order: 1;
-  }
-}
-
 /* ── L'ORBE DU CURSEUR ──
  *
  * 300px de diamètre pour une lueur à 7 % au centre : à cette taille elle ne se
@@ -910,5 +873,194 @@
      le tracé partage donc EXACTEMENT le déclencheur du reveal des blocs. */
   .landing-root .reveal-visible .tv-draw-path {
     animation: chart-draw 1100ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  }
+}
+
+/* ══ LE VERT DES ACTIONS, SUR LA VITRINE ══
+ *
+ * ── POURQUOI LE BOUTON PARAISSAIT SOMBRE ──────────────────────────────────
+ *
+ * L'accent de la marque est `#22e08a`, un émeraude franc (oklch L≈0.80). Le
+ * bouton, lui, ne le portait pas : `--tv-cta` verrouille la LUMINOSITÉ à
+ * 0.52 pour que du texte BLANC passe le seuil de contraste 4.5:1. Verrouiller
+ * la luminosité était juste, et c'est ce qui rendait le bouton deux fois plus
+ * sombre que la couleur de marque affichée partout à côté.
+ *
+ * ── LE MÊME PROBLÈME A DEUX SOLUTIONS ─────────────────────────────────────
+ *
+ * Blanc sur vert force un vert sombre. Noir sur vert autorise un vert clair.
+ * L'application garde la première (c'est un outil de travail, le blanc sur
+ * couleur y est la grammaire de l'action, et rien ne change côté produit).
+ * La vitrine prend la seconde : l'émeraude plein avec du texte quasi noir,
+ * mesuré à ~11:1 — largement au-dessus du seuil, et c'est CE contraste-là qui
+ * fait qu'un bouton clair sur fond noir se voit de l'autre bout de la page.
+ *
+ * On ne réintroduit aucune constante : le fond EST `--tv-accent`, le survol
+ * EST `--tv-highlight`. Changer le thème change le bouton, comme avant. */
+.landing-root .btn-primary {
+  background: var(--tv-accent);
+  color: #04120b;
+}
+.landing-root .btn-primary:hover {
+  background: var(--tv-highlight);
+}
+.landing-root .btn-primary:active {
+  background: var(--tv-accent-2);
+}
+
+/* ══ LE SURLIGNEUR ══
+ *
+ * Un mot du titre porté par l'accent, pas une phrase entière : c'est la
+ * différence entre souligner une idée et repeindre un paragraphe. Un seul
+ * par titre, jamais deux. */
+.landing-root .mark-accent {
+  color: var(--tv-accent);
+}
+
+/* ══ LE HÉROS EN DEUX COLONNES ══
+ *
+ * Texte à gauche, produit à droite, les deux dans le premier écran. Le
+ * gabarit n'est pas 50/50 : l'accroche a besoin d'une mesure de lecture
+ * (~560px, une cinquantaine de signes par ligne), la capture veut tout le
+ * reste et même un peu plus.
+ *
+ * Sous 1024px on empile, texte d'abord. Deux colonnes sur une tablette
+ * donneraient deux vignettes au lieu d'une lecture. */
+.landing-root .hero-grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .landing-root .hero-grid {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 3.5rem;
+  }
+}
+
+/* LE DÉBORDEMENT.
+ *
+ * La capture sort du conteneur par la droite et se fait couper par le bord de
+ * la fenêtre (`overflow: hidden` sur la section). Un écran coupé par le bord
+ * se lit comme une fenêtre sur quelque chose de plus grand ; la même image
+ * entière et centrée se lit comme une illustration posée sur la page.
+ *
+ * La marge négative est en `vw` plafonnée : sur un très grand écran, laisser
+ * la capture filer indéfiniment la ferait sortir de la zone de mise au point
+ * du regard. */
+@media (min-width: 1024px) {
+  .landing-root .hero-shot-col {
+    /* Assez pour que le bord de la FENÊTRE coupe la capture, pas seulement
+       pour la rapprocher du bord : s'arrêter à vingt pixels du bord ne se
+       lit pas comme un débordement, ça se lit comme une marge ratée. */
+    margin-right: min(-13vw, -120px);
+  }
+}
+
+/* ══ LES COINS DES CAPTURES ══
+ *
+ * LE DÉFAUT : on voyait des ANGLES NOIRS à 90° dans les coins. Le cadre est
+ * arrondi (20px) et l'image à l'intérieur l'était aussi (15px), mais rien ne
+ * découpait l'image sur la forme du cadre : entre l'arrondi de l'image et
+ * l'arrondi du cadre restait un petit triangle de plaque sombre, visible sur
+ * fond clair de capture. Quatre petits triangles noirs, un par coin.
+ *
+ * `overflow: hidden` sur le cadre découpe pour de bon, et l'image reprend
+ * exactement le rayon intérieur (rayon du cadre moins l'épaisseur du
+ * rembourrage) — c'est la règle des rayons concentriques : sans elle, deux
+ * arrondis de rayons différents laissent toujours une lunule. */
+.landing-root .shot-frame {
+  overflow: hidden;
+  border-radius: 22px;
+}
+.landing-root .shot-frame > img,
+.landing-root .shot-frame > picture > img {
+  border-radius: 16px;
+}
+.landing-root .shot-frame::after {
+  border-radius: 16px;
+}
+
+/* ══ LA VISITE DU PRODUIT - pleine largeur, avec chevauchement ══
+ *
+ * Le titre et sa phrase au-dessus, la capture en dessous sur toute la
+ * largeur. La raison est arithmétique : en deux colonnes, la capture tombait
+ * à 602px sur un écran de 1440 alors que sa mise en page avait été calculée
+ * sur 1352px - échelle 0,45, texte du produit à 6px. En pleine largeur elle
+ * fait ~1200px, soit 0,89 : on lit ce qu'on montre.
+ *
+ * Le numéro de rangée n'est pas une décoration. Une visite en cinq écrans
+ * sans repère se parcourt sans qu'on sache où l'on en est ; numérotée, elle
+ * se lit comme un parcours qui avance et qui finit. */
+.landing-root .tour-entete {
+  max-width: 62ch;
+}
+.landing-root .tour-num {
+  display: block;
+  margin-bottom: 0.65rem;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--tv-accent);
+}
+
+.landing-root .tour-scene {
+  position: relative;
+  margin-top: 2rem;
+}
+@media (min-width: 1024px) {
+  .landing-root .tour-scene {
+    margin-top: 2.75rem;
+  }
+}
+
+/* LE TÉLÉPHONE POSÉ SUR LE COIN.
+ *
+ * Deux captures RÉELLES du même écran, l'une de bureau, l'autre de téléphone.
+ * Le cadre reprend la matière du grand (liseré clair sur l'arête haute,
+ * ombre basse franche) pour qu'on lise « deux vues du même produit » et non
+ * « une image collée sur une autre ».
+ *
+ * `object-position: top` : on montre le HAUT de l'écran mobile, là où ces
+ * pages posent leur argument. Le bas est coupé, ce qui se lit comme un écran
+ * qu'on n'a pas fini de faire défiler - c'est vrai, et ça n'induit personne
+ * en erreur.
+ *
+ * Invisible sous `lg` : à cette largeur elle recouvrirait la capture qu'elle
+ * est censée compléter. */
+.landing-root .tour-tel {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .landing-root .tour-tel {
+    display: block;
+    position: absolute;
+    bottom: -2.25rem;
+    width: clamp(132px, 13%, 186px);
+    aspect-ratio: 13 / 24;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 20px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: var(--tv-plate-1);
+    padding: 4px;
+    box-shadow:
+      0 26px 60px -18px rgb(0 0 0 / 0.9),
+      inset 0 1px 0 rgb(255 255 255 / 0.09);
+  }
+  .landing-root .tour-tel--droite {
+    right: 3.5%;
+  }
+  .landing-root .tour-tel--gauche {
+    left: 3.5%;
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
+  .landing-root .tour-tel {
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .landing-root .tour-scene:hover .tour-tel {
+    transform: translateY(-6px);
   }
 }

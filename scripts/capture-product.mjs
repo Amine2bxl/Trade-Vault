@@ -648,13 +648,19 @@ await ctxM.close();
 // vient de `BOITE`, mesuree sur le `<main>`. `pleine: true` ne recadre rien.
 const PLANS = [
   // Le heros est affiche pleine largeur : tout compte, on ne recadre pas.
-  { de: "desk-01-dashboard.png", vers: "dashboard.webp", pleine: true, w: 1800 },
+  /* LE HÉROS SORT À 2400, PAS 1800.
+     Dans le héros en deux colonnes il s'affiche sur ~1000 px CSS, soit
+     2000 px physiques sur un écran Retina. À 1800 de large, le navigateur
+     AGRANDISSAIT donc la capture : c'est exactement ce qui la rendait molle.
+     2400 laisse de la marge jusqu'aux très grands écrans, et l'encodage WebP
+     absorbe la différence de poids. */
+  { de: "desk-01-dashboard.png", vers: "dashboard.webp", pleine: true, w: 2400 },
   // Les fenetres commencent et finissent sur un BORD DE CARTE. Une carte
   // tranchee en deux par le cadrage se lit comme une image mal chargee.
-  { de: "desk-07-jarvis-reponse.png", vers: "jarvis.webp", vfen: [170, 1500], w: 1300 },
-  { de: "desk-03-erreurs.png", vers: "mistakes.webp", vfen: [230, 1210], w: 1300 },
-  { de: "desk-05-analytics.png", vers: "analytics.webp", vfen: [505, 1500], w: 1300 },
-  { de: "desk-02-journal.png", vers: "journal.webp", vfen: [150, 1560], w: 1300 },
+  { de: "desk-07-jarvis-reponse.png", vers: "jarvis.webp", vfen: [170, 1500], w: 2400 },
+  { de: "desk-03-erreurs.png", vers: "mistakes.webp", vfen: [230, 1210], w: 2400 },
+  { de: "desk-05-analytics.png", vers: "analytics.webp", vfen: [505, 1500], w: 2400 },
+  { de: "desk-02-journal.png", vers: "journal.webp", vfen: [150, 1560], w: 2400 },
   /* PAS DE `monthly-reports.webp`.
      Les rapports mensuels sont une vraie fonctionnalite livree, mais le compte
      vitrine n'en a jamais genere : la page tombe sur son etat vide, neuf
@@ -664,9 +670,9 @@ const PLANS = [
      personne qui cherchera une illustration des rapports.
      Pour la retablir : generer un rapport sur le compte vitrine, puis remettre
      une ligne `{ de: "desk-08-rapports.png", vers: "monthly-reports.webp",
-     vfen: [150, 1560], w: 1300 }`. La capture PNG, elle, continue d'etre
+     vfen: [150, 1560], w: 2400 }`. La capture PNG, elle, continue d'etre
      prise : c'est elle qui permettra de verifier que l'etat n'est plus vide. */
-  { de: "desk-04-calendrier.png", vers: "calendar.webp", vfen: [60, 1700], w: 1300 },
+  { de: "desk-04-calendrier.png", vers: "calendar.webp", vfen: [60, 1700], w: 2400 },
 
   /* Les variantes telephone. Suffixe `-m`, largeur 780 (390 CSS a 2x) : la
      vitrine les sert sous 640px via `<picture>`. Aucun recadrage — le produit

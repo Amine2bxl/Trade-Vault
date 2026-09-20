@@ -43,18 +43,24 @@ export const SITE_DOMAIN = SITE_URL.replace(/^https?:\/\//, "");
 /**
  * La fiche Trustpilot du produit — le SEUL profil externe réel de la marque.
  *
- * Elle était écrite en dur dans `landing/AuthModal.tsx`, et pointait encore sur
- * `tradevaultt.vercel.app` : l'ancien domaine, abandonné lors de la migration
- * vers `tradevault.be`. Le lien « Avis vérifiés » affiché au moment exact de
- * l'inscription menait donc à une fiche qui n'est plus la nôtre.
+ * ── CETTE URL EST ÉCRITE EN DUR, ET C'EST VOULU ───────────────────────────
  *
- * Trustpilot indexe une fiche PAR DOMAINE. Dériver l'URL de `SITE_DOMAIN`,
- * comme le commentaire de cette constante l'annonçait déjà, fait suivre la
- * fiche automatiquement le jour où le domaine change — et c'est la même valeur
- * qui alimente `sameAs` dans les données structurées (`shared/seo.ts`), pour
- * que les deux déclarations de « où vit cette marque » ne puissent pas diverger.
+ * Elle était dérivée de `SITE_DOMAIN`, au motif que Trustpilot indexe une
+ * fiche par domaine et que la fiche suivrait donc la migration vers
+ * `tradevault.be`. Le raisonnement était juste en théorie et faux en fait :
+ * la fiche qui existe, celle qui porte les avis réels, est restée sur
+ * `tradevaultt.vercel.app`. Une fiche vide sur le nouveau domaine n'aurait
+ * pas remplacé les avis déjà écrits sur l'ancienne, elle les aurait cachés.
+ *
+ * Dériver l'URL revenait donc à faire pointer « Avis vérifiés » vers une page
+ * sans avis. On pointe sur la fiche qui existe, propriétaire du produit
+ * faisant foi.
+ *
+ * Le jour où la fiche est migrée côté Trustpilot, c'est CETTE constante qu'on
+ * change — et il faut vérifier `sameAs` dans `shared/seo.ts`, qui déclare la
+ * même chose aux moteurs.
  */
-export const TRUSTPILOT_URL = `https://www.trustpilot.com/review/${SITE_DOMAIN}`;
+export const TRUSTPILOT_URL = "https://www.trustpilot.com/review/tradevaultt.vercel.app";
 
 /** Supabase project ref — also the host of the Google OAuth callback. */
 export const SUPABASE_PROJECT_REF = "tjikygsipblatubyzbrt";

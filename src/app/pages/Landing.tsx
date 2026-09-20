@@ -144,6 +144,37 @@ function TrustpilotStar() {
   );
 }
 
+/**
+ * LE LIEN TRUSTPILOT - remonté juste sous le héros.
+ *
+ * Il vivait à mi-page, dans la section « confiance », après la visite du
+ * produit. C'est tard : la preuve sociale sert à faire CONTINUER quelqu'un
+ * qui hésite encore, donc elle doit arriver pendant qu'il hésite, pas une
+ * fois qu'il a tout lu.
+ *
+ * Toujours aucune note, aucun nombre d'avis. Les cinq carrés sont le LOGO de
+ * Trustpilot, pas un 5/5 : le lien mène à la vraie fiche, où le visiteur lit
+ * ce qui s'y trouve réellement. C'est la seule preuve sociale honnête dont
+ * on dispose, et l'inventer est la première ligne que `landing-copy` interdit.
+ */
+function LienTrustpilot({ t }: { t: (k: LandingKey) => string }) {
+  return (
+    <a
+      href={TRUSTPILOT_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="lp-card inline-flex items-center gap-2.5 px-5 py-3 text-[13px] text-slate-400 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white"
+    >
+      <span className="flex items-center gap-1" aria-hidden>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <TrustpilotStar key={i} />
+        ))}
+      </span>
+      {t("v2.trust.reviews")} <span className="font-semibold text-white">Trustpilot</span>
+    </a>
+  );
+}
+
 /* ─────────────────────────── HOOKS ─────────────────────────── */
 function useScroll() {
   const [y, setY] = useState(0);
@@ -713,37 +744,41 @@ function LandingPage() {
 
       <main className="relative z-10">
         {/* ── HERO ──
-            LA CAPTURE EST LE SUJET, ET ELLE PREND TOUTE LA LARGEUR.
+            TEXTE À GAUCHE, PRODUIT À DROITE. LES DEUX DANS LE PREMIER ÉCRAN.
 
-            Elle vivait dans une colonne de 520px à côté du texte. À cette
-            taille, l'écran du produit est une vignette : on distingue qu'il y a
-            un graphe, on ne lit ni un chiffre ni un libellé — donc elle ne
-            prouve rien, et la promesse du titre reste une affirmation.
-            `DESIGN.md` demande que la capture MÈNE la page ; une vignette ne
-            mène rien.
+            La capture a d'abord vécu dans une colonne étroite (vignette
+            illisible), puis en pleine largeur SOUS le texte. La pleine largeur
+            réglait la lisibilité et créait un autre problème : sur un portable
+            de 900px de haut, l'écran d'ouverture ne montrait que du texte. Le
+            produit commençait sous la ligne de flottaison, et la promesse du
+            titre restait une affirmation jusqu'au premier défilement.
 
-            Le texte passe donc au-dessus, centré et resserré (`max-w-3xl` :
-            une accroche se lit d'un coup d'œil, pas en balayant 1200px), et la
-            capture occupe la pleine largeur en dessous. C'est la disposition
-            de toutes les vitrines qui vendent un logiciel visuel, et pour une
-            raison simple : au premier défilement, on doit avoir VU le produit. */}
-        <section className="relative overflow-hidden pt-[104px] pb-10 lg:pt-[140px] lg:pb-16">
+            Côte à côte, les deux sont là d'emblée : on lit la promesse ET on
+            voit ce qu'on achète, sans un geste. La capture déborde
+            volontairement à droite (`hero-shot-bleed`) — un écran coupé par le
+            bord se lit comme une fenêtre sur quelque chose de plus grand,
+            là où une image entière et centrée se lit comme une illustration.
+
+            Sous 1024px la pile reprend : à cette largeur, deux colonnes
+            donneraient deux vignettes au lieu d'une lecture. */}
+        <section className="relative overflow-hidden pt-[104px] pb-10 lg:pt-[132px] lg:pb-16">
           <div className="lp-container">
-            <div className="mx-auto max-w-3xl text-center">
-              {/* Le titre se lit en DEUX TEMPS : la capacité, puis la faille.
+            <div className="hero-grid">
+              <div className="hero-copy">
+                {/* Le titre se lit en DEUX TEMPS : la capacité, puis la faille.
                     Le passage à la ligne n'est pas une mise en page, c'est la
                     respiration qui fait porter le second membre — mis bout à
                     bout, les deux propositions se lisaient comme une seule
                     phrase et le contre-temps disparaissait. */}
-              {/* La taille plafonne à 3.2rem, pas 4.2 : la colonne de texte
+                {/* La taille plafonne à 3.2rem, pas 4.2 : la colonne de texte
                     fait ~600px, et à 67px la première proposition passait
                     elle-même à la ligne — le titre montait à quatre lignes et
                     le passage à la ligne VOULU ne se distinguait plus des
                     passages subis. À 51px, chaque proposition tient sa place. */}
-              {/* Le titre monte à 4.4rem : centré sur 3xl, chaque proposition
+                {/* Le titre monte à 4.4rem : centré sur 3xl, chaque proposition
                   tient sa ligne, et l'accroche pèse enfin ce qu'elle doit
                   peser en haut d'une page de vente. */}
-              {/* À QUI ON PARLE — la ligne qui manquait.
+                {/* À QUI ON PARLE — la ligne qui manquait.
                   Le héros disait ce que le produit fait et à quelle douleur il
                   répond, jamais POUR QUI. Un trader en challenge prop-firm ne
                   se reconnaissait qu'au bout de trois sections ; un
@@ -751,74 +786,91 @@ function LandingPage() {
                   de comprendre qu'elle ne lui était pas destinée. Une ligne
                   sourde au-dessus du titre suffit à faire les deux tris, et
                   elle ne coûte rien à la lecture de l'accroche. */}
-              <p className="fade-up tv-label mb-5 text-[var(--tv-text-secondary)]">
-                {t("v2.hero.eyebrow")}
-              </p>
-              <h1 className="fade-up font-display text-[clamp(2.3rem,5.4vw,4.4rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-white">
-                {t("hero.h1a")}
-                <br />
-                <span className="text-accent">{t("hero.h1b")}</span>
-              </h1>
-              {/* LA VERSION COURTE DU SOUS-TITRE.
+                <p className="fade-up tv-label mb-5 text-[var(--tv-text-secondary)]">
+                  {t("v2.hero.eyebrow")}
+                </p>
+                {/* LA TAILLE SUIT LA COLONNE, PAS L'ENVIE.
+                    4.4rem était calibré pour une accroche CENTRÉE sur toute
+                    la largeur. Dans une colonne de ~520px, la même valeur
+                    mettait le titre sur quatre lignes et repoussait le bouton
+                    sous la ligne de flottaison : on avait rendu le produit
+                    visible et perdu l'action. À 3.1rem chaque proposition
+                    tient sur deux lignes au plus, et le bloc entier reste
+                    dans le premier écran. */}
+                <h1 className="fade-up font-display text-[clamp(2.1rem,3.6vw,3.1rem)] font-semibold leading-[1.07] tracking-[-0.03em] text-white">
+                  {t("hero.h1a")}
+                  <br />
+                  <span className="text-accent">{t("hero.h1b")}</span>
+                </h1>
+                {/* LA VERSION COURTE DU SOUS-TITRE.
                   L'ancienne énumérait les trois symptômes — dérive de taille,
                   overtrading, entrées hors plan. C'est exactement le travail
                   de la section « Le problème », 400px plus bas : deux blocs
                   répondaient à la même objection, et le héros payait la
                   redite en 37 mots. Ici on garde la mécanique (lit, chiffre,
                   donne une règle) ; les symptômes se lisent juste après. */}
-              <p className="fade-up d2 mx-auto mt-7 max-w-[600px] text-[17px] leading-7 text-slate-400">
-                {t("v2.hero.sub")}
-              </p>
-              {/* UN SEUL BOUTON. Le second appel — « or watch a 2-min demo » —
+                <p className="fade-up d2 mt-7 max-w-[560px] text-[17px] leading-7 text-slate-400">
+                  {t("v2.hero.sub")}
+                </p>
+                {/* UN SEUL BOUTON. Le second appel (« or watch a 2-min demo »)
                   est un lien discret, pas une action concurrente : deux
                   boutons côte à côte partagent le clic au lieu de l'additionner. */}
-              <div className="fade-up d3 mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <button
-                  onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="btn-primary w-full sm:w-auto"
-                >
-                  {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                </button>
-                <a
-                  href="/demo-site"
-                  className="group inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-white"
-                >
-                  <PlayCircle className="w-4 h-4" />
-                  {t("hero.demo")}
-                </a>
+                <div className="fade-up d3 mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <button
+                    onClick={() => open("signup", t("nav.cta.plan"))}
+                    className="btn-primary w-full sm:w-auto"
+                  >
+                    {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
+                  </button>
+                  <a
+                    href="/demo-site"
+                    className="group inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-white"
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    {t("hero.demo")}
+                  </a>
+                </div>
+                <div className="fade-up d4 mt-7 flex flex-wrap items-center gap-x-6 gap-y-2">
+                  {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
+                    <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
+                      <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
+                      {s}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="fade-up d4 mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-                {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
-                  <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
-                    <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
 
-            {/* LA CAPTURE PASSE DEVANT LE DESSIN.
-                `DESIGN.md` : « lead EVERY section with a product screenshot ».
-                Tant qu'aucun `dashboard.*` n'est déposé dans
-                `src/assets/product/`, le dessin ci-dessous tient la place ; le
-                fichier posé, il s'efface. */}
-            <div className="fade-up d4 relative mx-auto mt-14 w-full max-w-[1120px] lg:mt-20">
-              <ShotOuVisuel
-                nom="dashboard"
-                alt={t("shot.dashboard.alt")}
-                legende={t("shot.dashboard.cap")}
-                priorite
-                hero
-                repli={<HeroProductVisual />}
-              />
+              {/* LA CAPTURE PASSE DEVANT LE DESSIN.
+                  `DESIGN.md` : « lead EVERY section with a product screenshot ».
+                  Tant qu'aucun `dashboard.*` n'est déposé dans
+                  `src/assets/product/`, le dessin ci-dessous tient la place ;
+                  le fichier posé, il s'efface. */}
+              <div className="fade-up d4 hero-shot-col">
+                <ShotOuVisuel
+                  nom="dashboard"
+                  alt={t("shot.dashboard.alt")}
+                  /* Pas de légende dans le héros : le titre juste à gauche dit
+                     déjà ce qu'on regarde, et une ligne de texte sous l'image
+                     casserait le débordement qui fait tout l'effet. */
+                  priorite
+                  hero
+                  repli={<HeroProductVisual />}
+                />
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ── PLATEFORMES ── */}
-        <section className="relative pb-14 lg:pb-20">
+        {/* ── PLATEFORMES + PREUVE SOCIALE ──
+            Trustpilot est remonté ICI, juste sous le héros. Il vivait à
+            mi-page : une preuve sociale sert à faire continuer quelqu'un qui
+            hésite encore, donc elle doit arriver pendant qu'il hésite. */}
+        <section className="relative pb-12 lg:pb-16">
           <div className="lp-container">
             <PlatformsStrip />
+            <div className="reveal mt-8 flex justify-center">
+              <LienTrustpilot t={t} />
+            </div>
           </div>
         </section>
 
@@ -922,21 +974,6 @@ function LandingPage() {
             <div className="mt-10">
               <TrustStrip />
             </div>
-            <div className="reveal mt-10 flex justify-center">
-              <a
-                href={TRUSTPILOT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="lp-card inline-flex items-center gap-2.5 px-5 py-3 text-[13px] text-slate-400 transition-colors hover:text-white"
-              >
-                <span className="flex items-center gap-1" aria-hidden>
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <TrustpilotStar key={i} />
-                  ))}
-                </span>
-                {t("v2.trust.reviews")} <span className="font-semibold text-white">Trustpilot</span>
-              </a>
-            </div>
           </div>
         </section>
 
@@ -953,7 +990,7 @@ function LandingPage() {
             <div className="reveal">
               <PricingPlans
                 lang={lang}
-                onChoose={(plan) => open("signup", `TradeVault — ${plan}`)}
+                onChoose={(plan) => open("signup", `TradeVault - ${plan}`)}
                 onFree={() => open("signup", "Free")}
               />
             </div>

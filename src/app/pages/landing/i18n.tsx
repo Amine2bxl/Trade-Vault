@@ -166,9 +166,17 @@ export function useLandingT() {
  * correspondante dans `shared/lang.ts`, et les clés au fil de l'eau — une clé
  * manquante n'est pas une panne, c'est de l'anglais.
  */
+/* `drapeau` est l'émoji du pavillon, pas une image : une seule source de
+   vérité par langue, aucun fichier à déposer, et le rendu suit la police
+   système. Ajouter l'espagnol ou l'arabe reste une ligne — `dir` est déjà là
+   pour l'arabe, qui se lira de droite à gauche sans toucher aux composants.
+
+   Un drapeau ne désigne pas une langue mais un pays : `short` reste affiché à
+   côté, et c'est lui que lisent les lecteurs d'écran via `label`. Le drapeau
+   accélère la reconnaissance, il ne la remplace pas. */
 export const LANDING_LANGS = [
-  { id: "en", short: "EN", label: "English", dir: "ltr" },
-  { id: "fr", short: "FR", label: "Français", dir: "ltr" },
+  { id: "en", short: "EN", label: "English", drapeau: "🇬🇧", dir: "ltr" },
+  { id: "fr", short: "FR", label: "Français", drapeau: "🇫🇷", dir: "ltr" },
 ] as const;
 
 /**
@@ -260,7 +268,7 @@ const M: Record<string, Msg> = {
   "nav.cta": { en: "Start free", fr: "Commencer gratuitement" },
   "nav.cta.plan": { en: "Start free", fr: "Commencer gratuitement" },
 
-  "nav.p.jarvis": { en: "Jarvis — AI Coach", fr: "Jarvis — Coach IA" },
+  "nav.p.jarvis": { en: "Jarvis - AI Coach", fr: "Jarvis - Coach IA" },
   "nav.p.jarvis.d": {
     en: "A coach that reads every one of your trades.",
     fr: "Un coach qui lit chacun de tes trades.",
@@ -309,8 +317,8 @@ const M: Record<string, Msg> = {
     fr: "Tu casses tes propres règles quand ça compte.",
   },
   "hero.sub": {
-    en: "TradeVault reads your history and puts a number on what indiscipline costs you — size drift after a loss, overtrading, off-plan entries — then hands you one rule to hold tomorrow.",
-    fr: "TradeVault lit ton historique et chiffre ce que l'indiscipline te coûte — dérive de taille après une perte, overtrading, entrées hors plan — puis te donne une seule règle à tenir demain.",
+    en: "TradeVault reads your history and puts a number on what indiscipline costs you - size drift after a loss, overtrading, off-plan entries - then hands you one rule to hold tomorrow.",
+    fr: "TradeVault lit ton historique et chiffre ce que l'indiscipline te coûte - dérive de taille après une perte, overtrading, entrées hors plan - puis te donne une seule règle à tenir demain.",
   },
   "hero.cta": { en: "Start for free", fr: "Commencer gratuitement" },
   "hero.demo": { en: "or watch a 2-min demo", fr: "ou regarde une démo de 2 min" },
@@ -327,8 +335,8 @@ const M: Record<string, Msg> = {
   "analytics.title.a": { en: "The numbers exist", fr: "Les chiffres existent" },
   "analytics.title.b": { en: "to serve the diagnosis.", fr: "pour servir le diagnostic." },
   "analytics.sub": {
-    en: "Twenty-plus metrics computed on your real history — not to decorate a dashboard, but to show where your edge lives and where it dies.",
-    fr: "Plus de vingt métriques calculées sur ton historique réel — pas pour décorer un tableau de bord, mais pour montrer où vit ton edge et où il meurt.",
+    en: "Twenty-plus metrics computed on your real history - not to decorate a dashboard, but to show where your edge lives and where it dies.",
+    fr: "Plus de vingt métriques calculées sur ton historique réel - pas pour décorer un tableau de bord, mais pour montrer où vit ton edge et où il meurt.",
   },
   "analytics.c1.t": { en: "Equity curve", fr: "Courbe d'equity" },
   "analytics.c1.d": {
@@ -347,16 +355,16 @@ const M: Record<string, Msg> = {
   },
   "analytics.c4.t": { en: "Win rate by hour, day & setup", fr: "Win rate par heure, jour & setup" },
   "analytics.c4.d": {
-    en: "Where your edge lives — and where it dies.",
-    fr: "Où vit ton edge — et où il meurt.",
+    en: "Where your edge lives - and where it dies.",
+    fr: "Où vit ton edge - et où il meurt.",
   },
 
   /* mistakes / psychology */
   "mistakes.title.a": { en: "Your biggest leak", fr: "Ta plus grosse fuite" },
   "mistakes.title.b": { en: "has a name and a price.", fr: "a un nom et un prix." },
   "mistakes.sub": {
-    en: "Recurring mistakes and missed setups, counted and priced — month after month, on your own data. Your history can answer the questions you've never asked it.",
-    fr: "Erreurs récurrentes et setups manqués, comptés et chiffrés — mois après mois, sur tes propres données. Ton historique peut répondre aux questions que tu ne lui as jamais posées.",
+    en: "Recurring mistakes and missed setups, counted and priced - month after month, on your own data. Your history can answer the questions you've never asked it.",
+    fr: "Erreurs récurrentes et setups manqués, comptés et chiffrés - mois après mois, sur tes propres données. Ton historique peut répondre aux questions que tu ne lui as jamais posées.",
   },
   "mistakes.q1": {
     en: "When do I actually trade well?",
@@ -391,8 +399,8 @@ const M: Record<string, Msg> = {
   },
   "uses.u3.t": { en: "Serious retail", fr: "Retail sérieux" },
   "uses.u3.d": {
-    en: "Futures, forex, indices — several trades a week. Enough data for the patterns to surface.",
-    fr: "Futures, forex, indices — plusieurs trades par semaine. Assez de données pour que les schémas sortent.",
+    en: "Futures, forex, indices - several trades a week. Enough data for the patterns to surface.",
+    fr: "Futures, forex, indices - plusieurs trades par semaine. Assez de données pour que les schémas sortent.",
   },
 
   /* excel / notion */
@@ -509,16 +517,16 @@ const M: Record<string, Msg> = {
     fr: "Ta plus grosse fuite a un nom et un prix.",
   },
   "v2.s1.d": {
-    en: "Every mistake you tick is counted, costed, and tracked week by week — so you can see it recede.",
-    fr: "Chaque erreur que tu coches est comptée, chiffrée et suivie semaine par semaine — tu la vois reculer.",
+    en: "Every mistake you tick is counted, costed, and tracked week by week - so you can see it recede.",
+    fr: "Chaque erreur que tu coches est comptée, chiffrée et suivie semaine par semaine - tu la vois reculer.",
   },
   "v2.s2.t": {
     en: "Ask anything. It answers from your trades.",
     fr: "Demande n'importe quoi. Il répond depuis tes trades.",
   },
   "v2.s2.d": {
-    en: "Every claim carries its number, its period and its sample size. It analyses your past — it never predicts the market.",
-    fr: "Chaque affirmation porte son chiffre, sa période et son échantillon. Il analyse ton passé — jamais le marché à venir.",
+    en: "Every claim carries its number, its period and its sample size. It analyses your past - it never predicts the market.",
+    fr: "Chaque affirmation porte son chiffre, sa période et son échantillon. Il analyse ton passé - jamais le marché à venir.",
   },
   "v2.s3.t": {
     en: "Which setup pays you. Which one bleeds you.",
@@ -536,16 +544,16 @@ const M: Record<string, Msg> = {
      vérifiable : la régularité se voit, jour par jour. */
   "v2.s4.t": { en: "Your month, day by day.", fr: "Ton mois, jour par jour." },
   "v2.s4.d": {
-    en: "Every session tinted by its result — you see where the good days cluster, and where they stop.",
-    fr: "Chaque séance teintée par son résultat — tu vois où les bonnes journées se groupent, et où elles s'arrêtent.",
+    en: "Every session tinted by its result - you see where the good days cluster, and where they stop.",
+    fr: "Chaque séance teintée par son résultat - tu vois où les bonnes journées se groupent, et où elles s'arrêtent.",
   },
   "v2.s5.t": {
     en: "Getting your trades in takes minutes.",
     fr: "Entrer tes trades prend des minutes.",
   },
   "v2.s5.d": {
-    en: "Universal CSV import, copy-paste, or 45 seconds by hand. No broker connection — there is no API, and we would rather say so.",
-    fr: "Import CSV universel, copier-coller, ou 45 secondes à la main. Aucune connexion courtier — il n'y a pas d'API, et on préfère le dire.",
+    en: "Universal CSV import, copy-paste, or 45 seconds by hand. No broker connection - there is no API, and we would rather say so.",
+    fr: "Import CSV universel, copier-coller, ou 45 secondes à la main. Aucune connexion courtier - il n'y a pas d'API, et on préfère le dire.",
   },
 
   /* ── Confiance ── */
@@ -611,8 +619,8 @@ const M: Record<string, Msg> = {
   // capture n'est pas déposée : un visiteur ne distingue pas un dessin soigné
   // d'une capture.
   "hero.illustration": {
-    en: "Illustration — not a client result",
-    fr: "Illustration — pas un résultat client",
+    en: "Illustration - not a client result",
+    fr: "Illustration - pas un résultat client",
   },
   "hero.edge": { en: "Edge Score", fr: "Edge Score" },
   "hero.edge.sub": { en: "Behaviour, not P&L", fr: "Le comportement, pas le P&L" },
@@ -643,8 +651,8 @@ const M: Record<string, Msg> = {
      synchro broker, il n'y a pas d'API : import CSV, copier-coller, saisie,
      démo). */
   "platforms.label": {
-    en: "Your trades get in — instantly",
-    fr: "Tes trades entrent — en un instant",
+    en: "Your trades get in - instantly",
+    fr: "Tes trades entrent - en un instant",
   },
   "platforms.i1": { en: "Universal CSV import", fr: "Import CSV universel" },
   "platforms.i2": { en: "Copy & paste", fr: "Copier-coller" },
@@ -676,8 +684,8 @@ const M: Record<string, Msg> = {
     fr: "Tu prends des trades que ton plan n'autorise pas",
   },
   "problem.p2.d": {
-    en: "FOMO, boredom, the need to win it back. The setup was on no list — and there was nothing to stop you.",
-    fr: "FOMO, ennui, besoin de se refaire. Le setup n'était sur aucune liste — et rien ne t'a arrêté.",
+    en: "FOMO, boredom, the need to win it back. The setup was on no list - and there was nothing to stop you.",
+    fr: "FOMO, ennui, besoin de se refaire. Le setup n'était sur aucune liste - et rien ne t'a arrêté.",
   },
   "problem.p3.t": { en: "You have no idea what it costs", fr: "Tu ignores ce que ça te coûte" },
   "problem.p3.d": {
@@ -700,8 +708,8 @@ const M: Record<string, Msg> = {
   },
   "journey.title.b": { en: "It's a loop.", fr: "C'est une boucle." },
   "journey.sub": {
-    en: "Four moments, every trading day. TradeVault holds all four — most journals only show up for the third.",
-    fr: "Quatre moments, chaque jour de marché. TradeVault tient les quatre — la plupart des journaux n'arrivent qu'au troisième.",
+    en: "Four moments, every trading day. TradeVault holds all four - most journals only show up for the third.",
+    fr: "Quatre moments, chaque jour de marché. TradeVault tient les quatre - la plupart des journaux n'arrivent qu'au troisième.",
   },
   "journey.s1.t": { en: "Before", fr: "Avant" },
   "journey.s1.d": {
@@ -720,8 +728,8 @@ const M: Record<string, Msg> = {
   },
   "journey.s4.t": { en: "Tomorrow", fr: "Demain" },
   "journey.s4.d": {
-    en: "One priority — not a wall of statistics",
-    fr: "Une seule priorité — pas un mur de statistiques",
+    en: "One priority - not a wall of statistics",
+    fr: "Une seule priorité - pas un mur de statistiques",
   },
 
   /* ── CLAIM → EVIDENCE ─────────────────────────────────────────────────
@@ -737,8 +745,8 @@ const M: Record<string, Msg> = {
   "evidence.title.a": { en: "A coach that isn't allowed", fr: "Un coach qui n'a pas le droit" },
   "evidence.title.b": { en: "to make things up.", fr: "d'inventer." },
   "evidence.sub": {
-    en: "Every sentence Jarvis writes carries its numbers, its period and its sample size. The claim, then the evidence — and a link to the trades it read.",
-    fr: "Chaque phrase de Jarvis porte ses chiffres, sa période et la taille de son échantillon. L'affirmation, puis la preuve — et un lien vers les trades qu'il a lus.",
+    en: "Every sentence Jarvis writes carries its numbers, its period and its sample size. The claim, then the evidence - and a link to the trades it read.",
+    fr: "Chaque phrase de Jarvis porte ses chiffres, sa période et la taille de son échantillon. L'affirmation, puis la preuve - et un lien vers les trades qu'il a lus.",
   },
   "evidence.claim.l": { en: "The claim", fr: "L'affirmation" },
   "evidence.claim": {
@@ -759,12 +767,12 @@ const M: Record<string, Msg> = {
   },
   "evidence.b2": { en: "No market prediction, ever", fr: "Aucune prédiction de marché, jamais" },
   "evidence.b3": {
-    en: "No conclusion on a thin sample — it says so instead",
-    fr: "Aucune conclusion sur un échantillon faible — il le dit à la place",
+    en: "No conclusion on a thin sample - it says so instead",
+    fr: "Aucune conclusion sur un échantillon faible - il le dit à la place",
   },
   "evidence.guard": {
-    en: "Only 4 trades this month. Not enough to conclude — I'll wait.",
-    fr: "Seulement 4 trades ce mois-ci. Pas assez pour conclure — j'attends.",
+    en: "Only 4 trades this month. Not enough to conclude - I'll wait.",
+    fr: "Seulement 4 trades ce mois-ci. Pas assez pour conclure - j'attends.",
   },
   "evidence.guard.l": { en: "Statistical safety", fr: "Sécurité statistique" },
 
@@ -784,10 +792,10 @@ const M: Record<string, Msg> = {
   "edge.c2": { en: "Risk held", fr: "Risque tenu" },
   "edge.c3": { en: "Clean days", fr: "Jours propres" },
   "edge.c4": { en: "Routine", fr: "Routine" },
-  "edge.excluded": { en: "P&L — deliberately excluded", fr: "P&L — volontairement exclu" },
+  "edge.excluded": { en: "P&L - deliberately excluded", fr: "P&L - volontairement exclu" },
   "edge.note": {
-    en: "Computed over your last 10 traded days. Any component it can't measure is dropped and the weights re-normalised — never guessed.",
-    fr: "Calculé sur tes 10 derniers jours tradés. Toute composante non mesurable est retirée et les poids renormalisés — jamais devinés.",
+    en: "Computed over your last 10 traded days. Any component it can't measure is dropped and the weights re-normalised - never guessed.",
+    fr: "Calculé sur tes 10 derniers jours tradés. Toute composante non mesurable est retirée et les poids renormalisés - jamais devinés.",
   },
   "edge.why": {
     en: "Why it matters in a challenge",
@@ -807,11 +815,11 @@ const M: Record<string, Msg> = {
   "anchor.title.a": { en: "Compare us to the right thing.", fr: "Compare-nous à la bonne chose." },
   "anchor.title.b": { en: "Not to a cheaper journal.", fr: "Pas à un journal moins cher." },
   "anchor.sub": {
-    en: "A prop firm challenge is paid again on every reset. Most resets are not a strategy failure — they're one rule broken after a loss.",
-    fr: "Un challenge prop firm se repaie à chaque reset. La plupart des resets ne sont pas un échec de stratégie — c'est une règle cassée après une perte.",
+    en: "A prop firm challenge is paid again on every reset. Most resets are not a strategy failure - they're one rule broken after a loss.",
+    fr: "Un challenge prop firm se repaie à chaque reset. La plupart des resets ne sont pas un échec de stratégie - c'est une règle cassée après une perte.",
   },
   "anchor.a.l": { en: "One challenge reset", fr: "Un reset de challenge" },
-  "anchor.a.v": { en: "$200–600", fr: "200–600 $" },
+  "anchor.a.v": { en: "$200-600", fr: "200-600 $" },
   "anchor.a.d": {
     en: "Paid again, every time, market price.",
     fr: "Repayé à chaque fois, prix du marché.",
@@ -832,14 +840,14 @@ const M: Record<string, Msg> = {
   "ai.title.a": { en: "An AI coach who knows", fr: "Un coach IA qui connaît" },
   "ai.title.b": { en: "every one of your trades.", fr: "chacun de tes trades." },
   "ai.sub": {
-    en: "He reads your real history, names the habit costing you the most, and gives you one thing to fix — not a report to read.",
-    fr: "Il lit ton historique réel, nomme l'habitude qui te coûte le plus, et te donne une seule chose à corriger — pas un rapport à lire.",
+    en: "He reads your real history, names the habit costing you the most, and gives you one thing to fix - not a report to read.",
+    fr: "Il lit ton historique réel, nomme l'habitude qui te coûte le plus, et te donne une seule chose à corriger - pas un rapport à lire.",
   },
   "ai.head.a": { en: "A mentor who knows", fr: "Un mentor qui connaît" },
   "ai.head.b": { en: "every one of your trades.", fr: "chacun de tes trades." },
   "ai.body": {
-    en: "Ask a question. The coach draws on your history — no generalities, only the concrete.",
-    fr: "Pose une question. Le coach puise dans ton historique — pas de généralités, que du concret.",
+    en: "Ask a question. The coach draws on your history - no generalities, only the concrete.",
+    fr: "Pose une question. Le coach puise dans ton historique - pas de généralités, que du concret.",
   },
   "ai.b1": { en: "Answers based on your real data", fr: "Réponses basées sur tes vraies données" },
   "ai.b2": { en: "Diagnosis in seconds", fr: "Diagnostic en quelques secondes" },
@@ -949,8 +957,8 @@ const M: Record<string, Msg> = {
   "proof.f3.v": { en: "24/7", fr: "24/7" },
   "proof.f3.l": { en: "AI coach available", fr: "coach IA disponible" },
   "proof.quote": {
-    en: "I built TradeVault because no journal ever told me why I was losing. It doesn't promise gains — it shows what your data says, names the habit behind it, and leaves the decision to you.",
-    fr: "J'ai construit TradeVault parce qu'aucun journal ne m'a jamais dit pourquoi je perdais. Il ne promet pas de gains — il montre ce que tes données disent, nomme l'habitude derrière, et te laisse décider.",
+    en: "I built TradeVault because no journal ever told me why I was losing. It doesn't promise gains - it shows what your data says, names the habit behind it, and leaves the decision to you.",
+    fr: "J'ai construit TradeVault parce qu'aucun journal ne m'a jamais dit pourquoi je perdais. Il ne promet pas de gains - il montre ce que tes données disent, nomme l'habitude derrière, et te laisse décider.",
   },
   "proof.author": { en: "TradeVault's creator", fr: "Le créateur de TradeVault" },
   "proof.author.sub": { en: "Trader, and first user", fr: "Trader, et premier utilisateur" },
@@ -1011,8 +1019,8 @@ const M: Record<string, Msg> = {
   },
   "pricing.free.btn": { en: "Start free", fr: "Commencer gratuitement" },
   "pricing.f1": {
-    en: "Trading journal — 30 trades / month",
-    fr: "Journal de trading — 30 trades / mois",
+    en: "Trading journal - 30 trades / month",
+    fr: "Journal de trading - 30 trades / mois",
   },
   "pricing.f2": { en: "Dashboard & equity curve", fr: "Dashboard & courbe d'equity" },
   "pricing.f3": { en: "Pre-market checklist", fr: "Checklist pré-market" },
@@ -1036,8 +1044,8 @@ const M: Record<string, Msg> = {
     fr: "Sans engagement · Sans carte requise",
   },
   "pricing.pro.all": {
-    en: "Everything in Free, unlimited — plus:",
-    fr: "Tout le plan Free, sans limite — et :",
+    en: "Everything in Free, unlimited - plus:",
+    fr: "Tout le plan Free, sans limite - et :",
   },
   "pricing.pro.pf1": {
     en: "Jarvis AI coach, unlimited 24/7",
@@ -1052,8 +1060,8 @@ const M: Record<string, Msg> = {
     fr: "Trades illimités + comptes illimités",
   },
   "pricing.pro.pf2d": {
-    en: "Prop firm, demo, live — each separate.",
-    fr: "Prop firm, démo, réel — chacun séparé.",
+    en: "Prop firm, demo, live - each separate.",
+    fr: "Prop firm, démo, réel - chacun séparé.",
   },
   "pricing.pro.pf3": {
     en: "Quantitative analytics (20+ metrics)",
@@ -1093,8 +1101,8 @@ const M: Record<string, Msg> = {
   "pricing.pro.pf8d": { en: "A real answer, fast.", fr: "Une vraie réponse, vite." },
   "pricing.monthly": { en: "Pro · Monthly", fr: "Pro · Mensuel" },
   "pricing.monthly.d": {
-    en: "Same features as yearly — only the billing changes.",
-    fr: "Mêmes fonctionnalités que l'annuel — seule la facturation change.",
+    en: "Same features as yearly - only the billing changes.",
+    fr: "Mêmes fonctionnalités que l'annuel - seule la facturation change.",
   },
   "pricing.monthly.btn": { en: "Go monthly", fr: "Prendre au mois" },
   "pricing.trust1": { en: "Free plan forever", fr: "Offre gratuite à vie" },
@@ -1145,8 +1153,8 @@ const M: Record<string, Msg> = {
     fr: "L'offre gratuite est-elle vraiment gratuite ?",
   },
   "faq.a4": {
-    en: "Yes — no time limit, no credit card. Your journal, dashboard, calendar, checklist and plan stay free for good. Paid plans add the analysis tools.",
-    fr: "Oui — sans limite de temps ni carte bancaire. Ton journal, ton tableau de bord, ton calendrier, ta checklist et ton plan restent gratuits pour toujours. Les offres payantes ajoutent les outils d'analyse.",
+    en: "Yes - no time limit, no credit card. Your journal, dashboard, calendar, checklist and plan stay free for good. Paid plans add the analysis tools.",
+    fr: "Oui - sans limite de temps ni carte bancaire. Ton journal, ton tableau de bord, ton calendrier, ta checklist et ton plan restent gratuits pour toujours. Les offres payantes ajoutent les outils d'analyse.",
   },
   "faq.q5": {
     en: "Is my trading data secure?",
@@ -1161,8 +1169,8 @@ const M: Record<string, Msg> = {
     fr: "Puis-je importer mon historique existant ?",
   },
   "faq.a6": {
-    en: "Yes. Import a CSV from your broker and TradeVault structures it automatically — or paste, log by hand, or start with demo trades.",
-    fr: "Oui. Importe un CSV depuis ton courtier et TradeVault structure tout automatiquement — ou colle, saisis à la main, ou démarre avec des trades de démo.",
+    en: "Yes. Import a CSV from your broker and TradeVault structures it automatically - or paste, log by hand, or start with demo trades.",
+    fr: "Oui. Importe un CSV depuis ton courtier et TradeVault structure tout automatiquement - ou colle, saisis à la main, ou démarre avec des trades de démo.",
   },
 
   /* final cta */
