@@ -60,8 +60,26 @@ function genererTrades() {
   }
   const total = jours.length;
   const SYM = ["NQ", "NQ", "NQ", "ES", "EURUSD", "EURUSD", "GBPUSD", "XAUUSD"];
-  const STR = ["Liquidity Sweep","Order Block","FVG Entry","Breakout","VWAP Play","Silver Bullet","Momentum","Power of 3"];
-  const ERR = ["Revenge trade","FOMO entry","Size too large","Chased entry","Ignored plan","Premature exit","Overtrading","Holding too long"];
+  const STR = [
+    "Liquidity Sweep",
+    "Order Block",
+    "FVG Entry",
+    "Breakout",
+    "VWAP Play",
+    "Silver Bullet",
+    "Momentum",
+    "Power of 3",
+  ];
+  const ERR = [
+    "Revenge trade",
+    "FOMO entry",
+    "Size too large",
+    "Chased entry",
+    "Ignored plan",
+    "Premature exit",
+    "Overtrading",
+    "Holding too long",
+  ];
   const out = [];
   jours.forEach((d, idx) => {
     const i = idx + 1;
@@ -69,10 +87,17 @@ function genererTrades() {
     const n = 1 + Math.floor(u(`${i}cnt`) * 2.4);
     const prog = i / total;
     for (let k = 1; k <= n; k++) {
-      const uRes = u(`${i}${k}res`), uAmp = u(`${i}${k}amp`), uSz = u(`${i}${k}sz`);
-      const uSym = u(`${i}${k}sym`), uErr = u(`${i}${k}err`), uEm = u(`${i}${k}em`);
-      const uHr = u(`${i}${k}hr`), uSt = u(`${i}${k}st`), uDir = u(`${i}${k}dir`);
-      const uTl = u(`${i}${k}tail`), uMg = u(`${i}${k}mag`);
+      const uRes = u(`${i}${k}res`),
+        uAmp = u(`${i}${k}amp`),
+        uSz = u(`${i}${k}sz`);
+      const uSym = u(`${i}${k}sym`),
+        uErr = u(`${i}${k}err`),
+        uEm = u(`${i}${k}em`);
+      const uHr = u(`${i}${k}hr`),
+        uSt = u(`${i}${k}st`),
+        uDir = u(`${i}${k}dir`);
+      const uTl = u(`${i}${k}tail`),
+        uMg = u(`${i}${k}mag`);
       const pWin = 0.45 + 0.1 * prog;
       const pErr = 0.1 + 0.32 * (1 - prog);
       // Les QUEUES EPAISSES : sans elles la variance quotidienne etait si
@@ -80,34 +105,46 @@ function genererTrades() {
       // ressemblant a aucun journal reel.
       let r;
       if (uRes < pWin)
-        r = uTl < 0.08
-          ? Math.round((2.5 + uMg * 1.5) * 100) / 100
-          : Math.round((0.7 + uAmp * 1.1) * 100) / 100;
+        r =
+          uTl < 0.08
+            ? Math.round((2.5 + uMg * 1.5) * 100) / 100
+            : Math.round((0.7 + uAmp * 1.1) * 100) / 100;
       else if (uRes < pWin + 0.06) r = 0;
       else
-        r = uTl < 0.1
-          ? Math.round(-(1.8 + uMg * 0.8) * 100) / 100
-          : Math.round(-(0.8 + uAmp * 0.4) * 100) / 100;
+        r =
+          uTl < 0.1
+            ? Math.round(-(1.8 + uMg * 0.8) * 100) / 100
+            : Math.round(-(0.8 + uAmp * 0.4) * 100) / 100;
       const brut = Math.round((400 + uSz * 180) * (prog < 0.35 && uEm < 0.18 ? 1.9 : 1));
       const risque = Math.round(brut * 0.55);
       out.push({
-        id: `sc-${i}-${k}`, user_id: USER_ID, account_id: ACCOUNT_ID,
+        id: `sc-${i}-${k}`,
+        user_id: USER_ID,
+        account_id: ACCOUNT_ID,
         trade_date: iso(d),
         symbol: SYM[Math.floor(uSym * 8)],
         direction: r === 0 ? "be" : uDir < 0.58 ? "long" : "short",
         pnl: Math.round(r * risque * 100) / 100,
-        risk_amount: risque, r_multiple: r,
+        risk_amount: risque,
+        r_multiple: r,
         strategy: STR[Math.floor(uSt * 8)],
         mistakes: uErr < pErr ? [ERR[Math.floor(uEm * 8)]] : [],
         setup_quality: r > 1.4 ? 5 : r > 0 ? 4 : r === 0 ? 3 : 2,
-        notes: "", screenshots: [],
+        notes: "",
+        screenshots: [],
         entry_time: `${pad(8 + Math.floor(uHr * 8))}:${pad(Math.floor(uAmp * 59))}`,
         exit_time: `${pad(9 + Math.floor(uHr * 8))}:${pad(Math.floor(uSz * 59))}`,
         confluences: r > 0 ? ["Market structure", "Liquidity sweep", "VWAP"] : ["Market structure"],
         confidence: r > 0 ? 70 + Math.floor(uAmp * 25) : 45 + Math.floor(uAmp * 30),
-        mae: null, mfe: null, slippage: null, is_example: false, calibration_factor: 1,
-        replay_session_id: null, session_id: null,
-        created_at: `${iso(d)}T20:00:00+00:00`, updated_at: `${iso(d)}T20:00:00+00:00`,
+        mae: null,
+        mfe: null,
+        slippage: null,
+        is_example: false,
+        calibration_factor: 1,
+        replay_session_id: null,
+        session_id: null,
+        created_at: `${iso(d)}T20:00:00+00:00`,
+        updated_at: `${iso(d)}T20:00:00+00:00`,
       });
     }
   });
@@ -118,16 +155,28 @@ const TRADES = genererTrades();
 const somme = Math.round(TRADES.reduce((s, t) => s + t.pnl, 0) * 100) / 100;
 const fautes = TRADES.filter((t) => t.mistakes.length).length;
 console.log(`Trades : ${TRADES.length} · P&L ${somme} · fautes ${fautes}`);
-console.log(`Attendu en base : 193 · 18495.97 · 49  →  ${TRADES.length === 193 && somme === 18495.97 && fautes === 49 ? "IDENTIQUE" : "!! ECART !!"}`);
+console.log(
+  `Attendu en base : 193 · 18495.97 · 49  →  ${TRADES.length === 193 && somme === 18495.97 && fautes === 49 ? "IDENTIQUE" : "!! ECART !!"}`,
+);
 
 const PROFILE = {
-  id: USER_ID, name: "Alex Mercer", email: EMAIL,
-  account_balance: 50000, starting_balance: 50000, language: "en",
-  confluences: [], active_account_id: ACCOUNT_ID,
-  onboarding_goal: "consistency", onboarding_assets: ["indices", "forex"],
-  onboarding_style: "intraday", onboarding_experience: "intermediate",
-  onboarding_pain: "discipline", onboarding_monthly_target: 6,
-  onboarding_uses_ict: true, onboarding_brokers: [], onboarding_skipped: false,
+  id: USER_ID,
+  name: "Alex Mercer",
+  email: EMAIL,
+  account_balance: 50000,
+  starting_balance: 50000,
+  language: "en",
+  confluences: [],
+  active_account_id: ACCOUNT_ID,
+  onboarding_goal: "consistency",
+  onboarding_assets: ["indices", "forex"],
+  onboarding_style: "intraday",
+  onboarding_experience: "intermediate",
+  onboarding_pain: "discipline",
+  onboarding_monthly_target: 6,
+  onboarding_uses_ict: true,
+  onboarding_brokers: [],
+  onboarding_skipped: false,
   onboarded_at: "2026-01-01T00:00:00+00:00",
   jarvis_first_name: "Alex",
   jarvis_style: "Intraday NQ and EURUSD, London open into New York",
@@ -135,30 +184,57 @@ const PROFILE = {
   jarvis_strength: "Patient on A+ setups",
   jarvis_goal: "Pass the Apex 50K evaluation without breaking my own rules",
   jarvis_completed_at: "2026-01-01T00:00:00+00:00",
-  trading_rules: null, trading_plan: null, checklist_config: null,
-  onboarding_situation: null, trustpilot_prompted_at: new Date().toISOString(),
+  trading_rules: null,
+  trading_plan: null,
+  checklist_config: null,
+  onboarding_situation: null,
+  trustpilot_prompted_at: new Date().toISOString(),
   trustpilot_status: "dismissed",
-  created_at: "2026-01-01T00:00:00+00:00", updated_at: new Date().toISOString(),
+  created_at: "2026-01-01T00:00:00+00:00",
+  updated_at: new Date().toISOString(),
 };
 const ACCOUNT = {
-  id: ACCOUNT_ID, user_id: USER_ID, name: "Apex 50K", type: "prop",
-  starting_balance: 50000, currency: "USD", color: "#22e08a", is_default: true,
-  calibration_scale: 1, original_balance: null, calibrated_at: null,
-  created_at: "2026-01-01T00:00:00+00:00", updated_at: new Date().toISOString(),
+  id: ACCOUNT_ID,
+  user_id: USER_ID,
+  name: "Apex 50K",
+  type: "prop",
+  starting_balance: 50000,
+  currency: "USD",
+  color: "#22e08a",
+  is_default: true,
+  calibration_scale: 1,
+  original_balance: null,
+  calibrated_at: null,
+  created_at: "2026-01-01T00:00:00+00:00",
+  updated_at: new Date().toISOString(),
 };
 const SUB = {
-  user_id: USER_ID, plan: "elite_yearly", status: "active", source: "comp",
-  current_period_end: "2027-09-01T00:00:00+00:00", cancel_at_period_end: false,
-  stripe_customer_id: null, stripe_subscription_id: null, trial_ends_at: null,
-  created_at: "2026-01-01T00:00:00+00:00", updated_at: new Date().toISOString(),
+  user_id: USER_ID,
+  plan: "elite_yearly",
+  status: "active",
+  source: "comp",
+  current_period_end: "2027-09-01T00:00:00+00:00",
+  cancel_at_period_end: false,
+  stripe_customer_id: null,
+  stripe_subscription_id: null,
+  trial_ends_at: null,
+  created_at: "2026-01-01T00:00:00+00:00",
+  updated_at: new Date().toISOString(),
 };
 const USER = {
-  id: USER_ID, aud: "authenticated", role: "authenticated", email: EMAIL,
-  email_confirmed_at: "2026-01-01T00:00:00Z", phone: "",
-  confirmed_at: "2026-01-01T00:00:00Z", last_sign_in_at: new Date().toISOString(),
+  id: USER_ID,
+  aud: "authenticated",
+  role: "authenticated",
+  email: EMAIL,
+  email_confirmed_at: "2026-01-01T00:00:00Z",
+  phone: "",
+  confirmed_at: "2026-01-01T00:00:00Z",
+  last_sign_in_at: new Date().toISOString(),
   app_metadata: { provider: "email", providers: ["email"] },
-  user_metadata: { name: "Alex Mercer" }, identities: [],
-  created_at: "2026-01-01T00:00:00Z", updated_at: new Date().toISOString(),
+  user_metadata: { name: "Alex Mercer" },
+  identities: [],
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: new Date().toISOString(),
 };
 const TABLES = { profiles: [PROFILE], accounts: [ACCOUNT], trades: TRADES, subscriptions: [SUB] };
 
@@ -176,20 +252,35 @@ async function contexte(viewport, scale) {
       const p = new URL(req.url()).pathname;
       const json = (body, status = 200) =>
         route.fulfill({
-          status, contentType: "application/json",
+          status,
+          contentType: "application/json",
           headers: { "access-control-allow-origin": "*", "content-range": "0-0/*" },
           body: JSON.stringify(body),
         });
       if (req.method() === "OPTIONS")
-        return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" } });
+        return route.fulfill({
+          status: 204,
+          headers: {
+            "access-control-allow-origin": "*",
+            "access-control-allow-headers": "*",
+            "access-control-allow-methods": "*",
+          },
+        });
       if (p.startsWith("/auth/v1/token"))
-        return json({ access_token: "showcase.token", token_type: "bearer", expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: "r", user: USER });
+        return json({
+          access_token: "showcase.token",
+          token_type: "bearer",
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          refresh_token: "r",
+          user: USER,
+        });
       if (p.startsWith("/auth/v1/user")) return json(USER);
       if (p.startsWith("/rest/v1/")) {
         const table = p.replace("/rest/v1/", "").split("?")[0];
         const rows = TABLES[table] ?? [];
         const single = (req.headers()["accept"] ?? "").includes("vnd.pgrst.object");
-        return json(single ? rows[0] ?? null : rows);
+        return json(single ? (rows[0] ?? null) : rows);
       }
       return json({});
     },
@@ -229,9 +320,19 @@ async function connecter(page) {
   // Les sollicitations qui n'ont rien a faire sur une capture produit.
   for (const label of ["No thanks", "Non merci", "Accept", "Got it"]) {
     const b = page.getByRole("button", { name: label, exact: true });
-    if (await b.count()) { await b.first().click().catch(() => {}); await page.waitForTimeout(400); }
+    if (await b.count()) {
+      await b
+        .first()
+        .click()
+        .catch(() => {});
+      await page.waitForTimeout(400);
+    }
   }
-  await page.locator('button:has-text("Cookies")').first().click().catch(() => {});
+  await page
+    .locator('button:has-text("Cookies")')
+    .first()
+    .click()
+    .catch(() => {});
   await page.waitForTimeout(600);
   await page.keyboard.press("Escape").catch(() => {});
   await page.waitForTimeout(600);
@@ -240,7 +341,10 @@ async function connecter(page) {
 async function capturer(page, nom, lien) {
   if (lien) {
     const l = page.getByRole("button", { name: lien, exact: true }).first();
-    if (!(await l.count())) { console.log(`  ⊘ ${nom} : entrée « ${lien} » introuvable`); return; }
+    if (!(await l.count())) {
+      console.log(`  ⊘ ${nom} : entrée « ${lien} » introuvable`);
+      return;
+    }
     await l.click();
     await page.waitForTimeout(4500);
   }
@@ -285,7 +389,9 @@ await capturer(pageD, "desk-05-analytics", "Analysis");
 // Jarvis avec une VRAIE reponse. Sans cle de provider, c'est le moteur
 // deterministe qui repond — un chemin reel du produit, pas une mise en scene.
 await capturer(pageD, "desk-06-jarvis-vide", "Jarvis");
-const suggestion = pageD.getByRole("button", { name: /Chased entry|overtrading|Thursday/i }).first();
+const suggestion = pageD
+  .getByRole("button", { name: /Chased entry|overtrading|Thursday/i })
+  .first();
 if (await suggestion.count()) {
   await suggestion.click();
   await pageD.waitForTimeout(12000);
