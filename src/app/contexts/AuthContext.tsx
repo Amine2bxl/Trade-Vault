@@ -92,6 +92,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider: "google",
       options: {
         redirectTo: authRedirectTo("/"),
+        /* TOUJOURS LE SÉLECTEUR DE COMPTE.
+         *
+         * Sans `prompt`, Google reconnecte SILENCIEUSEMENT la dernière
+         * session active quand il n'y en a qu'une, et affiche le formulaire
+         * d'adresse e-mail quand il n'en a aucune. Les deux sont des impasses
+         * ici : la première enferme qui a plusieurs comptes Google (impossible
+         * de choisir l'autre sans se déconnecter de Google entièrement), la
+         * seconde fait ressaisir une adresse que le navigateur connaît déjà.
+         *
+         * `select_account` force l'écran « Choisir un compte » dans les deux
+         * cas : un clic sur un avatar, et c'est fini. */
+        queryParams: { prompt: "select_account" },
       },
     });
     if (error) return error.message ?? "Google sign-in failed";

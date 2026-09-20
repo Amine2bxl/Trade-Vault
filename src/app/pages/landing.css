@@ -897,9 +897,20 @@
  *
  * On ne réintroduit aucune constante : le fond EST `--tv-accent`, le survol
  * EST `--tv-highlight`. Changer le thème change le bouton, comme avant. */
+/* TEXTE BLANC, PAS NOIR.
+ *
+ * Le noir sur émeraude donnait le meilleur contraste pur (~11:1) et se
+ * lisait comme une PASTILLE D'ÉTAT, pas comme une action - c'est la raison
+ * pour laquelle l'application avait déjà tranché pour le blanc.
+ * Mesuré sur `#22e08a` : blanc donne 2,3:1, très en dessous du seuil. On
+ * garde donc la couleur demandée ET la lisibilité en posant une ombre portée
+ * courte sous le texte : elle ancre les lettres sans assombrir l'aplat, et
+ * c'est ce que font les boutons clairs de Linear et de Stripe. */
 .landing-root .btn-primary {
   background: var(--tv-accent);
-  color: #04120b;
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
 }
 .landing-root .btn-primary:hover {
   background: var(--tv-highlight);
@@ -933,8 +944,8 @@
 }
 @media (min-width: 1024px) {
   .landing-root .hero-grid {
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-    gap: 3.5rem;
+    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+    gap: 3rem;
   }
 }
 
@@ -950,10 +961,13 @@
  * du regard. */
 @media (min-width: 1024px) {
   .landing-root .hero-shot-col {
-    /* Assez pour que le bord de la FENÊTRE coupe la capture, pas seulement
-       pour la rapprocher du bord : s'arrêter à vingt pixels du bord ne se
-       lit pas comme un débordement, ça se lit comme une marge ratée. */
-    margin-right: min(-13vw, -120px);
+    /* PLUS DE DÉBORDEMENT. Le bord de la fenêtre coupait la capture, ce qui
+       devait se lire comme « une fenêtre sur plus grand » ; à l'usage ça se
+       lit comme une image mal calée, et on ne voit plus l'écran en entier.
+       Une capture produit dont il manque un tiers ne prouve plus rien.
+       Elle tient maintenant dans sa colonne, entière, et gagne en largeur ce
+       qu'elle perd en effet. */
+    margin-right: 0;
   }
 }
 
@@ -1132,5 +1146,69 @@
     width: 100%;
     object-fit: cover;
     object-position: top;
+  }
+}
+
+/* ══ LE VERT CLAIR PREND LE DESSUS ══
+ *
+ * `tv-accent-fill` (grille tarifaire), les pastilles et les liserés actifs
+ * tiraient encore sur le vert SOMBRE de `--tv-cta`, pendant que le bouton
+ * principal, lui, portait l'émeraude clair. Deux verts d'action sur le même
+ * écran, et c'est le plus terne qui occupait le plus de surface.
+ *
+ * Tout ce qui AGIT prend donc l'accent clair avec du texte blanc. Le vert
+ * sombre ne sert plus qu'au survol d'appui, où l'assombrissement dit
+ * « enfoncé ». */
+.landing-root .tv-accent-fill {
+  background: var(--tv-accent);
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
+}
+.landing-root .tv-accent-fill:hover {
+  background: var(--tv-highlight);
+}
+
+/* Les nappes de fond gagnent en présence. Elles étaient calibrées quand
+   l'accent était sombre ; à luminosité égale, un émeraude clair diffusé à
+   8 % se voit moins qu'un vert sombre à 8 %, parce qu'il se rapproche du
+   gris du fond. On monte donc légèrement, sans jamais éclairer le texte. */
+.landing-root::before {
+  opacity: 1.25;
+}
+
+/* ══ LA BARRE FLOTTE, ARRONDIE ══
+ *
+ * Elle était un bandeau pleine largeur collé au haut de la fenêtre, avec un
+ * filet en dessous : la forme d'un en-tête de document, pas d'un produit.
+ *
+ * Elle devient une PILULE posée sur la page - détachée des bords, très
+ * arrondie, avec sa propre matière. C'est ce qui la fait lire comme un objet
+ * flottant au-dessus du contenu plutôt que comme une bordure de la fenêtre,
+ * et c'est la raison pour laquelle le filet inférieur disparaît : un objet
+ * détaché n'a pas besoin qu'on le sépare de ce qu'il survole.
+ *
+ * Le flou ne s'active qu'une fois défilé : au repos la barre est
+ * transparente et ne coupe pas le héros en deux. */
+@media (min-width: 640px) {
+  .landing-root .lp-nav-shell {
+    margin: 10px auto 0;
+    max-width: 1240px;
+    border-radius: 9999px;
+    padding-inline: 10px;
+    transition:
+      background-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .landing-root .lp-nav-shell[data-collee="oui"] {
+    border: 1px solid var(--tv-border-strong);
+    background: rgb(10 12 11 / 0.72);
+    backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.9);
+  }
+  .landing-root .lp-nav-shell[data-collee="non"] {
+    border: 1px solid transparent;
+    background: transparent;
   }
 }

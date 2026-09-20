@@ -154,12 +154,20 @@ export function AuthModal({
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">{t("auth.brandSub")}</p>
 
-              {/* Deux promesses DISTINCTES. L'absence de carte et l'annulation
-               * vivent dans le sous-titre du formulaire, à droite — là où la
-               * décision se prend ; les répéter ici ne rassurait pas deux fois,
-               * ça diluait les deux arguments que cette colonne porte seule. */}
+              {/* QUATRE promesses DISTINCTES. Deux laissaient la colonne aux
+               * trois quarts vide, et le regard filait vers le formulaire
+               * sans les lire.
+               * Toujours pas l'absence de carte ni l'annulation : elles
+               * vivent dans le sous-titre du formulaire, à droite, là où la
+               * décision se prend. Les répéter ici ne rassure pas deux fois,
+               * ça dilue les arguments que cette colonne porte seule. */}
               <div className="mt-7 space-y-2.5">
-                {[t("auth.promise1"), t("auth.promise2")].map((line) => (
+                {[
+                  t("auth.promise1"),
+                  t("auth.promise2"),
+                  t("auth.promise3"),
+                  t("auth.promise4"),
+                ].map((line) => (
                   <p
                     key={line}
                     className="flex items-start gap-2 text-[13px] leading-5 text-slate-300"
@@ -173,8 +181,13 @@ export function AuthModal({
               </div>
             </div>
 
-            {/* Trustpilot — preuve sociale */}
-            <div className="relative mt-8">
+            {/* Trustpilot - preuve sociale.
+                REMONTÉ DU BAS. Le bandeau cookies est `fixed` en bas à
+                gauche : il se posait exactement sur ce bloc, et les deux se
+                touchaient. Un pavé de marge basse dégage la hauteur du
+                bandeau, cookies acceptés ou non - on ne peut pas savoir
+                lequel des deux sera affiché, donc on réserve la place. */}
+            <div className="relative mt-8 mb-[72px]">
               <a
                 href={TRUSTPILOT_URL}
                 target="_blank"

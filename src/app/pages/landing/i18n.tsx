@@ -215,6 +215,19 @@ const M: Record<string, Msg> = {
     en: "Your data stays exportable at any time",
     fr: "Tes données restent exportables à tout moment",
   },
+  /* Deux promesses de plus, pour quatre. Deux lignes laissaient la colonne
+     aux trois quarts vide et le regard filait vers le formulaire sans les
+     lire. Les deux ajoutées ne répètent PAS le sous-titre du formulaire
+     (« sans carte », « annulation ») : elles disent ce que le produit fait
+     de la donnée une fois qu'elle est là. */
+  "auth.promise3": {
+    en: "Every mistake costed in euros, not in vibes",
+    fr: "Chaque erreur chiffrée en euros, pas en ressenti",
+  },
+  "auth.promise4": {
+    en: "One rule to hold, recomputed every week",
+    fr: "Une règle à tenir, recalculée chaque semaine",
+  },
   "auth.trustpilot": { en: "Verified reviews on", fr: "Avis vérifiés sur" },
   "auth.title.signup": { en: "Create your account", fr: "Créer ton compte" },
   "auth.title.login": { en: "Sign in", fr: "Se connecter" },
@@ -264,9 +277,14 @@ const M: Record<string, Msg> = {
   "nav.analytics": { en: "Analytics", fr: "Analytics" },
   "nav.edge": { en: "Edge Score", fr: "Edge Score" },
   "nav.alternative": { en: "Excel vs Notion", fr: "Excel vs Notion" },
-  "nav.signin": { en: "Sign in", fr: "Se connecter" },
-  "nav.cta": { en: "Start free", fr: "Commencer gratuitement" },
-  "nav.cta.plan": { en: "Start free", fr: "Commencer gratuitement" },
+  /* « Log in » et « Get Started » disent ce qu'ils FONT, pas ce qu'ils
+     coûtent. « Sign in » / « Start free » se ressemblaient assez pour qu'on
+     hésite entre les deux ; là, le premier ouvre une session existante, le
+     second en crée une. La modale laisse basculer de l'un à l'autre, donc se
+     tromper ne coûte rien. */
+  "nav.signin": { en: "Log in", fr: "Se connecter" },
+  "nav.cta": { en: "Get Started", fr: "Commencer" },
+  "nav.cta.plan": { en: "Get Started", fr: "Commencer" },
 
   "nav.p.jarvis": { en: "Jarvis - AI Coach", fr: "Jarvis - Coach IA" },
   "nav.p.jarvis.d": {
@@ -320,7 +338,7 @@ const M: Record<string, Msg> = {
     en: "TradeVault reads your history and puts a number on what indiscipline costs you - size drift after a loss, overtrading, off-plan entries - then hands you one rule to hold tomorrow.",
     fr: "TradeVault lit ton historique et chiffre ce que l'indiscipline te coûte - dérive de taille après une perte, overtrading, entrées hors plan - puis te donne une seule règle à tenir demain.",
   },
-  "hero.cta": { en: "Start for free", fr: "Commencer gratuitement" },
+  "hero.cta": { en: "Get Started", fr: "Commencer" },
   "hero.demo": { en: "or watch a 2-min demo", fr: "ou regarde une démo de 2 min" },
   "hero.t1": { en: "No credit card", fr: "Sans carte bancaire" },
   "hero.t2": { en: "Set up in 2 minutes", fr: "Prêt en 2 minutes" },
