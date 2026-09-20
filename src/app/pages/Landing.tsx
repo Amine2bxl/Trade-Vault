@@ -464,7 +464,7 @@ function AnalyticsSection() {
   return (
     <section id="analytics" className="relative section-divider py-14 lg:py-24">
       <div className="lp-container">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
           <div className="reveal">
             <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
               {t("analytics.title.a")} <span className="text-accent">{t("analytics.title.b")}</span>
@@ -567,30 +567,40 @@ function MistakesSection() {
   return (
     <section id="mistakes" className="relative section-divider py-14 lg:py-20">
       <div className="lp-container">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
+          {/* Les trois « fuites » ci-dessous sont un DESSIN : « −$1,240 »,
+              « −$890 », « −$670 » ne viennent d'aucun compte. Elles ne
+              tiennent la place que tant qu'aucun `mistakes.*` n'est déposé. */}
           <div className="reveal order-2 lg:order-1">
-            <div className="lp-panel p-5">
-              <p className="tv-label mb-4 text-slate-500">{t("bento.errors.thismonth")}</p>
-              <div className="space-y-3">
-                {leaks.map((m) => (
-                  <div key={m.n}>
-                    <div className="flex items-center justify-between text-[13px]">
-                      <span className="font-medium text-slate-200">{m.n}</span>
-                      <span className="tv-figure tabular-nums text-[var(--tv-chart-red)]">
-                        {m.c}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/[.05]">
-                      <div
-                        className="h-full rounded-full bg-[var(--tv-chart-red)]/60"
-                        style={{ width: `${m.v}%` }}
-                      />
-                    </div>
+            <ShotOuVisuel
+              nom="mistakes"
+              alt={t("shot.mistakes.alt")}
+              legende={t("shot.mistakes.cap")}
+              repli={
+                <div className="lp-panel p-5">
+                  <p className="tv-label mb-4 text-slate-500">{t("bento.errors.thismonth")}</p>
+                  <div className="space-y-3">
+                    {leaks.map((m) => (
+                      <div key={m.n}>
+                        <div className="flex items-center justify-between text-[13px]">
+                          <span className="font-medium text-slate-200">{m.n}</span>
+                          <span className="tv-figure tabular-nums text-[var(--tv-chart-red)]">
+                            {m.c}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/[.05]">
+                          <div
+                            className="h-full rounded-full bg-[var(--tv-chart-red)]/60"
+                            style={{ width: `${m.v}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <p className="tv-label mt-4 text-slate-500">{t("bento.errors.d")}</p>
-            </div>
+                  <p className="tv-label mt-4 text-slate-500">{t("bento.errors.d")}</p>
+                </div>
+              }
+            />
           </div>
 
           <div className="reveal order-1 lg:order-2">
@@ -810,68 +820,87 @@ function LandingPage() {
       <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
 
       <main className="relative z-10">
-        {/* ── HERO ── */}
-        <section className="relative overflow-hidden pt-[96px] pb-16 lg:pt-[128px] lg:pb-24">
+        {/* ── HERO ──
+            LA CAPTURE EST LE SUJET, ET ELLE PREND TOUTE LA LARGEUR.
+
+            Elle vivait dans une colonne de 520px à côté du texte. À cette
+            taille, l'écran du produit est une vignette : on distingue qu'il y a
+            un graphe, on ne lit ni un chiffre ni un libellé — donc elle ne
+            prouve rien, et la promesse du titre reste une affirmation.
+            `DESIGN.md` demande que la capture MÈNE la page ; une vignette ne
+            mène rien.
+
+            Le texte passe donc au-dessus, centré et resserré (`max-w-3xl` :
+            une accroche se lit d'un coup d'œil, pas en balayant 1200px), et la
+            capture occupe la pleine largeur en dessous. C'est la disposition
+            de toutes les vitrines qui vendent un logiciel visuel, et pour une
+            raison simple : au premier défilement, on doit avoir VU le produit. */}
+        <section className="relative overflow-hidden pt-[104px] pb-10 lg:pt-[140px] lg:pb-16">
           <div className="lp-container">
-            <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
-              <div className="text-center lg:text-left">
-                {/* Le titre se lit en DEUX TEMPS : la capacité, puis la faille.
+            <div className="mx-auto max-w-3xl text-center">
+              {/* Le titre se lit en DEUX TEMPS : la capacité, puis la faille.
                     Le passage à la ligne n'est pas une mise en page, c'est la
                     respiration qui fait porter le second membre — mis bout à
                     bout, les deux propositions se lisaient comme une seule
                     phrase et le contre-temps disparaissait. */}
-                {/* La taille plafonne à 3.2rem, pas 4.2 : la colonne de texte
+              {/* La taille plafonne à 3.2rem, pas 4.2 : la colonne de texte
                     fait ~600px, et à 67px la première proposition passait
                     elle-même à la ligne — le titre montait à quatre lignes et
                     le passage à la ligne VOULU ne se distinguait plus des
                     passages subis. À 51px, chaque proposition tient sa place. */}
-                <h1 className="fade-up font-display text-[clamp(2.1rem,4.1vw,3.2rem)] font-semibold leading-[1.06] tracking-[-0.03em] text-white">
-                  {t("hero.h1a")}
-                  <br />
-                  <span className="text-accent">{t("hero.h1b")}</span>
-                </h1>
-                <p className="fade-up d2 mt-6 max-w-[540px] text-[17px] leading-7 text-slate-400">
-                  {t("hero.sub")}
-                </p>
-                <div className="fade-up d3 mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
-                  <button
-                    onClick={() => open("signup", t("nav.cta.plan"))}
-                    className="btn-primary px-7 py-3 text-base"
-                  >
-                    {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                  </button>
-                  <a
-                    href="/demo-site"
-                    className="group -my-2 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-white"
-                  >
-                    <PlayCircle className="w-4 h-4" />
-                    {t("hero.demo")}
-                  </a>
-                </div>
-                <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 lg:justify-start">
-                  {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
-                    <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
-                      <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
-                      {s}
-                    </span>
-                  ))}
-                </div>
+              {/* Le titre monte à 4.4rem : centré sur 3xl, chaque proposition
+                  tient sa ligne, et l'accroche pèse enfin ce qu'elle doit
+                  peser en haut d'une page de vente. */}
+              <h1 className="fade-up font-display text-[clamp(2.3rem,5.4vw,4.4rem)] font-semibold leading-[1.02] tracking-[-0.035em] text-white">
+                {t("hero.h1a")}
+                <br />
+                <span className="text-accent">{t("hero.h1b")}</span>
+              </h1>
+              <p className="fade-up d2 mx-auto mt-7 max-w-[600px] text-[17px] leading-7 text-slate-400">
+                {t("hero.sub")}
+              </p>
+              {/* UN SEUL BOUTON. Le second appel — « or watch a 2-min demo » —
+                  est un lien discret, pas une action concurrente : deux
+                  boutons côte à côte partagent le clic au lieu de l'additionner. */}
+              <div className="fade-up d3 mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <button
+                  onClick={() => open("signup", t("nav.cta.plan"))}
+                  className="btn-primary w-full sm:w-auto"
+                >
+                  {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
+                </button>
+                <a
+                  href="/demo-site"
+                  className="group inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-white"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  {t("hero.demo")}
+                </a>
               </div>
+              <div className="fade-up d4 mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
+                  <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
+                    <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
 
-              <div className="fade-up d3 relative mt-6 w-full max-w-[520px] mx-auto pb-8 lg:mx-0 lg:ml-auto lg:mt-0">
-                {/* LA CAPTURE PASSE DEVANT LE DESSIN.
-                    `DESIGN.md` : « lead EVERY section with a product
-                    screenshot ». Tant qu'aucun `dashboard.*` n'est déposé dans
-                    `src/assets/product/`, le dessin ci-dessous tient la place ;
-                    le fichier posé, il s'efface. */}
-                <ShotOuVisuel
-                  nom="dashboard"
-                  alt={t("shot.dashboard.alt")}
-                  legende={t("shot.dashboard.cap")}
-                  priorite
-                  repli={<HeroProductVisual />}
-                />
-              </div>
+            {/* LA CAPTURE PASSE DEVANT LE DESSIN.
+                `DESIGN.md` : « lead EVERY section with a product screenshot ».
+                Tant qu'aucun `dashboard.*` n'est déposé dans
+                `src/assets/product/`, le dessin ci-dessous tient la place ; le
+                fichier posé, il s'efface. */}
+            <div className="fade-up d4 relative mx-auto mt-14 w-full max-w-[1120px] lg:mt-20">
+              <ShotOuVisuel
+                nom="dashboard"
+                alt={t("shot.dashboard.alt")}
+                legende={t("shot.dashboard.cap")}
+                priorite
+                hero
+                repli={<HeroProductVisual />}
+              />
             </div>
           </div>
         </section>
@@ -935,8 +964,25 @@ function LandingPage() {
               }
               sub={t("ai.sub")}
             />
-            <div className="reveal mb-12 grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-              <AIConversation />
+            {/* LA VRAIE CONVERSATION REMPLACE LA CONVERSATION DESSINÉE.
+                `AIConversation` est un mock SVG dont chaque chiffre est
+                inventé — « 248 trades », « 38 % le vendredi », « +42 % de
+                taille ». `shots.ts` dit pourquoi c'est inacceptable : un
+                visiteur ne distingue pas un dessin soigné d'une capture, donc
+                le dessin présente des performances fabriquées comme un aperçu
+                du produit. Le mock ne survit que tant qu'aucun `jarvis.*`
+                n'est déposé ; le fichier posé, il s'efface. */}
+            {/* La capture prend la plus grande part : c'est elle qui porte la
+                preuve, le texte ne fait que la commenter. À 50/50 le texte du
+                produit devenait illisible et l'image cessait de prouver quoi
+                que ce soit. */}
+            <div className="reveal mb-12 grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-14">
+              <ShotOuVisuel
+                nom="jarvis"
+                alt={t("shot.jarvis.alt")}
+                legende={t("shot.jarvis.cap")}
+                repli={<AIConversation />}
+              />
               <div>
                 <h3 className="font-display text-2xl font-bold text-white leading-tight mb-4">
                   {t("ai.head.a")}

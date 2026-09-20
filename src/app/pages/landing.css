@@ -410,3 +410,298 @@
     animation: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REFONTE — LA PROFONDEUR, LE CADRE, LA FORME DES ACTIONS
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ── LA RÈGLE QUI CHANGE, ET SON PÉRIMÈTRE EXACT ───────────────────────────
+
+   « Rien ne rayonne » reste la loi du PRODUIT CONNECTÉ, et elle ne bouge pas
+   d'un pixel : un halo dans une interface de travail attire l'œil sur du
+   décor pendant qu'un chiffre attend d'être lu, et il rend la hiérarchie
+   illisible au bout de trois écrans.
+
+   La VITRINE n'a pas ce métier. Elle est vue une fois, en défilant, par
+   quelqu'un qui ne sait pas encore ce qu'est le produit — et son travail est
+   de donner envie d'ouvrir la porte. Une capture posée à plat sur du noir
+   ressemble à une pièce jointe ; la même capture posée dans la lumière
+   ressemble à un écran allumé. C'est la différence entre montrer une image du
+   produit et donner l'impression que le terminal tourne déjà.
+
+   Le halo est donc AUTORISÉ ICI, et nulle part ailleurs : toutes les règles de
+   ce bloc sont préfixées `.landing-root`. Aucune ne peut fuir dans l'app.
+
+   ── LA PROFONDEUR NE VIENT PAS D'UNE SECONDE COULEUR DE MARQUE ────────────
+
+   Ajouter un violet ou un bleu de marque aurait donné de la profondeur au prix
+   de l'accent : deux couleurs qui se disputent, et le vert qui cesse de dire
+   « ceci agit ». La profondeur vient donc de la LUMIÈRE — des nappes radiales
+   très sourdes, dont une froide (indigo) qui n'existe que pour empêcher le
+   noir d'être plat, et une chaude (la menthe du produit) qui n'éclaire que ce
+   qu'on veut faire regarder. Aucune des deux n'est jamais un aplat, jamais un
+   remplissage de carte, jamais lisible comme une couleur.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── La nappe ambiante ──
+ *
+ * Posée sur `.landing-root` plutôt que sur une section : le dégradé doit
+ * traverser les coutures, sinon chaque section redevient une boîte. `fixed`
+ * pour que la lumière ne défile pas avec le contenu — c'est une pièce qu'on
+ * éclaire, pas un motif imprimé sur le papier. */
+.landing-root {
+  position: relative;
+  isolation: isolate;
+}
+.landing-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    /* La menthe, très haut : elle n'éclaire que le héros. */
+    radial-gradient(
+      68rem 42rem at 72% -8%,
+      rgb(var(--tv-accent-rgb) / 0.085),
+      transparent 62%
+    ),
+    /* L'indigo, à gauche et plus bas : il donne au noir une TEMPÉRATURE.
+       Sans lui le fond est mort ; avec lui il a un volume, sans qu'on
+       puisse nommer la couleur. */
+      radial-gradient(56rem 40rem at 6% 18%, rgb(86 96 210 / 0.07), transparent 60%),
+    radial-gradient(70rem 50rem at 50% 108%, rgb(86 96 210 / 0.05), transparent 62%);
+}
+
+/* ── La trame de terminal ──
+ *
+ * Une grille d'un pixel, à 1,6 % d'opacité, qui s'efface vers le bas. Elle ne
+ * se voit pas ; elle s'enlève. Sans elle le fond n'a aucune matière et les
+ * cartes flottent sur du vide. */
+.landing-root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.016) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 78%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 78%);
+}
+
+/* ── LE CADRE D'UNE CAPTURE ──
+ *
+ * Trois couches, et chacune règle un défaut précis d'une image posée à plat :
+ *
+ *  1. LA LUEUR (`::before`) détache la capture du fond. Sans elle, une image
+ *     sombre sur un fond sombre n'a pas de bord : elle bave.
+ *  2. LE BISEAU (le `padding` + le liseré dégradé) donne l'épaisseur d'un
+ *     écran. Un liseré uniforme lit comme une bordure de tableau ; un liseré
+ *     plus clair EN HAUT lit comme une arête qui prend la lumière.
+ *  3. LE REFLET (`::after`) est un voile clair en diagonale, à 4 %. C'est ce
+ *     qui fait « verre » plutôt que « papier ».
+ */
+.landing-root .shot-frame {
+  position: relative;
+  border-radius: 20px;
+  padding: 6px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02) 34%, transparent 70%)
+      border-box,
+    var(--tv-plate-1) padding-box;
+  border: 1px solid transparent;
+  box-shadow:
+    /* Le poids. Une ombre franche et basse : l'objet est POSÉ. */
+    0 32px 80px -24px rgb(0 0 0 / 0.85),
+    /* La lueur, dans l'accent, très diffuse et très faible. */ 0 0 120px -30px
+      rgb(var(--tv-accent-rgb) / 0.3),
+    /* L'arête intérieure haute — la ligne qui fait l'épaisseur. */ inset 0 1px 0
+      rgb(255 255 255 / 0.07);
+}
+.landing-root .shot-frame::before {
+  content: "";
+  position: absolute;
+  inset: -18% -10%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(var(--tv-accent-rgb) / 0.14), transparent 72%);
+  filter: blur(42px);
+}
+.landing-root .shot-frame > img {
+  display: block;
+  width: 100%;
+  border-radius: 15px;
+}
+.landing-root .shot-frame::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 15px;
+  pointer-events: none;
+  background: linear-gradient(
+    104deg,
+    rgb(255 255 255 / 0.045) 0%,
+    transparent 38%,
+    transparent 100%
+  );
+}
+
+/* La capture du héros, LÉGÈREMENT tournée.
+ *
+ * 1,4° et pas davantage : au-delà, le texte de la capture devient illisible et
+ * l'image cesse d'être une preuve pour devenir une décoration. La perspective
+ * suffit à dire « objet dans l'espace » sans rien coûter à la lecture.
+ * Elle se redresse au survol — le geste dit que l'écran est vivant. */
+@media (min-width: 1024px) {
+  .landing-root .shot-hero {
+    transform: perspective(2200px) rotateY(-1.4deg) rotateX(0.7deg);
+    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .landing-root .shot-hero:hover {
+    transform: perspective(2200px) rotateY(0deg) rotateX(0deg) translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .shot-hero,
+  .landing-root .shot-hero:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── LA FORME DES ACTIONS, SUR LA VITRINE SEULEMENT ──
+ *
+ * `.btn-primary` est PARTAGÉE avec toute l'application connectée : la
+ * redéfinir globalement changerait chaque bouton de chaque page, ce qui n'est
+ * pas ce qui est demandé et sortirait d'un lot présenté comme visuel. La
+ * surcharge est donc portée par `.landing-root`.
+ *
+ * Pourquoi la pilule tombe ICI : sur un rail de navigation, elle épouse la
+ * forme des entrées voisines et c'est juste. Sur une page de vente, elle fait
+ * « pilule d'application mobile » à côté de captures à angles droits — deux
+ * langages de forme sur le même écran. Un rectangle à coin franc (10px) se
+ * range avec les cartes et les captures, et pèse davantage. */
+.landing-root .btn-primary {
+  border-radius: 10px;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.9375rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 8px 28px -12px rgb(var(--tv-accent-rgb) / 0.55);
+  transition:
+    background-color 0.16s ease,
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.16s ease;
+}
+.landing-root .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 12px 34px -12px rgb(var(--tv-accent-rgb) / 0.7);
+}
+.landing-root .btn-primary:active {
+  transform: translateY(0);
+}
+.landing-root .btn-ghost {
+  border-radius: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .btn-primary,
+  .landing-root .btn-primary:hover {
+    transform: none;
+    transition: background-color 0.16s ease;
+  }
+}
+
+/* ── L'APPARITION AU DÉFILEMENT, REPRISE ──
+ *
+ * L'ancienne montait de 12px en 0,5s sur une courbe déjà douce. C'était
+ * correct et invisible : à 12px le mouvement se devine à peine, et tout partait
+ * en même temps. On monte la course à 22px, on allonge à 0,72s, et surtout on
+ * DÉCALE les enfants d'un même bloc — c'est le décalage, pas la durée, qui
+ * donne la sensation de fluidité. Toujours `transform` + `opacity` seulement :
+ * le compositeur s'en charge, rien n'est recalculé par frame. */
+@media (prefers-reduced-motion: no-preference) {
+  .js-reveal .reveal {
+    transform: translateY(22px) scale(0.994);
+    transition:
+      opacity 0.72s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .js-reveal .reveal-visible {
+    transform: none;
+  }
+  /* Le décalage en cascade — au plus 6 crans, après quoi l'attente se voit. */
+  .js-reveal .reveal-stagger > * {
+    transition-delay: calc(var(--i, 0) * 70ms);
+  }
+}
+
+/* ── LE RELIEF DES PLAQUES, SUR LA VITRINE ──
+ *
+ * Les cartes de la page étaient `bg-white/[.02]` + un liseré à 6 % : sur un
+ * fond quasi noir, ça donne un rectangle gris un peu plus clair que le fond,
+ * et rien d'autre. Douze rectangles gris à la suite, c'est la définition d'une
+ * page plate — et c'est ce que la page renvoyait.
+ *
+ * Trois couches, aucune nouvelle couleur :
+ *
+ *  1. UN DÉGRADÉ DANS LA SURFACE. Deux pour cent en haut, zéro en bas. La
+ *     plaque cesse d'être un aplat : elle prend la lumière par le haut, comme
+ *     un objet posé sous un plafonnier.
+ *  2. L'ARÊTE. Un trait blanc à 6 % sur le bord supérieur INTÉRIEUR. C'est lui
+ *     qui donne l'épaisseur — le même trait que les panneaux du produit.
+ *  3. L'OMBRE. Basse, large, très sombre. Elle ne « brille » pas : elle
+ *     enfonce le fond sous la carte, donc elle fait exister le fond.
+ *
+ * Le survol ne fait pas grandir la carte (un déplacement de 4px sur une grille
+ * de six cartes fait sauter la page) : il éclaire l'arête et remonte d'un
+ * pixel. C'est assez pour dire « ceci réagit ».
+ */
+.landing-root .lp-card,
+.landing-root .lp-panel,
+.landing-root .glass-card,
+.landing-root .use-card,
+.landing-root .card-premium {
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.022), transparent 58%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 18px 40px -28px rgb(0 0 0 / 0.9);
+  transition:
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.22s ease;
+}
+.landing-root .lp-card:hover,
+.landing-root .glass-card:hover,
+.landing-root .use-card:hover,
+.landing-root .card-premium:hover {
+  transform: translateY(-1px);
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 22px 48px -26px rgb(0 0 0 / 0.95);
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .lp-card:hover,
+  .landing-root .glass-card:hover,
+  .landing-root .use-card:hover,
+  .landing-root .card-premium:hover {
+    transform: none;
+  }
+}
+
+/* La pastille d'icône d'une carte — creusée, pas posée.
+ * Une icône sur un aplat clair flotte ; la même icône dans un creux appartient
+ * à la carte. C'est un `inset` de plus, pas une couleur de plus. */
+.landing-root .feat-icon {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    inset 0 -1px 0 rgb(0 0 0 / 0.35);
+}

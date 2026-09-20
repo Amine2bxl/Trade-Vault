@@ -169,9 +169,26 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
           >
             {t("nav.signin")}
           </button>
+          {/* LE BOUTON DE LA NAV NE S'AFFICHE QU'APRÈS LE HÉROS.
+              Il était visible en même temps que « Commencer gratuitement » du
+              héros : deux boutons verts, même promesse, à 400px l'un de
+              l'autre. Le visiteur ne lit pas ça comme deux chances de cliquer
+              mais comme une insistance — et un appel répété avant qu'on ait
+              compris l'offre est une raison de partir, pas de s'inscrire.
+
+              Le seuil (560px) est la hauteur au-delà de laquelle le bouton du
+              héros est sorti de l'écran. Tant qu'il est là, la nav se tait ;
+              une fois qu'il n'y est plus, elle reprend le relais — il y a
+              toujours exactement UN appel à l'action visible. */}
           <button
             onClick={() => open("signup", t("nav.cta.plan"))}
-            className="btn-primary px-4 py-2 text-[13px]"
+            className={`btn-primary px-4 py-2 text-[13px] transition-[opacity,transform] duration-300 ${
+              y > 560
+                ? "pointer-events-auto translate-y-0 opacity-100"
+                : "pointer-events-none -translate-y-1 opacity-0"
+            }`}
+            aria-hidden={y <= 560}
+            tabIndex={y > 560 ? 0 : -1}
           >
             {t("nav.cta")} <ArrowRight className="w-3.5 h-3.5" />
           </button>

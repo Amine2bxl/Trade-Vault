@@ -437,6 +437,26 @@ const M: Record<string, Msg> = {
     fr: "Le cadran de l'Edge Score sur le tableau de bord, avec ses quatre composantes de comportement.",
   },
   "shot.edge.cap": { en: "The Edge Score", fr: "L'Edge Score" },
+  "shot.jarvis.alt": {
+    en: "A Jarvis conversation: the question, the weekday numbers it answers with, and the rule it proposes.",
+    fr: "Une conversation avec Jarvis : la question, les chiffres par jour de semaine qu'il cite, et la règle qu'il propose.",
+  },
+  "shot.jarvis.cap": { en: "Jarvis, answering", fr: "Jarvis, en train de répondre" },
+  "shot.mistakes.alt": {
+    en: "The mistakes page: the correction plan, and the week-by-week series for each mistake.",
+    fr: "La page Erreurs : le plan de correction, et la série semaine par semaine de chaque erreur.",
+  },
+  "shot.mistakes.cap": { en: "The correction plan", fr: "Le plan de correction" },
+  "shot.journal.alt": {
+    en: "The trade journal: every trade with its P&L, R multiple, setup and risk.",
+    fr: "Le journal de trades : chaque trade avec son P&L, son multiple de R, son setup et son risque.",
+  },
+  "shot.journal.cap": { en: "The journal", fr: "Le journal" },
+  "shot.calendar.alt": {
+    en: "The trading calendar: each day tinted by its P&L.",
+    fr: "Le calendrier de trading : chaque journée teintée par son P&L.",
+  },
+  "shot.calendar.cap": { en: "The calendar", fr: "Le calendrier" },
 
   /* hero product visual */
   // L'illustration du héros mène désormais avec ce que le tableau de bord
