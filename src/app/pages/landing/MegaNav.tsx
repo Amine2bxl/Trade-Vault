@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Bot, Shield, BarChart3, BookOpen, ArrowRight, ChevronDown } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
-import { useLandingT, type LandingLang } from "./i18n";
+import { LANDING_LANGS, useLandingT } from "./i18n";
+import { LIENS_NAV as LINKS } from "./nav";
 
 /**
  * Navbar de la landing — stable, calme, traduite.
@@ -19,17 +20,6 @@ interface MegaNavProps {
   pct: number;
 }
 
-const LINKS: {
-  key: "nav.features" | "nav.problem" | "nav.edge" | "nav.analytics" | "pricing.tag" | "faq.tag";
-  id: string;
-}[] = [
-  { key: "nav.problem", id: "problem" },
-  { key: "nav.edge", id: "edge" },
-  { key: "nav.features", id: "features" },
-  { key: "pricing.tag", id: "pricing" },
-  { key: "faq.tag", id: "faq" },
-];
-
 export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
   const { t, lang, setLang } = useLandingT();
   const [openMenu, setOpenMenu] = useState(false);
@@ -44,15 +34,17 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
     return () => document.removeEventListener("click", onClick);
   }, []);
 
-  // Chaque entrée mène à la section qui parle RÉELLEMENT de son sujet. Trois
-  // des quatre pointaient sur « features » — y compris « Analytics », alors que
-  // la page porte une section analytics entière. Un menu produit qui envoie
-  // trois fois au même endroit n'est pas un menu, c'est un bouton.
+  /* Trois des quatre entrées désignaient des ancres SUPPRIMÉES (`ai`,
+     `analytics`, `features`) : la visite du produit les a absorbées. Un menu
+     dont les trois quarts renvoient en bas de page est pire qu'un menu absent,
+     parce qu'on y a cliqué en confiance. Les quatre pointent maintenant sur
+     des sections qui existent — ce que `seo.test.ts` vérifie pour le pied de
+     page, et que la liste partagée `nav.ts` garantit pour la barre. */
   const productItems = [
-    { icon: Bot, title: t("nav.p.jarvis"), desc: t("nav.p.jarvis.d"), id: "ai" },
+    { icon: Bot, title: t("nav.p.jarvis"), desc: t("nav.p.jarvis.d"), id: "product" },
     { icon: Shield, title: t("nav.p.discipline"), desc: t("nav.p.discipline.d"), id: "edge" },
-    { icon: BarChart3, title: t("nav.p.analytics"), desc: t("nav.p.analytics.d"), id: "analytics" },
-    { icon: BookOpen, title: t("nav.p.journal"), desc: t("nav.p.journal.d"), id: "features" },
+    { icon: BarChart3, title: t("nav.p.analytics"), desc: t("nav.p.analytics.d"), id: "product" },
+    { icon: BookOpen, title: t("nav.p.journal"), desc: t("nav.p.journal.d"), id: "problem" },
   ];
 
   const goTo = (id: string) => {
@@ -148,17 +140,21 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
         <div className="flex items-center gap-1.5">
           {/* Language toggle */}
           <div className="hidden sm:flex items-center rounded-lg border border-[var(--tv-border)] p-0.5">
-            {(["en", "fr"] as LandingLang[]).map((l) => (
+            {/* Dessiné depuis `LANDING_LANGS` : ajouter l'espagnol ou l'arabe
+                est une ligne dans la table, pas une retouche ici. */}
+            {LANDING_LANGS.map((l) => (
               <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-[11px] font-semibold uppercase transition-colors ${
-                  lang === l
+                key={l.id}
+                onClick={() => setLang(l.id)}
+                aria-label={l.label}
+                aria-pressed={lang === l.id}
+                className={`flex h-8 min-w-[34px] items-center justify-center rounded-md px-2 text-[11px] font-semibold transition-colors ${
+                  lang === l.id
                     ? "bg-[rgb(var(--tv-accent-rgb)/0.14)] text-white"
                     : "text-slate-500 hover:text-slate-300"
                 }`}
               >
-                {l}
+                {l.short}
               </button>
             ))}
           </div>
@@ -194,7 +190,9 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
           </button>
           <button
             onClick={() => setMobile((v) => !v)}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--tv-border)] text-slate-200 lg:hidden"
+            /* 44 px : ce bouton n'existe QUE sous `lg`, donc toujours au
+               doigt. À 36 il était sous la cible tactile minimale. */
+            className="grid h-11 w-11 place-items-center rounded-lg border border-[var(--tv-border)] text-slate-200 lg:hidden"
             aria-label="Menu"
           >
             {mobile ? (
@@ -238,17 +236,18 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
               </button>
             ))}
             <div className="flex items-center gap-2 mt-3">
-              {(["en", "fr"] as LandingLang[]).map((l) => (
+              {LANDING_LANGS.map((l) => (
                 <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`flex-1 rounded-lg border py-2 text-[12px] font-semibold uppercase transition-colors ${
-                    lang === l
+                  key={l.id}
+                  onClick={() => setLang(l.id)}
+                  aria-pressed={lang === l.id}
+                  className={`flex-1 rounded-lg border py-2 text-[12px] font-semibold transition-colors ${
+                    lang === l.id
                       ? "border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.08)] text-[var(--tv-highlight)]"
                       : "border-[var(--tv-border)] text-slate-400"
                   }`}
                 >
-                  {l}
+                  {l.label}
                 </button>
               ))}
             </div>

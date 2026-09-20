@@ -34,7 +34,7 @@ import { SSR_LANG, FR_PREFIX } from "@/shared/lang";
  *  s'exécute de toute façon pas, mais où React avertirait à chaque rendu. */
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-export type LandingLang = "en" | "fr";
+export type LandingLang = (typeof LANDING_LANGS)[number]["id"];
 export type LandingKey = keyof typeof M;
 
 const STORAGE_KEY = "tv.landing.lang";
@@ -150,10 +150,37 @@ export function useLandingT() {
 
 /* ─────────────────────────── Dictionary ─────────────────────────── */
 
-export interface Msg {
+/**
+ * LES LANGUES DE LA VITRINE — une table, pas une paire de boutons.
+ *
+ * Le sélecteur rendait `EN` et `FR` en dur, dans le balisage. Ajouter
+ * l'espagnol demandait donc de toucher le composant, le type, le sélecteur et
+ * le repli : quatre endroits, dont trois qu'on oublie.
+ *
+ * Ici, une langue est UNE ENTRÉE. Le sélecteur se dessine depuis cette table,
+ * `tr()` retombe déjà sur l'anglais pour toute clé non traduite (`m[lang] ??
+ * m.en`), et `dir` est là dès maintenant pour que l'arabe n'oblige pas à
+ * reprendre la mise en page le jour venu.
+ *
+ * Ce qu'il reste à faire pour ajouter une langue : une ligne ici, la route
+ * correspondante dans `shared/lang.ts`, et les clés au fil de l'eau — une clé
+ * manquante n'est pas une panne, c'est de l'anglais.
+ */
+export const LANDING_LANGS = [
+  { id: "en", short: "EN", label: "English", dir: "ltr" },
+  { id: "fr", short: "FR", label: "Français", dir: "ltr" },
+] as const;
+
+/**
+ * `en` et `fr` sont EXIGÉS — ce sont les deux langues servies, et une vitrine
+ * à moitié traduite dans une langue annoncée est pire que pas de traduction.
+ * Les suivantes entrent en facultatif : elles se remplissent progressivement
+ * sans jamais casser la compilation.
+ */
+export type Msg = {
   en: string;
   fr: string;
-}
+} & Partial<Record<LandingLang, string>>;
 
 const M: Record<string, Msg> = {
   /* nav */
@@ -418,6 +445,123 @@ const M: Record<string, Msg> = {
     fr: "Décide maintenant ce que tu feras après.",
   },
   "cta.buttonShort": { en: "Start for free", fr: "Commencer gratuitement" },
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     LA VITRINE COURTE — une section, une fonction, jamais deux fois la même.
+     ═══════════════════════════════════════════════════════════════════════
+
+     L'audit de la version précédente : 12 517 px, 1 619 mots, 17 sections,
+     et quatre libellés différents pour un seul bouton. Surtout, la moitié de
+     la hauteur répétait quelque chose de déjà dit — l'argument Jarvis tenait
+     1 508 px sur deux sections, la comparaison 1 411 px sur deux autres, le
+     cadrage du problème 1 028 px sur deux encore.
+
+     La règle appliquée ici est celle du skill : « si deux sections répondent
+     à la même objection, l'une des deux part ». Rien n'est dit deux fois.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Héros ── */
+  "v2.hero.eyebrow": {
+    en: "For prop-firm challenges and serious retail",
+    fr: "Pour les challenges prop-firm et le retail exigeant",
+  },
+  "v2.hero.sub": {
+    en: "TradeVault reads your journal, puts a number on what indiscipline costs you, and gives you one rule to hold tomorrow.",
+    fr: "TradeVault lit ton journal, chiffre ce que l'indiscipline te coûte, et te donne une règle à tenir demain.",
+  },
+  "v2.hero.risk": {
+    en: "Free forever · No card · Export anytime",
+    fr: "Gratuit pour toujours · Sans carte · Export à tout moment",
+  },
+
+  /* ── Le problème — trois symptômes, une ligne chacun ── */
+  "v2.pb.title.a": { en: "It isn't your setup", fr: "Ce n'est pas ton setup" },
+  "v2.pb.title.b": { en: "that blows the account.", fr: "qui fait sauter le compte." },
+  "v2.pb.sub": {
+    en: "It's the twenty minutes after a loss.",
+    fr: "Ce sont les vingt minutes qui suivent une perte.",
+  },
+  "v2.pb.1.t": { en: "You size up after a loss", fr: "Tu montes la taille après une perte" },
+  "v2.pb.1.d": {
+    en: "The plan said 1%. The next one went in at 1.8%.",
+    fr: "Le plan disait 1 %. Le suivant est parti à 1,8 %.",
+  },
+  "v2.pb.2.t": {
+    en: "You take trades the plan never allowed",
+    fr: "Tu prends des trades que le plan interdisait",
+  },
+  "v2.pb.3.t": { en: "No number ever names the habit", fr: "Aucun chiffre ne nomme l'habitude" },
+  "v2.pb.2.d": {
+    en: "FOMO, boredom, the need to win it back.",
+    fr: "FOMO, ennui, le besoin de se refaire.",
+  },
+  "v2.pb.3.d": {
+    en: "So you change strategy instead of behaviour.",
+    fr: "Alors tu changes de stratégie au lieu de comportement.",
+  },
+
+  /* ── La visite du produit — une phrase par écran, pas un paragraphe ── */
+  "v2.tour.title.a": { en: "The whole product,", fr: "Le produit en entier," },
+  "v2.tour.title.b": { en: "in five screens.", fr: "en cinq écrans." },
+
+  "v2.s1.t": {
+    en: "Your biggest leak has a name and a price.",
+    fr: "Ta plus grosse fuite a un nom et un prix.",
+  },
+  "v2.s1.d": {
+    en: "Every mistake you tick is counted, costed, and tracked week by week — so you can see it recede.",
+    fr: "Chaque erreur que tu coches est comptée, chiffrée et suivie semaine par semaine — tu la vois reculer.",
+  },
+  "v2.s2.t": {
+    en: "Ask anything. It answers from your trades.",
+    fr: "Demande n'importe quoi. Il répond depuis tes trades.",
+  },
+  "v2.s2.d": {
+    en: "Every claim carries its number, its period and its sample size. It analyses your past — it never predicts the market.",
+    fr: "Chaque affirmation porte son chiffre, sa période et son échantillon. Il analyse ton passé — jamais le marché à venir.",
+  },
+  "v2.s3.t": {
+    en: "Which setup pays you. Which one bleeds you.",
+    fr: "Quel setup te paie. Lequel te saigne.",
+  },
+  "v2.s3.d": {
+    en: "Expectancy, profit factor and R multiple per setup, per session, per weekday.",
+    fr: "Espérance, profit factor et multiple de R par setup, par session, par jour de semaine.",
+  },
+  /* Cette rangée montrait les RAPPORTS MENSUELS. La capture réelle du compte
+     vitrine tombait sur l'état vide — neuf boutons « Generate » et pas un
+     rapport — parce que le compte n'en a jamais généré. Montrer une liste de
+     boutons pour illustrer « ton mois est lu » vend une page vide.
+     Le calendrier, lui, est plein et porte le même argument de façon
+     vérifiable : la régularité se voit, jour par jour. */
+  "v2.s4.t": { en: "Your month, day by day.", fr: "Ton mois, jour par jour." },
+  "v2.s4.d": {
+    en: "Every session tinted by its result — you see where the good days cluster, and where they stop.",
+    fr: "Chaque séance teintée par son résultat — tu vois où les bonnes journées se groupent, et où elles s'arrêtent.",
+  },
+  "v2.s5.t": {
+    en: "Getting your trades in takes minutes.",
+    fr: "Entrer tes trades prend des minutes.",
+  },
+  "v2.s5.d": {
+    en: "Universal CSV import, copy-paste, or 45 seconds by hand. No broker connection — there is no API, and we would rather say so.",
+    fr: "Import CSV universel, copier-coller, ou 45 secondes à la main. Aucune connexion courtier — il n'y a pas d'API, et on préfère le dire.",
+  },
+
+  /* ── Confiance ── */
+  "v2.trust.title": { en: "What we will never do", fr: "Ce qu'on ne fera jamais" },
+  "v2.trust.sub": {
+    en: "Three commitments you can check today.",
+    fr: "Trois engagements vérifiables aujourd'hui.",
+  },
+  "v2.trust.reviews": { en: "Verified reviews on", fr: "Avis vérifiés sur" },
+
+  /* ── CTA final ── */
+  "v2.cta.title.a": { en: "Your next loss is coming.", fr: "Ta prochaine perte arrive." },
+  "v2.cta.title.b": {
+    en: "Decide now what you do after it.",
+    fr: "Décide maintenant ce que tu feras après.",
+  },
 
   /* Captures d'écran du produit — voir `src/assets/product/README.md`.
      Le texte alternatif décrit L'ÉCRAN, jamais le résultat qu'on y voit :
@@ -1052,8 +1196,8 @@ const M: Record<string, Msg> = {
    * page ou à une route réelle du produit. Voir `FOOTER_PRODUCT` et
    * `FOOTER_RESOURCES` dans `pages/Landing.tsx`. */
   "footer.f1": { en: "The problem", fr: "Le problème" },
-  "footer.f2": { en: "Jarvis — AI coach", fr: "Jarvis — Coach IA" },
-  "footer.f3": { en: "Features", fr: "Fonctionnalités" },
+  "footer.f2": { en: "Trust & security", fr: "Confiance et sécurité" },
+  "footer.f3": { en: "The product", fr: "Le produit" },
   "footer.f4": { en: "Pricing", fr: "Tarifs" },
   "footer.f5": { en: "Edge Score", fr: "Edge Score" },
   "footer.r1": { en: "Guided demo", fr: "Démo guidée" },

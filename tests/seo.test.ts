@@ -309,7 +309,15 @@ describe("maillage interne", () => {
     // à supprimer le lien plutôt qu'à élargir la recherche. L'intention du
     // garde-fou est inchangée : tout lien de pied de page désigne quelque chose
     // qui existe.
-    const sources = landing + stripComments(read("../src/app/pages/landing/Proof.tsx"));
+    // La visite du produit monte `<section id="product">` depuis `Tour.tsx` :
+    // une source de plus à lire, pour la même raison qu'on avait déjà ajouté
+    // `Proof.tsx`. L'intention du garde-fou est inchangée — tout lien de pied
+    // de page désigne quelque chose qui existe —, et l'élargir vaut mieux que
+    // de supprimer un lien parfaitement valide pour faire passer un test.
+    const sources =
+      landing +
+      stripComments(read("../src/app/pages/landing/Proof.tsx")) +
+      stripComments(read("../src/app/pages/landing/Tour.tsx"));
     const sectionIds = [...sources.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
     const routes = ["/demo", "/demo-site", "/contact", "/privacy", "/terms", "/cgu", "/"];
     for (const href of targets) {

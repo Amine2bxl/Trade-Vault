@@ -705,3 +705,173 @@
     inset 0 1px 0 rgb(255 255 255 / 0.07),
     inset 0 -1px 0 rgb(0 0 0 / 0.35);
 }
+
+/* ── LA VISITE DU PRODUIT ──
+ *
+ * Une grille à deux pistes où la capture tient la LARGE : la capture prouve,
+ * le texte ne fait que la nommer. À 50/50, le texte du produit devient
+ * illisible dans l'image et l'image cesse de prouver quoi que ce soit.
+ *
+ * L'alternance inverse le GABARIT en même temps que l'ordre. C'est le point
+ * qui manquait : déplacer la capture en colonne 2 sans toucher au gabarit la
+ * faisait atterrir dans la piste étroite, et sa taille changeait d'une rangée
+ * à l'autre — une irrégularité qu'on lit comme un défaut de mise en page.
+ *
+ * Sous 1024px, tout s'empile et le TEXTE PASSE DEVANT : sur un téléphone, on
+ * lit ce qu'on va regarder, puis on le regarde. L'alternance n'a aucun sens
+ * sur une colonne unique, elle disparaît d'elle-même. */
+.landing-root .tour-row {
+  display: grid;
+  gap: 1.75rem;
+}
+.landing-root .tour-shot,
+.landing-root .tour-shot-col {
+  min-width: 0;
+}
+@media (max-width: 1023px) {
+  .landing-root .tour-shot-col {
+    order: 2;
+  }
+  .landing-root .tour-text-col {
+    order: 1;
+  }
+}
+@media (min-width: 1024px) {
+  .landing-root .tour-row {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 4rem;
+    align-items: center;
+  }
+  .landing-root .tour-row--flip {
+    grid-template-columns: 0.85fr 1.15fr;
+  }
+  .landing-root .tour-row--flip .tour-shot-col {
+    order: 2;
+  }
+  .landing-root .tour-row--flip .tour-text-col {
+    order: 1;
+  }
+}
+
+/* ── L'ORBE DU CURSEUR ──
+ *
+ * 300px de diamètre pour une lueur à 7 % au centre : à cette taille elle ne se
+ * voit pas comme un cercle, elle se voit comme un éclairage qui suit la main.
+ * Un disque net, même discret, distrait — on le suit du regard au lieu de lire.
+ *
+ * `z-index` sous la barre de navigation : la lueur passe DERRIÈRE le contenu
+ * fixe, sinon elle voile le texte qu'elle survole.
+ *
+ * Elle n'existe que pour un pointeur fin et sans `prefers-reduced-motion` —
+ * le composant ne monte rien dans les autres cas, et ces requêtes média sont
+ * la seconde ceinture. */
+.landing-root .cursor-orb {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 300px;
+  height: 300px;
+  border-radius: 9999px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--tv-accent-rgb) / 0.07),
+    rgb(var(--tv-accent-rgb) / 0.03) 45%,
+    transparent 72%
+  );
+}
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .landing-root .cursor-orb {
+    display: none;
+  }
+}
+
+/* ══ LE PLANCHER DE LISIBILITÉ SUR TÉLÉPHONE ══
+ *
+ * `--tv-t-micro` vaut 10px, et c'est juste DANS LE PRODUIT : un libellé de
+ * 10px y est lu à 40cm, sur un écran large, par quelqu'un qui connaît déjà le
+ * mot qu'il survole. La vitrine est lue par quelqu'un qui découvre, souvent à
+ * bout de bras, sur 390px de large.
+ *
+ * L'audit mobile comptait dix textes sous 13px, dont « Illustration — not a
+ * client result » : la mention d'honnêteté qui étiquette les chiffres des
+ * maquettes. Une mention légale illisible ne protège personne — c'est le seul
+ * texte de la page qu'on n'a pas le droit de rendre difficile à lire.
+ *
+ * On ne touche pas au token global : il est redéfini SOUS `.landing-root`, et
+ * seulement sous 640px. L'application garde son échelle au pixel près. */
+@media (max-width: 639px) {
+  .landing-root {
+    --tv-t-micro: 11.5px;
+  }
+  .landing-root .tv-row-label {
+    font-size: 12px;
+  }
+  /* Les légendes de capture et la mention d'illustration. */
+  .landing-root figcaption {
+    font-size: 12.5px;
+  }
+}
+
+/* ══ SUR TÉLÉPHONE, LA CAPTURE EST CELLE D'UN TÉLÉPHONE ══
+ *
+ * ── LE CALCUL QUI IMPOSE UNE SECONDE CAPTURE ──────────────────────────────
+ *
+ * Une capture de bureau de 1300px rendue dans une colonne de 336px est à
+ * l'échelle 0,26 : le texte du produit, 13px à l'écran, arrive à 3,4px sur le
+ * téléphone. Ce n'est pas « petit », c'est illisible — l'image cesse d'être
+ * une preuve pour devenir une texture grise entre deux paragraphes. Le brief
+ * l'interdit nommément.
+ *
+ * ── CE QU'ON A ESSAYÉ D'ABORD, ET POURQUOI ÇA NE SUFFISAIT PAS ────────────
+ *
+ * Recadrer : montrer un tiers de l'écran, agrandi. Ça marche pour un tableau
+ * ou une carte — le plan de correction était parfaitement lisible. Ça ne
+ * marche PAS pour Jarvis, dont toute la valeur est une PHRASE (« Chased
+ * entry, −$305.09 sur 8 trades, PF 1.69 ») : recadrée, elle est coupée en
+ * plein milieu. C'était exactement le défaut qu'on venait de corriger sur les
+ * captures elles-mêmes.
+ *
+ * ── LA VRAIE RÉPONSE ──────────────────────────────────────────────────────
+ *
+ * Le produit est responsive. On le photographie donc À LA LARGEUR DU
+ * TÉLÉPHONE (`<nom>-m.webp`, 390px à 2x) : le texte s'y replie tout seul, la
+ * capture est lue à l'échelle 1, et la barre de navigation basse du produit
+ * dit sans un mot que c'est une vraie application mobile. Toujours le produit
+ * réel, jamais un fragment ni un dessin.
+ *
+ * ── POURQUOI ON LA COUPE QUAND MÊME EN HAUTEUR ────────────────────────────
+ *
+ * 780×1800 affichée sur 336px de large ferait 775px de haut, cinq fois : près
+ * de 4 000px rien qu'en captures. On borne donc le cadre et on ancre l'image
+ * EN HAUT (`object-position: top`) — on montre le début de l'écran, qui est
+ * précisément là où ces pages posent leur argument. Couper le bas d'une
+ * capture de téléphone se lit comme un écran qu'on n'a pas fini de faire
+ * défiler : c'est vrai, et ça n'induit personne en erreur. */
+@media (max-width: 639px) {
+  .landing-root .tour-shot .shot-frame {
+    overflow: hidden;
+    /* 5/8 ≈ la moitié haute d'un écran de téléphone. */
+    aspect-ratio: var(--shot-ar, 5 / 8);
+  }
+  .landing-root .tour-shot .shot-frame > picture,
+  .landing-root .tour-shot .shot-frame > picture > img {
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+  /* Le journal est un TABLEAU : quelques lignes suffisent à le dire, et
+     chaque ligne de plus n'ajoute rien qu'on ne sache déjà. */
+  .landing-root [data-shot="journal"] {
+    --shot-ar: 5 / 7;
+  }
+  /* Le calendrier ne se lit qu'en voyant plusieurs semaines d'affilée. */
+  .landing-root [data-shot="calendar"] {
+    --shot-ar: 5 / 9;
+  }
+}

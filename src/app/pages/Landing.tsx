@@ -6,9 +6,12 @@ import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { ShotOuVisuel } from "./landing/ProductShot";
 import { AuthModal } from "./landing/AuthModal";
-import { FeaturesBento } from "./landing/FeaturesBento";
-import { PlatformsStrip, TraderProof, TrustStrip } from "./landing/Showcase";
-import { AncrageDePrix, SectionEdgeScore, SectionPreuve } from "./landing/Proof";
+import { PlatformsStrip, TrustStrip } from "./landing/Showcase";
+import { TRUSTPILOT_URL } from "@/shared/site";
+import { AncrageDePrix, SectionEdgeScore } from "./landing/Proof";
+import { TourProduit } from "./landing/Tour";
+import { CursorOrb } from "./landing/CursorOrb";
+import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
 import { CookieConsent } from "../components/CookieConsent";
 import { faqPageJsonLd } from "@/shared/seo";
@@ -71,9 +74,9 @@ type FooterLink = { k: LandingKey; href: string };
 
 const FOOTER_PRODUCT: FooterLink[] = [
   { k: "footer.f1", href: "#problem" },
+  { k: "footer.f3", href: "#product" },
   { k: "footer.f5", href: "#edge" },
-  { k: "footer.f2", href: "#ai" },
-  { k: "footer.f3", href: "#features" },
+  { k: "footer.f2", href: "#trust" },
   { k: "footer.f4", href: "#pricing" },
 ];
 
@@ -101,7 +104,9 @@ function FooterColumn({
           <li key={k}>
             <a
               href={href}
-              className="-my-1.5 inline-flex min-h-[36px] items-center text-slate-500 transition hover:text-slate-300"
+              /* 44 px au doigt, 36 à la souris. C'est la cible tactile
+                 minimale recommandée ; sous elle, on vise le lien d'à côté. */
+              className="-my-1.5 inline-flex min-h-[44px] items-center text-slate-500 transition hover:text-slate-300 sm:min-h-[36px]"
             >
               {t(k)}
             </a>
@@ -109,6 +114,32 @@ function FooterColumn({
         ))}
       </ul>
     </div>
+  );
+}
+
+/**
+ * L'ÉTOILE TRUSTPILOT — reproduite, pas inventée.
+ *
+ * Le carré vert `#00b67a` est la marque déposée de Trustpilot, et `AGENTS.md`
+ * la déclare ZONE GELÉE : elle ne suit aucun thème, elle ne s'accorde à rien.
+ * La repeindre à l'accent du produit serait une contrefaçon de badge de
+ * confiance — exactement ce qu'un visiteur ne peut pas vérifier d'un coup
+ * d'œil, donc exactement ce qu'on ne fait pas.
+ *
+ * AUCUNE NOTE, AUCUN NOMBRE D'AVIS. Les cinq carrés sont le LOGO de
+ * Trustpilot, pas une note de 5/5 : le lien mène au vrai profil, où le
+ * visiteur lit ce qui s'y trouve réellement.
+ */
+function TrustpilotStar() {
+  return (
+    <span
+      className="grid h-4 w-4 place-items-center rounded-[2px]"
+      style={{ background: "#00b67a" }}
+    >
+      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="#fff" aria-hidden>
+        <path d="M12 2.5l2.7 6.3 6.8.6-5.2 4.5 1.6 6.6L12 17l-5.9 3.5 1.6-6.6L2.5 9.4l6.8-.6z" />
+      </svg>
+    </span>
   );
 }
 
@@ -417,40 +448,6 @@ function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
 }
 
 /* ─────────────────────────── CORE VALUE · 4 TEMPS ─────────────────────────── */
-function CoreValueSection() {
-  const { t } = useLandingT();
-  const steps: { n: string; t: string; d: string }[] = [
-    { n: "01", t: t("journey.s1.t"), d: t("journey.s1.d") },
-    { n: "02", t: t("journey.s2.t"), d: t("journey.s2.d") },
-    { n: "03", t: t("journey.s3.t"), d: t("journey.s3.d") },
-    { n: "04", t: t("journey.s4.t"), d: t("journey.s4.d") },
-  ];
-  return (
-    <section className="relative section-divider py-14 lg:py-20">
-      <div className="lp-container">
-        <SectionHead
-          title={
-            <>
-              {t("journey.title.a")} <span className="text-accent">{t("journey.title.b")}</span>
-            </>
-          }
-          sub={t("journey.sub")}
-        />
-        <div className="reveal mx-auto grid max-w-[860px] gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((s) => (
-            <div key={s.n} className="journey-step">
-              <span className="journey-num">{s.n}</span>
-              <div>
-                <p className="font-display text-[15px] font-bold text-white">{s.t}</p>
-                <p className="mt-1 text-[13px] leading-5 text-slate-400">{s.d}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────────────────── ANALYTICS ─────────────────────────── */
 function AnalyticsSection() {
@@ -565,7 +562,7 @@ function MistakesSection() {
     { n: "Overtrading", c: "−$670", v: 42 },
   ];
   return (
-    <section id="mistakes" className="relative section-divider py-14 lg:py-20">
+    <section id="mistakes" className="relative section-divider py-10 sm:py-14 lg:py-20">
       <div className="lp-container">
         <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
           {/* Les trois « fuites » ci-dessous sont un DESSIN : « −$1,240 »,
@@ -630,105 +627,8 @@ function MistakesSection() {
 }
 
 /* ─────────────────────────── USE CASES ─────────────────────────── */
-function UseCasesSection() {
-  const { t } = useLandingT();
-  const cards: LandingKey[] = ["uses.u1.t", "uses.u2.t", "uses.u3.t"];
-  const descs: LandingKey[] = ["uses.u1.d", "uses.u2.d", "uses.u3.d"];
-  const icons: IName[] = ["chart", "calendar", "radar"];
-  return (
-    <section id="use-cases" className="relative section-divider py-14 lg:py-20">
-      <div className="lp-container">
-        <SectionHead
-          title={
-            <>
-              {t("uses.title.a")} <span className="text-accent">{t("uses.title.b")}</span>
-            </>
-          }
-        />
-        <div className="reveal grid gap-4 sm:grid-cols-3">
-          {cards.map((title, i) => (
-            <div key={title} className="use-card">
-              <div className="feat-icon mb-4 h-10 w-10">
-                <Icon n={icons[i]} cls="h-5 w-5" />
-              </div>
-              <h3 className="font-display text-base font-bold text-white">{t(title)}</h3>
-              <p className="mt-2 text-[13px] leading-6 text-slate-400">{t(descs[i])}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────────────────── EXCEL / NOTION ─────────────────────────── */
-function AlternativeSection() {
-  const { t } = useLandingT();
-  const rows: LandingKey[] = ["alt.r1", "alt.r2", "alt.r3", "alt.r4", "alt.r5", "alt.r6"];
-  return (
-    <section id="alternative" className="relative section-divider py-14 lg:py-20">
-      <div className="lp-container">
-        <SectionHead
-          title={
-            <>
-              {t("alt.title.a")} <span className="text-slate-500">{t("alt.title.b")}</span>
-            </>
-          }
-          sub={t("alt.sub")}
-        />
-        <div className="reveal mx-auto max-w-[760px]">
-          <div className="lp-panel px-4 py-5 sm:px-6">
-            <div className="cmp-row" style={{ borderTop: "none" }}>
-              <div />
-              <p className="cmp-col">{t("alt.h.excel")}</p>
-              <p className="cmp-col">{t("alt.h.notion")}</p>
-              <p className="cmp-col cmp-tv">{t("alt.h.tv")}</p>
-            </div>
-            <div className="cmp-row">
-              <p className="text-[13px] text-slate-200">{t("alt.excel.d")}</p>
-              <p className="cmp-col text-slate-500">—</p>
-              <p className="cmp-col text-slate-500">~</p>
-              <p className="cmp-col cmp-tv">
-                <Check className="mx-auto h-3.5 w-3.5" />
-              </p>
-            </div>
-            <div className="cmp-row">
-              <p className="text-[13px] text-slate-200">{t("alt.notion.d")}</p>
-              <p className="cmp-col text-slate-500">~</p>
-              <p className="cmp-col text-slate-500">—</p>
-              <p className="cmp-col cmp-tv">
-                <Check className="mx-auto h-3.5 w-3.5" />
-              </p>
-            </div>
-            {rows.map((r, i) => (
-              <div key={r} className="cmp-row">
-                <p className="text-[13px] text-slate-200">{t(r)}</p>
-                <p className="cmp-col">
-                  {i === 5 ? (
-                    <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
-                  ) : (
-                    <span className="text-slate-600">–</span>
-                  )}
-                </p>
-                <p className="cmp-col">
-                  {i === 5 ? (
-                    <Check className="mx-auto h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
-                  ) : (
-                    <span className="text-slate-600">–</span>
-                  )}
-                </p>
-                <p className="cmp-col cmp-tv">
-                  <Check className="mx-auto h-3.5 w-3.5" />
-                </p>
-              </div>
-            ))}
-            <p className="tv-label mt-3 text-slate-600">{t("alt.tv.d")}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────────────────── NAV ─────────────────────────── */
 /**
@@ -739,13 +639,6 @@ function AlternativeSection() {
  * qu'aucun lien ne porte — donc aucun lien actif pendant toute la traversée de
  * cette section, ce qui se lit comme un bug de navigation.
  */
-const NAV: [string, string][] = [
-  ["nav.problem", "problem"],
-  ["nav.edge", "edge"],
-  ["nav.features", "features"],
-  ["pricing.tag", "pricing"],
-  ["faq.tag", "faq"],
-];
 
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
@@ -762,11 +655,6 @@ function LandingPage() {
     { n: "err" as IName, t: t("problem.p1.t"), d: t("problem.p1.d") },
     { n: "heart" as IName, t: t("problem.p2.t"), d: t("problem.p2.d") },
     { n: "compass" as IName, t: t("problem.p3.t"), d: t("problem.p3.d") },
-  ];
-  const ais = [
-    { n: "brain" as IName, t: t("ai.f1.t"), d: t("ai.f1.d") },
-    { n: "radar" as IName, t: t("ai.f2.t"), d: t("ai.f2.d") },
-    { n: "err" as IName, t: t("ai.f3.t"), d: t("ai.f3.d") },
   ];
   // Six objections, dans l'ordre où elles viennent. Ce tableau alimente À LA
   // FOIS l'accordéon et le balisage `FAQPage` : les deux ne peuvent pas
@@ -786,7 +674,7 @@ function LandingPage() {
       if (scrollLockRef.current) return;
       const pos = window.scrollY + 120;
       let cur = "";
-      for (const [, id] of NAV) {
+      for (const { id } of LIENS_NAV) {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top + window.scrollY <= pos) cur = id;
       }
@@ -817,6 +705,9 @@ function LandingPage() {
 
   return (
     <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white">
+      {/* La lueur qui suit le pointeur. Montée AVANT tout le reste : elle vit
+          sous le contenu (`z-index: 0`) et ne doit jamais passer devant. */}
+      <CursorOrb />
       <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
 
       <main className="relative z-10">
@@ -913,7 +804,7 @@ function LandingPage() {
         </section>
 
         {/* ── PROBLÈME ── */}
-        <section id="problem" className="relative section-divider py-14 lg:py-20">
+        <section id="problem" className="relative section-divider py-10 sm:py-14 lg:py-20">
           <div className="lp-container">
             <SectionHead
               title={
@@ -938,127 +829,89 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── CORE VALUE — la boucle en 4 temps ── */}
-        <CoreValueSection />
+        {/* ── LA VISITE DU PRODUIT ──
+            Elle remplace SIX sections — la boucle, Claim→Evidence, Analytics,
+            Jarvis, les Erreurs, les cas d'usage, la comparaison Excel — qui
+            pesaient 4 300 px pour dire ce que le produit fait, en répétant
+            deux fois l'argument Jarvis et deux fois la comparaison.
 
-        {/* ── CLAIM → EVIDENCE ──
-            Placée juste après la boucle et AVANT toute section « IA » : elle
-            répond à l'objection que le mot « IA » lève désormais de lui-même
-            (« ça invente »), avant qu'on ait demandé au visiteur d'y croire. */}
-        <SectionPreuve />
-
-        {/* ── EDGE SCORE ── */}
+            L'Edge Score garde sa section À LUI : c'est le seul élément que
+            personne d'autre ne propose, et le noyer dans une rangée de visite
+            reviendrait à le présenter comme une fonctionnalité parmi cinq. */}
         <SectionEdgeScore />
 
-        {/* ── ANALYTICS ── */}
-        <AnalyticsSection />
+        <TourProduit
+          ecrans={[
+            {
+              nom: "mistakes",
+              titre: "v2.s1.t",
+              texte: "v2.s1.d",
+              alt: "shot.mistakes.alt",
+              repli: <MistakesSection />,
+            },
+            {
+              nom: "jarvis",
+              titre: "v2.s2.t",
+              texte: "v2.s2.d",
+              alt: "shot.jarvis.alt",
+              repli: <AIConversation />,
+            },
+            {
+              nom: "analytics",
+              titre: "v2.s3.t",
+              texte: "v2.s3.d",
+              alt: "shot.analytics.alt",
+              repli: <AnalyticsSection />,
+            },
+            {
+              nom: "calendar",
+              titre: "v2.s4.t",
+              texte: "v2.s4.d",
+              alt: "shot.calendar.alt",
+              repli: null,
+            },
+            {
+              nom: "journal",
+              titre: "v2.s5.t",
+              texte: "v2.s5.d",
+              alt: "shot.journal.alt",
+              repli: null,
+            },
+          ]}
+        />
 
-        {/* ── AI / JARVIS ── */}
-        <section id="ai" className="relative section-divider py-14 lg:py-20">
+        {/* ── CONFIANCE ──
+            `TraderProof` (« Construit par un trader, pour des traders » — 128
+            mots, 622 px, aucune capture) est parti : c'est du récit sur nous,
+            posé entre deux démonstrations du produit, et il ne répondait à
+            aucune objection que le reste de la page ne traite déjà.
+
+            Ce qui reste est vérifiable : les trois engagements de sécurité, et
+            le lien Trustpilot. Pas de note, pas de nombre d'avis, pas
+            d'étoiles — nous n'en avons pas, et les inventer est la ligne que
+            `landing-copy` interdit en premier. Un lien vers le vrai profil
+            laisse le visiteur vérifier lui-même ; c'est la seule preuve
+            sociale honnête dont on dispose aujourd'hui. */}
+        <section id="trust" className="relative section-divider py-10 sm:py-14 lg:py-20">
           <div className="lp-container">
-            <SectionHead
-              title={
-                <>
-                  {t("ai.title.a")} <span className="text-accent">{t("ai.title.b")}</span>
-                </>
-              }
-              sub={t("ai.sub")}
-            />
-            {/* LA VRAIE CONVERSATION REMPLACE LA CONVERSATION DESSINÉE.
-                `AIConversation` est un mock SVG dont chaque chiffre est
-                inventé — « 248 trades », « 38 % le vendredi », « +42 % de
-                taille ». `shots.ts` dit pourquoi c'est inacceptable : un
-                visiteur ne distingue pas un dessin soigné d'une capture, donc
-                le dessin présente des performances fabriquées comme un aperçu
-                du produit. Le mock ne survit que tant qu'aucun `jarvis.*`
-                n'est déposé ; le fichier posé, il s'efface. */}
-            {/* La capture prend la plus grande part : c'est elle qui porte la
-                preuve, le texte ne fait que la commenter. À 50/50 le texte du
-                produit devenait illisible et l'image cessait de prouver quoi
-                que ce soit. */}
-            <div className="reveal mb-12 grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-14">
-              <ShotOuVisuel
-                nom="jarvis"
-                alt={t("shot.jarvis.alt")}
-                legende={t("shot.jarvis.cap")}
-                repli={<AIConversation />}
-              />
-              <div>
-                <h3 className="font-display text-2xl font-bold text-white leading-tight mb-4">
-                  {t("ai.head.a")}
-                  <br />
-                  <span className="text-accent">{t("ai.head.b")}</span>
-                </h3>
-                <p className="text-slate-400 leading-7 mb-6">{t("ai.body")}</p>
-                <div className="space-y-3">
-                  {[t("ai.b1"), t("ai.b2"), t("ai.b3")].map((s) => (
-                    <div key={s} className="flex items-center gap-3 text-[15px] text-slate-300">
-                      <span className="grid h-5.5 w-5.5 shrink-0 place-items-center rounded-full bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]">
-                        <Icon n="check" cls="h-3.5 w-3.5" />
-                      </span>
-                      {s}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {ais.map((a) => (
-                <article key={a.t} className="ai-card reveal p-5">
-                  <div className="feat-icon mb-4 grid h-11 w-11 place-items-center rounded-xl text-[var(--tv-highlight)]">
-                    <Icon n={a.n} cls="h-5.5 w-5.5" />
-                  </div>
-                  <h3 className="font-display text-base font-bold text-white">{a.t}</h3>
-                  <p className="mt-2 text-[13px] leading-6 text-slate-400">{a.d}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── MISTAKES · PSYCHOLOGIE ── */}
-        <MistakesSection />
-
-        {/* ── PRODUIT EN PROFONDEUR ── */}
-        <section id="features" className="relative section-divider py-14 lg:py-20">
-          <div className="lp-container">
-            <SectionHead
-              title={
-                <>
-                  {t("features.title.a")}{" "}
-                  <span className="text-accent">{t("features.title.b")}</span>{" "}
-                  {t("features.title.c")}
-                </>
-              }
-              sub={t("features.sub")}
-            />
-            <div className="reveal">
-              <FeaturesBento />
-            </div>
-            <div className="reveal mt-10 text-center">
-              <button
-                onClick={() => open("signup", t("nav.cta.plan"))}
-                className="btn-primary px-7 py-2.5 text-base"
-              >
-                {t("features.cta")} <Icon n="arrow" cls="h-4 w-4" />
-              </button>
-              <p className="mt-3 text-[13px] text-slate-600">{t("features.cta.sub")}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── USE CASES ── */}
-        <UseCasesSection />
-
-        {/* ── EXCEL / NOTION ── */}
-        <AlternativeSection />
-
-        {/* ── POURQUOI ÇA, ET PAR QUI ── */}
-        <section className="relative section-divider py-14 lg:py-20">
-          <div className="lp-container">
-            <TraderProof onStart={() => open("signup", t("nav.cta.plan"))} />
-            <div className="mt-8">
+            <SectionHead title={t("v2.trust.title")} sub={t("v2.trust.sub")} />
+            <div className="mt-10">
               <TrustStrip />
+            </div>
+            <div className="reveal mt-10 flex justify-center">
+              <a
+                href={TRUSTPILOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lp-card inline-flex items-center gap-2.5 px-5 py-3 text-[13px] text-slate-400 transition-colors hover:text-white"
+              >
+                <span className="flex items-center gap-1" aria-hidden>
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <TrustpilotStar key={i} />
+                  ))}
+                </span>
+                {t("v2.trust.reviews")} <span className="font-semibold text-white">Trustpilot</span>
+              </a>
             </div>
           </div>
         </section>
@@ -1070,7 +923,7 @@ function LandingPage() {
         <AncrageDePrix />
 
         {/* ── PRICING ── */}
-        <section id="pricing" className="relative section-divider py-14 lg:py-20">
+        <section id="pricing" className="relative section-divider py-10 sm:py-14 lg:py-20">
           <div className="lp-container">
             <SectionHead title={t("pricing.title")} sub={t("pricing.sub")} />
             <div className="reveal">
@@ -1099,7 +952,7 @@ function LandingPage() {
         </section>
 
         {/* ── FAQ ── */}
-        <section id="faq" className="relative section-divider py-14 lg:py-20">
+        <section id="faq" className="relative section-divider py-10 sm:py-14 lg:py-20">
           <div className="mx-auto w-full max-w-[760px] px-5 lg:px-8">
             {/* `FAQPage` — construit à partir du MÊME tableau `faqs` que
                 l'accordéon rendu juste en dessous, donc incapable d'en
@@ -1189,33 +1042,41 @@ function LandingPage() {
                     (`shared/seo.ts`), qui est l'autre endroit où cette même
                     vérité se déclare. */}
               </div>
-              <FooterColumn title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
-              <FooterColumn title={t("footer.resources")} links={FOOTER_RESOURCES} t={t} />
+              {/* SUR TÉLÉPHONE, LES DEUX COLONNES RESTENT CÔTE À CÔTE.
+                  Empilées, elles faisaient à elles seules 250 px de pied de
+                  page — pour neuf liens courts qui tiennent largement sur une
+                  demi-largeur. `lg:contents` efface ce conteneur à partir de
+                  `lg` : la grille à quatre colonnes retrouve alors ses enfants
+                  directs, et la mise en page de bureau est inchangée. */}
+              <div className="grid grid-cols-2 gap-8 lg:contents">
+                <FooterColumn title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
+                <FooterColumn title={t("footer.resources")} links={FOOTER_RESOURCES} t={t} />
+              </div>
             </div>
             <div className="mt-10 pt-6 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-slate-600">{t("footer.rights")}</p>
               <div className="flex items-center gap-6 text-sm">
                 <a
                   href="/privacy"
-                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
                 >
                   {t("footer.privacy")}
                 </a>
                 <a
                   href="/terms"
-                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
                 >
                   {t("footer.terms")}
                 </a>
                 <a
                   href="/cgu"
-                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
                 >
                   CGU
                 </a>
                 <a
                   href="/privacy"
-                  className="-my-2 inline-flex min-h-[36px] items-center text-slate-600 transition hover:text-slate-400"
+                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
                 >
                   {t("footer.cookies")}
                 </a>

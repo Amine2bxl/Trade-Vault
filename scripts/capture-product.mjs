@@ -241,11 +241,49 @@ const TABLES = { profiles: [PROFILE], accounts: [ACCOUNT], trades: TRADES, subsc
 
 const browser = await chromium.launch({
   executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  args: ["--no-sandbox"],
+  args: [
+    "--no-sandbox",
+    /* LA POLICE — le detail qui decidait de tout.
+     *
+     * TradeVault charge Inter depuis Google Fonts (`routes/__root.tsx`). Dans
+     * un conteneur d'agent, la sortie HTTPS passe par un proxy qui presente son
+     * propre CA : sans ces deux options, la requete de police echoue en
+     * `ERR_CERT_AUTHORITY_INVALID`, le navigateur retombe sur une grotesque
+     * systeme, et la capture montre une typographie QUI N'EST PAS CELLE DU
+     * PRODUIT. Le defaut est invisible a qui ne cherche pas — et saute aux yeux
+     * de qui connait l'application.
+     *
+     * Sur une machine ordinaire, ces options ne servent a rien et ne nuisent
+     * pas : `HTTPS_PROXY` est alors vide et Chromium les ignore. */
+    ...(process.env.HTTPS_PROXY ? [`--proxy-server=${process.env.HTTPS_PROXY}`] : []),
+    "--ignore-certificate-errors",
+    /* Le lissage sous-pixel de macOS ne se reproduit pas sous Linux. Le
+     * desactiver donne un rendu en niveaux de gris, plus proche du rendu Retina
+     * d'un Mac qu'un lissage LCD horizontal qui frange les bords en couleur. */
+    "--disable-lcd-text",
+    "--font-render-hinting=none",
+  ],
 });
 
-async function contexte(viewport, scale) {
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: scale, colorScheme: "dark" });
+async function contexte(viewport, scale, mobile = false) {
+  const ctx = await browser.newContext({
+    viewport,
+    deviceScaleFactor: scale,
+    colorScheme: "dark",
+    ignoreHTTPSErrors: true,
+    /* `isMobile` fait plus que retrecir : il active la meta viewport et les
+       evenements tactiles, donc les points d'arret `pointer: coarse` du
+       produit. Sans lui on photographierait une fenetre etroite de bureau, ce
+       qui n'est pas ce que voit un telephone. */
+    isMobile: mobile,
+    hasTouch: mobile,
+    /* Le produit ne branche rien sur l'agent utilisateur ; il sert ici a ce que
+     * tout code tiers qui l'inspecte se comporte comme devant un Mac — ou,
+     * en mobile, devant un iPhone. */
+    userAgent: mobile
+      ? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+      : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+  });
   await ctx.route(
     (url) => url.hostname.endsWith("supabase.co"),
     async (route) => {
@@ -309,9 +347,20 @@ async function contexte(viewport, scale) {
   return ctx;
 }
 
-async function connecter(page) {
+async function connecter(page, mobile = false) {
   await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForTimeout(2500);
+  /* Sur la vitrine, « Sign in » est `hidden sm:block` : sous 640px il vit dans
+     le menu deroulant, derriere le bouton hamburger. Sans cette ouverture, la
+     passe mobile attendait trente secondes un bouton qui n'est pas affiche. */
+  if (mobile) {
+    await page
+      .getByRole("button", { name: "Menu" })
+      .first()
+      .click()
+      .catch(() => {});
+    await page.waitForTimeout(800);
+  }
   await page.getByRole("button", { name: "Sign in", exact: true }).first().click();
   await page.waitForTimeout(1200);
   await page.locator('input[type="email"]').fill(EMAIL);
@@ -339,6 +388,39 @@ async function connecter(page) {
   await page.waitForTimeout(600);
 }
 
+/* LA BOITE DE CONTENU, MESUREE — pas devinee.
+ *
+ * Le recadrage horizontal etait ecrit en dur : `sx = 600` pour « enlever le
+ * rail de navigation ». Le rail en fait 470 (device px, a 2x). Les 130 px de
+ * trop ne tombaient pas dans le vide : ils coupaient le contenu, et la capture
+ * des Erreurs est partie en production avec « ur correction plan » et « ze too
+ * large » — des mots tranches en plein milieu.
+ *
+ * Une constante magique ne peut pas suivre une mise en page qui bouge. Le
+ * `<main class="app-main">` de `App.tsx` EST la boite de contenu : on la
+ * mesure, et le recadrage devient juste par construction. Si le rail change de
+ * largeur demain, les captures suivent sans qu'on y touche. */
+let BOITE = null;
+
+async function mesurerBoite(page, dpr) {
+  const r = await page.evaluate(() => {
+    const m = document.querySelector("main.app-main");
+    if (!m) return null;
+    const b = m.getBoundingClientRect();
+    return { x: b.left, w: b.width };
+  });
+  if (!r) {
+    console.log("  ⚠ <main.app-main> introuvable — recadrage horizontal par defaut");
+    return null;
+  }
+  // Un cheveu de marge interieure : le bord arrondi du `<main>` n'apporte rien
+  // et laisse un liseré clair sur le cadre sombre de la vitrine.
+  const marge = 2 * dpr;
+  BOITE = { sx: Math.round(r.x * dpr + marge), sw: Math.round(r.w * dpr - 2 * marge) };
+  console.log(`  boite de contenu : x=${BOITE.sx} largeur=${BOITE.sw} (device px)`);
+  return BOITE;
+}
+
 async function capturer(page, nom, lien) {
   if (lien) {
     const l = page.getByRole("button", { name: lien, exact: true }).first();
@@ -349,8 +431,107 @@ async function capturer(page, nom, lien) {
     await l.click();
     await page.waitForTimeout(4500);
   }
+  /* INTER DOIT ÊTRE POSÉE AVANT LE DÉCLENCHEMENT.
+   *
+   * `font-display: swap` affiche d'abord une police de repli puis bascule. Une
+   * capture prise pendant ce battement montre la mauvaise typographie, ou pire
+   * un état mixte — et rien dans l'image ne le signale. On attend donc que le
+   * navigateur DÉCLARE Inter prête, et on le vérifie plutôt que de l'espérer. */
+  const inter = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return document.fonts.check('600 16px "Inter"');
+  });
+  if (!inter) console.log(`  ⚠ ${nom} : Inter absente — la capture aura la mauvaise police`);
   await page.screenshot({ path: `${OUT}/${nom}.png` });
-  console.log(`  ✓ ${nom}.png`);
+  console.log(`  ✓ ${nom}.png${inter ? "" : "  (POLICE DE REPLI)"}`);
+}
+
+/* NAVIGUER SUR TELEPHONE — le rail n'est plus une colonne.
+ *
+ * Sous `md`, la barre laterale devient un menu : le lien « Journal » n'est pas
+ * a l'ecran tant qu'on ne l'a pas ouvert. On tente donc le clic direct, et on
+ * ne passe par le bouton de menu que s'il le faut — l'ordre inverse casserait
+ * le jour ou la mise en page change. */
+async function allerMobile(page, lien) {
+  const direct = page.getByRole("button", { name: lien, exact: true }).first();
+  if (await direct.count()) {
+    await direct.click().catch(() => {});
+  } else {
+    const menu = page
+      .getByRole("button", { name: /menu|navigation/i })
+      .first()
+      .or(page.locator('[aria-label*="enu"]').first());
+    await menu.click().catch(() => {});
+    await page.waitForTimeout(700);
+    const l = page.getByRole("button", { name: lien, exact: true }).first();
+    if (!(await l.count())) {
+      console.log(`  ⊘ mobile : « ${lien} » introuvable`);
+      return false;
+    }
+    await l.click().catch(() => {});
+  }
+  await page.waitForTimeout(4500);
+  return true;
+}
+
+/* NAVIGUER VERS UNE PAGE DU GROUPE, SUR TELEPHONE — et le VERIFIER.
+ *
+ * `Mistakes` et `Calendar` ne sont pas des sous-onglets : ce sont des PAGES
+ * du meme groupe que `Journal`. Sous `md`, le selecteur de groupe se replie
+ * en menu deroulant, et `role="tab"` n'existe plus a l'ecran.
+ *
+ * La premiere version se rabattait sur un selecteur `text=` — qui a "reussi"
+ * en cliquant autre chose. Resultat : trois captures differentes montrant la
+ * meme page Journal, sans un seul avertissement. Un clic qui rate en silence
+ * est pire qu'un clic impossible.
+ *
+ * D'ou le MARQUEUR : un texte qui n'existe QUE sur la page visee. Tant qu'il
+ * n'est pas la, on n'est pas arrive, quel que soit ce qu'on a cliqué. */
+async function allerPageMobile(page, nom, marqueur) {
+  const present = async () =>
+    (await page.getByText(marqueur, { exact: false }).first().count()) > 0;
+
+  const essayer = async () => {
+    const cible = page.getByRole("tab", { name: nom, exact: true }).first();
+    const bouton = page.getByRole("button", { name: nom, exact: true }).first();
+    const l = (await cible.count()) ? cible : (await bouton.count()) ? bouton : null;
+    if (!l) return false;
+    await l.scrollIntoViewIfNeeded().catch(() => {});
+    await l.click({ timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(4500);
+    return await present();
+  };
+
+  if (await essayer()) return true;
+
+  // Rien d'atteignable directement : on ouvre le selecteur de groupe replie.
+  const menus = page.locator("[aria-haspopup], [aria-expanded]");
+  const n = Math.min(await menus.count(), 4);
+  for (let i = 0; i < n; i++) {
+    await menus
+      .nth(i)
+      .click({ timeout: 4000 })
+      .catch(() => {});
+    await page.waitForTimeout(800);
+    if (await essayer()) return true;
+    await page.keyboard.press("Escape").catch(() => {});
+  }
+  console.log(`  ⊘ mobile : « ${nom} » jamais atteinte (marqueur « ${marqueur} » absent)`);
+  return false;
+}
+
+/* La capture mobile est prise A LA HAUTEUR DE LA FENETRE, pas en pleine page :
+   un telephone montre un ecran, et une bande de 390×4000 sur la vitrine serait
+   aussi illisible que la capture de bureau retrecie qu'on cherche a remplacer. */
+async function capturerMobile(page, nom, lien) {
+  if (lien && !(await allerMobile(page, lien))) return;
+  const inter = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return document.fonts.check('600 16px "Inter"');
+  });
+  if (!inter) console.log(`  ⚠ ${nom} : Inter absente — la capture aura la mauvaise police`);
+  await page.screenshot({ path: `${OUT}/${nom}.png` });
+  console.log(`  ✓ ${nom}.png${inter ? "" : "  (POLICE DE REPLI)"}`);
 }
 
 // ── Desktop ──────────────────────────────────────────────────────────────────
@@ -359,6 +540,7 @@ const ctxD = await contexte({ width: 1600, height: 1000 }, 2);
 const pageD = await ctxD.newPage();
 pageD.on("pageerror", (e) => console.log("  [pageerror]", String(e).slice(0, 140)));
 await connecter(pageD);
+await mesurerBoite(pageD, 2);
 await capturer(pageD, "desk-01-dashboard");
 await capturer(pageD, "desk-02-journal", "Journal");
 
@@ -387,6 +569,10 @@ await capturer(pageD, "desk-04-calendrier");
 
 await capturer(pageD, "desk-05-analytics", "Analysis");
 
+// Les rapports mensuels vivent dans un sous-onglet d'Analyse.
+await sousOnglet(pageD, "Monthly Reports");
+await capturer(pageD, "desk-08-rapports");
+
 // Jarvis avec une VRAIE reponse. Sans cle de provider, c'est le moteur
 // deterministe qui repond — un chemin reel du produit, pas une mise en scene.
 await capturer(pageD, "desk-06-jarvis-vide", "Jarvis");
@@ -399,6 +585,50 @@ if (await suggestion.count()) {
   await capturer(pageD, "desk-07-jarvis-reponse");
 }
 await ctxD.close();
+
+// ── Mobile 390×900 @2x ───────────────────────────────────────────────────────
+//
+// POURQUOI UNE SECONDE PASSE, ET PAS UN RECADRAGE DE LA PREMIERE.
+//
+// Une capture de 1300px posee dans une colonne de 336px tombe a l'echelle 0,26:
+// le texte du produit, 13px a l'ecran, arrive a 3,4px sur le telephone. On a
+// d'abord essaye de recadrer — montrer un tiers de l'ecran, agrandi. Ca marche
+// pour un tableau ou une carte, ca ne marche PAS pour Jarvis : sa valeur est
+// une PHRASE (« Chased entry, -$305.09 sur 8 trades, PF 1.69 »), et une phrase
+// recadree est une phrase coupee en deux. C'est exactement le defaut qu'on
+// venait de corriger sur les captures elles-memes.
+//
+// Le produit est responsive : la vraie reponse est de le photographier A LA
+// LARGEUR DU TELEPHONE. Le texte s'y replie tout seul, la capture est lisible
+// a l'echelle 1, et c'est toujours le produit reel — pas un fragment.
+console.log("→ mobile 390×900 @2x");
+const ctxM = await contexte({ width: 390, height: 900 }, 2, true);
+const pageM = await ctxM.newPage();
+pageM.on("pageerror", (e) => console.log("  [pageerror]", String(e).slice(0, 140)));
+await connecter(pageM, true);
+/* PAS de `mesurerBoite` ici, et surtout PAS de `BOITE = null` : sous `md` le
+   rail n'est plus une colonne, il n'y a rien a retrancher — mais le
+   recadrage se fait APRES cette passe, et les plans DESKTOP lisent encore
+   `BOITE`. L'avoir remise a zero ici sortait six captures de bureau non
+   recadrees, rail compris, sans qu'aucune erreur ne le signale.
+   Les plans mobiles sont `pleine: true` : ils ne la consultent pas. */
+await capturerMobile(pageM, "mob-journal", "Journal");
+// Une capture prise apres une navigation RATEE est une capture de la page
+// precedente sous un autre nom : pire qu'une capture manquante, parce qu'elle
+// a l'air correcte.
+if (await allerPageMobile(pageM, "Mistakes", "Your correction plan"))
+  await capturerMobile(pageM, "mob-mistakes");
+if (await allerPageMobile(pageM, "Calendar", "TRADING DAYS"))
+  await capturerMobile(pageM, "mob-calendar");
+await capturerMobile(pageM, "mob-analytics", "Analysis");
+await capturerMobile(pageM, "mob-jarvis", "Jarvis");
+const sugM = pageM.getByRole("button", { name: /Chased entry|overtrading|Thursday/i }).first();
+if (await sugM.count()) {
+  await sugM.click();
+  await pageM.waitForTimeout(12000);
+  await capturerMobile(pageM, "mob-jarvis");
+}
+await ctxM.close();
 
 // ── Recadrage + WebP ─────────────────────────────────────────────────────────
 //
@@ -413,26 +643,61 @@ await ctxD.close();
 //
 // Chromium fait l'encodage : ni ImageMagick ni Pillow ne sont garantis
 // presents, et un `<canvas>` sait tres bien redimensionner et sortir du WebP.
+// `vfen: [y, hauteur]` en device px — la FENETRE VERTICALE, seule part du
+// recadrage qui reste un choix editorial (quelle carte montrer). L'horizontale
+// vient de `BOITE`, mesuree sur le `<main>`. `pleine: true` ne recadre rien.
 const PLANS = [
   // Le heros est affiche pleine largeur : tout compte, on ne recadre pas.
-  { de: "desk-01-dashboard.png", vers: "dashboard.webp", crop: null, w: 1800 },
-  { de: "desk-07-jarvis-reponse.png", vers: "jarvis.webp", crop: [600, 60, 2540, 1560], w: 1300 },
-  { de: "desk-03-erreurs.png", vers: "mistakes.webp", crop: [600, 230, 2540, 1420], w: 1300 },
-  { de: "desk-05-analytics.png", vers: "analytics.webp", crop: [600, 380, 2540, 1560], w: 1300 },
-  { de: "desk-02-journal.png", vers: "journal.webp", crop: [600, 150, 2540, 1560], w: 1300 },
-  { de: "desk-04-calendrier.png", vers: "calendar.webp", crop: [600, 60, 2540, 1700], w: 1300 },
+  { de: "desk-01-dashboard.png", vers: "dashboard.webp", pleine: true, w: 1800 },
+  // Les fenetres commencent et finissent sur un BORD DE CARTE. Une carte
+  // tranchee en deux par le cadrage se lit comme une image mal chargee.
+  { de: "desk-07-jarvis-reponse.png", vers: "jarvis.webp", vfen: [170, 1500], w: 1300 },
+  { de: "desk-03-erreurs.png", vers: "mistakes.webp", vfen: [230, 1210], w: 1300 },
+  { de: "desk-05-analytics.png", vers: "analytics.webp", vfen: [505, 1500], w: 1300 },
+  { de: "desk-02-journal.png", vers: "journal.webp", vfen: [150, 1560], w: 1300 },
+  /* PAS DE `monthly-reports.webp`.
+     Les rapports mensuels sont une vraie fonctionnalite livree, mais le compte
+     vitrine n'en a jamais genere : la page tombe sur son etat vide, neuf
+     boutons « Generate » et pas un rapport. `shots.ts` fait un glob EAGER —
+     tout fichier depose ici part dans le bundle — donc encoder cette capture,
+     c'est embarquer une image d'etat vide et tendre un piege a la prochaine
+     personne qui cherchera une illustration des rapports.
+     Pour la retablir : generer un rapport sur le compte vitrine, puis remettre
+     une ligne `{ de: "desk-08-rapports.png", vers: "monthly-reports.webp",
+     vfen: [150, 1560], w: 1300 }`. La capture PNG, elle, continue d'etre
+     prise : c'est elle qui permettra de verifier que l'etat n'est plus vide. */
+  { de: "desk-04-calendrier.png", vers: "calendar.webp", vfen: [60, 1700], w: 1300 },
+
+  /* Les variantes telephone. Suffixe `-m`, largeur 780 (390 CSS a 2x) : la
+     vitrine les sert sous 640px via `<picture>`. Aucun recadrage — le produit
+     s'est deja replie tout seul a cette largeur, c'est tout l'interet. */
+  { de: "mob-mistakes.png", vers: "mistakes-m.webp", pleine: true, w: 780 },
+  { de: "mob-jarvis.png", vers: "jarvis-m.webp", pleine: true, w: 780 },
+  { de: "mob-analytics.png", vers: "analytics-m.webp", pleine: true, w: 780 },
+  { de: "mob-calendar.png", vers: "calendar-m.webp", pleine: true, w: 780 },
+  { de: "mob-journal.png", vers: "journal-m.webp", pleine: true, w: 780 },
 ];
 
 console.log("→ recadrage et encodage WebP");
 const encodeur = await (await browser.newContext()).newPage();
 for (const p of PLANS) {
   const b64 = readFileSync(join(OUT, p.de)).toString("base64");
+  /* La fenetre verticale est un choix ; la bande horizontale est une mesure.
+     Faute de mesure (le `<main>` a disparu), on ne recadre PAS en largeur :
+     une capture trop large se voit et se corrige, une capture qui tranche un
+     mot passe inapercue jusqu'en production. */
+  const crop = p.pleine ? null : [BOITE?.sx ?? 0, p.vfen[0], BOITE?.sw ?? null, p.vfen[1]];
   const out = await encodeur.evaluate(
     async ([data, crop, w]) => {
       const img = new Image();
       img.src = `data:image/png;base64,${data}`;
       await img.decode();
-      const [sx, sy, sw, sh] = crop ?? [0, 0, img.width, img.height];
+      let [sx, sy, sw, sh] = crop ?? [0, 0, img.width, img.height];
+      sw ??= img.width - sx;
+      // Un recadrage qui deborde la source rend du transparent sur le bord :
+      // on le ramene dans l'image plutot que d'encoder un liseré vide.
+      sw = Math.min(sw, img.width - sx);
+      sh = Math.min(sh, img.height - sy);
       const ratio = Math.min(1, w / sw);
       const c = document.createElement("canvas");
       c.width = Math.round(sw * ratio);
@@ -442,7 +707,7 @@ for (const p of PLANS) {
       g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
       return { url: c.toDataURL("image/webp", 0.84), w: c.width, h: c.height };
     },
-    [b64, p.crop, p.w],
+    [b64, crop, p.w],
   );
   const bin = Buffer.from(out.url.split(",")[1], "base64");
   writeFileSync(join(OUT, p.vers), bin);
@@ -452,7 +717,11 @@ for (const p of PLANS) {
 // `src/assets/product/` ferait deux fichiers pour la meme capture, et
 // `shots.ts` indexe les deux extensions.
 for (const p of PLANS) rmSync(join(OUT, p.de), { force: true });
-rmSync(join(OUT, "desk-06-jarvis-vide.png"), { force: true });
+// Les captures prises mais NON encodees. Elles ne sont dans aucun plan, donc
+// la boucle ci-dessus ne les voit pas — et `shots.ts` globbe aussi les `.png`
+// du dossier : en oublier une, c'est la publier.
+for (const n of ["desk-06-jarvis-vide.png", "desk-08-rapports.png"])
+  rmSync(join(OUT, n), { force: true });
 
 await browser.close();
 console.log("terminé →", OUT);

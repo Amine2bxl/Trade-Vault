@@ -50,17 +50,31 @@ export function ProductShot({
 }) {
   const src = shot(nom);
   if (!src) return null;
+  /* LA VARIANTE TÉLÉPHONE, quand elle existe.
+   *
+   * `<nom>-m.webp` est le MÊME écran, photographié à 390px de large : le
+   * produit s'y est replié tout seul, donc son texte est lisible à l'échelle
+   * 1 au lieu d'être réduit à 26 %. Absente, on sert la capture de bureau —
+   * c'est un repli, pas une panne. */
+  const srcMobile = shot(`${nom}-m`);
 
   return (
-    <figure className={className}>
+    /* `data-shot` porte le nom de l'écran jusqu'au CSS. Sur téléphone, chaque
+       capture est cadrée sur une RÉGION différente (voir `landing.css`) : le
+       cadrage ne peut pas être le même pour une conversation alignée à droite
+       et pour un tableau aligné à gauche. */
+    <figure className={className} data-shot={nom}>
       <div className={`shot-frame${hero ? " shot-hero" : ""}`}>
-        <img
-          src={src}
-          alt={alt}
-          loading={priorite ? "eager" : "lazy"}
-          fetchPriority={priorite ? "high" : "auto"}
-          decoding="async"
-        />
+        <picture>
+          {srcMobile && <source media="(max-width: 639px)" srcSet={srcMobile} />}
+          <img
+            src={src}
+            alt={alt}
+            loading={priorite ? "eager" : "lazy"}
+            fetchPriority={priorite ? "high" : "auto"}
+            decoding="async"
+          />
+        </picture>
       </div>
       {legende && (
         <figcaption className="mt-4 text-center text-[12px] text-[#8a8f98]">{legende}</figcaption>

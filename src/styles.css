@@ -3803,3 +3803,76 @@ a:focus-visible,
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE DOCK DE JARVIS — l'orbite
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Le bouton était une gélule grise portant un « V » cerclé et le mot
+   « Jarvis ». Chaque pièce est correcte ; ensemble elles disent « widget de
+   chat greffé dans un coin » — la forme, la position et le mot sont
+   exactement ceux d'Intercom, de Crisp et de tous les autres. Or Jarvis n'est
+   pas un module tiers posé sur le produit : c'est l'intelligence du produit.
+
+   Ce qui le distingue maintenant tient en une chose, et une seule : UNE
+   ORBITE. Un anneau très fin autour du monogramme, qui tourne lentement et
+   s'accélère à peine au survol. Elle ne clignote pas, elle ne pulse pas — un
+   point qui clignote dit « notification en attente », ce qui serait un
+   mensonge au repos. Elle tourne, donc elle dit « ça tourne ».
+
+   Douze secondes par tour : assez lent pour qu'on ne le remarque qu'en
+   s'arrêtant dessus, assez présent pour que le bouton ne soit jamais tout à
+   fait inerte. `prefers-reduced-motion` l'immobilise sans rien supprimer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.tv-jarvis-mark {
+  position: relative;
+}
+/* L'anneau vit sur un pseudo-élément : il ne change ni la taille du bouton ni
+   le flux, et il disparaît tout seul si la règle saute. */
+.tv-jarvis-mark::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  pointer-events: none;
+  /* Un anneau OUVERT : trois quarts transparents, un quart teinté. C'est
+     l'asymétrie qui rend la rotation lisible — un anneau plein tournerait
+     sans que rien ne le montre. */
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 250deg,
+    rgb(var(--tv-accent-rgb) / 0.55) 320deg,
+    transparent 360deg
+  );
+  /* Le masque ne garde que le bord : sans lui, c'est un disque, pas un anneau. */
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+  animation: tv-jarvis-orbit 12s linear infinite;
+  opacity: 0.75;
+  transition: opacity var(--tv-dur-2) var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-jarvis-dock:hover .tv-jarvis-mark::after {
+    opacity: 1;
+    animation-duration: 6s;
+  }
+}
+/* Ouvert, l'orbite s'efface : la fenêtre est là, le bouton n'a plus à faire
+   signe — et une croix dans un anneau qui tourne se lit mal. */
+.tv-jarvis-mark-on::after {
+  opacity: 0;
+  animation: none;
+}
+@keyframes tv-jarvis-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-jarvis-mark::after {
+    animation: none;
+  }
+}
