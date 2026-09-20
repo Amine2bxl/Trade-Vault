@@ -1415,6 +1415,15 @@ const en = {
   "news.notice":
     "Times shown in your local timezone. Events tagged “approx.” follow a recurring schedule — confirm exact dates with the official source.",
   "news.today": "Today",
+  /* Ces quatre libelles etaient ECRITS EN DUR EN FRANCAIS dans
+     `EconomicNews.tsx`, au milieu d'une interface dont la langue par defaut
+     est l'anglais : un anglophone lisait « Aujourd'hui / Demain / Cette
+     semaine / Tout » et « Fort / Moyen / Faible ». Les cles `news.today` et
+     `news.impact*` existaient deja et n'etaient pas appelees. */
+  "news.tomorrow": "Tomorrow",
+  "news.thisWeek": "This week",
+  "news.all": "All",
+  "news.impactHoliday": "Holiday",
   "news.noEvents": "No events match these filters.",
   "news.approx": "approx.",
   "news.previous": "Previous",

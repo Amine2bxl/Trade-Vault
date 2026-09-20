@@ -1322,6 +1322,10 @@ const fr: Dict = {
   "news.notice":
     "Horaires convertis dans ton fuseau. Les événements marqués « approx. » suivent un calendrier récurrent — vérifie la date exacte auprès de la source officielle.",
   "news.today": "Aujourd'hui",
+  "news.tomorrow": "Demain",
+  "news.thisWeek": "Cette semaine",
+  "news.all": "Tout",
+  "news.impactHoliday": "Férié",
   "news.noEvents": "Aucun événement pour ces filtres.",
   "news.approx": "approx.",
   "news.previous": "Précédent",

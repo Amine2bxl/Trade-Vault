@@ -361,11 +361,22 @@ async function connecter(page, mobile = false) {
       .catch(() => {});
     await page.waitForTimeout(800);
   }
-  await page.getByRole("button", { name: "Sign in", exact: true }).first().click();
+  /* LE LIBELLE DU DECLENCHEUR N'EST PAS UN CONTRAT.
+     Il valait « Sign in », il vaut « Log in » : renommer un bouton de la
+     vitrine avait casse le harnais de capture, ce qui n'a aucun sens — le
+     harnais doit suivre le produit, pas le figer. Une alternative couvre les
+     deux, et le jour ou un troisieme nom arrive, l'erreur sera lisible. */
+  await page
+    .getByRole("button", { name: /^(Log in|Sign in|Se connecter)$/ })
+    .first()
+    .click();
   await page.waitForTimeout(1200);
   await page.locator('input[type="email"]').fill(EMAIL);
   await page.locator('input[type="password"]').fill(MOTDEPASSE);
-  await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
+  await page
+    .getByRole("button", { name: /^(Sign in|Se connecter)$/ })
+    .last()
+    .click();
   await page.waitForTimeout(9000);
   // Les sollicitations qui n'ont rien a faire sur une capture produit.
   for (const label of ["No thanks", "Non merci", "Accept", "Got it"]) {
@@ -419,6 +430,20 @@ async function mesurerBoite(page, dpr) {
   BOITE = { sx: Math.round(r.x * dpr + marge), sw: Math.round(r.w * dpr - 2 * marge) };
   console.log(`  boite de contenu : x=${BOITE.sx} largeur=${BOITE.sw} (device px)`);
   return BOITE;
+}
+
+/** Aller sur une section SANS capturer — quand il reste un geste a faire
+ *  avant que l'ecran soit presentable (fermer une modale, choisir une
+ *  source). */
+async function allerSection(page, lien) {
+  const l = page.getByRole("button", { name: lien, exact: true }).first();
+  if (!(await l.count())) {
+    console.log(`  ⊘ section « ${lien} » introuvable`);
+    return false;
+  }
+  await l.click();
+  await page.waitForTimeout(4500);
+  return true;
 }
 
 async function capturer(page, nom, lien) {
@@ -557,6 +582,16 @@ async function sousOnglet(page, nom) {
   }
   await t.click({ timeout: 8000 });
   await page.waitForTimeout(4500);
+  /* ON VERIFIE QU'IL EST DEVENU ACTIF.
+     Le commentaire de cette fonction reclamait deja ce controle sans le
+     faire : « un clic qui rate en silence produit une capture de la page
+     precedente sous un nouveau nom ». C'est exactement ce qui est arrive a
+     la passe mobile. `SubNav` pose `aria-selected` — on le lit. */
+  const actif = await t.getAttribute("aria-selected");
+  if (actif !== "true") {
+    console.log(`  ⊘ « ${nom} » clique mais pas actif (aria-selected=${actif})`);
+    return false;
+  }
   return true;
 }
 
@@ -572,6 +607,46 @@ await capturer(pageD, "desk-05-analytics", "Analysis");
 // Les rapports mensuels vivent dans un sous-onglet d'Analyse.
 await sousOnglet(pageD, "Monthly Reports");
 await capturer(pageD, "desk-08-rapports");
+
+/* LES QUATRE PAGES QUE LA VITRINE NE MONTRAIT PAS ENCORE.
+   Elles portent des arguments que rien d'autre ne porte : la preparation
+   d'avant-seance, le calendrier macro, les setups qu'on a LAISSES passer
+   (personne ne compte ceux-la), et la ruine simulee sur dix mille tirages.
+   Chacune vit dans une section differente — d'ou le double saut. */
+/* MONTE CARLO — il faut LANCER la simulation.
+   A l'arrivee la page affiche « Your Monte Carlo starts with your data »
+   alors que le panneau compte bien 193 trades : le calcul ne part pas tout
+   seul. Capturer sans cliquer donnait un etat vide sur une page qui a des
+   donnees — le pire des deux mondes. */
+await sousOnglet(pageD, "Monte Carlo");
+/* Le garde-fou de la page est `samples.length < 5`. La carte « Journal »
+   affiche bien « 193 trades » mais la source n'est pas ACTIVE tant qu'on ne
+   l'a pas choisie : on la clique, puis on verifie que l'etat vide a bien
+   disparu avant de declencher. */
+const srcJournal = pageD.locator('button:has-text("193"), [role="button"]:has-text("193")').first();
+if (await srcJournal.count()) {
+  await srcJournal.click().catch(() => {});
+  await pageD.waitForTimeout(6000);
+}
+const vide = await pageD.getByText("starts with your data").count();
+if (vide) {
+  console.log("  ⊘ Monte Carlo : toujours a l'etat vide, capture ignoree");
+} else {
+  await capturer(pageD, "desk-09-montecarlo");
+}
+
+/* CHECKLIST — une modale d'accueil (« Let's build your checklist together »)
+   recouvre la page, qui est pleine derriere. On la ferme par « Later ». */
+await allerSection(pageD, "Preparation");
+const plusTard = pageD.getByRole("button", { name: /^(Later|Plus tard)$/ }).first();
+if (await plusTard.count()) {
+  await plusTard.click().catch(() => {});
+  await pageD.waitForTimeout(2500);
+}
+// UNE seule capture, apres fermeture. La premiere version capturait AVANT
+// puis re-capturait sous le meme nom : le second cliche, pris pendant le
+// re-rendu, ecrasait le bon par une page blanche.
+await capturer(pageD, "desk-10-checklist");
 
 // Jarvis avec une VRAIE reponse. Sans cle de provider, c'est le moteur
 // deterministe qui repond — un chemin reel du produit, pas une mise en scene.
@@ -678,6 +753,18 @@ const PLANS = [
      vfen: [150, 1560], w: 2400 }`. La capture PNG, elle, continue d'etre
      prise : c'est elle qui permettra de verifier que l'etat n'est plus vide. */
   { de: "desk-04-calendrier.png", vers: "calendar.webp", vfen: [60, 1700], w: 2400 },
+  { de: "desk-09-montecarlo.png", vers: "montecarlo.webp", vfen: [150, 1560], w: 2400 },
+  { de: "desk-10-checklist.png", vers: "checklist.webp", vfen: [100, 1560], w: 2400 },
+  /* PAS de `news.webp` ni de `missed.webp`.
+     - Economic News : depuis ce conteneur l'API du calendrier est injoignable,
+       la page affiche donc un bandeau « Live calendar unavailable » et un
+       horaire indicatif. Publier un etat degrade comme capture produit, c'est
+       montrer une panne.
+     - Missed Setups : le compte vitrine n'a aucun setup manque enregistre, la
+       page tombe sur « No missed setups yet ». Meme piege que les rapports
+       mensuels.
+     Les deux redeviennent capturables des que la donnee existe : remettre une
+     ligne ici suffit. */
 
   /* Les variantes telephone. Suffixe `-m`, largeur 780 (390 CSS a 2x) : la
      vitrine les sert sous 640px via `<picture>`. Aucun recadrage — le produit
@@ -732,7 +819,7 @@ for (const p of PLANS) rmSync(join(OUT, p.de), { force: true });
 // Les captures prises mais NON encodees. Elles ne sont dans aucun plan, donc
 // la boucle ci-dessus ne les voit pas — et `shots.ts` globbe aussi les `.png`
 // du dossier : en oublier une, c'est la publier.
-for (const n of ["desk-06-jarvis-vide.png", "desk-08-rapports.png"])
+for (const n of ["desk-06-jarvis-vide.png", "desk-08-rapports.png", "desk-11-news.png"])
   rmSync(join(OUT, n), { force: true });
 
 await browser.close();
