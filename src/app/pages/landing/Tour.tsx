@@ -4,35 +4,31 @@ import { shot } from "./shots";
 import { useLandingT, type LandingKey } from "./i18n";
 
 /**
- * LA VISITE DU PRODUIT — cinq temps, cinq compositions, un seul fil.
+ * LA VISITE DU PRODUIT — quatre temps, quatre compositions, un seul fil.
  *
  * ── CE QUI N'ALLAIT PAS ───────────────────────────────────────────────────
  *
  * Six rangées RIGOUREUSEMENT identiques : titre, phrase, capture pleine
  * largeur, vignette téléphone qui alterne de coin. La disposition était
  * bonne une fois ; répétée six fois elle devient un gabarit, et un gabarit
- * se saute. Passé la deuxième rangée on ne lit plus, on défile - la page
- * avait beau montrer six écrans réels, elle n'en faisait regarder que deux.
+ * se saute. Passé la deuxième rangée on ne lit plus, on défile.
  *
- * Et rien ne reliait ces six écrans entre eux. C'était un CATALOGUE, pas un
- * parcours : six fonctionnalités posées côte à côte, dans un ordre qui
- * aurait pu être n'importe lequel.
+ * Et rien ne reliait ces six écrans. C'était un CATALOGUE, pas un parcours :
+ * six fonctionnalités posées côte à côte, dans un ordre qui aurait pu être
+ * n'importe lequel.
  *
  * ── CE QU'ELLE FAIT MAINTENANT ────────────────────────────────────────────
- *
- * Elle raconte le trajet d'un trade dans le produit, et chaque temps a sa
- * propre forme :
  *
  *   1. Journal    — texte à gauche, capture à droite qui déborde du cadre.
  *                   C'est l'entrée : le trade arrive.
  *   2. Analytics  — capture à gauche, texte à droite. L'œil retraverse.
- *   3. Erreurs    — pleine largeur, titre centré au-dessus. Le moment le
- *                   plus large de la page, parce que c'est l'argument le
- *                   plus singulier.
- *   4. Les quatre — une grille compacte. Quatre écrans réels qui méritent
- *                   d'être VUS sans mériter chacun une rangée entière.
- *   5. Jarvis     — resserré, centré, avec la vignette téléphone. Le
+ *   3. Les quatre — quatre CARTES, une par écran, avec le rôle en tête.
+ *   4. Jarvis     — resserré, centré, avec la vignette téléphone. Le
  *                   dénouement : on a montré la matière, voici ce qui la lit.
+ *
+ * Le coût des erreurs a quitté la visite : il sert maintenant de preuve dans
+ * la section « problème », bien plus haut, où il fait le contraste entre la
+ * douleur nommée et son prix.
  *
  * Les compositions varient, le SYSTÈME ne varie pas : même cadre, même
  * lueur, même échelle typographique, même rythme vertical.
@@ -40,20 +36,15 @@ import { useLandingT, type LandingKey } from "./i18n";
  * ── LE FIL ────────────────────────────────────────────────────────────────
  *
  * Un trait d'un pixel dans la gouttière gauche, avec un point numéroté par
- * temps. Ce n'est pas un schéma : c'est la seule chose qui dise « ces cinq
- * écrans sont le même trajet » sans l'écrire. Il s'arrête net après le
- * dernier point - une ligne qui continue dans le vide promet une suite.
+ * temps. Ce n'est pas un schéma : c'est la seule chose qui dise « ces écrans
+ * sont le même trajet » sans l'écrire. Il s'éteint aux deux bouts.
  *
  * ── LA LISIBILITÉ RESTE LA CONTRAINTE ─────────────────────────────────────
  *
  * Une capture dans une demi-colonne tombe à ~600px sur un écran de 1440
  * alors que sa mise en page est calculée sur 1352 : échelle 0,45, texte du
  * produit à 6px. Les deux rangées en deux colonnes gardent donc la capture
- * en position DÉBORDANTE (elle sort de sa colonne vers le bord), ce qui lui
- * rend ~250px, et la rangée pleine largeur est là pour l'écran qui a le plus
- * besoin de place. La grille de quatre assume l'échelle réduite : on n'y
- * lit pas les chiffres, on y reconnaît des écrans - et chaque tuile dit en
- * une ligne ce qu'on y verrait.
+ * en position DÉBORDANTE, ce qui lui rend ~250px.
  */
 
 export interface EcranProduit {
@@ -66,9 +57,11 @@ export interface EcranProduit {
   repli: ReactNode;
 }
 
-/** Une tuile de la grille compacte : une capture, une ligne. */
+/** Une carte de la grille : un moment, un titre, une ligne, un écran. */
 export interface EcranSecondaire {
   nom: string;
+  /** QUAND cet écran sert. C'est ce qui manquait le plus. */
+  moment: LandingKey;
   titre: LandingKey;
   texte: LandingKey;
   alt: LandingKey;
@@ -119,36 +112,42 @@ function RangeeDeux({
   );
 }
 
-/** La rangée pleine largeur : titre centré au-dessus, capture en dessous. */
-function RangeePleine({ e, n, retard }: { e: EcranProduit; n: number; retard: number }) {
-  const { t } = useLandingT();
-  return (
-    <div className="tour-etape tour-pleine reveal">
-      <Numero n={n} />
-      <div className="tour-pleine-texte">
-        <h3 className="tour-titre">{t(e.titre)}</h3>
-        <p className="tour-phrase mx-auto">{t(e.texte)}</p>
-      </div>
-      <ShotOuVisuel
-        nom={e.nom}
-        alt={t(e.alt)}
-        repli={e.repli}
-        retardFlottement={retard}
-        className="tour-shot mt-9"
-      />
-    </div>
-  );
-}
+/* `RangeePleine` a été RETIRÉE. La capture des erreurs, seule rangée qui en
+   usait, a déménagé dans la section « problème » : elle y sert de PREUVE au
+   coût annoncé, et elle y arrive 2 000px plus tôt. Une composition sans
+   appelant est une composition qu'on croit disponible et qui ne l'est plus
+   vraiment - elle reviendra le jour où un écran la mérite. */
 
 /**
- * La grille compacte. Quatre écrans réels, une ligne chacun.
+ * LES QUATRE ÉCRANS SECONDAIRES — des cartes, plus une mosaïque.
  *
- * Ils portent chacun un argument que rien d'autre ne porte — le seul moment
- * qui agit AVANT le trade, la seule chose qui parle de ce qui n'est pas
- * encore arrivé, les occasions que personne ne compte, le calendrier macro.
- * Leur donner une rangée entière chacun aurait rallongé la page de quatre
- * écrans ; les taire aurait laissé croire que le produit s'arrête au
- * journal.
+ * ── CE QUI N'ALLAIT PAS ───────────────────────────────────────────────────
+ *
+ * Quatre captures nues, recadrées au même rapport, posées sur le fond. Trois
+ * défauts d'un coup :
+ *
+ *   1. ON NE LES VOYAIT PAS EN ENTIER. Le recadrage en 16/10 avec
+ *      `object-fit: cover` coupait le bas de chaque écran. Montrer les trois
+ *      quarts d'une page et l'appeler « l'écran » est un demi-mensonge, et
+ *      ça se voit.
+ *   2. ON NE COMPRENAIT PAS LEUR RÔLE. Un titre et une ligne sous une image,
+ *      sans rien qui dise QUAND cet écran sert. « Où ton compte peut
+ *      atterrir » ne dit pas que c'est de la projection.
+ *   3. ELLES N'ÉTAIENT PAS MISES EN VALEUR. Posées à même le fond, à côté de
+ *      trois rangées qui, elles, ont un cadre et une lueur, elles se
+ *      lisaient comme un appendice.
+ *
+ * ── CE QU'ELLES SONT ──────────────────────────────────────────────────────
+ *
+ * Des cartes. Chacune porte un ÉTIQUETAGE DE MOMENT en tête — avant le
+ * trade, après le trade, ce qui n'est pas arrivé, ce qui arrive — puis le
+ * titre, la ligne, et l'écran ENTIER en bas. Le moment répond à la question
+ * qu'on se pose vraiment devant une capture inconnue : quand est-ce que je
+ * m'en sers ?
+ *
+ * L'image est complète (`contain`) : à cette taille on ne lit pas les
+ * chiffres, mais on reconnaît une forme d'écran, et une forme tronquée ne se
+ * reconnaît pas. La carte, elle, donne le cadre et la matière qui manquaient.
  */
 function GrilleSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number }) {
   const { t } = useLandingT();
@@ -163,19 +162,20 @@ function GrilleSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number 
       </div>
       <div className="tour-grille-cases">
         {presents.map((e, i) => (
-          <figure key={e.nom} className="tour-case">
-            <ShotOuVisuel
-              nom={e.nom}
-              alt={t(e.alt)}
-              repli={null}
-              retardFlottement={i * 1.4}
-              className="tour-case-shot"
-            />
-            <figcaption>
-              <span className="tour-case-titre">{t(e.titre)}</span>
-              <span className="tour-case-texte">{t(e.texte)}</span>
-            </figcaption>
-          </figure>
+          <article key={e.nom} className="tour-carte">
+            <p className="tour-carte-moment">{t(e.moment)}</p>
+            <h4 className="tour-carte-titre">{t(e.titre)}</h4>
+            <p className="tour-carte-texte">{t(e.texte)}</p>
+            <div className="tour-carte-scene">
+              <ShotOuVisuel
+                nom={e.nom}
+                alt={t(e.alt)}
+                repli={null}
+                retardFlottement={i * 1.4}
+                className="tour-carte-shot"
+              />
+            </div>
+          </article>
         ))}
       </div>
     </div>
@@ -224,13 +224,11 @@ function RangeeFinale({ e, n, retard }: { e: EcranProduit; n: number; retard: nu
 export function TourProduit({
   journal,
   analytics,
-  erreurs,
   secondaires,
   jarvis,
 }: {
   journal: EcranProduit;
   analytics: EcranProduit;
-  erreurs: EcranProduit;
   secondaires: EcranSecondaire[];
   jarvis: EcranProduit;
 }) {
@@ -252,9 +250,8 @@ export function TourProduit({
         <div className="tour-fil mt-14 lg:mt-20">
           <RangeeDeux e={journal} n={1} cote="droite" retard={0} />
           <RangeeDeux e={analytics} n={2} cote="gauche" retard={1.8} />
-          <RangeePleine e={erreurs} n={3} retard={3.4} />
-          <GrilleSecondaire ecrans={secondaires} n={4} />
-          <RangeeFinale e={jarvis} n={5} retard={5.2} />
+          <GrilleSecondaire ecrans={secondaires} n={3} />
+          <RangeeFinale e={jarvis} n={4} retard={4.6} />
         </div>
       </div>
     </section>

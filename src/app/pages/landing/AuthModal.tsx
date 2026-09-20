@@ -7,21 +7,42 @@
  * de vente anglaise et tombait sur un formulaire français au moment exact de la
  * conversion : le seul écran où l'on demande quelque chose. */
 import { FormEvent, useEffect, useState } from "react";
-import { useAuth } from "../../contexts/AuthContext";
+import { EnsureAuthProvider, useAuth } from "../../contexts/AuthContext";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon } from "./Icon";
 import { useLandingT } from "./i18n";
 import { TRUSTPILOT_URL } from "@/shared/site";
 
-export function AuthModal({
-  onClose,
-  initialMode = "signup",
-  plan,
-}: {
+interface AuthModalProps {
   onClose: () => void;
   initialMode?: "login" | "signup";
   plan?: string;
-}) {
+}
+
+/**
+ * LA MODALE PORTE SON PROPRE FOURNISSEUR D'AUTH.
+ *
+ * Elle appelle `useAuth()`, qui lève sans fournisseur au-dessus. Sur `/`,
+ * l'application en monte un ; sur `/fr` et `/pricing`, personne. N'importe
+ * quel appel à l'action y finissait donc en écran 500 - sur le clic le plus
+ * important du site, et seulement après un changement de langue, qui emmène
+ * précisément sur `/fr`.
+ *
+ * Le fournisseur est posé ICI plutôt que sur chaque page : la modale est la
+ * seule chose qui en a besoin hors de l'application, et une page ne peut pas
+ * oublier ce qu'elle n'a pas à faire. `EnsureAuthProvider` ne pose rien quand
+ * un fournisseur existe déjà - dans l'application, il n'y a donc toujours
+ * qu'une seule session, un seul `onAuthStateChange`.
+ */
+export function AuthModal(props: AuthModalProps) {
+  return (
+    <EnsureAuthProvider>
+      <AuthModalInterne {...props} />
+    </EnsureAuthProvider>
+  );
+}
+
+function AuthModalInterne({ onClose, initialMode = "signup", plan }: AuthModalProps) {
   const { t } = useLandingT();
   const { login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(initialMode);

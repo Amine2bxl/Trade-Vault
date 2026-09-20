@@ -317,21 +317,20 @@ describe("maillage interne", () => {
 
     // LES ANCRES NE VIVENT PLUS TOUTES DANS `Landing.tsx`.
     //
-    // Les sections « preuve », « Edge Score » et « ancrage de prix » sont
-    // montées depuis `landing/Proof.tsx` ; ne lire que `Landing.tsx` ferait
-    // échouer ce test sur des ancres parfaitement valides — et, pire, pousserait
-    // à supprimer le lien plutôt qu'à élargir la recherche. L'intention du
-    // garde-fou est inchangée : tout lien de pied de page désigne quelque chose
-    // qui existe.
     // La visite du produit monte `<section id="product">` depuis `Tour.tsx` :
-    // une source de plus à lire, pour la même raison qu'on avait déjà ajouté
-    // `Proof.tsx`. L'intention du garde-fou est inchangée — tout lien de pied
-    // de page désigne quelque chose qui existe —, et l'élargir vaut mieux que
-    // de supprimer un lien parfaitement valide pour faire passer un test.
-    const sources =
-      landing +
-      stripComments(read("../src/app/pages/landing/Proof.tsx")) +
-      stripComments(read("../src/app/pages/landing/Tour.tsx"));
+    // ne lire que `Landing.tsx` ferait échouer ce test sur une ancre
+    // parfaitement valide — et, pire, pousserait à supprimer le lien plutôt
+    // qu'à élargir la recherche. L'intention du garde-fou est inchangée :
+    // tout lien de pied de page désigne quelque chose qui existe.
+    //
+    // `Proof.tsx` a disparu de cette liste AVEC le fichier. Il montait les
+    // sections « preuve », « Edge Score » et « ancrage de prix » ; la
+    // dernière à partir est l'Edge Score, retirée parce qu'elle ouvrait sur
+    // « un score qui ne regarde pas ton P&L » — une affirmation qui demande
+    // d'avoir déjà adhéré à la philosophie du produit pour ne pas sonner
+    // comme un reproche, et qui arrivait avant qu'on ait montré quoi que ce
+    // soit. Le fichier n'avait plus aucun appelant.
+    const sources = landing + stripComments(read("../src/app/pages/landing/Tour.tsx"));
     const sectionIds = [...sources.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
     const routes = [
       "/demo",

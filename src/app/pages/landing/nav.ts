@@ -28,7 +28,11 @@ export interface LienNav {
 export const LIENS_NAV: readonly LienNav[] = [
   { key: "nav.problem", id: "problem" },
   { key: "nav.product", id: "product" },
-  { key: "nav.edge", id: "edge" },
+  /* « Edge Score » est parti avec sa section. Elle ouvrait sur « un score
+     qui ne regarde pas ton P&L » - une affirmation qui demande d'avoir déjà
+     adhéré à la philosophie du produit pour ne pas sonner comme un reproche,
+     et qui arrivait avant qu'on ait montré quoi que ce soit. Le score existe
+     toujours dans le produit, et le tableau de bord du héros le montre. */
   /* « Ce que tu obtiens vraiment » est parti AVEC sa section : elle résumait
      en quatre puces ce que la visite venait de MONTRER en cinq écrans, donc
      elle répondait deux fois à la même objection. Cinq entrées au lieu de

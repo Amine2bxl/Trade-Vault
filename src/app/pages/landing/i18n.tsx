@@ -407,8 +407,21 @@ const M: Record<string, Msg> = {
     en: "TradeVault reads your history and puts a number on what indiscipline costs you - size drift after a loss, overtrading, off-plan entries - then hands you one rule to hold tomorrow.",
     fr: "TradeVault lit ton historique et chiffre ce que l'indiscipline te coûte - dérive de taille après une perte, overtrading, entrées hors plan - puis te donne une seule règle à tenir demain.",
   },
+  /* LE TITRE SE LIT EN TROIS TEMPS, ET LE TROISIÈME EST ACCENTUÉ.
+     Le second membre restait gris : il énonce le problème, et peindre un
+     problème de la couleur du succès est un contresens. L'argument tenait
+     pour la PHRASE entière - il ne tient pas pour ses trois derniers mots.
+     « quand ça compte » n'est pas le problème, c'est le MOMENT : c'est là
+     que tout se joue, et c'est le seul endroit de l'accroche où l'accent
+     ajoute du sens au lieu d'en repeindre. */
+  "hero.h1b1": { en: "You break your own rules ", fr: "Tu casses tes propres règles " },
+  "hero.h1b2": { en: "when it counts.", fr: "quand ça compte." },
   "hero.cta": { en: "Get Started", fr: "Commencer" },
-  "hero.demo": { en: "or watch a 2-min demo", fr: "ou regarde une démo de 2 min" },
+  /* « ou regarde une démo de 2 min » envoyait sur une visite guidée alors
+     que la question qui suit immédiatement l'accroche est « combien ». Le
+     lien secondaire mène donc aux tarifs : c'est la seule autre chose qu'on
+     veut savoir à cette hauteur de page. */
+  "hero.pricing": { en: "View pricing", fr: "Voir les tarifs" },
   "hero.t1": { en: "No credit card", fr: "Sans carte bancaire" },
   "hero.t2": { en: "Set up in 2 minutes", fr: "Prêt en 2 minutes" },
   "hero.t3": { en: "Cancel anytime", fr: "Sans engagement" },
@@ -569,12 +582,12 @@ const M: Record<string, Msg> = {
      La partie surlignée est la PROMESSE CONCRÈTE, pas le nom du produit :
      c'est elle qu'on doit retenir si on ne lit que trois mots. */
   "v2.hero.sub.a": {
-    en: "TradeVault reads your journal, puts a number on what indiscipline costs you, and gives you ",
-    fr: "TradeVault lit ton journal, chiffre ce que l'indiscipline te coûte, et te donne ",
+    en: "It reads your journal, prices every rule you broke, and hands you ",
+    fr: "Il lit ton journal, chiffre chaque règle que tu as cassée, et te donne ",
   },
   "v2.hero.sub.b": {
-    en: "one rule to hold tomorrow",
-    fr: "une règle à tenir demain",
+    en: "one thing to fix tomorrow",
+    fr: "une seule chose à corriger demain",
   },
   "v2.hero.sub.c": { en: ".", fr: "." },
   "v2.hero.risk": {
@@ -609,6 +622,25 @@ const M: Record<string, Msg> = {
   },
 
   /* ── La visite du produit — une phrase par écran, pas un paragraphe ── */
+  /* L'ÉTIQUETTE DE MOMENT — la question qu'on se pose devant une capture
+     qu'on ne connaît pas : quand est-ce que je m'en sers ? Quatre moments
+     d'une séance, dans l'ordre où ils arrivent. */
+  "moment.avant": { en: "Before the open", fr: "Avant l'ouverture" },
+  "moment.jour": { en: "During the session", fr: "Pendant la séance" },
+  "moment.apres": { en: "After the close", fr: "Après la clôture" },
+  "moment.suite": { en: "Before the next one", fr: "Avant la suivante" },
+
+  /* ── Le prix du problème — la bascule entre la douleur et sa preuve ──
+     Nommer trois symptômes sans les CHIFFRER laisse le visiteur acquiescer
+     et passer. La section « problème » annonce donc un montant, et l'écran
+     juste dessous le donne. */
+  "cout.tag": { en: "What it costs", fr: "Ce que ça coûte" },
+  "cout.title.a": { en: "Every one of them has", fr: "Chacun d'eux a" },
+  "cout.title.b": { en: "a price.", fr: "un prix." },
+  "cout.sub": {
+    en: "Not a feeling, a figure. TradeVault counts each mistake you tick, prices it against your own risk, and tracks whether it recedes.",
+    fr: "Pas une impression, un chiffre. TradeVault compte chaque erreur que tu coches, la chiffre sur ton propre risque, et suit si elle recule.",
+  },
   "v2.tour.eyebrow": { en: "The product", fr: "Le produit" },
   /* La grille compacte : quatre ecrans reels, une ligne chacun. */
   "v2.tour.more.t": {

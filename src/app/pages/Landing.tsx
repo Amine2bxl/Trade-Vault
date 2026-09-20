@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 // Les cinq logos de réseaux sociaux ont quitté cet import avec les liens morts
 // qu'ils portaient : voir le pied de page plus bas.
-import { PlayCircle, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { Icon, type IName } from "./landing/Icon";
 import { ShotOuVisuel } from "./landing/ProductShot";
 import { AuthModal } from "./landing/AuthModal";
 import { TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
-import { SectionEdgeScore } from "./landing/Proof";
 import { TourProduit } from "./landing/Tour";
 import { CursorOrb } from "./landing/CursorOrb";
 import { DrawnLine } from "./landing/DrawnLine";
@@ -859,10 +858,18 @@ function LandingPage() {
                     visible et perdu l'action. À 3.1rem chaque proposition
                     tient sur deux lignes au plus, et le bloc entier reste
                     dans le premier écran. */}
+                {/* TROIS TEMPS, ET L'ACCENT SUR LE TROISIÈME.
+                    Le second membre était gris, au motif qu'il énonce le
+                    problème et qu'on ne peint pas un problème de la couleur
+                    du succès. L'argument tient pour la phrase - pas pour ses
+                    trois derniers mots : « quand ça compte » n'est pas le
+                    problème, c'est le MOMENT, et c'est le seul endroit de
+                    l'accroche où l'accent ajoute du sens. */}
                 <h1 className="fade-up font-display text-[clamp(2.1rem,3.6vw,3.1rem)] font-semibold leading-[1.07] tracking-[-0.03em] text-white">
                   {t("hero.h1a")}
                   <br />
-                  <span className="text-accent">{t("hero.h1b")}</span>
+                  <span className="text-[var(--tv-text-secondary)]">{t("hero.h1b1")}</span>
+                  <span className="mark-accent">{t("hero.h1b2")}</span>
                 </h1>
                 {/* LA VERSION COURTE DU SOUS-TITRE.
                   L'ancienne énumérait les trois symptômes — dérive de taille,
@@ -882,10 +889,16 @@ function LandingPage() {
                   <span className="mark-accent font-semibold">{t("v2.hero.sub.b")}</span>
                   {t("v2.hero.sub.c")}
                 </p>
-                {/* UN SEUL BOUTON. Le second appel (« or watch a 2-min demo »)
-                  est un lien discret, pas une action concurrente : deux
-                  boutons côte à côte partagent le clic au lieu de l'additionner. */}
-                <div className="fade-up d3 mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
+                {/* DEUX ACTIONS, ET LA SECONDE N'EST PAS UNE DÉMO.
+                    Le lien secondaire menait à la visite guidée. Or la
+                    question qui suit immédiatement une accroche n'est pas
+                    « montre-moi », c'est « combien ». Il mène donc aux
+                    tarifs.
+
+                    La hiérarchie reste franche : un bouton plein, un lien
+                    bordé. Deux boutons pleins côte à côte partagent le clic
+                    au lieu de l'additionner. */}
+                <div className="fade-up d3 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <button
                     onClick={() => open("signup", t("nav.cta.plan"))}
                     className="btn-primary w-full sm:w-auto"
@@ -893,11 +906,10 @@ function LandingPage() {
                     {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
                   </button>
                   <a
-                    href="/demo-site"
-                    className="group inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-white"
+                    href="/pricing"
+                    className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
                   >
-                    <PlayCircle className="w-4 h-4" />
-                    {t("hero.demo")}
+                    {t("hero.pricing")}
                   </a>
                 </div>
                 <div className="fade-up d4 mt-7 flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -966,22 +978,40 @@ function LandingPage() {
             l'en-tête de `DrawnLine.tsx`. */}
         <DrawnLine className="-mb-4 mt-2 lg:-mb-6" />
 
-        {/* ── PROBLÈME ── */}
-        <section id="problem" className="relative section-divider py-10 sm:py-14 lg:py-20">
+        {/* ── LE PROBLÈME, PUIS SON PRIX ──
+            La section nommait trois symptômes et s'arrêtait là. Nommer une
+            douleur sans la CHIFFRER, c'est de la psychologie de comptoir :
+            le visiteur acquiesce et passe à autre chose, parce que rien ne
+            lui a montré que ça lui coûte quelque chose.
+
+            La capture des erreurs monte donc ICI, juste sous les trois
+            cartes, au lieu d'attendre le milieu de la visite. C'est le
+            contraste sur lequel toute la page repose : trois phrases qui
+            font mal, puis un écran réel qui met un montant dessus. On passe
+            du « oui, c'est moi » au « et ça me coûte ça » en un défilement.
+
+            Effet de bord voulu : la première grande capture après le héros
+            arrive 2 000px plus tôt qu'avant. */}
+        <section id="problem" className="relative section-divider py-12 sm:py-16 lg:py-24">
           <div className="lp-container">
             <SectionHead
               title={
                 <>
                   {t("problem.title.a")}{" "}
-                  <span className="text-slate-500">{t("problem.title.b")}</span>
+                  <span className="text-[var(--tv-text-secondary)]">{t("problem.title.b")}</span>
                 </>
               }
               sub={t("problem.sub")}
             />
+            {/* Les trois symptômes portent un liseré ROUGE à gauche. C'est la
+                seule place du rouge sur la vitrine, et elle est sémantique :
+                le produit garde le vert pour ce qui va, le rouge pour ce qui
+                coûte (`--tv-chart-red`). Trois cartes grises se lisaient
+                comme trois fonctionnalités. */}
             <div className="grid gap-4 sm:grid-cols-3">
               {problems.map((p) => (
-                <article key={p.t} className="reveal card-premium p-6">
-                  <div className="feat-icon mb-4 h-11 w-11">
+                <article key={p.t} className="reveal carte-symptome p-6">
+                  <div className="feat-icon feat-icon--rouge mb-4 h-11 w-11">
                     <Icon n={p.n} cls="h-5 w-5" />
                   </div>
                   <h3 className="font-display text-base font-bold text-white">{p.t}</h3>
@@ -989,19 +1019,29 @@ function LandingPage() {
                 </article>
               ))}
             </div>
+
+            {/* LA BASCULE. Une seule phrase entre la douleur et sa preuve,
+                et c'est elle qui fait tout le travail émotionnel : elle
+                annonce un montant, et l'écran juste dessous le donne. */}
+            <div className="reveal mt-16 text-center lg:mt-20">
+              <p className="tv-label text-[var(--tv-chart-red)]">{t("cout.tag")}</p>
+              <h3 className="mx-auto mt-4 max-w-[680px] font-display text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
+                {t("cout.title.a")} <span className="mark-accent">{t("cout.title.b")}</span>
+              </h3>
+              <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-7 text-slate-400">
+                {t("cout.sub")}
+              </p>
+            </div>
+            <div className="reveal mt-9">
+              <ShotOuVisuel
+                nom="mistakes"
+                alt={t("shot.mistakes.alt")}
+                repli={<MistakesSection />}
+                className="tour-shot"
+              />
+            </div>
           </div>
         </section>
-
-        {/* ── LA VISITE DU PRODUIT ──
-            Elle remplace SIX sections — la boucle, Claim→Evidence, Analytics,
-            Jarvis, les Erreurs, les cas d'usage, la comparaison Excel — qui
-            pesaient 4 300 px pour dire ce que le produit fait, en répétant
-            deux fois l'argument Jarvis et deux fois la comparaison.
-
-            L'Edge Score garde sa section À LUI : c'est le seul élément que
-            personne d'autre ne propose, et le noyer dans une rangée de visite
-            reviendrait à le présenter comme une fonctionnalité parmi cinq. */}
-        <SectionEdgeScore />
 
         <TourProduit
           /* L'ORDRE EST UN TRAJET, PAS UN CATALOGUE.
@@ -1023,21 +1063,43 @@ function LandingPage() {
             alt: "shot.analytics.alt",
             repli: <AnalyticsSection />,
           }}
-          erreurs={{
-            nom: "mistakes",
-            titre: "v2.s1.t",
-            texte: "v2.s1.d",
-            alt: "shot.mistakes.alt",
-            repli: <MistakesSection />,
-          }}
           /* Quatre écrans qui portent chacun un argument que rien d'autre ne
              porte, et qui ne méritent pas une rangée entière chacun : ce
              serait quatre écrans de page en plus pour quatre phrases. */
+          /* L'ORDRE SUIT LA SÉANCE, pas l'importance : ce qu'on regarde avant
+             d'ouvrir, puis ce qui arrive pendant, puis ce qu'on relit après.
+             C'est ce que dit l'étiquette de MOMENT en tête de chaque carte,
+             et c'est ce qui manquait le plus - « Où ton compte peut
+             atterrir » ne dit pas tout seul qu'il s'agit de projection. */
           secondaires={[
-            { nom: "missed", titre: "v2.s8.t", texte: "v2.s8.d", alt: "shot.missed.alt" },
-            { nom: "checklist", titre: "v2.s6.t", texte: "v2.s6.d", alt: "shot.checklist.alt" },
-            { nom: "montecarlo", titre: "v2.s7.t", texte: "v2.s7.d", alt: "shot.montecarlo.alt" },
-            { nom: "news", titre: "v2.s9.t", texte: "v2.s9.d", alt: "shot.news.alt" },
+            {
+              nom: "checklist",
+              moment: "moment.avant",
+              titre: "v2.s6.t",
+              texte: "v2.s6.d",
+              alt: "shot.checklist.alt",
+            },
+            {
+              nom: "news",
+              moment: "moment.jour",
+              titre: "v2.s9.t",
+              texte: "v2.s9.d",
+              alt: "shot.news.alt",
+            },
+            {
+              nom: "missed",
+              moment: "moment.apres",
+              titre: "v2.s8.t",
+              texte: "v2.s8.d",
+              alt: "shot.missed.alt",
+            },
+            {
+              nom: "montecarlo",
+              moment: "moment.suite",
+              titre: "v2.s7.t",
+              texte: "v2.s7.d",
+              alt: "shot.montecarlo.alt",
+            },
           ]}
           jarvis={{
             nom: "jarvis",
@@ -1095,7 +1157,7 @@ function LandingPage() {
                 </a>
                 <button
                   onClick={() => open("signup", "Free")}
-                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-[var(--tv-border)] px-5 text-sm font-semibold text-slate-300 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white sm:w-auto"
+                  className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
                 >
                   {t("pricing.cta2")}
                 </button>

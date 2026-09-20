@@ -109,7 +109,11 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
 
             <button
               onClick={() => open("login")}
-              className="hidden sm:block text-[13px] font-medium text-slate-400 hover:text-white transition-colors px-3 py-1.5"
+              /* La SŒUR du bouton principal : même rayon, même hauteur, même
+                 graisse. Un texte nu à côté d'un bouton plein se lisait comme
+                 un lien égaré dans la zone des actions, alors que les deux
+                 ouvrent la même porte. */
+              className="btn-secondaire hidden px-4 py-2 text-[13px] sm:inline-flex"
             >
               {t("nav.signin")}
             </button>
@@ -193,7 +197,7 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
                   setMobile(false);
                   open("login");
                 }}
-                className="w-full mt-2.5 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+                className="btn-secondaire mt-2.5 w-full py-2.5 text-sm"
               >
                 {t("nav.signin")}
               </button>

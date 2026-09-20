@@ -39,10 +39,7 @@ export function PublicHeader({ onLogin, onSignup }: { onLogin: () => void; onSig
             <div className="hidden sm:block">
               <LangMenu />
             </div>
-            <button
-              onClick={onLogin}
-              className="px-3 py-1.5 text-[13px] font-medium text-slate-400 transition-colors hover:text-white"
-            >
+            <button onClick={onLogin} className="btn-secondaire px-4 py-2 text-[13px]">
               {t("nav.signin")}
             </button>
             <button onClick={onSignup} className="btn-primary px-4 py-2 text-[13px]">

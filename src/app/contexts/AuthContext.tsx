@@ -26,6 +26,42 @@ export function useAuth() {
   return ctx;
 }
 
+/**
+ * LE FOURNISSEUR D'AUTH, POSÉ SEULEMENT S'IL MANQUE.
+ *
+ * ── LE BUG QU'IL FERME ────────────────────────────────────────────────────
+ *
+ * `AuthModal` appelle `useAuth()`, qui LÈVE quand aucun fournisseur n'est
+ * au-dessus. Sur `/`, l'application en monte un et tout va bien. Mais deux
+ * surfaces publiques rendent cette même modale HORS de l'arbre applicatif :
+ * `/fr` (la vitrine française, rendue au SSR sans `ClientOnly`) et
+ * `/pricing`. Sur ces deux adresses, n'importe quel appel à l'action —
+ * « Commencer », « Se connecter », le choix d'une offre — faisait remonter
+ * l'exception jusqu'à la frontière d'erreur : écran 500, sur le clic le plus
+ * important du site.
+ *
+ * Le défaut était invisible en anglais parce que `/` passe par
+ * l'application ; il ne se manifestait qu'après un changement de langue, qui
+ * emmène précisément sur `/fr`.
+ *
+ * ── POURQUOI « SEULEMENT S'IL MANQUE » ────────────────────────────────────
+ *
+ * Envelopper les deux routes d'un `AuthProvider` nu aurait marché, mais
+ * aurait laissé le piège en place : la prochaine surface publique qui monte
+ * la modale replanterait, et l'erreur ne se verrait qu'en production, au
+ * clic. Et sur `/`, un fournisseur supplémentaire créerait un SECOND état
+ * d'authentification, indépendant de celui de l'application : deux
+ * abonnements `onAuthStateChange`, deux vérités sur qui est connecté.
+ *
+ * Ce composant ne pose donc rien quand un fournisseur existe déjà. Il rend
+ * la modale montable partout, sans jamais dupliquer la session.
+ */
+export function EnsureAuthProvider({ children }: { children: ReactNode }) {
+  const existant = useContext(AuthContext);
+  if (existant) return <>{children}</>;
+  return <AuthProvider>{children}</AuthProvider>;
+}
+
 function mapUser(u: SupabaseUser): User {
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
   const name =

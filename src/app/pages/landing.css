@@ -671,6 +671,49 @@
 .landing-root .btn-ghost {
   border-radius: 10px;
 }
+
+/* ══ L'ACTION SECONDAIRE EST LA SŒUR DE LA PRINCIPALE ══
+ *
+ * « Log in » était un texte nu à côté d'un bouton plein : deux objets de
+ * natures différentes, posés à 12px l'un de l'autre, pour deux actions du
+ * même rang (ouvrir une session, en créer une). Le texte nu se lisait comme
+ * un lien de navigation égaré dans la zone des actions.
+ *
+ * Même rayon, même hauteur, même graisse, même transition. Ce qui les
+ * distingue est le seul écart qui doit compter : l'un est rempli, l'autre
+ * est bordé. La hiérarchie reste franche sans que les deux cessent
+ * d'appartenir à la même paire. */
+.landing-root .btn-secondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 10px;
+  border: 1px solid var(--tv-border-strong);
+  background: transparent;
+  color: var(--tv-text-secondary);
+  font-weight: 600;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background-color 0.16s ease,
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing-root .btn-secondaire:hover {
+  border-color: rgb(var(--tv-accent-rgb) / 0.45);
+  background: rgb(var(--tv-accent-rgb) / 0.06);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.landing-root .btn-secondaire:active {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .btn-secondaire,
+  .landing-root .btn-secondaire:hover {
+    transform: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .landing-root .btn-primary,
   .landing-root .btn-primary:hover {
@@ -1072,6 +1115,53 @@
  * rangées en deux colonnes font donc DÉBORDER la capture vers le bord de la
  * fenêtre, ce qui lui rend ~250px. */
 
+/* ══ LES TROIS SYMPTÔMES PORTENT DU ROUGE ══
+ *
+ * Elles étaient trois cartes grises, identiques à toutes les autres cartes
+ * de la page : trois symptômes qui font mal se lisaient comme trois
+ * fonctionnalités. Le produit a pourtant une sémantique de couleur claire —
+ * vert pour ce qui va, rouge pour ce qui coûte (`--tv-chart-red`) — et la
+ * vitrine ne s'en servait nulle part.
+ *
+ * Un liseré à gauche, pas un fond : un aplat rouge sur trois cartes
+ * transformerait la section en avertissement système. Le liseré suffit à
+ * dire « ceci est le passif », et il prépare le contraste avec la capture
+ * qui suit, où le même rouge chiffre le montant. */
+.landing-root .carte-symptome {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: 14px;
+  background: var(--tv-plate-1);
+  transition:
+    border-color 260ms var(--lp-expo),
+    transform 260ms var(--lp-expo);
+}
+.landing-root .carte-symptome::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgb(var(--tv-chart-red-rgb) / 0.75) 22%,
+    rgb(var(--tv-chart-red-rgb) / 0.75) 78%,
+    transparent
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .carte-symptome:hover {
+    border-color: var(--tv-border-strong);
+    transform: translateY(-2px);
+  }
+}
+.landing-root .feat-icon--rouge {
+  border-color: rgb(var(--tv-chart-red-rgb) / 0.22);
+  background: rgb(var(--tv-chart-red-rgb) / 0.09);
+  color: var(--tv-chart-red);
+}
+
 /* ── LE FIL ──
  * Un trait d'un pixel dans la gouttière, un point numéroté par temps. Le
  * dégradé l'éteint aux deux bouts : une ligne franche qui commence et
@@ -1104,6 +1194,10 @@
 }
 .landing-root .tour-pastille {
   position: absolute;
+  /* AU-DESSUS DE LA CAPTURE. La rangée dont l'image déborde à GAUCHE
+     (`margin-left: -5vw`, soit -72px à 1440) passait par-dessus le point :
+     l'étape 02 n'avait plus de numéro, et le fil semblait sauter un cran. */
+  z-index: 2;
   left: -2.25rem;
   top: 2px;
   display: grid;
@@ -1174,6 +1268,16 @@
     width: calc(100% + 5vw);
     margin-right: -5vw;
   }
+  /* LES COLONNES SE RETOURNENT AVEC LEUR CONTENU.
+     `order` échangeait les deux blocs sans toucher au gabarit : la capture
+     se retrouvait dans la colonne ÉTROITE (0.82fr) et le texte dans la
+     large. La rangée Analytics sortait donc une capture sensiblement plus
+     petite que celle du Journal, pour aucune raison lisible.
+     On inverse le gabarit lui-même : la capture garde 1.18fr des deux
+     côtés. */
+  .landing-root .tour-duo--gauche {
+    grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
+  }
   .landing-root .tour-duo--gauche .tour-duo-texte {
     order: 2;
   }
@@ -1194,70 +1298,118 @@
   margin-inline: auto;
 }
 
-/* ── 4 : LA GRILLE COMPACTE ──
-   Quatre écrans réels à l'échelle réduite. On n'y lit pas les chiffres, on y
-   reconnaît des écrans — d'où la ligne de légende sous chacun, qui dit ce
-   qu'on y verrait. Deux colonnes dès 640px : à une colonne, quatre tuiles
-   font une cinquième rangée déguisée. */
+/* ── 3 : LES QUATRE ÉCRANS, EN CARTES ──
+ *
+ * Elles étaient quatre captures nues, recadrées au même rapport et posées à
+ * même le fond. Trois défauts d'un coup : le recadrage `cover` coupait le
+ * bas de chaque écran (on n'en voyait jamais un en entier) ; rien ne disait
+ * QUAND cet écran sert ; et sans cadre, à côté de trois rangées qui en ont
+ * un, elles se lisaient comme un appendice.
+ *
+ * Devenues des cartes : une plaque, une étiquette de moment, un titre, une
+ * ligne, puis l'écran ENTIER en bas. L'image est en `contain` — à cette
+ * taille on ne lit pas les chiffres, mais on reconnaît une forme d'écran, et
+ * une forme tronquée ne se reconnaît pas.
+ *
+ * Le texte est EN HAUT et l'image en bas, contrairement à une tuile
+ * ordinaire : on veut qu'on sache ce qu'on regarde avant de le regarder. */
 .landing-root .tour-grille-cases {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
   display: grid;
   gap: 1.25rem;
   grid-template-columns: 1fr;
 }
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .landing-root .tour-grille-cases {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.5rem;
   }
 }
-.landing-root .tour-case figcaption {
-  margin-top: 0.85rem;
+.landing-root .tour-carte {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: 20px;
+  background: var(--tv-plate-1);
+  padding: 1.5rem 1.5rem 0;
+  transition:
+    border-color 260ms var(--lp-expo),
+    transform 260ms var(--lp-expo);
 }
-.landing-root .tour-case-titre {
-  font-size: 14px;
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .tour-carte:hover {
+    border-color: var(--tv-border-strong);
+    transform: translateY(-2px);
+  }
+}
+.landing-root .tour-carte-moment {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tv-highlight);
+}
+.landing-root .tour-carte-titre {
+  margin-top: 0.7rem;
+  font-size: 1.0625rem;
   font-weight: 600;
+  letter-spacing: -0.015em;
   color: #fff;
 }
-.landing-root .tour-case-texte {
-  font-size: 13px;
-  line-height: 1.6;
+.landing-root .tour-carte-texte {
+  margin-top: 0.5rem;
+  font-size: 13.5px;
+  line-height: 1.65;
   color: var(--tv-text-secondary);
 }
-/* Les tuiles portent un cadre plus léger : à cette taille, le biseau et
-   l'ombre de la grande capture deviennent du bruit.
+/* L'écran occupe le bas de la carte et déborde par en bas : il se lit comme
+   un écran POSÉ dans la carte plutôt que comme une vignette collée dedans.
+   `margin-top: auto` le colle au bas quelle que soit la longueur du texte.
 
-   Et elles ont TOUTES LE MÊME RAPPORT. Les quatre captures n'ont pas la
-   même hauteur (une liste de six lignes contre une checklist en cinq
-   étapes) : laissées libres, les tuiles finissaient à des hauteurs
-   différentes et les légendes ne s'alignaient plus d'une colonne à
-   l'autre. Une grille dont les lignes de base zigzaguent se lit comme une
-   grille cassée. L'image est ancrée EN HAUT : c'est là que chaque écran
-   pose son argument. */
-.landing-root .tour-case-shot .shot-frame {
-  padding: 4px;
-  border-radius: 16px;
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
-  box-shadow:
-    0 14px 34px -20px rgb(0 0 0 / 0.8),
-    inset 0 1px 0 rgb(255 255 255 / 0.05);
+   ── LA BOÎTE EST FIXE, ET C'EST TOUT L'INTÉRÊT ──
+   Les quatre captures n'ont pas le même rapport : les setups manqués font
+   2400×941 (six lignes, recadrées court), Monte Carlo 2400×1385. Laissées
+   libres, elles se posaient à des hauteurs différentes, et la carte à
+   l'image courte creusait un trou de 120px au milieu.
+   Une boîte au rapport imposé les met toutes au même gabarit. L'image y est
+   en `contain`, donc ENTIÈRE : c'est la contrainte qui compte ici, et c'est
+   celle que le recadrage `cover` d'avant violait. Une bande vide de part et
+   d'autre d'un écran large coûte moins qu'un écran tronqué. */
+.landing-root .tour-carte-scene {
+  margin-top: auto;
+  padding-top: 1.5rem;
 }
-.landing-root .tour-case-shot .shot-frame > picture,
-.landing-root .tour-case-shot .shot-frame > picture > img,
-.landing-root .tour-case-shot .shot-frame > img {
+.landing-root .tour-carte-shot .shot-frame {
+  padding: 0;
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  /* FOND TRANSPARENT, ET PAS DE BISEAU. Le cadre habituel peint une plaque
+     derrière l'image : dans une boîte au rapport imposé, cette plaque se
+     voit là où l'image ne remplit pas — une bande grise au-dessus d'une
+     capture large, qu'on lit comme un défaut de chargement. Ici la CARTE
+     est déjà la surface, le cadre n'a plus rien à poser. */
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+.landing-root .tour-carte-shot .shot-frame > picture,
+.landing-root .tour-carte-shot .shot-frame > picture > img,
+.landing-root .tour-carte-shot .shot-frame > img {
   display: block;
   height: 100%;
   width: 100%;
-  object-fit: cover;
-  object-position: top;
-  border-radius: 12px;
+  object-fit: contain;
+  /* Ancrée EN BAS : l'écran monte depuis le bord inférieur de la carte,
+     comme s'il en sortait. Centré, il flotterait au milieu d'une bande. */
+  object-position: bottom;
+  border-radius: 11px 11px 0 0;
 }
-.landing-root .tour-case-shot.shot-halo::before {
-  opacity: 0.55;
+/* La lueur d'une carte est plus discrète que celle d'une grande capture :
+   quatre halos côte à côte se additionnent en une nappe. */
+.landing-root .tour-carte-shot.shot-halo::before {
+  opacity: 0.4;
 }
 
 /* ── 5 : LE DÉNOUEMENT ──
