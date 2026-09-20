@@ -70,7 +70,7 @@ export function SectionPreuve() {
     v || (l === "evidence.r3.l" ? t("evidence.r3.v") : t("evidence.r4.v"));
 
   return (
-    <section id="evidence" className="relative section-divider py-14 lg:py-20">
+    <section id="evidence" className="relative section-divider py-10 sm:py-14 lg:py-20">
       <div className="lp-container">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="reveal">
@@ -195,7 +195,7 @@ function CadranEdge({ valeur }: { valeur: number }) {
 export function SectionEdgeScore() {
   const { t } = useLandingT();
   return (
-    <section id="edge" className="relative section-divider py-14 lg:py-20">
+    <section id="edge" className="relative section-divider py-10 sm:py-14 lg:py-20">
       <div className="lp-container">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="reveal order-2 lg:order-1">
@@ -273,7 +273,7 @@ export function SectionEdgeScore() {
 export function AncrageDePrix() {
   const { t } = useLandingT();
   return (
-    <section className="relative section-divider py-14 lg:py-20">
+    <section className="relative section-divider py-10 sm:py-14 lg:py-20">
       <div className="lp-container">
         <div className="mx-auto mb-12 max-w-2xl text-center">
           <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">

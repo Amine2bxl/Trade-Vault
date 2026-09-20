@@ -10,20 +10,33 @@ import { shot } from "./shots";
 /**
  * UNE CAPTURE, DANS SON CADRE.
  *
- * Le cadre suit `DESIGN.md` : plaque `surface-1`, liseré d'un pixel, rayon
- * 16px, et le mince trait clair sur l'arête haute qui donne aux panneaux leur
- * relief « rendu au pixel ». Aucune ombre portée — sur un fond quasi noir,
- * elles ne font que salir.
+ * ── CE QUI A CHANGÉ, ET POURQUOI LA CHARTE LE PERMET ICI ──────────────────
  *
- * `loading` est modulable parce que les deux emplacements n'ont pas le même
- * besoin : celle du héros est visible immédiatement et doit être demandée tout
- * de suite ; celles des sections basses attendent le défilement.
+ * Le cadre était une plaque plate, sans ombre, au nom de « rien ne rayonne ».
+ * Cette règle vaut pour le PRODUIT CONNECTÉ, où un halo attire l'œil sur du
+ * décor pendant qu'un chiffre attend d'être lu. La vitrine a un autre métier :
+ * elle est vue une fois, en défilant, par quelqu'un qui ne sait pas encore ce
+ * qu'est le produit.
+ *
+ * Or une capture sombre posée à plat sur un fond sombre n'a pas de bord — elle
+ * bave, et se lit comme une pièce jointe. La même capture posée dans la
+ * lumière se lit comme un écran allumé. C'est très exactement la différence
+ * entre « voici une image du produit » et « le terminal tourne déjà ».
+ *
+ * Tout l'habillage vit donc dans `.shot-frame`, sous `.landing-root` : aucune
+ * de ces règles ne peut atteindre l'application.
+ *
+ * `priorite` distingue les deux emplacements : celle du héros est visible sans
+ * défiler et doit être demandée tout de suite — et, sur une page dont elle est
+ * la première image, elle mérite `fetchPriority="high"`, sans quoi le
+ * navigateur la met en file derrière les scripts.
  */
 export function ProductShot({
   nom,
   alt,
   legende,
   priorite = false,
+  hero = false,
   className,
 }: {
   nom: string;
@@ -31,31 +44,40 @@ export function ProductShot({
   legende?: string;
   /** Vrai pour la capture du héros : elle est visible sans défiler. */
   priorite?: boolean;
+  /** La légère perspective, réservée à la capture d'ouverture. */
+  hero?: boolean;
   className?: string;
 }) {
   const src = shot(nom);
   if (!src) return null;
+  /* LA VARIANTE TÉLÉPHONE, quand elle existe.
+   *
+   * `<nom>-m.webp` est le MÊME écran, photographié à 390px de large : le
+   * produit s'y est replié tout seul, donc son texte est lisible à l'échelle
+   * 1 au lieu d'être réduit à 26 %. Absente, on sert la capture de bureau —
+   * c'est un repli, pas une panne. */
+  const srcMobile = shot(`${nom}-m`);
 
   return (
-    <figure className={className}>
-      <div className="relative overflow-hidden rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-1.5 sm:p-2">
-        {/* L'arête claire du haut — le seul « effet » que la charte autorise. */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-6 top-0 h-px bg-white/[0.09]"
-        />
-        <img
-          src={src}
-          alt={alt}
-          loading={priorite ? "eager" : "lazy"}
-          decoding="async"
-          /* `block` : une image en `inline` laisse sous elle la place de la
-             ligne de base, donc un liseré de fond sous le cadre. */
-          className="block w-full rounded-xl"
-        />
+    /* `data-shot` porte le nom de l'écran jusqu'au CSS. Sur téléphone, chaque
+       capture est cadrée sur une RÉGION différente (voir `landing.css`) : le
+       cadrage ne peut pas être le même pour une conversation alignée à droite
+       et pour un tableau aligné à gauche. */
+    <figure className={className} data-shot={nom}>
+      <div className={`shot-frame${hero ? " shot-hero" : ""}`}>
+        <picture>
+          {srcMobile && <source media="(max-width: 639px)" srcSet={srcMobile} />}
+          <img
+            src={src}
+            alt={alt}
+            loading={priorite ? "eager" : "lazy"}
+            fetchPriority={priorite ? "high" : "auto"}
+            decoding="async"
+          />
+        </picture>
       </div>
       {legende && (
-        <figcaption className="mt-2.5 text-center text-[12px] text-[#8a8f98]">{legende}</figcaption>
+        <figcaption className="mt-4 text-center text-[12px] text-[#8a8f98]">{legende}</figcaption>
       )}
     </figure>
   );
@@ -73,6 +95,7 @@ export function ShotOuVisuel({
   alt,
   legende,
   priorite,
+  hero,
   className,
   repli,
 }: {
@@ -80,12 +103,20 @@ export function ShotOuVisuel({
   alt: string;
   legende?: string;
   priorite?: boolean;
+  hero?: boolean;
   className?: string;
   /** L'illustration à montrer tant que la capture n'est pas déposée. */
   repli: React.ReactNode;
 }) {
   if (!shot(nom)) return <>{repli}</>;
   return (
-    <ProductShot nom={nom} alt={alt} legende={legende} priorite={priorite} className={className} />
+    <ProductShot
+      nom={nom}
+      alt={alt}
+      legende={legende}
+      priorite={priorite}
+      hero={hero}
+      className={className}
+    />
   );
 }

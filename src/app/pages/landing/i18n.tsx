@@ -34,7 +34,7 @@ import { SSR_LANG, FR_PREFIX } from "@/shared/lang";
  *  s'exécute de toute façon pas, mais où React avertirait à chaque rendu. */
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-export type LandingLang = "en" | "fr";
+export type LandingLang = (typeof LANDING_LANGS)[number]["id"];
 export type LandingKey = keyof typeof M;
 
 const STORAGE_KEY = "tv.landing.lang";
@@ -150,10 +150,45 @@ export function useLandingT() {
 
 /* ─────────────────────────── Dictionary ─────────────────────────── */
 
-export interface Msg {
+/**
+ * LES LANGUES DE LA VITRINE — une table, pas une paire de boutons.
+ *
+ * Le sélecteur rendait `EN` et `FR` en dur, dans le balisage. Ajouter
+ * l'espagnol demandait donc de toucher le composant, le type, le sélecteur et
+ * le repli : quatre endroits, dont trois qu'on oublie.
+ *
+ * Ici, une langue est UNE ENTRÉE. Le sélecteur se dessine depuis cette table,
+ * `tr()` retombe déjà sur l'anglais pour toute clé non traduite (`m[lang] ??
+ * m.en`), et `dir` est là dès maintenant pour que l'arabe n'oblige pas à
+ * reprendre la mise en page le jour venu.
+ *
+ * Ce qu'il reste à faire pour ajouter une langue : une ligne ici, la route
+ * correspondante dans `shared/lang.ts`, et les clés au fil de l'eau — une clé
+ * manquante n'est pas une panne, c'est de l'anglais.
+ */
+/* `drapeau` est l'émoji du pavillon, pas une image : une seule source de
+   vérité par langue, aucun fichier à déposer, et le rendu suit la police
+   système. Ajouter l'espagnol ou l'arabe reste une ligne — `dir` est déjà là
+   pour l'arabe, qui se lira de droite à gauche sans toucher aux composants.
+
+   Un drapeau ne désigne pas une langue mais un pays : `short` reste affiché à
+   côté, et c'est lui que lisent les lecteurs d'écran via `label`. Le drapeau
+   accélère la reconnaissance, il ne la remplace pas. */
+export const LANDING_LANGS = [
+  { id: "en", short: "EN", label: "English", drapeau: "🇬🇧", dir: "ltr" },
+  { id: "fr", short: "FR", label: "Français", drapeau: "🇫🇷", dir: "ltr" },
+] as const;
+
+/**
+ * `en` et `fr` sont EXIGÉS — ce sont les deux langues servies, et une vitrine
+ * à moitié traduite dans une langue annoncée est pire que pas de traduction.
+ * Les suivantes entrent en facultatif : elles se remplissent progressivement
+ * sans jamais casser la compilation.
+ */
+export type Msg = {
   en: string;
   fr: string;
-}
+} & Partial<Record<LandingLang, string>>;
 
 const M: Record<string, Msg> = {
   /* nav */
@@ -179,6 +214,19 @@ const M: Record<string, Msg> = {
   "auth.promise2": {
     en: "Your data stays exportable at any time",
     fr: "Tes données restent exportables à tout moment",
+  },
+  /* Deux promesses de plus, pour quatre. Deux lignes laissaient la colonne
+     aux trois quarts vide et le regard filait vers le formulaire sans les
+     lire. Les deux ajoutées ne répètent PAS le sous-titre du formulaire
+     (« sans carte », « annulation ») : elles disent ce que le produit fait
+     de la donnée une fois qu'elle est là. */
+  "auth.promise3": {
+    en: "Every mistake costed in euros, not in vibes",
+    fr: "Chaque erreur chiffrée en euros, pas en ressenti",
+  },
+  "auth.promise4": {
+    en: "One rule to hold, recomputed every week",
+    fr: "Une règle à tenir, recalculée chaque semaine",
   },
   "auth.trustpilot": { en: "Verified reviews on", fr: "Avis vérifiés sur" },
   "auth.title.signup": { en: "Create your account", fr: "Créer ton compte" },
@@ -229,11 +277,16 @@ const M: Record<string, Msg> = {
   "nav.analytics": { en: "Analytics", fr: "Analytics" },
   "nav.edge": { en: "Edge Score", fr: "Edge Score" },
   "nav.alternative": { en: "Excel vs Notion", fr: "Excel vs Notion" },
-  "nav.signin": { en: "Sign in", fr: "Se connecter" },
-  "nav.cta": { en: "Start free", fr: "Commencer gratuitement" },
-  "nav.cta.plan": { en: "Start free", fr: "Commencer gratuitement" },
+  /* « Log in » et « Get Started » disent ce qu'ils FONT, pas ce qu'ils
+     coûtent. « Sign in » / « Start free » se ressemblaient assez pour qu'on
+     hésite entre les deux ; là, le premier ouvre une session existante, le
+     second en crée une. La modale laisse basculer de l'un à l'autre, donc se
+     tromper ne coûte rien. */
+  "nav.signin": { en: "Log in", fr: "Se connecter" },
+  "nav.cta": { en: "Get Started", fr: "Commencer" },
+  "nav.cta.plan": { en: "Get Started", fr: "Commencer" },
 
-  "nav.p.jarvis": { en: "Jarvis — AI Coach", fr: "Jarvis — Coach IA" },
+  "nav.p.jarvis": { en: "Jarvis - AI Coach", fr: "Jarvis - Coach IA" },
   "nav.p.jarvis.d": {
     en: "A coach that reads every one of your trades.",
     fr: "Un coach qui lit chacun de tes trades.",
@@ -282,10 +335,10 @@ const M: Record<string, Msg> = {
     fr: "Tu casses tes propres règles quand ça compte.",
   },
   "hero.sub": {
-    en: "TradeVault reads your history and puts a number on what indiscipline costs you — size drift after a loss, overtrading, off-plan entries — then hands you one rule to hold tomorrow.",
-    fr: "TradeVault lit ton historique et chiffre ce que l'indiscipline te coûte — dérive de taille après une perte, overtrading, entrées hors plan — puis te donne une seule règle à tenir demain.",
+    en: "TradeVault reads your history and puts a number on what indiscipline costs you - size drift after a loss, overtrading, off-plan entries - then hands you one rule to hold tomorrow.",
+    fr: "TradeVault lit ton historique et chiffre ce que l'indiscipline te coûte - dérive de taille après une perte, overtrading, entrées hors plan - puis te donne une seule règle à tenir demain.",
   },
-  "hero.cta": { en: "Start for free", fr: "Commencer gratuitement" },
+  "hero.cta": { en: "Get Started", fr: "Commencer" },
   "hero.demo": { en: "or watch a 2-min demo", fr: "ou regarde une démo de 2 min" },
   "hero.t1": { en: "No credit card", fr: "Sans carte bancaire" },
   "hero.t2": { en: "Set up in 2 minutes", fr: "Prêt en 2 minutes" },
@@ -300,8 +353,8 @@ const M: Record<string, Msg> = {
   "analytics.title.a": { en: "The numbers exist", fr: "Les chiffres existent" },
   "analytics.title.b": { en: "to serve the diagnosis.", fr: "pour servir le diagnostic." },
   "analytics.sub": {
-    en: "Twenty-plus metrics computed on your real history — not to decorate a dashboard, but to show where your edge lives and where it dies.",
-    fr: "Plus de vingt métriques calculées sur ton historique réel — pas pour décorer un tableau de bord, mais pour montrer où vit ton edge et où il meurt.",
+    en: "Twenty-plus metrics computed on your real history - not to decorate a dashboard, but to show where your edge lives and where it dies.",
+    fr: "Plus de vingt métriques calculées sur ton historique réel - pas pour décorer un tableau de bord, mais pour montrer où vit ton edge et où il meurt.",
   },
   "analytics.c1.t": { en: "Equity curve", fr: "Courbe d'equity" },
   "analytics.c1.d": {
@@ -320,16 +373,16 @@ const M: Record<string, Msg> = {
   },
   "analytics.c4.t": { en: "Win rate by hour, day & setup", fr: "Win rate par heure, jour & setup" },
   "analytics.c4.d": {
-    en: "Where your edge lives — and where it dies.",
-    fr: "Où vit ton edge — et où il meurt.",
+    en: "Where your edge lives - and where it dies.",
+    fr: "Où vit ton edge - et où il meurt.",
   },
 
   /* mistakes / psychology */
   "mistakes.title.a": { en: "Your biggest leak", fr: "Ta plus grosse fuite" },
   "mistakes.title.b": { en: "has a name and a price.", fr: "a un nom et un prix." },
   "mistakes.sub": {
-    en: "Recurring mistakes and missed setups, counted and priced — month after month, on your own data. Your history can answer the questions you've never asked it.",
-    fr: "Erreurs récurrentes et setups manqués, comptés et chiffrés — mois après mois, sur tes propres données. Ton historique peut répondre aux questions que tu ne lui as jamais posées.",
+    en: "Recurring mistakes and missed setups, counted and priced - month after month, on your own data. Your history can answer the questions you've never asked it.",
+    fr: "Erreurs récurrentes et setups manqués, comptés et chiffrés - mois après mois, sur tes propres données. Ton historique peut répondre aux questions que tu ne lui as jamais posées.",
   },
   "mistakes.q1": {
     en: "When do I actually trade well?",
@@ -364,8 +417,8 @@ const M: Record<string, Msg> = {
   },
   "uses.u3.t": { en: "Serious retail", fr: "Retail sérieux" },
   "uses.u3.d": {
-    en: "Futures, forex, indices — several trades a week. Enough data for the patterns to surface.",
-    fr: "Futures, forex, indices — plusieurs trades par semaine. Assez de données pour que les schémas sortent.",
+    en: "Futures, forex, indices - several trades a week. Enough data for the patterns to surface.",
+    fr: "Futures, forex, indices - plusieurs trades par semaine. Assez de données pour que les schémas sortent.",
   },
 
   /* excel / notion */
@@ -419,6 +472,191 @@ const M: Record<string, Msg> = {
   },
   "cta.buttonShort": { en: "Start for free", fr: "Commencer gratuitement" },
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     LA VITRINE COURTE — une section, une fonction, jamais deux fois la même.
+     ═══════════════════════════════════════════════════════════════════════
+
+     L'audit de la version précédente : 12 517 px, 1 619 mots, 17 sections,
+     et quatre libellés différents pour un seul bouton. Surtout, la moitié de
+     la hauteur répétait quelque chose de déjà dit — l'argument Jarvis tenait
+     1 508 px sur deux sections, la comparaison 1 411 px sur deux autres, le
+     cadrage du problème 1 028 px sur deux encore.
+
+     La règle appliquée ici est celle du skill : « si deux sections répondent
+     à la même objection, l'une des deux part ». Rien n'est dit deux fois.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Héros ── */
+  "v2.hero.eyebrow": {
+    en: "For prop-firm challenges and serious retail",
+    fr: "Pour les challenges prop-firm et le retail exigeant",
+  },
+  /* LE SOUS-TITRE EST DÉCOUPÉ EN TROIS, POUR LE SURLIGNEUR.
+     Découper plutôt que chercher une sous-chaîne à l'exécution : une
+     recherche de texte casse à la première traduction qui tourne la phrase
+     autrement, et elle casse EN SILENCE - le surlignage disparaît sans que
+     rien ne le signale. Trois clés, trois traductions, aucun découpage
+     deviné.
+     La partie surlignée est la PROMESSE CONCRÈTE, pas le nom du produit :
+     c'est elle qu'on doit retenir si on ne lit que trois mots. */
+  "v2.hero.sub.a": {
+    en: "TradeVault reads your journal, puts a number on what indiscipline costs you, and gives you ",
+    fr: "TradeVault lit ton journal, chiffre ce que l'indiscipline te coûte, et te donne ",
+  },
+  "v2.hero.sub.b": {
+    en: "one rule to hold tomorrow",
+    fr: "une règle à tenir demain",
+  },
+  "v2.hero.sub.c": { en: ".", fr: "." },
+  "v2.hero.risk": {
+    en: "Free forever · No card · Export anytime",
+    fr: "Gratuit pour toujours · Sans carte · Export à tout moment",
+  },
+
+  /* ── Le problème — trois symptômes, une ligne chacun ── */
+  "v2.pb.title.a": { en: "It isn't your setup", fr: "Ce n'est pas ton setup" },
+  "v2.pb.title.b": { en: "that blows the account.", fr: "qui fait sauter le compte." },
+  "v2.pb.sub": {
+    en: "It's the twenty minutes after a loss.",
+    fr: "Ce sont les vingt minutes qui suivent une perte.",
+  },
+  "v2.pb.1.t": { en: "You size up after a loss", fr: "Tu montes la taille après une perte" },
+  "v2.pb.1.d": {
+    en: "The plan said 1%. The next one went in at 1.8%.",
+    fr: "Le plan disait 1 %. Le suivant est parti à 1,8 %.",
+  },
+  "v2.pb.2.t": {
+    en: "You take trades the plan never allowed",
+    fr: "Tu prends des trades que le plan interdisait",
+  },
+  "v2.pb.3.t": { en: "No number ever names the habit", fr: "Aucun chiffre ne nomme l'habitude" },
+  "v2.pb.2.d": {
+    en: "FOMO, boredom, the need to win it back.",
+    fr: "FOMO, ennui, le besoin de se refaire.",
+  },
+  "v2.pb.3.d": {
+    en: "So you change strategy instead of behaviour.",
+    fr: "Alors tu changes de stratégie au lieu de comportement.",
+  },
+
+  /* ── La visite du produit — une phrase par écran, pas un paragraphe ── */
+  "v2.tour.title.a": { en: "The whole product,", fr: "Le produit en entier," },
+  "v2.tour.title.b": { en: "in five screens.", fr: "en cinq écrans." },
+
+  "v2.s1.t": {
+    en: "Your biggest leak has a name and a price.",
+    fr: "Ta plus grosse fuite a un nom et un prix.",
+  },
+  "v2.s1.d": {
+    en: "Every mistake you tick is counted, costed, and tracked week by week - so you can see it recede.",
+    fr: "Chaque erreur que tu coches est comptée, chiffrée et suivie semaine par semaine - tu la vois reculer.",
+  },
+  "v2.s2.t": {
+    en: "Ask anything. It answers from your trades.",
+    fr: "Demande n'importe quoi. Il répond depuis tes trades.",
+  },
+  "v2.s2.d": {
+    en: "Every claim carries its number, its period and its sample size. It analyses your past - it never predicts the market.",
+    fr: "Chaque affirmation porte son chiffre, sa période et son échantillon. Il analyse ton passé - jamais le marché à venir.",
+  },
+  "v2.s3.t": {
+    en: "Which setup pays you. Which one bleeds you.",
+    fr: "Quel setup te paie. Lequel te saigne.",
+  },
+  "v2.s3.d": {
+    en: "Expectancy, profit factor and R multiple per setup, per session, per weekday.",
+    fr: "Espérance, profit factor et multiple de R par setup, par session, par jour de semaine.",
+  },
+  /* Cette rangée montrait les RAPPORTS MENSUELS. La capture réelle du compte
+     vitrine tombait sur l'état vide — neuf boutons « Generate » et pas un
+     rapport — parce que le compte n'en a jamais généré. Montrer une liste de
+     boutons pour illustrer « ton mois est lu » vend une page vide.
+     Le calendrier, lui, est plein et porte le même argument de façon
+     vérifiable : la régularité se voit, jour par jour. */
+  "v2.s4.t": { en: "Your month, day by day.", fr: "Ton mois, jour par jour." },
+  "v2.s4.d": {
+    en: "Every session tinted by its result - you see where the good days cluster, and where they stop.",
+    fr: "Chaque séance teintée par son résultat - tu vois où les bonnes journées se groupent, et où elles s'arrêtent.",
+  },
+  "v2.s5.t": {
+    en: "Getting your trades in takes minutes.",
+    fr: "Entrer tes trades prend des minutes.",
+  },
+  "v2.s5.d": {
+    en: "Universal CSV import, copy-paste, or 45 seconds by hand. No broker connection - there is no API, and we would rather say so.",
+    fr: "Import CSV universel, copier-coller, ou 45 secondes à la main. Aucune connexion courtier - il n'y a pas d'API, et on préfère le dire.",
+  },
+  /* Deux écrans de plus dans la visite : la préparation d'avant-séance et la
+     ruine simulée. Ils portent des arguments que rien d'autre ne porte -
+     l'un est le SEUL moment du produit qui agit AVANT le trade, l'autre est
+     la seule chose qui parle de ce qui ne s'est pas encore produit. */
+  "v2.s6.t": {
+    en: "The checklist runs before the trade.",
+    fr: "La checklist passe avant le trade.",
+  },
+  "v2.s6.d": {
+    en: "Preparation, mental state, lock-in. It is the only moment the product acts before you click, not after.",
+    fr: "Préparation, état mental, verrouillage. C'est le seul moment où le produit agit avant que tu cliques, pas après.",
+  },
+  "v2.s7.t": { en: "Where your account can land.", fr: "Où ton compte peut atterrir." },
+  "v2.s7.d": {
+    en: "Ten thousand replays of your own wins and losses, in a different order each time. Nothing here is a preset.",
+    fr: "Dix mille rejeux de tes propres gains et pertes, dans un ordre différent à chaque fois. Rien ici n'est un préréglage.",
+  },
+  "shot.checklist.alt": {
+    en: "The pre-market checklist: preparation, mental state and lock-in.",
+    fr: "La checklist d'avant-séance : préparation, état mental et verrouillage.",
+  },
+  "shot.montecarlo.alt": {
+    en: "The Monte Carlo page: target reached, median drawdown and the range of paths.",
+    fr: "La page Monte Carlo : cible atteinte, drawdown médian et l'éventail des trajectoires.",
+  },
+
+  /* ── Les quatre bénéfices, en liste ──
+   *
+   * Quatre puces, pas six : au-delà, une liste cesse d'être lue et devient
+   * une texture qu'on saute. Chacune est VÉRIFIABLE dans le produit - aucune
+   * ne promet un gain, aucune n'annonce une fonctionnalité non livrée
+   * (`FEATURES_STATUS.md` fait foi). Elles répondent chacune à une objection
+   * différente : « ça sert à quoi », « comment c'est mesuré », « combien de
+   * travail pour moi », « et si je pars ». */
+  "v2.bul.title": { en: "What you actually get", fr: "Ce que tu obtiens vraiment" },
+  "v2.bul.1.t": { en: "A price on every mistake", fr: "Un prix sur chaque erreur" },
+  "v2.bul.1.d": {
+    en: "Not a tag on a trade. The euro cost of the habit, across your whole journal.",
+    fr: "Pas une étiquette sur un trade. Le coût en euros de l'habitude, sur tout ton journal.",
+  },
+  "v2.bul.2.t": { en: "A score that ignores your P&L", fr: "Un score qui ignore ton P&L" },
+  "v2.bul.2.d": {
+    en: "Edge Score rates plan kept, risk held, consistency. You can have a green week and a bad score.",
+    fr: "L'Edge Score note le plan tenu, le risque tenu, la régularité. Tu peux finir vert avec un mauvais score.",
+  },
+  "v2.bul.3.t": { en: "One rule, not a report", fr: "Une règle, pas un rapport" },
+  "v2.bul.3.d": {
+    en: "Each week ends with a single thing to hold. Twelve pages of charts change nothing on Monday.",
+    fr: "Chaque semaine finit sur une seule chose à tenir. Douze pages de graphes ne changent rien le lundi.",
+  },
+  "v2.bul.4.t": { en: "Your data, exportable", fr: "Tes données, exportables" },
+  "v2.bul.4.d": {
+    en: "CSV in, CSV out, any time. No broker connection, no lock-in.",
+    fr: "CSV à l'entrée, CSV à la sortie, quand tu veux. Aucune connexion courtier, aucun enfermement.",
+  },
+
+  /* ── Confiance ── */
+  "v2.trust.title": { en: "What we will never do", fr: "Ce qu'on ne fera jamais" },
+  "v2.trust.sub": {
+    en: "Three commitments you can check today.",
+    fr: "Trois engagements vérifiables aujourd'hui.",
+  },
+  "v2.trust.reviews": { en: "Verified reviews on", fr: "Avis vérifiés sur" },
+
+  /* ── CTA final ── */
+  "v2.cta.title.a": { en: "Your next loss is coming.", fr: "Ta prochaine perte arrive." },
+  "v2.cta.title.b": {
+    en: "Decide now what you do after it.",
+    fr: "Décide maintenant ce que tu feras après.",
+  },
+
   /* Captures d'écran du produit — voir `src/assets/product/README.md`.
      Le texte alternatif décrit L'ÉCRAN, jamais le résultat qu'on y voit :
      une capture montre le compte d'un trader, pas une promesse. */
@@ -437,6 +675,26 @@ const M: Record<string, Msg> = {
     fr: "Le cadran de l'Edge Score sur le tableau de bord, avec ses quatre composantes de comportement.",
   },
   "shot.edge.cap": { en: "The Edge Score", fr: "L'Edge Score" },
+  "shot.jarvis.alt": {
+    en: "A Jarvis conversation: the question, the weekday numbers it answers with, and the rule it proposes.",
+    fr: "Une conversation avec Jarvis : la question, les chiffres par jour de semaine qu'il cite, et la règle qu'il propose.",
+  },
+  "shot.jarvis.cap": { en: "Jarvis, answering", fr: "Jarvis, en train de répondre" },
+  "shot.mistakes.alt": {
+    en: "The mistakes page: the correction plan, and the week-by-week series for each mistake.",
+    fr: "La page Erreurs : le plan de correction, et la série semaine par semaine de chaque erreur.",
+  },
+  "shot.mistakes.cap": { en: "The correction plan", fr: "Le plan de correction" },
+  "shot.journal.alt": {
+    en: "The trade journal: every trade with its P&L, R multiple, setup and risk.",
+    fr: "Le journal de trades : chaque trade avec son P&L, son multiple de R, son setup et son risque.",
+  },
+  "shot.journal.cap": { en: "The journal", fr: "Le journal" },
+  "shot.calendar.alt": {
+    en: "The trading calendar: each day tinted by its P&L.",
+    fr: "Le calendrier de trading : chaque journée teintée par son P&L.",
+  },
+  "shot.calendar.cap": { en: "The calendar", fr: "Le calendrier" },
 
   /* hero product visual */
   // L'illustration du héros mène désormais avec ce que le tableau de bord
@@ -447,8 +705,8 @@ const M: Record<string, Msg> = {
   // capture n'est pas déposée : un visiteur ne distingue pas un dessin soigné
   // d'une capture.
   "hero.illustration": {
-    en: "Illustration — not a client result",
-    fr: "Illustration — pas un résultat client",
+    en: "Illustration - not a client result",
+    fr: "Illustration - pas un résultat client",
   },
   "hero.edge": { en: "Edge Score", fr: "Edge Score" },
   "hero.edge.sub": { en: "Behaviour, not P&L", fr: "Le comportement, pas le P&L" },
@@ -479,8 +737,8 @@ const M: Record<string, Msg> = {
      synchro broker, il n'y a pas d'API : import CSV, copier-coller, saisie,
      démo). */
   "platforms.label": {
-    en: "Your trades get in — instantly",
-    fr: "Tes trades entrent — en un instant",
+    en: "Your trades get in - instantly",
+    fr: "Tes trades entrent - en un instant",
   },
   "platforms.i1": { en: "Universal CSV import", fr: "Import CSV universel" },
   "platforms.i2": { en: "Copy & paste", fr: "Copier-coller" },
@@ -512,8 +770,8 @@ const M: Record<string, Msg> = {
     fr: "Tu prends des trades que ton plan n'autorise pas",
   },
   "problem.p2.d": {
-    en: "FOMO, boredom, the need to win it back. The setup was on no list — and there was nothing to stop you.",
-    fr: "FOMO, ennui, besoin de se refaire. Le setup n'était sur aucune liste — et rien ne t'a arrêté.",
+    en: "FOMO, boredom, the need to win it back. The setup was on no list - and there was nothing to stop you.",
+    fr: "FOMO, ennui, besoin de se refaire. Le setup n'était sur aucune liste - et rien ne t'a arrêté.",
   },
   "problem.p3.t": { en: "You have no idea what it costs", fr: "Tu ignores ce que ça te coûte" },
   "problem.p3.d": {
@@ -536,8 +794,8 @@ const M: Record<string, Msg> = {
   },
   "journey.title.b": { en: "It's a loop.", fr: "C'est une boucle." },
   "journey.sub": {
-    en: "Four moments, every trading day. TradeVault holds all four — most journals only show up for the third.",
-    fr: "Quatre moments, chaque jour de marché. TradeVault tient les quatre — la plupart des journaux n'arrivent qu'au troisième.",
+    en: "Four moments, every trading day. TradeVault holds all four - most journals only show up for the third.",
+    fr: "Quatre moments, chaque jour de marché. TradeVault tient les quatre - la plupart des journaux n'arrivent qu'au troisième.",
   },
   "journey.s1.t": { en: "Before", fr: "Avant" },
   "journey.s1.d": {
@@ -556,8 +814,8 @@ const M: Record<string, Msg> = {
   },
   "journey.s4.t": { en: "Tomorrow", fr: "Demain" },
   "journey.s4.d": {
-    en: "One priority — not a wall of statistics",
-    fr: "Une seule priorité — pas un mur de statistiques",
+    en: "One priority - not a wall of statistics",
+    fr: "Une seule priorité - pas un mur de statistiques",
   },
 
   /* ── CLAIM → EVIDENCE ─────────────────────────────────────────────────
@@ -573,8 +831,8 @@ const M: Record<string, Msg> = {
   "evidence.title.a": { en: "A coach that isn't allowed", fr: "Un coach qui n'a pas le droit" },
   "evidence.title.b": { en: "to make things up.", fr: "d'inventer." },
   "evidence.sub": {
-    en: "Every sentence Jarvis writes carries its numbers, its period and its sample size. The claim, then the evidence — and a link to the trades it read.",
-    fr: "Chaque phrase de Jarvis porte ses chiffres, sa période et la taille de son échantillon. L'affirmation, puis la preuve — et un lien vers les trades qu'il a lus.",
+    en: "Every sentence Jarvis writes carries its numbers, its period and its sample size. The claim, then the evidence - and a link to the trades it read.",
+    fr: "Chaque phrase de Jarvis porte ses chiffres, sa période et la taille de son échantillon. L'affirmation, puis la preuve - et un lien vers les trades qu'il a lus.",
   },
   "evidence.claim.l": { en: "The claim", fr: "L'affirmation" },
   "evidence.claim": {
@@ -595,12 +853,12 @@ const M: Record<string, Msg> = {
   },
   "evidence.b2": { en: "No market prediction, ever", fr: "Aucune prédiction de marché, jamais" },
   "evidence.b3": {
-    en: "No conclusion on a thin sample — it says so instead",
-    fr: "Aucune conclusion sur un échantillon faible — il le dit à la place",
+    en: "No conclusion on a thin sample - it says so instead",
+    fr: "Aucune conclusion sur un échantillon faible - il le dit à la place",
   },
   "evidence.guard": {
-    en: "Only 4 trades this month. Not enough to conclude — I'll wait.",
-    fr: "Seulement 4 trades ce mois-ci. Pas assez pour conclure — j'attends.",
+    en: "Only 4 trades this month. Not enough to conclude - I'll wait.",
+    fr: "Seulement 4 trades ce mois-ci. Pas assez pour conclure - j'attends.",
   },
   "evidence.guard.l": { en: "Statistical safety", fr: "Sécurité statistique" },
 
@@ -620,10 +878,10 @@ const M: Record<string, Msg> = {
   "edge.c2": { en: "Risk held", fr: "Risque tenu" },
   "edge.c3": { en: "Clean days", fr: "Jours propres" },
   "edge.c4": { en: "Routine", fr: "Routine" },
-  "edge.excluded": { en: "P&L — deliberately excluded", fr: "P&L — volontairement exclu" },
+  "edge.excluded": { en: "P&L - deliberately excluded", fr: "P&L - volontairement exclu" },
   "edge.note": {
-    en: "Computed over your last 10 traded days. Any component it can't measure is dropped and the weights re-normalised — never guessed.",
-    fr: "Calculé sur tes 10 derniers jours tradés. Toute composante non mesurable est retirée et les poids renormalisés — jamais devinés.",
+    en: "Computed over your last 10 traded days. Any component it can't measure is dropped and the weights re-normalised - never guessed.",
+    fr: "Calculé sur tes 10 derniers jours tradés. Toute composante non mesurable est retirée et les poids renormalisés - jamais devinés.",
   },
   "edge.why": {
     en: "Why it matters in a challenge",
@@ -643,11 +901,11 @@ const M: Record<string, Msg> = {
   "anchor.title.a": { en: "Compare us to the right thing.", fr: "Compare-nous à la bonne chose." },
   "anchor.title.b": { en: "Not to a cheaper journal.", fr: "Pas à un journal moins cher." },
   "anchor.sub": {
-    en: "A prop firm challenge is paid again on every reset. Most resets are not a strategy failure — they're one rule broken after a loss.",
-    fr: "Un challenge prop firm se repaie à chaque reset. La plupart des resets ne sont pas un échec de stratégie — c'est une règle cassée après une perte.",
+    en: "A prop firm challenge is paid again on every reset. Most resets are not a strategy failure - they're one rule broken after a loss.",
+    fr: "Un challenge prop firm se repaie à chaque reset. La plupart des resets ne sont pas un échec de stratégie - c'est une règle cassée après une perte.",
   },
   "anchor.a.l": { en: "One challenge reset", fr: "Un reset de challenge" },
-  "anchor.a.v": { en: "$200–600", fr: "200–600 $" },
+  "anchor.a.v": { en: "$200-600", fr: "200-600 $" },
   "anchor.a.d": {
     en: "Paid again, every time, market price.",
     fr: "Repayé à chaque fois, prix du marché.",
@@ -668,14 +926,14 @@ const M: Record<string, Msg> = {
   "ai.title.a": { en: "An AI coach who knows", fr: "Un coach IA qui connaît" },
   "ai.title.b": { en: "every one of your trades.", fr: "chacun de tes trades." },
   "ai.sub": {
-    en: "He reads your real history, names the habit costing you the most, and gives you one thing to fix — not a report to read.",
-    fr: "Il lit ton historique réel, nomme l'habitude qui te coûte le plus, et te donne une seule chose à corriger — pas un rapport à lire.",
+    en: "He reads your real history, names the habit costing you the most, and gives you one thing to fix - not a report to read.",
+    fr: "Il lit ton historique réel, nomme l'habitude qui te coûte le plus, et te donne une seule chose à corriger - pas un rapport à lire.",
   },
   "ai.head.a": { en: "A mentor who knows", fr: "Un mentor qui connaît" },
   "ai.head.b": { en: "every one of your trades.", fr: "chacun de tes trades." },
   "ai.body": {
-    en: "Ask a question. The coach draws on your history — no generalities, only the concrete.",
-    fr: "Pose une question. Le coach puise dans ton historique — pas de généralités, que du concret.",
+    en: "Ask a question. The coach draws on your history - no generalities, only the concrete.",
+    fr: "Pose une question. Le coach puise dans ton historique - pas de généralités, que du concret.",
   },
   "ai.b1": { en: "Answers based on your real data", fr: "Réponses basées sur tes vraies données" },
   "ai.b2": { en: "Diagnosis in seconds", fr: "Diagnostic en quelques secondes" },
@@ -785,8 +1043,8 @@ const M: Record<string, Msg> = {
   "proof.f3.v": { en: "24/7", fr: "24/7" },
   "proof.f3.l": { en: "AI coach available", fr: "coach IA disponible" },
   "proof.quote": {
-    en: "I built TradeVault because no journal ever told me why I was losing. It doesn't promise gains — it shows what your data says, names the habit behind it, and leaves the decision to you.",
-    fr: "J'ai construit TradeVault parce qu'aucun journal ne m'a jamais dit pourquoi je perdais. Il ne promet pas de gains — il montre ce que tes données disent, nomme l'habitude derrière, et te laisse décider.",
+    en: "I built TradeVault because no journal ever told me why I was losing. It doesn't promise gains - it shows what your data says, names the habit behind it, and leaves the decision to you.",
+    fr: "J'ai construit TradeVault parce qu'aucun journal ne m'a jamais dit pourquoi je perdais. Il ne promet pas de gains - il montre ce que tes données disent, nomme l'habitude derrière, et te laisse décider.",
   },
   "proof.author": { en: "TradeVault's creator", fr: "Le créateur de TradeVault" },
   "proof.author.sub": { en: "Trader, and first user", fr: "Trader, et premier utilisateur" },
@@ -847,8 +1105,8 @@ const M: Record<string, Msg> = {
   },
   "pricing.free.btn": { en: "Start free", fr: "Commencer gratuitement" },
   "pricing.f1": {
-    en: "Trading journal — 30 trades / month",
-    fr: "Journal de trading — 30 trades / mois",
+    en: "Trading journal - 30 trades / month",
+    fr: "Journal de trading - 30 trades / mois",
   },
   "pricing.f2": { en: "Dashboard & equity curve", fr: "Dashboard & courbe d'equity" },
   "pricing.f3": { en: "Pre-market checklist", fr: "Checklist pré-market" },
@@ -872,8 +1130,8 @@ const M: Record<string, Msg> = {
     fr: "Sans engagement · Sans carte requise",
   },
   "pricing.pro.all": {
-    en: "Everything in Free, unlimited — plus:",
-    fr: "Tout le plan Free, sans limite — et :",
+    en: "Everything in Free, unlimited - plus:",
+    fr: "Tout le plan Free, sans limite - et :",
   },
   "pricing.pro.pf1": {
     en: "Jarvis AI coach, unlimited 24/7",
@@ -888,8 +1146,8 @@ const M: Record<string, Msg> = {
     fr: "Trades illimités + comptes illimités",
   },
   "pricing.pro.pf2d": {
-    en: "Prop firm, demo, live — each separate.",
-    fr: "Prop firm, démo, réel — chacun séparé.",
+    en: "Prop firm, demo, live - each separate.",
+    fr: "Prop firm, démo, réel - chacun séparé.",
   },
   "pricing.pro.pf3": {
     en: "Quantitative analytics (20+ metrics)",
@@ -929,8 +1187,8 @@ const M: Record<string, Msg> = {
   "pricing.pro.pf8d": { en: "A real answer, fast.", fr: "Une vraie réponse, vite." },
   "pricing.monthly": { en: "Pro · Monthly", fr: "Pro · Mensuel" },
   "pricing.monthly.d": {
-    en: "Same features as yearly — only the billing changes.",
-    fr: "Mêmes fonctionnalités que l'annuel — seule la facturation change.",
+    en: "Same features as yearly - only the billing changes.",
+    fr: "Mêmes fonctionnalités que l'annuel - seule la facturation change.",
   },
   "pricing.monthly.btn": { en: "Go monthly", fr: "Prendre au mois" },
   "pricing.trust1": { en: "Free plan forever", fr: "Offre gratuite à vie" },
@@ -981,8 +1239,8 @@ const M: Record<string, Msg> = {
     fr: "L'offre gratuite est-elle vraiment gratuite ?",
   },
   "faq.a4": {
-    en: "Yes — no time limit, no credit card. Your journal, dashboard, calendar, checklist and plan stay free for good. Paid plans add the analysis tools.",
-    fr: "Oui — sans limite de temps ni carte bancaire. Ton journal, ton tableau de bord, ton calendrier, ta checklist et ton plan restent gratuits pour toujours. Les offres payantes ajoutent les outils d'analyse.",
+    en: "Yes - no time limit, no credit card. Your journal, dashboard, calendar, checklist and plan stay free for good. Paid plans add the analysis tools.",
+    fr: "Oui - sans limite de temps ni carte bancaire. Ton journal, ton tableau de bord, ton calendrier, ta checklist et ton plan restent gratuits pour toujours. Les offres payantes ajoutent les outils d'analyse.",
   },
   "faq.q5": {
     en: "Is my trading data secure?",
@@ -997,8 +1255,8 @@ const M: Record<string, Msg> = {
     fr: "Puis-je importer mon historique existant ?",
   },
   "faq.a6": {
-    en: "Yes. Import a CSV from your broker and TradeVault structures it automatically — or paste, log by hand, or start with demo trades.",
-    fr: "Oui. Importe un CSV depuis ton courtier et TradeVault structure tout automatiquement — ou colle, saisis à la main, ou démarre avec des trades de démo.",
+    en: "Yes. Import a CSV from your broker and TradeVault structures it automatically - or paste, log by hand, or start with demo trades.",
+    fr: "Oui. Importe un CSV depuis ton courtier et TradeVault structure tout automatiquement - ou colle, saisis à la main, ou démarre avec des trades de démo.",
   },
 
   /* final cta */
@@ -1032,8 +1290,8 @@ const M: Record<string, Msg> = {
    * page ou à une route réelle du produit. Voir `FOOTER_PRODUCT` et
    * `FOOTER_RESOURCES` dans `pages/Landing.tsx`. */
   "footer.f1": { en: "The problem", fr: "Le problème" },
-  "footer.f2": { en: "Jarvis — AI coach", fr: "Jarvis — Coach IA" },
-  "footer.f3": { en: "Features", fr: "Fonctionnalités" },
+  "footer.f2": { en: "Trust & security", fr: "Confiance et sécurité" },
+  "footer.f3": { en: "The product", fr: "Le produit" },
   "footer.f4": { en: "Pricing", fr: "Tarifs" },
   "footer.f5": { en: "Edge Score", fr: "Edge Score" },
   "footer.r1": { en: "Guided demo", fr: "Démo guidée" },

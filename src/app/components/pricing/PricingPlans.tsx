@@ -85,7 +85,9 @@ export default function PricingPlans({
               aria-selected={interval === value}
               onClick={() => setInterval(value)}
               className={cn(
-                "rounded-full px-4 py-2 text-[13px] font-semibold transition",
+                // 44 px au doigt : la bascule mensuel/annuel est la premiere
+                // chose qu'on touche dans la grille, elle etait a 36.
+                "inline-flex min-h-[44px] items-center rounded-full px-4 py-2 text-[13px] font-semibold transition sm:min-h-0",
                 interval === value
                   ? "bg-white text-[#04101a] shadow-lg shadow-black/30"
                   : "text-slate-500 hover:text-slate-200",

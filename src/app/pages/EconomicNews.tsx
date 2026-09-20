@@ -69,12 +69,17 @@ const IMPACT_STYLE: Record<
   },
 };
 
-const IMPACT_LABELS: Record<string, string> = {
-  high: "Fort",
-  medium: "Moyen",
-  low: "Faible",
-  holiday: "Férié",
-};
+/* Les libellés d'impact passent par `t`, comme tout le reste. La table
+   figée qui vivait ici écrivait « Fort / Moyen / Faible / Férié » en dur,
+   donc en FRANÇAIS, dans une interface dont la langue par défaut est
+   l'anglais. Les clés `news.impact*` existaient déjà et n'étaient appelées
+   nulle part. */
+const IMPACT_KEYS = {
+  high: "news.impactHigh",
+  medium: "news.impactMedium",
+  low: "news.impactLow",
+  holiday: "news.impactHoliday",
+} as const;
 
 const LOCALE_MAP: Record<string, string> = {
   en: "en-US",
@@ -345,7 +350,7 @@ export default function EconomicNews() {
               onClick={jumpToToday}
               className="h-8 px-2.5 rounded-lg flex items-center gap-1 text-[10px] font-bold text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 transition shrink-0"
             >
-              <Clock className="w-3 h-3" /> Aujourd'hui
+              <Clock className="w-3 h-3" /> {t("news.today")}
             </button>
           )}
           <button
@@ -399,20 +404,20 @@ export default function EconomicNews() {
           {[
             {
               preset: "today" as DayNavPreset,
-              label: "Aujourd'hui",
+              label: t("news.today"),
               icon: <Clock className="w-3 h-3" />,
             },
             {
               preset: "tomorrow" as DayNavPreset,
-              label: "Demain",
+              label: t("news.tomorrow"),
               icon: <ChevronRight className="w-3 h-3" />,
             },
             {
               preset: "week" as DayNavPreset,
-              label: "Cette semaine",
+              label: t("news.thisWeek"),
               icon: <CalendarDays className="w-3 h-3" />,
             },
-            { preset: "all" as DayNavPreset, label: "Tout", icon: null },
+            { preset: "all" as DayNavPreset, label: t("news.all"), icon: null },
           ].map(({ preset, label, icon }) => {
             const active = dayPreset === preset;
             const count =
@@ -469,7 +474,7 @@ export default function EconomicNews() {
                 )}
               >
                 <span className={cn("w-1.5 h-1.5 rounded-full", st.dot)} />
-                {IMPACT_LABELS[i]}
+                {t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS])}
                 <span className="tv-figure text-[10px] opacity-60">{weekCounts[i]}</span>
               </button>
             );
@@ -600,7 +605,7 @@ export default function EconomicNews() {
                   </span>
                   {isToday && (
                     <span className="tv-label px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
-                      Aujourd'hui
+                      {t("news.today")}
                     </span>
                   )}
                   {highCount > 0 && (

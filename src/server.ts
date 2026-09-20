@@ -21,6 +21,10 @@ const PUBLIC_ROUTES = [
   { path: "/privacy", priority: "0.5", changefreq: "yearly" },
   { path: "/terms", priority: "0.5", changefreq: "yearly" },
   { path: "/cgu", priority: "0.5", changefreq: "yearly" },
+  /* Les tarifs ont leur propre adresse : c'est une page qu'on partage,
+     qu'on garde ouverte dans un onglet et qu'un moteur doit pouvoir
+     servir directement sur une requête « prix ». */
+  { path: "/pricing", priority: "0.8", changefreq: "monthly" },
   { path: "/contact", priority: "0.5", changefreq: "monthly" },
 ] as const;
 

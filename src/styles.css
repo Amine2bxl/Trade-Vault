@@ -466,9 +466,28 @@
    * avec Amber, gris avec Graphite. Une seule variable à changer, jamais une
    * couleur codée en dur.
    */
-  --tv-rail-top: oklch(0.34 calc(0.075 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-rail-mid: oklch(0.25 calc(0.06 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-rail-bot: oklch(0.135 calc(0.022 * var(--tv-primary-c)) var(--tv-primary-h));
+  /*
+   * LE PLAFOND DE CHROMA — et pourquoi il manquait.
+   *
+   * Les trois multiplicateurs (0.075 / 0.06 / 0.022) ont été réglés à l'œil
+   * quand l'accent du produit était le graphite. Or `computeThemeVars` calcule
+   * `--tv-primary-c` par `clamp(C / 0.14, 0.35, 1.3)` : le graphite a un chroma
+   * de 0.035, donc `pc` était COLLÉ À SON PLANCHER (0.350), et le rail sortait
+   * à 0.026 de chroma — une ardoise à peine teintée.
+   *
+   * Le passage au vert menthe (chroma 0.186) a envoyé `pc` AU PLAFOND (1.300).
+   * Le même multiplicateur rend alors 0.098 : trois fois et demie plus saturé.
+   * L'intention n'a pas changé — « un objet distinct posé SUR le produit » —
+   * mais personne n'a choisi ce facteur 3,7 ; il est tombé du réglage.
+   *
+   * `min()` borne la contribution sans toucher aux thèmes sourds : à 0.350 de
+   * `pc` le calcul reste sous le plafond et Graphite rend EXACTEMENT ce qu'il
+   * rendait. Seuls les accents vifs sont retenus — le rail reste franchement
+   * teinté (0.045, soit 1,7× le graphite), il cesse d'être une colonne verte.
+   */
+  --tv-rail-top: oklch(0.34 min(calc(0.075 * var(--tv-primary-c)), 0.045) var(--tv-primary-h));
+  --tv-rail-mid: oklch(0.25 min(calc(0.06 * var(--tv-primary-c)), 0.036) var(--tv-primary-h));
+  --tv-rail-bot: oklch(0.135 min(calc(0.022 * var(--tv-primary-c)), 0.013) var(--tv-primary-h));
   /* Conservé : quelques surfaces héritées lisent encore `--tv-rail`. */
   --tv-rail: var(--tv-rail-mid);
 
@@ -3783,4 +3802,77 @@ a:focus-visible,
 .tv-jarvis-icon-btn:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE DOCK DE JARVIS — l'orbite
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Le bouton était une gélule grise portant un « V » cerclé et le mot
+   « Jarvis ». Chaque pièce est correcte ; ensemble elles disent « widget de
+   chat greffé dans un coin » — la forme, la position et le mot sont
+   exactement ceux d'Intercom, de Crisp et de tous les autres. Or Jarvis n'est
+   pas un module tiers posé sur le produit : c'est l'intelligence du produit.
+
+   Ce qui le distingue maintenant tient en une chose, et une seule : UNE
+   ORBITE. Un anneau très fin autour du monogramme, qui tourne lentement et
+   s'accélère à peine au survol. Elle ne clignote pas, elle ne pulse pas — un
+   point qui clignote dit « notification en attente », ce qui serait un
+   mensonge au repos. Elle tourne, donc elle dit « ça tourne ».
+
+   Douze secondes par tour : assez lent pour qu'on ne le remarque qu'en
+   s'arrêtant dessus, assez présent pour que le bouton ne soit jamais tout à
+   fait inerte. `prefers-reduced-motion` l'immobilise sans rien supprimer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.tv-jarvis-mark {
+  position: relative;
+}
+/* L'anneau vit sur un pseudo-élément : il ne change ni la taille du bouton ni
+   le flux, et il disparaît tout seul si la règle saute. */
+.tv-jarvis-mark::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  pointer-events: none;
+  /* Un anneau OUVERT : trois quarts transparents, un quart teinté. C'est
+     l'asymétrie qui rend la rotation lisible — un anneau plein tournerait
+     sans que rien ne le montre. */
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 250deg,
+    rgb(var(--tv-accent-rgb) / 0.55) 320deg,
+    transparent 360deg
+  );
+  /* Le masque ne garde que le bord : sans lui, c'est un disque, pas un anneau. */
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+  animation: tv-jarvis-orbit 12s linear infinite;
+  opacity: 0.75;
+  transition: opacity var(--tv-dur-2) var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-jarvis-dock:hover .tv-jarvis-mark::after {
+    opacity: 1;
+    animation-duration: 6s;
+  }
+}
+/* Ouvert, l'orbite s'efface : la fenêtre est là, le bouton n'a plus à faire
+   signe — et une croix dans un anneau qui tourne se lit mal. */
+.tv-jarvis-mark-on::after {
+  opacity: 0;
+  animation: none;
+}
+@keyframes tv-jarvis-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-jarvis-mark::after {
+    animation: none;
+  }
 }

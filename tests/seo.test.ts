@@ -69,14 +69,21 @@ describe("le graphe schema.org ne dit que ce que la page dit", () => {
     expect(offers.offerCount).toBe(String(TIERS.length));
   });
 
-  test("`sameAs` ne liste que des profils qui existent vraiment", () => {
+  test("`sameAs` ne liste que des profils qui existent vraiment", async () => {
     // Le pied de page affichait cinq icônes de réseaux sociaux sans compte
     // derrière. Elles ont été retirées, pas promues en `sameAs`.
     const sameAs: string[] = node("Organization").sameAs;
     expect(sameAs).toHaveLength(1);
     expect(sameAs[0]).toContain("trustpilot.com/review/");
-    // Et surtout pas vers l'ancien domaine, abandonné à la migration.
-    expect(sameAs[0]).not.toContain("vercel.app");
+    /* On n'interdit plus `vercel.app` ici. L'interdiction supposait que la
+       fiche Trustpilot avait suivi la migration vers `tradevault.be` ; elle
+       ne l'a pas suivie, et les avis réels vivent toujours sur
+       `tradevaultt.vercel.app`. Déclarer aux moteurs une fiche vide sur le
+       nouveau domaine aurait été moins vrai, pas plus.
+       Ce que le test garde : `sameAs` ne liste QU'UN profil, et c'est celui
+       que le produit affiche - donc les deux ne peuvent pas diverger. */
+    const { TRUSTPILOT_URL } = await import("../src/shared/site");
+    expect(sameAs[0]).toBe(TRUSTPILOT_URL);
   });
 
   test("`inLanguage` suit la langue servie", () => {
@@ -309,7 +316,15 @@ describe("maillage interne", () => {
     // à supprimer le lien plutôt qu'à élargir la recherche. L'intention du
     // garde-fou est inchangée : tout lien de pied de page désigne quelque chose
     // qui existe.
-    const sources = landing + stripComments(read("../src/app/pages/landing/Proof.tsx"));
+    // La visite du produit monte `<section id="product">` depuis `Tour.tsx` :
+    // une source de plus à lire, pour la même raison qu'on avait déjà ajouté
+    // `Proof.tsx`. L'intention du garde-fou est inchangée — tout lien de pied
+    // de page désigne quelque chose qui existe —, et l'élargir vaut mieux que
+    // de supprimer un lien parfaitement valide pour faire passer un test.
+    const sources =
+      landing +
+      stripComments(read("../src/app/pages/landing/Proof.tsx")) +
+      stripComments(read("../src/app/pages/landing/Tour.tsx"));
     const sectionIds = [...sources.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
     const routes = ["/demo", "/demo-site", "/contact", "/privacy", "/terms", "/cgu", "/"];
     for (const href of targets) {
@@ -331,16 +346,27 @@ describe("maillage interne", () => {
     }
   });
 
-  test("le lien Trustpilot suit le domaine, il n'est pas écrit en dur", () => {
-    // Il pointait encore sur `tradevaultt.vercel.app`, l'ancien domaine : le
-    // lien « Avis vérifiés » affiché au moment exact de l'inscription menait à
-    // une fiche qui n'est plus la nôtre.
+  test("le lien Trustpilot est déclaré à UN seul endroit", () => {
+    /* CE TEST A CHANGÉ D'INTENTION, ET C'EST VOULU.
+     *
+     * Il exigeait que l'URL soit DÉRIVÉE de `SITE_DOMAIN`, au motif que
+     * Trustpilot indexe une fiche par domaine et que la fiche suivrait donc
+     * la migration vers `tradevault.be`. Juste en théorie, faux en fait : la
+     * fiche qui porte les avis réels est restée sur `tradevaultt.vercel.app`,
+     * et dériver l'URL faisait pointer « Avis vérifiés » vers une page vide.
+     *
+     * Ce que le garde-fou protégeait vraiment n'était pas la dérivation, mais
+     * l'UNICITÉ : l'URL était recopiée dans les composants, donc elle
+     * divergeait. C'est cela qu'on vérifie maintenant - une constante, et
+     * aucun composant qui réécrit l'adresse dans son coin. */
     const site = read("../src/shared/site.ts");
     expect(site).toContain("export const TRUSTPILOT_URL");
-    expect(site).toContain("${SITE_DOMAIN}");
+    for (const f of ["AuthModal.tsx", "../Landing.tsx"]) {
+      const src = read(`../src/app/pages/landing/${f}`);
+      expect(src, f).not.toContain("trustpilot.com/review/");
+    }
     const modal = read("../src/app/pages/landing/AuthModal.tsx");
     expect(modal).toContain("href={TRUSTPILOT_URL}");
-    expect(modal).not.toContain("trustpilot.com/review/tradevault");
   });
 });
 

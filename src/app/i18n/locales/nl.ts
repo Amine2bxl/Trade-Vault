@@ -2,10 +2,10 @@ import type { Dict } from "../translations";
 
 const nl: Dict = {
   "nav.dashboard": "Dashboard",
-  "chk.cfgItemOn": "Actief — telt vandaag",
+  "chk.cfgItemOn": "Actief - telt vandaag",
   "chk.deepShow": "Ga dieper",
   "chk.deepHide": "Extra's verbergen",
-  "chk.cfgItemOff": "Uit — vandaag verborgen",
+  "chk.cfgItemOff": "Uit - vandaag verborgen",
   "error.pageTitle": "Dit onderdeel liep vast",
   "error.pageBody": "Deze pagina kon niet worden geladen. Je gegevens zijn veilig.",
   "error.retry": "Opnieuw proberen",
@@ -82,7 +82,7 @@ const nl: Dict = {
   "profile.deleteAllTrades": "Alle trades verwijderen",
   "profile.confirmDeleteAll": "⚠️ ALLE trades verwijderen? Dit kan niet ongedaan worden gemaakt.",
   "missed.title": "Gemiste setups",
-  "missed.subtitle": "A+ setups die u niet nam — en wat te doen de volgende keer",
+  "missed.subtitle": "A+ setups die u niet nam - en wat te doen de volgende keer",
   "missed.empty.title": "Nog geen gemiste setups",
   "missed.empty.sub":
     "Leg A+ setups vast die u miste zodat u er de volgende keer op kunt handelen.",
@@ -97,7 +97,7 @@ const nl: Dict = {
   "missed.field.what": "Wat gebeurde er daarna?",
   "missed.field.whatPh": "Ging +3R in mijn voordeel in 12 minuten.",
   "missed.field.lesson": "Geleerde les",
-  "missed.field.lessonPh": "Confluenties waren perfect — vertrouw op het plan.",
+  "missed.field.lessonPh": "Confluenties waren perfect - vertrouw op het plan.",
   "missed.field.next": "Hoe neem ik deze A+ setup de volgende keer?",
   "missed.field.nextPh":
     "Niveaus vooraf markeren, alarmen 5 min. vooraf, zonder aarzelen uitvoeren.",
@@ -211,7 +211,7 @@ const nl: Dict = {
   "mistakes.mostCommon": "Meest voorkomend",
   "mistakes.noMistakesShort": "Geen fouten!",
   "mistakes.noMistakes": "Geen fouten",
-  "mistakes.noMistakesGreat": "Geen fouten — geweldige discipline!",
+  "mistakes.noMistakesGreat": "Geen fouten - geweldige discipline!",
   "mistakes.improvementTips": "Verbetertips",
   "mistakes.priority": "PRIORITEIT",
   "mistakes.defaultTip": "Focus op het verminderen van deze fout.",
@@ -296,7 +296,7 @@ const nl: Dict = {
   "push.testSent": "Testmelding verzonden!",
   "push.testNoSub": "Geen actief abonnement op dit apparaat.",
   "push.unsupported": "Pushmeldingen worden niet ondersteund door deze browser.",
-  "push.denied": "Toestemming geweigerd — schakel meldingen in via de browserinstellingen.",
+  "push.denied": "Toestemming geweigerd - schakel meldingen in via de browserinstellingen.",
   "push.hint":
     "U kunt meldingen op elk moment uitschakelen via dit scherm of de systeeminstellingen.",
   "push.iosInstallTitle": "Installeer eerst de app",

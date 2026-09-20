@@ -23,8 +23,23 @@ description: Loi du mouvement de TradeVault — 8 keyframes autorisées, easings
 
 Toute autre animation se remappe sur celles-ci. **Aucune animation
 décorative** dans l'app : pas d'orbe, pas de `float`, pas de `shine`, pas de
-`scan`, pas de `glow`. La landing a droit à **deux** effets d'ambiance maximum
-— aujourd'hui : le tracé de la courbe du héros et le reveal au scroll.
+`scan`, pas de `glow`.
+
+La landing a droit à **deux** effets d'ambiance maximum. Aujourd'hui :
+
+1. **Le reveal au scroll** — et le **tracé de la ligne** (`DrawnLine`) en fait
+   partie : même déclencheur (`.reveal` → `.reveal-visible`), même easing,
+   même famille. C'est le reveal appliqué à un tracé, pas un effet de plus.
+   Une seule ligne tracée dans toute la page ; la rareté est ce qui la fait
+   remarquer.
+2. **L'orbe du curseur** (`CursorOrb`) — demandée explicitement. Elle ne monte
+   que pour un pointeur fin, s'arrête au repos, et n'existe pas sous
+   `prefers-reduced-motion`.
+
+L'ancien tracé de la courbe du héros (`.chart-line`) ne compte plus : il vit
+dans `HeroProductVisual`, qui n'est que le **repli** affiché tant qu'aucune
+capture n'est déposée. Depuis que `dashboard.webp` existe, il ne s'affiche
+jamais.
 
 ## Durées et easings
 
