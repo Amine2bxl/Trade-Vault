@@ -1109,3 +1109,28 @@
       inset 0 1px 0 rgb(255 255 255 / 0.09);
   }
 }
+
+/* Le héros sur téléphone : même traitement que les rangées de la visite.
+ *
+ * Sans variante `-m`, il servait la capture de BUREAU réduite à 350px, soit
+ * l'échelle 0,22 - la seule image de la page encore illisible au téléphone,
+ * et c'était la première qu'on voyait. Avec `dashboard-m.webp` (le produit
+ * photographié à 390px), le texte se lit à l'échelle 1.
+ *
+ * On borne la hauteur : 780x1800 affichée sur 350px ferait 807px de haut, et
+ * le bouton passerait sous la ligne de flottaison - exactement ce que la
+ * refonte du héros cherchait à éviter. */
+@media (max-width: 639px) {
+  .landing-root .hero-shot-col .shot-frame {
+    overflow: hidden;
+    aspect-ratio: 5 / 6;
+  }
+  .landing-root .hero-shot-col .shot-frame > picture,
+  .landing-root .hero-shot-col .shot-frame > picture > img {
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+}

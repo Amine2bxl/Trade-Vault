@@ -612,6 +612,11 @@ await connecter(pageM, true);
    `BOITE`. L'avoir remise a zero ici sortait six captures de bureau non
    recadrees, rail compris, sans qu'aucune erreur ne le signale.
    Les plans mobiles sont `pleine: true` : ils ne la consultent pas. */
+/* Le tableau de bord EN PREMIER : au retour de `connecter()` on y est deja,
+   donc aucune navigation a faire. C'est la capture du heros, et c'etait la
+   derniere de la page a rester illisible sur telephone - faute de variante
+   `-m`, le heros servait la capture de BUREAU reduite a 350px. */
+await capturerMobile(pageM, "mob-dashboard");
 await capturerMobile(pageM, "mob-journal", "Journal");
 // Une capture prise apres une navigation RATEE est une capture de la page
 // precedente sous un autre nom : pire qu'une capture manquante, parce qu'elle
@@ -677,6 +682,7 @@ const PLANS = [
   /* Les variantes telephone. Suffixe `-m`, largeur 780 (390 CSS a 2x) : la
      vitrine les sert sous 640px via `<picture>`. Aucun recadrage — le produit
      s'est deja replie tout seul a cette largeur, c'est tout l'interet. */
+  { de: "mob-dashboard.png", vers: "dashboard-m.webp", pleine: true, w: 780 },
   { de: "mob-mistakes.png", vers: "mistakes-m.webp", pleine: true, w: 780 },
   { de: "mob-jarvis.png", vers: "jarvis-m.webp", pleine: true, w: 780 },
   { de: "mob-analytics.png", vers: "analytics-m.webp", pleine: true, w: 780 },
