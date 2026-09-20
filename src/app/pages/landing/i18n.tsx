@@ -58,6 +58,69 @@ function preferredLang(): LandingLang {
   return "en";
 }
 
+/**
+ * LE PASSAGE D'UNE LANGUE À L'AUTRE, EN DEUX TEMPS.
+ *
+ * Changer de langue change d'adresse (`/` ↔ `/fr`) et recharge le document :
+ * c'est ce qui garantit que le canonical, l'`hreflang` et le `<html lang>`
+ * disent la vérité. Ce rechargement ne peut pas disparaître - mais il peut
+ * cesser d'être un à-coup.
+ *
+ * On efface donc la page AVANT de naviguer (160ms, opacité seule), et on
+ * pose un drapeau que la page suivante lit au montage pour se révéler en
+ * fondu. Entre les deux, le navigateur peint le même fond des deux côtés :
+ * l'œil ne voit pas une page partir puis une autre arriver, il voit un texte
+ * se changer.
+ *
+ * Le délai est plafonné par un `setTimeout` plutôt que par `transitionend` :
+ * si la transition ne joue pas (« moins de mouvement », onglet en arrière-
+ * plan, moteur qui coupe les animations), l'événement n'arrive jamais et le
+ * visiteur resterait bloqué sur une page qui ne change pas de langue.
+ */
+const CLE_TRANSITION = "tv.landing.langswap";
+
+function partirVers(url: string) {
+  try {
+    window.sessionStorage.setItem(CLE_TRANSITION, "1");
+  } catch {
+    /* le fondu d'arrivée est un confort : sans stockage, on navigue sec */
+  }
+  const racine = document.querySelector(".landing-root");
+  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!racine || reduit) {
+    window.location.href = url;
+    return;
+  }
+  racine.classList.add("lang-sortie");
+  window.setTimeout(() => {
+    window.location.href = url;
+  }, 160);
+}
+
+/**
+ * Le fondu d'ARRIVÉE, joué une seule fois, et seulement après un changement
+ * de langue. Le drapeau est effacé dès sa lecture : un rechargement manuel
+ * (F5) ne doit pas rejouer une transition que personne n'a demandée.
+ */
+function useEntreeDeLangue() {
+  useIsomorphicLayoutEffect(() => {
+    let venuDUnChangement = false;
+    try {
+      venuDUnChangement = window.sessionStorage.getItem(CLE_TRANSITION) === "1";
+      if (venuDUnChangement) window.sessionStorage.removeItem(CLE_TRANSITION);
+    } catch {
+      return;
+    }
+    if (!venuDUnChangement) return;
+    const racine = document.querySelector(".landing-root");
+    if (!racine) return;
+    racine.classList.add("lang-entree");
+    const fin = () => racine.classList.remove("lang-entree");
+    racine.addEventListener("animationend", fin, { once: true });
+    return () => racine.removeEventListener("animationend", fin);
+  }, []);
+}
+
 interface LandingLangCtx {
   lang: LandingLang;
   setLang: (l: LandingLang) => void;
@@ -104,6 +167,11 @@ export function LandingLangProvider({
     document.documentElement.lang = lang;
   }, [lang]);
 
+  // Le fondu d'arrivée vit ICI plutôt que dans chaque page : toute surface
+  // qui monte ce provider (la vitrine, `/fr`, `/pricing`) hérite du même
+  // passage, et aucune ne peut l'oublier.
+  useEntreeDeLangue();
+
   const setLang = useCallback(
     (l: LandingLang) => {
       try {
@@ -126,7 +194,7 @@ export function LandingLangProvider({
       // canonical, `hreflang`, `<html lang>` — pas seulement l'arbre React.
       const routeLang = pinned ?? SSR_LANG;
       if (l !== routeLang && typeof window !== "undefined") {
-        window.location.href = l === "fr" ? FR_PREFIX : "/";
+        partirVers(l === "fr" ? FR_PREFIX : "/");
         return;
       }
       setLangState(l);
@@ -285,6 +353,7 @@ const M: Record<string, Msg> = {
   "nav.signin": { en: "Log in", fr: "Se connecter" },
   "nav.cta": { en: "Get Started", fr: "Commencer" },
   "nav.cta.plan": { en: "Get Started", fr: "Commencer" },
+  "nav.language": { en: "Language", fr: "Langue" },
 
   "nav.p.jarvis": { en: "Jarvis - AI Coach", fr: "Jarvis - Coach IA" },
   "nav.p.jarvis.d": {
@@ -1302,8 +1371,14 @@ const M: Record<string, Msg> = {
     en: "© 2026 TradeVault. All rights reserved.",
     fr: "© 2026 TradeVault. Tous droits réservés.",
   },
+  "footer.legal": { en: "Legal", fr: "Légal" },
   "footer.privacy": { en: "Privacy", fr: "Confidentialité" },
-  "footer.terms": { en: "Terms", fr: "CGU" },
+  /* « Terms » disait « CGU » en français pendant qu'un lien voisin, lui
+     aussi intitulé « CGU », menait à une AUTRE page. Deux libellés
+     identiques pour deux documents différents : le visiteur ne pouvait pas
+     savoir lequel il ouvrait. Chacun porte maintenant son propre nom. */
+  "footer.terms": { en: "Terms of Service", fr: "Conditions d'utilisation" },
+  "footer.cgu": { en: "General Terms (CGU)", fr: "CGU" },
   "footer.cookies": { en: "Cookies", fr: "Cookies" },
 };
 

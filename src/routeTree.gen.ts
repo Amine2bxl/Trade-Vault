@@ -16,6 +16,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as FrRouteImport } from './routes/fr'
 import { Route as DemoSiteRouteImport } from './routes/demo-site'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CguRouteImport } from './routes/cgu'
 import { Route as PageRouteImport } from './routes/$page'
@@ -58,6 +59,11 @@ const DemoRoute = DemoRouteImport.update({
   path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/$page': typeof PageRoute
   '/cgu': typeof CguRoute
   '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
   '/fr': typeof FrRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/$page': typeof PageRoute
   '/cgu': typeof CguRoute
   '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
   '/fr': typeof FrRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/$page': typeof PageRoute
   '/cgu': typeof CguRoute
   '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
   '/demo': typeof DemoRoute
   '/demo-site': typeof DemoSiteRoute
   '/fr': typeof FrRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/$page'
     | '/cgu'
     | '/contact'
+    | '/cookies'
     | '/demo'
     | '/demo-site'
     | '/fr'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/$page'
     | '/cgu'
     | '/contact'
+    | '/cookies'
     | '/demo'
     | '/demo-site'
     | '/fr'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/$page'
     | '/cgu'
     | '/contact'
+    | '/cookies'
     | '/demo'
     | '/demo-site'
     | '/fr'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   PageRoute: typeof PageRoute
   CguRoute: typeof CguRoute
   ContactRoute: typeof ContactRoute
+  CookiesRoute: typeof CookiesRoute
   DemoRoute: typeof DemoRoute
   DemoSiteRoute: typeof DemoSiteRoute
   FrRoute: typeof FrRoute
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   PageRoute: PageRoute,
   CguRoute: CguRoute,
   ContactRoute: ContactRoute,
+  CookiesRoute: CookiesRoute,
   DemoRoute: DemoRoute,
   DemoSiteRoute: DemoSiteRoute,
   FrRoute: FrRoute,

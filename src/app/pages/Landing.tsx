@@ -15,6 +15,7 @@ import { CursorOrb } from "./landing/CursorOrb";
 import { DrawnLine } from "./landing/DrawnLine";
 import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
+import { LangMenuPied } from "./landing/LangMenu";
 import { CookieConsent } from "../components/CookieConsent";
 import { faqPageJsonLd } from "@/shared/seo";
 import PricingPlans from "../components/pricing/PricingPlans";
@@ -54,39 +55,43 @@ function Logo() {
 /* ─────────────────────────── PIED DE PAGE ─────────────────────────── */
 
 /**
- * LES LIENS DU PIED DE PAGE — la seule structure de maillage du site.
+ * LES LIENS DU PIED DE PAGE — deux colonnes, huit liens.
  *
- * Ils étaient TREIZE à pointer vers `href="#"` : quatre « Produit », quatre
- * « Ressources », cinq icônes sociales. Le pied de page est le bloc que tout
- * moteur d'indexation lit sur chaque page pour découvrir le reste du site ;
- * celui-ci ne menait nulle part, et `/contact` — pourtant déclarée dans le
- * sitemap — n'était atteignable par AUCUN lien du produit.
+ * Il y en avait TREIZE, répartis sur « Produit » (5), « Ressources » (4) et
+ * une barre basse de liens légaux (4), soit trois blocs pour une seule
+ * fonction. Un pied de page n'est pas un plan du site : c'est la sortie de
+ * secours de quelqu'un qui n'a pas trouvé ce qu'il cherchait plus haut.
  *
- * Quatre des libellés annonçaient en plus des pages qui n'existent pas
- * (« Intégrations », « Changelog », « Documentation », « Blog »). Un lien de
- * pied de page est une promesse de contenu ; on n'en écrit pas qu'on ne tient
- * pas.
+ * Ce qui a disparu, et pourquoi :
+ * - « Le problème », « Edge Score », « Confiance » : trois ancres vers des
+ *   sections que le visiteur vient de traverser pour arriver ici. Les
+ *   reproposer en bas, c'est lui demander de remonter lire ce qu'il a déjà lu.
+ * - « Démo guidée » + « Démo en vidéo » : deux entrées pour une même
+ *   intention. Celle qui reste est la démo du site, qui montre le produit.
+ * - La barre basse : ses quatre liens légaux étaient une TROISIÈME colonne
+ *   déguisée en ligne. Ils rejoignent la colonne « Légal », où ils ont
+ *   toujours eu leur place.
  *
- * Chaque entrée ci-dessous désigne donc une ancre RÉELLE de cette page ou une
- * route RÉELLE du produit. Le lien vers `/demo` et `/demo-site` est délibéré
- * bien que ces deux routes soient en `noindex` : elles sont utiles au visiteur,
+ * Chaque entrée désigne une ancre RÉELLE de cette page ou une route RÉELLE du
+ * produit — `tests/seo.test.ts` le vérifie. Le lien vers `/demo-site` est
+ * délibéré bien que la route soit en `noindex` : elle est utile au visiteur,
  * et un lien vers une page non indexée reste un lien parfaitement valide.
  */
 type FooterLink = { k: LandingKey; href: string };
 
 const FOOTER_PRODUCT: FooterLink[] = [
-  { k: "footer.f1", href: "#problem" },
   { k: "footer.f3", href: "#product" },
-  { k: "footer.f5", href: "#edge" },
-  { k: "footer.f2", href: "#trust" },
-  { k: "footer.f4", href: "#pricing" },
+  { k: "footer.f4", href: "/pricing" },
+  { k: "footer.r1", href: "/demo-site" },
+  { k: "footer.r3", href: "#faq" },
 ];
 
-const FOOTER_RESOURCES: FooterLink[] = [
-  { k: "footer.r1", href: "/demo-site" },
-  { k: "footer.r2", href: "/demo" },
-  { k: "footer.r3", href: "#faq" },
+const FOOTER_LEGAL: FooterLink[] = [
   { k: "footer.r4", href: "/contact" },
+  { k: "footer.privacy", href: "/privacy" },
+  { k: "footer.terms", href: "/terms" },
+  { k: "footer.cgu", href: "/cgu" },
+  { k: "footer.cookies", href: "/cookies" },
 ];
 
 function FooterColumn({
@@ -100,15 +105,15 @@ function FooterColumn({
 }) {
   return (
     <div>
-      <p className="text-sm font-bold text-white mb-4">{title}</p>
-      <ul className="space-y-2.5 text-sm">
+      <p className="tv-label mb-4 text-slate-500">{title}</p>
+      <ul className="space-y-1.5 text-[13px]">
         {links.map(({ k, href }) => (
           <li key={k}>
             <a
               href={href}
-              /* 44 px au doigt, 36 à la souris. C'est la cible tactile
+              /* 44 px au doigt, 32 à la souris. C'est la cible tactile
                  minimale recommandée ; sous elle, on vise le lien d'à côté. */
-              className="-my-1.5 inline-flex min-h-[44px] items-center text-slate-500 transition hover:text-slate-300 sm:min-h-[36px]"
+              className="-my-1.5 inline-flex min-h-[44px] items-center text-slate-400 transition-colors hover:text-white sm:min-h-[32px]"
             >
               {t(k)}
             </a>
@@ -1152,64 +1157,48 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── FOOTER ── */}
-        <footer className="relative section-divider py-12">
+        {/* ── PIED DE PAGE ──
+            Trois colonnes, et la première n'est pas une liste : c'est
+            l'identité (logo, une ligne, la langue). Les deux autres portent
+            huit liens là où il y en avait treize répartis sur trois blocs.
+
+            La barre basse de liens légaux a disparu : c'était une troisième
+            colonne écrite en ligne. Ne reste dessous que la mention de
+            droits, qui n'est pas un lien et n'a donc rien à faire dans une
+            colonne. */}
+        <footer className="relative section-divider pb-10 pt-12">
           <div className="lp-container">
-            <div className="grid gap-8 lg:grid-cols-4">
-              <div className="lg:col-span-2">
+            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr] lg:gap-8">
+              <div>
                 <Logo />
-                <p className="mt-4 text-sm leading-6 text-slate-500 max-w-[320px]">
+                <p className="mt-4 max-w-[300px] text-[13px] leading-6 text-slate-500">
                   {t("footer.tagline")}
                 </p>
-                {/* LES CINQ ICÔNES SOCIALES ONT ÉTÉ RETIRÉES.
-                    Elles pointaient toutes vers `href="#"` : Twitter, LinkedIn,
-                    Instagram, Facebook et YouTube dessinaient une présence que
-                    la marque n'a pas. Un logo de réseau est une affirmation —
-                    « nous sommes là » — et celle-ci était fausse. Elles
-                    reviendront le jour où les comptes existeront, avec leurs
-                    vraies URL, et elles rejoindront alors `sameAs`
-                    (`shared/seo.ts`), qui est l'autre endroit où cette même
-                    vérité se déclare. */}
+                {/* LE SEUL APPEL DU PIED DE PAGE, ET C'EST UN LIEN.
+                    La section juste au-dessus porte déjà le bouton plein de
+                    la même action. Deux boutons identiques à 200px l'un de
+                    l'autre ne doublent pas le clic, ils le partagent - et le
+                    second se lit comme une insistance. Un lien discret
+                    rattrape celui qui a défilé trop loin, sans répéter. */}
+                <button
+                  onClick={() => open("signup", t("nav.cta.plan"))}
+                  className="group mt-5 inline-flex min-h-[40px] items-center gap-1.5 text-[13px] font-semibold text-[var(--tv-highlight)] transition-colors hover:text-white"
+                >
+                  {t("cta.buttonShort")}
+                  <Icon
+                    n="arrow"
+                    cls="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+                  />
+                </button>
+                <div className="mt-6">
+                  <LangMenuPied />
+                </div>
               </div>
-              {/* SUR TÉLÉPHONE, LES DEUX COLONNES RESTENT CÔTE À CÔTE.
-                  Empilées, elles faisaient à elles seules 250 px de pied de
-                  page — pour neuf liens courts qui tiennent largement sur une
-                  demi-largeur. `lg:contents` efface ce conteneur à partir de
-                  `lg` : la grille à quatre colonnes retrouve alors ses enfants
-                  directs, et la mise en page de bureau est inchangée. */}
-              <div className="grid grid-cols-2 gap-8 lg:contents">
-                <FooterColumn title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
-                <FooterColumn title={t("footer.resources")} links={FOOTER_RESOURCES} t={t} />
-              </div>
+              <FooterColumn title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
+              <FooterColumn title={t("footer.legal")} links={FOOTER_LEGAL} t={t} />
             </div>
-            <div className="mt-10 pt-6 border-t border-white/[.06] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-slate-600">{t("footer.rights")}</p>
-              <div className="flex items-center gap-6 text-sm">
-                <a
-                  href="/privacy"
-                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
-                >
-                  {t("footer.privacy")}
-                </a>
-                <a
-                  href="/terms"
-                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
-                >
-                  {t("footer.terms")}
-                </a>
-                <a
-                  href="/cgu"
-                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
-                >
-                  CGU
-                </a>
-                <a
-                  href="/privacy"
-                  className="-my-2 inline-flex min-h-[44px] items-center text-slate-600 transition hover:text-slate-400 sm:min-h-[36px]"
-                >
-                  {t("footer.cookies")}
-                </a>
-              </div>
+            <div className="mt-10 border-t border-white/[.06] pt-6">
+              <p className="text-[12px] text-slate-600">{t("footer.rights")}</p>
             </div>
           </div>
         </footer>

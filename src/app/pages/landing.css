@@ -1177,39 +1177,162 @@
   opacity: 1.25;
 }
 
-/* ══ LA BARRE FLOTTE, ARRONDIE ══
+/* ══ LA BARRE : UN SEUL OBJET, QUI NE CHANGE JAMAIS DE FORME ══
  *
- * Elle était un bandeau pleine largeur collé au haut de la fenêtre, avec un
- * filet en dessous : la forme d'un en-tête de document, pas d'un produit.
+ * Elle changeait d'identité en cours de route. Au repos : pas de bordure,
+ * pas de fond, un rayon de 9999px. Défilée : une bordure apparaissait, un
+ * fond, une ombre. Le rayon en capsule rendait la chose pire encore - une
+ * capsule ne se lit comme une capsule QUE quand on voit son contour, donc la
+ * forme elle-même n'existait qu'à partir du premier défilement.
  *
- * Elle devient une PILULE posée sur la page - détachée des bords, très
- * arrondie, avec sa propre matière. C'est ce qui la fait lire comme un objet
- * flottant au-dessus du contenu plutôt que comme une bordure de la fenêtre,
- * et c'est la raison pour laquelle le filet inférieur disparaît : un objet
- * détaché n'a pas besoin qu'on le sépare de ce qu'il survole.
+ * Ici la barre a UNE forme, tout le temps : un rectangle à coins arrondis
+ * (18px), une bordure, un fond. Elle ne gagne rien au défilement, elle
+ * DENSIFIE : le fond passe de translucide à opaque, la bordure se précise,
+ * une ombre porte l'objet au-dessus du contenu qui glisse dessous.
  *
- * Le flou ne s'active qu'une fois défilé : au repos la barre est
- * transparente et ne coupe pas le héros en deux. */
+ * Aucune propriété de MISE EN PAGE ne varie entre les deux états - ni
+ * marge, ni rayon, ni rembourrage, ni hauteur. Seules changent trois
+ * propriétés peintes (fond, bordure, ombre), ce qui rend la transition
+ * incapable de faire bouger quoi que ce soit. C'est la définition même de
+ * « ne jamais changer brutalement de forme ou de position ».
+ *
+ * `backdrop-filter` est posé en permanence, pas ajouté au défilement :
+ * l'activer en cours de route recompose la couche et produit un
+ * scintillement d'une image sur la plupart des navigateurs. */
 @media (min-width: 640px) {
   .landing-root .lp-nav-shell {
     margin: 10px auto 0;
     max-width: 1240px;
-    border-radius: 9999px;
+    border-radius: 18px;
     padding-inline: 10px;
+    border: 1px solid var(--tv-border);
+    background: rgb(10 12 11 / 0.42);
+    backdrop-filter: blur(14px) saturate(135%);
+    box-shadow: 0 10px 28px -26px rgb(0 0 0 / 0.8);
     transition:
-      background-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1);
+      background-color 320ms var(--lp-expo),
+      border-color 320ms var(--lp-expo),
+      box-shadow 320ms var(--lp-expo);
   }
   .landing-root .lp-nav-shell[data-collee="oui"] {
-    border: 1px solid var(--tv-border-strong);
-    background: rgb(10 12 11 / 0.72);
-    backdrop-filter: blur(16px) saturate(140%);
-    box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.9);
+    border-color: var(--tv-border-strong);
+    background: rgb(10 12 11 / 0.82);
+    box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.92);
   }
-  .landing-root .lp-nav-shell[data-collee="non"] {
-    border: 1px solid transparent;
-    background: transparent;
+}
+
+/* Sous 640px la barre reprend la pleine largeur : une pilule à marges sur un
+   écran de 390px vole la place du logo. Même principe qu'au-dessus - la
+   forme est acquise dès le premier pixel, seule la densité varie. */
+@media (max-width: 639px) {
+  .landing-root .lp-nav-shell {
+    border-bottom: 1px solid transparent;
+    background: rgb(10 12 11 / 0.55);
+    backdrop-filter: blur(14px) saturate(135%);
+    transition:
+      background-color 320ms var(--lp-expo),
+      border-color 320ms var(--lp-expo);
+  }
+  .landing-root .lp-nav-shell[data-collee="oui"] {
+    border-bottom-color: var(--tv-border);
+    background: rgb(10 12 11 / 0.9);
+  }
+}
+
+/* Le panneau mobile se déplie depuis le bord bas de la barre. `max-height`
+   plutôt que `height` : la hauteur réelle dépend du nombre d'entrées, et on
+   ne la connaît pas au moment d'écrire la règle. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .lp-nav-mobile {
+    animation: nav-mobile-in 260ms var(--lp-expo) both;
+  }
+}
+@keyframes nav-mobile-in {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 70vh;
+  }
+}
+
+/* ══ LE MENU DE LANGUE ══
+ *
+ * Un bouton, pas une rangée. À deux langues la rangée tenait ; à quatre elle
+ * occupe la moitié de la barre, et à six elle ne tient plus du tout. Le
+ * menu déroulant a un coût constant : un drapeau, un code, un chevron.
+ *
+ * Il s'ouvre en se POSANT (échelle 0.96 → 1 depuis le haut-droit, l'angle
+ * où vit le bouton) plutôt qu'en apparaissant : c'est ce qui rattache le
+ * panneau à ce qui l'a ouvert. */
+.landing-root .lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 190px;
+  overflow: hidden;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: 14px;
+  background: rgb(12 14 13 / 0.96);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 24px 48px -24px rgb(0 0 0 / 0.95);
+  transform-origin: top right;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .lang-menu {
+    animation: lang-menu-in 200ms var(--lp-expo) both;
+  }
+}
+@keyframes lang-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ══ LE PASSAGE D'UNE LANGUE À L'AUTRE ══
+ *
+ * Changer de langue change d'ADRESSE (`/` ↔ `/fr`) : le document entier est
+ * re-servi, sans quoi le canonical, l'`hreflang` et le `<html lang>`
+ * mentiraient. Ce rechargement est donc non négociable - mais son BRUTALITÉ,
+ * elle, l'est.
+ *
+ * Deux temps : la page en cours s'efface (160ms) pendant qu'on navigue, la
+ * page servie se révèle (380ms). Entre les deux le navigateur peint un
+ * fond noir identique des deux côtés, donc l'œil ne voit pas une page qui
+ * disparaît puis une autre qui arrive : il voit un texte qui se change.
+ *
+ * L'effacement ne porte QUE sur l'opacité : un `translate` ferait glisser
+ * une page qu'on est en train de quitter, ce qui se lit comme un départ, pas
+ * comme une substitution. */
+.landing-root.lang-sortie {
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+  pointer-events: none;
+}
+/* L'ENTRÉE N'EST PAS GLOBALE. Elle ne joue que sur la page SERVIE APRÈS un
+   changement de langue (drapeau posé en `sessionStorage`, lu et effacé au
+   montage). Un fondu à chaque chargement retarderait la première peinture
+   pour tout le monde afin de soigner un geste que la plupart ne font
+   jamais. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root.lang-entree {
+    animation: lang-entree 340ms var(--lp-expo) both;
+  }
+}
+@keyframes lang-entree {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

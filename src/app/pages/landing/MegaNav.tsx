@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
-import { LANDING_LANGS, useLandingT } from "./i18n";
+import { useLandingT } from "./i18n";
+import { LangMenu } from "./LangMenu";
 import { LIENS_NAV as LINKS } from "./nav";
 
 /**
@@ -32,7 +33,7 @@ interface MegaNavProps {
 }
 
 export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
-  const { t, lang, setLang } = useLandingT();
+  const { t } = useLandingT();
   const [mobile, setMobile] = useState(false);
 
   const goTo = (id: string) => {
@@ -41,22 +42,23 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
   };
 
   return (
-    /* La barre n'est plus un bandeau collé au bord : c'est une PILULE posée
-       sur la page (voir `.lp-nav-shell` dans `landing.css`). Sous 640px elle
-       reprend la pleine largeur - une pilule à marges sur un écran de 390px
-       vole la place du logo et du menu. */
+    /* La barre est un RECTANGLE À COINS ARRONDIS posé sur la page (voir
+       `.lp-nav-shell` dans `landing.css`), détaché des bords. Elle garde
+       exactement cette forme du premier au dernier pixel de défilement :
+       seule sa densité change. Sous 640px elle reprend la pleine largeur -
+       un objet à marges sur un écran de 390px vole la place du logo. */
     <header
       className="fixed inset-x-0 top-0 z-[var(--tv-z-nav)] px-0 sm:px-4"
       style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px) - 2px)" }}
     >
-      <div
-        className={`lp-nav-shell relative ${
-          y > 10
-            ? "border-b border-[var(--tv-border)] bg-[var(--tv-bg)]/90 backdrop-blur-[12px] sm:border-b-0"
-            : "border-b border-transparent bg-transparent sm:border-b-0"
-        }`}
-        data-collee={y > 10 ? "oui" : "non"}
-      >
+      {/* UNE SEULE CLASSE, UN SEUL ÉTAT DÉCLARÉ.
+          Les classes conditionnelles ont disparu : elles ajoutaient et
+          retiraient une bordure ET un fond ET un flou en cours de route,
+          c'est-à-dire qu'elles changeaient l'identité de la barre au
+          défilement. Le seul signal transmis est maintenant `data-collee`,
+          et c'est le CSS (`landing.css`) qui en tire une variation de
+          DENSITÉ - jamais de forme. */}
+      <div className="lp-nav-shell relative" data-collee={y > 10 ? "oui" : "non"}>
         <div
           className="scroll-bar absolute inset-x-0 top-0 h-[2px]"
           style={{ transform: `scaleX(${pct})` }}
@@ -98,32 +100,11 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
 
           {/* Right actions */}
           <div className="flex items-center gap-1.5">
-            {/* Language toggle */}
-            <div className="hidden sm:flex items-center rounded-lg border border-[var(--tv-border)] p-0.5">
-              {/* Dessiné depuis `LANDING_LANGS` : ajouter l'espagnol ou l'arabe
-                est une ligne dans la table, pas une retouche ici. */}
-              {LANDING_LANGS.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => setLang(l.id)}
-                  aria-label={l.label}
-                  aria-pressed={lang === l.id}
-                  className={`flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-semibold transition-colors ${
-                    lang === l.id
-                      ? "bg-[rgb(var(--tv-accent-rgb)/0.14)] text-white"
-                      : "text-slate-500 hover:text-slate-300"
-                  }`}
-                >
-                  {/* Le drapeau accélère la reconnaissance ; le code la garantit.
-                    Un pavillon seul désigne un PAYS, pas une langue, et il ne
-                    dit rien à un lecteur d'écran : `aria-hidden` sur l'émoji,
-                    `aria-label` sur le bouton. */}
-                  <span aria-hidden className="text-[13px] leading-none">
-                    {l.drapeau}
-                  </span>
-                  {l.short}
-                </button>
-              ))}
+            {/* UN BOUTON, UN MENU. La rangée « EN | FR » grandissait avec le
+              nombre de langues ; celui-ci coûte la même place à deux qu'à
+              six, et la table `LANDING_LANGS` est faite pour grandir. */}
+            <div className="hidden sm:block">
+              <LangMenu />
             </div>
 
             <button
@@ -174,9 +155,12 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Le panneau mobile se DÉPLIE au lieu d'apparaître : il pousse sa
+            propre hauteur depuis le bord de la barre, ce qui le rattache à
+            elle. Monté sans animation, il se lisait comme un second bloc
+            surgi de nulle part. */}
         {mobile && (
-          <div className="lg:hidden border-t border-[var(--tv-border)] bg-[var(--tv-bg)] px-5 py-4">
+          <div className="lp-nav-mobile lg:hidden border-t border-[var(--tv-border)] bg-[var(--tv-bg)] px-5 py-4">
             <div className="flex flex-col">
               {LINKS.map((l) =>
                 l.href ? (
@@ -189,25 +173,11 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
                   </button>
                 ),
               )}
-              <div className="flex items-center gap-2 mt-3">
-                {LANDING_LANGS.map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => setLang(l.id)}
-                    aria-pressed={lang === l.id}
-                    aria-label={l.label}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-2.5 text-[12px] font-semibold transition-colors ${
-                      lang === l.id
-                        ? "border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.08)] text-[var(--tv-highlight)]"
-                        : "border-[var(--tv-border)] text-slate-400"
-                    }`}
-                  >
-                    <span aria-hidden className="text-[15px] leading-none">
-                      {l.drapeau}
-                    </span>
-                    {l.label}
-                  </button>
-                ))}
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-[12px] font-semibold text-slate-500">
+                  {t("nav.language")}
+                </span>
+                <LangMenu />
               </div>
               <button
                 onClick={() => {

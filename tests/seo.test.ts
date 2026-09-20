@@ -303,10 +303,17 @@ describe("maillage interne", () => {
   });
 
   test("chaque lien du pied de page désigne une ancre ou une route RÉELLE", () => {
-    const targets = [...landing.matchAll(/\{ k: "footer\.[fr]\d", href: "([^"]+)" \}/g)].map(
+    const targets = [...landing.matchAll(/\{ k: "footer\.[\w.]+", href: "([^"]+)" \}/g)].map(
       (m) => m[1],
     );
-    expect(targets.length).toBe(9);
+    // LE NOMBRE EXACT N'EST PLUS FIGÉ. Il valait 9 quand le pied de page
+    // portait deux colonnes de cinq et quatre ; il en porte maintenant deux
+    // de quatre et cinq, et il en portera autre chose demain. Figer le compte
+    // faisait échouer ce test à chaque respiration du pied de page, pour une
+    // raison qui n'a jamais été son objet : ce qu'on garde, c'est qu'AUCUN
+    // lien ne mène nulle part. Le plancher, lui, reste utile - il attrape la
+    // régression où la table se vide sans qu'on s'en aperçoive.
+    expect(targets.length).toBeGreaterThanOrEqual(6);
 
     // LES ANCRES NE VIVENT PLUS TOUTES DANS `Landing.tsx`.
     //
@@ -326,7 +333,17 @@ describe("maillage interne", () => {
       stripComments(read("../src/app/pages/landing/Proof.tsx")) +
       stripComments(read("../src/app/pages/landing/Tour.tsx"));
     const sectionIds = [...sources.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
-    const routes = ["/demo", "/demo-site", "/contact", "/privacy", "/terms", "/cgu", "/"];
+    const routes = [
+      "/demo",
+      "/demo-site",
+      "/contact",
+      "/privacy",
+      "/terms",
+      "/cgu",
+      "/cookies",
+      "/pricing",
+      "/",
+    ];
     for (const href of targets) {
       const ok = href.startsWith("#") ? sectionIds.includes(href.slice(1)) : routes.includes(href);
       expect(ok, `cible de pied de page introuvable : ${href}`).toBe(true);
