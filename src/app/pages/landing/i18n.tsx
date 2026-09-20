@@ -587,6 +587,36 @@ const M: Record<string, Msg> = {
     fr: "Import CSV universel, copier-coller, ou 45 secondes à la main. Aucune connexion courtier - il n'y a pas d'API, et on préfère le dire.",
   },
 
+  /* ── Les quatre bénéfices, en liste ──
+   *
+   * Quatre puces, pas six : au-delà, une liste cesse d'être lue et devient
+   * une texture qu'on saute. Chacune est VÉRIFIABLE dans le produit - aucune
+   * ne promet un gain, aucune n'annonce une fonctionnalité non livrée
+   * (`FEATURES_STATUS.md` fait foi). Elles répondent chacune à une objection
+   * différente : « ça sert à quoi », « comment c'est mesuré », « combien de
+   * travail pour moi », « et si je pars ». */
+  "v2.bul.title": { en: "What you actually get", fr: "Ce que tu obtiens vraiment" },
+  "v2.bul.1.t": { en: "A price on every mistake", fr: "Un prix sur chaque erreur" },
+  "v2.bul.1.d": {
+    en: "Not a tag on a trade. The euro cost of the habit, across your whole journal.",
+    fr: "Pas une étiquette sur un trade. Le coût en euros de l'habitude, sur tout ton journal.",
+  },
+  "v2.bul.2.t": { en: "A score that ignores your P&L", fr: "Un score qui ignore ton P&L" },
+  "v2.bul.2.d": {
+    en: "Edge Score rates plan kept, risk held, consistency. You can have a green week and a bad score.",
+    fr: "L'Edge Score note le plan tenu, le risque tenu, la régularité. Tu peux finir vert avec un mauvais score.",
+  },
+  "v2.bul.3.t": { en: "One rule, not a report", fr: "Une règle, pas un rapport" },
+  "v2.bul.3.d": {
+    en: "Each week ends with a single thing to hold. Twelve pages of charts change nothing on Monday.",
+    fr: "Chaque semaine finit sur une seule chose à tenir. Douze pages de graphes ne changent rien le lundi.",
+  },
+  "v2.bul.4.t": { en: "Your data, exportable", fr: "Tes données, exportables" },
+  "v2.bul.4.d": {
+    en: "CSV in, CSV out, any time. No broker connection, no lock-in.",
+    fr: "CSV à l'entrée, CSV à la sortie, quand tu veux. Aucune connexion courtier, aucun enfermement.",
+  },
+
   /* ── Confiance ── */
   "v2.trust.title": { en: "What we will never do", fr: "Ce qu'on ne fera jamais" },
   "v2.trust.sub": {

@@ -178,11 +178,17 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
         {mobile && (
           <div className="lg:hidden border-t border-[var(--tv-border)] bg-[var(--tv-bg)] px-5 py-4">
             <div className="flex flex-col">
-              {LINKS.map((l) => (
-                <button key={l.id} onClick={() => goTo(l.id)} className="mobile-nav-link">
-                  {t(l.key)}
-                </button>
-              ))}
+              {LINKS.map((l) =>
+                l.href ? (
+                  <a key={l.id} href={l.href} className="mobile-nav-link">
+                    {t(l.key)}
+                  </a>
+                ) : (
+                  <button key={l.id} onClick={() => goTo(l.id)} className="mobile-nav-link">
+                    {t(l.key)}
+                  </button>
+                ),
+              )}
               <div className="flex items-center gap-2 mt-3">
                 {LANDING_LANGS.map((l) => (
                   <button

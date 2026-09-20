@@ -10,6 +10,7 @@ import { PlatformsStrip, TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
 import { AncrageDePrix, SectionEdgeScore } from "./landing/Proof";
 import { TourProduit } from "./landing/Tour";
+import { Benefices } from "./landing/Benefices";
 import { CursorOrb } from "./landing/CursorOrb";
 import { DrawnLine } from "./landing/DrawnLine";
 import { LIENS_NAV } from "./landing/nav";
@@ -1006,6 +1007,10 @@ function LandingPage() {
             },
           ]}
         />
+
+        {/* Le résumé, juste après la démonstration : on a MONTRÉ cinq écrans,
+            on dit en quatre lignes ce qu'on en retire, puis on parle prix. */}
+        <Benefices />
 
         {/* ── CONFIANCE ──
             `TraderProof` (« Construit par un trader, pour des traders » — 128
