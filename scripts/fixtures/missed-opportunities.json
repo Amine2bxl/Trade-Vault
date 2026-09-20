@@ -1,0 +1,80 @@
+[
+  {
+    "id": "a5100000-0000-4000-8000-0000000000b1",
+    "user_id": "a5100000-0000-4000-8000-000000000001",
+    "account_id": "a5100000-0000-4000-8000-0000000000a1",
+    "opportunity_date": "2026-09-15",
+    "symbol": "NQ",
+    "reason_not_taken": "Still shaken by the losing trade twenty minutes earlier. I saw the setup and did not take it.",
+    "what_happened": "Clean break of the London high, ran 62 points without a pullback into the close.",
+    "lesson_learned": "The trade after a loss is the one I skip when it is good and force when it is bad. Exactly backwards.",
+    "next_time_plan": "After a loss: no new entry for 15 minutes, then take the next A-grade setup at full plan size.",
+    "estimated_r": 2.4,
+    "screenshots": []
+  },
+  {
+    "id": "a5100000-0000-4000-8000-0000000000b2",
+    "user_id": "a5100000-0000-4000-8000-000000000001",
+    "account_id": "a5100000-0000-4000-8000-0000000000a1",
+    "opportunity_date": "2026-09-08",
+    "symbol": "EURUSD",
+    "reason_not_taken": "Waited for a retest the plan never asked for. I wanted a cheaper entry.",
+    "what_happened": "Pushed 48 pips straight from the level, no retest.",
+    "lesson_learned": "My plan says enter at the level. I was negotiating with it for a better price.",
+    "next_time_plan": "Enter at the level, half size if unsure. Stop waiting for a retest that is not in the plan.",
+    "estimated_r": 1.8,
+    "screenshots": []
+  },
+  {
+    "id": "a5100000-0000-4000-8000-0000000000b3",
+    "user_id": "a5100000-0000-4000-8000-000000000001",
+    "account_id": "a5100000-0000-4000-8000-0000000000a1",
+    "opportunity_date": "2026-08-27",
+    "symbol": "XAUUSD",
+    "reason_not_taken": "Daily loss limit already hit. Correct to skip.",
+    "what_happened": "Setup worked, roughly 3R into the New York close.",
+    "lesson_learned": "This one is a good miss. The rule did its job and it cost me nothing I should regret.",
+    "next_time_plan": "Nothing to change. Logged so the good misses stay visible next to the bad ones.",
+    "estimated_r": 3.0,
+    "screenshots": []
+  },
+  {
+    "id": "a5100000-0000-4000-8000-0000000000b4",
+    "user_id": "a5100000-0000-4000-8000-000000000001",
+    "account_id": "a5100000-0000-4000-8000-0000000000a1",
+    "opportunity_date": "2026-08-12",
+    "symbol": "ES",
+    "reason_not_taken": "Away from the desk. No alert set on the level I had marked the night before.",
+    "what_happened": "Swept the Asian low and reversed for 1.9R.",
+    "lesson_learned": "The level was in my plan. The alert was not.",
+    "next_time_plan": "Every level written in the evening plan gets an alert before the session opens.",
+    "estimated_r": 1.9,
+    "screenshots": []
+  },
+  {
+    "id": "a5100000-0000-4000-8000-0000000000b5",
+    "user_id": "a5100000-0000-4000-8000-000000000001",
+    "account_id": "a5100000-0000-4000-8000-0000000000a1",
+    "opportunity_date": "2026-07-22",
+    "symbol": "GBPUSD",
+    "reason_not_taken": "Graded the setup B because of the news window, then it turned out to be an A.",
+    "what_happened": "Ran 1.4R in forty minutes.",
+    "lesson_learned": "I downgrade setups around news even when my own rules allow them. My grading drifts with my mood.",
+    "next_time_plan": "Grade before the session, not in the moment. Do not regrade because of nerves.",
+    "estimated_r": 1.4,
+    "screenshots": []
+  },
+  {
+    "id": "a5100000-0000-4000-8000-0000000000b6",
+    "user_id": "a5100000-0000-4000-8000-000000000001",
+    "account_id": "a5100000-0000-4000-8000-0000000000a1",
+    "opportunity_date": "2026-06-30",
+    "symbol": "NQ",
+    "reason_not_taken": "Already three trades in on a day my plan caps at three. Correct to skip.",
+    "what_happened": "Would have been about 2.2R.",
+    "lesson_learned": "The cap held. Missing a winner because of a rule is the price of the rule working.",
+    "next_time_plan": "Keep the cap. Review it monthly on data, never in the middle of a session.",
+    "estimated_r": 2.2,
+    "screenshots": []
+  }
+]

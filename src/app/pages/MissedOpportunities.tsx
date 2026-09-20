@@ -313,13 +313,28 @@ export default function MissedOpportunities() {
 
                         Le couple symbole + date devient la zone ÉLASTIQUE
                         (`min-w-0 flex-1`) : c'est lui qui absorbe la variation,
-                        en tronquant si besoin. */}
-                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-                      {m.symbol || "—"}
-                    </span>
-                    <span className="shrink-0 text-[10px] text-slate-500">
-                      {formatShortDate(m.date)}
-                    </span>
+                        en tronquant si besoin.
+
+                        ══ ET SUR TÉLÉPHONE, ILS S'EMPILENT ══════════════════
+                        Côte à côte sur 390px, la place manquait : le symbole
+                        portait `flex-1`, sa base tombait donc à zéro et
+                        `truncate` n'affichait plus RIEN, pendant que la date,
+                        en `shrink-0`, débordait sous la pastille verte. La
+                        ligne montrait « 15/09/26 » à moitié recouvert et plus
+                        aucun instrument — c'est-à-dire qu'elle avait perdu ce
+                        qui l'identifie.
+
+                        Empilés, les deux tiennent : le symbole garde sa
+                        largeur, la date passe dessous. À partir de `sm` on
+                        revient sur une ligne, où la place existe. */}
+                    <div className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                      <span className="truncate text-sm font-bold text-white">
+                        {m.symbol || "—"}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-slate-500">
+                        {formatShortDate(m.date)}
+                      </span>
+                    </div>
                   </div>
 
                   {/* ══ LES DEUX PASTILLES, CHACUNE SUR SON AXE ═══════════════
@@ -332,10 +347,23 @@ export default function MissedOpportunities() {
                       C'est la file indienne demandée : deux colonnes, pas deux
                       éléments qui flottent. */}
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="flex w-[76px] justify-end sm:w-[92px]">
+                    {/* 56px sous `sm`, pas 76 : la pastille y tient désormais en
+                        « +2.4R », et les vingt pixels rendus vont au symbole,
+                        qui sortait « E… » pour EURUSD. Entre une réserve
+                        confortable pour un chiffre court et l'instrument qui
+                        identifie la ligne, c'est l'instrument qui gagne. */}
+                    <span className="flex w-[56px] justify-end sm:w-[92px]">
                       {m.estimatedR > 0 && (
+                        /* « R missed » en toutes lettres ne tient pas dans
+                           76px : la pastille sortait « +2.4 R mi… », une
+                           troncature au milieu d'un mot de deux syllabes. Sous
+                           `sm` on garde le chiffre et l'unité, qui suffisent
+                           dans une colonne dont l'en-tête dit déjà « R left on
+                           the table ». */
                         <span className="truncate rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                          +{m.estimatedR.toFixed(1)} {t("missed.rMissed")}
+                          +{m.estimatedR.toFixed(1)}
+                          <span className="sm:hidden">R</span>
+                          <span className="hidden sm:inline"> {t("missed.rMissed")}</span>
                         </span>
                       )}
                     </span>

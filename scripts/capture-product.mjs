@@ -2,8 +2,15 @@
  * HARNAIS DE CAPTURE DES ECRANS PRODUIT — pour la vitrine.
  *
  * USAGE
- *   bun run build && bun run preview        # dans un autre terminal
- *   SHOWCASE_PASSWORD=... node scripts/capture-product.mjs src/assets/product
+ *   node scripts/fixtures/supabase-stub.mjs &            # doublure REST :5199
+ *   SUPABASE_URL=http://127.0.0.1:5199 SUPABASE_PUBLISHABLE_KEY=stub \
+ *     bunx vite dev --host 127.0.0.1 --port 5181 &
+ *   SHOWCASE_PASSWORD=... SHOWCASE_BASE=http://127.0.0.1:5181 \
+ *     node scripts/capture-product.mjs src/assets/product
+ *
+ * La doublure n'est necessaire QUE pour le calendrier economique, seule
+ * donnee lue par une fonction SERVEUR (voir le commentaire dans `contexte`).
+ * Depuis une machine qui atteint Supabase, on s'en passe.
  *
  * Les fichiers produits sont indexes automatiquement par
  * `src/app/pages/landing/shots.ts` : deposer l'image suffit, aucun code a
@@ -237,7 +244,28 @@ const USER = {
   created_at: "2026-01-01T00:00:00Z",
   updated_at: new Date().toISOString(),
 };
-const TABLES = { profiles: [PROFILE], accounts: [ACCOUNT], trades: TRADES, subscriptions: [SUB] };
+/* ── LES DEUX TABLES QUI NE SE REGENERENT PAS ────────────────────────────
+ *
+ * Les trades se RECALCULENT (generateur deterministe, verifie contre la base
+ * au demarrage). Ces deux-la, non : leur contenu est du texte ecrit a la
+ * main, il n'existe aucune formule qui le reproduise. Ils sont donc EXPORTES
+ * de la base vers `scripts/fixtures/`, et c'est le meme fait que pour les
+ * trades — ce que la capture montre existe reellement dans le compte
+ * vitrine, ce n'est pas une mise en scene.
+ *
+ * Les reexporter : voir `scripts/fixtures/README.md`. */
+const fixture = (nom) =>
+  JSON.parse(readFileSync(new URL(`./fixtures/${nom}.json`, import.meta.url), "utf-8"));
+
+const MISSED = fixture("missed-opportunities");
+
+const TABLES = {
+  profiles: [PROFILE],
+  accounts: [ACCOUNT],
+  trades: TRADES,
+  subscriptions: [SUB],
+  missed_opportunities: MISSED,
+};
 
 const browser = await chromium.launch({
   executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
@@ -284,6 +312,28 @@ async function contexte(viewport, scale, mobile = false) {
       ? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
       : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
   });
+  /* ══ LE CALENDRIER ECONOMIQUE N'EST PAS INTERCEPTE ICI ══
+   *
+   * `fetchEconomicCalendar` est une FONCTION SERVEUR : le navigateur poste
+   * sur `/_serverFn/...` et c'est le serveur de dev, dans ce conteneur, qui
+   * interroge Supabase. Une interception de navigateur ne la voit jamais.
+   *
+   * Deux tentatives ont echoue avant d'arriver a la bonne couche :
+   *   1. filtrer sur le CORPS de la requete — l'appel part en GET, avec la
+   *      charge dans l'URL ; le gabarit ne s'est jamais declenche, et la
+   *      capture mobile est partie avec « Live calendar unavailable » en
+   *      travers. Une interception branchee qui ne se declenche pas est
+   *      exactement le genre de panne silencieuse que ce fichier collectionne ;
+   *   2. reecrire la reponse — elle est serialisee par seroval, pas en JSON
+   *      nu. La rejouer revient a reimplementer un format interne du
+   *      framework, qui changera a la prochaine montee de version.
+   *
+   * La solution est un cran plus bas : `scripts/fixtures/supabase-stub.mjs`
+   * sert les VRAIES lignes de `economic_events` sur une adresse locale, et on
+   * lance le serveur de dev avec `SUPABASE_URL` pointe dessus. Le code
+   * applicatif s'execute alors en entier, sans modification. Voir l'en-tete
+   * de ce fichier pour la commande. */
+
   await ctx.route(
     (url) => url.hostname.endsWith("supabase.co"),
     async (route) => {
@@ -349,16 +399,21 @@ async function contexte(viewport, scale, mobile = false) {
 
 async function connecter(page, mobile = false) {
   await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page.waitForTimeout(2500);
+  /* ON ATTEND LE BOUTON, PAS 2,5 SECONDES.
+     Contre un serveur de DEV froid, la premiere requete compile la route et
+     l'hydratation arrive apres le delai fixe : le clic partait dans le vide
+     et le harnais mourait trente secondes plus tard sur « input[type=email]
+     introuvable », une erreur qui ne dit rien de la vraie cause. Un delai
+     en dur est un pari sur la vitesse de la machine ; on attend l'element. */
+  const declencheur = page.getByRole("button", { name: /^(Log in|Sign in|Se connecter)$/ }).first();
+  await page.waitForLoadState("networkidle", { timeout: 60000 }).catch(() => {});
   /* Sur la vitrine, « Sign in » est `hidden sm:block` : sous 640px il vit dans
      le menu deroulant, derriere le bouton hamburger. Sans cette ouverture, la
      passe mobile attendait trente secondes un bouton qui n'est pas affiche. */
   if (mobile) {
-    await page
-      .getByRole("button", { name: "Menu" })
-      .first()
-      .click()
-      .catch(() => {});
+    const menu = page.getByRole("button", { name: "Menu" }).first();
+    await menu.waitFor({ state: "visible", timeout: 45000 }).catch(() => {});
+    await menu.click().catch(() => {});
     await page.waitForTimeout(800);
   }
   /* LE LIBELLE DU DECLENCHEUR N'EST PAS UN CONTRAT.
@@ -366,11 +421,9 @@ async function connecter(page, mobile = false) {
      vitrine avait casse le harnais de capture, ce qui n'a aucun sens — le
      harnais doit suivre le produit, pas le figer. Une alternative couvre les
      deux, et le jour ou un troisieme nom arrive, l'erreur sera lisible. */
-  await page
-    .getByRole("button", { name: /^(Log in|Sign in|Se connecter)$/ })
-    .first()
-    .click();
-  await page.waitForTimeout(1200);
+  await declencheur.waitFor({ state: "visible", timeout: 45000 });
+  await declencheur.click();
+  await page.locator('input[type="email"]').waitFor({ state: "visible", timeout: 30000 });
   await page.locator('input[type="email"]').fill(EMAIL);
   await page.locator('input[type="password"]').fill(MOTDEPASSE);
   await page
@@ -635,6 +688,31 @@ if (vide) {
   await capturer(pageD, "desk-09-montecarlo");
 }
 
+/* ECONOMIC NEWS et MISSED SETUPS — les deux ecrans qui manquaient.
+   Ils etaient ecartes pour la meme raison, dans les deux cas un ETAT VIDE :
+   le calendrier tombait sur « Live calendar unavailable » (le serveur de dev
+   n'atteint pas Supabase depuis ce conteneur), et les setups manques sur
+   « No missed setups yet » (le compte vitrine n'en avait aucun).
+
+   Les deux causes sont levees : le calendrier est servi depuis les VRAIES
+   lignes de `economic_events` (voir l'interception `_serverFn` plus haut), et
+   six setups manques ont ete enregistres sur le compte vitrine, exportes dans
+   `scripts/fixtures/`. On verifie l'etat vide avant de declencher — publier
+   une page vide sous un nom de fonctionnalite serait pire que ne rien
+   publier. */
+/* NI L'UNE NI L'AUTRE N'EST UNE ENTREE DE PREMIER NIVEAU.
+   `Economic News` vit dans la section Preparation, `Missed Setups` dans la
+   section Journal — ce sont des SOUS-ONGLETS. Les chercher comme entrees de
+   rail echouait ; `capturer` renvoyait alors sans naviguer, et la capture
+   suivante photographiait la page precedente sous le nouveau nom. Le
+   troisieme exemplaire du meme piege dans ce fichier : on ne capture
+   qu'apres une navigation VERIFIEE. */
+if ((await allerSection(pageD, "Journal")) && (await sousOnglet(pageD, "Missed Setups"))) {
+  const aucunSetup = await pageD.getByText(/No missed setups yet/i).count();
+  if (aucunSetup) console.log("  ⊘ Missed Setups : aucune donnee, capture ignoree");
+  else await capturer(pageD, "desk-12-missed");
+}
+
 /* CHECKLIST — une modale d'accueil (« Let's build your checklist together »)
    recouvre la page, qui est pleine derriere. On la ferme par « Later ». */
 await allerSection(pageD, "Preparation");
@@ -647,6 +725,39 @@ if (await plusTard.count()) {
 // puis re-capturait sous le meme nom : le second cliche, pris pendant le
 // re-rendu, ecrasait le bon par une page blanche.
 await capturer(pageD, "desk-10-checklist");
+
+/* ECONOMIC NEWS — meme section que la checklist, donc juste apres elle : la
+   modale d'accueil est deja fermee, il ne reste qu'a changer d'onglet. */
+if (await sousOnglet(pageD, "Economic News")) {
+  /* ON ATTEND LA DONNEE, ON NE DORT PAS 4,5 SECONDES.
+     Le calendrier passe par une FONCTION SERVEUR, et au premier appel le
+     serveur de dev compile encore la route : la reponse arrive apres le
+     delai fixe. La page affichait donc « Live calendar unavailable » au
+     moment du controle, et la capture etait ecartee — alors que la meme
+     page, dix secondes plus tard dans la passe mobile, etait pleine.
+     On attend donc un EVENEMENT, pas une duree.
+
+     Le premier marqueur essaye etait « This week » : c'est le filtre de
+     periode, et sur BUREAU il vit dans un menu deroulant FERME. Invisible,
+     donc jamais atteint — le marqueur decrivait la version mobile de la
+     page. On attend maintenant deux choses qui ne dependent d'aucune mise
+     en page : le bandeau de panne a disparu, et il y a des lignes (un code
+     de devise). */
+  const pret = await pageD
+    .waitForFunction(
+      () => {
+        const txt = document.body.innerText;
+        if (/Live calendar unavailable/i.test(txt)) return false;
+        return /\b(USD|EUR|GBP|JPY)\b/.test(txt);
+      },
+      undefined,
+      { timeout: 30000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  if (!pret) console.log("  ⊘ Economic News : calendrier indisponible, capture ignoree");
+  else await capturer(pageD, "desk-11-news");
+}
 
 // Jarvis avec une VRAIE reponse. Sans cle de provider, c'est le moteur
 // deterministe qui repond — un chemin reel du produit, pas une mise en scene.
@@ -700,6 +811,13 @@ if (await allerPageMobile(pageM, "Mistakes", "Your correction plan"))
   await capturerMobile(pageM, "mob-mistakes");
 if (await allerPageMobile(pageM, "Calendar", "TRADING DAYS"))
   await capturerMobile(pageM, "mob-calendar");
+/* SETUPS MANQUES — sous-onglet de la MEME section que le journal et le
+   calendrier. Cherche depuis une autre section, l'onglet n'est pas rendu du
+   tout : c'est pour ca que la premiere version ne le trouvait jamais. On le
+   prend donc pendant qu'on est dans Journal. Le marqueur est la premiere
+   tuile de la page, qui n'existe nulle part ailleurs. */
+if (await allerPageMobile(pageM, "Missed Setups", "R left on the table"))
+  await capturerMobile(pageM, "mob-missed");
 await capturerMobile(pageM, "mob-analytics", "Analysis");
 /* Les deux ecrans entres dans la visite ont besoin de leur variante
    telephone, sinon `<picture>` retombe sur la capture de BUREAU reduite —
@@ -717,7 +835,32 @@ if (await allerMobile(pageM, "Preparation")) {
     await pageM.waitForTimeout(2000);
   }
   await capturerMobile(pageM, "mob-checklist");
+  /* CALENDRIER MACRO — meme section que la checklist. Meme raison que pour
+     les setups manques : l'onglet n'existe que depuis l'interieur.
+     ET LE MEME CONTROLE D'ETAT QU'EN BUREAU. Sans lui, cette passe a publie
+     une capture portant le bandeau « Live calendar unavailable » : arriver
+     sur la page ne prouve pas que la page a des donnees. */
+  if (await allerPageMobile(pageM, "Economic News", "This week")) {
+    const pretM = await pageM
+      .waitForFunction(
+        () => !/Live calendar unavailable/i.test(document.body.innerText),
+        undefined,
+        {
+          timeout: 30000,
+        },
+      )
+      .then(() => true)
+      .catch(() => false);
+    if (pretM) await capturerMobile(pageM, "mob-news");
+    else console.log("  ⊘ mobile : calendrier indisponible, capture ignoree");
+  }
 }
+
+/* Les deux nouveaux ecrans, en telephone aussi. Sans variante `-m`,
+   `<picture>` retombe sur la capture de BUREAU reduite a 0,26 - la seule
+   erreur que ce harnais a deja faite deux fois. Le marqueur est un texte qui
+   n'existe QUE sur la page visee : un clic qui rate en silence produit
+   sinon une capture de la page precedente sous un autre nom. */
 
 /* JARVIS EN DERNIER : la reponse met une douzaine de secondes a se composer,
    et on ne veut pas que cette attente retarde les autres ecrans.
@@ -780,16 +923,20 @@ const PLANS = [
      prise : c'est elle qui permettra de verifier que l'etat n'est plus vide. */
   { de: "desk-09-montecarlo.png", vers: "montecarlo.webp", vfen: [150, 1560], w: 2400 },
   { de: "desk-10-checklist.png", vers: "checklist.webp", vfen: [100, 1560], w: 2400 },
-  /* PAS de `news.webp` ni de `missed.webp`.
-     - Economic News : depuis ce conteneur l'API du calendrier est injoignable,
-       la page affiche donc un bandeau « Live calendar unavailable » et un
-       horaire indicatif. Publier un etat degrade comme capture produit, c'est
-       montrer une panne.
-     - Missed Setups : le compte vitrine n'a aucun setup manque enregistre, la
-       page tombe sur « No missed setups yet ». Meme piege que les rapports
-       mensuels.
-     Les deux redeviennent capturables des que la donnee existe : remettre une
-     ligne ici suffit. */
+  /* Economic News et Missed Setups, enfin.
+     Ils etaient absents parce que les deux pages tombaient sur un etat vide.
+     Les deux causes sont levees (voir la sequence de capture plus haut). La
+     sequence VERIFIE l'etat vide avant de declencher : si l'un des deux
+     redevenait vide, le fichier source n'existerait pas et la ligne
+     ci-dessous sauterait toute seule avec un message — elle ne publierait
+     pas une page vide. */
+  { de: "desk-11-news.png", vers: "news.webp", vfen: [150, 1560], w: 2400 },
+  /* La fenetre des setups manques est PLUS COURTE que les autres : six lignes
+     et trois tuiles, pas un tableau de trente lignes. A 1470 comme ses
+     voisines, 40 % de la capture etait du vide sous la derniere ligne - et
+     du vide publie comme capture produit se lit comme une page a moitie
+     chargee. */
+  { de: "desk-12-missed.png", vers: "missed.webp", vfen: [150, 1060], w: 2400 },
 
   /* Les variantes telephone. Suffixe `-m`, largeur 780 (390 CSS a 2x) : la
      vitrine les sert sous 640px via `<picture>`. Aucun recadrage — le produit
@@ -801,6 +948,8 @@ const PLANS = [
   { de: "mob-journal.png", vers: "journal-m.webp", pleine: true, w: 780 },
   { de: "mob-montecarlo.png", vers: "montecarlo-m.webp", pleine: true, w: 780 },
   { de: "mob-checklist.png", vers: "checklist-m.webp", pleine: true, w: 780 },
+  { de: "mob-news.png", vers: "news-m.webp", pleine: true, w: 780 },
+  { de: "mob-missed.png", vers: "missed-m.webp", pleine: true, w: 780 },
 ];
 
 console.log("→ recadrage et encodage WebP");

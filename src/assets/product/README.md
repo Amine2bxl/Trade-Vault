@@ -19,6 +19,8 @@ Le nom du fichier, **sans son extension**, est l'identifiant. Formats acceptés 
 | `checklist`  | Visite du produit, rangée 4          | Préparation → Checklist         |
 | `montecarlo` | Visite du produit, rangée 5          | Analyse → Monte Carlo           |
 | `journal`    | Visite du produit, rangée 6          | Le journal de trades            |
+| `missed`     | Visite du produit                    | Journal → Setups manqués        |
+| `news`       | Visite du produit                    | Préparation → Actualités éco.   |
 
 Chaque écran a AUSSI une variante `<nom>-m` : le même écran photographié à
 390px de large. La vitrine la sert sous 640px via `<picture>`. Sans elle, le
@@ -33,6 +35,21 @@ fichier publié — `scripts/capture-product.mjs` les efface pour cette raison.
 Pas de `monthly-reports` : la fonctionnalité existe, mais le compte vitrine n'a
 jamais généré de rapport, et la capture tombe sur l'état vide (neuf boutons
 « Generate »). Voir le commentaire dans `scripts/capture-product.mjs`.
+
+`missed` et `news` étaient dans le même cas, et n'y sont plus :
+
+- **Setups manqués** : six entrées réelles ont été enregistrées sur le compte
+  vitrine. Elles sont exportées dans `scripts/fixtures/missed-opportunities.json`
+  pour que le harnais les serve sans réseau.
+- **Actualités économiques** : la page lit une fonction SERVEUR, que le harnais
+  ne peut pas intercepter côté navigateur. On lui donne donc une base à lire —
+  `scripts/fixtures/supabase-stub.mjs`, alimenté par un export réel de la table
+  `economic_events`. Le code applicatif tourne en entier, sans modification.
+
+Dans les deux cas, la séquence de capture VÉRIFIE l'état vide avant de
+déclencher : une page vide ne peut pas être publiée sous un nom de
+fonctionnalité. C'est ce contrôle qui a rattrapé une capture partie avec
+« Live calendar unavailable » en travers.
 
 ## Ce qu'une bonne capture demande
 

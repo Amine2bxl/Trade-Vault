@@ -1323,6 +1323,8 @@ const fr: Dict = {
     "Horaires convertis dans ton fuseau. Les événements marqués « approx. » suivent un calendrier récurrent — vérifie la date exacte auprès de la source officielle.",
   "news.today": "Aujourd'hui",
   "news.tomorrow": "Demain",
+  "news.nextEvent": "Prochain événement",
+  "news.dayShort": "j",
   "news.thisWeek": "Cette semaine",
   "news.all": "Tout",
   "news.impactHoliday": "Férié",

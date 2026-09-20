@@ -38,6 +38,7 @@ export function ProductShot({
   priorite = false,
   hero = false,
   className,
+  retardFlottement,
 }: {
   nom: string;
   alt: string;
@@ -47,6 +48,13 @@ export function ProductShot({
   /** La légère perspective, réservée à la capture d'ouverture. */
   hero?: boolean;
   className?: string;
+  /**
+   * Le décalage du flottement, en secondes. Sans lui toutes les captures de
+   * la page montent et descendent EN MÊME TEMPS, et six objets synchronisés
+   * ne se lisent plus comme six écrans qui respirent mais comme une seule
+   * surface qui tangue.
+   */
+  retardFlottement?: number;
 }) {
   const src = shot(nom);
   if (!src) return null;
@@ -63,7 +71,19 @@ export function ProductShot({
        capture est cadrée sur une RÉGION différente (voir `landing.css`) : le
        cadrage ne peut pas être le même pour une conversation alignée à droite
        et pour un tableau aligné à gauche. */
-    <figure className={className} data-shot={nom}>
+    /* `shot-halo` porte la lueur, `shot-flotte` le mouvement — les deux sur
+       le `<figure>` et non sur le cadre, parce que le cadre a
+       `overflow: hidden` (pour ses coins) et découpait donc la lueur à zéro,
+       et parce qu'il porte déjà sa propre `transform` sur le héros. */
+    <figure
+      className={`shot-halo shot-flotte${className ? ` ${className}` : ""}`}
+      data-shot={nom}
+      style={
+        retardFlottement
+          ? ({ "--flot-retard": `${retardFlottement}s` } as React.CSSProperties)
+          : undefined
+      }
+    >
       <div className={`shot-frame${hero ? " shot-hero" : ""}`}>
         <picture>
           {srcMobile && <source media="(max-width: 639px)" srcSet={srcMobile} />}
@@ -97,6 +117,7 @@ export function ShotOuVisuel({
   priorite,
   hero,
   className,
+  retardFlottement,
   repli,
 }: {
   nom: string;
@@ -105,6 +126,7 @@ export function ShotOuVisuel({
   priorite?: boolean;
   hero?: boolean;
   className?: string;
+  retardFlottement?: number;
   /** L'illustration à montrer tant que la capture n'est pas déposée. */
   repli: React.ReactNode;
 }) {
@@ -117,6 +139,7 @@ export function ShotOuVisuel({
       priorite={priorite}
       hero={hero}
       className={className}
+      retardFlottement={retardFlottement}
     />
   );
 }

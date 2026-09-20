@@ -1148,6 +1148,87 @@ const M: Record<string, Msg> = {
   "trust.t3": { en: "Your data is yours", fr: "Tes données t'appartiennent" },
   "trust.d3": { en: "Full export, anytime.", fr: "Export complet, à tout moment." },
 
+  /* ── /pricing — la page dédiée ─────────────────────────────────────────
+   *
+   * Sa copy est DISTINCTE de la section tarifaire de la vitrine, et c'est
+   * délibéré : là-bas on arrive au bout d'un parcours, ici on arrive avec la
+   * question. Reprendre le même titre ferait lire deux fois la même page à
+   * deux moments qui n'ont rien à voir.
+   *
+   * Le titre passe le test de l'inversion : « l'offre gratuite EST un essai »
+   * est une vraie alternative, que pratiquement tous les concurrents
+   * choisissent. Dire l'inverse dit donc quelque chose. */
+  "price.h1": {
+    en: "The free plan is not a trial.",
+    fr: "L'offre gratuite n'est pas un essai.",
+  },
+  "price.sub": {
+    en: "Log your trades for free, with no deadline and no card. Pay the day you want to know what they cost you.",
+    fr: "Note tes trades gratuitement, sans échéance et sans carte. Paie le jour où tu veux savoir ce qu'ils te coûtent.",
+  },
+  "price.state.on": { en: "You are currently on", fr: "Tu es actuellement sur" },
+  "price.state.free": { en: "the free plan", fr: "l'offre gratuite" },
+  "price.state.manage": { en: "Manage", fr: "Gérer" },
+  "price.foot.home": { en: "Home", fr: "Accueil" },
+
+  /* Ce qui change, en trois phrases. Une matrice de vingt lignes se PARCOURT
+     et ne se lit pas ; trois phrases se lisent en entier. La troisième est
+     celle qu'aucune grille n'affiche jamais - ce qui reste gratuit pour
+     toujours -, et sans elle « offre gratuite » se lit « version mutilée ». */
+  "price.diff.title": {
+    en: "What actually changes",
+    fr: "Ce qui change vraiment",
+  },
+  "price.diff1.from": { en: "Free", fr: "Gratuit" },
+  "price.diff1.to": { en: "Pro", fr: "Pro" },
+  "price.diff1.d": {
+    en: "Every analysis page opens - your mistakes priced, your edge broken down by day, session and symbol, Monte Carlo, seasonality, monthly reports - and your trades stop being counted.",
+    fr: "Toutes les pages d'analyse s'ouvrent - tes erreurs chiffrées, ton edge découpé par jour, session et symbole, Monte-Carlo, saisonnalité, rapports mensuels - et tes trades cessent d'être comptés.",
+  },
+  "price.diff2.from": { en: "Pro", fr: "Pro" },
+  "price.diff2.to": { en: "Elite", fr: "Elite" },
+  "price.diff2.d": {
+    en: "Nothing new opens. The limits come off: Jarvis without a daily cap, and as many trading accounts as you run.",
+    fr: "Rien de nouveau ne s'ouvre. Les limites sautent : Jarvis sans plafond quotidien, et autant de comptes de trading que tu en gères.",
+  },
+  "price.diff3.from": { en: "Every plan", fr: "Toutes les offres" },
+  "price.diff3.to": { en: "Always", fr: "Toujours" },
+  "price.diff3.d": {
+    en: "The journal, the dashboard, the calendar, the pre-market checklist, your trading plan and the position calculator stay free. They are not a teaser.",
+    fr: "Le journal, le tableau de bord, le calendrier, la checklist pré-market, ton plan de trading et le calculateur de position restent gratuits. Ce n'est pas un avant-goût.",
+  },
+
+  /* Quatre objections de FACTURATION. Aucune ne répète la FAQ de la vitrine :
+     ici on ne demande plus « à quoi ça sert », on demande « qu'est-ce que je
+     signe ». */
+  "price.faq.title": { en: "Before you pay", fr: "Avant de payer" },
+  "price.faq1.q": {
+    en: "Is the free plan really free?",
+    fr: "Le gratuit est-il vraiment gratuit ?",
+  },
+  "price.faq1.a": {
+    en: "Yes. No deadline, no card asked, no feature that expires. It is capped at 10 new trades a month, and that is the only limit.",
+    fr: "Oui. Aucune échéance, aucune carte demandée, aucune fonction qui expire. Il est plafonné à 10 nouveaux trades par mois, et c'est la seule limite.",
+  },
+  "price.faq2.q": {
+    en: "What happens to my data if I stop paying?",
+    fr: "Que deviennent mes données si j'arrête de payer ?",
+  },
+  "price.faq2.a": {
+    en: "Nothing is deleted. You go back to the free plan, everything already recorded stays readable, and the CSV export stays available. Only new logging is capped again.",
+    fr: "Rien n'est supprimé. Tu reviens à l'offre gratuite, tout ce qui est déjà enregistré reste lisible, et l'export CSV reste disponible. Seule la saisie de nouveaux trades est à nouveau plafonnée.",
+  },
+  "price.faq3.q": { en: "Can I cancel?", fr: "Puis-je annuler ?" },
+  "price.faq3.a": {
+    en: "In one click, from your account. You keep your plan until the end of the period already paid for, then you move back to free.",
+    fr: "En un clic, depuis ton compte. Tu gardes ton offre jusqu'à la fin de la période déjà payée, puis tu reviens au gratuit.",
+  },
+  "price.faq4.q": { en: "How do I pay?", fr: "Comment payer ?" },
+  "price.faq4.a": {
+    en: "By card through Stripe, or in cryptocurrency through Coinbase Commerce. Your card number never reaches TradeVault.",
+    fr: "Par carte via Stripe, ou en cryptomonnaie via Coinbase Commerce. Ton numéro de carte n'atteint jamais TradeVault.",
+  },
+
   /* pricing */
   "pricing.tag": { en: "Pricing", fr: "Tarifs" },
   "pricing.title": {

@@ -69,7 +69,21 @@ describe("les deux pastilles tiennent une colonne", () => {
 
   test("le symbole et la date absorbent la variation", () => {
     // Quelque chose doit céder : c'est le couple symbole + date, qui tronque.
-    expect(LIGNE).toContain("min-w-0 flex-1 truncate");
+    //
+    // LE TEST NE CHERCHE PLUS UNE CHAÎNE DE CLASSES EXACTE. Il attendait
+    // `"min-w-0 flex-1 truncate"` sur un seul élément ; les trois classes
+    // vivent maintenant sur deux (le conteneur est élastique, le symbole
+    // tronque) parce que sur 390px le couple s'EMPILE — côte à côte, la base
+    // du symbole tombait à zéro et son `truncate` n'affichait plus rien.
+    //
+    // La propriété à garder est celle-ci, et elle est inchangée : le couple
+    // est la zone qui cède, et c'est le symbole qui tronque. Figer les
+    // classes revenait à interdire toute mise en page responsive du bloc.
+    const i = LIGNE.indexOf("m.symbol");
+    expect(i).toBeGreaterThan(-1);
+    const bloc = LIGNE.slice(0, i);
+    expect(bloc).toContain("min-w-0 flex-1");
+    expect(bloc.slice(bloc.lastIndexOf("min-w-0 flex-1"))).toContain("truncate");
   });
 });
 

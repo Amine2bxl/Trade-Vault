@@ -1421,6 +1421,8 @@ const en = {
      semaine / Tout » et « Fort / Moyen / Faible ». Les cles `news.today` et
      `news.impact*` existaient deja et n'etaient pas appelees. */
   "news.tomorrow": "Tomorrow",
+  "news.nextEvent": "Next event",
+  "news.dayShort": "d",
   "news.thisWeek": "This week",
   "news.all": "All",
   "news.impactHoliday": "Holiday",

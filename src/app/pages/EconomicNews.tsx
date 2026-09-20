@@ -114,13 +114,26 @@ function useNow(fast: boolean): number {
   return now;
 }
 
-function formatCountdown(ms: number): string {
+/**
+ * Le compte a rebours jusqu'au prochain evenement.
+ *
+ * `j` est l'abreviation FRANCAISE de « jour ». Elle etait ecrite en dur dans
+ * une interface dont la langue par defaut est l'anglais : un anglophone
+ * lisait « 1j 17h ». Les trois autres unites (h, m, s) sont identiques dans
+ * les deux langues, ce qui explique que le defaut soit passe inapercu — seul
+ * le premier palier, celui qui ne s'affiche qu'au-dela de 24 heures, trahit
+ * la langue.
+ *
+ * Le suffixe vient donc du dictionnaire. Trouve en relisant une capture
+ * destinee a la vitrine, exactement comme les libelles de filtres avant lui.
+ */
+function formatCountdown(ms: number, jour: string): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const days = Math.floor(total / 86_400);
   const hours = Math.floor((total % 86_400) / 3_600);
   const minutes = Math.floor((total % 3_600) / 60);
   const seconds = total % 60;
-  if (days > 0) return `${days}j ${hours}h`;
+  if (days > 0) return `${days}${jour} ${hours}h`;
   if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
   if (minutes > 0) return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
   return `${seconds}s`;
@@ -561,7 +574,7 @@ export default function EconomicNews() {
             )}
           />
           <div className="flex-1 min-w-0">
-            <div className="tv-label text-slate-500">Prochain event</div>
+            <div className="tv-label text-slate-500">{t("news.nextEvent")}</div>
             <div className="text-sm font-semibold text-white truncate mt-0.5">
               {flagOf(nextEvent.currency)} {nextEvent.title}
             </div>
@@ -570,8 +583,11 @@ export default function EconomicNews() {
             </div>
           </div>
           <div className="shrink-0 text-right">
-            <div className="tv-figure text-xl text-cyan-300 leading-none">
-              {formatCountdown(new Date(nextEvent.startsAt).getTime() - now)}
+            {/* L'accent du theme, pas un cyan en dur : cette tuile est la
+                seule de la page a porter encore la couleur d'avant la
+                direction emeraude, et elle part dans les captures. */}
+            <div className="tv-figure text-xl leading-none text-[var(--tv-highlight)]">
+              {formatCountdown(new Date(nextEvent.startsAt).getTime() - now, t("news.dayShort"))}
             </div>
           </div>
         </div>

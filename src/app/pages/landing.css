@@ -517,15 +517,44 @@
     /* L'arête intérieure haute — la ligne qui fait l'épaisseur. */ inset 0 1px 0
       rgb(255 255 255 / 0.07);
 }
-.landing-root .shot-frame::before {
+/* ══ LA LUEUR A CHANGÉ DE PORTEUR, PARCE QU'ELLE N'EXISTAIT PAS ══
+ *
+ * Elle était posée sur `.shot-frame::before`, en `inset: -18% -10%` — donc
+ * DÉBORDANTE. Or `.shot-frame` a reçu plus tard `overflow: hidden`, pour
+ * régler les triangles noirs dans les coins. Ce `hidden` découpait la lueur
+ * exactement à la limite du cadre : elle était calculée, composée, et
+ * intégralement invisible. Le code décrivait un effet que personne n'avait
+ * jamais vu.
+ *
+ * Elle vit donc sur le `<figure>` (`.shot-halo`), qui ne découpe rien, et le
+ * cadre garde son `overflow: hidden` pour ses coins.
+ *
+ * ── CE QU'ELLE ÉCLAIRE ────────────────────────────────────────────────────
+ *
+ * Deux sources, pas une. L'accent au-dessus, le vert des courbes en dessous :
+ * une capture de TradeVault a du vert dans sa moitié basse (l'equity, les
+ * gains) et du gris en haut. Une lueur monochrome centrée aurait aplati cette
+ * différence ; deux nappes décalées prolongent les couleurs de la capture
+ * hors de son cadre, ce qui la fait lire comme un écran ALLUMÉ plutôt que
+ * comme une image posée devant une lampe.
+ *
+ * Les opacités restent sous 0,14 et le flou monte à 56px : au-delà on ne voit
+ * plus une profondeur, on voit un halo — et un halo attire l'œil sur le vide
+ * autour de la capture plutôt que sur la capture. */
+.landing-root .shot-halo {
+  position: relative;
+  isolation: isolate;
+}
+.landing-root .shot-halo::before {
   content: "";
   position: absolute;
-  inset: -18% -10%;
+  inset: -14% -8% -10%;
   z-index: -1;
   pointer-events: none;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(var(--tv-accent-rgb) / 0.14), transparent 72%);
-  filter: blur(42px);
+  background:
+    radial-gradient(60% 46% at 50% 18%, rgb(var(--tv-accent-rgb) / 0.13), transparent 70%),
+    radial-gradient(52% 40% at 50% 88%, rgb(var(--tv-chart-green-rgb) / 0.075), transparent 72%);
+  filter: blur(56px);
 }
 .landing-root .shot-frame > img {
   display: block;
@@ -544,6 +573,41 @@
     transparent 38%,
     transparent 100%
   );
+}
+
+/* ══ LES CAPTURES RESPIRENT ══
+ *
+ * Une amplitude de 5px sur 11 secondes. C'est délibérément SOUS le seuil de
+ * ce qu'on remarque : on ne doit pas voir une capture bouger, on doit sentir
+ * que la page n'est pas une impression. Au-delà de ~8px le mouvement devient
+ * visible, et une capture qui se balance pendant qu'on essaie d'en lire le
+ * texte est une nuisance, pas une finition.
+ *
+ * `ease-in-out` et non `linear` : un aller-retour à vitesse constante a deux
+ * points d'arrêt nets, qu'on perçoit comme des à-coups même à 5px.
+ *
+ * Le décalage (`--flot-retard`) est passé depuis le JSX, un par rangée. Sans
+ * lui les six captures montent et descendent ENSEMBLE, et six objets
+ * synchronisés se lisent comme une seule surface qui tangue — exactement
+ * l'effet spectaculaire qu'on ne veut pas. Désynchronisées, chacune vit sa
+ * vie.
+ *
+ * `transform` seul, donc composité par le GPU : aucune remise en page,
+ * aucun repeint, rien qui coûte pendant le défilement. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .shot-flotte {
+    animation: shot-flottement 11s ease-in-out infinite;
+    animation-delay: var(--flot-retard, 0s);
+  }
+}
+@keyframes shot-flottement {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
 }
 
 /* La capture du héros, LÉGÈREMENT tournée.
