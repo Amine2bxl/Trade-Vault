@@ -586,6 +586,31 @@ const M: Record<string, Msg> = {
     en: "Universal CSV import, copy-paste, or 45 seconds by hand. No broker connection - there is no API, and we would rather say so.",
     fr: "Import CSV universel, copier-coller, ou 45 secondes à la main. Aucune connexion courtier - il n'y a pas d'API, et on préfère le dire.",
   },
+  /* Deux écrans de plus dans la visite : la préparation d'avant-séance et la
+     ruine simulée. Ils portent des arguments que rien d'autre ne porte -
+     l'un est le SEUL moment du produit qui agit AVANT le trade, l'autre est
+     la seule chose qui parle de ce qui ne s'est pas encore produit. */
+  "v2.s6.t": {
+    en: "The checklist runs before the trade.",
+    fr: "La checklist passe avant le trade.",
+  },
+  "v2.s6.d": {
+    en: "Preparation, mental state, lock-in. It is the only moment the product acts before you click, not after.",
+    fr: "Préparation, état mental, verrouillage. C'est le seul moment où le produit agit avant que tu cliques, pas après.",
+  },
+  "v2.s7.t": { en: "Where your account can land.", fr: "Où ton compte peut atterrir." },
+  "v2.s7.d": {
+    en: "Ten thousand replays of your own wins and losses, in a different order each time. Nothing here is a preset.",
+    fr: "Dix mille rejeux de tes propres gains et pertes, dans un ordre différent à chaque fois. Rien ici n'est un préréglage.",
+  },
+  "shot.checklist.alt": {
+    en: "The pre-market checklist: preparation, mental state and lock-in.",
+    fr: "La checklist d'avant-séance : préparation, état mental et verrouillage.",
+  },
+  "shot.montecarlo.alt": {
+    en: "The Monte Carlo page: target reached, median drawdown and the range of paths.",
+    fr: "La page Monte Carlo : cible atteinte, drawdown médian et l'éventail des trajectoires.",
+  },
 
   /* ── Les quatre bénéfices, en liste ──
    *

@@ -10,14 +10,19 @@ d'illustration vers la vraie capture dès que le fichier correspondant existe.
 Le nom du fichier, **sans son extension**, est l'identifiant. Formats acceptés :
 `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`.
 
-| Fichier     | Où il apparaît                       | Écran à capturer                |
-| ----------- | ------------------------------------ | ------------------------------- |
-| `dashboard` | Héros — la première image de la page | Le tableau de bord, plein écran |
-| `mistakes`  | Visite du produit, rangée 1          | Journal → Erreurs               |
-| `jarvis`    | Visite du produit, rangée 2          | Une conversation Jarvis         |
-| `analytics` | Visite du produit, rangée 3          | La page Analyses                |
-| `calendar`  | Visite du produit, rangée 4          | Journal → Calendrier            |
-| `journal`   | Visite du produit, rangée 5          | Le journal de trades            |
+| Fichier      | Où il apparaît                       | Écran à capturer                |
+| ------------ | ------------------------------------ | ------------------------------- |
+| `dashboard`  | Héros — la première image de la page | Le tableau de bord, plein écran |
+| `mistakes`   | Visite du produit, rangée 1          | Journal → Erreurs               |
+| `jarvis`     | Visite du produit, rangée 2          | Une conversation Jarvis         |
+| `analytics`  | Visite du produit, rangée 3          | La page Analyses                |
+| `checklist`  | Visite du produit, rangée 4          | Préparation → Checklist         |
+| `montecarlo` | Visite du produit, rangée 5          | Analyse → Monte Carlo           |
+| `journal`    | Visite du produit, rangée 6          | Le journal de trades            |
+
+Chaque écran a AUSSI une variante `<nom>-m` : le même écran photographié à
+390px de large. La vitrine la sert sous 640px via `<picture>`. Sans elle, le
+téléphone reçoit la capture de bureau réduite à l'échelle 0,26 — illisible.
 
 Une capture absente n'est pas une erreur : la section garde son illustration.
 

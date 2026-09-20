@@ -991,11 +991,23 @@ function LandingPage() {
               alt: "shot.analytics.alt",
               repli: <AnalyticsSection />,
             },
+            /* La checklist prend la place du calendrier. Le calendrier
+               montrait « ton mois jour par jour », ce que la rangée Journal
+               dit déjà autrement ; la checklist est le SEUL écran du produit
+               qui agit avant le trade, et rien d'autre ne porte cet
+               argument. */
             {
-              nom: "calendar",
-              titre: "v2.s4.t",
-              texte: "v2.s4.d",
-              alt: "shot.calendar.alt",
+              nom: "checklist",
+              titre: "v2.s6.t",
+              texte: "v2.s6.d",
+              alt: "shot.checklist.alt",
+              repli: null,
+            },
+            {
+              nom: "montecarlo",
+              titre: "v2.s7.t",
+              texte: "v2.s7.d",
+              alt: "shot.montecarlo.alt",
               repli: null,
             },
             {

@@ -27,7 +27,7 @@
  */
 import { chromium } from "playwright";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 const OUT = process.argv[2] ?? "/tmp/shots";
@@ -701,11 +701,37 @@ if (await allerPageMobile(pageM, "Mistakes", "Your correction plan"))
 if (await allerPageMobile(pageM, "Calendar", "TRADING DAYS"))
   await capturerMobile(pageM, "mob-calendar");
 await capturerMobile(pageM, "mob-analytics", "Analysis");
-await capturerMobile(pageM, "mob-jarvis", "Jarvis");
-const sugM = pageM.getByRole("button", { name: /Chased entry|overtrading|Thursday/i }).first();
-if (await sugM.count()) {
-  await sugM.click();
-  await pageM.waitForTimeout(12000);
+/* Les deux ecrans entres dans la visite ont besoin de leur variante
+   telephone, sinon `<picture>` retombe sur la capture de BUREAU reduite —
+   exactement l'illisibilite qu'on a passe du temps a corriger ailleurs. */
+if (await allerPageMobile(pageM, "Monte Carlo", "risk of ruin"))
+  await capturerMobile(pageM, "mob-montecarlo");
+/* Sur telephone il n'y a PAS d'entree « Pre-Market Checklist » : la
+   checklist est la page par defaut de la section « Preparation », qui est
+   dans la barre du bas. On y va par la section, puis on ferme la modale
+   d'accueil, puis on capture. */
+if (await allerMobile(pageM, "Preparation")) {
+  const plusTardM = pageM.getByRole("button", { name: /^(Later|Plus tard)$/ }).first();
+  if (await plusTardM.count()) {
+    await plusTardM.click().catch(() => {});
+    await pageM.waitForTimeout(2000);
+  }
+  await capturerMobile(pageM, "mob-checklist");
+}
+
+/* JARVIS EN DERNIER : la reponse met une douzaine de secondes a se composer,
+   et on ne veut pas que cette attente retarde les autres ecrans.
+   UNE seule capture, apres la reponse. La version precedente capturait la
+   page vide puis re-capturait sous le meme nom — le meme piege qui, sur la
+   checklist, avait ecrase la bonne image par une page blanche. */
+if (await allerMobile(pageM, "Jarvis")) {
+  const sugM = pageM.getByRole("button", { name: /Chased entry|overtrading|Thursday/i }).first();
+  if (await sugM.count()) {
+    await sugM.click().catch(() => {});
+    await pageM.waitForTimeout(12000);
+  } else {
+    console.log("  ⊘ mobile : aucune suggestion Jarvis a cliquer");
+  }
   await capturerMobile(pageM, "mob-jarvis");
 }
 await ctxM.close();
@@ -752,7 +778,6 @@ const PLANS = [
      une ligne `{ de: "desk-08-rapports.png", vers: "monthly-reports.webp",
      vfen: [150, 1560], w: 2400 }`. La capture PNG, elle, continue d'etre
      prise : c'est elle qui permettra de verifier que l'etat n'est plus vide. */
-  { de: "desk-04-calendrier.png", vers: "calendar.webp", vfen: [60, 1700], w: 2400 },
   { de: "desk-09-montecarlo.png", vers: "montecarlo.webp", vfen: [150, 1560], w: 2400 },
   { de: "desk-10-checklist.png", vers: "checklist.webp", vfen: [100, 1560], w: 2400 },
   /* PAS de `news.webp` ni de `missed.webp`.
@@ -773,14 +798,24 @@ const PLANS = [
   { de: "mob-mistakes.png", vers: "mistakes-m.webp", pleine: true, w: 780 },
   { de: "mob-jarvis.png", vers: "jarvis-m.webp", pleine: true, w: 780 },
   { de: "mob-analytics.png", vers: "analytics-m.webp", pleine: true, w: 780 },
-  { de: "mob-calendar.png", vers: "calendar-m.webp", pleine: true, w: 780 },
   { de: "mob-journal.png", vers: "journal-m.webp", pleine: true, w: 780 },
+  { de: "mob-montecarlo.png", vers: "montecarlo-m.webp", pleine: true, w: 780 },
+  { de: "mob-checklist.png", vers: "checklist-m.webp", pleine: true, w: 780 },
 ];
 
 console.log("→ recadrage et encodage WebP");
 const encodeur = await (await browser.newContext()).newPage();
 for (const p of PLANS) {
-  const b64 = readFileSync(join(OUT, p.de)).toString("base64");
+  /* Une capture manquante SAUTE, elle ne fait pas tomber l'encodage. Le
+     script vient d'echouer en `ENOENT` sur `mob-checklist.png` apres avoir
+     produit onze fichiers corrects : une navigation ratee en fin de passe
+     mobile jetait tout le travail de la passe bureau. */
+  const src = join(OUT, p.de);
+  if (!existsSync(src)) {
+    console.log(`  ⊘ ${p.vers.padEnd(18)} source absente (${p.de})`);
+    continue;
+  }
+  const b64 = readFileSync(src).toString("base64");
   /* La fenetre verticale est un choix ; la bande horizontale est une mesure.
      Faute de mesure (le `<main>` a disparu), on ne recadre PAS en largeur :
      une capture trop large se voit et se corrige, une capture qui tranche un
@@ -819,7 +854,18 @@ for (const p of PLANS) rmSync(join(OUT, p.de), { force: true });
 // Les captures prises mais NON encodees. Elles ne sont dans aucun plan, donc
 // la boucle ci-dessus ne les voit pas — et `shots.ts` globbe aussi les `.png`
 // du dossier : en oublier une, c'est la publier.
-for (const n of ["desk-06-jarvis-vide.png", "desk-08-rapports.png", "desk-11-news.png"])
+/* `desk-04-calendrier` et `mob-calendar` restent PRIS mais ne sont plus
+   encodes : la checklist a pris la place du calendrier dans la visite, et
+   `shots.ts` globbe en eager — un webp non reference partirait quand meme
+   dans le bundle. Les PNG servent a verifier l'ecran si on veut l'y
+   remettre. */
+for (const n of [
+  "desk-06-jarvis-vide.png",
+  "desk-08-rapports.png",
+  "desk-11-news.png",
+  "desk-04-calendrier.png",
+  "mob-calendar.png",
+])
   rmSync(join(OUT, n), { force: true });
 
 await browser.close();
