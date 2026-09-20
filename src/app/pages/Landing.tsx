@@ -192,6 +192,27 @@ function useScroll() {
   }, []);
   return { y, pct };
 }
+/**
+ * « Moins de mouvement », lu une seule fois.
+ *
+ * Au rendu serveur `matchMedia` n'existe pas : on part donc de `false` et on
+ * corrige au montage. Partir de `true` serait plus prudent en apparence, mais
+ * produirait un saut visible chez la majorité des visiteurs, qui n'ont rien
+ * demandé - et la parallaxe qu'on neutralise ici ne coûte rien à personne le
+ * temps d'une image.
+ */
+function usePrefereMoinsDeMouvement() {
+  const [reduit, setReduit] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduit(mq.matches);
+    const on = () => setReduit(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return reduit;
+}
+
 function useReveal() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -682,6 +703,13 @@ function LandingPage() {
   const [activeSec, setActiveSec] = useState("");
   const { y, pct } = useScroll();
   useReveal();
+  /* Lu UNE fois, pas à chaque rendu : `matchMedia` n'existe pas au rendu
+     serveur, et l'interroger soixante fois par seconde pendant un défilement
+     serait du gâchis pour une valeur qui ne change quasiment jamais. */
+  const reduitLeMouvement = usePrefereMoinsDeMouvement();
+  // Plafonnée à 60px : au-delà, la capture se décroche du texte qu'elle
+  // illustre et on lit deux blocs qui glissent l'un contre l'autre.
+  const parallaxe = Math.min(y * 0.06, 60);
 
   const problems = [
     { n: "err" as IName, t: t("problem.p1.t"), d: t("problem.p1.d") },
@@ -810,7 +838,15 @@ function LandingPage() {
                   redite en 37 mots. Ici on garde la mécanique (lit, chiffre,
                   donne une règle) ; les symptômes se lisent juste après. */}
                 <p className="fade-up d2 mt-7 max-w-[560px] text-[17px] leading-7 text-slate-400">
-                  {t("v2.hero.sub")}
+                  {t("v2.hero.sub.a")}
+                  {/* LE SEUL SURLIGNEUR DE LA PAGE.
+                      Un groupe de mots porté par l'accent, pas une phrase :
+                      surligner une phrase entière ne souligne rien, ça
+                      repeint. Et c'est la PROMESSE qu'on surligne, jamais le
+                      nom du produit - si on ne lit que trois mots, ce sont
+                      ceux-là qu'il faut avoir lus. */}
+                  <span className="mark-accent font-semibold">{t("v2.hero.sub.b")}</span>
+                  {t("v2.hero.sub.c")}
                 </p>
                 {/* UN SEUL BOUTON. Le second appel (« or watch a 2-min demo »)
                   est un lien discret, pas une action concurrente : deux
@@ -845,7 +881,22 @@ function LandingPage() {
                   Tant qu'aucun `dashboard.*` n'est déposé dans
                   `src/assets/product/`, le dessin ci-dessous tient la place ;
                   le fichier posé, il s'efface. */}
-              <div className="fade-up d4 hero-shot-col">
+              {/* LA PARALLAXE DU HÉROS.
+                  La capture remonte de 6 % de la distance défilée, plafonnée
+                  à 60px. C'est peu, et c'est voulu : au-delà, l'image se
+                  décroche du texte qu'elle illustre et on lit deux blocs qui
+                  bougent l'un par rapport à l'autre. À cette amplitude on ne
+                  voit pas un effet, on sent que la page a de l'épaisseur.
+
+                  `transform` seul, donc composité par le GPU : aucune remise
+                  en page, aucun repeint. Neutralisée si le visiteur a demandé
+                  moins de mouvement - `y` est alors simplement ignoré. */}
+              <div
+                className="fade-up d4 hero-shot-col"
+                style={
+                  reduitLeMouvement ? undefined : { transform: `translate3d(0,${-parallaxe}px,0)` }
+                }
+              >
                 <ShotOuVisuel
                   nom="dashboard"
                   alt={t("shot.dashboard.alt")}

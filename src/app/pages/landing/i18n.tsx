@@ -473,10 +473,23 @@ const M: Record<string, Msg> = {
     en: "For prop-firm challenges and serious retail",
     fr: "Pour les challenges prop-firm et le retail exigeant",
   },
-  "v2.hero.sub": {
-    en: "TradeVault reads your journal, puts a number on what indiscipline costs you, and gives you one rule to hold tomorrow.",
-    fr: "TradeVault lit ton journal, chiffre ce que l'indiscipline te coûte, et te donne une règle à tenir demain.",
+  /* LE SOUS-TITRE EST DÉCOUPÉ EN TROIS, POUR LE SURLIGNEUR.
+     Découper plutôt que chercher une sous-chaîne à l'exécution : une
+     recherche de texte casse à la première traduction qui tourne la phrase
+     autrement, et elle casse EN SILENCE - le surlignage disparaît sans que
+     rien ne le signale. Trois clés, trois traductions, aucun découpage
+     deviné.
+     La partie surlignée est la PROMESSE CONCRÈTE, pas le nom du produit :
+     c'est elle qu'on doit retenir si on ne lit que trois mots. */
+  "v2.hero.sub.a": {
+    en: "TradeVault reads your journal, puts a number on what indiscipline costs you, and gives you ",
+    fr: "TradeVault lit ton journal, chiffre ce que l'indiscipline te coûte, et te donne ",
   },
+  "v2.hero.sub.b": {
+    en: "one rule to hold tomorrow",
+    fr: "une règle à tenir demain",
+  },
+  "v2.hero.sub.c": { en: ".", fr: "." },
   "v2.hero.risk": {
     en: "Free forever · No card · Export anytime",
     fr: "Gratuit pour toujours · Sans carte · Export à tout moment",
