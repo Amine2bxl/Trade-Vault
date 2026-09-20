@@ -466,9 +466,28 @@
    * avec Amber, gris avec Graphite. Une seule variable à changer, jamais une
    * couleur codée en dur.
    */
-  --tv-rail-top: oklch(0.34 calc(0.075 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-rail-mid: oklch(0.25 calc(0.06 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-rail-bot: oklch(0.135 calc(0.022 * var(--tv-primary-c)) var(--tv-primary-h));
+  /*
+   * LE PLAFOND DE CHROMA — et pourquoi il manquait.
+   *
+   * Les trois multiplicateurs (0.075 / 0.06 / 0.022) ont été réglés à l'œil
+   * quand l'accent du produit était le graphite. Or `computeThemeVars` calcule
+   * `--tv-primary-c` par `clamp(C / 0.14, 0.35, 1.3)` : le graphite a un chroma
+   * de 0.035, donc `pc` était COLLÉ À SON PLANCHER (0.350), et le rail sortait
+   * à 0.026 de chroma — une ardoise à peine teintée.
+   *
+   * Le passage au vert menthe (chroma 0.186) a envoyé `pc` AU PLAFOND (1.300).
+   * Le même multiplicateur rend alors 0.098 : trois fois et demie plus saturé.
+   * L'intention n'a pas changé — « un objet distinct posé SUR le produit » —
+   * mais personne n'a choisi ce facteur 3,7 ; il est tombé du réglage.
+   *
+   * `min()` borne la contribution sans toucher aux thèmes sourds : à 0.350 de
+   * `pc` le calcul reste sous le plafond et Graphite rend EXACTEMENT ce qu'il
+   * rendait. Seuls les accents vifs sont retenus — le rail reste franchement
+   * teinté (0.045, soit 1,7× le graphite), il cesse d'être une colonne verte.
+   */
+  --tv-rail-top: oklch(0.34 min(calc(0.075 * var(--tv-primary-c)), 0.045) var(--tv-primary-h));
+  --tv-rail-mid: oklch(0.25 min(calc(0.06 * var(--tv-primary-c)), 0.036) var(--tv-primary-h));
+  --tv-rail-bot: oklch(0.135 min(calc(0.022 * var(--tv-primary-c)), 0.013) var(--tv-primary-h));
   /* Conservé : quelques surfaces héritées lisent encore `--tv-rail`. */
   --tv-rail: var(--tv-rail-mid);
 

@@ -27,7 +27,8 @@
  */
 import { chromium } from "playwright";
 import { createHash } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 
 const OUT = process.argv[2] ?? "/tmp/shots";
 mkdirSync(OUT, { recursive: true });
@@ -398,6 +399,60 @@ if (await suggestion.count()) {
   await capturer(pageD, "desk-07-jarvis-reponse");
 }
 await ctxD.close();
+
+// ── Recadrage + WebP ─────────────────────────────────────────────────────────
+//
+// UNE SEULE COMMANDE, parce que deux outils pour un seul geste finissent
+// toujours par diverger : on regenere les captures et on oublie de recadrer.
+//
+// Le recadrage n'est pas cosmetique. Une capture pleine page dans une
+// demi-colonne rend un texte illisible : elle cesse d'etre une preuve pour
+// devenir une texture. On enleve donc ce qui ne porte pas l'argument — le rail
+// de navigation, le chrome haut, le vide bas — pour que ce qui reste soit LU a
+// la taille ou il sera affiche.
+//
+// Chromium fait l'encodage : ni ImageMagick ni Pillow ne sont garantis
+// presents, et un `<canvas>` sait tres bien redimensionner et sortir du WebP.
+const PLANS = [
+  // Le heros est affiche pleine largeur : tout compte, on ne recadre pas.
+  { de: "desk-01-dashboard.png", vers: "dashboard.webp", crop: null, w: 1800 },
+  { de: "desk-07-jarvis-reponse.png", vers: "jarvis.webp", crop: [600, 60, 2540, 1560], w: 1300 },
+  { de: "desk-03-erreurs.png", vers: "mistakes.webp", crop: [600, 230, 2540, 1420], w: 1300 },
+  { de: "desk-05-analytics.png", vers: "analytics.webp", crop: [600, 380, 2540, 1560], w: 1300 },
+  { de: "desk-02-journal.png", vers: "journal.webp", crop: [600, 150, 2540, 1560], w: 1300 },
+  { de: "desk-04-calendrier.png", vers: "calendar.webp", crop: [600, 60, 2540, 1700], w: 1300 },
+];
+
+console.log("→ recadrage et encodage WebP");
+const encodeur = await (await browser.newContext()).newPage();
+for (const p of PLANS) {
+  const b64 = readFileSync(join(OUT, p.de)).toString("base64");
+  const out = await encodeur.evaluate(
+    async ([data, crop, w]) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${data}`;
+      await img.decode();
+      const [sx, sy, sw, sh] = crop ?? [0, 0, img.width, img.height];
+      const ratio = Math.min(1, w / sw);
+      const c = document.createElement("canvas");
+      c.width = Math.round(sw * ratio);
+      c.height = Math.round(sh * ratio);
+      const g = c.getContext("2d");
+      g.imageSmoothingQuality = "high";
+      g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return { url: c.toDataURL("image/webp", 0.84), w: c.width, h: c.height };
+    },
+    [b64, p.crop, p.w],
+  );
+  const bin = Buffer.from(out.url.split(",")[1], "base64");
+  writeFileSync(join(OUT, p.vers), bin);
+  console.log(`  ✓ ${p.vers.padEnd(18)} ${out.w}×${out.h}  ${(bin.length / 1024).toFixed(0)} Ko`);
+}
+// Les PNG intermediaires ne servent qu'au recadrage : les laisser dans
+// `src/assets/product/` ferait deux fichiers pour la meme capture, et
+// `shots.ts` indexe les deux extensions.
+for (const p of PLANS) rmSync(join(OUT, p.de), { force: true });
+rmSync(join(OUT, "desk-06-jarvis-vide.png"), { force: true });
 
 await browser.close();
 console.log("terminé →", OUT);
