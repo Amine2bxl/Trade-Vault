@@ -16,6 +16,7 @@ import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";
 import { CookieConsent } from "../components/CookieConsent";
 import { faqPageJsonLd } from "@/shared/seo";
+import { YEARLY_EUR, eur } from "../utils/pricing";
 import {
   LandingLangProvider,
   useLandingT,
@@ -23,6 +24,62 @@ import {
   type LandingLang,
 } from "./landing/i18n";
 import "./landing.css";
+
+/**
+ * UN MONTANT, FACE À UN AUTRE.
+ *
+ * Les deux panneaux de l'ancrage tarifaire. Ils ne diffèrent que par leur
+ * RAIL de gauche — rouge pour ce que coûte un reset, émeraude pour ce que
+ * coûte l'abonnement. Le reste est identique, et c'est voulu : deux plaques
+ * de valeurs différentes se compareraient mal, l'œil attribuerait l'écart à
+ * la mise en forme plutôt qu'aux chiffres.
+ *
+ * Le rail suffit à porter le sens, et il ne remplit rien : l'accent reste
+ * rare, la couleur dit « perte » ou « offre » sur trois pixels de large.
+ */
+function PanneauAncrage({
+  variante,
+  label,
+  valeur,
+  suffixe,
+  detail,
+}: {
+  variante: "cout" | "offre";
+  label: string;
+  valeur: string;
+  suffixe?: string;
+  detail: string;
+}) {
+  const offre = variante === "offre";
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border p-6 sm:p-7 ${
+        offre
+          ? "border-[rgb(var(--tv-accent-rgb)/0.3)] bg-[var(--tv-plate-1)]"
+          : "border-white/[0.07] bg-white/[0.015]"
+      }`}
+    >
+      <span
+        className={`absolute inset-y-0 left-0 w-[3px] ${
+          offre ? "bg-[var(--tv-accent)]" : "bg-[var(--tv-chart-red)]"
+        }`}
+        aria-hidden
+      />
+      <p className="tv-label text-slate-500">{label}</p>
+      <p className="mt-3 flex items-baseline gap-1.5">
+        <span
+          className={`tv-figure text-[clamp(1.9rem,4vw,2.6rem)] leading-none ${
+            offre ? "text-white" : "text-[var(--tv-chart-red)]"
+          }`}
+        >
+          {valeur}
+        </span>
+        {suffixe && <span className="text-[13px] text-slate-500">{suffixe}</span>}
+      </p>
+      <p className="mt-3 text-[13px] leading-6 text-slate-400">{detail}</p>
+    </div>
+  );
+}
 
 /* ─────────────────────────── LOGO ────────────────────────── */
 function Logo() {
@@ -735,7 +792,7 @@ function MistakesSection() {
 
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
-  const { t } = useLandingT();
+  const { t, lang } = useLandingT();
   const [auth, setAuth] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [authPlan, setAuthPlan] = useState<string | undefined>();
@@ -1154,23 +1211,46 @@ function LandingPage() {
               <h2 className="mt-4 font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
                 {t("pricing.title")}
               </h2>
-              <p className="mx-auto mt-5 max-w-[580px] text-[15px] leading-7 text-slate-400">
+              <p className="mx-auto mt-5 max-w-[520px] text-[15px] leading-7 text-slate-400">
                 {t("anchor.sub")}
               </p>
+            </div>
 
-              {/* Les deux bornes de l'offre, pas la grille. Le montant vient
-                  du catalogue (`@/domain/plans`), jamais d'une constante
-                  recopiée : c'est la seule façon qu'il ne diverge pas de
-                  `/pricing` et de Stripe. */}
-              {/* LE MÊME COUPLE QU'AILLEURS, DANS LE MÊME ORDRE.
-                  Cette section portait « See the plans » en bouton plein et
-                  « Start on the free plan » en second : deux libellés de
-                  plus pour deux actions que le héros nomme déjà autrement.
-                  Trois façons de dire « crée un compte » sur une même page
-                  ne se lisent pas comme trois offres, elles se lisent comme
-                  une hésitation. Un libellé par action, partout : l'aplat
-                  émeraude, c'est toujours l'inscription ; le bouton bordé,
-                  c'est toujours la grille tarifaire. */}
+            {/* ── L'ANCRAGE, MONTRÉ AU LIEU D'ÊTRE RACONTÉ ──
+                L'argument de cette section est ARITHMÉTIQUE : on ne se
+                compare pas à un journal moins cher, on se compare à ce que
+                coûte un challenge qu'on se saborde. Il était écrit en
+                paragraphe, au milieu d'une colonne de texte centré — donc
+                lu comme une opinion, alors que c'est une soustraction.
+
+                Deux montants face à face, et l'écart se voit sans être
+                calculé. Celui de gauche est le prix du marché d'un reset
+                (la fourchette du secteur, pas un chiffre inventé) ; celui
+                de droite vient du catalogue `@/domain/plans`, donc il ne
+                peut pas diverger de `/pricing` ni de Stripe. */}
+            <div className="reveal mx-auto mt-11 grid max-w-[880px] gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-stretch sm:gap-0">
+              <PanneauAncrage
+                variante="cout"
+                label={t("anchor.a.l")}
+                valeur={t("anchor.a.v")}
+                detail={t("anchor.a.d")}
+              />
+              <div className="flex items-center justify-center py-1 sm:px-6">
+                <span className="tv-label text-slate-600">{t("anchor.vs")}</span>
+              </div>
+              <PanneauAncrage
+                variante="offre"
+                label={t("anchor.b.l")}
+                valeur={eur(YEARLY_EUR, lang)}
+                suffixe={t("anchor.b.year")}
+                detail={t("anchor.b.d")}
+              />
+            </div>
+            <p className="reveal mt-6 text-center text-[15px] font-semibold text-white">
+              {t("anchor.punch")}
+            </p>
+
+            <div className="reveal mx-auto max-w-[760px] text-center">
               <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-3">
                 <button
                   onClick={() => open("signup", t("nav.cta.plan"))}
@@ -1205,9 +1285,16 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── FAQ ── */}
-        <section id="faq" className="relative section-divider py-10 sm:py-14 lg:py-20">
-          <div className="mx-auto w-full max-w-[760px] px-5 lg:px-8">
+        {/* ── FAQ, EN DEUX COLONNES ──
+            Elle était une colonne de 760px centrée sous son titre : le titre
+            prenait sa propre bande de hauteur, l'accordéon commençait
+            300px plus bas, et les deux tiers de la largeur restaient vides
+            de chaque côté. Le titre passe à gauche, en vis-à-vis, et la
+            page cesse de descendre pour rien. Il y tient compagnie au seul
+            recours utile ici : quelqu'un à qui écrire quand la réponse
+            n'est pas dans la liste. */}
+        <section id="faq" className="relative section-divider py-12 sm:py-16 lg:py-20">
+          <div className="lp-container">
             {/* `FAQPage` — construit à partir du MÊME tableau `faqs` que
                 l'accordéon rendu juste en dessous, donc incapable d'en
                 diverger. C'est le contenu le plus directement extractible du
@@ -1223,56 +1310,89 @@ function LandingPage() {
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: faqPageJsonLd(faqs) }}
             />
-            <SectionHead title={t("faq.title")} />
-            <div className="reveal border-t border-white/[.08]">
-              {faqs.map(({ q, a }, i) => {
-                const o = faq === i;
-                return (
-                  <div key={q} className="border-b border-white/[.08]">
-                    <button
-                      onClick={() => setFaq(o ? null : i)}
-                      aria-expanded={o}
-                      className="flex w-full items-center justify-between gap-5 py-5 text-left"
-                    >
-                      <span
-                        className={`text-base font-semibold transition-colors ${o ? "text-white" : "text-slate-300"}`}
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-16">
+              <div className="reveal lg:sticky lg:top-28 lg:self-start">
+                <h2 className="font-display text-[clamp(1.8rem,3.4vw,2.5rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
+                  {t("faq.title")}
+                </h2>
+                <p className="mt-4 text-[14px] leading-6 text-slate-500">{t("faq.aside")}</p>
+                <a
+                  href="/contact"
+                  className="group mt-4 inline-flex min-h-[40px] items-center gap-1.5 text-[13px] font-semibold text-[var(--tv-highlight)] transition-colors hover:text-white"
+                >
+                  {t("faq.aside.cta")}
+                  <Icon
+                    n="arrow"
+                    cls="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+                  />
+                </a>
+              </div>
+
+              <div className="reveal border-t border-white/[.08]">
+                {faqs.map(({ q, a }, i) => {
+                  const o = faq === i;
+                  return (
+                    <div key={q} className="border-b border-white/[.08]">
+                      <button
+                        onClick={() => setFaq(o ? null : i)}
+                        aria-expanded={o}
+                        className="flex w-full items-center justify-between gap-5 py-5 text-left"
                       >
-                        {q}
-                      </span>
-                      <span
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]" : "border-white/[.12] text-slate-500"}`}
-                      >
-                        <Icon n="chevron" cls="h-4 w-4" />
-                      </span>
-                    </button>
-                    <div className={`faq-body ${o ? "faq-open" : ""}`}>
-                      <div>
-                        <p className="pb-5 pr-8 text-[15px] leading-7 text-slate-400">{a}</p>
+                        <span
+                          className={`text-base font-semibold transition-colors ${o ? "text-white" : "text-slate-300"}`}
+                        >
+                          {q}
+                        </span>
+                        <span
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]" : "border-white/[.12] text-slate-500"}`}
+                        >
+                          <Icon n="chevron" cls="h-4 w-4" />
+                        </span>
+                      </button>
+                      <div className={`faq-body ${o ? "faq-open" : ""}`}>
+                        <div>
+                          <p className="pb-5 pr-8 text-[15px] leading-7 text-slate-400">{a}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ── CTA FINAL ── */}
-        <section className="relative section-divider py-20 lg:py-28">
+        {/* ── CTA FINAL ──
+            Il flottait au milieu de 200px de vide haut et bas, sur le fond
+            de la page : rien ne disait que c'était la fin, seulement que la
+            page continuait. Il devient une PLAQUE — la même grammaire de
+            surface que les cartes du reste de la vitrine — posée entre la
+            FAQ et le pied de page. Un bloc qui se referme se lit comme une
+            conclusion, et il n'a plus besoin de deux cents pixels de marge
+            pour exister. */}
+        <section className="relative section-divider py-14 lg:py-20">
           <div className="lp-container">
-            <div className="reveal mx-auto max-w-[680px] text-center">
-              <h2 className="font-display text-[clamp(2rem,4.4vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
-                {t("cta.title.a")}
-                <br />
-                <span className="text-accent">{t("cta.title.b")}</span>
-              </h2>
-              <button
-                onClick={() => open("signup", t("nav.cta.plan"))}
-                className="btn-primary mt-9 px-8 py-3 text-lg"
-              >
-                {t("hero.cta")} <Icon n="arrow" cls="h-5 w-5" />
-              </button>
-              <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
+            <div className="reveal relative overflow-hidden rounded-3xl border border-white/[0.07] bg-[var(--tv-plate-1)] px-6 py-14 text-center sm:px-10 lg:py-16">
+              {/* La seule lueur de la section, très basse, posée derrière le
+                  titre : elle sépare la plaque du fond sans rien éclairer. */}
+              <span
+                className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,rgb(var(--tv-accent-rgb)/0.1),transparent_70%)]"
+                aria-hidden
+              />
+              <div className="relative mx-auto max-w-[680px]">
+                <h2 className="font-display text-[clamp(2rem,4.4vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
+                  {t("cta.title.a")}
+                  <br />
+                  <span className="text-accent">{t("cta.title.b")}</span>
+                </h2>
+                <button
+                  onClick={() => open("signup", t("nav.cta.plan"))}
+                  className="btn-primary mt-9 px-8 py-3 text-lg"
+                >
+                  {t("hero.cta")} <Icon n="arrow" cls="h-5 w-5" />
+                </button>
+                <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
+              </div>
             </div>
           </div>
         </section>

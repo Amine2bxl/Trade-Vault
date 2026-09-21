@@ -1056,12 +1056,15 @@ const M: Record<string, Msg> = {
    * jamais d'une constante recopiée ici. */
   "anchor.title.a": { en: "Compare us to the right thing.", fr: "Compare-nous à la bonne chose." },
   "anchor.title.b": { en: "Not to a cheaper journal.", fr: "Pas à un journal moins cher." },
+  /* Raccourci de moitié : la comparaison chiffrée juste en dessous dit
+     maintenant ce que la première phrase expliquait. Ne reste que ce
+     qu'aucun chiffre ne peut dire — la CAUSE du reset. */
   "anchor.sub": {
-    en: "A prop firm challenge is paid again on every reset. Most resets are not a strategy failure - they're one rule broken after a loss.",
-    fr: "Un challenge prop firm se repaie à chaque reset. La plupart des resets ne sont pas un échec de stratégie - c'est une règle cassée après une perte.",
+    en: "Most resets are not a strategy failure. They're one rule broken after a loss.",
+    fr: "La plupart des resets ne sont pas un échec de stratégie. C'est une règle cassée après une perte.",
   },
   "anchor.a.l": { en: "One challenge reset", fr: "Un reset de challenge" },
-  "anchor.a.v": { en: "$200-600", fr: "200-600 $" },
+  "anchor.a.v": { en: "€200-600", fr: "200-600 €" },
   "anchor.a.d": {
     en: "Paid again, every time, market price.",
     fr: "Repayé à chaque fois, prix du marché.",
@@ -1072,6 +1075,11 @@ const M: Record<string, Msg> = {
     fr: "Tout débloqué. Annulation en un clic.",
   },
   "anchor.b.per": { en: "/ month", fr: "/ mois" },
+  /* Le titre de la section compare un reset à UNE ANNÉE de Pro. Afficher le
+     prix mensuel en face d'un montant unique laissait croire à deux échelles
+     différentes ; c'est l'annuel qui rend la soustraction exacte. */
+  "anchor.b.year": { en: "/ year", fr: "/ an" },
+  "anchor.vs": { en: "vs", fr: "contre" },
   "anchor.punch": {
     en: "One reset avoided pays for years.",
     fr: "Un reset évité paie des années.",
@@ -1452,6 +1460,11 @@ const M: Record<string, Msg> = {
   // l'accordéon rendu (`Landing.tsx`) : ajouter une entrée ici la publie aussi
   // en données structurées, sans recopie possible.
   "faq.title": { en: "Everything you need to know", fr: "Tout ce que tu dois savoir" },
+  "faq.aside": {
+    en: "Straight answers. If yours isn't here, it takes one message.",
+    fr: "Des réponses directes. Si la tienne n'y est pas, un message suffit.",
+  },
+  "faq.aside.cta": { en: "Ask us", fr: "Nous écrire" },
   "faq.q1": {
     en: "Is this just another trading journal?",
     fr: "C'est encore un journal de trading ?",
