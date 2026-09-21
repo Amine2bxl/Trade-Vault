@@ -1151,16 +1151,28 @@ function LandingPage() {
                   du catalogue (`@/domain/plans`), jamais d'une constante
                   recopiée : c'est la seule façon qu'il ne diverge pas de
                   `/pricing` et de Stripe. */}
+              {/* LE MÊME COUPLE QU'AILLEURS, DANS LE MÊME ORDRE.
+                  Cette section portait « See the plans » en bouton plein et
+                  « Start on the free plan » en second : deux libellés de
+                  plus pour deux actions que le héros nomme déjà autrement.
+                  Trois façons de dire « crée un compte » sur une même page
+                  ne se lisent pas comme trois offres, elles se lisent comme
+                  une hésitation. Un libellé par action, partout : l'aplat
+                  émeraude, c'est toujours l'inscription ; le bouton bordé,
+                  c'est toujours la grille tarifaire. */}
               <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-3">
-                <a href="/pricing" className="btn-primary w-full sm:w-auto">
-                  {t("pricing.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                </a>
                 <button
-                  onClick={() => open("signup", "Free")}
+                  onClick={() => open("signup", t("nav.cta.plan"))}
+                  className="btn-primary w-full sm:w-auto"
+                >
+                  {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
+                </button>
+                <a
+                  href="/pricing"
                   className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
                 >
-                  {t("pricing.cta2")}
-                </button>
+                  {t("hero.pricing")}
+                </a>
               </div>
 
               <div className="mt-7 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
@@ -1247,7 +1259,7 @@ function LandingPage() {
                 onClick={() => open("signup", t("nav.cta.plan"))}
                 className="btn-primary mt-9 px-8 py-3 text-lg"
               >
-                {t("cta.buttonShort")} <Icon n="arrow" cls="h-5 w-5" />
+                {t("hero.cta")} <Icon n="arrow" cls="h-5 w-5" />
               </button>
               <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
             </div>
@@ -1281,7 +1293,7 @@ function LandingPage() {
                   onClick={() => open("signup", t("nav.cta.plan"))}
                   className="group mt-5 inline-flex min-h-[40px] items-center gap-1.5 text-[13px] font-semibold text-[var(--tv-highlight)] transition-colors hover:text-white"
                 >
-                  {t("cta.buttonShort")}
+                  {t("hero.cta")}
                   <Icon
                     n="arrow"
                     cls="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"

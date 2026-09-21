@@ -416,6 +416,10 @@ const M: Record<string, Msg> = {
      ajoute du sens au lieu d'en repeindre. */
   "hero.h1b1": { en: "You break your own rules ", fr: "Tu casses tes propres règles " },
   "hero.h1b2": { en: "when it counts.", fr: "quand ça compte." },
+  /* LE libellé de l'inscription, pour tout le site. Court, parce qu'il doit
+     aussi tenir dans la barre de navigation ; la gratuité est portée juste
+     en dessous par la ligne de réassurance, à chaque endroit où le bouton
+     apparaît. */
   "hero.cta": { en: "Get Started", fr: "Commencer" },
   /* « ou regarde une démo de 2 min » envoyait sur une visite guidée alors
      que la question qui suit immédiatement l'accroche est « combien ». Le
@@ -552,7 +556,6 @@ const M: Record<string, Msg> = {
     en: "Decide now what you'll do after it.",
     fr: "Décide maintenant ce que tu feras après.",
   },
-  "cta.buttonShort": { en: "Start for free", fr: "Commencer gratuitement" },
 
   /* ═══════════════════════════════════════════════════════════════════════
      LA VITRINE COURTE — une section, une fonction, jamais deux fois la même.
@@ -1306,11 +1309,11 @@ const M: Record<string, Msg> = {
     en: "Start free, with no time limit. Go Pro when the free plan stops being enough.",
     fr: "Commence gratuitement, sans limite de temps. Passe Pro quand le gratuit ne suffit plus.",
   },
-  /* Le bloc tarifs de la LANDING n'est plus la grille : c'est une porte vers
-     `/pricing`. Deux actions, et elles ne disent pas la même chose - l'une
-     va comparer, l'autre commence tout de suite. */
-  "pricing.cta": { en: "See the plans", fr: "Voir les offres" },
-  "pricing.cta2": { en: "Start on the free plan", fr: "Commencer sur l'offre gratuite" },
+  /* `pricing.cta` / `pricing.cta2` / `cta.buttonShort` ont disparu, et c'est
+     le fond du sujet : ils nommaient une TROISIÈME et une QUATRIÈME façon de
+     dire « crée un compte » sur la même page. La vitrine n'a plus que deux
+     libellés d'action, `hero.cta` et `hero.pricing`, et ils servent partout -
+     navigation, héros, bloc tarifs, appel final, pied de page. */
   "pricing.save": {
     // Conservé pour d'éventuels usages hors grille. Aucun montant en dur : le
     // nombre de mois offerts est calculé depuis le catalogue et affiché sur la
