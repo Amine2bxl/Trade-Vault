@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eraser, Mic, MicOff, Zap } from "lucide-react";
+import { ArrowUpRight, Eraser, Mic, MicOff, Zap } from "lucide-react";
 import { JarvisMark } from "@/shared/ui";
 import Composer from "../Composer";
 import { askCoach } from "@/backend/coach.functions";
@@ -758,7 +758,15 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           nouveaux messages, pas le re-rendu de tout le fil. */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 md:px-8 py-5 space-y-5"
+        /* `grid place-items-center` UNIQUEMENT sur la conversation vide : le
+           bloc d'accueil se pose alors au milieu du panneau au lieu de
+           s'accrocher au coin haut-gauche. Dès qu'il y a des messages, on
+           repasse en flux normal — un fil de discussion se lit du haut. */
+        className={
+          messages.length === 0 && loaded
+            ? "grid flex-1 place-items-center overflow-y-auto px-4 py-5 md:px-8"
+            : "flex-1 space-y-5 overflow-y-auto px-4 py-5 md:px-8"
+        }
         aria-live="polite"
         aria-relevant="additions"
         aria-busy={loading}
@@ -770,41 +778,46 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             <div className="h-24 rounded-2xl bg-white/[0.03] animate-pulse" />
           </div>
         ) : messages.length === 0 ? (
-          /* ── État vide premium ──
-             Premier écran vu : il doit poser l'identité de Jarvis ET enseigner
-             quoi demander, à partir des données réelles du trader. */
-          <div className="animate-fade-in-up">
-            <div className="relative">
-              <div className="relative flex items-center gap-3">
-                {/* Le halo flou est parti : un carré de lumière cyan de 35%
-                    posé derrière un avatar, c'est de l'effet, pas du dessin. */}
-                <span className="tv-accent-fill grid h-11 w-11 shrink-0 place-items-center rounded-2xl">
-                  <JarvisMark className="h-[22px] w-[22px]" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-white tracking-tight">
-                    {t("assistant.title")}
-                  </p>
-                  <p className="tv-prose text-slate-400">{t("jarvis.copilot")}</p>
-                </div>
-              </div>
-              <p className="relative mt-3 text-sm text-slate-300 leading-relaxed max-w-lg">
-                {t("assistant.empty")}
-              </p>
-            </div>
+          /* ── L'ACCUEIL DE LA CONVERSATION ──
+             ══ CE QUI LE RENDAIT PAUVRE ══
+
+               • L'IDENTITÉ ÉTAIT DITE DEUX FOIS. La barre de tête affiche
+                 déjà « Jarvis · un coach qui a lu tes trades et dit quoi
+                 corriger demain ». Le panneau reposait en dessous l'avatar,
+                 le nom, et « Ton copilote IA de trading » — la même chose,
+                 en moins précis, à 40px d'écart. Le commentaire en tête de
+                 `Jarvis.tsx` déclarait ce défaut corrigé ; il ne l'était que
+                 d'un côté.
+               • TOUT ÉTAIT COLLÉ EN HAUT À GAUCHE d'un panneau plein écran.
+                 Un bloc de 300px dans le coin d'une surface de 1200 se lit
+                 comme une page qui n'a pas fini de charger.
+               • LES SURVOLS ÉTAIENT CYAN, reste de l'identité d'avant.
+
+             ══ CE QU'IL EST ══
+
+             Un seul bloc, CENTRÉ dans le panneau (c'est le `grid
+             place-items-center` du conteneur quand la conversation est
+             vide). Pas de second avatar : l'invitation, puis les questions.
+             Les questions sont les vraies — `buildSuggestions` les tire des
+             motifs mesurés sur les trades du trader, pas d'une liste écrite
+             d'avance — donc elles méritent d'être l'objet principal de
+             l'écran plutôt qu'une note de bas de bloc. */
+          <div className="jarvis-accueil animate-fade-in-up">
+            <p className="jarvis-accueil-invite">{t("assistant.empty")}</p>
 
             {suggestions.length > 0 && (
-              <div className="mt-5 space-y-2">
-                <p className="tv-label text-slate-500">{t("jarvisHome.suggestions")}</p>
-                <div className="grid gap-2 sm:grid-cols-2">
+              <div className="mt-7 w-full">
+                <p className="tv-label mb-3 text-slate-500">{t("jarvisHome.suggestions")}</p>
+                <div className="grid gap-2.5 sm:grid-cols-2">
                   {suggestions.map((s) => (
                     <button
                       key={s.id}
                       type="button"
                       onClick={() => void ask(s.prompt)}
-                      className="min-h-11 text-left rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-[13px] text-slate-200 hover:border-cyan-500/30 hover:bg-cyan-500/[0.06] active:scale-[0.99] transition"
+                      className="jarvis-suggestion"
                     >
-                      {s.label}
+                      <span className="min-w-0 flex-1">{s.label}</span>
+                      <ArrowUpRight className="jarvis-suggestion-fleche" aria-hidden />
                     </button>
                   ))}
                 </div>

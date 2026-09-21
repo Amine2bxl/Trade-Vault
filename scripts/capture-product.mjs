@@ -999,7 +999,11 @@ for (const p of PLANS) {
 // Les PNG intermediaires ne servent qu'au recadrage : les laisser dans
 // `src/assets/product/` ferait deux fichiers pour la meme capture, et
 // `shots.ts` indexe les deux extensions.
-for (const p of PLANS) rmSync(join(OUT, p.de), { force: true });
+/* `GARDER_PNG=1` conserve les sources. Quand une capture a l'air fausse, la
+   première chose qu'on veut est l'image AVANT recadrage - et elle venait
+   d'être effacée. */
+const GARDER = process.env.GARDER_PNG === "1";
+if (!GARDER) for (const p of PLANS) rmSync(join(OUT, p.de), { force: true });
 // Les captures prises mais NON encodees. Elles ne sont dans aucun plan, donc
 // la boucle ci-dessus ne les voit pas — et `shots.ts` globbe aussi les `.png`
 // du dossier : en oublier une, c'est la publier.
@@ -1008,14 +1012,15 @@ for (const p of PLANS) rmSync(join(OUT, p.de), { force: true });
    `shots.ts` globbe en eager — un webp non reference partirait quand meme
    dans le bundle. Les PNG servent a verifier l'ecran si on veut l'y
    remettre. */
-for (const n of [
-  "desk-06-jarvis-vide.png",
-  "desk-08-rapports.png",
-  "desk-11-news.png",
-  "desk-04-calendrier.png",
-  "mob-calendar.png",
-])
-  rmSync(join(OUT, n), { force: true });
+if (!GARDER)
+  for (const n of [
+    "desk-06-jarvis-vide.png",
+    "desk-08-rapports.png",
+    "desk-11-news.png",
+    "desk-04-calendrier.png",
+    "mob-calendar.png",
+  ])
+    rmSync(join(OUT, n), { force: true });
 
 await browser.close();
 console.log("terminé →", OUT);

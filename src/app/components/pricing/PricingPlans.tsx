@@ -1,6 +1,16 @@
 import { useState } from "react";
-import { Check, Sparkles, Zap, Gauge, ArrowRight, Bitcoin, Lock } from "lucide-react";
+import {
+  Check,
+  Sparkles,
+  Zap,
+  Gauge,
+  ArrowRight,
+  Bitcoin,
+  Lock,
+  Infinity as Infini,
+} from "lucide-react";
 import { cn } from "../../utils/cn";
+import { LIMITS } from "@/domain/plans";
 import {
   TIERS,
   eur,
@@ -30,6 +40,28 @@ import {
  * Pro mène avec ses DEUX bénéfices les plus concrets (tes erreurs chiffrées en
  * euros, ta probabilité de ruine) — ce sont eux, pas le nom d'une page, qui
  * font passer à l'action. Le reste est une liste courte et vérifiable.
+ *
+ * ── LE BAS DES COLONNES ───────────────────────────────────────────────────
+ *
+ * Pro est dense, Gratuit et Elite ne l'étaient pas : les colonnes s'étirant à
+ * la même hauteur, les deux se terminaient par 200 à 260 px de vide. Un trou
+ * au bas d'une colonne de prix ne se lit pas comme de l'espace, il se lit
+ * comme « il n'y a rien de plus ici », juste sous le bouton qu'on veut faire
+ * cliquer.
+ *
+ * Deux blocs le referment, et tous deux APPORTENT l'information qui manquait :
+ *
+ *   • `BandeauLimites`, ancré en bas de CHAQUE colonne (`mt-auto`) : les trois
+ *     chiffres qu'on compare réellement avant de payer — trades par mois,
+ *     Jarvis par jour, comptes. Ils viennent de `LIMITS`, la même table que
+ *     celle qui les fait respecter dans le produit ; ils ne peuvent donc pas
+ *     mentir. Les puces qui ne faisaient que les répéter sont retirées
+ *     (marqueur `metered` du catalogue) : le chiffre se lit une fois.
+ *
+ *   • dans la colonne Gratuit, les 9 pages Premium en gris et cadenassées —
+ *     exactement la même grille que celle de Pro, à l'aplomb l'une de l'autre.
+ *     C'est la comparaison la plus utile de la page, et elle se fait d'un
+ *     coup d'œil : deux grilles identiques, l'une verte, l'autre éteinte.
  */
 
 const ICONS: Record<Tier, typeof Sparkles> = {
@@ -155,8 +187,8 @@ function PlanColumn({
   const plan = isFree ? null : planId(tier.id as PaidTier, yearly ? "yearly" : "monthly");
   const key = plan ?? "free";
   const price = isFree
-    ? "0 €"
-    : eur(Math.round((yearly ? yearlyPerMonth(tier.id) : tier.monthly) * 100) / 100);
+    ? eur(0, lang)
+    : eur(Math.round((yearly ? yearlyPerMonth(tier.id) : tier.monthly) * 100) / 100, lang);
 
   // Les deux bénéfices les plus concrets de Pro, en tête de liste. Texte déjà
   // utilisé partout (PAGE_VALUE), pas de promesse nouvelle. Liste courte,
@@ -171,7 +203,10 @@ function PlanColumn({
       en: "Your risk of ruin across 10,000 runs of your edge.",
     },
   ];
-  const featured = isPro ? tier.features : tier.features.slice(0, isFree ? 4 : 5);
+  // Les lignes `metered` (« 10 trades par mois », « Jarvis 20 fois par
+  // jour », « 3 comptes ») sont reprises par le bandeau du bas : les garder
+  // ici ferait lire le même chiffre deux fois, sous deux formes.
+  const featured = tier.features.filter((f) => !f.metered);
 
   return (
     <div
@@ -224,9 +259,12 @@ function PlanColumn({
           <>&nbsp;</>
         ) : yearly ? (
           <>
-            <span className="text-slate-500 line-through">{eur(tier.monthly)}</span>
+            <span className="text-slate-500 line-through">{eur(tier.monthly, lang)}</span>
             <span className="mx-2 text-slate-600">·</span>
-            {fr ? "facturé" : "billed"} {eur(tier.yearly)}/an
+            {/* « /an » était écrit en dur, y compris dans la version anglaise :
+                « billed €120/an » au milieu d'une page anglaise. */}
+            {fr ? "facturé" : "billed"} {eur(tier.yearly, lang)}
+            {fr ? "/an" : "/yr"}
             {!current && (
               <span className="ml-2 text-emerald-400">
                 {monthsFree(tier.id)} {fr ? "mois offerts" : "mo. free"}
@@ -309,53 +347,26 @@ function PlanColumn({
         </>
       )}
 
-      {/* Pro mène avec ses bénéfices chiffrés ; les autres restent laconiques. */}
+      {/* Les trois colonnes ont la MÊME ossature : ce qui leur est propre en
+          haut, puis la grille des neuf pages, puis les chiffres. C'est ce qui
+          rend la comparaison horizontale possible — la même ligne, au même
+          endroit, dans les trois colonnes. */}
       <div className="mt-7 space-y-3">
         {isPro ? (
-          <>
-            {proHighlights.map((h) => (
-              <div
-                key={h.en}
-                className="flex items-start gap-2.5 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.22)] bg-[rgb(var(--tv-accent-rgb)/0.06)] px-3.5 py-2.5"
-              >
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
-                <span className="text-[13px] font-semibold leading-snug text-white">{h[lang]}</span>
-              </div>
-            ))}
-            {/* Les 9 pages Premium — la liste concrète de ce qui se débloque. */}
-            <div className="pt-1">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[.12em] text-[var(--tv-highlight)]/90">
-                {fr
-                  ? `${pagesOfTier("pro").length} pages Premium`
-                  : `${pagesOfTier("pro").length} Premium pages`}
-              </p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                {pagesOfTier("pro").map((page) => {
-                  const v = PAGE_VALUE[page];
-                  if (!v) return null;
-                  return (
-                    <p
-                      key={page}
-                      className="flex items-start gap-2 text-[13px] leading-snug text-slate-300"
-                    >
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-                      <span>{v.title[fr ? "fr" : "en"]}</span>
-                    </p>
-                  );
-                })}
-              </div>
+          proHighlights.map((h) => (
+            <div
+              key={h.en}
+              className="flex items-start gap-2.5 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.22)] bg-[rgb(var(--tv-accent-rgb)/0.06)] px-3.5 py-2.5"
+            >
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
+              <span className="text-[13px] font-semibold leading-snug text-white">{h[lang]}</span>
             </div>
-            <p className="pt-2 text-[12px] text-slate-500">
-              {fr
-                ? "+ tout le plan gratuit, sans aucune limite."
-                : "+ everything in Free, with no limits at all."}
-            </p>
-          </>
+          ))
         ) : (
           <div className="space-y-2.5">
             {tier.id === "elite" && (
               <p className="tv-label text-[var(--tv-highlight)]/90">
-                {fr ? "Tout Pro, mais sans limites, plus :" : "All of Pro without limits, plus:"}
+                {fr ? "Tout Pro, sans limites, plus :" : "All of Pro without limits, plus:"}
               </p>
             )}
             {featured.map((f) => (
@@ -364,17 +375,150 @@ function PlanColumn({
                 <span className="text-slate-300">{tr(f)}</span>
               </p>
             ))}
-            {tier.id === "elite" && (
-              <p className="flex items-start gap-2 text-[13px] text-slate-500">
-                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                {fr
-                  ? "Prends-la seulement si le Pro te limite."
-                  : "Only if Pro starts limiting you."}
-              </p>
-            )}
           </div>
         )}
+
+        <GrillePages tier={tier.id} lang={lang} />
+
+        {isPro && (
+          <p className="pt-1 text-[12px] text-slate-500">
+            {fr
+              ? "+ tout le plan gratuit, sans aucune limite."
+              : "+ everything in Free, with no limits at all."}
+          </p>
+        )}
+        {tier.id === "elite" && (
+          <p className="pt-1 text-[12px] text-slate-500">
+            {fr ? "Prends-la seulement si le Pro te limite." : "Only if Pro starts limiting you."}
+          </p>
+        )}
+      </div>
+
+      <BandeauLimites tier={tier.id} lang={lang} isPro={isPro} />
+    </div>
+  );
+}
+
+/**
+ * LES NEUF PAGES D'ANALYSE, DANS LES TROIS COLONNES.
+ *
+ * La même liste, à la même hauteur, trois fois : fermée en gratuit, ouverte en
+ * Pro, ouverte en Elite. Répéter les noms est ici l'INTÉRÊT et non un défaut —
+ * c'est ce qui permet de lire la différence en balayant une ligne du regard,
+ * sans tenir de tête ce qu'on vient de voir dans la colonne d'à côté.
+ *
+ * Seule la colonne Pro les met en vert. Elite affiche la même chose en gris :
+ * elle n'ouvre AUCUNE page de plus, elle enlève des limites, et un second
+ * bloc vert le laisserait croire. L'accent reste rare, et il désigne une
+ * seule colonne.
+ */
+function GrillePages({ tier, lang }: { tier: Tier; lang: "fr" | "en" }) {
+  const fr = lang === "fr";
+  const pages = pagesOfTier("pro");
+  const ferme = tier === "free";
+  const vedette = tier === "pro";
+
+  return (
+    <div className="pt-2">
+      <p
+        className={cn(
+          "mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[.12em]",
+          vedette ? "text-[var(--tv-highlight)]/90" : "text-slate-500",
+        )}
+      >
+        {ferme && <Lock className="h-3 w-3" />}
+        {ferme
+          ? fr
+            ? `${pages.length} pages fermées`
+            : `${pages.length} pages locked`
+          : vedette
+            ? fr
+              ? `${pages.length} pages Premium`
+              : `${pages.length} Premium pages`
+            : fr
+              ? `Les mêmes ${pages.length} pages`
+              : `The same ${pages.length} pages`}
+      </p>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+        {pages.map((page) => {
+          const v = PAGE_VALUE[page];
+          if (!v) return null;
+          return (
+            <p
+              key={page}
+              className={cn(
+                "flex items-start gap-2 text-[13px] leading-snug",
+                ferme ? "text-slate-600" : vedette ? "text-slate-300" : "text-slate-400",
+              )}
+            >
+              {ferme ? (
+                <Lock className="mt-0.5 h-3 w-3 shrink-0 text-slate-700" />
+              ) : (
+                <Check
+                  className={cn(
+                    "mt-0.5 h-3.5 w-3.5 shrink-0",
+                    vedette ? "text-emerald-400" : "text-slate-500",
+                  )}
+                />
+              )}
+              <span>{v.title[fr ? "fr" : "en"]}</span>
+            </p>
+          );
+        })}
       </div>
     </div>
+  );
+}
+
+/**
+ * LES TROIS CHIFFRES QU'ON COMPARE AVANT DE PAYER.
+ *
+ * Trades par mois, Jarvis par jour, comptes de trading : c'est là, et
+ * seulement là, que les trois offres diffèrent vraiment en usage. Ils étaient
+ * dispersés en puces, dans trois colonnes de longueurs différentes, donc
+ * impossibles à comparer d'un regard.
+ *
+ * Les valeurs viennent de `LIMITS` — la table que le produit applique
+ * réellement. Une limite changée dans le code change ici au même commit ; il
+ * n'y a pas de version « marketing » de ces chiffres.
+ *
+ * `mt-auto` colle le bandeau au bas de la carte : les colonnes s'étirant à la
+ * même hauteur, c'est lui qui ferme celles qui ont moins à dire, au lieu du
+ * vide qui s'y trouvait.
+ */
+function BandeauLimites({ tier, lang, isPro }: { tier: Tier; lang: "fr" | "en"; isPro: boolean }) {
+  const fr = lang === "fr";
+  const l = LIMITS[tier];
+  const lignes: { label: string; valeur: number }[] = [
+    { label: fr ? "Trades / mois" : "Trades / month", valeur: l.tradesPerMonth },
+    { label: fr ? "Jarvis / jour" : "Jarvis / day", valeur: l.jarvisPerDay },
+    { label: fr ? "Comptes" : "Accounts", valeur: l.accounts },
+  ];
+
+  return (
+    <dl className="mt-auto space-y-2 border-t border-white/[0.07] pt-5">
+      {lignes.map(({ label, valeur }) => (
+        <div key={label} className="flex items-baseline justify-between gap-3">
+          <dt className="text-[12px] text-slate-500">{label}</dt>
+          <dd
+            className={cn(
+              "tv-figure text-[13px]",
+              // Une limite levée mérite d'être vue : c'est ce qu'on achète.
+              valeur === Infinity
+                ? isPro
+                  ? "text-[var(--tv-highlight)]"
+                  : "text-slate-200"
+                : "text-slate-400",
+            )}
+          >
+            {valeur === Infinity ? (
+              <Infini className="h-4 w-4" aria-label={fr ? "illimité" : "unlimited"} role="img" />
+            ) : (
+              valeur
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }

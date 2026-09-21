@@ -218,8 +218,17 @@ export default function Jarvis() {
           </div>
         )}
 
-        {/* La conversation, plein cadre — l'en-tête vit dans la barre de tête. */}
-        <div className="min-h-0 flex-1">
+        {/* La conversation, plein cadre — l'en-tête vit dans la barre de tête.
+
+            ── `flex flex-col`, ET C'EST TOUT LE SUJET ──
+            Ce conteneur était un bloc ordinaire. `ConversationWorkspace` se
+            déclare pourtant `flex-1 min-h-0` : sans contexte flex au-dessus,
+            cette déclaration ne vaut RIEN, et le panneau retombait à la
+            hauteur de son contenu. Résultat mesuré sur la conversation vide :
+            le compositeur flottait au tiers de la hauteur et 560px de noir
+            s'étendaient dessous, jusqu'à la barre de quota. C'est ce vide,
+            pas le dessin, qui faisait bon marché. */}
+        <div className="flex min-h-0 flex-1 flex-col">
           <Suspense fallback={spinner}>
             {conversationId ? (
               <ConversationWorkspace

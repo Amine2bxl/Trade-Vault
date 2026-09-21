@@ -7,6 +7,7 @@
  */
 
 import type { Page } from "../types";
+import { intlLocale } from "../i18n/locale";
 import type { Bi } from "@/domain/plans";
 import {
   TIER_BY_ID,
@@ -59,12 +60,46 @@ export const YEARLY_FULL_PRICE = yearlyFullPrice("pro");
 export const YEARLY_PER_MONTH = yearlyPerMonth("pro");
 export const YEARLY_SAVING = yearlySaving("pro");
 
-/** Euro amounts, French formatting: no decimals when the amount is round. */
-export function eur(n: number): string {
-  return `${n.toLocaleString("fr-FR", {
+/**
+ * UN MONTANT EN EUROS, DANS LA LANGUE DE CELUI QUI LE LIT.
+ *
+ * ── LE DÉFAUT ─────────────────────────────────────────────────────────────
+ *
+ * Le formatage était `fr-FR`, EN DUR, suffixe compris. La grille tarifaire
+ * anglaise affichait donc « 16,67 € » : virgule décimale française et symbole
+ * derrière le nombre, au milieu d'une page dont tout le reste est en anglais.
+ * Sur un montant à deux décimales, la virgule ne se lit pas comme un
+ * séparateur décimal pour un anglophone - elle se lit comme un séparateur de
+ * milliers, et « 16,67 € » devient un prix à quatre chiffres.
+ *
+ * C'est la page des tarifs : c'est le seul endroit du produit où un chiffre
+ * mal lu coûte une conversion.
+ *
+ * ── LA RÈGLE ──────────────────────────────────────────────────────────────
+ *
+ * `Intl` place le symbole tout seul, du bon côté, avec le bon séparateur :
+ * « 16,67 € » en français, « €16.67 » en anglais. On ne le recolle pas à la
+ * main.
+ *
+ * Les décimales restent masquées sur un montant rond (« 15 € », pas
+ * « 15,00 € ») : un prix d'abonnement entier s'écrit entier.
+ *
+ * La langue passe par `intlLocale`, la table `Lang → BCP-47` que tout le
+ * produit utilise déjà pour les dates : une seule définition de « comment
+ * cette langue s'écrit », et les douze langues de l'application sont donc
+ * couvertes, pas seulement les deux de la vitrine.
+ *
+ * Le défaut reste le FRANÇAIS pour ne pas changer en silence le rendu des
+ * surfaces qui ne passent pas encore de langue ; chaque appelant qui connaît
+ * la sienne la passe.
+ */
+export function eur(n: number, lang?: string): string {
+  return n.toLocaleString(lang ? intlLocale(lang) : "fr-FR", {
+    style: "currency",
+    currency: "EUR",
     minimumFractionDigits: n % 1 ? 2 : 0,
     maximumFractionDigits: 2,
-  })} €`;
+  });
 }
 
 /**

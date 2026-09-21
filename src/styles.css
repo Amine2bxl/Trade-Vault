@@ -725,6 +725,71 @@ body {
 
 /* ── Démo landing (LandingDemo) ── */
 /* ══ Branded error identity (404 / 500) ══ */
+/* ══ L'ACCUEIL DE LA CONVERSATION JARVIS ══
+ *
+ * Il tenait dans le coin haut-gauche d'un panneau plein écran : un bloc de
+ * 300px dans une surface de 1200, avec 560px de noir en dessous. Centré, et
+ * borné à une mesure de lecture, il occupe l'écran au lieu de s'y perdre. */
+.jarvis-accueil {
+  width: 100%;
+  max-width: 44rem;
+  text-align: center;
+}
+.jarvis-accueil-invite {
+  margin-inline: auto;
+  max-width: 34rem;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--tv-text-primary);
+}
+/* LES QUESTIONS SONT L'OBJET PRINCIPAL DE L'ÉCRAN, pas une note de bas de
+ * bloc : elles sont tirées des motifs mesurés sur les trades du trader
+ * (`buildSuggestions`), donc chacune est une vraie porte d'entrée. Elles
+ * étaient des rangées grises indifférenciées, avec un survol CYAN resté de
+ * l'identité d'avant. */
+.jarvis-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.875rem;
+  width: 100%;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.875rem;
+  background: var(--tv-plate-2);
+  padding: 0.7rem 0.9rem 0.7rem 1rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--tv-text-primary);
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+.jarvis-suggestion:hover {
+  border-color: rgb(var(--tv-accent-rgb) / 0.4);
+  background: rgb(var(--tv-accent-rgb) / 0.07);
+}
+.jarvis-suggestion:active {
+  transform: scale(0.99);
+}
+.jarvis-suggestion-fleche {
+  height: 0.875rem;
+  width: 0.875rem;
+  flex-shrink: 0;
+  color: var(--tv-text-muted, #64748b);
+  transition: color 0.18s ease;
+}
+.jarvis-suggestion:hover .jarvis-suggestion-fleche {
+  color: var(--tv-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .jarvis-suggestion,
+  .jarvis-suggestion:active {
+    transition: none;
+    transform: none;
+  }
+}
+
 /* ══ L'ÉCRAN D'ERREUR ══
  *
  * Jumeau de `src/shared/error-page.ts`, qui fait la même chose en HTML nu

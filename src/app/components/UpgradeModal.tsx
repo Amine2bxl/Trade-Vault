@@ -67,6 +67,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
     eur(
       Math.round((interval === "yearly" ? yearlyPerMonth(tier) : TIER_BY_ID[tier].monthly) * 100) /
         100,
+      lang,
     );
 
   return (
@@ -173,8 +174,8 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                 <p className="mt-0.5 text-[11px] text-slate-500">
                   {interval === "yearly"
                     ? fr
-                      ? `Facturé ${eur(def.yearly)}/an · ${monthsFree(tier)} mois offerts`
-                      : `Billed ${eur(def.yearly)}/yr · ${monthsFree(tier)} months free`
+                      ? `Facturé ${eur(def.yearly, lang)}/an · ${monthsFree(tier)} mois offerts`
+                      : `Billed ${eur(def.yearly, lang)}/yr · ${monthsFree(tier)} months free`
                     : fr
                       ? "Sans engagement"
                       : "No commitment"}

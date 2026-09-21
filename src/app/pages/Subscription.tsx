@@ -177,13 +177,14 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
                     etat === "active" || etat === "lifetime" ? "rp-pos" : "text-white",
                   )}
                 >
-                  {paid && sub ? eur(planPrice(sub.plan as PaidPlan)) : "0 €"}
+                  {paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang)}
                 </div>
                 <div className="tv-row-label mt-1">
                   {paid
                     ? intervalOf(sub?.plan ?? "free") === "yearly"
                       ? `${t("billing.perYear")} · ${eur(
                           Math.round(yearlyPerMonth(currentTier) * 100) / 100,
+                          lang,
                         )}${t("billing.perMonth")}`
                       : t("billing.perMonth")
                     : tr("/ toujours", "/ forever")}

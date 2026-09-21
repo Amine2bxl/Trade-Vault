@@ -41,7 +41,9 @@ await p.evaluate(async () => {
 });
 await p.waitForTimeout(1000);
 const h = await p.evaluate(() => document.documentElement.scrollHeight);
-const deborde = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+const deborde = await p.evaluate(
+  () => document.documentElement.scrollWidth > window.innerWidth + 1,
+);
 for (let i = 0; i < N; i++) {
   const y = Math.floor((h * i) / N);
   const haut = Math.min(Math.ceil(h / N), h - y);

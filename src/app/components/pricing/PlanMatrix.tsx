@@ -113,7 +113,7 @@ export default function PlanMatrix() {
                     pro ? "text-white" : gratuit ? "text-slate-600" : "text-slate-400",
                   )}
                 >
-                  {gratuit ? "0 €" : eur(Math.round(yearlyPerMonth(t.id) * 100) / 100)}
+                  {gratuit ? eur(0, lang) : eur(Math.round(yearlyPerMonth(t.id) * 100) / 100, lang)}
                 </span>
                 <span className="tv-row-label leading-none">{fr ? "/mois" : "/mo"}</span>
                 {pro && (

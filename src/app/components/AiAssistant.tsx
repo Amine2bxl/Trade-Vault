@@ -210,35 +210,45 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           téléphone, le « + » de la barre basse est déjà le seul aplat saturé de
           l'écran. Deux pastilles vertes à trente pixels l'une de l'autre, et
           plus aucune des deux ne désigne quoi que ce soit. */}
-      <button
-        onClick={toggleOpen}
-        aria-label={open ? t("assistant.close") : t("assistant.open")}
-        aria-expanded={open}
-        className={cn(
-          "tv-jarvis-dock fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
-          "justify-center gap-2.5 rounded-full p-1.5 md:rounded-2xl md:pr-4",
-          "active:scale-[0.98]",
-          open && "tv-jarvis-dock-active",
-        )}
-      >
-        <span
+      {/* ── IL DISPARAÎT SUR LA PAGE JARVIS ──
+          Un bouton flottant « Jarvis » posé sur la page Jarvis propose
+          d'ouvrir ce qu'on regarde déjà. Il coûtait en plus : ancré en bas à
+          droite, il recouvrait le lien d'abonnement de la barre de quota, qui
+          s'affichait « Discov… ». Une action redondante qui en cache une
+          vraie.
+          Le module reste MONTÉ (il écoute `tv:open-jarvis` et `tv:ask-coach`,
+          que d'autres pages émettent) : seul son déclencheur s'efface. */}
+      {!(page === "insights" && !open) && (
+        <button
+          onClick={toggleOpen}
+          aria-label={open ? t("assistant.close") : t("assistant.open")}
+          aria-expanded={open}
           className={cn(
-            "tv-jarvis-mark h-8 w-8 shrink-0 md:h-9 md:w-9",
-            open && "tv-jarvis-mark-on",
+            "tv-jarvis-dock fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
+            "justify-center gap-2.5 rounded-full p-1.5 md:rounded-2xl md:pr-4",
+            "active:scale-[0.98]",
+            open && "tv-jarvis-dock-active",
           )}
         >
-          {open ? (
-            <X className="h-4 w-4" />
-          ) : (
-            <JarvisMark className="h-5 w-5 md:h-[22px] md:w-[22px]" />
-          )}
-        </span>
-        {/* Le nom en texte PRIMAIRE, au repos comme ouvert. En secondaire, il
+          <span
+            className={cn(
+              "tv-jarvis-mark h-8 w-8 shrink-0 md:h-9 md:w-9",
+              open && "tv-jarvis-mark-on",
+            )}
+          >
+            {open ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <JarvisMark className="h-5 w-5 md:h-[22px] md:w-[22px]" />
+            )}
+          </span>
+          {/* Le nom en texte PRIMAIRE, au repos comme ouvert. En secondaire, il
             achevait de faire lire le module comme un contrôle éteint. */}
-        <span className="hidden text-[13px] font-semibold tracking-[-0.01em] text-[var(--tv-text-primary)] md:block">
-          {t("assistant.title")}
-        </span>
-      </button>
+          <span className="hidden text-[13px] font-semibold tracking-[-0.01em] text-[var(--tv-text-primary)] md:block">
+            {t("assistant.title")}
+          </span>
+        </button>
+      )}
 
       {/* Workspace actif : la fenêtre espace de travail (le chat est un module). */}
       {open && (

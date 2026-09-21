@@ -23,7 +23,9 @@ p.on("response", (r) => {
 async function etat(nom) {
   const txt = await p.evaluate(() => document.body.innerText.slice(0, 220));
   const casse = /Something went wrong|500|Une erreur|Internal/i.test(txt);
-  console.log(`${nom.padEnd(34)} url=${p.url().replace(BASE, "")} ${casse ? "❌ ÉCRAN D'ERREUR" : "ok"}`);
+  console.log(
+    `${nom.padEnd(34)} url=${p.url().replace(BASE, "")} ${casse ? "❌ ÉCRAN D'ERREUR" : "ok"}`,
+  );
   if (casse) console.log("   →", txt.replace(/\n+/g, " | ").slice(0, 200));
 }
 

@@ -29,6 +29,21 @@ export interface Bi {
   en: string;
 }
 
+/**
+ * Une ligne de la liste d'une offre.
+ *
+ * `metered` marque les lignes qui ne font QUE donner un chiffre déjà porté par
+ * `LIMITS` (trades par mois, Jarvis par jour, comptes). La grille tarifaire
+ * affiche ces trois chiffres dans un bandeau comparatif au bas de chaque
+ * colonne : les répéter en puce au-dessus ferait lire deux fois la même
+ * information, dans deux formes différentes. Les autres surfaces (matrice
+ * complète, modale d'upgrade) continuent de tout afficher — c'est justement
+ * leur rôle.
+ */
+export interface Feature extends Bi {
+  metered?: boolean;
+}
+
 export interface TierDef {
   id: Tier;
   name: Bi;
@@ -39,7 +54,7 @@ export interface TierDef {
   /** Prix annuel en euros. Deux mois offerts par rapport au mensuel. */
   yearly: number;
   /** Ce que le palier ajoute — l'offre du dessus hérite de tout. */
-  features: Bi[];
+  features: Feature[];
   /** Mise en avant sur la grille de prix. */
   featured?: boolean;
 }
@@ -59,14 +74,17 @@ export const TIERS: TierDef[] = [
     monthly: 0,
     yearly: 0,
     features: [
+      // Le chiffre part au bandeau ; la puce garde ce que le bandeau ne dit
+      // pas — qu'une capture d'écran accompagne chaque trade, gratuitement.
       {
-        fr: "10 trades par mois, captures incluses",
-        en: "10 trades a month, screenshots included",
+        fr: "Une capture d'écran sur chaque trade",
+        en: "A screenshot on every trade",
       },
+      { fr: "10 trades par mois", en: "10 trades a month", metered: true },
       { fr: "Tableau de bord et calendrier", en: "Dashboard and calendar" },
       { fr: "Checklist, plan, calculateur", en: "Checklist, plan, calculator" },
-      { fr: "Jarvis 3 fois par jour", en: "Jarvis 3 times a day" },
-      { fr: "1 compte de trading", en: "1 trading account" },
+      { fr: "Jarvis 3 fois par jour", en: "Jarvis 3 times a day", metered: true },
+      { fr: "1 compte de trading", en: "1 trading account", metered: true },
     ],
   },
   {
@@ -82,14 +100,18 @@ export const TIERS: TierDef[] = [
     yearly: 120,
     featured: true,
     features: [
-      { fr: "Trades illimités", en: "Unlimited trades" },
+      { fr: "Trades illimités", en: "Unlimited trades", metered: true },
       { fr: "Toutes les analyses de ton edge", en: "Every analysis of your edge" },
       { fr: "Tes erreurs chiffrées en euros", en: "Your mistakes priced in euros" },
       { fr: "Monte-Carlo : ta probabilité de ruine", en: "Monte Carlo: your risk of ruin" },
       { fr: "Saisonnalité : tes heures rentables", en: "Seasonality: your profitable hours" },
-      { fr: "Jarvis 20 fois par jour", en: "Jarvis 20 times a day" },
+      { fr: "Jarvis 20 fois par jour", en: "Jarvis 20 times a day", metered: true },
       { fr: "Rapports mensuels automatiques", en: "Automatic monthly reports" },
-      { fr: "Jusqu'à 3 comptes (2 sous-comptes)", en: "Up to 3 accounts (2 sub-accounts)" },
+      {
+        fr: "Jusqu'à 3 comptes (2 sous-comptes)",
+        en: "Up to 3 accounts (2 sub-accounts)",
+        metered: true,
+      },
     ],
   },
   {
@@ -105,8 +127,8 @@ export const TIERS: TierDef[] = [
     monthly: 25,
     yearly: 200,
     features: [
-      { fr: "Jarvis sans aucune limite", en: "Jarvis with no limit at all" },
-      { fr: "Comptes de trading illimités", en: "Unlimited trading accounts" },
+      { fr: "Jarvis sans aucune limite", en: "Jarvis with no limit at all", metered: true },
+      { fr: "Comptes de trading illimités", en: "Unlimited trading accounts", metered: true },
       { fr: "Détection automatique de patterns", en: "Automatic pattern detection" },
       { fr: "Alertes push et rappels de session", en: "Push alerts and session reminders" },
       { fr: "Support prioritaire", en: "Priority support" },

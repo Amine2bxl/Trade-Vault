@@ -86,7 +86,7 @@ export function PreviewWall({
   if (!locked) return <>{children}</>;
 
   const tier = TIER_BY_ID[requiredTier];
-  const perMonth = eur(Math.round(yearlyPerMonth(requiredTier) * 100) / 100);
+  const perMonth = eur(Math.round(yearlyPerMonth(requiredTier) * 100) / 100, lang);
   const freeMonths = monthsFree(requiredTier);
 
   return (
