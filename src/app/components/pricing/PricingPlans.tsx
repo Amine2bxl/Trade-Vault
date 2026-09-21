@@ -10,6 +10,7 @@ import {
   Infinity as Infini,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
+import PrixAnime from "./PrixAnime";
 import { LIMITS } from "@/domain/plans";
 import {
   TIERS,
@@ -249,7 +250,12 @@ function PlanColumn({
 
       {/* Prix — un seul chiffre à lire. */}
       <div className="mt-5 flex items-end gap-1.5">
-        <span className={cn("tv-figure text-white", isPro ? "text-5xl" : "text-4xl")}>{price}</span>
+        {/* Le chiffre roule au lieu de sauter : c'est le geste qui montre
+            l'économie de l'annuel, et il ne se voyait pas. */}
+        <PrixAnime
+          valeur={price}
+          className={cn("tv-figure text-white", isPro ? "text-5xl" : "text-4xl")}
+        />
         <span className="mb-1.5 text-sm text-slate-400">
           {isFree ? (fr ? "/ pour toujours" : "/ forever") : fr ? "/mois" : "/month"}
         </span>
@@ -292,7 +298,10 @@ function PlanColumn({
           disabled={!onFree || current}
           className="mt-6 w-full rounded-xl border border-white/[0.1] bg-transparent px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/[0.05] hover:text-white disabled:opacity-50"
         >
-          {fr ? "Commencer gratuitement" : "Start for free"}
+          {/* « Get Started », comme partout : c'est le MÊME acte que le
+              bouton de l'en-tête, à quinze centimètres l'un de l'autre. Deux
+              libellés pour une action se lisent comme deux portes. */}
+          {fr ? "Commencer" : "Get Started"}
         </button>
       ) : (
         <>

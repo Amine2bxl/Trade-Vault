@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { ArrowUpRight, Check, Sparkles } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  CreditCard,
+  Database,
+  Gift,
+  Sparkles,
+  Unlock,
+  XCircle,
+} from "lucide-react";
 import PricingPlans from "../components/pricing/PricingPlans";
 import { AuthModal } from "./landing/AuthModal";
 import { PublicHeader } from "./landing/PublicHeader";
@@ -46,27 +55,32 @@ import "./landing.css";
  * entier - c'est la section « ce qui change » ci-dessous.
  */
 
-/* ── CE QUI CHANGE D'UNE OFFRE À L'AUTRE ─────────────────────────────────
+/* ── LES SIX OUTILS QU'AUCUNE OFFRE NE FERME ─────────────────────────────
  *
- * Trois lignes, et elles répondent à la seule question qu'on se pose devant
- * une grille : « qu'est-ce que je gagne en payant, et qu'est-ce que je
- * perds en ne payant pas ? »
+ * La section « ce qui change » disait en trois paragraphes ce que la grille
+ * montre maintenant ligne par ligne : les pages qui s'ouvrent, les limites
+ * qui sautent. Elle ne portait plus qu'une information à elle — et c'est la
+ * plus importante de la page.
  *
- * La troisième ligne est la plus importante et c'est celle qu'aucune grille
- * n'affiche jamais : ce qui reste gratuit POUR TOUJOURS. Sans elle, « offre
- * gratuite » se lit comme « version mutilée », et le gratuit ne convertit
- * personne parce que personne ne s'en sert. */
-const DIFFERENCES: { de: LandingKey; a: LandingKey; k: LandingKey }[] = [
-  { de: "price.diff1.from", a: "price.diff1.to", k: "price.diff1.d" },
-  { de: "price.diff2.from", a: "price.diff2.to", k: "price.diff2.d" },
-  { de: "price.diff3.from", a: "price.diff3.to", k: "price.diff3.d" },
+ * Sans elle, « offre gratuite » se lit comme « version mutilée ». Un gratuit
+ * dont on doute ne convertit personne, parce que personne ne s'en sert assez
+ * longtemps pour avoir envie de payer. Six outils NOMMÉS se reconnaissent
+ * d'un coup d'œil ; une phrase qui les énumère se lit, ou plus souvent, se
+ * saute. */
+const TOUJOURS_GRATUIT: LandingKey[] = [
+  "price.free.1",
+  "price.free.2",
+  "price.free.3",
+  "price.free.4",
+  "price.free.5",
+  "price.free.6",
 ];
 
-const FAQ: [LandingKey, LandingKey][] = [
-  ["price.faq1.q", "price.faq1.a"],
-  ["price.faq2.q", "price.faq2.a"],
-  ["price.faq3.q", "price.faq3.a"],
-  ["price.faq4.q", "price.faq4.a"],
+const FAQ: [LandingKey, LandingKey, typeof Unlock][] = [
+  ["price.faq1.q", "price.faq1.a", Gift],
+  ["price.faq2.q", "price.faq2.a", Database],
+  ["price.faq3.q", "price.faq3.a", XCircle],
+  ["price.faq4.q", "price.faq4.a", CreditCard],
 ];
 
 function Contenu() {
@@ -124,14 +138,13 @@ function Contenu() {
           </div>
         )}
 
-        {/* L'ANCRAGE, juste avant le premier montant. Se comparer à un
-            challenge raté plutôt qu'à un journal à 20 € : c'est la règle de
-            `landing-copy`, et c'est la seule comparaison honnête - les deux
-            dépenses servent la même chose. */}
-        <p className="mx-auto mt-10 max-w-[600px] text-center text-[15px] leading-7 text-slate-400">
-          {t("anchor.sub")}
-        </p>
-
+        {/* LE PARAGRAPHE D'ANCRAGE A ÉTÉ RETIRÉ D'ICI.
+            Il faisait un TROISIÈME bloc de texte entre le titre et le
+            premier montant. Au-dessus d'une grille tarifaire on ne lit pas,
+            on cherche un chiffre : trois paragraphes empilés avant le
+            premier prix repoussent la seule chose qu'on est venu voir. La
+            comparaison au coût d'un reset vit maintenant sur la vitrine, en
+            chiffres face à face, là où on la découvre au bon moment. */}
         <div className="mt-12">
           <PricingPlans
             lang={lang}
@@ -153,24 +166,25 @@ function Contenu() {
           ))}
         </div>
 
-        {/* ── CE QUI CHANGE ── */}
-        <section className="mx-auto mt-20 max-w-[720px]">
+        {/* ── CE QUI NE SE FERME JAMAIS ── */}
+        <section className="mx-auto mt-20 max-w-[880px]">
           <h2 className="text-center font-display text-[clamp(1.5rem,2.8vw,2rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
-            {t("price.diff.title")}
+            {t("price.free.title")}
           </h2>
-          <div className="mt-8 divide-y divide-white/[.07] border-y border-white/[.07]">
-            {DIFFERENCES.map((d) => (
-              <div
-                key={d.k}
-                className="flex flex-col gap-2 py-5 sm:flex-row sm:items-baseline sm:gap-6"
+          <p className="mx-auto mt-3 max-w-[460px] text-center text-[14px] leading-6 text-slate-500">
+            {t("price.free.sub")}
+          </p>
+          <ul className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {TOUJOURS_GRATUIT.map((k) => (
+              <li
+                key={k}
+                className="flex items-center gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.015] px-4 py-3.5 text-[14px] font-medium text-slate-200"
               >
-                <p className="tv-label shrink-0 text-slate-500 sm:w-[136px]">
-                  {t(d.de)} <span className="text-slate-700">→</span> {t(d.a)}
-                </p>
-                <p className="text-[15px] leading-7 text-slate-300">{t(d.k)}</p>
-              </div>
+                <Unlock aria-hidden className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
+                {t(k)}
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
         {/* ── LA FAQ DE FACTURATION ──
@@ -181,11 +195,19 @@ function Contenu() {
           <h2 className="text-center font-display text-[clamp(1.5rem,2.8vw,2rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
             {t("price.faq.title")}
           </h2>
-          <dl className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
-            {FAQ.map(([q, a]) => (
-              <div key={q}>
-                <dt className="text-[15px] font-semibold text-white">{t(q)}</dt>
-                <dd className="mt-2 text-[14px] leading-7 text-slate-400">{t(a)}</dd>
+          {/* Des cartes plutôt qu'une liste de définitions : quatre
+              objections posées à plat se lisent comme un document légal,
+              alors que ce sont quatre réponses courtes et rassurantes. La
+              plaque les sépare, l'icône dit de quoi on parle avant la
+              première ligne. */}
+          <dl className="mt-8 grid gap-3 sm:grid-cols-2">
+            {FAQ.map(([q, a, Icone]) => (
+              <div key={q} className="rounded-2xl border border-white/[0.07] bg-white/[0.015] p-5">
+                <dt className="flex items-center gap-2.5 text-[15px] font-semibold text-white">
+                  <Icone aria-hidden className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
+                  {t(q)}
+                </dt>
+                <dd className="mt-2.5 text-[14px] leading-6 text-slate-400">{t(a)}</dd>
               </div>
             ))}
           </dl>

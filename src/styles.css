@@ -2422,6 +2422,70 @@ a:focus-visible,
   color: #ffffff;
 }
 
+/* ══ LE PRIX QUI ROULE ══
+ *
+ * Voir `src/app/components/pricing/PrixAnime.tsx` pour le pourquoi. Ici, la
+ * mécanique : une fenêtre de la hauteur d'une ligne, deux valeurs empilées
+ * au même endroit, et un seul geste — `fade-in-up` paramétré en direction.
+ *
+ * `--prix-de` / `--prix-vers` portent le SENS : un prix qui baisse fait
+ * tomber le nouveau chiffre d'en haut, un prix qui monte le fait monter d'en
+ * bas. 55 % plutôt que 100 % : au-delà, le chiffre sort du cadre et on ne
+ * lit plus un compteur mais deux apparitions successives.
+ */
+.prix-anime {
+  position: relative;
+  display: inline-block;
+  vertical-align: baseline;
+}
+.prix-anime[data-sens="bas"] {
+  --prix-de: -55%;
+  --prix-vers: 55%;
+}
+.prix-anime[data-sens="haut"] {
+  --prix-de: 55%;
+  --prix-vers: -55%;
+}
+/* La valeur sortante quitte le flux : sans ça, les deux se poussent
+   horizontalement et la largeur du bloc saute pendant le croisement. */
+.prix-anime-sort {
+  position: absolute;
+  inset: 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .prix-anime-entre {
+    display: inline-block;
+    animation: prix-entre 260ms var(--tv-ease) both;
+  }
+  /* 70 % de l'entrée : une valeur qui met autant de temps à partir qu'à
+     arriver alourdit le geste. */
+  .prix-anime-sort {
+    animation: prix-sort 182ms var(--tv-ease) both;
+  }
+}
+@keyframes prix-entre {
+  from {
+    opacity: 0;
+    transform: translateY(var(--prix-de, -55%));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes prix-sort {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--prix-vers, 55%));
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    L'ÉMERAUDE VERROUILLÉE DES SURFACES PUBLIQUES
    ══════════════════════════════════════════════════════════════════════════
