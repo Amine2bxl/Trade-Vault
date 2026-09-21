@@ -91,7 +91,18 @@ const FOOTER_LEGAL: FooterLink[] = [
   { k: "footer.cookies", href: "/cookies" },
 ];
 
-function FooterColumn({
+/**
+ * UNE RANGÉE DE LIENS, PAS UNE COLONNE.
+ *
+ * Les deux colonnes empilaient quatre et cinq liens, soit près de 160px de
+ * hauteur pour neuf mots. Un pied de page n'est pas un sommaire : on n'y
+ * descend pas pour lire, on y descend pour attraper UN lien précis. Mis en
+ * ligne derrière leur intitulé, les mêmes neuf liens tiennent sur deux
+ * lignes, et le regard les balaie au lieu de les parcourir.
+ *
+ * Rien n'a été retiré : c'est la FORME qui se simplifie, pas le fond.
+ */
+function FooterRow({
   title,
   links,
   t,
@@ -101,16 +112,16 @@ function FooterColumn({
   t: (k: LandingKey) => string;
 }) {
   return (
-    <div>
-      <p className="tv-label mb-4 text-slate-500">{title}</p>
-      <ul className="space-y-1.5 text-[13px]">
+    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-5">
+      <p className="tv-label w-[72px] shrink-0 text-slate-600">{title}</p>
+      <ul className="flex flex-wrap items-baseline gap-x-5 gap-y-0.5 text-[13px]">
         {links.map(({ k, href }) => (
           <li key={k}>
             <a
               href={href}
-              /* 44 px au doigt, 32 à la souris. C'est la cible tactile
+              /* 44 px au doigt, 28 à la souris. C'est la cible tactile
                  minimale recommandée ; sous elle, on vise le lien d'à côté. */
-              className="-my-1.5 inline-flex min-h-[44px] items-center text-slate-400 transition-colors hover:text-white sm:min-h-[32px]"
+              className="-my-2 inline-flex min-h-[44px] items-center text-slate-400 transition-colors hover:text-white sm:-my-0.5 sm:min-h-[28px]"
             >
               {t(k)}
             </a>
@@ -1267,47 +1278,39 @@ function LandingPage() {
         </section>
 
         {/* ── PIED DE PAGE ──
-            Trois colonnes, et la première n'est pas une liste : c'est
-            l'identité (logo, une ligne, la langue). Les deux autres portent
-            huit liens là où il y en avait treize répartis sur trois blocs.
+            Deux bandes, et c'est tout.
 
-            La barre basse de liens légaux a disparu : c'était une troisième
-            colonne écrite en ligne. Ne reste dessous que la mention de
-            droits, qui n'est pas un lien et n'a donc rien à faire dans une
-            colonne. */}
-        <footer className="relative section-divider pb-10 pt-12">
+            Il en faisait près de 400px. La cause n'était pas le nombre de
+            liens mais leur DISPOSITION : trois colonnes empilées, un CTA, un
+            sélecteur de langue et une mention de droits, chacun sur sa
+            propre ligne. Un pied de page n'est pas une page : on y descend
+            pour attraper un lien, pas pour lire.
+
+            Bande haute : l'identité à gauche, les neuf liens à droite sur
+            deux rangées derrière leur intitulé. Bande basse : les droits et
+            la langue, épaule contre épaule.
+
+            Le bouton « Get Started » du pied de page a disparu. Il vivait à
+            200px du bouton plein de la section précédente — deux appels
+            identiques aussi près ne doublent pas le clic, ils le partagent,
+            et le second se lit comme une insistance. */}
+        <footer className="relative section-divider pb-8 pt-10">
           <div className="lp-container">
-            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr] lg:gap-8">
-              <div>
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
+              <div className="shrink-0">
                 <Logo />
-                <p className="mt-4 max-w-[300px] text-[13px] leading-6 text-slate-500">
+                <p className="mt-3 max-w-[260px] text-[13px] leading-6 text-slate-500">
                   {t("footer.tagline")}
                 </p>
-                {/* LE SEUL APPEL DU PIED DE PAGE, ET C'EST UN LIEN.
-                    La section juste au-dessus porte déjà le bouton plein de
-                    la même action. Deux boutons identiques à 200px l'un de
-                    l'autre ne doublent pas le clic, ils le partagent - et le
-                    second se lit comme une insistance. Un lien discret
-                    rattrape celui qui a défilé trop loin, sans répéter. */}
-                <button
-                  onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="group mt-5 inline-flex min-h-[40px] items-center gap-1.5 text-[13px] font-semibold text-[var(--tv-highlight)] transition-colors hover:text-white"
-                >
-                  {t("hero.cta")}
-                  <Icon
-                    n="arrow"
-                    cls="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
-                  />
-                </button>
-                <div className="mt-6">
-                  <LangMenuPied />
-                </div>
               </div>
-              <FooterColumn title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
-              <FooterColumn title={t("footer.legal")} links={FOOTER_LEGAL} t={t} />
+              <div className="flex flex-col gap-3.5 lg:min-w-0 lg:flex-1 lg:max-w-[640px]">
+                <FooterRow title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
+                <FooterRow title={t("footer.legal")} links={FOOTER_LEGAL} t={t} />
+              </div>
             </div>
-            <div className="mt-10 border-t border-white/[.06] pt-6">
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-white/[.06] pt-5">
               <p className="text-[12px] text-slate-600">{t("footer.rights")}</p>
+              <LangMenuPied />
             </div>
           </div>
         </footer>

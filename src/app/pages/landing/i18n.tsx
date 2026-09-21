@@ -646,23 +646,33 @@ const M: Record<string, Msg> = {
   },
   "v2.tour.eyebrow": { en: "The product", fr: "Le produit" },
   /* La grille compacte : quatre ecrans reels, une ligne chacun. */
+  /* « Quatre écrans de plus » annonçait un CATALOGUE, et un catalogue ne se
+     lit pas : il se saute. Ce que ces quatre écrans ont en commun n'est pas
+     leur nombre, c'est qu'ils couvrent chacun un moment de la journée - ce
+     que disent déjà leurs étiquettes. Le titre le dit donc aussi. */
   "v2.tour.more.t": {
-    en: "Four more screens, same data.",
-    fr: "Quatre écrans de plus, les mêmes données.",
+    en: "One screen per moment of the day.",
+    fr: "Un écran par moment de la journée.",
   },
   "v2.tour.more.d": {
-    en: "What you skipped, what you check before the open, what could still happen, and what the calendar has in store.",
-    fr: "Ce que tu n'as pas pris, ce que tu vérifies avant l'ouverture, ce qui peut encore arriver, et ce que le calendrier te réserve.",
+    en: "Before the open, during the session, after the close, and before the next one.",
+    fr: "Avant l'ouverture, pendant la séance, après la clôture, et avant la suivante.",
   },
-  "v2.s8.t": { en: "The trades you didn't take", fr: "Les trades que tu n'as pas pris" },
+  "v2.s8.t": {
+    en: "The trades you skipped, priced.",
+    fr: "Les trades que tu n'as pas pris, chiffrés.",
+  },
   "v2.s8.d": {
-    en: "Nobody counts those. Here they cost R, like the others.",
-    fr: "Personne ne les compte. Ici ils coûtent des R, comme les autres.",
+    en: "Nobody counts those. Here they cost R, like the ones you took.",
+    fr: "Personne ne les compte. Ici ils coûtent des R, comme ceux que tu as pris.",
   },
-  "v2.s9.t": { en: "The week's releases", fr: "Les publications de la semaine" },
+  "v2.s9.t": {
+    en: "The releases that move your pairs.",
+    fr: "Les annonces qui bougent tes paires.",
+  },
   "v2.s9.d": {
-    en: "Impact, currency, local time. Before you size, not after.",
-    fr: "Impact, devise, heure locale. Avant de dimensionner, pas après.",
+    en: "Impact, currency, your local time, and a countdown to the next one.",
+    fr: "Impact, devise, ton heure locale, et le compte à rebours de la prochaine.",
   },
   "shot.missed.alt": {
     en: "TradeVault Missed Setups screen, listing A+ setups that were not taken and the R they represented",
@@ -729,18 +739,25 @@ const M: Record<string, Msg> = {
      ruine simulée. Ils portent des arguments que rien d'autre ne porte -
      l'un est le SEUL moment du produit qui agit AVANT le trade, l'autre est
      la seule chose qui parle de ce qui ne s'est pas encore produit. */
+  /* « La checklist passe avant le trade » décrit l'écran. Ce que montre la
+     capture est bien plus fort : le produit DEMANDE pourquoi tu entres, et
+     propose « je veux récupérer ma perte » parmi les réponses. Le titre dit
+     donc ça. */
   "v2.s6.t": {
-    en: "The checklist runs before the trade.",
-    fr: "La checklist passe avant le trade.",
+    en: "It asks why you're entering.",
+    fr: "Il te demande pourquoi tu entres.",
   },
   "v2.s6.d": {
-    en: "Preparation, mental state, lock-in. It is the only moment the product acts before you click, not after.",
-    fr: "Préparation, état mental, verrouillage. C'est le seul moment où le produit agit avant que tu cliques, pas après.",
+    en: "The only moment the product acts before the click, not after it.",
+    fr: "Le seul moment où le produit agit avant le clic, pas après.",
   },
-  "v2.s7.t": { en: "Where your account can land.", fr: "Où ton compte peut atterrir." },
+  "v2.s7.t": {
+    en: "Ten thousand versions of next month.",
+    fr: "Dix mille versions du mois prochain.",
+  },
   "v2.s7.d": {
-    en: "Ten thousand replays of your own wins and losses, in a different order each time. Nothing here is a preset.",
-    fr: "Dix mille rejeux de tes propres gains et pertes, dans un ordre différent à chaque fois. Rien ici n'est un préréglage.",
+    en: "Your own wins and losses, replayed in a different order each time.",
+    fr: "Tes gains et tes pertes à toi, rejoués dans un ordre différent à chaque fois.",
   },
   "shot.checklist.alt": {
     en: "The pre-market checklist: preparation, mental state and lock-in.",

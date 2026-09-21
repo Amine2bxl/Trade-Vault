@@ -319,10 +319,61 @@
   opacity: 1;
 }
 
-/* ── Scroll progress ── */
-.scroll-bar {
+/* ══ LA JAUGE DE DÉFILEMENT ══
+ *
+ * Elle traversait le bord HAUT de la barre, d'un coin arrondi à l'autre. Un
+ * trait droit posé sur une courbe commence dans le vide et finit dedans :
+ * on voyait une ligne verte flotter au-dessus de la barre, sans comprendre
+ * à quoi elle appartenait. Et comme rien ne marquait le trajet restant,
+ * elle ne se lisait pas non plus comme une jauge — juste comme un trait de
+ * longueur variable.
+ *
+ * Elle descend donc sur le bord BAS, rentrée de la valeur du rayon pour ne
+ * jamais croiser une courbe, et pose une PISTE sous elle. Une jauge vide se
+ * lit comme une jauge ; un trait absent ne se lit pas du tout. Le résultat
+ * se confond avec le liseré bas de la barre, qui se remplit à mesure qu'on
+ * descend : elle appartient enfin à quelque chose.
+ *
+ * Elle n'apparaît qu'une fois la page décollée — le même signal
+ * `data-collee` qui densifie la barre. À zéro pour cent, une piste vide
+ * sous une barre qu'on n'a pas encore fait bouger n'informe de rien. */
+.landing-root .lp-jauge {
+  position: absolute;
+  bottom: 0;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.05);
+  opacity: 0;
+  transition: opacity 320ms var(--lp-expo);
+  pointer-events: none;
+}
+.landing-root .lp-nav-shell[data-collee="oui"] .lp-jauge {
+  opacity: 1;
+}
+.landing-root .lp-jauge-fil {
+  height: 100%;
+  border-radius: inherit;
   transform-origin: left;
-  background: var(--tv-highlight);
+  /* Un dégradé, pas un aplat : la tête de la jauge est pleine, la queue
+     s'éteint. On lit le SENS de la progression sans flèche ni chiffre. */
+  background: linear-gradient(90deg, rgb(var(--tv-accent-rgb) / 0.35), var(--tv-accent));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .lp-jauge-fil {
+    transition: transform 120ms linear;
+  }
+}
+/* Pleine largeur sous 640px : la barre n'y a plus de coins arrondis, donc
+   plus de courbe à éviter. */
+@media (max-width: 639px) {
+  .landing-root .lp-jauge {
+    left: 0;
+    right: 0;
+    border-radius: 0;
+  }
 }
 
 /* ── Entrances (bloc héros seulement) ── */
@@ -1332,7 +1383,7 @@
   border: 1px solid var(--tv-border);
   border-radius: 20px;
   background: var(--tv-plate-1);
-  padding: 1.5rem 1.5rem 0;
+  padding: 1.5rem;
   transition:
     border-color 260ms var(--lp-expo),
     transform 260ms var(--lp-expo);
@@ -1363,44 +1414,118 @@
   line-height: 1.65;
   color: var(--tv-text-secondary);
 }
-/* L'écran occupe le bas de la carte et déborde par en bas : il se lit comme
-   un écran POSÉ dans la carte plutôt que comme une vignette collée dedans.
-   `margin-top: auto` le colle au bas quelle que soit la longueur du texte.
-
-   ── PAS DE BOÎTE AU RAPPORT IMPOSÉ ──
-   Les quatre captures n'ont pas le même rapport : les setups manqués font
-   2400×941 (six lignes, recadrées court), les trois autres environ 16/9.
-   Une boîte 16/9 commune les mettait au même gabarit, l'image en `contain`
-   donc entière — mais la capture courte n'occupait alors que 70 % de sa
-   boîte, et les 30 % restants n'étaient pas neutres : la lueur de la carte
-   y était toujours peinte. On lisait un panneau vide et allumé au-dessus
-   de l'écran, exactement ce qu'on voulait éviter.
-   L'image reprend donc sa hauteur naturelle, et la lueur épouse ce qu'elle
-   éclaire. L'écart de hauteur qui reste dans la rangée se range EN HAUT,
-   entre le texte et l'écran, où il se lit comme de l'air : les écrans,
-   eux, restent alignés sur le bas des cartes. */
+/* ══ LES QUATRE ÉCRANS SECONDAIRES : UN DÉTAIL, PAS UNE VIGNETTE ══
+ *
+ * ── LE PROBLÈME, MESURÉ ──
+ *
+ * Une capture de bureau fait 2400px de large, soit 1200px d'interface. Dans
+ * une carte de 490px, elle est réduite à 41 % : un libellé de 13px y tombe à
+ * 5px. On ne lisait donc RIEN — ni un chiffre, ni un intitulé, ni même de
+ * quel écran il s'agissait. Quatre rectangles sombres et illisibles côte à
+ * côte ne donnent aucune envie d'en voir plus, et c'est logique : ils ne
+ * montrent rien.
+ *
+ * Les agrandir n'est pas une option. Pour lire un écran de bureau entier il
+ * faut sa largeur réelle ; la donner à quatre écrans, c'est quatre rangées
+ * pleine largeur de plus sur une page qu'on veut raccourcir.
+ *
+ * ── CE QU'ON MONTRE À LA PLACE ──
+ *
+ * Un DÉTAIL, à l'échelle 1. Le cadre devient une fenêtre découpée dans la
+ * vraie capture, cadrée sur la zone qui porte l'argument de cet écran : le
+ * bloc « pourquoi tu entres » de la checklist, le compte à rebours du
+ * calendrier, le R laissé sur la table, la bande de probabilité du
+ * Monte-Carlo. Le texte du produit s'y lit vraiment.
+ *
+ * Ce n'est pas un recadrage de complaisance : ce sont les pixels de la
+ * capture, non retouchés, simplement cadrés. Montrer une partie lisible dit
+ * davantage qu'un tout illisible, et c'est ce que fait n'importe quelle page
+ * produit qui se respecte.
+ *
+ * Le cadrage est déclaré par écran (`--zoom`, `--cx`, `--cy`), lus depuis
+ * `data-shot` que `ProductShot` pose déjà sur le `<figure>`. `--cx`/`--cy`
+ * sont des fractions de l'IMAGE, pas du cadre : `-43%` veut dire « commence
+ * à 43 % de la hauteur de la capture », ce qui reste vrai si la capture est
+ * régénérée à une autre définition. */
 .landing-root .tour-carte-scene {
   margin-top: auto;
   padding-top: 1.5rem;
 }
 .landing-root .tour-carte-shot .shot-frame {
-  padding: 0;
-  border-radius: 14px 14px 0 0;
+  position: relative;
   overflow: hidden;
-  /* FOND TRANSPARENT, ET PAS DE BISEAU : ici la CARTE est déjà la surface,
-     le cadre n'a plus rien à poser. */
-  background: none;
-  border: 0;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  /* Une fenêtre, donc un encadrement franc sur ses quatre côtés — pas le
+     cadre ouvert par le bas des grandes captures. Un détail sans bord se
+     lirait comme une image mal chargée. */
+  border: 1px solid var(--tv-border);
+  border-radius: 12px;
+  background: var(--tv-plate-0);
   box-shadow: none;
 }
-.landing-root .tour-carte-shot .shot-frame > picture,
-.landing-root .tour-carte-shot .shot-frame > picture > img,
-.landing-root .tour-carte-shot .shot-frame > img {
-  display: block;
-  height: auto;
-  width: 100%;
-  border-radius: 11px 11px 0 0;
+.landing-root .tour-carte-shot .shot-frame > picture {
+  display: contents;
 }
+.landing-root .tour-carte-shot .shot-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  border-radius: 0;
+  transform-origin: 0 0;
+  transform: scale(var(--zoom, 2)) translate(var(--cx, 0%), var(--cy, 0%));
+}
+
+/* Le cadrage de chaque écran. Une ligne par capture, et la raison du
+   cadrage avec — c'est un choix éditorial, pas un réglage. */
+
+/* La checklist : le bloc MENTAL. « Je veux récupérer ma perte », « le prix
+   part sans moi », CALM / FOCUSED / IMPATIENT / FOMO. C'est là que le
+   produit fait quelque chose qu'aucun journal ne fait. */
+.landing-root [data-shot="checklist"] {
+  --cy: -43%;
+  --cx: -1%;
+  /* 2.15 plutôt que 2 : à 2, le bord droit laissait paraître 4 % de la
+     colonne voisine, soit un fragment de pilule coupé qu'on lit comme un
+     défaut. Le cadre s'arrête maintenant pile au bord de la colonne. */
+  --zoom: 2.15;
+}
+/* Le calendrier : la carte « NEXT EVENT » et son compte à rebours, puis les
+   premières lignes de la semaine. */
+.landing-root [data-shot="news"] {
+  --cy: -20%;
+  --cx: -1%;
+}
+/* Les setups manqués : le R laissé sur la table, et les lignes en dessous. */
+.landing-root [data-shot="missed"] {
+  --cy: -5%;
+  /* Le titre de l'écran commence à 1,2 % : à -2 % on lui coupait sa
+     première lettre. */
+  --cx: -0.6%;
+}
+/* Monte-Carlo : la probabilité d'atteindre l'objectif, et le haut de la
+   bande de scénarios. */
+.landing-root [data-shot="montecarlo"] {
+  --cy: -8%;
+  --cx: -1%;
+}
+
+/* Sous 640px c'est la capture TÉLÉPHONE qui est servie (`<picture>`) : elle
+   est déjà à l'échelle 1, il n'y a rien à agrandir. On la cadre en hauteur
+   comme les autres captures mobiles de la page. */
+@media (max-width: 639px) {
+  .landing-root .tour-carte-shot .shot-frame {
+    aspect-ratio: 5 / 6;
+  }
+  .landing-root .tour-carte-shot .shot-frame img {
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    transform: none;
+  }
+}
+
 /* La lueur d'une carte est plus discrète que celle d'une grande capture :
    quatre halos côte à côte se additionnent en une nappe. */
 .landing-root .tour-carte-shot.shot-halo::before {

@@ -59,10 +59,12 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
           et c'est le CSS (`landing.css`) qui en tire une variation de
           DENSITÉ - jamais de forme. */}
       <div className="lp-nav-shell relative" data-collee={y > 10 ? "oui" : "non"}>
-        <div
-          className="scroll-bar absolute inset-x-0 top-0 h-[2px]"
-          style={{ transform: `scaleX(${pct})` }}
-        />
+        {/* La jauge appartient au bord BAS de la barre, pas au bord haut :
+            voir `.lp-jauge` dans `landing.css`. Elle porte sa piste, donc
+            elle se lit comme une jauge même à 2 %. */}
+        <div className="lp-jauge" aria-hidden>
+          <div className="lp-jauge-fil" style={{ transform: `scaleX(${pct})` }} />
+        </div>
 
         {/* Plus de `ref` ici : il ne servait qu'à détecter le clic hors du menu
           déroulant, qui n'existe plus. */}
