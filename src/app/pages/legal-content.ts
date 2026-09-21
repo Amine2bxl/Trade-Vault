@@ -62,6 +62,8 @@ export interface LegalChrome {
   contactCta: string;
   /** Les autres documents, listés au pied de chaque page. */
   related: string;
+  /** L'intitulé du groupe de navigation entre documents. */
+  docs: string;
 }
 
 const chromeByLang: Partial<Record<Lang, LegalChrome>> = {
@@ -70,12 +72,14 @@ const chromeByLang: Partial<Record<Lang, LegalChrome>> = {
     toc: "On this page",
     contactCta: "Contact us",
     related: "Other documents",
+    docs: "Legal",
   },
   fr: {
     back: "Retour à TradeVault",
     toc: "Sur cette page",
     contactCta: "Nous contacter",
     related: "Les autres documents",
+    docs: "Juridique",
   },
 };
 
@@ -84,16 +88,58 @@ export function legalChrome(lang: Lang): LegalChrome {
 }
 
 /**
- * LA TABLE DES DOCUMENTS — une seule liste, lue par le pied de chaque page
- * légale. Un document légal isolé oblige à revenir en arrière pour trouver
- * son voisin ; les quatre se citent donc mutuellement.
+ * LA TABLE DES DOCUMENTS — une seule liste, lue par la navigation de chaque
+ * page légale et par le pied de la vitrine.
+ *
+ * ── POURQUOI CHAQUE ENTRÉE PORTE UNE PHRASE ──
+ *
+ * « Conditions d'utilisation » et « CGU » sont deux documents différents, et
+ * leurs NOMS ne disent pas en quoi. Devant quatre intitulés juridiques, on
+ * ne sait pas lequel ouvrir pour trouver la règle de résiliation — alors on
+ * les ouvre tous, ou aucun. Une ligne par document dit ce qu'on y trouve, et
+ * la question disparaît.
  */
 export const LEGAL_ROUTES = [
-  { path: "/terms", label: { en: "Terms of Service", fr: "Conditions d'utilisation" } },
-  { path: "/cgu", label: { en: "General Terms (CGU)", fr: "CGU" } },
-  { path: "/privacy", label: { en: "Privacy Policy", fr: "Politique de confidentialité" } },
-  { path: "/cookies", label: { en: "Cookies", fr: "Cookies" } },
+  {
+    path: "/terms",
+    label: { en: "Terms of Service", fr: "Conditions d'utilisation" },
+    blurb: {
+      en: "Plans, billing, cancellation, liability.",
+      fr: "Offres, facturation, résiliation, responsabilité.",
+    },
+  },
+  {
+    path: "/cgu",
+    label: { en: "General Terms (CGU)", fr: "CGU" },
+    blurb: {
+      en: "Access to the service and rules of use.",
+      fr: "Accès au service et règles d'usage.",
+    },
+  },
+  {
+    path: "/privacy",
+    label: { en: "Privacy Policy", fr: "Politique de confidentialité" },
+    blurb: {
+      en: "What is stored, where, and for how long.",
+      fr: "Ce qui est stocké, où, et combien de temps.",
+    },
+  },
+  {
+    path: "/cookies",
+    label: { en: "Cookies", fr: "Cookies" },
+    blurb: {
+      en: "Browser storage, and who sets what.",
+      fr: "Stockage navigateur, et qui dépose quoi.",
+    },
+  },
 ] as const;
+
+/** La phrase qui dit ce qu'on trouve dans un document. */
+export function legalBlurb(path: string, lang: Lang): string {
+  const entry = LEGAL_ROUTES.find((r) => r.path === path);
+  if (!entry) return "";
+  return lang === "fr" ? entry.blurb.fr : entry.blurb.en;
+}
 
 export function legalLabel(path: string, lang: Lang): string {
   const entry = LEGAL_ROUTES.find((r) => r.path === path);

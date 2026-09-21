@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpRight, Mail } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import type { Lang } from "../i18n/translations";
 import { SUPPORT_EMAIL } from "../types";
-import { LEGAL_ROUTES, legalChrome, legalLabel, type LegalDoc } from "./legal-content";
+import { LEGAL_ROUTES, legalBlurb, legalChrome, legalLabel, type LegalDoc } from "./legal-content";
 import { usePublicLang } from "./usePersistedLang";
 import { breadcrumbJsonLd } from "@/shared/seo";
 import "./landing.css";
@@ -12,33 +12,79 @@ import "./landing.css";
 /**
  * LE GABARIT DES PAGES LÉGALES.
  *
- * ── CE QUI NE COLLAIT PLUS ────────────────────────────────────────────────
+ * ── CE QU'ON NE SAVAIT PAS EN ARRIVANT ────────────────────────────────────
  *
- * Il portait la peau d'AVANT la refonte : des nappes cyan et indigo en fond,
- * des numéros de section en cyan, un bouton d'action cyan. La vitrine est
- * passée à l'émeraude ; ces pages étaient restées la seule surface publique
- * d'une autre marque. Un visiteur qui clique « Confidentialité » depuis le
- * pied de page changeait de site.
+ * Trois choses, et elles se répondaient :
  *
- * Chaque section vivait par ailleurs dans sa PROPRE carte. Neuf plaques
- * empilées pour neuf paragraphes, c'est la mise en page d'un tableau de bord
- * appliquée à un texte suivi : le regard redémarre à chaque bord, et la
- * lecture continue devient impossible. Le fond est maintenant plat, les
- * sections sont séparées par un filet, et la seule plaque restante est le
- * sommaire - parce que lui, justement, n'est pas du texte suivi.
+ *   1. SUR QUELLE PAGE ON ÉTAIT. L'en-tête portait le logo et rien d'autre ;
+ *      le titre du document défilait hors de l'écran au bout de deux
+ *      paragraphes, et il ne restait plus aucun repère.
+ *   2. QUELLES AUTRES PAGES EXISTAIENT. Elles étaient listées TOUT EN BAS,
+ *      donc on ne les découvrait qu'après avoir lu le document entier.
+ *   3. LAQUELLE OUVRIR. « Conditions d'utilisation » et « CGU » sont deux
+ *      documents différents et leurs noms ne disent pas en quoi. Devant
+ *      quatre intitulés juridiques, on ne sait pas lequel porte la règle de
+ *      résiliation, alors on les ouvre tous ou aucun.
+ *
+ * ── LA RÉPONSE : UNE COLONNE QUI NE BOUGE PAS ─────────────────────────────
+ *
+ * L'en-tête est collé en haut, et il NOMME le document ouvert. À sa gauche,
+ * une colonne collée sous lui porte deux listes : les quatre documents, avec
+ * une phrase disant ce qu'on trouve dans chacun et un rail émeraude sur
+ * celui qu'on lit ; puis le sommaire du document, dont l'entrée courante
+ * s'allume au défilement.
+ *
+ * On peut donc répondre aux trois questions sans jamais remonter, et le
+ * texte est la seule chose qui bouge — ce qui est exactement le
+ * comportement qu'on attend d'un document de référence.
  *
  * ── LA LARGEUR ────────────────────────────────────────────────────────────
  *
  * ~68 caractères. C'est la mesure au-delà de laquelle l'œil rate la ligne
  * suivante en revenant à la marge. Un document légal est déjà pénible à
  * lire ; lui donner 110 caractères de large le rend hostile.
- *
- * ── LE SOMMAIRE ───────────────────────────────────────────────────────────
- *
- * Il passe en colonne collante à partir de `lg` : sur une page de dix
- * sections, savoir où l'on est vaut mieux qu'une liste qu'on a dépassée
- * depuis longtemps. Sous `lg` il redevient un bloc en tête, faute de place.
  */
+
+/** La hauteur de l'en-tête collé, en pixels. Sert aussi d'ancrage haut. */
+const HAUTEUR_ENTETE = 64;
+
+/**
+ * LA SECTION QU'ON EST EN TRAIN DE LIRE.
+ *
+ * Un `IntersectionObserver` avec une fenêtre resserrée sur le haut de
+ * l'écran : la section « active » est celle qui passe sous l'en-tête, pas
+ * celle qui occupe le plus de place. C'est ce qui fait qu'un sommaire suit
+ * la lecture au lieu de sauter deux entrées d'un coup.
+ */
+function useSectionActive(nb: number) {
+  const [actif, setActif] = useState(0);
+
+  useEffect(() => {
+    if (nb === 0) return;
+    const cibles = Array.from({ length: nb }, (_, i) => document.getElementById(`sec-${i}`)).filter(
+      (n): n is HTMLElement => n !== null,
+    );
+    if (!cibles.length) return;
+
+    const obs = new IntersectionObserver(
+      (entrees) => {
+        /* On prend la PREMIÈRE section visible dans la bande, pas la
+           dernière entrée déclenchée : en défilement rapide, plusieurs
+           franchissent la bande dans la même frame. */
+        const visibles = entrees
+          .filter((e) => e.isIntersecting)
+          .map((e) => Number(e.target.id.slice(4)));
+        if (visibles.length) setActif(Math.min(...visibles));
+      },
+      { rootMargin: `-${HAUTEUR_ENTETE + 8}px 0px -70% 0px`, threshold: 0 },
+    );
+    cibles.forEach((c) => obs.observe(c));
+    return () => obs.disconnect();
+  }, [nb]);
+
+  return actif;
+}
+
 export default function LegalPage({
   pick,
   path,
@@ -51,7 +97,7 @@ export default function LegalPage({
   const doc = useMemo(() => pick(lang), [pick, lang]);
   const chrome = legalChrome(lang);
   const dir = lang === "ar" ? "rtl" : "ltr";
-  const autres = LEGAL_ROUTES.filter((r) => r.path !== path);
+  const actif = useSectionActive(doc.blocks.length);
 
   return (
     <div
@@ -68,26 +114,37 @@ export default function LegalPage({
         dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd(doc.title, path) }}
       />
 
-      {/* Un vrai en-tête, pas une flèche seule. Ces pages s'ouvrent souvent
-          dans un onglet isolé, depuis un e-mail ou un lien partagé : sans
-          logo, rien ne dit de quel produit on lit les conditions. */}
-      <header className="border-b border-white/[.06]">
-        <div className="lp-container flex h-16 items-center justify-between">
-          <a href="/" className="flex shrink-0 items-center gap-2.5">
-            <img
-              src={logoSrc}
-              alt="TradeVault"
-              width={30}
-              height={30}
-              className="h-7 w-7 object-contain"
-            />
-            <span className="font-display text-[1.05rem] font-bold leading-none tracking-[-0.02em] text-white">
-              TradeVault
+      {/* L'EN-TÊTE NE BOUGE PLUS, ET IL NOMME LE DOCUMENT.
+          Il défilait hors de l'écran au bout de deux paragraphes : passé ce
+          point, plus rien ne disait ni de quel produit ni de quel document
+          il s'agissait. Le nom du document y est répété après le logo, comme
+          un fil d'Ariane — c'est la réponse la moins coûteuse à « je suis
+          où ? ». */}
+      <header className="sticky top-0 z-[var(--tv-z-nav)] border-b border-white/[.06] bg-[rgb(10_12_11/0.82)] backdrop-blur-md">
+        <div className="lp-container flex h-16 items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <a href="/" className="flex shrink-0 items-center gap-2.5">
+              <img
+                src={logoSrc}
+                alt="TradeVault"
+                width={30}
+                height={30}
+                className="h-7 w-7 object-contain"
+              />
+              <span className="font-display text-[1.05rem] font-bold leading-none tracking-[-0.02em] text-white">
+                TradeVault
+              </span>
+            </a>
+            <span className="hidden text-slate-700 sm:inline" aria-hidden>
+              /
             </span>
-          </a>
+            <span className="hidden truncate text-[13px] font-medium text-slate-400 sm:inline">
+              {doc.title}
+            </span>
+          </div>
           <Link
             to="/"
-            className="inline-flex min-h-[40px] items-center gap-1.5 text-[13px] font-medium text-slate-400 transition-colors hover:text-white"
+            className="inline-flex min-h-[40px] shrink-0 items-center gap-1.5 text-[13px] font-medium text-slate-400 transition-colors hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" /> {chrome.back}
           </Link>
@@ -95,26 +152,56 @@ export default function LegalPage({
       </header>
 
       <div className="lp-container relative z-10 py-12 md:py-16">
-        <div className="mx-auto max-w-[1040px] lg:grid lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-14">
-          {/* ── SOMMAIRE ── */}
-          <nav
-            aria-label={chrome.toc}
-            className="mb-10 rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-4 lg:sticky lg:top-8 lg:mb-0 lg:self-start lg:border-0 lg:bg-transparent lg:p-0"
+        <div className="mx-auto max-w-[1040px] lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-14">
+          {/* ── LA COLONNE QUI NE BOUGE PAS ──
+              `top` dégage la hauteur de l'en-tête collé, sinon elle
+              passerait dessous. Sous `lg` elle redevient un bloc en tête :
+              une colonne collante sur un écran de 390px mangerait la page. */}
+          <div
+            className="mb-10 lg:sticky lg:mb-0 lg:self-start"
+            style={{ top: HAUTEUR_ENTETE + 24 }}
           >
-            <p className="tv-label mb-3 text-slate-500">{chrome.toc}</p>
-            <ol className="space-y-1">
-              {doc.blocks.map((b, i) => (
-                <li key={b.h}>
-                  <a
-                    href={`#sec-${i}`}
-                    className="-my-1 block py-1 text-[13px] leading-5 text-slate-500 transition-colors hover:text-white"
-                  >
-                    {b.h}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
+            <nav aria-label={chrome.docs}>
+              <p className="tv-label mb-2.5 text-slate-600">{chrome.docs}</p>
+              <ul className="space-y-0.5">
+                {LEGAL_ROUTES.map((r) => {
+                  const courant = r.path === path;
+                  return (
+                    <li key={r.path}>
+                      <a
+                        href={r.path}
+                        aria-current={courant ? "page" : undefined}
+                        className={`legal-lien ${courant ? "legal-lien--ici" : ""}`}
+                      >
+                        <span className="legal-lien-titre">{legalLabel(r.path, lang)}</span>
+                        <span className="legal-lien-phrase">{legalBlurb(r.path, lang)}</span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+
+            {/* Le sommaire du document ouvert, en dessous de la liste des
+                documents : d'abord « où suis-je parmi les quatre », ensuite
+                « où suis-je dans celui-ci ». */}
+            <nav aria-label={chrome.toc} className="mt-8 hidden lg:block">
+              <p className="tv-label mb-2.5 text-slate-600">{chrome.toc}</p>
+              <ol className="border-l border-white/[.08]">
+                {doc.blocks.map((b, i) => (
+                  <li key={b.h}>
+                    <a
+                      href={`#sec-${i}`}
+                      aria-current={i === actif ? "true" : undefined}
+                      className={`legal-toc ${i === actif ? "legal-toc--ici" : ""}`}
+                    >
+                      {b.h}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </div>
 
           {/* ── LE DOCUMENT ── */}
           <article className="max-w-[68ch]">
@@ -126,7 +213,13 @@ export default function LegalPage({
 
             <div className="mt-12 space-y-11">
               {doc.blocks.map((b, i) => (
-                <section key={b.h} id={`sec-${i}`} className="scroll-mt-8">
+                <section
+                  key={b.h}
+                  id={`sec-${i}`}
+                  /* L'ancre doit s'arrêter SOUS l'en-tête collé, sinon un
+                     clic dans le sommaire cache le titre qu'on visait. */
+                  style={{ scrollMarginTop: HAUTEUR_ENTETE + 24 }}
+                >
                   <h2 className="font-display text-[1.15rem] font-semibold tracking-[-0.02em] text-white">
                     {b.h}
                   </h2>
@@ -145,28 +238,15 @@ export default function LegalPage({
               ))}
             </div>
 
-            {/* ── LES AUTRES DOCUMENTS ──
-                Un document légal isolé oblige à revenir en arrière pour
-                trouver son voisin, alors qu'on les consulte presque toujours
-                en série. Les quatre se citent donc mutuellement. */}
+            {/* La liste des autres documents a quitté ce pied de page : elle
+                vit maintenant dans la colonne de gauche, visible dès
+                l'arrivée plutôt qu'après la dernière ligne. Ne reste que ce
+                qui a vraiment sa place à la fin d'un document légal : à qui
+                écrire quand il ne répond pas à la question. */}
             <div className="mt-16 border-t border-white/[.08] pt-8">
-              <p className="tv-label mb-4 text-slate-500">{chrome.related}</p>
-              <div className="flex flex-wrap gap-2.5">
-                {autres.map((r) => (
-                  <a
-                    key={r.path}
-                    href={r.path}
-                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[var(--tv-border)] px-4 text-[13px] font-medium text-slate-400 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white"
-                  >
-                    {legalLabel(r.path, lang)}
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </a>
-                ))}
-              </div>
-
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
-                className="btn-primary mt-8 inline-flex px-5 py-2.5 text-[13px]"
+                className="btn-primary inline-flex px-5 py-2.5 text-[13px]"
               >
                 <Mail className="h-4 w-4" /> {chrome.contactCta}
               </a>

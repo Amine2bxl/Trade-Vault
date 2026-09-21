@@ -10,11 +10,10 @@ import { TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
 import { TourProduit } from "./landing/Tour";
 import { CursorOrb } from "./landing/CursorOrb";
-import { DrawnLine } from "./landing/DrawnLine";
 import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";
-import { CookieConsent } from "../components/CookieConsent";
+import { CookieConsent } from "./landing/CookieConsent";
 import { faqPageJsonLd } from "@/shared/seo";
 import { YEARLY_EUR, eur } from "../utils/pricing";
 import {
@@ -138,13 +137,18 @@ const FOOTER_PRODUCT: FooterLink[] = [
   { k: "footer.f4", href: "/pricing" },
   { k: "footer.r1", href: "/demo-site" },
   { k: "footer.r3", href: "#faq" },
+  /* « Contact » vivait sous l'intitulé LÉGAL. Écrire à quelqu'un n'est pas
+     un acte juridique, et sa présence dans cette colonne faisait passer les
+     quatre documents pour cinq. */
+  { k: "footer.r4", href: "/contact" },
 ];
 
+/* Les QUATRE documents, dans le même ordre que la navigation des pages
+   légales (`LEGAL_ROUTES`) : on retrouve la liste telle qu'on l'a quittée. */
 const FOOTER_LEGAL: FooterLink[] = [
-  { k: "footer.r4", href: "/contact" },
-  { k: "footer.privacy", href: "/privacy" },
   { k: "footer.terms", href: "/terms" },
   { k: "footer.cgu", href: "/cgu" },
+  { k: "footer.privacy", href: "/privacy" },
   { k: "footer.cookies", href: "/cookies" },
 ];
 
@@ -1040,11 +1044,6 @@ function LandingPage() {
             <BandeConfiance t={t} />
           </div>
         </section>
-
-        {/* La seule ligne tracée de la page, à la charnière entre « voici le
-            produit » et « voici ton problème ». Sans axe ni chiffre : voir
-            l'en-tête de `DrawnLine.tsx`. */}
-        <DrawnLine className="-mb-4 mt-2 lg:-mb-6" />
 
         {/* ── LE PROBLÈME, PUIS SON PRIX ──
             La section nommait trois symptômes et s'arrêtait là. Nommer une

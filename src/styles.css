@@ -2525,8 +2525,13 @@ a:focus-visible,
    « Get Started », sans qu'aucun composant n'ait à le savoir. C'est ce qui
    rend `PricingPlans` cohérent sur les deux surfaces d'un seul coup : vert
    de marque sur `/pricing`, accent du thème dans la page d'abonnement. */
+/* `.tv-public` : les modales des surfaces publiques. `Modal` rend dans un
+   PORTAIL sur `document.body`, donc son contenu sort de `.landing-root` et
+   n'héritait ni des jetons émeraude ni des styles de la vitrine. La classe
+   se pose sur le panneau et lui rend les deux. */
 .landing-root,
-.err-ecran {
+.err-ecran,
+.tv-public {
   --tv-primary-h: 156.4;
   --tv-primary-c: 1.3;
   --tv-secondary-h: 162.4;
@@ -2548,7 +2553,8 @@ a:focus-visible,
    le faisait déjà sur `.btn-primary` ; tout ce qui est plein sur ces
    surfaces le mérite pour la même raison. */
 .landing-root .tv-accent-fill,
-.err-ecran .tv-accent-fill {
+.err-ecran .tv-accent-fill,
+.tv-public .tv-accent-fill {
   font-weight: 700;
   text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
 }

@@ -1080,6 +1080,31 @@ const M: Record<string, Msg> = {
      différentes ; c'est l'annuel qui rend la soustraction exacte. */
   "anchor.b.year": { en: "/ year", fr: "/ an" },
   "anchor.vs": { en: "vs", fr: "contre" },
+
+  /* ── L'AVIS COOKIES ──
+     Il était écrit en français, en dur, sur une vitrine dont la langue par
+     défaut est l'anglais. Le contenu suit MOT POUR MOT ce que dit la page
+     `/cookies` : pas de balise de mesure d'audience, pas de pixel
+     publicitaire, pas de widget social, et les cookies de Stripe, Coinbase
+     et Google déposés sur LEURS pages, pas sur la nôtre. */
+  "cookie.pill": { en: "Cookies", fr: "Cookies" },
+  "cookie.aria": { en: "Cookie preferences", fr: "Préférences de cookies" },
+  "cookie.done.aria": {
+    en: "Cookies accepted - review preferences",
+    fr: "Cookies acceptés - revoir les préférences",
+  },
+  "cookie.title": { en: "Cookies and local storage", fr: "Cookies et stockage local" },
+  "cookie.body": {
+    en: "TradeVault stores what it needs to keep you signed in and remember your settings. No analytics tag, no advertising pixel, no social widget.",
+    fr: "TradeVault stocke ce qu'il faut pour te garder connecté et retenir tes réglages. Aucune balise de mesure d'audience, aucun pixel publicitaire, aucun widget social.",
+  },
+  "cookie.note": {
+    en: "Stripe, Coinbase Commerce and Google set their own cookies on their own pages when you go there to pay or sign in. Never on TradeVault itself.",
+    fr: "Stripe, Coinbase Commerce et Google déposent leurs propres cookies sur leurs propres pages, quand tu y vas pour payer ou te connecter. Jamais sur TradeVault même.",
+  },
+  "cookie.more": { en: "Read the details", fr: "Lire le détail" },
+  "cookie.accept": { en: "Accept", fr: "J'accepte" },
+  "cookie.done": { en: "Preferences saved", fr: "Préférences enregistrées" },
   "anchor.punch": {
     en: "One reset avoided pays for years.",
     fr: "Un reset évité paie des années.",
