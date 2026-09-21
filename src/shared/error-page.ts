@@ -78,11 +78,14 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
          l'écran crie une information qui n'aide personne : ce qu'on veut
          lire, c'est ce qui s'est passé et quoi faire. Il devient une
          étiquette, en émeraude, au-dessus du titre. */
+      /* Un rectangle, pas une pilule : centree au-dessus d'un titre, une
+         pilule verte se lit comme un petit bouton rond et on cherche a
+         cliquer dessus. Meme valeur que .err-etiquette dans styles.css. */
       .code {
         display:inline-block; font-weight:700; font-size:.6875rem; letter-spacing:.14em;
         text-transform:uppercase; color:var(--accent);
         border:1px solid rgba(34,224,138,.28); background:rgba(34,224,138,.07);
-        border-radius:999px; padding:.3rem .7rem; margin-bottom:1.25rem;
+        border-radius:7px; padding:.3rem .7rem; margin-bottom:1.25rem;
       }
       svg.spark { width:170px; max-width:55%; height:38px; margin:0 auto 1.75rem; display:block; }
       svg.spark path { stroke-dasharray:400; stroke-dashoffset:400; animation:draw 2s cubic-bezier(.19,1,.22,1) forwards .25s; }

@@ -1012,18 +1012,18 @@
  * Mesuré sur `#22e08a` : blanc donne 2,3:1, très en dessous du seuil. On
  * garde donc la couleur demandée ET la lisibilité en posant une ombre portée
  * courte sous le texte : elle ancre les lettres sans assombrir l'aplat, et
- * c'est ce que font les boutons clairs de Linear et de Stripe. */
+ * c'est ce que font les boutons clairs de Linear et de Stripe.
+ *
+ * LA COULEUR N'EST PLUS ÉCRITE ICI. Ce bloc repeignait `.btn-primary` avec
+ * `--tv-accent` pour contourner une rampe d'action trop sombre sur fond
+ * noir. Le contournement a été remplacé par sa cause : `styles.css` pose
+ * maintenant `--tv-cta: #22e08a` sur `.landing-root`, donc le bouton de base
+ * arrive déjà à la bonne couleur — et tout ce qui est plein sur cette
+ * surface arrive avec lui. Il ne reste ici que ce qui est propre à la
+ * vitrine : la graisse et l'ombre du texte. */
 .landing-root .btn-primary {
-  background: var(--tv-accent);
-  color: #ffffff;
   font-weight: 700;
   text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
-}
-.landing-root .btn-primary:hover {
-  background: var(--tv-highlight);
-}
-.landing-root .btn-primary:active {
-  background: var(--tv-accent-2);
 }
 
 /* ══ LE SURLIGNEUR ══

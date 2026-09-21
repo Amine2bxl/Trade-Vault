@@ -34,11 +34,20 @@ import ErrorScreen from "../app/components/ErrorScreen";
 import { SSR_LANG, langForPath } from "@/shared/lang";
 
 function NotFoundComponent() {
+  /* LE 404 PORTE LE MÊME COUPLE DE BOUTONS QUE LE 500.
+     Il n'en avait qu'un, bordé : l'écran n'offrait donc aucune action
+     principale, et son seul objet coloré était l'étiquette du code — qu'on
+     prenait pour un bouton rond puisque rien d'autre n'en avait l'air.
+     « Actualiser » a un vrai usage ici : une adresse juste qui tombe en 404
+     le temps qu'un déploiement se propage est le cas le plus fréquent, et
+     recharger la résout. Quand ce n'est pas ça, le bouton bordé à côté
+     ramène à l'accueil. */
   return (
     <ErrorScreen
       code="404"
       title="This page slipped the market"
       subtitle="The page you're looking for doesn't exist or has been moved. Let's get you back on the chart."
+      onRetry={() => window.location.reload()}
     />
   );
 }

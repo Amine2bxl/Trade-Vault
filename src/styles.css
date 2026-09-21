@@ -835,11 +835,16 @@ body {
     transform: translateY(0);
   }
 }
+/* UN RECTANGLE, PAS UNE PILULE. À cette taille, une pilule verte centrée
+   au-dessus d'un titre ne se lit pas comme une étiquette : elle se lit comme
+   un petit bouton rond, et on cherche à cliquer dessus. Un rectangle à coin
+   franc se range avec les boutons rectangulaires d'en dessous et redevient
+   ce qu'il est — une mention. */
 .err-etiquette {
   display: inline-block;
   margin-bottom: 1.25rem;
   border: 1px solid rgb(var(--tv-accent-rgb) / 0.28);
-  border-radius: 999px;
+  border-radius: 7px;
   background: rgb(var(--tv-accent-rgb) / 0.07);
   padding: 0.3rem 0.7rem;
   font-size: 0.6875rem;
@@ -886,7 +891,7 @@ body {
     transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .err-cta {
-  background: var(--tv-accent);
+  background: var(--tv-cta);
   color: #fff;
   text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
   box-shadow:
@@ -894,7 +899,11 @@ body {
     0 8px 26px -12px rgb(var(--tv-accent-rgb) / 0.55);
 }
 .err-cta:hover {
+  background: var(--tv-cta-hover);
   transform: translateY(-1px);
+}
+.err-cta:active {
+  background: var(--tv-cta-active);
 }
 .err-cta-2 {
   border-color: rgb(255 255 255 / 0.14);
@@ -2411,6 +2420,73 @@ a:focus-visible,
 .tv-accent-fill {
   background: var(--tv-cta);
   color: #ffffff;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   L'ÉMERAUDE VERROUILLÉE DES SURFACES PUBLIQUES
+   ══════════════════════════════════════════════════════════════════════════
+
+   ── LE DÉFAUT ──
+
+   Le moteur de thème réécrit `--tv-primary-h/-c` sur `documentElement`, et
+   toute la rampe d'accent en dérive. C'est exactement ce qu'on veut DANS
+   l'application : quelqu'un qui choisit Amber travaille en ambre.
+
+   Mais ces variables vivent sur la racine, donc elles descendent aussi sur
+   la vitrine, sur `/pricing`, sur les pages légales et sur les écrans
+   d'erreur — des pages qui ne sont pas « son » espace de travail mais la
+   MARQUE. Un visiteur arrivait sur une page de vente orange parce qu'un
+   réglage pris trois semaines plus tôt dans un tableau de bord était encore
+   en mémoire locale. L'identité d'un produit ne se négocie pas avec la
+   préférence d'affichage d'un utilisateur connecté.
+
+   ── CE QUE CE BLOC FAIT ──
+
+   Il repose les jetons d'accent à l'émeraude, en local, sur les racines
+   publiques. Les valeurs sont les mêmes qu'au `:root` : ce n'est pas une
+   seconde palette, c'est la palette par défaut rendue non négociable là où
+   elle est l'identité.
+
+   ── ET LA RAMPE D'ACTION AVEC ──
+
+   `--tv-cta` est verrouillé à `oklch(0.52 …)` : une luminosité choisie pour
+   qu'un bouton tienne dans un tableau de bord dense sans crier. Sur une page
+   de vente noire où il est le seul objet coloré, ce même vert est terne — et
+   la vitrine l'avait déjà contourné en repeignant `.btn-primary` à la main
+   avec `--tv-accent`.
+
+   On supprime le contournement en traitant la cause : ici, la rampe d'action
+   EST l'émeraude clair. Tout ce qui est plein et agit — `.btn-primary`,
+   `.tv-accent-fill`, une pastille active — devient donc le bouton
+   « Get Started », sans qu'aucun composant n'ait à le savoir. C'est ce qui
+   rend `PricingPlans` cohérent sur les deux surfaces d'un seul coup : vert
+   de marque sur `/pricing`, accent du thème dans la page d'abonnement. */
+.landing-root,
+.err-ecran {
+  --tv-primary-h: 156.4;
+  --tv-primary-c: 1.3;
+  --tv-secondary-h: 162.4;
+  --tv-secondary-c: 1.063;
+  --tv-accent: #22e08a;
+  --tv-accent-2: #12b981;
+  --tv-highlight: #5bf0ab;
+  --tv-accent-rgb: 34 224 138;
+  --tv-accent-2-rgb: 18 185 129;
+  --tv-highlight-rgb: 91 240 171;
+  --tv-border-accent: rgb(34 224 138 / 0.35);
+  --tv-cta: #22e08a;
+  --tv-cta-hover: #5bf0ab;
+  --tv-cta-active: #12b981;
+}
+
+/* Le texte blanc sur l'émeraude clair ne tient que porté : 2,3:1 à nu, une
+   ombre courte sous les lettres les ancre sans assombrir l'aplat. La vitrine
+   le faisait déjà sur `.btn-primary` ; tout ce qui est plein sur ces
+   surfaces le mérite pour la même raison. */
+.landing-root .tv-accent-fill,
+.err-ecran .tv-accent-fill {
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
 }
 @media (hover: hover) {
   .tv-accent-fill:hover {
