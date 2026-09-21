@@ -524,6 +524,44 @@ async function capturer(page, nom, lien) {
   console.log(`  ✓ ${nom}.png${inter ? "" : "  (POLICE DE REPLI)"}`);
 }
 
+/* CAPTURER UNE PAGE PLUS HAUTE QUE LA FENETRE.
+ *
+ * `capturer` photographie la FENETRE (1600x1000). Les pages qui descendent
+ * plus bas — Analyse et ses courbes d'equity, le calendrier et sa semaine,
+ * les setups manques et leurs lignes — perdaient donc tout ce qui passait
+ * sous le pli, sans que rien dans l'image ne le signale. La vitrine
+ * publiait des demi-pages.
+ *
+ * On agrandit la FENETRE plutot que d'utiliser `fullPage`. La difference
+ * compte : `fullPage` assemble plusieurs passes de rendu, et les graphiques
+ * Recharts, qui se dimensionnent sur le conteneur, s'y retrouvent coupes ou
+ * dupliques. Une fenetre haute les fait se calculer UNE fois, a la bonne
+ * taille.
+ *
+ * Le plafond evite la capture de dix mille pixels qu'aucune mise en page ne
+ * saurait montrer. Et on rend la fenetre d'origine avant de continuer :
+ * sans ca, tout ce qui suit serait photographie dans une fenetre etiree.
+ */
+async function capturerLong(page, nom, lien, plafond = 3000) {
+  if (lien && !(await allerSection(page, lien))) {
+    console.log(`  ⊘ ${nom} : section « ${lien} » introuvable`);
+    return;
+  }
+  const h = await page.evaluate(() => {
+    const m = document.querySelector("main.app-main");
+    return Math.ceil(m ? m.scrollHeight : document.documentElement.scrollHeight);
+  });
+  const hauteur = Math.min(h + 32, plafond);
+  await page.setViewportSize({ width: 1600, height: hauteur });
+  /* Les graphiques se recalculent sur le redimensionnement, et leur
+     animation d'entree rejoue. Trois secondes couvrent les deux. */
+  await page.waitForTimeout(3000);
+  await capturer(page, nom);
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.waitForTimeout(1200);
+  console.log(`    (fenetre ${hauteur}px, contenu ${h}px)`);
+}
+
 /* NAVIGUER SUR TELEPHONE — le rail n'est plus une colonne.
  *
  * Sous `md`, la barre laterale devient un menu : le lien « Journal » n'est pas
@@ -655,7 +693,7 @@ await capturer(pageD, "desk-03-erreurs");
 await sousOnglet(pageD, "Calendar");
 await capturer(pageD, "desk-04-calendrier");
 
-await capturer(pageD, "desk-05-analytics", "Analysis");
+await capturerLong(pageD, "desk-05-analytics", "Analysis");
 
 // Les rapports mensuels vivent dans un sous-onglet d'Analyse.
 await sousOnglet(pageD, "Monthly Reports");
@@ -673,19 +711,32 @@ await capturer(pageD, "desk-08-rapports");
    donnees — le pire des deux mondes. */
 await sousOnglet(pageD, "Monte Carlo");
 /* Le garde-fou de la page est `samples.length < 5`. La carte « Journal »
-   affiche bien « 193 trades » mais la source n'est pas ACTIVE tant qu'on ne
-   l'a pas choisie : on la clique, puis on verifie que l'etat vide a bien
-   disparu avant de declencher. */
-const srcJournal = pageD.locator('button:has-text("193"), [role="button"]:has-text("193")').first();
+   compte bien les trades, mais la source n'est pas ACTIVE tant qu'on ne l'a
+   pas choisie : on la clique, puis on verifie que l'etat vide a bien disparu
+   avant de declencher.
+
+   ON NE CHERCHE PLUS LE NOMBRE DE TRADES. Le selecteur visait
+   `has-text("193")` — le compte du compte vitrine le jour ou il a ete
+   ecrit. Le generateur de donnees est date-dependant : le lendemain il y en
+   a 190, et le clic ne trouve plus rien. Une capture s'est donc perdue en
+   silence a la premiere regeneration. On vise le TITRE de la carte, qui
+   lui ne bouge pas. */
+const srcJournal = pageD.locator("button[aria-pressed]").first();
 if (await srcJournal.count()) {
   await srcJournal.click().catch(() => {});
-  await pageD.waitForTimeout(6000);
+  await pageD.waitForTimeout(7000);
+} else {
+  console.log("  ⚠ Monte Carlo : aucun selecteur de source trouve");
 }
 const vide = await pageD.getByText("starts with your data").count();
 if (vide) {
+  /* Quand ca rate, on veut savoir POURQUOI sans relancer quatre minutes de
+     harnais : on imprime ce que la page propose comme sources. */
+  const sources = await pageD.locator("button[aria-pressed]").allInnerTexts();
   console.log("  ⊘ Monte Carlo : toujours a l'etat vide, capture ignoree");
+  console.log("    sources proposees :", JSON.stringify(sources));
 } else {
-  await capturer(pageD, "desk-09-montecarlo");
+  await capturerLong(pageD, "desk-09-montecarlo");
 }
 
 /* ECONOMIC NEWS et MISSED SETUPS — les deux ecrans qui manquaient.
@@ -710,7 +761,7 @@ if (vide) {
 if ((await allerSection(pageD, "Journal")) && (await sousOnglet(pageD, "Missed Setups"))) {
   const aucunSetup = await pageD.getByText(/No missed setups yet/i).count();
   if (aucunSetup) console.log("  ⊘ Missed Setups : aucune donnee, capture ignoree");
-  else await capturer(pageD, "desk-12-missed");
+  else await capturerLong(pageD, "desk-12-missed");
 }
 
 /* CHECKLIST — une modale d'accueil (« Let's build your checklist together »)
@@ -724,7 +775,7 @@ if (await plusTard.count()) {
 // UNE seule capture, apres fermeture. La premiere version capturait AVANT
 // puis re-capturait sous le meme nom : le second cliche, pris pendant le
 // re-rendu, ecrasait le bon par une page blanche.
-await capturer(pageD, "desk-10-checklist");
+await capturerLong(pageD, "desk-10-checklist");
 
 /* ECONOMIC NEWS — meme section que la checklist, donc juste apres elle : la
    modale d'accueil est deja fermee, il ne reste qu'a changer d'onglet. */
@@ -756,7 +807,7 @@ if (await sousOnglet(pageD, "Economic News")) {
     .then(() => true)
     .catch(() => false);
   if (!pret) console.log("  ⊘ Economic News : calendrier indisponible, capture ignoree");
-  else await capturer(pageD, "desk-11-news");
+  else await capturerLong(pageD, "desk-11-news");
 }
 
 // Jarvis avec une VRAIE reponse. Sans cle de provider, c'est le moteur
@@ -908,7 +959,7 @@ const PLANS = [
   // tranchee en deux par le cadrage se lit comme une image mal chargee.
   { de: "desk-07-jarvis-reponse.png", vers: "jarvis.webp", vfen: [170, 1500], w: 2400 },
   { de: "desk-03-erreurs.png", vers: "mistakes.webp", vfen: [230, 1210], w: 2400 },
-  { de: "desk-05-analytics.png", vers: "analytics.webp", vfen: [505, 1500], w: 2400 },
+  { de: "desk-05-analytics.png", vers: "analytics.webp", vfen: [505, 2760], w: 2400 },
   { de: "desk-02-journal.png", vers: "journal.webp", vfen: [150, 1560], w: 2400 },
   /* PAS DE `monthly-reports.webp`.
      Les rapports mensuels sont une vraie fonctionnalite livree, mais le compte
@@ -921,8 +972,8 @@ const PLANS = [
      une ligne `{ de: "desk-08-rapports.png", vers: "monthly-reports.webp",
      vfen: [150, 1560], w: 2400 }`. La capture PNG, elle, continue d'etre
      prise : c'est elle qui permettra de verifier que l'etat n'est plus vide. */
-  { de: "desk-09-montecarlo.png", vers: "montecarlo.webp", vfen: [150, 1560], w: 2400 },
-  { de: "desk-10-checklist.png", vers: "checklist.webp", vfen: [100, 1560], w: 2400 },
+  { de: "desk-09-montecarlo.png", vers: "montecarlo.webp", vfen: [150, 1800], w: 2400 },
+  { de: "desk-10-checklist.png", vers: "checklist.webp", vfen: [100, 1800], w: 2400 },
   /* Economic News et Missed Setups, enfin.
      Ils etaient absents parce que les deux pages tombaient sur un etat vide.
      Les deux causes sont levees (voir la sequence de capture plus haut). La
@@ -930,13 +981,13 @@ const PLANS = [
      redevenait vide, le fichier source n'existerait pas et la ligne
      ci-dessous sauterait toute seule avec un message — elle ne publierait
      pas une page vide. */
-  { de: "desk-11-news.png", vers: "news.webp", vfen: [150, 1560], w: 2400 },
+  { de: "desk-11-news.png", vers: "news.webp", vfen: [150, 1800], w: 2400 },
   /* La fenetre des setups manques est PLUS COURTE que les autres : six lignes
      et trois tuiles, pas un tableau de trente lignes. A 1470 comme ses
      voisines, 40 % de la capture etait du vide sous la derniere ligne - et
      du vide publie comme capture produit se lit comme une page a moitie
      chargee. */
-  { de: "desk-12-missed.png", vers: "missed.webp", vfen: [150, 1060], w: 2400 },
+  { de: "desk-12-missed.png", vers: "missed.webp", vfen: [150, 1800], w: 2400 },
 
   /* Les variantes telephone. Suffixe `-m`, largeur 780 (390 CSS a 2x) : la
      vitrine les sert sous 640px via `<picture>`. Aucun recadrage — le produit

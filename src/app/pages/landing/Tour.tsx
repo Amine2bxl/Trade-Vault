@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ShotOuVisuel } from "./ProductShot";
 import { shot } from "./shots";
 import { useLandingT, type LandingKey } from "./i18n";
@@ -119,40 +119,61 @@ function RangeeDeux({
    vraiment - elle reviendra le jour où un écran la mérite. */
 
 /**
- * LES QUATRE ÉCRANS SECONDAIRES — des cartes, plus une mosaïque.
+ * LES QUATRE ÉCRANS SECONDAIRES — un seul à la fois, en grand.
  *
- * ── CE QUI N'ALLAIT PAS ───────────────────────────────────────────────────
+ * ── POURQUOI PAS QUATRE CARTES ────────────────────────────────────────────
  *
- * Quatre captures nues, recadrées au même rapport, posées sur le fond. Trois
- * défauts d'un coup :
+ * Parce qu'à quatre de front, chaque capture reçoit 490px de large pour
+ * montrer 1350px d'interface : 36 % d'échelle, un libellé de 13px réduit à
+ * 5px. On ne lisait rien, donc on ne reconnaissait pas l'écran, donc on
+ * n'avait aucune raison d'en vouloir plus. Le recadrage sur un détail
+ * rendait le texte lisible mais montrait un fragment — et ce qu'on veut
+ * voir, c'est la PAGE.
  *
- *   1. ON NE LES VOYAIT PAS EN ENTIER. Le recadrage en 16/10 avec
- *      `object-fit: cover` coupait le bas de chaque écran. Montrer les trois
- *      quarts d'une page et l'appeler « l'écran » est un demi-mensonge, et
- *      ça se voit.
- *   2. ON NE COMPRENAIT PAS LEUR RÔLE. Un titre et une ligne sous une image,
- *      sans rien qui dise QUAND cet écran sert. « Où ton compte peut
- *      atterrir » ne dit pas que c'est de la projection.
- *   3. ELLES N'ÉTAIENT PAS MISES EN VALEUR. Posées à même le fond, à côté de
- *      trois rangées qui, elles, ont un cadre et une lueur, elles se
- *      lisaient comme un appendice.
+ * Les quatre partagent donc la même place, et on en montre un à la fois.
+ * Pleine largeur, la capture est à 80 % d'échelle : on lit les intitulés,
+ * les chiffres, les badges. Exactement le traitement qu'ont le journal et
+ * les analyses, qui n'ont jamais posé ce problème parce qu'ils étaient
+ * grands.
  *
- * ── CE QU'ELLES SONT ──────────────────────────────────────────────────────
+ * La section est même PLUS COURTE qu'avant : un panneau au lieu de deux
+ * rangées de cartes.
  *
- * Des cartes. Chacune porte un ÉTIQUETAGE DE MOMENT en tête — avant le
- * trade, après le trade, ce qui n'est pas arrivé, ce qui arrive — puis le
- * titre, la ligne, et l'écran ENTIER en bas. Le moment répond à la question
- * qu'on se pose vraiment devant une capture inconnue : quand est-ce que je
- * m'en sers ?
+ * ── LES ONGLETS SONT LES MOMENTS ──────────────────────────────────────────
  *
- * L'image est complète (`contain`) : à cette taille on ne lit pas les
- * chiffres, mais on reconnaît une forme d'écran, et une forme tronquée ne se
- * reconnaît pas. La carte, elle, donne le cadre et la matière qui manquaient.
+ * Pas « Checklist / Calendrier / Setups manqués / Monte-Carlo », qui
+ * demanderait de connaître le produit pour choisir. « Avant l'ouverture,
+ * pendant la séance, après la clôture, avant la suivante » : on choisit un
+ * moment de sa propre journée, et l'écran qui va avec apparaît. C'est la
+ * même idée que le titre de la section, rendue cliquable.
+ *
+ * ── LA HAUTEUR NE SAUTE PAS ───────────────────────────────────────────────
+ *
+ * Les quatre captures sont cadrées au même rapport (3/2) par le harnais.
+ * Sans ça, changer d'onglet ferait bondir la page sous le doigt — le défaut
+ * classique des panneaux à onglets, et la raison pour laquelle on les évite
+ * souvent à tort.
  */
-function GrilleSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number }) {
+function VitrineSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number }) {
   const { t } = useLandingT();
   const presents = ecrans.filter((e) => shot(e.nom));
+  const [actif, setActif] = useState(0);
+  const onglets = useRef<(HTMLButtonElement | null)[]>([]);
   if (!presents.length) return null;
+  const e = presents[Math.min(actif, presents.length - 1)];
+
+  /* Les flèches parcourent les onglets, comme n'importe quel `tablist` :
+     sans ça, la tabulation entre dans chaque onglet un par un et il faut
+     quatre tabulations pour atteindre le contenu. */
+  const auClavier = (ev: React.KeyboardEvent) => {
+    const d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+    if (!d) return;
+    ev.preventDefault();
+    const suivant = (actif + d + presents.length) % presents.length;
+    setActif(suivant);
+    onglets.current[suivant]?.focus();
+  };
+
   return (
     <div className="tour-etape tour-grille reveal">
       <Numero n={n} />
@@ -160,23 +181,45 @@ function GrilleSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number 
         <h3 className="tour-titre">{t("v2.tour.more.t")}</h3>
         <p className="tour-phrase">{t("v2.tour.more.d")}</p>
       </div>
-      <div className="tour-grille-cases">
-        {presents.map((e, i) => (
-          <article key={e.nom} className="tour-carte">
-            <p className="tour-carte-moment">{t(e.moment)}</p>
-            <h4 className="tour-carte-titre">{t(e.titre)}</h4>
-            <p className="tour-carte-texte">{t(e.texte)}</p>
-            <div className="tour-carte-scene">
-              <ShotOuVisuel
-                nom={e.nom}
-                alt={t(e.alt)}
-                repli={null}
-                retardFlottement={i * 1.4}
-                className="tour-carte-shot"
-              />
-            </div>
-          </article>
+
+      <div className="tour-onglets" role="tablist" aria-label={t("v2.tour.more.t")}>
+        {presents.map((x, i) => (
+          <button
+            key={x.nom}
+            ref={(n2) => {
+              onglets.current[i] = n2;
+            }}
+            role="tab"
+            id={`onglet-${x.nom}`}
+            aria-selected={i === actif}
+            aria-controls={`panneau-${x.nom}`}
+            tabIndex={i === actif ? 0 : -1}
+            onClick={() => setActif(i)}
+            onKeyDown={auClavier}
+            className="tour-onglet"
+          >
+            {t(x.moment)}
+          </button>
         ))}
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`panneau-${e.nom}`}
+        aria-labelledby={`onglet-${e.nom}`}
+        /* La clé force un remontage au changement d'onglet : c'est elle qui
+           rejoue l'apparition, et qui garantit qu'aucun état du panneau
+           précédent ne survit dans le suivant. */
+        key={e.nom}
+        className="tour-panneau"
+      >
+        <div className="tour-panneau-texte">
+          <h4 className="tour-carte-titre">{t(e.titre)}</h4>
+          <p className="tour-carte-texte">{t(e.texte)}</p>
+        </div>
+        <div className="tour-panneau-scene">
+          <ShotOuVisuel nom={e.nom} alt={t(e.alt)} repli={null} className="tour-vitrine-shot" />
+        </div>
       </div>
     </div>
   );
@@ -250,7 +293,7 @@ export function TourProduit({
         <div className="tour-fil mt-14 lg:mt-20">
           <RangeeDeux e={journal} n={1} cote="droite" retard={0} />
           <RangeeDeux e={analytics} n={2} cote="gauche" retard={1.8} />
-          <GrilleSecondaire ecrans={secondaires} n={3} />
+          <VitrineSecondaire ecrans={secondaires} n={3} />
           <RangeeFinale e={jarvis} n={4} retard={4.6} />
         </div>
       </div>

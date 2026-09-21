@@ -1364,43 +1364,9 @@
  *
  * Le texte est EN HAUT et l'image en bas, contrairement à une tuile
  * ordinaire : on veut qu'on sache ce qu'on regarde avant de le regarder. */
-.landing-root .tour-grille-cases {
-  margin-top: 2.5rem;
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: 1fr;
-}
-@media (min-width: 768px) {
-  .landing-root .tour-grille-cases {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.5rem;
-  }
-}
-.landing-root .tour-carte {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--tv-border);
-  border-radius: 20px;
-  background: var(--tv-plate-1);
-  padding: 1.5rem;
-  transition:
-    border-color 260ms var(--lp-expo),
-    transform 260ms var(--lp-expo);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .landing-root .tour-carte:hover {
-    border-color: var(--tv-border-strong);
-    transform: translateY(-2px);
-  }
-}
-.landing-root .tour-carte-moment {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--tv-highlight);
-}
+/* `.tour-carte-titre` et `.tour-carte-texte` survivent à la grille de
+   cartes qui les portait : le panneau à onglets réemploie la même échelle,
+   et deux classes pour la même taille de titre finiraient par diverger. */
 .landing-root .tour-carte-titre {
   margin-top: 0.7rem;
   font-size: 1.0625rem;
@@ -1414,122 +1380,128 @@
   line-height: 1.65;
   color: var(--tv-text-secondary);
 }
-/* ══ LES QUATRE ÉCRANS SECONDAIRES : UN DÉTAIL, PAS UNE VIGNETTE ══
+/* ══ LES QUATRE ÉCRANS SECONDAIRES : UN SEUL À LA FOIS, EN GRAND ══
  *
- * ── LE PROBLÈME, MESURÉ ──
+ * Voir `Tour.tsx` pour le pourquoi. Ici, trois choses.
  *
- * Une capture de bureau fait 2400px de large, soit 1200px d'interface. Dans
- * une carte de 490px, elle est réduite à 41 % : un libellé de 13px y tombe à
- * 5px. On ne lisait donc RIEN — ni un chiffre, ni un intitulé, ni même de
- * quel écran il s'agissait. Quatre rectangles sombres et illisibles côte à
- * côte ne donnent aucune envie d'en voir plus, et c'est logique : ils ne
- * montrent rien.
+ * LES ONGLETS SONT DES MOMENTS, pas des noms de page : on choisit un moment
+ * de sa journée, l'écran suit. L'onglet actif porte un aplat léger et un
+ * texte blanc — pas de soulignement mobile, qui demanderait d'animer une
+ * position et n'ajouterait rien à cette échelle.
  *
- * Les agrandir n'est pas une option. Pour lire un écran de bureau entier il
- * faut sa largeur réelle ; la donner à quatre écrans, c'est quatre rangées
- * pleine largeur de plus sur une page qu'on veut raccourcir.
+ * LE PANNEAU NE SAUTE PAS. Les quatre captures sont cadrées au même rapport
+ * par le harnais (3/2) : la hauteur du panneau est donc constante, et
+ * changer d'onglet ne déplace rien sous le doigt.
  *
- * ── CE QU'ON MONTRE À LA PLACE ──
- *
- * Un DÉTAIL, à l'échelle 1. Le cadre devient une fenêtre découpée dans la
- * vraie capture, cadrée sur la zone qui porte l'argument de cet écran : le
- * bloc « pourquoi tu entres » de la checklist, le compte à rebours du
- * calendrier, le R laissé sur la table, la bande de probabilité du
- * Monte-Carlo. Le texte du produit s'y lit vraiment.
- *
- * Ce n'est pas un recadrage de complaisance : ce sont les pixels de la
- * capture, non retouchés, simplement cadrés. Montrer une partie lisible dit
- * davantage qu'un tout illisible, et c'est ce que fait n'importe quelle page
- * produit qui se respecte.
- *
- * Le cadrage est déclaré par écran (`--zoom`, `--cx`, `--cy`), lus depuis
- * `data-shot` que `ProductShot` pose déjà sur le `<figure>`. `--cx`/`--cy`
- * sont des fractions de l'IMAGE, pas du cadre : `-43%` veut dire « commence
- * à 43 % de la hauteur de la capture », ce qui reste vrai si la capture est
- * régénérée à une autre définition. */
-.landing-root .tour-carte-scene {
-  margin-top: auto;
-  padding-top: 1.5rem;
+ * LA CAPTURE EST ENTIÈRE ET PLEINE LARGEUR. C'est tout l'intérêt : à 1078px
+ * elle rend l'interface à 80 % — on lit les intitulés et les chiffres, ce
+ * qui n'était pas le cas à 36 % dans une carte d'une grille de quatre.
+ */
+.landing-root .tour-onglets {
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
 }
-.landing-root .tour-carte-shot .shot-frame {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
+.landing-root .tour-onglet {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 0.55rem 0.9rem;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: var(--tv-text-muted);
+  transition:
+    background-color 180ms var(--lp-expo),
+    border-color 180ms var(--lp-expo),
+    color 180ms var(--lp-expo);
+}
+.landing-root .tour-onglet:hover {
+  color: #fff;
+}
+.landing-root .tour-onglet[aria-selected="true"] {
+  border-color: rgb(var(--tv-accent-rgb) / 0.3);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+  color: var(--tv-highlight);
+}
+/* Sous 640px les quatre moments ne tiennent pas sur une ligne : ils
+   défilent, plutôt que de passer à deux lignes et de doubler la hauteur
+   du sélecteur. */
+@media (max-width: 639px) {
+  .landing-root .tour-onglets {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -1.25rem;
+    padding-inline: 1.25rem;
+  }
+  .landing-root .tour-onglets::-webkit-scrollbar {
+    display: none;
+  }
+  .landing-root .tour-onglet {
+    flex: 0 0 auto;
+  }
+}
+
+.landing-root .tour-panneau {
+  margin-top: 1.25rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 20px;
+  background: var(--tv-plate-1);
+  padding: 1.5rem;
+}
+@media (min-width: 768px) {
+  .landing-root .tour-panneau {
+    padding: 1.75rem;
+  }
+}
+.landing-root .tour-panneau-texte {
+  max-width: 54ch;
+}
+.landing-root .tour-panneau-scene {
+  margin-top: 1.5rem;
+}
+/* La capture, entière, sans recadrage : c'est la demande, et c'est ce que
+   permet la pleine largeur. Le cadre n'a plus rien à poser puisque le
+   panneau est déjà la surface. */
+.landing-root .tour-vitrine-shot .shot-frame {
   padding: 0;
-  /* Une fenêtre, donc un encadrement franc sur ses quatre côtés — pas le
-     cadre ouvert par le bas des grandes captures. Un détail sans bord se
-     lirait comme une image mal chargée. */
+  overflow: hidden;
   border: 1px solid var(--tv-border);
   border-radius: 12px;
   background: var(--tv-plate-0);
   box-shadow: none;
 }
-.landing-root .tour-carte-shot .shot-frame > picture {
-  display: contents;
-}
-.landing-root .tour-carte-shot .shot-frame img {
+.landing-root .tour-vitrine-shot .shot-frame > picture,
+.landing-root .tour-vitrine-shot .shot-frame > picture > img,
+.landing-root .tour-vitrine-shot .shot-frame > img {
   display: block;
   width: 100%;
   height: auto;
-  max-width: none;
   border-radius: 0;
-  transform-origin: 0 0;
-  transform: scale(var(--zoom, 2)) translate(var(--cx, 0%), var(--cy, 0%));
 }
-
-/* Le cadrage de chaque écran. Une ligne par capture, et la raison du
-   cadrage avec — c'est un choix éditorial, pas un réglage. */
-
-/* La checklist : le bloc MENTAL. « Je veux récupérer ma perte », « le prix
-   part sans moi », CALM / FOCUSED / IMPATIENT / FOMO. C'est là que le
-   produit fait quelque chose qu'aucun journal ne fait. */
-.landing-root [data-shot="checklist"] {
-  --cy: -43%;
-  --cx: -1%;
-  /* 2.15 plutôt que 2 : à 2, le bord droit laissait paraître 4 % de la
-     colonne voisine, soit un fragment de pilule coupé qu'on lit comme un
-     défaut. Le cadre s'arrête maintenant pile au bord de la colonne. */
-  --zoom: 2.15;
-}
-/* Le calendrier : la carte « NEXT EVENT » et son compte à rebours, puis les
-   premières lignes de la semaine. */
-.landing-root [data-shot="news"] {
-  --cy: -20%;
-  --cx: -1%;
-}
-/* Les setups manqués : le R laissé sur la table, et les lignes en dessous. */
-.landing-root [data-shot="missed"] {
-  --cy: -5%;
-  /* Le titre de l'écran commence à 1,2 % : à -2 % on lui coupait sa
-     première lettre. */
-  --cx: -0.6%;
-}
-/* Monte-Carlo : la probabilité d'atteindre l'objectif, et le haut de la
-   bande de scénarios. */
-.landing-root [data-shot="montecarlo"] {
-  --cy: -8%;
-  --cx: -1%;
-}
-
-/* Sous 640px c'est la capture TÉLÉPHONE qui est servie (`<picture>`) : elle
-   est déjà à l'échelle 1, il n'y a rien à agrandir. On la cadre en hauteur
-   comme les autres captures mobiles de la page. */
+/* Sous 640px c'est la capture TÉLÉPHONE qui est servie : portrait, déjà à
+   l'échelle 1. On la borne en hauteur, ancrée en haut, comme les autres
+   captures mobiles de la page. */
 @media (max-width: 639px) {
-  .landing-root .tour-carte-shot .shot-frame {
+  .landing-root .tour-vitrine-shot .shot-frame {
     aspect-ratio: 5 / 6;
   }
-  .landing-root .tour-carte-shot .shot-frame img {
+  .landing-root .tour-vitrine-shot .shot-frame > picture > img,
+  .landing-root .tour-vitrine-shot .shot-frame > img {
     height: 100%;
     object-fit: cover;
     object-position: top;
-    transform: none;
   }
 }
-
-/* La lueur d'une carte est plus discrète que celle d'une grande capture :
-   quatre halos côte à côte se additionnent en une nappe. */
-.landing-root .tour-carte-shot.shot-halo::before {
-  opacity: 0.4;
+/* L'apparition au changement d'onglet : le geste d'entrée de la maison,
+   rien de plus. Le panneau est remonté par sa clé, l'animation rejoue donc
+   toute seule. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .tour-panneau {
+    animation: fade-in-up 260ms var(--tv-ease) both;
+  }
 }
 
 /* ── 5 : LE DÉNOUEMENT ──
