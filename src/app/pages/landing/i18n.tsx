@@ -414,8 +414,18 @@ const M: Record<string, Msg> = {
      « quand ça compte » n'est pas le problème, c'est le MOMENT : c'est là
      que tout se joue, et c'est le seul endroit de l'accroche où l'accent
      ajoute du sens au lieu d'en repeindre. */
-  "hero.h1b1": { en: "You break your own rules ", fr: "Tu casses tes propres règles " },
-  "hero.h1b2": { en: "when it counts.", fr: "quand ça compte." },
+  /* ── LE SECOND TEMPS PORTE LA VALEUR, PLUS LA DOULEUR ──
+     « Tu sais trader. Tu casses tes propres règles quand ça compte. » est
+     un bon titre : il nomme une douleur que la cible reconnaît en une
+     seconde. Mais les DEUX temps y disaient la même chose — un constat,
+     puis le même constat en plus dur. On sortait du héros en sachant qu'on
+     a un problème, sans savoir ce que TradeVault en fait.
+     Le second temps devient donc la promesse, et c'est le
+     différenciateur que personne d'autre ne peut écrire : mettre un
+     MONTANT sur une règle cassée. La douleur reste au premier temps, où
+     elle suffit. */
+  "hero.h1b1": { en: "Here's what every broken rule ", fr: "Voici ce que te coûte " },
+  "hero.h1b2": { en: "costs you.", fr: "chaque règle cassée." },
   /* LE libellé de l'inscription, pour tout le site. Court, parce qu'il doit
      aussi tenir dans la barre de navigation ; la gratuité est portée juste
      en dessous par la ligne de réassurance, à chaque endroit où le bouton
@@ -584,9 +594,12 @@ const M: Record<string, Msg> = {
      deviné.
      La partie surlignée est la PROMESSE CONCRÈTE, pas le nom du produit :
      c'est elle qu'on doit retenir si on ne lit que trois mots. */
+  /* « Il lit ton journal » — « il » ne désignait rien : le titre ne nomme
+     plus le produit. Le sous-titre le nomme donc une fois, ce qui est la
+     seule mention autorisée dans le héros. */
   "v2.hero.sub.a": {
-    en: "It reads your journal, prices every rule you broke, and hands you ",
-    fr: "Il lit ton journal, chiffre chaque règle que tu as cassée, et te donne ",
+    en: "TradeVault reads your journal, turns your mistakes into euros, and hands you ",
+    fr: "TradeVault lit ton journal, convertit tes erreurs en euros, et te donne ",
   },
   "v2.hero.sub.b": {
     en: "one thing to fix tomorrow",
@@ -1070,15 +1083,16 @@ const M: Record<string, Msg> = {
     fr: "Repayé à chaque fois, prix du marché.",
   },
   "anchor.b.l": { en: "TradeVault Pro", fr: "TradeVault Pro" },
+  /* « FACTURÉ À L'ANNÉE » N'EST PAS UNE MENTION LÉGALE DE COMPLAISANCE.
+     10 € par mois est le tarif de l'engagement annuel ; au mois, c'est 15.
+     Afficher le plus bas des deux sans dire lequel c'est serait vendre un
+     prix qu'on ne pratique pas. La mention passe donc en TÊTE du détail,
+     pas en note de bas de page. */
   "anchor.b.d": {
-    en: "Everything unlocked. Cancel in one click.",
-    fr: "Tout débloqué. Annulation en un clic.",
+    en: "Billed yearly. Everything unlocked, cancel in one click.",
+    fr: "Facturé à l'année. Tout débloqué, annulation en un clic.",
   },
   "anchor.b.per": { en: "/ month", fr: "/ mois" },
-  /* Le titre de la section compare un reset à UNE ANNÉE de Pro. Afficher le
-     prix mensuel en face d'un montant unique laissait croire à deux échelles
-     différentes ; c'est l'annuel qui rend la soustraction exacte. */
-  "anchor.b.year": { en: "/ year", fr: "/ an" },
   "anchor.vs": { en: "vs", fr: "contre" },
 
   /* ── L'AVIS COOKIES ──
@@ -1357,8 +1371,8 @@ const M: Record<string, Msg> = {
   /* pricing */
   "pricing.tag": { en: "Pricing", fr: "Tarifs" },
   "pricing.title": {
-    en: "One broken rule costs more than a year of Pro",
-    fr: "Une règle cassée coûte plus qu'une année de Pro",
+    en: "One broken rule costs more than a month of Pro",
+    fr: "Une règle cassée coûte plus qu'un mois de Pro",
   },
   "pricing.sub": {
     en: "Start free, with no time limit. Go Pro when the free plan stops being enough.",

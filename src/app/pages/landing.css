@@ -1101,8 +1101,14 @@
   align-items: center;
 }
 @media (min-width: 1024px) {
+  /* PARTS ÉGALES. La colonne de texte recevait 0,86 contre 1,14, soit
+     443px à 1440 : à cette largeur, une accroche de 44px passe à cinq
+     lignes et se met à orpheliner des mots (« trade. » seul, « you. »
+     seul). La capture, elle, déborde volontairement par la droite — lui
+     reprendre 50px ne change rien à ce qu'on en voit, alors que les mêmes
+     50px font gagner une ligne au titre. */
   .landing-root .hero-grid {
-    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 3rem;
   }
 }
@@ -2019,4 +2025,38 @@
 .landing-root .legal-toc--ici {
   border-left-color: var(--tv-accent);
   color: #fff;
+}
+
+/* ══ LES LIGNES DE LA FAQ ══
+ *
+ * Une liste de filets horizontaux ne dit pas qu'elle est cliquable, et une
+ * fois une réponse ouverte, rien ne dit LAQUELLE : le titre blanc se perd
+ * entre deux paragraphes gris. Deux signaux, et pas un de plus — un fond à
+ * peine plus clair au survol, un rail d'accent sur la ligne ouverte.
+ *
+ * Le rail est posé en `::before` plutôt qu'en bordure gauche : une bordure
+ * décalerait le texte de deux pixels à chaque ouverture, et la liste
+ * entière tressauterait. */
+.landing-root .faq-ligne {
+  position: relative;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  transition: background-color 180ms var(--lp-expo);
+}
+.landing-root .faq-ligne::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: -1rem;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 220ms var(--lp-expo);
+}
+@media (hover: hover) {
+  .landing-root .faq-ligne:hover {
+    background: rgb(255 255 255 / 0.015);
+  }
+}
+.landing-root .faq-ligne[data-ouverte="oui"]::before {
+  background: var(--tv-accent);
 }

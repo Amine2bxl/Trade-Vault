@@ -15,7 +15,7 @@ import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";
 import { CookieConsent } from "./landing/CookieConsent";
 import { faqPageJsonLd } from "@/shared/seo";
-import { YEARLY_EUR, eur } from "../utils/pricing";
+import { YEARLY_PER_MONTH, eur } from "../utils/pricing";
 import {
   LandingLangProvider,
   useLandingT,
@@ -335,260 +335,6 @@ function useReveal() {
 }
 
 /* ─────────────────────────── SPLINE · COURBE ─────────────────────────── */
-/**
- * La spline de la courbe — même famille que le `natural` de recharts.
- * Catmull-Rom passe par tous les points ; calculée une fois au chargement.
- */
-const HERO_PTS: [number, number][] = [
-  [0, 130],
-  [42, 118],
-  [84, 124],
-  [126, 96],
-  [168, 106],
-  [210, 74],
-  [252, 88],
-  [294, 52],
-  [336, 62],
-  [376, 30],
-];
-
-function buildSpline(p: [number, number][]): string {
-  let d = `M${p[0][0]},${p[0][1]}`;
-  for (let i = 0; i < p.length - 1; i++) {
-    const p0 = p[i - 1] ?? p[i];
-    const p1 = p[i];
-    const p2 = p[i + 1];
-    const p3 = p[i + 2] ?? p2;
-    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
-    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-    d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
-  }
-  return d;
-}
-const HERO_D = buildSpline(HERO_PTS);
-const ANALYTICS_D = buildSpline([
-  [0, 96],
-  [40, 88],
-  [80, 92],
-  [120, 70],
-  [160, 78],
-  [200, 52],
-  [240, 62],
-  [280, 40],
-]);
-
-/* ─────────────────────────── HERO — THE PRODUCT ─────────────────────────── */
-/**
- * L'ILLUSTRATION DU HÉROS — le tableau de bord, mené par ce qu'il montre en
- * premier dans le produit.
- *
- * Elle menait avec « +$4,218.50 · +16.9 % » : une courbe qui monte et un gain
- * en gros, c'est-à-dire exactement la promesse que le produit refuse de faire
- * (`docs/product/PRODUCT.md` §2 — « la discipline avant le profit », aucun
- * classement par P&L, aucune promesse de gain). La première image de la page
- * de vente contredisait la philosophie du produit et la section « le vrai
- * problème » située trois écrans plus bas.
- *
- * Elle mène maintenant avec l'Edge Score et la règle du jour — les deux
- * premiers blocs du vrai tableau de bord — et la courbe passe en dessous, sans
- * montant. Le montant inventé ne subsiste que dans le repli de la section
- * analytics, où il illustre un rapport mensuel.
- */
-function HeroProductVisual() {
-  const { t } = useLandingT();
-  return (
-    <>
-      {/* Le conteneur de POSITIONNEMENT ne contient que la plaque et les deux
-          cartes flottantes : les cartes s'ancrent sur ses bords (`-bottom-14`,
-          `-top-7`), donc tout ce qu'on y ajoute les déplace. La mention
-          d'illustration vit en dehors, plus bas. */}
-      <div className="relative">
-        {/* La plaque produit — la même matière qu'une carte de l'app.
-            Le rembourrage bas est plus généreux que les trois autres côtés :
-            c'est la réserve dans laquelle la carte du coach vient se poser.
-            Sans elle, la vignette mordait sur la valeur du « WIN RATE ». */}
-        <div className="lp-panel p-5 pb-8 sm:pb-14">
-          {/* ── L'Edge Score : le chiffre qui ouvre le produit ── */}
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="tv-label text-slate-500">{t("hero.edge")}</p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="tv-figure text-[2rem] leading-none tabular-nums text-white">
-                  78
-                </span>
-                <span className="text-[11px] text-slate-500">{t("hero.edge.sub")}</span>
-              </div>
-            </div>
-            <span className="mt-1 shrink-0 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-              {t("bento.edge.ready")}
-            </span>
-          </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[.05]">
-            <div
-              className="h-full rounded-full bg-[var(--tv-highlight)]/70"
-              style={{ width: "78%" }}
-            />
-          </div>
-
-          {/* ── La règle du jour : ce que le produit IMPOSE, et qui n'existe
-             nulle part ailleurs sur le marché du journal. ── */}
-          <div className="lp-card-inset mt-4 px-3.5 py-3">
-            <p className="tv-label text-[var(--tv-highlight)]">{t("hero.rule")}</p>
-            <p className="mt-1 text-[13px] leading-5 text-slate-200">{t("hero.rule.d")}</p>
-          </div>
-
-          <p className="tv-label mt-5 text-slate-500">{t("hero.eq")}</p>
-          <div className="mt-2 h-24 w-full">
-            <svg viewBox="0 0 376 145" className="h-full w-full" preserveAspectRatio="none">
-              {/* LES MÊMES RÉGLAGES QUE LA VRAIE COURBE — `chartTheme.ts`.
-                  Trois paliers de dégradé qui ne s'éteignent pas tout à fait en
-                  bas (la masse fait un volume, pas un voile), un trait fin, et
-                  un zéro en points courts et rapprochés qui se lit comme une
-                  graduation plutôt que comme une suite de tirets. */}
-              <defs>
-                <linearGradient id="hf" x1="0" x2="0" y1="0" y2="1">
-                  <stop stopColor="var(--tv-chart-green)" stopOpacity=".32" />
-                  <stop offset=".5" stopColor="var(--tv-chart-green)" stopOpacity=".17" />
-                  <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity=".05" />
-                </linearGradient>
-              </defs>
-              {[34, 74, 114].map((yy) => (
-                <path key={yy} d={`M0 ${yy}H376`} stroke="rgba(148,163,184,.09)" />
-              ))}
-              <path d={`${HERO_D} L376,145 L0,145 Z`} fill="url(#hf)" />
-              <path
-                d="M0 138H376"
-                stroke="var(--tv-chart-red)"
-                strokeWidth="1.25"
-                strokeDasharray="2 3.5"
-                vectorEffect="non-scaling-stroke"
-              />
-              <path
-                d={HERO_D}
-                fill="none"
-                stroke="var(--tv-chart-green)"
-                strokeWidth="2.25"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-                className="chart-line"
-              />
-            </svg>
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-3 border-t border-white/[.08] pt-4">
-            {[
-              [t("hero.winrate"), "64%"],
-              [t("hero.pf"), "2.31"],
-              [t("hero.sharpe"), "1.96"],
-            ].map(([l, v]) => (
-              <div key={l} className="text-center">
-                <p className="tv-label text-slate-500">{l}</p>
-                <p className="mt-1 font-display text-base font-bold tabular-nums text-white">{v}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Le coach — une vraie remarque sur des données réelles.
-            Elle descend de 28 à 56px sous la plaque : celle-ci a raccourci en
-            perdant son gros montant, et la carte se posait sur la valeur du
-            « WIN RATE ». Une statistique à moitié cachée derrière une vignette
-            ne se lit pas comme une superposition voulue, mais comme un défaut
-            de mise en page. */}
-        <div className="absolute -bottom-14 -left-3 z-10 hidden w-[236px] sm:block">
-          <div className="lp-card p-3.5">
-            <div className="mb-2 flex items-center gap-2">
-              <div className="tv-accent-fill grid h-6 w-6 place-items-center rounded-md">
-                <Icon n="brain" cls="h-3.5 w-3.5" />
-              </div>
-              <p className="text-[11px] font-bold text-white">{t("hero.coach")}</p>
-              <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
-              </span>
-            </div>
-            <p className="text-[11px] leading-4 text-slate-300">
-              {t("hero.coach.tip")}{" "}
-              <span className="text-[var(--tv-highlight)] font-semibold">
-                {t("hero.coach.action")}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {/* Le pattern détecté. */}
-        <div className="absolute -top-7 -right-3 z-10 hidden w-[200px] md:block">
-          <div className="lp-card p-3.5">
-            <div className="mb-1.5 flex items-center gap-2">
-              <Icon n="radar" cls="h-3.5 w-3.5 text-[var(--tv-highlight)]" />
-              <p className="text-[11px] font-bold text-white">{t("hero.pattern")}</p>
-            </div>
-            <p className="text-[11px] leading-4 text-slate-300">
-              <span className="text-[var(--tv-highlight)] font-semibold">
-                {t("hero.pattern.tip")}
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* CE DESSIN DIT QU'IL EST UN DESSIN.
-          Un visiteur ne distingue pas une illustration soignée d'une capture ;
-          tant que `dashboard.png` n'est pas déposé, la mention est la seule
-          chose qui empêche ces chiffres de se lire comme le compte de
-          quelqu'un. Elle disparaît avec le dessin.
-
-          La carte du coach déborde SOUS la plaque, à gauche. Dès qu'elle est
-          montée (`sm`), la mention passe à DROITE : jouer sur la marge
-          verticale ne suffisait pas — la carte et la ligne se chevauchaient
-          encore, et c'est la ligne qui ne doit jamais être illisible. */}
-      <p className="tv-label mt-5 text-center text-slate-600 sm:mt-10 sm:text-right">
-        {t("hero.illustration")}
-      </p>
-    </>
-  );
-}
-
-/* ─────────────────────────── AI CONVERSATION ─────────────────────────── */
-function AIConversation() {
-  const { t } = useLandingT();
-  return (
-    <div className="lp-panel overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/[.08] px-5 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <div className="tv-accent-fill grid h-9 w-9 place-items-center rounded-lg">
-            <Icon n="brain" cls="h-4.5 w-4.5" />
-          </div>
-          <div>
-            <p className="tv-prose font-bold text-white">{t("ai.c.title")}</p>
-            <p className="text-[11px] text-emerald-300">{t("ai.c.sub")}</p>
-          </div>
-        </div>
-        <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("ai.c.active")}
-        </span>
-      </div>
-      <div className="space-y-3 px-5 py-5">
-        <div className="flex justify-end">
-          <div className="max-w-[80%] rounded-xl rounded-tr-sm border border-white/[.08] bg-white/[.05] px-4 py-2.5">
-            <p className="tv-prose text-slate-200">{t("ai.c.q")}</p>
-          </div>
-        </div>
-        <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-[rgb(var(--tv-accent-rgb)/0.35)] bg-[rgb(var(--tv-accent-rgb)/0.06)] p-3.5">
-          <p className="tv-prose text-slate-200">{t("ai.c.a")}</p>
-        </div>
-        <div className="max-w-[88%] rounded-xl rounded-tl-sm border border-emerald-400/20 bg-emerald-400/[.05] p-3.5">
-          <div className="mb-1.5 flex items-center gap-1.5">
-            <Icon n="check" cls="h-3.5 w-3.5 text-emerald-400" />
-            <span className="tv-label text-emerald-400">{t("ai.c.plan")}</span>
-          </div>
-          <p className="tv-prose text-slate-200">{t("ai.c.plan.d")}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─────────────────────────── SECTION HEAD ─────────────────────────── */
 function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
   return (
@@ -601,184 +347,45 @@ function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
   );
 }
 
-/* ─────────────────────────── CORE VALUE · 4 TEMPS ─────────────────────────── */
+/* LE GÉNÉRATEUR DE COURBES A SUIVI LES MAQUETTES QU'IL DESSINAIT.
+ *
+ * `buildSpline` et ses deux jeux de points ne servaient qu'aux replis
+ * supprimés juste en dessous. Une spline Catmull-Rom qui ne trace plus rien
+ * est exactement le genre de code qu'on retrouve dans six mois en se
+ * demandant quelle courbe elle alimente.
+ */
 
-/* ─────────────────────────── ANALYTICS ─────────────────────────── */
-function AnalyticsSection() {
-  const { t } = useLandingT();
-  const caps: { t: string; d: string }[] = [
-    { t: t("analytics.c1.t"), d: t("analytics.c1.d") },
-    { t: t("analytics.c2.t"), d: t("analytics.c2.d") },
-    { t: t("analytics.c3.t"), d: t("analytics.c3.d") },
-    { t: t("analytics.c4.t"), d: t("analytics.c4.d") },
-  ];
-  return (
-    <section id="analytics" className="relative section-divider py-14 lg:py-24">
-      <div className="lp-container">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
-          <div className="reveal">
-            <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
-              {t("analytics.title.a")} <span className="text-accent">{t("analytics.title.b")}</span>
-            </h2>
-            <p className="mt-4 max-w-xl leading-7 text-slate-400">{t("analytics.sub")}</p>
-            <div className="mt-8 grid gap-x-6 gap-y-5 sm:grid-cols-2">
-              {caps.map((c) => (
-                <div key={c.t} className="flex items-start gap-3">
-                  <span className="mt-1.5 grid h-2 w-2 shrink-0 place-items-center rounded-full bg-[var(--tv-highlight)]" />
-                  <div>
-                    <p className="text-sm font-semibold text-white">{c.t}</p>
-                    <p className="mt-0.5 text-[13px] leading-5 text-slate-400">{c.d}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+/* LA TROISIÈME MAQUETTE DE REPLI EST PARTIE AVEC LES DEUX AUTRES.
+ *
+ * `AnalyticsSection` servait de repli à l'étape « analyses » de la visite,
+ * et portait elle-même un second repli pour les rapports mensuels : une
+ * courbe d'equity dessinée à la main, « +$4,218.50 · 6m », « Win rate
+ * 64 % », « Profit factor 2.31 », « Sharpe 1.96 ». Quatre métriques de
+ * performance inventées, présentées comme un aperçu du produit.
+ *
+ * Celle-là était la plus dangereuse des trois : `monthly-reports.webp`
+ * n'est PAS publié — le compte vitrine n'a jamais généré de rapport, la
+ * page tombe sur son état vide, et le harnais refuse donc d'encoder cette
+ * capture (voir le commentaire dans `scripts/capture-product.mjs`). Le
+ * repli était le SEUL rendu possible de ce bloc. Il n'attendait pas une
+ * panne pour publier des chiffres faux : il le faisait déjà, dès que
+ * `analytics.webp` venait à manquer.
+ *
+ * Repli `null`. Une capture absente ne montre rien.
+ */
 
-          <div className="reveal">
-            {/* Même bascule que le héros : la vraie capture des rapports
-                mensuels remplace ce panneau dès qu'elle est déposée. */}
-            <ShotOuVisuel
-              nom="monthly-reports"
-              alt={t("shot.reports.alt")}
-              legende={t("shot.reports.cap")}
-              repli={
-                <div className="lp-panel p-5">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="tv-label text-slate-500">{t("hero.eq")}</p>
-                    <span className="tv-figure rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] tabular-nums text-emerald-300">
-                      +$4,218.50 · 6m
-                    </span>
-                  </div>
-                  <div className="h-28 w-full">
-                    <svg viewBox="0 0 280 100" className="h-full w-full" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="aa" x1="0" x2="0" y1="0" y2="1">
-                          <stop stopColor="var(--tv-chart-green)" stopOpacity=".32" />
-                          <stop offset=".5" stopColor="var(--tv-chart-green)" stopOpacity=".17" />
-                          <stop offset="1" stopColor="var(--tv-chart-green)" stopOpacity=".05" />
-                        </linearGradient>
-                      </defs>
-                      {[24, 50, 76].map((yy) => (
-                        <path key={yy} d={`M0 ${yy}H280`} stroke="rgba(148,163,184,.09)" />
-                      ))}
-                      <path d={`${ANALYTICS_D} L280,100 L0,100 Z`} fill="url(#aa)" />
-                      <path
-                        d="M0 96H280"
-                        stroke="var(--tv-chart-red)"
-                        strokeWidth="1.25"
-                        strokeDasharray="2 3.5"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                      <path
-                        d={ANALYTICS_D}
-                        fill="none"
-                        stroke="var(--tv-chart-green)"
-                        strokeWidth="2.25"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    </svg>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    {[
-                      ["Win rate", "64%"],
-                      ["Profit factor", "2.31"],
-                      ["Expectancy", "+0.68R"],
-                      ["Sharpe", "1.96"],
-                    ].map(([l, v]) => (
-                      <div
-                        key={l}
-                        className="rounded-lg border border-white/[.06] bg-white/[.02] px-3 py-2.5"
-                      >
-                        <p className="tv-label text-slate-500">{l}</p>
-                        <p className="mt-0.5 tv-figure text-sm tabular-nums text-white">{v}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              }
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────── MISTAKES · PSYCHOLOGIE ─────────────────────────── */
-function MistakesSection() {
-  const { t } = useLandingT();
-  const qs: LandingKey[] = ["mistakes.q1", "mistakes.q2", "mistakes.q3", "mistakes.q4"];
-  const leaks: { n: string; c: string; v: number }[] = [
-    { n: "Revenge trading", c: "−$1,240", v: 82 },
-    { n: "FOMO entry", c: "−$890", v: 58 },
-    { n: "Overtrading", c: "−$670", v: 42 },
-  ];
-  return (
-    <section id="mistakes" className="relative section-divider py-10 sm:py-14 lg:py-20">
-      <div className="lp-container">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
-          {/* Les trois « fuites » ci-dessous sont un DESSIN : « −$1,240 »,
-              « −$890 », « −$670 » ne viennent d'aucun compte. Elles ne
-              tiennent la place que tant qu'aucun `mistakes.*` n'est déposé. */}
-          <div className="reveal order-2 lg:order-1">
-            <ShotOuVisuel
-              nom="mistakes"
-              alt={t("shot.mistakes.alt")}
-              legende={t("shot.mistakes.cap")}
-              repli={
-                <div className="lp-panel p-5">
-                  <p className="tv-label mb-4 text-slate-500">{t("bento.errors.thismonth")}</p>
-                  <div className="space-y-3">
-                    {leaks.map((m) => (
-                      <div key={m.n}>
-                        <div className="flex items-center justify-between text-[13px]">
-                          <span className="font-medium text-slate-200">{m.n}</span>
-                          <span className="tv-figure tabular-nums text-[var(--tv-chart-red)]">
-                            {m.c}
-                          </span>
-                        </div>
-                        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/[.05]">
-                          <div
-                            className="h-full rounded-full bg-[var(--tv-chart-red)]/60"
-                            style={{ width: `${m.v}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="tv-label mt-4 text-slate-500">{t("bento.errors.d")}</p>
-                </div>
-              }
-            />
-          </div>
-
-          <div className="reveal order-1 lg:order-2">
-            <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
-              {t("mistakes.title.a")}{" "}
-              <span className="text-slate-500">{t("mistakes.title.b")}</span>
-            </h2>
-            <p className="mt-4 max-w-xl leading-7 text-slate-400">{t("mistakes.sub")}</p>
-            <ul className="mt-8 space-y-3">
-              {qs.map((q, i) => (
-                <li
-                  key={q}
-                  className="flex items-center gap-3 rounded-xl border border-white/[.06] bg-white/[.02] px-4 py-3"
-                >
-                  <span className="tv-figure w-5 shrink-0 text-[11px] tabular-nums text-slate-600">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="text-[14px] text-slate-200">{t(q)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
+/* LA QUATRIÈME ET DERNIÈRE MAQUETTE DE REPLI.
+ *
+ * `MistakesSection` dessinait trois « fuites » avec leur coût : Revenge
+ * trading −$1,240, FOMO entry −$890, Overtrading −$670. Aucun de ces
+ * montants ne vient d'un compte ; ils ont été choisis pour être crédibles,
+ * ce qui est précisément le problème.
+ *
+ * Avec les trois autres, c'était le dernier endroit de la vitrine où un
+ * chiffre fabriqué pouvait atteindre l'écran. Il n'en reste aucun : toute
+ * valeur affichée vient soit d'une capture du produit, soit du catalogue
+ * d'offres. `tests/productShots.test.ts` en fait une règle.
+ */
 
 /* ─────────────────────────── USE CASES ─────────────────────────── */
 
@@ -919,7 +526,7 @@ function LandingPage() {
                   de comprendre qu'elle ne lui était pas destinée. Une ligne
                   sourde au-dessus du titre suffit à faire les deux tris, et
                   elle ne coûte rien à la lecture de l'accroche. */}
-                <p className="fade-up tv-label mb-5 text-[var(--tv-text-secondary)]">
+                <p className="fade-up tv-label mb-4 text-[var(--tv-text-secondary)]">
                   {t("v2.hero.eyebrow")}
                 </p>
                 {/* LA TAILLE SUIT LA COLONNE, PAS L'ENVIE.
@@ -937,7 +544,7 @@ function LandingPage() {
                     trois derniers mots : « quand ça compte » n'est pas le
                     problème, c'est le MOMENT, et c'est le seul endroit de
                     l'accroche où l'accent ajoute du sens. */}
-                <h1 className="fade-up font-display text-[clamp(2.1rem,3.6vw,3.1rem)] font-semibold leading-[1.07] tracking-[-0.03em] text-white">
+                <h1 className="fade-up font-display text-[clamp(2.05rem,3.3vw,2.8rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-balance text-white">
                   {t("hero.h1a")}
                   <br />
                   <span className="text-[var(--tv-text-secondary)]">{t("hero.h1b1")}</span>
@@ -950,7 +557,7 @@ function LandingPage() {
                   répondaient à la même objection, et le héros payait la
                   redite en 37 mots. Ici on garde la mécanique (lit, chiffre,
                   donne une règle) ; les symptômes se lisent juste après. */}
-                <p className="fade-up d2 mt-7 max-w-[560px] text-[17px] leading-7 text-slate-400">
+                <p className="fade-up d2 mt-5 max-w-[560px] text-[17px] leading-7 text-slate-400">
                   {t("v2.hero.sub.a")}
                   {/* LE SEUL SURLIGNEUR DE LA PAGE.
                       Un groupe de mots porté par l'accent, pas une phrase :
@@ -970,7 +577,7 @@ function LandingPage() {
                     La hiérarchie reste franche : un bouton plein, un lien
                     bordé. Deux boutons pleins côte à côte partagent le clic
                     au lieu de l'additionner. */}
-                <div className="fade-up d3 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="fade-up d3 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <button
                     onClick={() => open("signup", t("nav.cta.plan"))}
                     className="btn-primary w-full sm:w-auto"
@@ -984,7 +591,7 @@ function LandingPage() {
                     {t("hero.pricing")}
                   </a>
                 </div>
-                <div className="fade-up d4 mt-7 flex flex-wrap items-center gap-x-6 gap-y-2">
+                <div className="fade-up d4 mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
                   {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
                     <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
                       <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
@@ -1023,7 +630,7 @@ function LandingPage() {
                      casserait le débordement qui fait tout l'effet. */
                   priorite
                   hero
-                  repli={<HeroProductVisual />}
+                  repli={null}
                 />
               </div>
             </div>
@@ -1103,7 +710,7 @@ function LandingPage() {
               <ShotOuVisuel
                 nom="mistakes"
                 alt={t("shot.mistakes.alt")}
-                repli={<MistakesSection />}
+                repli={null}
                 className="tour-shot"
               />
             </div>
@@ -1128,7 +735,7 @@ function LandingPage() {
             titre: "v2.s3.t",
             texte: "v2.s3.d",
             alt: "shot.analytics.alt",
-            repli: <AnalyticsSection />,
+            repli: null,
           }}
           /* Quatre écrans qui portent chacun un argument que rien d'autre ne
              porte, et qui ne méritent pas une rangée entière chacun : ce
@@ -1173,7 +780,7 @@ function LandingPage() {
             titre: "v2.s2.t",
             texte: "v2.s2.d",
             alt: "shot.jarvis.alt",
-            repli: <AIConversation />,
+            repli: null,
           }}
         />
 
@@ -1240,8 +847,8 @@ function LandingPage() {
               <PanneauAncrage
                 variante="offre"
                 label={t("anchor.b.l")}
-                valeur={eur(YEARLY_EUR, lang)}
-                suffixe={t("anchor.b.year")}
+                valeur={eur(Math.round(YEARLY_PER_MONTH * 100) / 100, lang)}
+                suffixe={t("anchor.b.per")}
                 detail={t("anchor.b.d")}
               />
             </div>
@@ -1331,14 +938,14 @@ function LandingPage() {
                 {faqs.map(({ q, a }, i) => {
                   const o = faq === i;
                   return (
-                    <div key={q} className="border-b border-white/[.08]">
+                    <div key={q} className="faq-ligne" data-ouverte={o ? "oui" : "non"}>
                       <button
                         onClick={() => setFaq(o ? null : i)}
                         aria-expanded={o}
-                        className="flex w-full items-center justify-between gap-5 py-5 text-left"
+                        className="group flex w-full items-center justify-between gap-5 py-5 text-left"
                       >
                         <span
-                          className={`text-base font-semibold transition-colors ${o ? "text-white" : "text-slate-300"}`}
+                          className={`text-base font-semibold transition-colors group-hover:text-white ${o ? "text-white" : "text-slate-300"}`}
                         >
                           {q}
                         </span>

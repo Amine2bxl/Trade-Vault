@@ -11,14 +11,25 @@ import { readSource, stripComments } from "./helpers/source";
  * testimonials, user counts, logos, revenue or performance claims ».
  *
  * La landing tenait la première en violant la seconde : elle DESSINAIT le
- * produit, et les chiffres de ces dessins (« +$4,218.50 », « 64 % », « 2.31 »)
- * sont fabriqués. Un visiteur ne distingue pas une capture d'un dessin soigné —
- * c'est exactement ce qui rend le dessin inacceptable.
+ * produit, et les chiffres de ces dessins (« +$4,218.50 », « 64 % », « 2.31 »,
+ * « −$1,240 ») sont fabriqués. Un visiteur ne distingue pas une capture d'un
+ * dessin soigné — c'est exactement ce qui rend le dessin inacceptable.
  *
- * Le dessin ne peut donc subsister QUE comme repli, le temps que la vraie
- * capture soit déposée. Ces tests interdisent les deux dérives possibles : un
- * dessin qui reste affiché à côté d'une capture disponible, et une capture
- * attendue que personne ne sait nommer.
+ * ── LA RÈGLE S'EST DURCIE ───────────────────────────────────────────────────
+ *
+ * Ces dessins ont longtemps été tolérés COMME REPLI : ils ne s'affichaient que
+ * si la capture manquait. C'était une fausse sécurité. `AnalyticsSection`
+ * portait un repli pour `monthly-reports.webp`, une capture que le harnais
+ * refuse d'encoder parce que la page tombe sur son état vide : le dessin
+ * n'attendait donc aucune panne, il était le seul rendu possible de ce bloc.
+ * Les trois autres se seraient affichés au premier fichier supprimé par
+ * mégarde.
+ *
+ * Les quatre sont partis. La règle n'est plus « derrière un repli » mais
+ * « nulle part » : sur la vitrine, tout chiffre affiché vient d'une capture du
+ * produit ou du catalogue d'offres. Un repli vaut `null`, et une capture
+ * absente ne montre rien — un trou se voit et se corrige, un faux tableau de
+ * bord non.
  */
 
 const read = (p: string) => stripComments(readSource(import.meta.dir, p));
@@ -34,9 +45,12 @@ const I18N = read("../src/app/pages/landing/i18n.tsx");
 const NOMS = [...LANDING.matchAll(/<ShotOuVisuel\s[^>]*?nom="([^"]+)"/gs)].map((m) => m[1]);
 
 describe("le mécanisme des captures", () => {
-  test("la landing réserve au moins les deux emplacements connus", () => {
+  test("la landing réserve les emplacements qu'elle sait remplir", () => {
+    // `monthly-reports` a quitté cette liste avec la section analytics qui le
+    // montait : sa capture n'est pas encodée (état vide sur le compte
+    // vitrine), donc réserver l'emplacement ne réservait qu'un dessin.
     expect(NOMS).toContain("dashboard");
-    expect(NOMS).toContain("monthly-reports");
+    expect(NOMS).toContain("mistakes");
   });
 
   test("la présence d'un fichier est connue au BUILD, pas à l'exécution", () => {
@@ -54,44 +68,35 @@ describe("le mécanisme des captures", () => {
   });
 });
 
-describe("aucun dessin ne survit à sa capture", () => {
-  test("le visuel inventé du héros n'est monté QUE comme repli", () => {
-    // `<HeroProductVisual />` posé ailleurs qu'en `repli` réafficherait des
-    // chiffres fabriqués à côté de la vraie capture.
-    const montages = [...LANDING.matchAll(/<HeroProductVisual\s*\/>/g)];
-    expect(montages.length).toBe(1);
-    const avant = LANDING.slice(0, LANDING.indexOf("<HeroProductVisual />"));
-    expect(avant.slice(-40)).toContain("repli={");
+describe("aucun chiffre fabriqué n'atteint la vitrine", () => {
+  /* Les montants témoins des quatre maquettes supprimées. Les chercher
+     nommément plutôt que par motif : un motif attraperait aussi les prix du
+     catalogue, qui eux sont légitimes. */
+  const TEMOINS = ["+$4,218.50", "−$1,240", "−$890", "−$670", "2.31", "+0.68R", "1.96"];
+
+  test("les montants des anciennes maquettes ont disparu", () => {
+    for (const t of TEMOINS) {
+      expect(LANDING, `${t} est un chiffre inventé`).not.toContain(t);
+    }
   });
 
-  test("les montants fabriqués vivent tous derrière un repli", () => {
-    // Le chiffre témoin, présent deux fois : dans le héros et dans la section
-    // analytics. Deux abris légitimes, et deux seulement :
-    //
-    //   • le corps de `HeroProductVisual`, dont le test ci-dessus prouve qu'il
-    //     n'est monté QUE comme repli ;
-    //   • un `repli={…}` écrit sur place.
-    //
-    // Toute autre position remettrait un montant inventé à l'écran à côté de
-    // la vraie capture.
-    const debutHero = LANDING.indexOf("function HeroProductVisual(");
-    expect(debutHero).toBeGreaterThan(-1);
-    const finHero = LANDING.indexOf("\nfunction ", debutHero + 1);
-
-    const occurrences = [...LANDING.matchAll(/\+\$4,218\.50/g)];
-    expect(occurrences.length).toBeGreaterThan(0);
-
-    for (const m of occurrences) {
-      const i = m.index!;
-      if (i > debutHero && i < finHero) continue;
-      const avant = LANDING.slice(0, i);
-      const dernierRepli = avant.lastIndexOf("repli={");
-      const dernierShot = avant.lastIndexOf("<ShotOuVisuel");
-      expect(dernierRepli).toBeGreaterThan(-1);
-      // Le `repli={` le plus proche appartient bien au `<ShotOuVisuel` ouvert
-      // juste avant : sinon le montant serait hors de tout repli.
-      expect(dernierRepli).toBeGreaterThan(dernierShot);
+  test("plus aucun repli ne dessine le produit", () => {
+    // `repli` n'accepte plus que `null` : un JSX en repli, c'est un dessin
+    // qui attend sa panne pour s'afficher.
+    const replis = [...LANDING.matchAll(/repli[=:]\s*(\{?)([^,\n]*)/g)].map((m) =>
+      m[2].trim().replace(/\}$/, ""),
+    );
+    expect(replis.length).toBeGreaterThan(0);
+    for (const r of replis) {
+      expect(r, `repli « ${r} » doit valoir null`).toBe("null");
     }
+  });
+
+  test("aucun montant en dur sur la vitrine", () => {
+    // Un prix vient du catalogue (`eur(...)`), jamais d'une chaîne écrite à
+    // la main : c'est ce qui garantit qu'il ne diverge pas de Stripe.
+    const enDur = [...LANDING.matchAll(/["'>][^"'<]*\$\s?\d[\d.,]*/g)].map((m) => m[0]);
+    expect(enDur).toEqual([]);
   });
 });
 
