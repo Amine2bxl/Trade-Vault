@@ -321,7 +321,16 @@ const privacyByLang: Partial<Record<Lang, LegalDoc>> = {
         p: "When you ask Jarvis a question, the data needed to answer it is sent to an AI provider for processing: trade dates, symbols, P&L, strategies, mistake tags, your behavioural signals, your rules and your trade notes. Your screenshots and your credentials are never sent.",
         list: [
           "This only happens when you actively ask. Nothing is sent in the background.",
-          "The provider is configurable and is currently Google Gemini; Anthropic and OpenAI-compatible services are also supported. The provider processes the request to produce the answer.",
+          /* LA CHAÎNE DE REPLI DOIT ÊTRE DITE, PAS SEULEMENT LE PREMIER MAILLON.
+             La phrase d'origine nommait Gemini et ajoutait que d'autres
+             services étaient « pris en charge ». C'est vrai, et c'est
+             insuffisant : `resolveProviders()` renvoie TOUS les fournisseurs
+             configurés, et le routeur passe au suivant dès qu'un appel
+             échoue (quota, panne, délai). Une requête peut donc partir chez
+             un second fournisseur sans que personne l'ait décidé au moment
+             de la poser. Dans une politique de confidentialité, où part la
+             donnée n'est pas un détail d'implémentation. */
+          "The provider is set by configuration; Gemini is the default. If it is unavailable, the request falls back to the next configured provider, which may be Anthropic, Groq, OpenRouter or another OpenAI-compatible service. The provider processes the request to produce the answer.",
           "Jarvis also has a fully local mode that uses no provider at all: when none is configured, or when the call fails, the answer is built on this server from the same data.",
           "If you would rather share none of it, do not use Jarvis. Every other feature keeps working.",
         ],
@@ -389,7 +398,7 @@ const privacyByLang: Partial<Record<Lang, LegalDoc>> = {
         p: "Lorsque vous posez une question à Jarvis, les données nécessaires pour y répondre sont envoyées à un fournisseur d'IA : dates, symboles, P&L, stratégies, tags d'erreurs, vos signaux comportementaux, vos règles et vos notes de trade. Vos captures d'écran et vos identifiants ne sont jamais envoyés.",
         list: [
           "Cela n'arrive que lorsque vous le demandez. Rien n'est envoyé en arrière-plan.",
-          "Le fournisseur est configurable et est actuellement Google Gemini ; Anthropic et les services compatibles OpenAI sont également pris en charge. Le fournisseur traite la requête pour produire la réponse.",
+          "Le fournisseur est défini par configuration ; Gemini est celui par défaut. S'il est indisponible, la requête bascule vers le fournisseur configuré suivant, qui peut être Anthropic, Groq, OpenRouter ou un autre service compatible OpenAI. Le fournisseur traite la requête pour produire la réponse.",
           "Jarvis dispose aussi d'un mode entièrement local, sans aucun fournisseur : quand aucun n'est configuré, ou quand l'appel échoue, la réponse est construite sur ce serveur à partir des mêmes données.",
           "Si vous préférez ne rien partager de tout cela, n'utilisez pas Jarvis. Toutes les autres fonctions continuent de marcher.",
         ],
