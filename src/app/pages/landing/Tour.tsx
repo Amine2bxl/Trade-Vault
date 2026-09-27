@@ -1,4 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { ShotOuVisuel } from "./ProductShot";
 import { shot } from "./shots";
 import { useLandingT, type LandingKey } from "./i18n";
@@ -149,29 +151,99 @@ function RangeeDeux({
  *
  * ── LA HAUTEUR NE SAUTE PAS ───────────────────────────────────────────────
  *
- * Les quatre captures sont cadrées au même rapport (3/2) par le harnais.
- * Sans ça, changer d'onglet ferait bondir la page sous le doigt — le défaut
- * classique des panneaux à onglets, et la raison pour laquelle on les évite
- * souvent à tort.
+ * Les quatre panneaux sont superposés dans la même cellule de grille : la
+ * hauteur est celle du plus grand, et changer d'onglet ne fait jamais bondir
+ * la page sous le doigt — le défaut classique des panneaux à onglets.
+ *
+ * ── L'ORDRE EST CELUI DE LA SÉANCE ────────────────────────────────────────
+ *
+ * Calendrier (avant l'ouverture), checklist (pendant, avant chaque entrée),
+ * setups manqués (après la clôture), Monte-Carlo (avant la suivante). C'est
+ * `Landing.tsx` qui fixe l'ordre ; ce composant le suit tel quel.
  */
 function VitrineSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number }) {
   const { t } = useLandingT();
   const presents = ecrans.filter((e) => shot(e.nom));
   const [actif, setActif] = useState(0);
   const onglets = useRef<(HTMLButtonElement | null)[]>([]);
-  if (!presents.length) return null;
-  const e = presents[Math.min(actif, presents.length - 1)];
+  const liste = useRef<HTMLDivElement>(null);
+  const pile = useRef<HTMLDivElement>(null);
+  const precedent = useRef(0);
+  const enCours = useRef<gsap.core.Timeline | null>(null);
+  const courant = Math.min(actif, Math.max(presents.length - 1, 0));
 
-  /* Les flèches parcourent les onglets, comme n'importe quel `tablist` :
-     sans ça, la tabulation entre dans chaque onglet un par un et il faut
-     quatre tabulations pour atteindre le contenu. */
+  /* LE PASSAGE D'UN ÉCRAN À L'AUTRE — fondu enchaîné et glissement de 14px.
+     Les quatre panneaux sont empilés dans la même cellule : le sortant
+     s'efface pendant que l'entrant arrive, sans trou ni saut de hauteur. Un
+     changement rapide (flèches maintenues) coupe la transition en cours et
+     repart de l'état propre. Moins de mouvement : bascule immédiate. */
+  useGSAP(
+    () => {
+      const avant = precedent.current;
+      precedent.current = courant;
+      if (avant === courant || !pile.current) return;
+
+      /* Sur téléphone la barre d'onglets défile : l'onglet choisi y reste
+         visible, sans faire bouger la page. */
+      const barre = liste.current;
+      const onglet = onglets.current[courant];
+      if (barre && onglet && barre.scrollWidth > barre.clientWidth) {
+        barre.scrollTo({
+          left: onglet.offsetLeft - (barre.clientWidth - onglet.offsetWidth) / 2,
+          behavior: "smooth",
+        });
+      }
+
+      const panneaux = gsap.utils.toArray<HTMLElement>(".tour-panneau", pile.current);
+      const sortant = panneaux[avant];
+      const entrant = panneaux[courant];
+      enCours.current?.kill();
+      gsap.set(panneaux, { clearProps: "opacity,visibility,transform" });
+      if (!sortant || !entrant || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+        return;
+
+      const sens = courant > avant ? 1 : -1;
+      enCours.current = gsap
+        .timeline({
+          onComplete: () =>
+            gsap.set([sortant, entrant], { clearProps: "opacity,visibility,transform" }),
+        })
+        .fromTo(
+          sortant,
+          { autoAlpha: 1, x: 0 },
+          { autoAlpha: 0, x: -14 * sens, duration: 0.26, ease: "power2.in" },
+        )
+        .fromTo(
+          entrant,
+          { autoAlpha: 0, x: 14 * sens },
+          { autoAlpha: 1, x: 0, duration: 0.42, ease: "power3.out" },
+          "<0.08",
+        );
+    },
+    { dependencies: [courant], scope: pile },
+  );
+
+  if (!presents.length) return null;
+
+  /* Le clavier d'un `tablist` : flèches pour passer d'un onglet à l'autre
+     (en boucle), Début/Fin pour le premier et le dernier. Une seule
+     tabulation entre dans la barre, la suivante atteint le panneau. */
   const auClavier = (ev: React.KeyboardEvent) => {
-    const d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
-    if (!d) return;
+    const dernier = presents.length - 1;
+    const cible =
+      ev.key === "ArrowRight"
+        ? (courant + 1) % presents.length
+        : ev.key === "ArrowLeft"
+          ? (courant - 1 + presents.length) % presents.length
+          : ev.key === "Home"
+            ? 0
+            : ev.key === "End"
+              ? dernier
+              : null;
+    if (cible === null) return;
     ev.preventDefault();
-    const suivant = (actif + d + presents.length) % presents.length;
-    setActif(suivant);
-    onglets.current[suivant]?.focus();
+    setActif(cible);
+    onglets.current[cible]?.focus();
   };
 
   return (
@@ -182,18 +254,19 @@ function VitrineSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number
         <p className="tour-phrase">{t("v2.tour.more.d")}</p>
       </div>
 
-      <div className="tour-onglets" role="tablist" aria-label={t("v2.tour.more.t")}>
+      <div ref={liste} className="tour-onglets" role="tablist" aria-label={t("v2.tour.more.t")}>
         {presents.map((x, i) => (
           <button
             key={x.nom}
-            ref={(n2) => {
-              onglets.current[i] = n2;
+            ref={(el) => {
+              onglets.current[i] = el;
             }}
+            type="button"
             role="tab"
             id={`onglet-${x.nom}`}
-            aria-selected={i === actif}
+            aria-selected={i === courant}
             aria-controls={`panneau-${x.nom}`}
-            tabIndex={i === actif ? 0 : -1}
+            tabIndex={i === courant ? 0 : -1}
             onClick={() => setActif(i)}
             onKeyDown={auClavier}
             className="tour-onglet"
@@ -203,23 +276,33 @@ function VitrineSecondaire({ ecrans, n }: { ecrans: EcranSecondaire[]; n: number
         ))}
       </div>
 
-      <div
-        role="tabpanel"
-        id={`panneau-${e.nom}`}
-        aria-labelledby={`onglet-${e.nom}`}
-        /* La clé force un remontage au changement d'onglet : c'est elle qui
-           rejoue l'apparition, et qui garantit qu'aucun état du panneau
-           précédent ne survit dans le suivant. */
-        key={e.nom}
-        className="tour-panneau"
-      >
-        <div className="tour-panneau-texte">
-          <h4 className="tour-carte-titre">{t(e.titre)}</h4>
-          <p className="tour-carte-texte">{t(e.texte)}</p>
-        </div>
-        <div className="tour-panneau-scene">
-          <ShotOuVisuel nom={e.nom} alt={t(e.alt)} repli={null} className="tour-vitrine-shot" />
-        </div>
+      {/* LA PILE. Les quatre panneaux restent montés, superposés : c'est ce
+          qui permet le fondu enchaîné, et chaque onglet pointe vers un
+          panneau qui existe vraiment. Les inactifs sont `inert` — ni focus,
+          ni lecteur d'écran — et masqués par le CSS (`data-actif`), donc
+          corrects dès le rendu serveur. La plaque est portée par la pile et
+          ne bouge pas : seul le contenu glisse. */}
+      <div ref={pile} className="tour-pile">
+        {presents.map((x, i) => (
+          <div
+            key={x.nom}
+            role="tabpanel"
+            id={`panneau-${x.nom}`}
+            aria-labelledby={`onglet-${x.nom}`}
+            data-actif={i === courant}
+            inert={i !== courant}
+            tabIndex={i === courant ? 0 : -1}
+            className="tour-panneau"
+          >
+            <div className="tour-panneau-texte">
+              <h4 className="tour-carte-titre">{t(x.titre)}</h4>
+              <p className="tour-carte-texte">{t(x.texte)}</p>
+            </div>
+            <div className="tour-panneau-scene">
+              <ShotOuVisuel nom={x.nom} alt={t(x.alt)} repli={null} className="tour-vitrine-shot" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

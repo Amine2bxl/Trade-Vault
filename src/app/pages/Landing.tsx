@@ -14,6 +14,8 @@ import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";
 import { CookieConsent } from "./landing/CookieConsent";
+import { DefilementDoux, useApparitions, usePrefereMoinsDeMouvement } from "./landing/motion";
+import { useLenis } from "lenis/react";
 import { faqPageJsonLd } from "@/shared/seo";
 import { YEARLY_PER_MONTH, eur } from "../utils/pricing";
 import {
@@ -293,47 +295,6 @@ function useScroll() {
   }, []);
   return { y, pct };
 }
-/**
- * « Moins de mouvement », lu une seule fois.
- *
- * Au rendu serveur `matchMedia` n'existe pas : on part donc de `false` et on
- * corrige au montage. Partir de `true` serait plus prudent en apparence, mais
- * produirait un saut visible chez la majorité des visiteurs, qui n'ont rien
- * demandé - et la parallaxe qu'on neutralise ici ne coûte rien à personne le
- * temps d'une image.
- */
-function usePrefereMoinsDeMouvement() {
-  const [reduit, setReduit] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduit(mq.matches);
-    const on = () => setReduit(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduit;
-}
-
-function useReveal() {
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const root = document.documentElement;
-    root.classList.add("js-reveal");
-    const io = new IntersectionObserver(
-      (es) =>
-        es.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("reveal-visible");
-            io.unobserve(e.target);
-          }
-        }),
-      { threshold: 0.15, rootMargin: "0px 0px -6% 0px" },
-    );
-    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-}
-
 /* ─────────────────────────── SPLINE · COURBE ─────────────────────────── */
 /* ─────────────────────────── SECTION HEAD ─────────────────────────── */
 function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
@@ -410,7 +371,9 @@ function LandingPage() {
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
   const { y, pct } = useScroll();
-  useReveal();
+  const racineRef = useRef<HTMLDivElement>(null);
+  useApparitions(racineRef);
+  const lenis = useLenis();
   /* Lu UNE fois, pas à chaque rendu : `matchMedia` n'existe pas au rendu
      serveur, et l'interroger soixante fois par seconde pendant un défilement
      serait du gâchis pour une valeur qui ne change quasiment jamais. */
@@ -469,14 +432,21 @@ function LandingPage() {
     setActiveSec(id);
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     scrollLockRef.current = true;
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const cible = document.getElementById(id);
+    /* Sous Lenis, c'est lui qui fait le trajet (il lit `scroll-margin-top`
+       comme le navigateur) ; sans lui, le défilement natif. */
+    if (cible && lenis?.options.smoothWheel) lenis.scrollTo(cible);
+    else cible?.scrollIntoView({ behavior: "smooth", block: "start" });
     scrollTimerRef.current = setTimeout(() => {
       scrollLockRef.current = false;
     }, 1000);
   };
 
   return (
-    <div className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white">
+    <div
+      ref={racineRef}
+      className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white"
+    >
       {/* La lueur qui suit le pointeur. Montée AVANT tout le reste : elle vit
           sous le contenu (`z-index: 0`) et ne doit jamais passer devant. */}
       <CursorOrb />
@@ -741,24 +711,26 @@ function LandingPage() {
              porte, et qui ne méritent pas une rangée entière chacun : ce
              serait quatre écrans de page en plus pour quatre phrases. */
           /* L'ORDRE SUIT LA SÉANCE, pas l'importance : ce qu'on regarde avant
-             d'ouvrir, puis ce qui arrive pendant, puis ce qu'on relit après.
+             d'ouvrir (le calendrier des annonces), puis ce qui arrive pendant
+             (la checklist, avant chaque entrée), puis ce qu'on relit après
+             (les setups manqués), puis ce qu'on projette pour la suite.
              C'est ce que dit l'étiquette de MOMENT en tête de chaque carte,
              et c'est ce qui manquait le plus - « Où ton compte peut
              atterrir » ne dit pas tout seul qu'il s'agit de projection. */
           secondaires={[
             {
-              nom: "checklist",
-              moment: "moment.avant",
-              titre: "v2.s6.t",
-              texte: "v2.s6.d",
-              alt: "shot.checklist.alt",
-            },
-            {
               nom: "news",
-              moment: "moment.jour",
+              moment: "moment.avant",
               titre: "v2.s9.t",
               texte: "v2.s9.d",
               alt: "shot.news.alt",
+            },
+            {
+              nom: "checklist",
+              moment: "moment.jour",
+              titre: "v2.s6.t",
+              texte: "v2.s6.d",
+              alt: "shot.checklist.alt",
             },
             {
               nom: "missed",
@@ -1060,7 +1032,11 @@ function LandingPage() {
 export default function Landing({ lang }: { lang?: LandingLang } = {}) {
   return (
     <LandingLangProvider pinned={lang}>
-      <LandingPage />
+      {/* Le défilement doux vit ICI, et nulle part plus haut : il disparaît
+          avec la landing, avant que l'application ne s'affiche. */}
+      <DefilementDoux>
+        <LandingPage />
+      </DefilementDoux>
     </LandingLangProvider>
   );
 }
