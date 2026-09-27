@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { ArrowRight } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo.webp";
 import { useLandingT } from "./i18n";
@@ -28,11 +28,15 @@ interface MegaNavProps {
   activeSec: string;
   go: (id: string) => void;
   open: (mode: "login" | "signup", plan?: string) => void;
-  y: number;
-  pct: number;
+  /** Vrai dès que la page a quitté le haut. Franchi deux fois par visite,
+      pas soixante fois par seconde : voir `useDefilementSansRendu`. */
+  collee: boolean;
+  /** La jauge est pilotée hors de React — le défilement écrit son
+      `transform` directement, sans reconstruire la barre. */
+  jauge: RefObject<HTMLDivElement | null>;
 }
 
-export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
+export default function MegaNav({ activeSec, go, open, collee, jauge }: MegaNavProps) {
   const { t } = useLandingT();
   const [mobile, setMobile] = useState(false);
 
@@ -58,12 +62,12 @@ export default function MegaNav({ activeSec, go, open, y, pct }: MegaNavProps) {
           défilement. Le seul signal transmis est maintenant `data-collee`,
           et c'est le CSS (`landing.css`) qui en tire une variation de
           DENSITÉ - jamais de forme. */}
-      <div className="lp-nav-shell relative" data-collee={y > 10 ? "oui" : "non"}>
+      <div className="lp-nav-shell relative" data-collee={collee ? "oui" : "non"}>
         {/* La jauge appartient au bord BAS de la barre, pas au bord haut :
             voir `.lp-jauge` dans `landing.css`. Elle porte sa piste, donc
             elle se lit comme une jauge même à 2 %. */}
         <div className="lp-jauge" aria-hidden>
-          <div className="lp-jauge-fil" style={{ transform: `scaleX(${pct})` }} />
+          <div ref={jauge} className="lp-jauge-fil" />
         </div>
 
         {/* Plus de `ref` ici : il ne servait qu'à détecter le clic hors du menu

@@ -86,18 +86,20 @@ export function DefilementDoux({ children }: { children: ReactNode }) {
       options={{
         autoRaf: false,
         smoothWheel: !reduit,
-        /* PLUS BAS QUE LE DÉFAUT (0.1), et c'est tout le sujet. Le `lerp`
-           est la fraction du chemin restant parcourue à chaque image : plus
-           il est petit, plus la page continue de filer après que la molette
-           s'arrête. 0.08 donne environ un tiers de seconde de glisse en
-           plus — assez pour que l'arrêt se sente amorti, pas assez pour
-           qu'on ait l'impression de patiner. */
-        lerp: 0.08,
-        /* Un cran de molette pousse moins loin. C'est ce qui enlève la
-           sensation de à-coups : le défilement devient continu plutôt
-           qu'une suite de sauts que le lissage doit rattraper. */
-        wheelMultiplier: 0.85,
-        touchMultiplier: 1.5,
+        /* LE `lerp` EST UNE DÉCROISSANCE EXPONENTIELLE, par construction :
+           chaque image parcourt la même FRACTION du chemin restant, donc la
+           vitesse s'effondre vite puis rampe indéfiniment vers la cible.
+           Plus il est bas, plus cette traîne est longue — et une traîne
+           longue ne se lit pas comme de la douceur, elle se lit comme un
+           défilement qui colle et qui n'arrive jamais.
+           0.15 raccourcit la traîne au point qu'elle ne se remarque plus :
+           il reste le lissage entre deux crans de molette, sans le sirop.
+           (0.08, essayé avant, était l'erreur inverse.) */
+        lerp: 0.15,
+        /* Plein régime. Réduire ce facteur fait moins avancer la page à
+           chaque cran : ce qu'on gagne en finesse, on le perd en sensation
+           de résistance — exactement ce qu'on cherche à retirer. */
+        wheelMultiplier: 1,
       }}
       ref={lenisRef}
     >
@@ -105,6 +107,84 @@ export function DefilementDoux({ children }: { children: ReactNode }) {
       {children}
     </ReactLenis>
   );
+}
+
+/**
+ * LE DÉFILEMENT NE PASSE PLUS PAR REACT.
+ *
+ * ── CE QUI SACCADAIT ──────────────────────────────────────────────────────
+ *
+ * La position de défilement vivait dans un `useState`, posé à CHAQUE
+ * évènement `scroll`. Sous Lenis, cet évènement part à chaque image : la
+ * vitrine entière — héros, cinq sections, quatre captures, la FAQ — se
+ * reconstruisait soixante fois par seconde pour déplacer deux éléments.
+ * Le scrollspy mesurait en plus quatre sections par évènement, juste après
+ * ce rendu : une mesure qui suit une invalidation force le navigateur à
+ * refaire la mise en page sur-le-champ. Deux fois par image.
+ *
+ * C'est ce cycle — rendu, invalidation, mesure forcée — qui donnait
+ * l'impression que la page accrochait, et non le lissage de Lenis.
+ *
+ * ── CE QUI LE REMPLACE ────────────────────────────────────────────────────
+ *
+ * Une seule fonction par image, qui écrit directement dans le DOM les deux
+ * `transform` concernés. Aucun rendu React : l'état ne remonte que quand la
+ * barre FRANCHIT son seuil de densité, soit deux fois par visite.
+ *
+ * `transform` seul, donc composité : ces écritures ne coûtent ni mise en
+ * page ni repeint.
+ */
+export function useDefilementSansRendu({
+  jauge,
+  parallaxe,
+  surCollee,
+  reduit,
+}: {
+  /** La jauge de progression de la barre. `scaleX(0→1)`. */
+  jauge: RefObject<HTMLElement | null>;
+  /** La capture du héros, qui monte un peu moins vite que la page. */
+  parallaxe: RefObject<HTMLElement | null>;
+  /** Appelé au franchissement du seuil, pas à chaque image. */
+  surCollee: (collee: boolean) => void;
+  reduit: boolean;
+}) {
+  const collee = useRef<boolean | null>(null);
+  useEffect(() => {
+    let demande = 0;
+    const ecrire = () => {
+      demande = 0;
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (jauge.current) {
+        jauge.current.style.transform = `scaleX(${max > 0 ? Math.min(y / max, 1) : 0})`;
+      }
+      if (parallaxe.current) {
+        /* Plafonnée à 60px : au-delà, la capture se décroche du texte
+           qu'elle illustre et on lit deux blocs qui glissent l'un contre
+           l'autre. Neutralisée si le visiteur a demandé moins de mouvement. */
+        parallaxe.current.style.transform = reduit
+          ? ""
+          : `translate3d(0,${-Math.min(y * 0.06, 60)}px,0)`;
+      }
+      const seuil = y > 10;
+      if (seuil !== collee.current) {
+        collee.current = seuil;
+        surCollee(seuil);
+      }
+    };
+    /* Au plus une écriture par image, même si l'évènement part plus souvent. */
+    const auDefilement = () => {
+      if (!demande) demande = requestAnimationFrame(ecrire);
+    };
+    ecrire();
+    window.addEventListener("scroll", auDefilement, { passive: true });
+    window.addEventListener("resize", auDefilement, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", auDefilement);
+      window.removeEventListener("resize", auDefilement);
+      cancelAnimationFrame(demande);
+    };
+  }, [jauge, parallaxe, surCollee, reduit]);
 }
 
 /**
@@ -279,9 +359,10 @@ export function useApparitions(scope: RefObject<HTMLElement | null>) {
        * ce qui est précisément la rupture qu'on remarque.
        */
       const traites = new WeakSet<HTMLElement>();
-      const enroler = (candidats: HTMLElement[]) => {
+      /** Rend le nombre de blocs nouvellement pris en charge. */
+      const enroler = (candidats: HTMLElement[]): number => {
         const nouveaux = candidats.filter((el) => !traites.has(el));
-        if (!nouveaux.length) return;
+        if (!nouveaux.length) return 0;
         nouveaux.forEach((el) => traites.add(el));
 
         const seuil = window.innerHeight * 0.9;
@@ -289,7 +370,7 @@ export function useApparitions(scope: RefObject<HTMLElement | null>) {
         /* Ce qui est déjà dans le cadre est montré tel quel : un bloc rendu
            par le serveur ne doit pas clignoter à l'hydratation. */
         montrer(nouveaux.filter((el) => !aVenir.includes(el)));
-        if (!aVenir.length) return;
+        if (!aVenir.length) return nouveaux.length;
 
         /* `transition: none` le temps de l'entrée : certaines cartes ont une
            transition CSS sur `transform` (survol) qui lisserait chaque image
@@ -302,6 +383,7 @@ export function useApparitions(scope: RefObject<HTMLElement | null>) {
            le cadre quand il commence à monter, donc on le VOIT arriver au
            lieu de le découvrir déjà posé. */
         ScrollTrigger.batch(aVenir, { start: "top 86%", once: true, onEnter: entree });
+        return nouveaux.length;
       };
 
       const mm = gsap.matchMedia();
@@ -317,12 +399,23 @@ export function useApparitions(scope: RefObject<HTMLElement | null>) {
         /* Une seule reprise pour les deux causes, groupée sur une image :
            une capture qui arrive change la hauteur de la page (donc la
            position de tous les déclencheurs), et une section chargée en
-           différé apporte en plus des blocs à enrôler. */
+           différé apporte en plus des blocs à enrôler.
+
+           `ScrollTrigger.refresh()` remesure TOUS les déclencheurs : c'est
+           une remise en page forcée, et l'appeler sur un accordéon qui
+           s'ouvre ou un onglet qui change serait précisément le genre
+           d'à-coup qu'on vient de retirer ailleurs. On ne le déclenche donc
+           que si la hauteur de la page a réellement bougé, ou si de
+           nouveaux blocs viennent d'être enrôlés. */
         let attente = 0;
+        let hauteurConnue = racine.scrollHeight;
         const revoirLaPage = () => {
           cancelAnimationFrame(attente);
           attente = requestAnimationFrame(() => {
-            enroler(gsap.utils.toArray<HTMLElement>(".reveal", racine));
+            const nouveaux = enroler(gsap.utils.toArray<HTMLElement>(".reveal", racine));
+            const hauteur = racine.scrollHeight;
+            if (!nouveaux && hauteur === hauteurConnue) return;
+            hauteurConnue = hauteur;
             ScrollTrigger.refresh();
           });
         };

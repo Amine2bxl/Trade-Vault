@@ -18,6 +18,7 @@ import {
   DefilementDoux,
   allerVers,
   useApparitions,
+  useDefilementSansRendu,
   usePrefereMoinsDeMouvement,
 } from "./landing/motion";
 import { useLenis } from "lenis/react";
@@ -284,22 +285,11 @@ function BandeConfiance({ t }: { t: (k: LandingKey) => string }) {
 }
 
 /* ─────────────────────────── HOOKS ─────────────────────────── */
-function useScroll() {
-  const [y, setY] = useState(0);
-  const [pct, setPct] = useState(0);
-  useEffect(() => {
-    const h = () => {
-      const sy = window.scrollY;
-      setY(sy);
-      const m = document.documentElement.scrollHeight - window.innerHeight;
-      setPct(m > 0 ? Math.min(sy / m, 1) : 0);
-    };
-    h();
-    window.addEventListener("scroll", h, { passive: true });
-    return () => window.removeEventListener("scroll", h);
-  }, []);
-  return { y, pct };
-}
+/* `useScroll` est parti chez `landing/motion.tsx` sous le nom
+   `useDefilementSansRendu`, et surtout sans le `useState` : il reposait la
+   position à chaque évènement de défilement, ce qui reconstruisait la
+   vitrine entière soixante fois par seconde pour déplacer deux éléments. */
+
 /* ─────────────────────────── SPLINE · COURBE ─────────────────────────── */
 /* ─────────────────────────── SECTION HEAD ─────────────────────────── */
 function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
@@ -375,7 +365,12 @@ function LandingPage() {
   const [authPlan, setAuthPlan] = useState<string | undefined>();
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
-  const { y, pct } = useScroll();
+  /* `collee` est le SEUL état que le défilement fait remonter à React, et il
+     ne change que deux fois par visite. La jauge et la parallaxe sont
+     écrites directement dans le DOM par `useDefilementSansRendu`. */
+  const [collee, setCollee] = useState(false);
+  const jaugeRef = useRef<HTMLDivElement>(null);
+  const parallaxeRef = useRef<HTMLDivElement>(null);
   const racineRef = useRef<HTMLDivElement>(null);
   useApparitions(racineRef);
   const lenis = useLenis();
@@ -383,9 +378,12 @@ function LandingPage() {
      serveur, et l'interroger soixante fois par seconde pendant un défilement
      serait du gâchis pour une valeur qui ne change quasiment jamais. */
   const reduitLeMouvement = usePrefereMoinsDeMouvement();
-  // Plafonnée à 60px : au-delà, la capture se décroche du texte qu'elle
-  // illustre et on lit deux blocs qui glissent l'un contre l'autre.
-  const parallaxe = Math.min(y * 0.06, 60);
+  useDefilementSansRendu({
+    jauge: jaugeRef,
+    parallaxe: parallaxeRef,
+    surCollee: setCollee,
+    reduit: reduitLeMouvement,
+  });
 
   const problems = [
     { n: "err" as IName, t: t("problem.p1.t"), d: t("problem.p1.d") },
@@ -410,7 +408,9 @@ function LandingPage() {
   const scrollLockRef = useRef(false);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    const onScroll = () => {
+    let demande = 0;
+    const mesurer = () => {
+      demande = 0;
       if (scrollLockRef.current) return;
       const pos = window.scrollY + 120;
       let cur = "";
@@ -418,12 +418,20 @@ function LandingPage() {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top + window.scrollY <= pos) cur = id;
       }
+      /* `setActiveSec` avec la même valeur ne re-rend pas : React compare.
+         Mais la MESURE, elle, coûtait à chaque évènement — et quatre
+         `getBoundingClientRect` qui suivent une invalidation forcent la
+         remise en page immédiate. Une fois par image suffit. */
       setActiveSec(cur);
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    const auDefilement = () => {
+      if (!demande) demande = requestAnimationFrame(mesurer);
+    };
+    mesurer();
+    window.addEventListener("scroll", auDefilement, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", auDefilement);
+      cancelAnimationFrame(demande);
       if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     };
   }, []);
@@ -459,7 +467,7 @@ function LandingPage() {
       {/* La lueur qui suit le pointeur. Montée AVANT tout le reste : elle vit
           sous le contenu (`z-index: 0`) et ne doit jamais passer devant. */}
       <CursorOrb />
-      <MegaNav activeSec={activeSec} go={go} open={open} y={y} pct={pct} />
+      <MegaNav activeSec={activeSec} go={go} open={open} collee={collee} jauge={jaugeRef} />
 
       <main className="relative z-10">
         {/* ── HERO ──
@@ -594,23 +602,29 @@ function LandingPage() {
 
                   `transform` seul, donc composité par le GPU : aucune remise
                   en page, aucun repeint. Neutralisée si le visiteur a demandé
-                  moins de mouvement - `y` est alors simplement ignoré. */}
-              <div
-                className="fade-up d4 hero-shot-col"
-                style={
-                  reduitLeMouvement ? undefined : { transform: `translate3d(0,${-parallaxe}px,0)` }
-                }
-              >
-                <ShotOuVisuel
-                  nom="dashboard"
-                  alt={t("shot.dashboard.alt")}
-                  /* Pas de légende dans le héros : le titre juste à gauche dit
-                     déjà ce qu'on regarde, et une ligne de texte sous l'image
-                     casserait le débordement qui fait tout l'effet. */
-                  priorite
-                  hero
-                  repli={null}
-                />
+                  moins de mouvement.
+
+                  ── POURQUOI DEUX ÉLÉMENTS ────────────────────────────────
+                  L'extérieur porte `fade-up`, l'entrée du héros. Une
+                  animation CSS en `fill: both` continue d'imposer son
+                  `transform` final APRÈS sa fin, et elle appartient à une
+                  origine de cascade qui bat le style en ligne : tant que la
+                  parallaxe était écrite sur ce même élément, elle était
+                  calculée, posée, et ignorée par le navigateur. Elle vit
+                  donc sur un élément intérieur, qui n'anime rien. */}
+              <div className="fade-up d4 hero-shot-col">
+                <div ref={parallaxeRef}>
+                  <ShotOuVisuel
+                    nom="dashboard"
+                    alt={t("shot.dashboard.alt")}
+                    /* Pas de légende dans le héros : le titre juste à gauche
+                       dit déjà ce qu'on regarde, et une ligne de texte sous
+                       l'image casserait le débordement qui fait tout l'effet. */
+                    priorite
+                    hero
+                    repli={null}
+                  />
+                </div>
               </div>
             </div>
           </div>

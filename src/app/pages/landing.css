@@ -344,6 +344,11 @@
   height: 100%;
   border-radius: inherit;
   transform-origin: left;
+  /* L'ÉTAT DE REPOS EST ICI, plus dans un style en ligne posé par React :
+     le défilement écrit ce `transform` directement dans le DOM, et le rendu
+     serveur doit donc partir d'une jauge vide de lui-même. Sans cette
+     ligne, la barre s'affiche pleine le temps de la première image. */
+  transform: scaleX(0);
   /* Un dégradé, pas un aplat : la tête de la jauge est pleine, la queue
      s'éteint. On lit le SENS de la progression sans flèche ni chiffre. */
   background: linear-gradient(90deg, rgb(var(--tv-accent-rgb) / 0.35), var(--tv-accent));
