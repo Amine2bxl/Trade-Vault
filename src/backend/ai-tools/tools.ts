@@ -60,6 +60,10 @@ const LIMITES = {
   joursDefaut: 90,
   /** Fenêtre maximale — 5 ans couvre tout historique réel. */
   joursMax: 1825,
+  /** Caractères d'une note rendue (trade, séance, occasion manquée). */
+  note: 600,
+  /** Lignes par section de `get_day` (séances, occasions manquées…). */
+  jour: 20,
 } as const;
 
 /** Le client de service, ou une erreur NOMMÉE : un outil muet ferait croire au
@@ -190,6 +194,9 @@ export const getTrades: ToolDefinition = {
         mistakes: t.mistakes,
         setupQuality: t.setupQuality,
         entryTime: t.entryTime || null,
+        // Les notes du trader : sans elles, « qu'est-ce que j'avais écrit sur ce
+        // trade ? » restait sans réponse. Tronquées — la sortie revient au prompt.
+        notes: t.notes ? t.notes.slice(0, LIMITES.note) : null,
       })),
     };
   },
@@ -461,8 +468,227 @@ export const searchMemory: ToolDefinition = {
   },
 };
 
+// ── get_profile ──────────────────────────────────────────────────────────────
+
+/**
+ * QUI est le trader — la question la plus simple, et celle à laquelle Jarvis
+ * ne savait pas répondre. « C'est quoi mon nom ? » partait dans le vide : le
+ * prénom, les marchés, le style, l'objectif déclarés à l'onboarding vivaient
+ * dans `profiles`, qu'aucun outil ne lisait. Idem pour les comptes, les
+ * objectifs et les règles écrites.
+ *
+ * Tout est lu sous `ctx.userId`, jamais d'un argument (règle 2).
+ */
+export const getProfile: ToolDefinition = {
+  name: "get_profile",
+  description:
+    "Read who this trader is: first name, language, what they trade (markets, style, " +
+    "experience, ICT/SMC), their declared goal and biggest pain point, monthly target, " +
+    "written trading rules and plan, their trading accounts (name, type, starting " +
+    "balance, which one is active), long-term goals and current plan tier. Use it for " +
+    "any personal question (their name, their accounts, their goal, their rules) and " +
+    "to personalise advice. No arguments.",
+  inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  sideEffect: false,
+  source: "local",
+  async execute(_input, ctx) {
+    const sb = client();
+    const [profil, comptes, objectifs, abonnement] = await Promise.all([
+      sb.from("profiles").select("*").eq("id", ctx.userId).maybeSingle(),
+      sb
+        .from("accounts")
+        .select("id, name, type, starting_balance, currency, is_default, created_at")
+        .eq("user_id", ctx.userId)
+        .order("created_at"),
+      sb
+        .from("six_month_goals")
+        .select("kind, start_value, target_value, started_at")
+        .eq("user_id", ctx.userId),
+      sb.from("subscriptions").select("plan, status").eq("user_id", ctx.userId).maybeSingle(),
+    ]);
+    if (profil.error) throw new Error(profil.error.message);
+    // `select("*")` : le profil a gagné des colonnes au fil des migrations, et
+    // nommer une colonne absente ferait échouer toute la lecture.
+    const p = (profil.data ?? {}) as Record<string, unknown>;
+    const txt = (k: string) => (typeof p[k] === "string" && p[k] ? (p[k] as string) : null);
+    const actif = (p.active_account_id as string | null) ?? null;
+    return {
+      firstName: txt("jarvis_first_name") ?? txt("name"),
+      email: txt("email"),
+      language: txt("language"),
+      memberSince: txt("created_at"),
+      trading: {
+        markets: p.onboarding_assets ?? null,
+        style: txt("onboarding_style"),
+        experience: txt("onboarding_experience"),
+        usesIctSmc: p.onboarding_uses_ict ?? null,
+        brokers: p.onboarding_brokers ?? null,
+        goal: txt("onboarding_goal") ?? txt("jarvis_goal"),
+        biggestPain: p.onboarding_pain ?? null,
+        monthlyTargetPct: p.onboarding_monthly_target ?? null,
+        selfDeclaredStrength: txt("jarvis_strength"),
+        selfDeclaredWeakness: txt("jarvis_weakness"),
+      },
+      rules: txt("trading_rules")?.slice(0, 1500) ?? null,
+      plan: txt("trading_plan")?.slice(0, 1500) ?? null,
+      accounts: ((comptes.data ?? []) as Record<string, unknown>[]).map((a) => ({
+        name: a.name,
+        type: a.type,
+        startingBalance: a.starting_balance,
+        currency: a.currency,
+        active: a.id === actif,
+        isDefault: !!a.is_default,
+      })),
+      longTermGoals: objectifs.data ?? [],
+      subscription: abonnement.data ?? { plan: "free", status: "none" },
+    };
+  },
+};
+
+// ── get_day ──────────────────────────────────────────────────────────────────
+
+/**
+ * UNE JOURNÉE, en entier. « Qu'est-ce que j'avais noté le 12 ? » touche quatre
+ * tables : les trades (et leurs notes), la séance (objectif du jour, état
+ * émotionnel, note de revue), le score de discipline et les occasions
+ * manquées. Sans cet outil, le modèle n'en voyait qu'une — et répondait « tu
+ * n'as rien noté » à un trader qui avait tout écrit ailleurs.
+ */
+export const getDay: ToolDefinition = {
+  name: "get_day",
+  description:
+    "Read everything the trader logged for ONE market date (YYYY-MM-DD) or a short range " +
+    "(max 14 days): trades with their notes, the trading session (daily objective, " +
+    "emotional state, readiness, review note, discipline score), the checklist/discipline " +
+    "day, pre-trade intents and post-trade reflections, and missed opportunities with " +
+    "lessons. Use it for 'what did I write / do / feel on <day>', 'how was my Monday', " +
+    "'my notes from yesterday'. Args: date, or since+until.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      date: { type: "string", description: "Market date, YYYY-MM-DD." },
+      since: { type: "string", description: "Inclusive start, YYYY-MM-DD." },
+      until: { type: "string", description: "Inclusive end, YYYY-MM-DD (≤ 14 days after since)." },
+    },
+    additionalProperties: false,
+  },
+  sideEffect: false,
+  source: "local",
+  async execute(input, ctx) {
+    const args = (input ?? {}) as Record<string, unknown>;
+    const jour = date(args.date);
+    let since = jour ?? date(args.since);
+    let until = jour ?? date(args.until) ?? since;
+    if (!since || !until) {
+      // Aucune date exploitable : on le DIT au modèle au lieu de rendre
+      // « aucune donnée », qu'il répéterait comme un fait.
+      return { error: "Provide `date` (YYYY-MM-DD) or `since`/`until`." };
+    }
+    if (until < since) [since, until] = [until, since];
+    // Plafond de 14 jours : au-delà, c'est une question de période → get_trades/get_stats.
+    const max = new Date(`${since}T12:00:00`);
+    max.setDate(max.getDate() + 13);
+    const plafond = todayLocalDate(max);
+    if (until > plafond) until = plafond;
+
+    const sb = client();
+    // Le sous-compte actif cloisonne aussi les séances et les occasions
+    // manquées — pas seulement les trades (voir `ToolContext.accountId`).
+    const compte = ctx.accountId ?? null;
+    let qSeances = sb
+      .from("trading_sessions")
+      .select(
+        "session_date, daily_objective, emotional_state, readiness_score, discipline_score, review_note, active_rules",
+      )
+      .eq("user_id", ctx.userId)
+      .gte("session_date", since)
+      .lte("session_date", until);
+    if (compte) qSeances = qSeances.eq("account_id", compte);
+    let qManquees = sb
+      .from("missed_opportunities")
+      .select(
+        "opportunity_date, symbol, reason_not_taken, what_happened, lesson_learned, next_time_plan, estimated_r",
+      )
+      .eq("user_id", ctx.userId)
+      .gte("opportunity_date", since)
+      .lte("opportunity_date", until);
+    if (compte) qManquees = qManquees.eq("account_id", compte);
+
+    const trades = await tradesDe(ctx, { since, until });
+    const ids = trades.map((t) => t.id).filter(Boolean);
+    const [seances, discipline, manquees, intentions, reflexions] = await Promise.all([
+      qSeances.limit(LIMITES.jour),
+      sb
+        .from("discipline_days")
+        .select("date, score, checklist_done_at, journal_complete, trade_count")
+        .eq("user_id", ctx.userId)
+        .gte("date", since)
+        .lte("date", until)
+        .limit(LIMITES.jour),
+      qManquees.limit(LIMITES.jour),
+      ids.length
+        ? sb
+            .from("trade_intent")
+            .select("trade_id, setup, reasoning, confidence, plan, emotion")
+            .eq("user_id", ctx.userId)
+            .in("trade_id", ids)
+            .limit(LIMITES.trades)
+        : Promise.resolve({ data: [], error: null }),
+      ids.length
+        ? sb
+            .from("trade_reflection")
+            .select("trade_id, plan_respected, reason, note")
+            .eq("user_id", ctx.userId)
+            .in("trade_id", ids)
+            .limit(LIMITES.trades)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    const coupe = (v: unknown) => (typeof v === "string" ? v.slice(0, LIMITES.note) : v);
+    const parTrade = <R extends { trade_id?: unknown }>(rows: R[] | null) => {
+      const m = new Map<string, R>();
+      for (const r of rows ?? []) m.set(String(r.trade_id), r);
+      return m;
+    };
+    const intentDe = parTrade(intentions.data as { trade_id?: unknown }[] | null);
+    const reflexDe = parTrade(reflexions.data as { trade_id?: unknown }[] | null);
+
+    return {
+      since,
+      until,
+      tradeCount: trades.length,
+      netPnl: arrondi(trades.reduce((s, t) => s + t.pnl, 0)),
+      trades: trades.slice(0, LIMITES.trades).map((t) => ({
+        date: t.date,
+        time: t.entryTime || null,
+        symbol: t.symbol,
+        direction: t.direction,
+        pnl: arrondi(t.pnl),
+        rMultiple: arrondi(t.rMultiple),
+        strategy: t.strategy || null,
+        mistakes: t.mistakes,
+        notes: t.notes ? t.notes.slice(0, LIMITES.note) : null,
+        intent: intentDe.get(t.id) ?? null,
+        reflection: reflexDe.get(t.id) ?? null,
+      })),
+      sessions: ((seances.data ?? []) as Record<string, unknown>[]).map((s) => ({
+        ...s,
+        review_note: coupe(s.review_note),
+      })),
+      discipline: discipline.data ?? [],
+      missedOpportunities: ((manquees.data ?? []) as Record<string, unknown>[]).map((m) => ({
+        ...m,
+        what_happened: coupe(m.what_happened),
+        lesson_learned: coupe(m.lesson_learned),
+      })),
+    };
+  },
+};
+
 /** Les outils, dans l'ordre où ils servent. */
 export const JARVIS_TOOL_DEFS: readonly ToolDefinition[] = [
+  getProfile,
+  getDay,
   getStats,
   getTrades,
   getMistakes,

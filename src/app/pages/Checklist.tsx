@@ -26,7 +26,7 @@ import {
   saveChecklistConfig,
   type OnboardingData,
 } from "../store";
-import { ttsSpeak } from "@/backend/tts.functions";
+import { hostedAudio, hostedAvailable, markHostedDown } from "../utils/hostedVoice";
 import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
 import { computeChecklistStreak } from "../utils/checklistStreak";
@@ -678,22 +678,22 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const speakHosted = useCallback(
     async (txt: string): Promise<boolean> => {
       if (ttsAvailableRef.current === false) return false;
-      try {
-        const res = await ttsSpeak({ data: { text: txt } });
-        if (!res.available || !("audio" in res) || !res.audio) {
-          ttsAvailableRef.current = false;
-          return false;
-        }
-        ttsAvailableRef.current = true;
-        return await playUrl(res.audio, txt);
-      } catch {
-        // Network/autoplay refusal → fall back to the browser voice.
+      if (!(await hostedAvailable())) {
         ttsAvailableRef.current = false;
-        commOff();
         return false;
       }
+      // Cache partagé : chaque réplique de la checklist n'est facturée qu'une
+      // fois par session, même si le rituel la répète.
+      const audio = await hostedAudio(txt);
+      if (!audio) {
+        ttsAvailableRef.current = false;
+        markHostedDown();
+        return false;
+      }
+      ttsAvailableRef.current = true;
+      return await playUrl(audio, txt);
     },
-    [playUrl, commOff],
+    [playUrl],
   );
 
   const speakBrowser = useCallback(
@@ -753,31 +753,23 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const speakOne = useCallback(
     async (txt: string, tone: Tone) => {
       if (!audioOnRef.current) return;
-      // The cloned voice first: any pre-rendered line plays its static clip —
-      // zero network, zero per-utterance cost, identical on every OS. Wait for
-      // the (tiny, cached) manifest so the first line never races past it.
+      // UNE SEULE VOIX : la voix hébergée de Jarvis d'abord — la même que
+      // l'accueil et l'onboarding (voir `utils/hostedVoice`). Les clips clonés
+      // ne servent plus que de secours : ils avaient un autre timbre.
+      if (await speakHosted(txt)) return;
       await loadVoiceClips();
       const clip = clipFor(txt);
       if (clip) {
         let ok = await playUrl(clip, txt, undefined, true);
         if (!ok) {
-          // Stale manifest (browser/CDN cache)? Refresh once and retry before
-          // falling back to the browser voice.
+          // Manifeste périmé (cache navigateur/CDN) ? On le rafraîchit une fois.
           await refreshVoiceClips();
           const healed = clipFor(txt);
           if (healed && healed !== clip) ok = await playUrl(healed, txt, undefined, true);
         }
         if (ok) return;
-        // Autoplay refusal or missing file → fall through to hosted/browser.
       }
-      // Hosted voice next — identical everywhere. Browser voice is the fallback.
-      if (ttsAvailableRef.current !== false) {
-        const ok = await speakHosted(txt);
-        if (ok || !("speechSynthesis" in window)) return;
-        speakBrowser(txt, tone);
-        return;
-      }
-      speakBrowser(txt, tone);
+      if ("speechSynthesis" in window) speakBrowser(txt, tone);
     },
     [playUrl, speakHosted, speakBrowser],
   );

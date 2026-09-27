@@ -673,6 +673,89 @@ body {
 .onb-halo {
   opacity: 0.7;
 }
+/* ══ L'ONBOARDING PORTE L'HABIT DE LA VITRINE ══
+ *
+ * On y arrive depuis la landing, en venant de cliquer « Get Started ». Il
+ * portait jusqu'ici le thème de l'app (graphite, accent de thème) : le visiteur
+ * passait d'une page émeraude, lumineuse, tramée, à un écran gris et plat, et
+ * lisait la rupture comme « je suis sorti du produit que j'ai choisi ».
+ *
+ * `.tv-public` (posée sur la racine) lui rend les jetons émeraude de la LP ;
+ * ce bloc lui rend son FOND : la menthe très haut, l'indigo qui donne au noir
+ * une température, et la trame d'un pixel qui s'efface vers le bas — les mêmes
+ * valeurs que `.landing-root::before/::after`. La règle « rien ne rayonne » de
+ * l'app ne s'applique pas ici : c'est encore la vitrine. */
+.onb-root {
+  isolation: isolate;
+}
+.onb-root::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(68rem 42rem at 72% -8%, rgb(var(--tv-accent-rgb) / 0.11), transparent 62%),
+    radial-gradient(56rem 40rem at 6% 18%, rgb(86 96 210 / 0.08), transparent 60%),
+    radial-gradient(70rem 50rem at 50% 108%, rgb(86 96 210 / 0.06), transparent 62%);
+}
+.onb-root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.022) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 20%, transparent 80%);
+}
+/* Le bouton principal de la LP, au pixel près : même coin, même ombre portée
+   dans l'accent, même relief au survol. */
+.onb-root .onb-cta {
+  border-radius: 10px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 8px 28px -12px rgb(var(--tv-accent-rgb) / 0.55);
+  transition:
+    background-color 0.16s ease,
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.16s ease;
+}
+.onb-root .onb-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 12px 34px -12px rgb(var(--tv-accent-rgb) / 0.7);
+}
+/* La pastille d'icône de chaque question : une lueur émeraude diffuse dessous,
+   comme le halo des captures de la LP. Elle donne un point d'ancrage à l'écran. */
+.onb-root .onb-badge {
+  position: relative;
+}
+.onb-root .onb-badge::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  z-index: -1;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgb(var(--tv-accent-rgb) / 0.28), transparent);
+}
+/* Une réponse choisie s'allume : liseré d'accent + lueur courte. */
+.onb-root .onb-selected {
+  box-shadow:
+    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.35),
+    0 10px 30px -14px rgb(var(--tv-accent-rgb) / 0.55);
+}
+@media (prefers-reduced-motion: reduce) {
+  .onb-root .onb-cta:hover:not(:disabled) {
+    transform: none;
+  }
+}
 /* ── Transition d'étape de l'onboarding ──
  *
  * L'étape entre depuis le côté vers lequel on se déplace : en avant elle vient

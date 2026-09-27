@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ttsCapabilities, ttsSpeak } from "@/backend/tts.functions";
+import { hostedAudio, hostedAvailable, markHostedDown } from "./hostedVoice";
 import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
 import { JARVIS_VOICE, pickJarvisVoice, toSpeechSegments } from "@/modules/voice";
 
@@ -19,18 +19,6 @@ import { JARVIS_VOICE, pickJarvisVoice, toSpeechSegments } from "@/modules/voice
  *   4. Spoken text is ALWAYS English, whatever the UI language, so the single
  *      voice never has to mispronounce another locale.
  */
-
-/** Probed once per page load and shared by every hook instance. */
-let hostedProbe: Promise<boolean> | null = null;
-
-function hostedAvailable(): Promise<boolean> {
-  if (!hostedProbe) {
-    hostedProbe = ttsCapabilities()
-      .then((r) => !!r.hosted)
-      .catch(() => false);
-  }
-  return hostedProbe;
-}
 
 /** Back-compat alias — the Checklist imports the picker under this name. */
 export { pickJarvisVoice as pickEnglishMaleVoice } from "@/modules/voice";
@@ -135,42 +123,12 @@ export function useJarvisVoice(): JarvisVoice {
       const line = text.trim();
       if (!line) return;
 
-      // Cloned voice first: pre-rendered fixed lines play their static clip —
-      // exact identity, zero network, zero per-utterance cost.
-      await loadVoiceClips();
-      const clip = clipFor(line);
-      if (clip) {
-        const played = await new Promise<boolean>((resolve) => {
+      /** Joue une URL audio ; `true` si la lecture a démarré. */
+      const play = (url: string) =>
+        new Promise<boolean>((resolve) => {
           const run = ++runRef.current;
           audioRef.current?.pause();
-          const el = new Audio(clip);
-          audioRef.current = el;
-          el.volume = 0.95;
-          // Deterministic playback — the clip carries the right pace and tone.
-          el.playbackRate = 1;
-          el.preservesPitch = true;
-          const done = (started: boolean) => {
-            if (run === runRef.current && !started) setSpeaking(false);
-            resolve(started);
-          };
-          el.onended = () => {
-            if (run === runRef.current) setSpeaking(false);
-            resolve(true);
-          };
-          el.onerror = () => done(false);
-          setSpeaking(true);
-          el.play()
-            .then(() => done(true))
-            .catch(() => done(false));
-        });
-        if (played) return;
-        // Stale manifest? Refresh once and retry the healed mapping.
-        await refreshVoiceClips();
-        const healed = clipFor(line);
-        if (healed && healed !== clip) {
-          const run = ++runRef.current;
-          audioRef.current?.pause();
-          const el = new Audio(healed);
+          const el = new Audio(url);
           audioRef.current = el;
           el.volume = 0.95;
           el.playbackRate = 1;
@@ -180,47 +138,37 @@ export function useJarvisVoice(): JarvisVoice {
           };
           el.onerror = () => {
             if (run === runRef.current) setSpeaking(false);
+            resolve(false);
           };
           setSpeaking(true);
-          try {
-            await el.play();
-            return;
-          } catch {
-            if (run === runRef.current) setSpeaking(false);
-          }
-        }
-        // Autoplay refusal or missing file → fall through to hosted/local.
+          el.play()
+            .then(() => resolve(true))
+            .catch(() => {
+              if (run === runRef.current) setSpeaking(false);
+              resolve(false);
+            });
+        });
+
+      // 1. LA voix de Jarvis — la même sur tous les écrans (voir hostedVoice).
+      if (await hostedAvailable()) {
+        const audio = await hostedAudio(line);
+        if (audio && (await play(audio))) return;
+        if (!audio) markHostedDown();
       }
 
-      if (!(await hostedAvailable())) {
-        speakLocal(line);
-        return;
+      // 2. Secours : le clip pré-rendu de la réplique, s'il existe.
+      await loadVoiceClips();
+      const clip = clipFor(line);
+      if (clip && (await play(clip))) return;
+      if (clip) {
+        // Manifeste périmé (cache navigateur/CDN) ? On le rafraîchit une fois.
+        await refreshVoiceClips();
+        const healed = clipFor(line);
+        if (healed && healed !== clip && (await play(healed))) return;
       }
-      try {
-        const res = await ttsSpeak({ data: { text: line.slice(0, 600) } });
-        if (!res.available || !("audio" in res) || !res.audio) {
-          hostedProbe = Promise.resolve(false);
-          speakLocal(line);
-          return;
-        }
-        const run = ++runRef.current;
-        audioRef.current?.pause();
-        const el = new Audio(res.audio);
-        audioRef.current = el;
-        el.volume = 0.95;
-        el.onended = () => {
-          if (run === runRef.current) setSpeaking(false);
-        };
-        el.onerror = () => {
-          if (run === runRef.current) setSpeaking(false);
-        };
-        setSpeaking(true);
-        await el.play();
-      } catch {
-        // Network or autoplay refusal → local voice, never an error.
-        hostedProbe = Promise.resolve(false);
-        speakLocal(line);
-      }
+
+      // 3. Dernier secours : la voix du navigateur — jamais une erreur.
+      speakLocal(line);
     },
     [speakLocal],
   );

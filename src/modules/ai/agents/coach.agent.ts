@@ -194,6 +194,15 @@ export const TOOL_PROTOCOL =
   "whole point of tracking it.\n" +
   "- Call get_edge_score rather than reasoning about their edge.\n" +
   "- Call search_memory when they refer to something said earlier or to a commitment.\n" +
+  "- Call get_profile for anything about WHO they are: their name, their accounts, what " +
+  "and how they trade, their goal, their written rules or plan, their subscription.\n" +
+  "- Call get_day for anything tied to a date: 'my notes on the 12th', 'how was Monday', " +
+  "'what did I feel yesterday'. It returns the trades WITH their notes, the session " +
+  "(objective, emotions, review note), the discipline day and missed opportunities. " +
+  "Resolve relative dates ('yesterday', 'last Friday') from TODAY in the context.\n" +
+  "- Simple personal or general questions (their name, a trading concept, how a feature " +
+  "of TradeVault works) get a direct 1–2 sentence answer, not a diagnosis-and-plan. " +
+  "General knowledge is allowed; only claims about THIS trader's numbers need a source.\n" +
   "- A tool that returns zero rows means the journal has nothing there — say so plainly. " +
   "It never means you may estimate.\n" +
   "- Stop calling tools once you can answer. Two or three calls is a good answer; ten is " +

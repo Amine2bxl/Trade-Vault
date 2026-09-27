@@ -89,7 +89,7 @@ const EMPTY: OnboardingData = {
  */
 function IconBadge({ icon: Icon }: { icon: typeof Target }) {
   return (
-    <div className="tv-accent-fill mb-3 grid h-10 w-10 place-items-center rounded-xl">
+    <div className="onb-badge tv-accent-fill mb-4 grid h-11 w-11 place-items-center rounded-xl">
       <Icon className="h-5 w-5" />
     </div>
   );
@@ -145,7 +145,7 @@ function OptionCard({
            lignes actives de Jarvis. Un aplat cyan sur toute la carte faisait
            lire la sélection comme un état de risque. */
         selected
-          ? "border-[var(--tv-border-accent)] bg-[var(--tv-plate-3)]"
+          ? "onb-selected border-[var(--tv-border-accent)] bg-[var(--tv-plate-3)]"
           : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)]",
       )}
     >
@@ -184,7 +184,7 @@ function Chip({
       className={cn(
         "onb-card inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-semibold transition",
         selected
-          ? "border-[var(--tv-border-accent)] bg-[var(--tv-plate-3)] text-white"
+          ? "onb-selected border-[var(--tv-border-accent)] bg-[var(--tv-plate-3)] text-white"
           : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-300 hover:border-[var(--tv-border-strong)]",
       )}
     >
@@ -333,7 +333,7 @@ export default function Onboarding({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 rounded-xl text-sm font-bold tv-accent-fill transition active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
+      className="onb-cta w-full h-12 text-[15px] font-bold tv-accent-fill active:scale-[0.99] disabled:opacity-60 mt-7 inline-flex items-center justify-center gap-1.5"
     >
       {children}
     </button>
@@ -350,7 +350,7 @@ export default function Onboarding({
 
   return (
     <div
-      className="relative h-dvh w-full overflow-hidden flex flex-col"
+      className="tv-public onb-root relative h-dvh w-full overflow-hidden flex flex-col"
       style={{ background: "var(--tv-bg)" }}
     >
       {/* Top bar : back · progress · étape */}
