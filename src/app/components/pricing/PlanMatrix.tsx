@@ -1,174 +1,203 @@
-import { Fragment } from "react";
-import { Check, Minus } from "lucide-react";
-import { TIERS, yearlyPerMonth, type Tier, type TierDef } from "@/domain/plans";
+import { Fragment, type ReactNode } from "react";
+import { Check, Crown, Infinity as InfinityIcon, Minus, Sparkles } from "lucide-react";
+import { LIMITS, TIERS, TIER_RANK, yearlyPerMonth, type Tier } from "@/domain/plans";
 import { useT } from "../../i18n/LanguageContext";
+import { useSubscription } from "../../hooks/useSubscription";
 import { eur } from "../../utils/pricing";
 import { cn } from "../../utils/cn";
 
 /**
- * LA MATRICE DE COMPARAISON — et ce qu'elle doit faire.
+ * LE TABLEAU DE COMPARAISON — un vrai tableau, qui montre la différence.
  *
- * Trois colonnes, des lignes groupées par palier qui AJOUTE : chaque ligne
- * n'apparaît qu'une fois, dans le groupe de l'offre qui l'introduit, et la
- * coche se propage aux colonnes qui en héritent. « Pro ajoute X » avec ✓ dans
- * Pro et Elite ne laisse aucune ambiguïté.
+ * ══ CE QUI N'ALLAIT PAS ══
  *
- * ── CE QUI A CHANGÉ, ET POURQUOI ──
+ *   • LES DIFFÉRENCES QUI COMPTENT ÉTAIENT NOYÉES. « 10 trades par mois »,
+ *     « Jarvis 3 fois par jour », « 1 compte » étaient des lignes de texte
+ *     parmi d'autres, cochées dans une seule colonne : pour comparer 10 et
+ *     illimité, il fallait lire trois groupes et recoller les morceaux.
+ *   • DES COCHES DE 18 PX, en gris sur gris, sans une ligne pour guider l'œil
+ *     d'une colonne à l'autre : un tableau qui se lisait comme une liste.
+ *   • UN SEUL BOUTON, et il proposait « Passer Pro » même à un abonné Pro.
  *
- * LES TROIS COLONNES AVAIENT LE MÊME POIDS. Free portait les mêmes coches
- * vertes, la même taille de police, le même soin que Pro : une page de
- * comparaison neutre, qui laisse le lecteur conclure que la gratuite suffit.
- * Or cette page existe pour faire passer au payant.
+ * ══ CE QU'IL EST ══
  *
- *   • FREE EST MIS EN RETRAIT — sa colonne est grisée, sans fond, et ses
- *     coches sont de simples traits gris. Elle dit ce qu'elle contient, elle
- *     ne le vend pas.
- *   • PRO EST LA COLONNE. Un fond continu du haut en bas de la matrice — pas
- *     seulement sous son en-tête —, ses coches à l'accent, et SON BOUTON
- *     D'ACHAT DANS SON EN-TÊTE. Il n'y en avait aucun : il fallait descendre
- *     sous la matrice pour trouver comment souscrire, c'est-à-dire quitter
- *     l'argument au moment où il porte.
- *   • LE PRIX TIENT SUR UNE LIGNE. « 16,67 € » passait à la ligne dans une
- *     colonne de 52px, et « 10 € » se coupait entre le nombre et le symbole.
- *     Les colonnes montent à 96px et le prix garde sa chasse.
+ *   1. LES LIMITES D'ABORD, en chiffres, côte à côte : trades par mois,
+ *      analyses Jarvis par jour, comptes. Elles viennent de `LIMITS` — la
+ *      table que le serveur applique — donc le tableau ne peut pas mentir.
+ *   2. PUIS LES FONCTIONNALITÉS, groupées par l'offre qui les apporte, cochées
+ *      dans chaque colonne qui les contient.
+ *   3. UNE COLONNE PRO qui se lit d'un trait (bande lumineuse continue), un
+ *      bouton par offre selon l'abonnement courant : « Ton offre » sur la
+ *      sienne, rien sur celles d'en dessous, l'achat sur celles d'au-dessus.
  */
 
-interface MatrixRow {
+type Cell = boolean | number;
+
+interface Row {
   id: string;
-  label: { fr: string; en: string };
-  /** Colonnes qui contiennent cette fonctionnalité, dans l'ordre de TIERS. */
-  in: boolean[];
+  label: string;
+  values: Cell[];
 }
-
-function rowsFor(tier: TierDef, cumulativeFrom: number, all: Tier[]): MatrixRow[] {
-  return tier.features.map((f) => ({
-    id: `${tier.id}-${f.en}`,
-    label: { fr: f.fr, en: f.en },
-    in: all.map((_, i) => i >= cumulativeFrom),
-  }));
-}
-
-/** La grille : le libellé, puis trois colonnes de largeur égale. */
-const GRILLE =
-  "grid grid-cols-[minmax(0,1fr)_repeat(3,72px)] gap-x-1.5 sm:grid-cols-[minmax(0,1fr)_repeat(3,96px)]";
 
 export default function PlanMatrix() {
-  const { lang } = useT();
-  const fr = lang === "fr";
-  const all = TIERS.map((t) => t.id) as Tier[];
-  const groups: { tier: TierDef; rows: MatrixRow[] }[] = [
-    { tier: TIERS[0], rows: rowsFor(TIERS[0], 0, all) },
-    { tier: TIERS[1], rows: rowsFor(TIERS[1], 1, all) },
-    { tier: TIERS[2], rows: rowsFor(TIERS[2], 2, all) },
+  const { t, lang } = useT();
+  const { tier: current, loading } = useSubscription();
+  const tr = (b: { fr: string; en: string }) => (lang === "fr" ? b.fr : b.en);
+  const ids = TIERS.map((x) => x.id) as Tier[];
+
+  // 1 · Les limites, en chiffres.
+  const limits: Row[] = [
+    { id: "trades", label: t("matrix.trades"), values: ids.map((i) => LIMITS[i].tradesPerMonth) },
+    { id: "jarvis", label: t("matrix.jarvis"), values: ids.map((i) => LIMITS[i].jarvisPerDay) },
+    { id: "accounts", label: t("matrix.accounts"), values: ids.map((i) => LIMITS[i].accounts) },
   ];
-  const tr = (b: { fr: string; en: string }) => (fr ? b.fr : b.en);
+
+  // 2 · Les fonctionnalités : chaque palier hérite de ceux d'en dessous. Les
+  // puces « mesurées » sont déjà dites en chiffres au-dessus.
+  const groups = TIERS.map((tierDef, rank) => ({
+    id: tierDef.id,
+    title: t(`matrix.group.${tierDef.id}`),
+    rows: tierDef.features
+      .filter((f) => !f.metered)
+      .map<Row>((f) => ({
+        id: `${tierDef.id}-${f.en}`,
+        label: tr(f),
+        values: ids.map((_, i) => i >= rank),
+      })),
+  })).filter((g) => g.rows.length > 0);
+
+  const cta = (id: Tier): ReactNode => {
+    if (loading) return <span className="plan-cmp-cta-slot" />;
+    if (id === current) return <span className="plan-cmp-current">{t("matrix.yourPlan")}</span>;
+    if (TIER_RANK[id] < TIER_RANK[current]) return <span className="plan-cmp-cta-slot" />;
+    return (
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
+        className={cn("plan-cmp-cta", id === "pro" && "plan-cmp-cta-hot")}
+      >
+        {id === "pro" ? t("matrix.goPro") : t("matrix.goElite")}
+      </button>
+    );
+  };
+
+  const col = (i: number) =>
+    cn("plan-cmp-col", ids[i] === "pro" && "is-pro", ids[i] === "free" && "is-free");
+
+  const renderCell = (v: Cell, i: number) => {
+    if (typeof v === "number") {
+      return Number.isFinite(v) ? (
+        <span className="plan-cmp-num">{v}</span>
+      ) : (
+        <span className="plan-cmp-num plan-cmp-unlimited">
+          <InfinityIcon className="h-4 w-4" aria-hidden />
+          <span className="sr-only">{t("matrix.unlimited")}</span>
+        </span>
+      );
+    }
+    return v ? (
+      <span className={cn("plan-cmp-check", ids[i] === "free" && "is-muted")}>
+        <Check className="h-3 w-3" strokeWidth={3} aria-label={t("matrix.included")} />
+      </span>
+    ) : (
+      <Minus className="mx-auto h-3.5 w-3.5 text-slate-700" aria-label={t("matrix.notIncluded")} />
+    );
+  };
 
   return (
-    /* `relative` : la bande verticale de Pro est posée en absolu derrière la
-       grille. Une colonne teintée ligne par ligne aurait laissé un liseré à
-       chaque interstice — c'est UNE colonne, elle doit se lire d'un trait. */
-    <div className="relative">
-      {/* LA COLONNE PRO, D'UN SEUL TENANT. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-y-3 right-[calc(72px+0.375rem)] w-[72px] rounded-2xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.06)] sm:right-[calc(96px+0.375rem)] sm:w-[96px]"
-      />
+    <div className="plan-cmp">
+      <div className="plan-cmp-intro">
+        <h3 className="tv-title">{t("matrix.title")}</h3>
+        <p className="tv-prose text-slate-500">{t("matrix.subtitle")}</p>
+      </div>
 
-      <div className="relative px-4 py-4 sm:px-5">
-        <h3 className="tv-label mb-3 text-slate-400">
-          {fr ? "Tout ce que contient chaque offre" : "Everything each plan includes"}
-        </h3>
-
-        {/* ── L'EN-TÊTE ────────────────────────────────────────────────── */}
-        <div className={cn(GRILLE, "items-end")}>
-          <div />
-          {TIERS.map((t) => {
-            const pro = t.id === "pro";
-            const gratuit = t.monthly === 0;
-            return (
-              /* PAS DE PASTILLE « RECOMMANDÉ ». Elle mesurait 99px de large
-                 pour une colonne de 96 — et 87 pour 72 sur téléphone : elle
-                 débordait sur la colonne voisine. Et elle ne servait à rien :
-                 la bande à l'accent, le nom en surbrillance et le bouton
-                 d'achat désignent déjà cette colonne, plus fort qu'un mot. */
-              <div
-                key={t.id}
-                className="flex flex-col items-center justify-end gap-1 pb-2 text-center"
-              >
-                <span
-                  className={cn(
-                    "tv-label",
-                    pro
-                      ? "text-[var(--tv-highlight)]"
-                      : gratuit
-                        ? "text-slate-600"
-                        : "text-slate-400",
+      <div className="overflow-x-auto">
+        <table className="plan-cmp-table">
+          <thead>
+            <tr>
+              <th scope="col" className="plan-cmp-label" />
+              {TIERS.map((x, i) => (
+                <th key={x.id} scope="col" className={cn(col(i), "plan-cmp-head")}>
+                  {x.id === "pro" && (
+                    <span className="plan-cmp-ribbon">
+                      <Sparkles className="h-3 w-3" aria-hidden /> {t("matrix.popular")}
+                    </span>
                   )}
-                >
-                  {tr(t.name)}
-                </span>
-                <span
-                  className={cn(
-                    "tv-figure whitespace-nowrap text-sm leading-none",
-                    pro ? "text-white" : gratuit ? "text-slate-600" : "text-slate-400",
-                  )}
-                >
-                  {gratuit ? eur(0, lang) : eur(Math.round(yearlyPerMonth(t.id) * 100) / 100, lang)}
-                </span>
-                <span className="tv-row-label leading-none">{fr ? "/mois" : "/mo"}</span>
-                {pro && (
-                  /* LE BOUTON D'ACHAT EST DANS LA COLONNE. Il n'existait nulle
-                     part ici : il fallait descendre sous la matrice, donc
-                     quitter l'argument au moment où il porte. */
-                  <button
-                    type="button"
-                    onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-                    className="btn-primary btn-sm mt-1.5 w-full whitespace-nowrap px-2"
-                  >
-                    {fr ? "Passer Pro" : "Go Pro"}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── LES LIGNES, groupées par palier qui ajoute ────────────────── */}
-        {groups.map(({ tier: g, rows }) => (
-          <Fragment key={g.id}>
-            <div className="tv-label mt-4 mb-1 text-slate-600">
-              {fr
-                ? `Dans l'offre ${g.name.fr.toLowerCase()}`
-                : `Included in ${g.name.en.toLowerCase()}`}
-            </div>
-            {rows.map((row) => (
-              <div key={row.id} className={cn(GRILLE, "items-center py-1")}>
-                <span className="text-[13px] leading-snug text-slate-300">{tr(row.label)}</span>
-                {row.in.map((has, i) => (
-                  <span key={i} className="justify-self-center">
-                    {has ? (
-                      <span
-                        className={cn(
-                          "grid h-4.5 w-4.5 place-items-center rounded-full",
-                          i === 1
-                            ? "bg-[rgb(var(--tv-accent-rgb)/0.22)] text-[var(--tv-highlight)]"
-                            : i === 0
-                              ? // Free : un trait gris, pas une coche verte.
-                                "text-slate-600"
-                              : "bg-emerald-400/10 text-emerald-400/90",
-                        )}
-                      >
-                        <Check className="h-2.5 w-2.5" strokeWidth={3} />
-                      </span>
-                    ) : (
-                      <Minus className="h-3 w-3 text-slate-700" />
-                    )}
+                  <span className="plan-cmp-name">
+                    {x.id === "elite" && <Crown className="h-3.5 w-3.5" aria-hidden />}
+                    {tr(x.name)}
                   </span>
+                  <span className="plan-cmp-price">
+                    {eur(x.monthly, lang)}
+                    <span className="plan-cmp-per">{t("matrix.perMonth")}</span>
+                  </span>
+                  <span className="plan-cmp-yearly">
+                    {x.monthly > 0
+                      ? t("matrix.yearly").replace(
+                          "{price}",
+                          eur(Math.round(yearlyPerMonth(x.id) * 100) / 100, lang),
+                        )
+                      : t("matrix.forever")}
+                  </span>
+                  {cta(x.id)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="plan-cmp-group">
+              <th scope="colgroup" className="plan-cmp-label">
+                {t("matrix.group.limits")}
+              </th>
+              {ids.map((_, i) => (
+                <td key={i} className={col(i)} />
+              ))}
+            </tr>
+            {limits.map((row) => (
+              <tr key={row.id} className="plan-cmp-row">
+                <th scope="row" className="plan-cmp-label">
+                  {row.label}
+                </th>
+                {row.values.map((v, i) => (
+                  <td key={i} className={col(i)}>
+                    {renderCell(v, i)}
+                  </td>
                 ))}
-              </div>
+              </tr>
             ))}
-          </Fragment>
-        ))}
+            {groups.map((g) => (
+              <Fragment key={g.id}>
+                <tr className="plan-cmp-group">
+                  <th scope="colgroup" className="plan-cmp-label">
+                    {g.title}
+                  </th>
+                  {ids.map((_, i) => (
+                    <td key={i} className={col(i)} />
+                  ))}
+                </tr>
+                {g.rows.map((row) => (
+                  <tr key={row.id} className="plan-cmp-row">
+                    <th scope="row" className="plan-cmp-label">
+                      {row.label}
+                    </th>
+                    {row.values.map((v, i) => (
+                      <td key={i} className={col(i)}>
+                        {renderCell(v, i)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
+            {/* La dernière rangée ferme la bande Pro par son arrondi. */}
+            <tr className="plan-cmp-end">
+              <th className="plan-cmp-label" />
+              {ids.map((_, i) => (
+                <td key={i} className={col(i)} />
+              ))}
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );

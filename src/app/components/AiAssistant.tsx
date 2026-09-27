@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { loadJarvisProfile, type JarvisProfile } from "../store";
+import { JARVIS_PROFILE_EVENT } from "./jarvis/prefs";
 import { JarvisMark } from "@/shared/ui";
 import JarvisShell from "./jarvis/JarvisShell";
 import type { JarvisContext } from "./jarvis/context";
@@ -37,8 +38,8 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>(undefined);
-  // Le workspace actif : l'Accueil par défaut, la Conversation sur prompt externe.
-  const [activeWorkspace, setActiveWorkspace] = useState<JarvisWorkspaceId>("home");
+  // Le workspace actif : la Conversation, toujours — l'Accueil a été retiré.
+  const [activeWorkspace, setActiveWorkspace] = useState<JarvisWorkspaceId>("conversation");
 
   // Conversations (couche de données dédiée, multi-sessions).
   const conversations = useConversations(user?.id);
@@ -70,7 +71,6 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       if (conversationId === id) {
         const list = await jarvisConversationStore(user.id).list();
         setConversationId(list[0]?.id ?? null);
-        if (list.length === 0) setActiveWorkspace("home");
       }
     },
     [user?.id, conversationId],
@@ -107,15 +107,14 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     [user?.id],
   );
 
-  // Le dock ouvre toujours sur l'Accueil intelligent (jamais de chat vide).
+  // Le dock ouvre directement sur la Conversation : on ouvre Jarvis pour lui
+  // parler, pas pour lire un tableau avant d'avoir le droit d'écrire.
   const toggleOpen = () => {
-    if (!open) setActiveWorkspace("home");
+    if (!open) setActiveWorkspace("conversation");
     setOpen((v) => !v);
   };
 
-  // Profil Jarvis chargé pour le contexte (le modal « première-prise » a été
-  // supprimé : on atterrit directement sur l'accueil). L'édition vit dans
-  // Settings → Profil mémorisé.
+  // Profil Jarvis chargé pour le contexte. L'édition vit dans Réglages → Profil.
   const [jarvisProfile, setJarvisProfile] = useState<JarvisProfile | null>(null);
   useEffect(() => {
     if (!open || !user?.id) return;
@@ -131,6 +130,12 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       active = false;
     };
   }, [open, user?.id]);
+  // Profil modifié dans les Réglages → la conversation le suit sans rechargement.
+  useEffect(() => {
+    const onProfile = (e: Event) => setJarvisProfile((e as CustomEvent<JarvisProfile>).detail);
+    window.addEventListener(JARVIS_PROFILE_EVENT, onProfile);
+    return () => window.removeEventListener(JARVIS_PROFILE_EVENT, onProfile);
+  }, []);
 
   // La page Jarvis (nav) ouvre le MÊME overlay — conversation et historique
   // partagés partout. Un seul Jarvis, deux points d'entrée.

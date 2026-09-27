@@ -6,9 +6,10 @@ import { JarvisMark } from "../src/shared/ui/JarvisMark";
  * LE SIGLE DE JARVIS.
  *
  * Il remplace `Bot` de lucide — le petit robot à antenne que tout le monde
- * colle dans un coin pour dire « il y a une IA ici ». C'est désormais le V de
- * *Vault*, construit comme le mot de la marque : un bras fin et sourd
- * (« Trade », à 65 % dans `Brand.tsx`), un bras épais et plein (« Vault »).
+ * colle dans un coin pour dire « il y a une IA ici » — puis le V de *Vault*,
+ * qui était le sigle de TradeVault et pas celui de Jarvis. C'est désormais son
+ * logo à lui : un NOYAU plein, un ANNEAU ouvert, une ÉTINCELLE en orbite dans
+ * l'ouverture — le même objet que l'orbe vivante (`JarvisOrb`), au repos.
  *
  * ── POURQUOI CE FICHIER EXISTE ────────────────────────────────────────────
  *
@@ -19,20 +20,20 @@ import { JarvisMark } from "../src/shared/ui/JarvisMark";
  * surface la plus visible du produit, celle qui flotte en permanence dans le
  * coin de l'écran.
  *
- * Le contrat tient en une phrase : DEUX TRAITS, `currentColor`, RIEN D'AUTRE.
+ * Le contrat tient en une phrase : TROIS FORMES, `currentColor`, RIEN D'AUTRE.
  * La couleur vient de la plaque qui le porte, jamais du sigle.
  */
 
 const html = renderToStaticMarkup(<JarvisMark className="h-5 w-5" />);
 
 describe("le sigle de Jarvis", () => {
-  test("est un SVG de deux traits, et deux seulement", () => {
-    // Deux bras : le fin et l'épais. Un troisième trait, et ce n'est plus un V.
-    expect(html.match(/<path/g) ?? []).toHaveLength(2);
+  test("est un anneau, un noyau et une étincelle — trois formes pleines, lisibles à 16px", () => {
+    expect(html.match(/<path/g) ?? []).toHaveLength(1);
+    expect(html.match(/<circle/g) ?? []).toHaveLength(2);
   });
 
   test("prend la couleur de la surface qui le porte", () => {
-    expect(html.match(/currentColor/g) ?? []).toHaveLength(2);
+    expect(html.match(/currentColor/g) ?? []).toHaveLength(3);
   });
 
   test("n'écrit AUCUNE couleur — le studio de thèmes doit pouvoir le repeindre", () => {
@@ -40,13 +41,11 @@ describe("le sigle de Jarvis", () => {
     expect(html).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|var\(--/i);
   });
 
-  test("garde le contraste de graisse qui cite le mot de la marque", () => {
-    // Le bras « Trade » est en retrait, le bras « Vault » est plein et plus
-    // épais. Si les deux s'égalisent, le sigle perd son lien au logotype.
-    const widths = [...html.matchAll(/stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
-    expect(widths).toHaveLength(2);
-    expect(widths[1]).toBeGreaterThan(widths[0]);
-    expect(html).toContain('opacity="0.5"');
+  test("l'anneau est en retrait, le noyau et l'étincelle sont pleins", () => {
+    // La hiérarchie du dessin : l'attention (anneau) s'efface derrière
+    // l'intelligence (noyau). Égalisés, les trois se lisent comme une cible.
+    expect(html).toContain('opacity="0.55"');
+    expect(html.match(/fill="currentColor"/g) ?? []).toHaveLength(2);
   });
 
   test("se dimensionne par sa classe et reste invisible aux lecteurs d'écran", () => {

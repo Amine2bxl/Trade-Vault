@@ -19,6 +19,7 @@ import { ShotOuVisuel } from "./landing/ProductShot";
  * millisecondes.
  */
 const AuthModal = lazy(() => import("./landing/AuthModal").then((m) => ({ default: m.AuthModal })));
+const DemoModal = lazy(() => import("./landing/DemoModal").then((m) => ({ default: m.DemoModal })));
 import { TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
 import { TourProduit } from "./landing/Tour";
@@ -432,6 +433,7 @@ function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
 function LandingPage() {
   const { t, lang } = useLandingT();
   const [auth, setAuth] = useState(false);
+  const [demo, setDemo] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [authPlan, setAuthPlan] = useState<string | undefined>();
   const [faq, setFaq] = useState<number | null>(0);
@@ -694,6 +696,18 @@ function LandingPage() {
                     {t("hero.pricing")}
                   </a>
                 </div>
+                {/* La démo en troisième rang, sous les deux boutons : un lien, pas un
+                    troisième bouton qui partagerait le clic avec l'inscription. */}
+                <button
+                  onClick={() => setDemo(true)}
+                  className="fade-up d3 group mt-3 inline-flex min-h-[44px] items-center gap-2.5 whitespace-nowrap text-sm text-slate-400 transition-colors hover:text-white"
+                >
+                  <span className="grid h-7 w-7 place-items-center rounded-full border border-white/[.14] text-[var(--tv-accent)] transition-colors group-hover:border-[rgb(var(--tv-accent-rgb)/0.5)]">
+                    <Icon n="play" cls="h-3 w-3 translate-x-[1px] fill-current" />
+                  </span>
+                  {t("hero.demo")}
+                  <span className="text-slate-600">· {t("hero.demo.len")}</span>
+                </button>
                 <div className="fade-up d4 mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
                   {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
                     <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
@@ -1193,6 +1207,11 @@ function LandingPage() {
       {auth && (
         <Suspense fallback={null}>
           <AuthModal initialMode={authMode} plan={authPlan} onClose={() => setAuth(false)} />
+        </Suspense>
+      )}
+      {demo && (
+        <Suspense fallback={null}>
+          <DemoModal onClose={() => setDemo(false)} />
         </Suspense>
       )}
       <CookieConsent />

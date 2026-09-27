@@ -74,14 +74,24 @@ export const ttsSpeak = createServerFn({ method: "POST" })
     // n'y a aucune raison de laisser passer un appel facturé quand on ne sait
     // pas s'il est dans les clous.
     try {
-      const { data: allowed, error } = await (context.supabase as unknown as SupabaseClient).rpc(
-        "consume_ai_quota_scoped",
-        {
-          p_scope: "tts",
+      const sb = context.supabase as unknown as SupabaseClient;
+      let { data: allowed, error } = await sb.rpc("consume_ai_quota_scoped", {
+        p_scope: "tts",
+        p_limit: TTS_LIMIT_PER_HOUR,
+        p_window_seconds: 3600,
+      });
+      // BASE EN RETARD SUR LES MIGRATIONS. Tant que `consume_ai_quota_scoped`
+      // n'existe pas en production (PGRST202), CHAQUE réplique échouait ici et
+      // Jarvis retombait sur la voix robot du navigateur — alors que la clé
+      // ElevenLabs était bien là. On compte sur le compteur horaire historique
+      // (partagé avec le coach) plutôt que de perdre la voix : le quota reste
+      // appliqué, et la portée `tts` reprend la main dès la migration passée.
+      if (error?.code === "PGRST202") {
+        ({ data: allowed, error } = await sb.rpc("consume_ai_quota", {
           p_limit: TTS_LIMIT_PER_HOUR,
           p_window_seconds: 3600,
-        },
-      );
+        }));
+      }
       if (error || allowed === false) {
         if (error) console.error("[tts] quota check failed", error);
         return { available: false as const };
@@ -100,9 +110,15 @@ export const ttsSpeak = createServerFn({ method: "POST" })
           body: JSON.stringify({
             text: data.text,
             model_id: JARVIS_VOICE.hostedModelId,
-            // Tuned for an executive-coach delivery: stable and composed,
-            // with enough style to stay human rather than robotic.
-            voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.3 },
+            // Lecture de voix off publicitaire : assez stable pour rester
+            // posée, assez de style pour porter l'intention — et le renfort de
+            // présence qui donne le grain « studio ».
+            voice_settings: {
+              stability: 0.4,
+              similarity_boost: 0.8,
+              style: 0.45,
+              use_speaker_boost: true,
+            },
           }),
         },
       );

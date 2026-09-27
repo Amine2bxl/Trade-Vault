@@ -57,8 +57,12 @@ export interface RouteOptions {
   }) => void;
 }
 
-function timeoutMs(provider: AIProvider): number {
-  return PROVIDER_TIMEOUTS[provider.id] ?? 8_000;
+/** Une requête qui demande au modèle de RÉFLÉCHIR (budget de réflexion) a
+ *  droit à plus de temps : couper la réflexion à mi-chemin rendrait une panne
+ *  là où il suffisait d'attendre quelques secondes de plus. */
+function timeoutMs(provider: AIProvider, req?: AIRequest): number {
+  const base = PROVIDER_TIMEOUTS[provider.id] ?? 8_000;
+  return req?.reasoningBudget ? base + 20_000 : base;
 }
 
 /** Retry sur le MÊME provider uniquement pour 500/réseau (transitoires). */
@@ -115,7 +119,7 @@ export async function routeCompletion(
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs(provider));
+    const timer = setTimeout(() => controller.abort(), timeoutMs(provider, req));
     const attemptStart = Date.now();
     let attempts = 0;
 

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Eraser, Mic, MicOff, Zap } from "lucide-react";
-import { JarvisMark } from "@/shared/ui";
+import { ArrowUpRight, Check, Eraser, Square, Volume2, Zap } from "lucide-react";
+import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
+import TypedAnswer from "../TypedAnswer";
+import { setJarvisActivity } from "../activity";
+import { useJarvisVoice } from "../../../utils/jarvisVoice";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
@@ -31,20 +34,13 @@ import {
   type TradeIntent,
   type TradeReflection,
 } from "../../../store/tradeIntel";
-import { answerToBlocks } from "../insights/answerToBlocks";
 import { buildSuggestions } from "../insights/suggestions";
-import { cn } from "../../../utils/cn";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useToast } from "../../../contexts/ToastContext";
 import { loadOnboarding, type OnboardingData } from "../../../store";
-import {
-  exceedsDailyLimit,
-  incrementAiUsage,
-  aiUsageToday,
-  jarvisDailyLimit,
-} from "../../../utils/aiUsage";
-import { effectiveCopyLang } from "../prefs";
+import { exceedsDailyLimit, incrementAiUsage, jarvisDailyLimit } from "../../../utils/aiUsage";
+import { effectiveCopyLang, readAutoSpeak } from "../prefs";
 import { jarvisConversationStore } from "../conversations";
 import { BlockList } from "../BlockRenderer";
 import { historyTextOf } from "../history";
@@ -88,6 +84,22 @@ function genId(): string {
 function textOf(m: JarvisMessage): string {
   const md = m.blocks.find((b) => b.type === "markdown");
   return md && md.type === "markdown" ? md.content : "";
+}
+
+/** Le texte d'une réponse tel qu'il se DIT : sans Markdown, borné à la limite
+ *  de la voix (600 caractères). Une voix qui lit « astérisque astérisque » ou
+ *  des barres de tableau ne se lit plus comme un agent. */
+function spokenOf(m: JarvisMessage): string {
+  return textOf(m)
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/\|[^\n]*\|/g, " ")
+    .replace(/^#+\s*/gm, "")
+    .replace(/^\s*[-*•]\s+/gm, "")
+    .replace(/[*_`>#]/g, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 600);
 }
 
 /** 4xx (quota, validation, auth) → non rétentable ; 5xx/réseau → rétentable. */
@@ -286,6 +298,40 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
+  // La voix de Jarvis — la même que partout (voir `utils/hostedVoice`).
+  const voice = useJarvisVoice();
+  // La réponse en cours de lecture, pour que SON bouton devienne « Stop ».
+  const [readingId, setReadingId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!voice.speaking) setReadingId(null);
+  }, [voice.speaking]);
+  /* L'ÉTAT DE L'AGENT, pour l'orbe. Réfléchir prime sur tout (la question est
+     partie), puis parler, puis écouter. Publié dans le store partagé pour que
+     l'en-tête de la fenêtre et la barre de la page s'animent aussi. */
+  // La réponse qui s'écrit en ce moment (voir `TypedAnswer`).
+  const [typingId, setTypingId] = useState<string | null>(null);
+  const activity: JarvisOrbState = loading
+    ? "thinking"
+    : voice.speaking || typingId
+      ? "speaking"
+      : listening
+        ? "listening"
+        : "idle";
+  useEffect(() => {
+    setJarvisActivity(activity);
+  }, [activity]);
+  useEffect(() => () => setJarvisActivity("idle"), []);
+  const readAloud = (m: JarvisMessage) => {
+    if (readingId === m.id) {
+      voice.stop();
+      setReadingId(null);
+      return;
+    }
+    const line = spokenOf(m);
+    if (!line) return;
+    setReadingId(m.id);
+    void voice.speak(line);
+  };
   // Limite gratuite 5/j : la bannière Premium apparaît quand la limite est
   // atteinte, pour inviter à l'upgrade plutôt que de bloquer en silence.
   const [quotaBanner, setQuotaBanner] = useState(false);
@@ -356,6 +402,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
   const clearChat = useCallback(() => {
     setMessages([]);
+    setTypingId(null);
     if (store && conversationId) void store.saveMessages(conversationId, []);
   }, [store, conversationId]);
 
@@ -566,34 +613,24 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         // estimer une.
         simulation: simulationFor(query),
       });
-      // La réponse du coach devient une INTERFACE VIVANTE : analyse (🧠) + preuve
-      // chiffrée déterministe (📊) + plan (🎯) + action exécutable. Repli gracieux
-      // sur un simple bloc markdown si rien ne peut être structuré.
+      /* LA RÉPONSE EST CELLE DU MODÈLE, ET RIEN D'AUTRE. Elle recevait jusqu'ici
+         une « preuve », un « Plan recommandé » et un bouton « Ajouter cette
+         règle à ma checklist » choisis par des expressions régulières sur la
+         question — les mêmes à chaque message, quelle que soit la réponse.
+         Jarvis formule lui-même ce qui mérite de l'être. */
       const pushAnswer = (text: string, degraded = false) => {
-        const { blocks } = answerToBlocks({
-          answer: text || t("ai.noResponse"),
-          question: query,
-          lang: effectiveCopyLang(lang),
-          signals,
-          stats: payload.stats,
-          mistakes: payload.mistakes,
-        });
-        // Honnêteté : quand la réponse vient du moteur déterministe (provider
-        // indisponible, quota, timeout), on le DIT. Les chiffres restent vrais
-        // — ils viennent des mêmes signaux — mais le raisonnement est plus
-        // pauvre, et laisser croire le contraire abîmerait la confiance.
-        const withNotice: typeof blocks = degraded
-          ? [{ type: "alert", level: "info", message: t("ai.offlineAnalysis") }, ...blocks]
-          : blocks;
+        const id = genId();
+        const blocks: JarvisMessage["blocks"] = [
+          ...(degraded
+            ? [{ type: "alert" as const, level: "info" as const, message: t("ai.offlineAnalysis") }]
+            : []),
+          { type: "markdown", content: text || t("ai.noResponse") },
+        ];
         setMessages((prev) => [
           ...prev,
-          {
-            role: "assistant",
-            id: genId(),
-            blocks: withNotice,
-            createdAt: new Date().toISOString(),
-          },
+          { role: "assistant", id, blocks, createdAt: new Date().toISOString() },
         ]);
+        if (!degraded) setTypingId(id);
       };
       try {
         // Une analyse consommée — comptée localement, jamais d'appel réseau.
@@ -793,6 +830,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
              d'avance — donc elles méritent d'être l'objet principal de
              l'écran plutôt qu'une note de bas de bloc. */
           <div className="jarvis-accueil animate-fade-in-up">
+            {/* L'orbe : Jarvis est là, et elle s'anime dès qu'il écoute. */}
+            <JarvisOrb state={activity} size={84} className="mx-auto mb-6" />
             <p className="jarvis-accueil-invite">{t("assistant.empty")}</p>
 
             {suggestions.length > 0 && (
@@ -815,7 +854,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             )}
           </div>
         ) : (
-          messages.map((m, i) =>
+          messages.map((m) =>
             m.role === "user" ? (
               /* L'utilisateur garde la bulle : l'asymétrie devient le repère de
                  tour, sans enfermer le contenu analytique de Jarvis. */
@@ -826,24 +865,58 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                     répétée cinq fois, et elle ne désignait plus rien. La bulle
                     est une plaque neutre — l'asymétrie suffit à dire qui
                     parle, et le vert reste à Jarvis et aux boutons. */}
-                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md border border-white/[0.07] bg-[var(--tv-plate-3)] px-4 py-2.5 text-sm text-white">
+                <div className="jarvis-bubble-user max-w-[85%] whitespace-pre-wrap">
                   {textOf(m) || ""}
                 </div>
               </div>
             ) : (
               /* Jarvis : CANVAS pleine largeur. Plus de bulle autour des cartes
                  — fin des cartes-dans-une-carte, les blocs respirent enfin. */
-              <div
-                key={m.id}
-                className={cn("animate-fade-in-up", i > 0 && "border-t border-white/[0.05] pt-5")}
-              >
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
-                    <JarvisMark className="h-4 w-4" />
+              <div key={m.id} className="jarvis-turn animate-fade-in-up">
+                <div className="mb-2.5 flex items-center gap-2">
+                  {/* La réponse EN COURS DE LECTURE porte l'orbe qui parle ;
+                      les autres, la marque au repos. */}
+                  {readingId === m.id ? (
+                    <JarvisOrb state="speaking" size={24} />
+                  ) : (
+                    <span className="jarvis-avatar">
+                      <JarvisMark className="h-4 w-4" />
+                    </span>
+                  )}
+                  <span className="tv-label text-[var(--tv-highlight)]">
+                    {t("assistant.title")}
                   </span>
-                  <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
+                  {m.role === "assistant" && typingId !== m.id && spokenOf(m) && (
+                    <button
+                      type="button"
+                      onClick={() => readAloud(m)}
+                      className="jarvis-listen ml-auto"
+                      aria-pressed={readingId === m.id}
+                    >
+                      {readingId === m.id ? (
+                        <Square className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <Volume2 className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                      {readingId === m.id ? t("jarvis.stopListening") : t("jarvis.listen")}
+                    </button>
+                  )}
                 </div>
-                {m.role === "assistant" ? (
+                {m.role === "assistant" && typingId === m.id ? (
+                  <TypedAnswer
+                    content={textOf(m)}
+                    onProgress={() => {
+                      const el = scrollRef.current;
+                      if (el) el.scrollTop = el.scrollHeight;
+                    }}
+                    onDone={() => {
+                      setTypingId(null);
+                      // Réglage « lire les réponses » : la voix part quand le
+                      // texte a fini de s'écrire, jamais par-dessus.
+                      if (readAutoSpeak()) readAloud(m);
+                    }}
+                  />
+                ) : m.role === "assistant" ? (
                   <BlockList blocks={m.blocks} onTool={handleTool} />
                 ) : (
                   <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
@@ -855,42 +928,23 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           )
         )}
 
-        {/* Relances : Jarvis oriente au lieu d'attendre. */}
-        {loaded && !loading && messages.length > 0 && suggestions.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-1">
-            {suggestions.slice(0, 3).map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => void ask(s.prompt)}
-                className="min-h-9 rounded-full border border-white/[0.08] bg-white/[0.02] px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:border-cyan-500/30 hover:text-white active:scale-[0.98] transition"
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         {loading && (
-          /* Chargement informatif : on annonce ce que Jarvis lit réellement. */
-          <div className="animate-fade-in border-t border-white/[0.05] pt-5">
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
-                <JarvisMark className="h-4 w-4" />
-              </span>
-              <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
-              <span className="flex items-center gap-1">
-                <span className="thinking-dot" />
-                <span className="thinking-dot" style={{ animationDelay: "0.15s" }} />
-                <span className="thinking-dot" style={{ animationDelay: "0.3s" }} />
-              </span>
+          /* LE TEMPS DE RÉFLEXION SE VOIT. Jarvis prend le temps d'analyser
+             avant d'écrire : les étapes avancent pendant qu'il lit le journal,
+             au lieu d'un squelette gris qui ne dit rien. */
+          <div className="jarvis-turn animate-fade-in">
+            <div className="mb-3 flex items-center gap-2.5">
+              <JarvisOrb state="thinking" size={28} label={t("jarvis.thinking")} />
+              <span className="tv-label text-[var(--tv-highlight)]">{t("jarvis.thinking")}</span>
             </div>
-            <p className="text-[13px] text-slate-400">
-              {t("jarvisHome.analyzing").replace("{n}", String(context.trades.length))}
-            </p>
-            <div className="mt-3 space-y-2">
-              <div className="h-16 rounded-2xl bg-white/[0.03] animate-pulse" />
-            </div>
+            <ThinkingSteps
+              steps={[
+                t("jarvis.step.read"),
+                t("jarvis.step.journal").replace("{n}", String(context.trades.length)),
+                t("jarvis.step.numbers"),
+                t("jarvis.step.write"),
+              ]}
+            />
           </div>
         )}
       </div>
@@ -898,21 +952,23 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       {/* Saisie */}
       <div className="p-3 md:p-4 border-t border-white/[0.06] shrink-0">
         {(quotaBanner || exceedsDailyLimit(userId, dailyLimit)) && (
-          <div className="mb-2.5 rounded-xl border border-amber-500/25 bg-gradient-to-r from-amber-500/[0.08] to-amber-500/[0.03] px-3.5 py-3 flex items-start gap-2.5">
-            <Zap className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-amber-200 leading-snug">
-                {t("credits.exhausted")}
+          /* La limite du jour : le message et l'offre dépendent du palier —
+             un abonné Pro ne se voit jamais proposer « Pro ». */
+          <div className="jarvis-quota mb-2.5">
+            <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold leading-snug text-amber-200">
+                {tier === "free" ? t("credits.exhausted") : t("credits.exhaustedPro")}
               </p>
-              <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                {t("credits.exhaustedBody")}
+              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+                {tier === "free" ? t("credits.freePitch") : t("credits.exhaustedBody")}
               </p>
             </div>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-              className="shrink-0 px-3 py-1.5 rounded-lg tv-accent-fill text-xs font-bold transition"
+              className="jarvis-upgrade jarvis-upgrade-hot shrink-0"
             >
-              {t("credits.upgrade")}
+              {tier === "free" ? t("credits.upgrade") : t("credits.upgradePro")}
             </button>
           </div>
         )}
@@ -932,6 +988,37 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Les étapes de réflexion, qui avancent pendant que la réponse se prépare.
+ * La dernière reste active tant que le serveur n'a pas répondu : elle ne
+ * prétend jamais avoir fini avant lui.
+ */
+function ThinkingSteps({ steps }: { steps: string[] }) {
+  const [at, setAt] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setAt((n) => Math.min(steps.length - 1, n + 1));
+    }, 1600);
+    return () => window.clearInterval(id);
+  }, [steps.length]);
+  return (
+    <ol className="jarvis-steps">
+      {steps.map((label, i) => (
+        <li
+          key={i}
+          className="jarvis-step"
+          data-state={i < at ? "done" : i === at ? "active" : "todo"}
+        >
+          <span className="jarvis-step-dot" aria-hidden>
+            {i < at && <Check className="h-2.5 w-2.5" />}
+          </span>
+          {label}
+        </li>
+      ))}
+    </ol>
   );
 }
 

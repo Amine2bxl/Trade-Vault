@@ -432,6 +432,12 @@ const M: Record<string, Msg> = {
      lien secondaire mène donc aux tarifs : c'est la seule autre chose qu'on
      veut savoir à cette hauteur de page. */
   "hero.pricing": { en: "View pricing", fr: "Voir les tarifs" },
+  /* La démo revient, mais sous la forme d'une vidéo de 20 s jouée sur place :
+     elle répond à « montre-moi » sans faire quitter l'accroche, et elle reste
+     en troisième rang, en simple lien, derrière l'inscription et les tarifs. */
+  "hero.demo": { en: "Watch the demo", fr: "Voir la démo" },
+  "hero.demo.len": { en: "20 s", fr: "20 s" },
+  "demo.title": { en: "TradeVault in 20 seconds", fr: "TradeVault en 20 secondes" },
   "hero.t1": { en: "No credit card", fr: "Sans carte bancaire" },
   "hero.t2": { en: "Set up in 2 minutes", fr: "Prêt en 2 minutes" },
   "hero.t3": { en: "Cancel anytime", fr: "Sans engagement" },

@@ -2,6 +2,7 @@ export {
   resolveProvider,
   resolveProviders,
   resolveToolCapableProvider,
+  resolveToolCapableProviders,
   providerIds,
   isProviderConfigured,
 } from "./registry";

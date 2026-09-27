@@ -11,7 +11,7 @@
  * It stays business-agnostic: no personas, no prompts, no tools of its own.
  */
 import {
-  resolveToolCapableProvider,
+  resolveToolCapableProviders,
   type AIProvider,
   type AIRequest,
   type AIResponse,
@@ -69,16 +69,45 @@ export interface ToolLoopOptions extends GenerateOptions {
  * tool-free call forces a text answer). Provider-agnostic.
  */
 export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promise<AIResponse> {
-  const provider = opts.provider ?? resolveToolCapableProvider();
+  const candidates = opts.provider ? [opts.provider] : resolveToolCapableProviders();
+  if (candidates.length === 0) {
+    throw new Error(
+      "No tool-capable AI provider is configured. Set GEMINI_API_KEY, OPENAI_API_KEY or ANTHROPIC_API_KEY.",
+    );
+  }
   const manifest = toProviderTools(opts.tools);
   const maxIterations = opts.maxIterations ?? 4;
   const messages = [...req.messages];
 
+  /* LE PREMIER TOUR CHOISIT LE FOURNISSEUR. On essaie chaque fournisseur
+     capable d'outils, dans l'ordre, jusqu'à ce que l'un réponde ; la suite de
+     la conversation reste sur celui-là (changer de modèle au milieu d'une
+     boucle d'outils mélangerait deux raisonnements). */
+  let provider: AIProvider = candidates[0];
+  let res: AIResponse | null = null;
+  let lastErr: unknown = null;
+  for (const candidate of candidates) {
+    try {
+      res = await generate(
+        { ...req, messages, tools: manifest, toolChoice: "auto" },
+        { provider: candidate, onUsage: opts.onUsage },
+      );
+      provider = candidate;
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[ai] tool loop: ${candidate.id} failed, trying next provider`);
+    }
+  }
+  if (!res) throw lastErr ?? new Error("No tool-capable AI provider answered.");
+
   for (let i = 0; i < maxIterations; i++) {
-    const res = await generate(
-      { ...req, messages, tools: manifest, toolChoice: "auto" },
-      { provider, onUsage: opts.onUsage },
-    );
+    if (i > 0) {
+      res = await generate(
+        { ...req, messages, tools: manifest, toolChoice: "auto" },
+        { provider, onUsage: opts.onUsage },
+      );
+    }
     if (!res.toolCalls?.length) return res;
 
     const results = await executeToolCalls(res.toolCalls, opts.toolContext, {

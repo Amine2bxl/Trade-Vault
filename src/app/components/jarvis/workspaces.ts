@@ -4,17 +4,21 @@ import type { JarvisContext } from "./context";
 /**
  * Workspaces Jarvis — la PLATEFORME, pas un chat (Phase 0, verrouillage).
  *
- * Jarvis est un ensemble d'espaces de travail indépendants (Accueil,
- * Conversation, Rapports, Analyses, Mémoire, Objectifs, Historique, Outils).
- * Le JarvisShell n'affiche QUE le workspace actif — il ne dépend d'aucun
- * module en particulier.
+ * Jarvis est un ensemble d'espaces de travail indépendants (Conversation,
+ * Réglages, puis Rapports, Analyses, Mémoire…). Le JarvisShell n'affiche QUE
+ * le workspace actif — il ne dépend d'aucun module en particulier.
+ *
+ * L'ACCUEIL A ÉTÉ RETIRÉ. Il s'intercalait entre le trader et Jarvis : on
+ * ouvrait l'assistant pour lui parler, et on tombait sur un tableau de
+ * suggestions à lire avant de pouvoir écrire. Jarvis s'ouvre désormais sur la
+ * Conversation, directement. Le moteur de suggestions (`insights/`) reste — il
+ * est pur, testé, et nourrit la conversation.
  *
  * Lazy loading : chaque workspace est un `lazy()` séparé → un espace jamais
  * ouvert n'est jamais téléchargé. Le Shell reste extrêmement léger.
  */
 
 export type JarvisWorkspaceId =
-  | "home" // Accueil intelligent (Phase 1)
   | "conversation" // Chat (existant, extrait en module)
   | "settings" // Configuration Jarvis (profil, préférences, mémoire)
   | "reports" // à venir
@@ -41,7 +45,6 @@ export interface JarvisWorkspaceProps {
 export const JARVIS_WORKSPACES: Partial<
   Record<JarvisWorkspaceId, LazyExoticComponent<ComponentType<JarvisWorkspaceProps>>>
 > = {
-  home: lazy(() => import("./workspaces/HomeWorkspace")),
   conversation: lazy(() => import("./workspaces/ConversationWorkspace")),
   settings: lazy(() => import("./workspaces/SettingsWorkspace")),
   // reports, analyses, memory, goals, history, tools — à venir
