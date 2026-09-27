@@ -322,8 +322,8 @@
  * une barre fixe est la définition du bruit. Seul le survol densifie, sur
  * la durée des micro-interactions. */
 .landing-root .lp-logo {
-  filter: drop-shadow(0 0 6px rgb(var(--tv-accent-rgb) / 0.45))
-    drop-shadow(0 0 18px rgb(var(--tv-accent-rgb) / 0.2));
+  filter: drop-shadow(0 0 7px rgb(var(--tv-accent-rgb) / 0.6))
+    drop-shadow(0 0 22px rgb(var(--tv-accent-rgb) / 0.32));
 }
 @media (prefers-reduced-motion: no-preference) {
   .landing-root .lp-logo {
@@ -332,8 +332,30 @@
 }
 .landing-root a:hover .lp-logo,
 .landing-root a:focus-visible .lp-logo {
-  filter: drop-shadow(0 0 7px rgb(var(--tv-accent-rgb) / 0.65))
-    drop-shadow(0 0 24px rgb(var(--tv-accent-rgb) / 0.3));
+  filter: drop-shadow(0 0 8px rgb(var(--tv-accent-rgb) / 0.8))
+    drop-shadow(0 0 30px rgb(var(--tv-accent-rgb) / 0.42));
+}
+
+/* ── LE MOT-SYMBOLE, JUSTE TEINTÉ ──
+ *
+ * Un dégradé qui part du blanc et finit à peine coloré : la première
+ * syllabe reste blanche, la fin attrape le vert de la marque. À cette
+ * amplitude on ne lit pas « du texte en dégradé », on lit un blanc qui
+ * n'est pas tout à fait neutre — ce qui est le but. Le point d'arrivée est
+ * un blanc mentholé, pas l'accent pur : l'accent sur un mot de 18px le
+ * rendrait moins lisible que le reste de la barre, et un logotype ne doit
+ * jamais être ce qui se lit le moins bien.
+ *
+ * `color: transparent` ne vaut que si le découpage sur le texte est
+ * réellement pris en charge — sinon le mot disparaîtrait. La règle vit donc
+ * sous `@supports`, et le `text-white` du balisage reste le repli. */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .landing-root .lp-mot {
+    background: linear-gradient(104deg, #ffffff 42%, #cffbe9 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 /* ══ LA JAUGE DE DÉFILEMENT ══
