@@ -29,7 +29,7 @@ import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, saveAccountBalance, type OnboardingData } from "../store";
 import ThemeSettings from "../components/ThemeSettings";
 import { oc } from "./onboardingCopy";
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;

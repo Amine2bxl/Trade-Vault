@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Mail } from "lucide-react";
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 import type { Lang } from "../i18n/translations";
 import { SUPPORT_EMAIL } from "../types";
 import { LEGAL_ROUTES, legalBlurb, legalChrome, legalLabel, type LegalDoc } from "./legal-content";

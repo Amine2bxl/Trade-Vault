@@ -1,6 +1,6 @@
 import { useState, type RefObject } from "react";
 import { ArrowRight } from "lucide-react";
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 import { useLandingT } from "./i18n";
 import { LangMenu } from "./LangMenu";
 import { LIENS_NAV as LINKS } from "./nav";

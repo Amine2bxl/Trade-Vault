@@ -1,4 +1,4 @@
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 
 /**
  * Le repli SSR des écrans AUTHENTIFIÉS (`/journal`, `/settings`, …).

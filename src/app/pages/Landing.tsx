@@ -1,11 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 // Les cinq logos de réseaux sociaux ont quitté cet import avec les liens morts
 // qu'ils portaient : voir le pied de page plus bas.
 import { Check } from "lucide-react";
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Icon, type IName } from "./landing/Icon";
 import { ShotOuVisuel } from "./landing/ProductShot";
-import { AuthModal } from "./landing/AuthModal";
+/**
+ * L'ÉCRAN D'AUTHENTIFICATION EST DIFFÉRÉ, et c'est lui qui porte Supabase.
+ *
+ * Il est le SEUL module de la vitrine à toucher `AuthContext`, donc le seul
+ * à faire entrer le SDK Supabase (204 Ko) dans le graphe de la page. Or il
+ * ne s'affiche qu'après un clic sur « Se connecter » ou « Commencer » : un
+ * visiteur qui lit la page de vente et repart ne l'ouvre jamais.
+ *
+ * Aucun repli de `Suspense` : le module descend pendant que la modale
+ * s'apprête à s'ouvrir, et l'écran derrière ne bouge pas. Poser un
+ * chargement ici ferait clignoter la page pour quelques dizaines de
+ * millisecondes.
+ */
+const AuthModal = lazy(() => import("./landing/AuthModal").then((m) => ({ default: m.AuthModal })));
 import { TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
 import { TourProduit } from "./landing/Tour";
@@ -1037,7 +1050,11 @@ function LandingPage() {
         </footer>
       </main>
 
-      {auth && <AuthModal initialMode={authMode} plan={authPlan} onClose={() => setAuth(false)} />}
+      {auth && (
+        <Suspense fallback={null}>
+          <AuthModal initialMode={authMode} plan={authPlan} onClose={() => setAuth(false)} />
+        </Suspense>
+      )}
       <CookieConsent />
     </div>
   );

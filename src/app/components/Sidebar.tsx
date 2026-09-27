@@ -17,7 +17,7 @@ import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useUnreadCount } from "../hooks/useUnreadCount";
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Modal, BrandWord } from "@/shared/ui";
 import AccountSwitcher from "./AccountSwitcher";
 

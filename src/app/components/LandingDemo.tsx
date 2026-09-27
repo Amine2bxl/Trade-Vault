@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Bot, X, ArrowRight, ArrowLeft, Play, CheckCircle2 } from "lucide-react";
 import { cn } from "../utils/cn";
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 // `demoBar` / `demoProgress` vivent dans la feuille de la landing, pas dans le
 // CSS global : la démo est aussi montée par /demo et /demo-site, qui
 // n'importent pas Landing.tsx — d'où cet import ici plutôt que là-bas.

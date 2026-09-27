@@ -8,7 +8,7 @@
  * conversion : le seul écran où l'on demande quelque chose. */
 import { FormEvent, useEffect, useState } from "react";
 import { EnsureAuthProvider, useAuth } from "../../contexts/AuthContext";
-import logoSrc from "@/assets/tradevault-logo.webp";
+import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Icon } from "./Icon";
 import { useLandingT } from "./i18n";
 import { TRUSTPILOT_URL } from "@/shared/site";
