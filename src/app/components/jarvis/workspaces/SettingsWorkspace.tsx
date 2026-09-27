@@ -77,14 +77,14 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4 md:py-5 max-w-3xl">
-      <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-4">
+      <div className="tv-label flex items-center gap-2 text-[var(--tv-highlight)] mb-4">
         <Settings className="w-3.5 h-3.5" /> {t("jarvisSettings.title")}
       </div>
 
       {/* ── Profil mémorisé ── */}
       <div className={section}>
         <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-cyan-400" />
+          <User className="w-4 h-4 text-[var(--tv-highlight)]" />
           <h3 className="tv-title">{t("jarvisSettings.profileTitle")}</h3>
         </div>
         <p className="tv-prose text-slate-500">{t("jarvisSettings.profileSubtitle")}</p>
@@ -116,7 +116,7 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
                 .catch(() => {});
             }
           }}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 text-cyan-300 text-xs font-bold hover:bg-cyan-500/20 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)] text-xs font-bold hover:bg-[rgb(var(--tv-accent-rgb)/0.2)] transition-colors"
         >
           <Pencil className="w-3.5 h-3.5" /> {t("jarvisSettings.edit")}
         </button>
@@ -125,7 +125,7 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
       {/* ── Préférences ── */}
       <div className={section + " mt-4"}>
         <div className="flex items-center gap-2">
-          <Languages className="w-4 h-4 text-cyan-400" />
+          <Languages className="w-4 h-4 text-[var(--tv-highlight)]" />
           <h3 className="tv-title">{t("jarvisSettings.prefTitle")}</h3>
         </div>
         <div className="flex items-center gap-2">
@@ -139,7 +139,7 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
               setRespLang(v);
               writeResponseLang(v);
             }}
-            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500/40 cursor-pointer"
+            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-[rgb(var(--tv-accent-rgb)/0.4)] cursor-pointer"
           >
             <option value="auto">{t("jarvisSettings.langAuto")}</option>
             <option value="fr">{t("jarvisSettings.langFr")}</option>
@@ -151,7 +151,7 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
       {/* ── Mémoire Jarvis ── */}
       <div className={section + " mt-4"}>
         <div className="flex items-center gap-2">
-          <Brain className="w-4 h-4 text-cyan-400" />
+          <Brain className="w-4 h-4 text-[var(--tv-highlight)]" />
           <h3 className="tv-title">{t("jarvisSettings.memoryTitle")}</h3>
         </div>
         <p className="tv-prose text-slate-500">{t("jarvisSettings.memorySubtitle")}</p>

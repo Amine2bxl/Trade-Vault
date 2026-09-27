@@ -69,7 +69,7 @@ function HeroView({ block }: { block: JarvisHeroBlock }) {
             return (
               <div
                 key={i}
-                className="mt-1 rounded-xl border border-cyan-500/25 bg-cyan-500/[0.07] px-3.5 py-2.5 text-sm text-cyan-100 font-medium leading-relaxed"
+                className="mt-1 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.07)] px-3.5 py-2.5 text-sm text-[var(--tv-text-primary)] font-medium leading-relaxed"
               >
                 {line.text}
               </div>
@@ -100,7 +100,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
     <div className="panel rounded-2xl p-3.5 space-y-3">
       <header className="card-header">
         <div className="card-header-left">
-          <span className="card-header-icon text-cyan-300">
+          <span className="card-header-icon text-[var(--tv-highlight)]">
             <Lightbulb className="w-4 h-4" />
           </span>
           <h3 className="card-header-title">{block.patternLabel}</h3>
@@ -133,7 +133,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
         <button
           type="button"
           onClick={goToEvidence}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--tv-highlight)] hover:text-[var(--tv-highlight)] transition-colors"
         >
           {block.viewTradesLabel ?? block.affectedTrades?.length ?? "Voir"}
           <ArrowRight className="h-3.5 w-3.5" />
@@ -146,12 +146,12 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
 /* ── Mission : l'action du jour ── */
 function MissionView({ block, onTool }: { block: JarvisMissionBlock; onTool?: BlockToolHandler }) {
   return (
-    <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.05] p-3.5 space-y-2.5">
-      <div className="tv-label text-cyan-300">{block.title}</div>
+    <div className="rounded-2xl border border-[rgb(var(--tv-accent-rgb)/0.2)] bg-[rgb(var(--tv-accent-rgb)/0.05)] p-3.5 space-y-2.5">
+      <div className="tv-label text-[var(--tv-highlight)]">{block.title}</div>
       <ul className="space-y-1.5">
         {block.items.map((item, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-slate-200 leading-snug">
-            <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-300">
+            <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[rgb(var(--tv-accent-rgb)/0.2)] text-[10px] font-bold text-[var(--tv-highlight)]">
               ✓
             </span>
             {item}
@@ -233,7 +233,7 @@ function AlertView({ block }: { block: Extract<JarvisBlock, { type: "alert" }> }
         ? "border-amber-500/25 bg-amber-500/[0.07] text-amber-200"
         : block.level === "success"
           ? "border-emerald-500/25 bg-emerald-500/[0.07] text-emerald-200"
-          : "border-cyan-500/25 bg-cyan-500/[0.07] text-cyan-100";
+          : "border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.07)] text-[var(--tv-text-primary)]";
   return (
     <div className={"rounded-xl border px-3.5 py-2.5 text-sm font-medium " + tone}>
       {block.message}
@@ -248,7 +248,7 @@ function StatsView({ block }: { block: Extract<JarvisBlock, { type: "stats" }> }
       {block.title && (
         <header className="card-header">
           <div className="card-header-left">
-            <span className="card-header-icon text-cyan-300">
+            <span className="card-header-icon text-[var(--tv-highlight)]">
               <BarChart3 className="w-4 h-4" />
             </span>
             <h3 className="card-header-title">{block.title}</h3>
@@ -274,7 +274,7 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
         : block.tone === "success"
           ? "border-emerald-500/20"
           : block.tone === "accent"
-            ? "border-cyan-500/25"
+            ? "border-[rgb(var(--tv-accent-rgb)/0.25)]"
             : "border-white/[0.08]";
   const toneText =
     block.tone === "danger"
@@ -283,7 +283,7 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
         ? "text-amber-300"
         : block.tone === "success"
           ? "text-emerald-300"
-          : "text-cyan-300";
+          : "text-[var(--tv-highlight)]";
   return (
     <div className={"panel rounded-2xl p-3.5 space-y-1.5 " + tone}>
       <header className="card-header">

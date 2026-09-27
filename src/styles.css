@@ -821,9 +821,48 @@ body {
 .jarvis-accueil-invite {
   margin-inline: auto;
   max-width: 34rem;
-  font-size: 1.0625rem;
-  line-height: 1.7;
+  /* L'invitation est LA phrase de l'écran — celle qui dit « parle-moi ». En
+     corps de texte, elle se lisait comme une légende sous l'orbe. */
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.5;
   color: var(--tv-text-primary);
+}
+/* La signature d'une réponse de Jarvis : sa marque, sur une plaque sourde
+   liserée d'émeraude — plus un aplat plein à chaque message, qui répétait la
+   couleur d'action dix fois dans un fil de dix réponses. */
+.jarvis-avatar {
+  display: grid;
+  height: 1.5rem;
+  width: 1.5rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid rgb(34 224 138 / 0.35);
+  border-radius: 0.5rem;
+  background: rgb(34 224 138 / 0.1);
+  color: #5bf0ab;
+}
+/* « Écouter » : discret au repos, il ne s'impose qu'au survol ou en lecture. */
+.jarvis-listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.75rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 9999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary, #94a3b8);
+  transition-property: color, border-color, background-color;
+  transition-duration: 120ms;
+}
+.jarvis-listen:hover,
+.jarvis-listen[aria-pressed="true"] {
+  border-color: rgb(34 224 138 / 0.45);
+  background: rgb(34 224 138 / 0.08);
+  color: #5bf0ab;
 }
 /* LES QUESTIONS SONT L'OBJET PRINCIPAL DE L'ÉCRAN, pas une note de bas de
  * bloc : elles sont tirées des motifs mesurés sur les trades du trader
@@ -1745,6 +1784,126 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   .thinking-dot {
     animation: none;
     opacity: 0.6;
+  }
+}
+
+/* ══ L'ORBE DE JARVIS (`JarvisOrb`) ══
+ *
+ * Toutes les couches sont empilées dans la même cellule de grille : aucune
+ * position absolue à recalculer, l'orbe se dimensionne par `width/height`.
+ * L'émeraude est FIXÉ ici (celui de la marque, pas l'accent du thème) : Jarvis
+ * garde son identité quel que soit le thème choisi par le trader.
+ * Au repos, rien ne bouge. Les animations n'existent que dans un état actif,
+ * et seulement si le trader n'a pas demandé moins de mouvement. */
+.tv-orb {
+  --orb: 34 224 138;
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  color: rgb(var(--orb));
+}
+.tv-orb > * {
+  grid-area: 1 / 1;
+}
+.tv-orb-halo {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgb(var(--orb) / 0.32), transparent);
+  opacity: 0.35;
+  transform: scale(1.2);
+  transition:
+    opacity 260ms var(--tv-ease),
+    transform 260ms var(--tv-ease);
+}
+.tv-orb-ring {
+  width: 100%;
+  height: 100%;
+}
+.tv-orb-ring path {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+.tv-orb-ring circle {
+  fill: currentColor;
+}
+.tv-orb-core {
+  width: 34%;
+  height: 34%;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 34% 30%, #d4fdea, rgb(var(--orb)) 55%, #12b981);
+}
+.tv-orb-wave {
+  width: 46%;
+  height: 46%;
+  border: 1.5px solid rgb(var(--orb) / 0.6);
+  border-radius: 9999px;
+  opacity: 0;
+}
+.tv-orb-listening .tv-orb-halo,
+.tv-orb-thinking .tv-orb-halo,
+.tv-orb-speaking .tv-orb-halo {
+  opacity: 1;
+  transform: scale(1.35);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-orb-thinking .tv-orb-ring {
+    animation: tv-orb-spin 1.1s linear infinite;
+  }
+  .tv-orb-thinking .tv-orb-core,
+  .tv-orb-listening .tv-orb-core {
+    animation: tv-orb-breathe 1.4s ease-in-out infinite;
+  }
+  .tv-orb-speaking .tv-orb-ring {
+    animation: tv-orb-spin 3.2s linear infinite;
+  }
+  .tv-orb-speaking .tv-orb-core {
+    animation: tv-orb-talk 0.42s ease-in-out infinite alternate;
+  }
+  .tv-orb-speaking .tv-orb-wave {
+    animation: tv-orb-wave 1.2s var(--tv-ease-out) infinite;
+  }
+  .tv-orb-listening .tv-orb-wave {
+    animation: tv-orb-wave 1.8s var(--tv-ease-out) infinite;
+  }
+  .tv-orb-speaking .tv-orb-wave-2,
+  .tv-orb-listening .tv-orb-wave-2 {
+    animation-delay: 0.6s;
+  }
+}
+@keyframes tv-orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes tv-orb-breathe {
+  0%,
+  100% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+@keyframes tv-orb-talk {
+  from {
+    transform: scale(0.88);
+  }
+  to {
+    transform: scale(1.14);
+  }
+}
+@keyframes tv-orb-wave {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.3);
   }
 }
 

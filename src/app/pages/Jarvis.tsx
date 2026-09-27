@@ -11,7 +11,8 @@ import { jarvisConversationStore } from "../components/jarvis/conversations";
 import type { JarvisContext } from "../components/jarvis/context";
 import CreditsBar from "../components/jarvis/components/CreditsBar";
 import ProposalsPanel from "../components/jarvis/components/ProposalsPanel";
-import { JarvisMark } from "@/shared/ui";
+import { JarvisOrb } from "@/shared/ui";
+import { useJarvisActivity } from "../components/jarvis/activity";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 
 const ConversationWorkspace = lazy(
@@ -140,13 +141,14 @@ export default function Jarvis() {
     };
   }, []);
 
-  /* ── L'IDENTITÉ MONTE DANS LA BARRE DE TÊTE ─────────────────────────── */
+  /* ── L'IDENTITÉ MONTE DANS LA BARRE DE TÊTE ───────────────────────────
+     L'orbe y suit l'activité de la conversation : quand la réponse se prépare
+     plus bas, l'en-tête le montre aussi. */
+  const activity = useJarvisActivity();
   const lead = useMemo(
     () => (
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="tv-accent-fill grid h-6 w-6 shrink-0 place-items-center rounded-lg">
-          <JarvisMark className="h-4 w-4" />
-        </span>
+        <JarvisOrb state={activity} size={28} />
         <span className="font-display shrink-0 text-sm font-bold tracking-tight text-white">
           {t("assistant.title")}
         </span>
@@ -156,7 +158,7 @@ export default function Jarvis() {
         <span className="tv-row-label hidden truncate md:block">{t("jarvis.pageLead")}</span>
       </div>
     ),
-    [t],
+    [t, activity],
   );
   usePageLead(lead);
 
@@ -192,8 +194,8 @@ export default function Jarvis() {
 
   const spinner = (
     <div className="flex h-full items-center justify-center">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-500/30 border-t-cyan-500" />
+      <div className="flex flex-col items-center gap-3 text-sm text-slate-500">
+        <JarvisOrb state="thinking" size={56} />
         {t("jarvis.waking")}
       </div>
     </div>

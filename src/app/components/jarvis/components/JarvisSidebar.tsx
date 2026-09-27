@@ -127,7 +127,7 @@ export default function JarvisSidebar({
                 <Pin
                   className={cn(
                     "w-3 h-3 shrink-0 transition-colors",
-                    c.pinned ? "text-cyan-400" : "text-slate-700",
+                    c.pinned ? "text-[var(--tv-highlight)]" : "text-slate-700",
                   )}
                 />
                 <span className="flex-1 min-w-0 text-[13px] text-slate-300 truncate">
@@ -139,7 +139,7 @@ export default function JarvisSidebar({
                     onTogglePin(c.id);
                   }}
                   aria-label={c.pinned ? t("jarvisConv.unpin") : t("jarvisConv.pin")}
-                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 hover:text-cyan-300 transition-opacity shrink-0"
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 hover:text-[var(--tv-highlight)] transition-opacity shrink-0"
                 >
                   {c.pinned ? <PinOff className="w-3 h-3" /> : <Pin className="w-3 h-3" />}
                 </button>

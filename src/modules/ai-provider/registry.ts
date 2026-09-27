@@ -74,6 +74,19 @@ export function resolveToolCapableProvider(): AIProvider {
   return first;
 }
 
+/**
+ * Toutes les providers CONFIGURÉES et capables d'outils, la préférée
+ * (`AI_PROVIDER`) d'abord. La boucle d'outils n'en prenait qu'UNE : si son
+ * modèle était mort (modèle retiré, offre gratuite supprimée), Jarvis perdait
+ * l'accès au journal alors qu'une autre clé aurait répondu.
+ */
+export function resolveToolCapableProviders(): AIProvider[] {
+  const capable = PROVIDERS.filter((p) => p.supportsTools && p.isConfigured());
+  const wanted = process.env.AI_PROVIDER?.toLowerCase();
+  const preferred = wanted ? capable.find((p) => p.id === wanted) : undefined;
+  return preferred ? [preferred, ...capable.filter((p) => p !== preferred)] : capable;
+}
+
 /** Ids de toutes les providers connues (même non configurées). */
 export function providerIds(): string[] {
   return PROVIDERS.map((p) => p.id);

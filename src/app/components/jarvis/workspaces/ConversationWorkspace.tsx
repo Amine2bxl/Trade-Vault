@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Eraser, Mic, MicOff, Zap } from "lucide-react";
-import { JarvisMark } from "@/shared/ui";
+import { ArrowUpRight, Eraser, Mic, MicOff, Square, Volume2, Zap } from "lucide-react";
+import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
+import { setJarvisActivity } from "../activity";
+import { useJarvisVoice } from "../../../utils/jarvisVoice";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
 import { buildCoachV1Payload, seedProfileMemory } from "../../../utils/aiContext";
@@ -88,6 +90,22 @@ function genId(): string {
 function textOf(m: JarvisMessage): string {
   const md = m.blocks.find((b) => b.type === "markdown");
   return md && md.type === "markdown" ? md.content : "";
+}
+
+/** Le texte d'une réponse tel qu'il se DIT : sans Markdown, borné à la limite
+ *  de la voix (600 caractères). Une voix qui lit « astérisque astérisque » ou
+ *  des barres de tableau ne se lit plus comme un agent. */
+function spokenOf(m: JarvisMessage): string {
+  return textOf(m)
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/\|[^\n]*\|/g, " ")
+    .replace(/^#+\s*/gm, "")
+    .replace(/^\s*[-*•]\s+/gm, "")
+    .replace(/[*_`>#]/g, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 600);
 }
 
 /** 4xx (quota, validation, auth) → non rétentable ; 5xx/réseau → rétentable. */
@@ -286,6 +304,38 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
+  // La voix de Jarvis — la même que partout (voir `utils/hostedVoice`).
+  const voice = useJarvisVoice();
+  // La réponse en cours de lecture, pour que SON bouton devienne « Stop ».
+  const [readingId, setReadingId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!voice.speaking) setReadingId(null);
+  }, [voice.speaking]);
+  /* L'ÉTAT DE L'AGENT, pour l'orbe. Réfléchir prime sur tout (la question est
+     partie), puis parler, puis écouter. Publié dans le store partagé pour que
+     l'en-tête de la fenêtre et la barre de la page s'animent aussi. */
+  const activity: JarvisOrbState = loading
+    ? "thinking"
+    : voice.speaking
+      ? "speaking"
+      : listening
+        ? "listening"
+        : "idle";
+  useEffect(() => {
+    setJarvisActivity(activity);
+  }, [activity]);
+  useEffect(() => () => setJarvisActivity("idle"), []);
+  const readAloud = (m: JarvisMessage) => {
+    if (readingId === m.id) {
+      voice.stop();
+      setReadingId(null);
+      return;
+    }
+    const line = spokenOf(m);
+    if (!line) return;
+    setReadingId(m.id);
+    void voice.speak(line);
+  };
   // Limite gratuite 5/j : la bannière Premium apparaît quand la limite est
   // atteinte, pour inviter à l'upgrade plutôt que de bloquer en silence.
   const [quotaBanner, setQuotaBanner] = useState(false);
@@ -793,6 +843,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
              d'avance — donc elles méritent d'être l'objet principal de
              l'écran plutôt qu'une note de bas de bloc. */
           <div className="jarvis-accueil animate-fade-in-up">
+            {/* L'orbe : Jarvis est là, et elle s'anime dès qu'il écoute. */}
+            <JarvisOrb state={activity} size={84} className="mx-auto mb-6" />
             <p className="jarvis-accueil-invite">{t("assistant.empty")}</p>
 
             {suggestions.length > 0 && (
@@ -837,11 +889,34 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 key={m.id}
                 className={cn("animate-fade-in-up", i > 0 && "border-t border-white/[0.05] pt-5")}
               >
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
-                    <JarvisMark className="h-4 w-4" />
+                <div className="mb-2.5 flex items-center gap-2">
+                  {/* La réponse EN COURS DE LECTURE porte l'orbe qui parle ;
+                      les autres, la marque au repos. */}
+                  {readingId === m.id ? (
+                    <JarvisOrb state="speaking" size={24} />
+                  ) : (
+                    <span className="jarvis-avatar">
+                      <JarvisMark className="h-4 w-4" />
+                    </span>
+                  )}
+                  <span className="tv-label text-[var(--tv-highlight)]">
+                    {t("assistant.title")}
                   </span>
-                  <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
+                  {m.role === "assistant" && spokenOf(m) && (
+                    <button
+                      type="button"
+                      onClick={() => readAloud(m)}
+                      className="jarvis-listen ml-auto"
+                      aria-pressed={readingId === m.id}
+                    >
+                      {readingId === m.id ? (
+                        <Square className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <Volume2 className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                      {readingId === m.id ? t("jarvis.stopListening") : t("jarvis.listen")}
+                    </button>
+                  )}
                 </div>
                 {m.role === "assistant" ? (
                   <BlockList blocks={m.blocks} onTool={handleTool} />
@@ -863,7 +938,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 key={s.id}
                 type="button"
                 onClick={() => void ask(s.prompt)}
-                className="min-h-9 rounded-full border border-white/[0.08] bg-white/[0.02] px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:border-cyan-500/30 hover:text-white active:scale-[0.98] transition"
+                className="min-h-9 rounded-full border border-white/[0.08] bg-white/[0.02] px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:border-[rgb(var(--tv-accent-rgb)/0.3)] hover:text-white active:scale-[0.98] transition"
               >
                 {s.label}
               </button>
@@ -874,16 +949,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         {loading && (
           /* Chargement informatif : on annonce ce que Jarvis lit réellement. */
           <div className="animate-fade-in border-t border-white/[0.05] pt-5">
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
-                <JarvisMark className="h-4 w-4" />
-              </span>
-              <span className="tv-label text-cyan-400/80">{t("assistant.title")}</span>
-              <span className="flex items-center gap-1">
-                <span className="thinking-dot" />
-                <span className="thinking-dot" style={{ animationDelay: "0.15s" }} />
-                <span className="thinking-dot" style={{ animationDelay: "0.3s" }} />
-              </span>
+            <div className="mb-2.5 flex items-center gap-2.5">
+              {/* L'orbe qui réfléchit remplace les trois points : c'est le même
+                  objet que la marque, en train de travailler. */}
+              <JarvisOrb state="thinking" size={28} label={t("jarvis.thinking")} />
+              <span className="tv-label text-[var(--tv-highlight)]">{t("assistant.title")}</span>
             </div>
             <p className="text-[13px] text-slate-400">
               {t("jarvisHome.analyzing").replace("{n}", String(context.trades.length))}

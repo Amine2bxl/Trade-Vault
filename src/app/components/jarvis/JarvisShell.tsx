@@ -1,8 +1,9 @@
 import { Suspense, useState, type ReactNode } from "react";
-import { MessageSquare, PanelLeft, Settings2, Sparkles, X } from "lucide-react";
+import { MessageSquare, PanelLeft, Settings2, X } from "lucide-react";
 import { cn } from "../../utils/cn";
 import { useT } from "../../i18n/LanguageContext";
-import { JarvisMark, Modal, SubNav, type SubNavItem } from "@/shared/ui";
+import { JarvisOrb, Modal, SubNav, type SubNavItem } from "@/shared/ui";
+import { useJarvisActivity } from "./activity";
 import type { JarvisContext } from "./context";
 import { JARVIS_WORKSPACES, type JarvisWorkspaceId } from "./workspaces";
 
@@ -22,12 +23,10 @@ import { JARVIS_WORKSPACES, type JarvisWorkspaceId } from "./workspaces";
  * annonçait l'assistant ; il ne disait pas OÙ on était ni où aller.
  *
  * La bande fait maintenant 48px et porte la seule chose qu'un en-tête doit
- * porter : la marque, et LA NAVIGATION. Les trois espaces (Accueil,
- * Conversation, Réglages) étaient jusqu'ici dispersés — « Accueil » dans la
- * colonne de gauche, « Réglages » derrière un engrenage anonyme à droite, et
- * la Conversation joignable seulement en ouvrant une conversation. Ils vivent
- * ensemble, dans le contrôle segmenté du produit (`SubNav`), toujours visible,
- * et l'espace courant est nommé.
+ * porter : la marque, et LA NAVIGATION. Deux espaces seulement —
+ * Conversation et Réglages — dans le contrôle segmenté du produit (`SubNav`),
+ * toujours visible. L'ancien « Accueil » est parti : il redisait ce que la
+ * conversation montre déjà, et c'est elle que le trader vient chercher.
  *
  * Seuls « Jarvis » et « Assistant IA de TradeVault » sont affichés — aucun
  * nom de fournisseur n'est jamais rendu ici.
@@ -53,7 +52,7 @@ export interface JarvisShellProps {
 }
 
 /** Les espaces réellement navigables — ceux que le registre sait rendre. */
-const NAVIGABLE: readonly JarvisWorkspaceId[] = ["home", "conversation", "settings"];
+const NAVIGABLE: readonly JarvisWorkspaceId[] = ["conversation", "settings"];
 
 export default function JarvisShell({
   open,
@@ -69,14 +68,13 @@ export default function JarvisShell({
   const { t } = useT();
   const Workspace = JARVIS_WORKSPACES[activeWorkspace];
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const activity = useJarvisActivity();
 
   const ICON: Record<string, ReactNode> = {
-    home: <Sparkles className="h-3.5 w-3.5" />,
     conversation: <MessageSquare className="h-3.5 w-3.5" />,
     settings: <Settings2 className="h-3.5 w-3.5" />,
   };
   const LABEL: Record<string, string> = {
-    home: t("jarvisSide.home"),
     conversation: t("jarvis.conversation"),
     settings: t("jarvisSettings.title"),
   };
@@ -117,11 +115,12 @@ export default function JarvisShell({
           </button>
         )}
 
-        {/* La marque + le nom. Le nom disparaît sous 640px : la navigation est
-            plus utile que le mot « Jarvis » sur une fenêtre qui EST Jarvis. */}
-        <span className="tv-jarvis-mark tv-jarvis-mark-on h-7 w-7 shrink-0">
-          <JarvisMark className="h-[18px] w-[18px]" />
-        </span>
+        {/* L'orbe + le nom. L'orbe suit ce que fait Jarvis dans la
+            conversation (écoute, réfléchit, parle) : l'agent se voit
+            travailler même quand la réponse est hors du champ. Le nom
+            disparaît sous 640px : la navigation est plus utile que le mot
+            « Jarvis » sur une fenêtre qui EST Jarvis. */}
+        <JarvisOrb state={activity} size={30} />
         <h2 id="jarvis-shell-title" className="tv-title hidden min-w-0 shrink-0 truncate sm:block">
           {t("assistant.title")}
         </h2>
@@ -181,7 +180,7 @@ export default function JarvisShell({
             <Suspense
               fallback={
                 <div className="flex flex-1 items-center justify-center">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--tv-border-strong)] border-t-[var(--tv-accent)]" />
+                  <JarvisOrb state="thinking" size={48} />
                 </div>
               }
             >

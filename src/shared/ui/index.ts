@@ -81,6 +81,8 @@ export { StreakCalendar } from "./StreakCalendar";
 export type { StreakPeriod } from "./StreakCalendar";
 export { BrandWord } from "./Brand";
 export { JarvisMark } from "./JarvisMark";
+export { JarvisOrb } from "./JarvisOrb";
+export type { JarvisOrbState } from "./JarvisOrb";
 export { DateField } from "./DateField";
 export type { DateFieldProps } from "./DateField";
 export { TimeField } from "./TimeField";

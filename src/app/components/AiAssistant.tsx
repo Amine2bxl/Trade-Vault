@@ -37,8 +37,8 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | undefined>(undefined);
-  // Le workspace actif : l'Accueil par défaut, la Conversation sur prompt externe.
-  const [activeWorkspace, setActiveWorkspace] = useState<JarvisWorkspaceId>("home");
+  // Le workspace actif : la Conversation, toujours — l'Accueil a été retiré.
+  const [activeWorkspace, setActiveWorkspace] = useState<JarvisWorkspaceId>("conversation");
 
   // Conversations (couche de données dédiée, multi-sessions).
   const conversations = useConversations(user?.id);
@@ -70,7 +70,6 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       if (conversationId === id) {
         const list = await jarvisConversationStore(user.id).list();
         setConversationId(list[0]?.id ?? null);
-        if (list.length === 0) setActiveWorkspace("home");
       }
     },
     [user?.id, conversationId],
@@ -107,9 +106,10 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     [user?.id],
   );
 
-  // Le dock ouvre toujours sur l'Accueil intelligent (jamais de chat vide).
+  // Le dock ouvre directement sur la Conversation : on ouvre Jarvis pour lui
+  // parler, pas pour lire un tableau avant d'avoir le droit d'écrire.
   const toggleOpen = () => {
-    if (!open) setActiveWorkspace("home");
+    if (!open) setActiveWorkspace("conversation");
     setOpen((v) => !v);
   };
 
