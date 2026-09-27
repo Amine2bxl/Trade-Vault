@@ -29,6 +29,7 @@ import {
 // chunk d'entrée de chaque route. Réexportée ici par commodité.
 export { SSR_LANG } from "@/shared/lang";
 import { SSR_LANG, FR_PREFIX } from "@/shared/lang";
+import { lireLePassage, noterLePassage } from "./langSwap";
 
 /** `useLayoutEffect` côté navigateur, `useEffect` côté serveur — où il ne
  *  s'exécute de toute façon pas, mais où React avertirait à chaque rendu. */
@@ -77,14 +78,12 @@ function preferredLang(): LandingLang {
  * plan, moteur qui coupe les animations), l'événement n'arrive jamais et le
  * visiteur resterait bloqué sur une page qui ne change pas de langue.
  */
-const CLE_TRANSITION = "tv.landing.langswap";
-
 function partirVers(url: string) {
-  try {
-    window.sessionStorage.setItem(CLE_TRANSITION, "1");
-  } catch {
-    /* le fondu d'arrivée est un confort : sans stockage, on navigue sec */
-  }
+  /* La position part avec le drapeau : le document suivant reprend la
+     lecture là où celui-ci la laisse, au lieu de rouvrir en haut. Voir
+     `langSwap.ts` — c'était la plus grosse des trois ruptures, et le fondu
+     la masquait au lieu de la corriger. */
+  noterLePassage();
   const racine = document.querySelector(".landing-root");
   const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!racine || reduit) {
@@ -92,9 +91,13 @@ function partirVers(url: string) {
     return;
   }
   racine.classList.add("lang-sortie");
+  /* 120ms au lieu de 160 : l'effacement n'a pas besoin d'être vu, il a
+     besoin d'exister. Chaque milliseconde ici s'ajoute au noir entre les
+     deux documents, qui est la seule partie du passage que personne ne peut
+     trouver agréable. */
   window.setTimeout(() => {
     window.location.href = url;
-  }, 160);
+  }, 120);
 }
 
 /**
@@ -104,14 +107,7 @@ function partirVers(url: string) {
  */
 function useEntreeDeLangue() {
   useIsomorphicLayoutEffect(() => {
-    let venuDUnChangement = false;
-    try {
-      venuDUnChangement = window.sessionStorage.getItem(CLE_TRANSITION) === "1";
-      if (venuDUnChangement) window.sessionStorage.removeItem(CLE_TRANSITION);
-    } catch {
-      return;
-    }
-    if (!venuDUnChangement) return;
+    if (!lireLePassage()) return;
     const racine = document.querySelector(".landing-root");
     if (!racine) return;
     racine.classList.add("lang-entree");

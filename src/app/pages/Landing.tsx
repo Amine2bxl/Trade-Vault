@@ -37,6 +37,7 @@ import {
 import { useLenis } from "lenis/react";
 import { faqPageJsonLd } from "@/shared/seo";
 import { RESEAUX_ACTIFS } from "@/shared/socials";
+import { lireLePassage, positionDeReprise } from "./landing/langSwap";
 import { YEARLY_PER_MONTH, eur } from "../utils/pricing";
 import {
   LandingLangProvider,
@@ -442,7 +443,11 @@ function LandingPage() {
   const jaugeRef = useRef<HTMLDivElement>(null);
   const parallaxeRef = useRef<HTMLDivElement>(null);
   const racineRef = useRef<HTMLDivElement>(null);
-  useApparitions(racineRef);
+  /* Lu une seule fois par document (le paquet est effacé à la lecture) :
+     la même valeur sert au fondu d'ensemble, à la reprise de position et à
+     la suppression de la cascade. */
+  const repriseLangue = useRef(typeof window === "undefined" ? null : lireLePassage()).current;
+  useApparitions(racineRef, Boolean(repriseLangue));
   const lenis = useLenis();
   /* Lu UNE fois, pas à chaque rendu : `matchMedia` n'existe pas au rendu
      serveur, et l'interroger soixante fois par seconde pendant un défilement
@@ -475,6 +480,47 @@ function LandingPage() {
     { q: t("faq.q5"), a: t("faq.a5") },
     { q: t("faq.q6"), a: t("faq.a6") },
   ];
+  /**
+   * LA REPRISE APRÈS UN CHANGEMENT DE LANGUE.
+   *
+   * On retombe sur l'ancre franchie, pas sur un nombre de pixels : les deux
+   * langues n'ont pas la même hauteur de texte. Deux passes — une au montage,
+   * une après `load`, parce que les captures chargées en différé déplacent
+   * tout ce qui est en dessous d'elles. La seconde est abandonnée si le
+   * visiteur a déjà touché au défilement : reprendre la main sous ses doigts
+   * serait pire que d'atterrir à cinquante pixels près.
+   */
+  useEffect(() => {
+    if (!repriseLangue) return;
+    let intact = true;
+    const touche = () => {
+      intact = false;
+    };
+    const poser = () => {
+      if (!intact) return;
+      const y = positionDeReprise(repriseLangue);
+      /* Par Lenis quand il est là, pour que son défilement interne parte de
+         la bonne valeur — un `window.scrollTo` seul le laisserait croire
+         qu'on est resté en haut, et le premier cran de molette ramènerait
+         brutalement la page à zéro. */
+      if (lenis) lenis.scrollTo(y, { immediate: true, force: true });
+      else window.scrollTo(0, y);
+    };
+    poser();
+    window.addEventListener("wheel", touche, { passive: true, once: true });
+    window.addEventListener("touchstart", touche, { passive: true, once: true });
+    window.addEventListener("keydown", touche, { once: true });
+    const apres = () => requestAnimationFrame(poser);
+    if (document.readyState === "complete") apres();
+    else window.addEventListener("load", apres, { once: true });
+    return () => {
+      window.removeEventListener("wheel", touche);
+      window.removeEventListener("touchstart", touche);
+      window.removeEventListener("keydown", touche);
+      window.removeEventListener("load", apres);
+    };
+  }, [repriseLangue, lenis]);
+
   const scrollLockRef = useRef(false);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -1087,7 +1133,7 @@ function LandingPage() {
             et le second se lit comme une insistance. */}
         <footer className="relative section-divider pb-8 pt-10">
           <div className="lp-container">
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
               {/* L'IDENTITÉ, ET OÙ NOUS TROUVER. Les réseaux appartiennent à
                   ce bloc, pas à la bande basse : celle-ci porte le légal et la
                   langue, deux choses qu'on consulte, alors qu'un réseau est
@@ -1108,8 +1154,31 @@ function LandingPage() {
                   Sous 640px la grille retombe à une colonne : l'intitulé passe
                   AU-DESSUS de ses liens, ce qui est la seule disposition
                   lisible quand la largeur ne permet plus les deux côte à côte. */}
-              <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-[auto_1fr] sm:gap-y-3.5 lg:min-w-0 lg:flex-1 lg:max-w-[640px]">
+              <div className="grid gap-x-6 gap-y-3 sm:grid-cols-[auto_1fr] sm:gap-y-4 lg:min-w-0 lg:flex-1 lg:max-w-[640px]">
                 <FooterRow title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
+                {/* UN FILET, PAS UN ÉCART PLUS GRAND.
+                    Les deux rangées se ressemblent trait pour trait : même
+                    graisse, même couleur, même hauteur. Espacées, elles se
+                    lisaient comme UNE liste de neuf liens dont deux mots en
+                    capitales dépassaient à gauche. Le filet dit qu'il y a
+                    deux groupes, ce que l'écart seul n'arrivait pas à dire —
+                    et il coûte un pixel de hauteur là où doubler l'écart en
+                    aurait coûté quatorze.
+                    Il commence à la colonne des LIENS : passer sous
+                    l'intitulé en ferait une ligne de tableau, et ces deux
+                    mots ne sont pas des cellules. */}
+                <div
+                  aria-hidden
+                  /* La colonne est posée en STYLE, pas en classe : `col-start-2`
+                     de Tailwind n'était pas généré ici, et le filet retombait
+                     dans la première colonne — où sa largeur automatique
+                     étirait la colonne des intitulés à 385px et faisait passer
+                     la seconde rangée à la ligne. Un filet décoratif ne vaut
+                     pas de dépendre d'un utilitaire dont on vérifie la
+                     présence à l'œil. */
+                  style={{ gridColumnStart: 2 }}
+                  className="hidden h-px bg-white/[.06] sm:block"
+                />
                 <FooterRow title={t("footer.legal")} links={FOOTER_LEGAL} t={t} />
               </div>
             </div>

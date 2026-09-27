@@ -304,7 +304,18 @@ function lignesDu(bloc: HTMLElement): HTMLElement[] {
   return enfants.length >= 2 && enfants.length <= 6 ? enfants : [];
 }
 
-export function useApparitions(scope: RefObject<HTMLElement | null>) {
+export function useApparitions(
+  scope: RefObject<HTMLElement | null>,
+  /**
+   * `true` quand la page vient d'un changement de langue. Les blocs sont
+   * alors montrés d'un coup, sans cascade : le visiteur relit une page qu'il
+   * connaît, dans l'autre langue. Lui rejouer dix-neuf entrées échelonnées,
+   * c'est deux secondes pendant lesquelles le contenu monte et se décale —
+   * exactement ce qu'on lit comme un à-coup. Le fondu d'ensemble
+   * (`lang-entree`) suffit à dire que quelque chose a changé.
+   */
+  sansCascade = false,
+) {
   useGSAP(
     () => {
       const racine = scope.current;
@@ -386,6 +397,17 @@ export function useApparitions(scope: RefObject<HTMLElement | null>) {
         return nouveaux.length;
       };
 
+      if (sansCascade) {
+        montrer(blocs);
+        /* Les sections différées arrivent après : elles sont montrées au
+           passage, toujours sans cascade. */
+        const mo = new MutationObserver(() =>
+          montrer(gsap.utils.toArray<HTMLElement>(".reveal", racine)),
+        );
+        mo.observe(racine, { childList: true, subtree: true });
+        return () => mo.disconnect();
+      }
+
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         enroler(blocs);
@@ -442,6 +464,6 @@ export function useApparitions(scope: RefObject<HTMLElement | null>) {
         return () => mo.disconnect();
       });
     },
-    { scope },
+    { scope, dependencies: [sansCascade] },
   );
 }
