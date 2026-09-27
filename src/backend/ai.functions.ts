@@ -84,7 +84,14 @@ export const aiChat = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const messages = buildMessages(
       data.context,
-      `Respond in GitHub-flavored Markdown with: ## 🎯 Key Takeaways (3-5 bullets with real numbers), ## 📊 Stats Snapshot (compact table), ## ✅ Strengths, ## ⚠️ Weaknesses, ## 🧭 Action Plan (numbered, measurable), ## 💡 Bottom Line (one bold sentence). Omit a section only if truly not applicable. Use **bold** for key numbers. No fluff.`,
+      /* SIX TITRES À EMOJI IMPOSÉS À CHAQUE QUESTION — c'était ça, le gabarit.
+         « Quel setup garder ? » et « salut » recevaient la même charpente en
+         six sections, et le modèle n'avait plus qu'à remplir des cases. Un
+         coach répond comme un coach : un diagnostic, un plan, une relance —
+         et un rapport complet UNIQUEMENT si on lui en demande un. C'est le
+         format déjà en vigueur dans `modules/ai/agents/coach.agent.ts`, que
+         cette fonction contredisait. */
+      `Answer like a coach, not like a form. Open with the diagnosis — the specific pattern in THEIR numbers, no preamble, no heading above it. Then, if there is something to act on, a short plan under a single bold line: 1-3 bullets, each concrete and measurable. Every claim carries a number from the data. Never invent a number. Use \`##\` sections and a table ONLY when the trader explicitly asks for a full review or a complete breakdown. 80-160 words unless more is genuinely required.`,
       `Question: ${data.question}`,
     );
     const res = await resolveProvider().complete({ messages, maxTokens: 4096 });

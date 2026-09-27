@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireProAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
 import { ensureJarvisTools } from "@/backend/ai-tools";
-import { fallbackCoachAnswer } from "@/modules/ai/fallback-coach";
 import { recordAgentRun } from "./telemetry.server";
 import {
   ConversationSchema,
@@ -147,6 +146,26 @@ function sanitizePrompt(text: string): string {
     .trim();
 }
 
+/**
+ * LE REPLI DÉTERMINISTE A ÉTÉ RETIRÉ.
+ *
+ * Il classait la question dans SIX intentions par expression régulière et
+ * remplissait des phrases à trous. Servi sans être annoncé, il faisait passer
+ * une panne pour une réponse — et pour le trader, Jarvis devenait « une IA
+ * qui répond toujours la même chose sans comprendre la question ». C'était
+ * exact : ces réponses-là ne comprenaient rien, par construction.
+ *
+ * Une panne se dit. Le trader sait alors que le silence vient du service et
+ * non de son journal, et nous le voyons dans `ai_agent_runs` au lieu de le
+ * découvrir par une plainte.
+ */
+function indisponible(language?: string) {
+  const fr = (language ?? "").toLowerCase().startsWith("fr");
+  return fr
+    ? "Je n'arrive pas à réfléchir à cette question pour l'instant — le service d'analyse ne répond pas. Réessaie dans un moment : tes données n'ont rien à voir là-dedans, et je n'ai pas envie de te servir une réponse toute faite en attendant."
+    : "I can't think this one through right now — the analysis service isn't responding. Try again in a moment. This has nothing to do with your journal, and I'd rather say so than hand you a canned answer.";
+}
+
 export const askCoach = createServerFn({ method: "POST" })
   .middleware([requireProAccess])
   .inputValidator((input: unknown) => CoachAsk.parse(input))
@@ -226,18 +245,15 @@ export const askCoach = createServerFn({ method: "POST" })
         track("ok");
         return { answer: text, source: "ai" as const };
       }
-      console.warn("[coach] provider answered but text was empty — serving fallback", res);
+      console.warn("[coach] provider answered but text was empty", res);
       track("fallback", "empty response");
-      return {
-        answer: fallbackCoachAnswer(data),
-        source: "deterministic" as const,
-      };
+      return { answer: indisponible(data.language), source: "unavailable" as const };
     } catch (err) {
-      console.warn("[coach] provider unavailable — deterministic answer served", err);
+      console.warn("[coach] provider unavailable", err);
       track("error", err instanceof Error ? err.message : String(err));
       return {
-        answer: fallbackCoachAnswer(data),
-        source: "deterministic" as const,
+        answer: indisponible(data.language),
+        source: "unavailable" as const,
       };
     }
   });

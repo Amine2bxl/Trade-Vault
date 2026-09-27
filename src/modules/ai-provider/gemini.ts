@@ -6,7 +6,12 @@ import type { AIProvider, AIRequest, AIResponse } from "./types";
  */
 
 function getModel(): string {
-  return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  /* 2.5 PRO, PAS FLASH. Flash est rapide et docile : il suit un format à la
+     lettre au lieu de raisonner, et c'est exactement ce qui faisait répondre
+     Jarvis avec la même structure à toutes les questions. Le raisonnement
+     est ici le produit, pas la latence. `GEMINI_MODEL` reste le levier pour
+     redescendre si la facture le demande. */
+  return process.env.GEMINI_MODEL || "gemini-2.5-pro";
 }
 
 /**

@@ -15,7 +15,6 @@ import { applyLever } from "@/modules/probability/sensitivity";
 import type { CoachV1Payload } from "../../../utils/aiContext";
 import { isCalibrated } from "../../../utils/accountCalibration";
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
-import { fallbackCoachAnswer, type FallbackPayload } from "@/modules/ai/fallback-coach";
 import { useTradingRules } from "../../../hooks/useTradingRules";
 import { useGoalProgress } from "../../../hooks/useGoalProgress";
 import { computeRuleAdherence } from "../../../utils/ruleAdherence";
@@ -664,21 +663,12 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           /* l'apprentissage ne doit JAMAIS dégrader la conversation */
         });
       } catch (e) {
-        // Jamais d'erreur visible : on répond de façon déterministe depuis les
-        // mêmes données (quota, session, transport…). La console garde la cause.
-        console.error("[coach] request failed — serving deterministic answer", e);
-        try {
-          const fallbackPayload: FallbackPayload = {
-            question: query,
-            language: effectiveCopyLang(lang),
-            stats: payload.stats,
-            mistakes: payload.mistakes,
-            trades: payload.trades as FallbackPayload["trades"],
-          };
-          pushAnswer(fallbackCoachAnswer(fallbackPayload), true);
-        } catch {
-          push("error", t("ai.genericError"));
-        }
+        /* PLUS DE RÉPONSE DÉTERMINISTE ICI NON PLUS. Le serveur a cessé d'en
+           servir une ; la servir depuis le client reviendrait à réintroduire
+           par la fenêtre ce qu'on vient de sortir par la porte. Une requête
+           qui échoue des deux côtés est une panne, et elle se dit. */
+        console.error("[coach] request failed", e);
+        push("error", t("ai.genericError"));
       } finally {
         setLoading(false);
       }
