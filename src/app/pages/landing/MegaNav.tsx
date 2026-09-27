@@ -82,7 +82,7 @@ export default function MegaNav({ activeSec, go, open, collee, jauge }: MegaNavP
               alt="TradeVault"
               width={30}
               height={30}
-              className="h-8 w-8 object-contain"
+              className="lp-logo h-8 w-8 object-contain"
             />
             <span className="font-display font-bold tracking-[-0.02em] text-white leading-none hidden sm:block text-[1.15rem]">
               TradeVault

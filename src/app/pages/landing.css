@@ -306,6 +306,36 @@
   opacity: 1;
 }
 
+/* ══ LA LUEUR DU LOGO ══
+ *
+ * Deux ombres portées empilées, pas une : un NOYAU serré (6px) qui décolle
+ * le sigle du fond, et un HALO large (18px) à peine perceptible qui lui
+ * donne son rayonnement. Une seule ombre oblige à choisir entre les deux —
+ * serrée elle fait un liseré, large elle fait une tache.
+ *
+ * `drop-shadow` suit l'ALPHA de l'image, contrairement à `box-shadow` qui
+ * suivrait le carré de 32px : la lueur épouse donc le sigle lui-même, ce
+ * qui est tout l'intérêt sur un logo détouré.
+ *
+ * C'est un état, pas une animation : rien ne pulse, rien ne boucle — la
+ * loi de la maison interdit le `glow` animé, et un logo qui respire dans
+ * une barre fixe est la définition du bruit. Seul le survol densifie, sur
+ * la durée des micro-interactions. */
+.landing-root .lp-logo {
+  filter: drop-shadow(0 0 6px rgb(var(--tv-accent-rgb) / 0.45))
+    drop-shadow(0 0 18px rgb(var(--tv-accent-rgb) / 0.2));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-root .lp-logo {
+    transition: filter 120ms var(--lp-expo);
+  }
+}
+.landing-root a:hover .lp-logo,
+.landing-root a:focus-visible .lp-logo {
+  filter: drop-shadow(0 0 7px rgb(var(--tv-accent-rgb) / 0.65))
+    drop-shadow(0 0 24px rgb(var(--tv-accent-rgb) / 0.3));
+}
+
 /* ══ LA JAUGE DE DÉFILEMENT ══
  *
  * Elle traversait le bord HAUT de la barre, d'un coin arrondi à l'autre. Un
