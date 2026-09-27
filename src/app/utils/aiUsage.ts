@@ -64,7 +64,11 @@ function write(userId: string | undefined, day: UsageDay): void {
   } catch {
     /* best-effort */
   }
+  // Le pied de Jarvis relit le compteur à chaque analyse consommée.
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(AI_USAGE_EVENT));
 }
+
+export const AI_USAGE_EVENT = "tv:ai-usage";
 
 /** Analyses used today. */
 export function aiUsageToday(userId: string | undefined): number {

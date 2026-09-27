@@ -95,7 +95,7 @@ export default function JarvisShell({
         "md:h-[88vh] md:w-[88vw] lg:h-[86vh] lg:w-[84vw]",
         "max-h-[940px] max-w-[1400px]",
         // Le rayon de la coque, pas un 28px écrit à la main.
-        "tv-jarvis-shell",
+        "tv-jarvis-shell jarvis-stage",
         "flex flex-col overflow-hidden",
       )}
     >

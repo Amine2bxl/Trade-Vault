@@ -20,11 +20,11 @@ export default function MarkdownAnswer({ content }: { content: string }) {
             <strong className="text-white font-semibold">{children}</strong>
           ),
           em: ({ children }) => (
-            <em className="text-cyan-300 not-italic font-medium">{children}</em>
+            <em className="text-[var(--tv-highlight)] not-italic font-medium">{children}</em>
           ),
           ul: ({ children }) => <ul className="space-y-1.5 ml-1">{children}</ul>,
           ol: ({ children }) => (
-            <ol className="space-y-1.5 ml-5 list-decimal marker:text-cyan-400 marker:font-bold">
+            <ol className="space-y-1.5 ml-5 list-decimal marker:text-[var(--tv-accent)] marker:font-bold">
               {children}
             </ol>
           ),
@@ -33,7 +33,7 @@ export default function MarkdownAnswer({ content }: { content: string }) {
             if (ordered) return <li className="text-slate-300 pl-1">{children}</li>;
             return (
               <li className="flex gap-2 text-slate-300">
-                <span className="text-cyan-400 mt-1.5 shrink-0 w-1 h-1 rounded-full bg-cyan-400" />
+                <span className="mt-[0.6em] shrink-0 w-1 h-1 rounded-full bg-[var(--tv-accent)]" />
                 <span className="flex-1">{children}</span>
               </li>
             );
@@ -55,12 +55,12 @@ export default function MarkdownAnswer({ content }: { content: string }) {
             </td>
           ),
           code: ({ children }) => (
-            <code className="px-1.5 py-0.5 rounded bg-white/[0.06] text-cyan-300 text-[0.85em] font-mono">
+            <code className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[var(--tv-highlight)] text-[0.85em] font-mono">
               {children}
             </code>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l border-cyan-500/50 pl-3.5 py-1 text-slate-200 italic">
+            <blockquote className="border-l border-[rgb(var(--tv-accent-rgb)/0.5)] pl-3.5 py-1 text-slate-200 italic">
               {children}
             </blockquote>
           ),

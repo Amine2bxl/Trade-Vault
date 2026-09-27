@@ -8,6 +8,7 @@ import { previewTrades } from "../utils/previewTrades";
 import { useT } from "../i18n/LanguageContext";
 import { loadJarvisProfile, type JarvisProfile } from "../store";
 import { jarvisConversationStore } from "../components/jarvis/conversations";
+import { JARVIS_PROFILE_EVENT } from "../components/jarvis/prefs";
 import type { JarvisContext } from "../components/jarvis/context";
 import CreditsBar from "../components/jarvis/components/CreditsBar";
 import ProposalsPanel from "../components/jarvis/components/ProposalsPanel";
@@ -95,6 +96,12 @@ export default function Jarvis() {
       active = false;
     };
   }, [user?.id]);
+  // Profil modifié dans les Réglages de la fenêtre → la page le suit aussi.
+  useEffect(() => {
+    const onProfile = (e: Event) => setProfile((e as CustomEvent<JarvisProfile>).detail);
+    window.addEventListener(JARVIS_PROFILE_EVENT, onProfile);
+    return () => window.removeEventListener(JARVIS_PROFILE_EVENT, onProfile);
+  }, []);
 
   const newConversation = async () => {
     if (!user?.id) return;
@@ -205,7 +212,7 @@ export default function Jarvis() {
     <div ref={boxRef} className="p-3 md:p-4" style={{ height: hauteur }}>
       {/* La plaque du produit, pas un cadre à part : `glass` est la surface que
           porte chaque carte de l'application. */}
-      <div className="glass flex h-full flex-col overflow-hidden rounded-3xl">
+      <div className="glass jarvis-stage flex h-full flex-col overflow-hidden rounded-3xl">
         {/* ── LES CONSEILS DE JARVIS ─────────────────────────────────────
             Ils existaient déjà, adossés à des motifs mesurés sur les trades du
             trader (une proposition sans preuve chiffrée ne s'affiche PAS) —

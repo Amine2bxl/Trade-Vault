@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { loadJarvisProfile, type JarvisProfile } from "../store";
+import { JARVIS_PROFILE_EVENT } from "./jarvis/prefs";
 import { JarvisMark } from "@/shared/ui";
 import JarvisShell from "./jarvis/JarvisShell";
 import type { JarvisContext } from "./jarvis/context";
@@ -113,9 +114,7 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     setOpen((v) => !v);
   };
 
-  // Profil Jarvis chargé pour le contexte (le modal « première-prise » a été
-  // supprimé : on atterrit directement sur l'accueil). L'édition vit dans
-  // Settings → Profil mémorisé.
+  // Profil Jarvis chargé pour le contexte. L'édition vit dans Réglages → Profil.
   const [jarvisProfile, setJarvisProfile] = useState<JarvisProfile | null>(null);
   useEffect(() => {
     if (!open || !user?.id) return;
@@ -131,6 +130,12 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       active = false;
     };
   }, [open, user?.id]);
+  // Profil modifié dans les Réglages → la conversation le suit sans rechargement.
+  useEffect(() => {
+    const onProfile = (e: Event) => setJarvisProfile((e as CustomEvent<JarvisProfile>).detail);
+    window.addEventListener(JARVIS_PROFILE_EVENT, onProfile);
+    return () => window.removeEventListener(JARVIS_PROFILE_EVENT, onProfile);
+  }, []);
 
   // La page Jarvis (nav) ouvre le MÊME overlay — conversation et historique
   // partagés partout. Un seul Jarvis, deux points d'entrée.

@@ -164,7 +164,7 @@ export const GeminiProvider: AIProvider = {
         // Bounded reasoning — see getThinkingBudget(). Thinking tokens are
         // charged against maxOutputTokens, so the cap also protects the
         // answer from being squeezed out by an over-long reasoning pass.
-        thinkingConfig: { thinkingBudget: getThinkingBudget() },
+        thinkingConfig: { thinkingBudget: req.reasoningBudget ?? getThinkingBudget() },
         ...(req.temperature !== undefined && { temperature: req.temperature }),
         // JSON strict et appels de fonction sont incompatibles côté Gemini.
         ...(req.json && !withTools && { responseMimeType: "application/json" }),

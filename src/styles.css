@@ -838,10 +838,11 @@ body {
   width: 1.5rem;
   flex-shrink: 0;
   place-items: center;
-  border: 1px solid rgb(34 224 138 / 0.35);
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.35);
   border-radius: 0.5rem;
-  background: rgb(34 224 138 / 0.1);
-  color: #5bf0ab;
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-highlight);
+  box-shadow: 0 0 14px -4px rgb(var(--tv-accent-rgb) / 0.6);
 }
 /* « Écouter » : discret au repos, il ne s'impose qu'au survol ou en lecture. */
 .jarvis-listen {
@@ -860,9 +861,9 @@ body {
 }
 .jarvis-listen:hover,
 .jarvis-listen[aria-pressed="true"] {
-  border-color: rgb(34 224 138 / 0.45);
-  background: rgb(34 224 138 / 0.08);
-  color: #5bf0ab;
+  border-color: rgb(var(--tv-accent-rgb) / 0.45);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+  color: var(--tv-highlight);
 }
 /* LES QUESTIONS SONT L'OBJET PRINCIPAL DE L'ÉCRAN, pas une note de bas de
  * bloc : elles sont tirées des motifs mesurés sur les trades du trader
@@ -882,14 +883,18 @@ body {
   text-align: left;
   font-size: 0.8125rem;
   color: var(--tv-text-primary);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   transition:
     border-color 0.18s ease,
     background-color 0.18s ease,
+    box-shadow 0.18s ease,
     transform 0.18s ease;
 }
 .jarvis-suggestion:hover {
-  border-color: rgb(var(--tv-accent-rgb) / 0.4);
-  background: rgb(var(--tv-accent-rgb) / 0.07);
+  border-color: rgb(var(--tv-accent-rgb) / 0.45);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+  box-shadow: 0 0 28px -10px rgb(var(--tv-accent-rgb) / 0.55);
+  transform: translateY(-1px);
 }
 .jarvis-suggestion:active {
   transform: scale(0.99);
@@ -4361,6 +4366,453 @@ a:focus-visible,
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   LA SCÈNE DE JARVIS — profondeur et lumière
+   ═══════════════════════════════════════════════════════════════════════════
+   La fenêtre et la page étaient une plaque unie : tout au même plan, rien ne
+   disait « ici vit l'agent ». La scène pose trois couches, toutes tirées de
+   l'accent du thème (`--tv-accent-rgb`), donc repeintes par le studio :
+     1. une lumière d'ambiance qui tombe du haut, derrière l'orbe ;
+     2. une trame fine, masquée vers le bas — la matière de l'écran ;
+     3. un liseré lumineux en haut de la plaque — le bord qui accroche la
+        lumière et détache la fenêtre du fond.
+   La P&L garde ses propres couleurs ; rien ici ne touche au contenu. */
+.jarvis-stage {
+  isolation: isolate;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.08),
+    0 40px 120px -30px rgb(0 0 0 / 0.75),
+    0 0 90px -40px rgb(var(--tv-accent-rgb) / 0.35);
+}
+.jarvis-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(60% 45% at 50% -8%, rgb(var(--tv-accent-rgb) / 0.16), transparent 70%),
+    radial-gradient(40% 35% at 100% 100%, rgb(var(--tv-accent-rgb) / 0.06), transparent 70%),
+    radial-gradient(35% 30% at 0% 70%, rgb(120 130 255 / 0.05), transparent 70%);
+}
+.jarvis-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(80% 60% at 50% 0%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(80% 60% at 50% 0%, #000 20%, transparent 75%);
+}
+/* Les bandes de la scène laissent passer la lumière : verre sombre, et un
+   filet d'accent qui s'éteint vers les bords au lieu d'une bordure grise. */
+.jarvis-stage .tv-jarvis-bar {
+  position: relative;
+  background: rgb(8 10 12 / 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+.jarvis-stage .tv-jarvis-bar-top {
+  border-bottom-color: transparent;
+}
+.jarvis-stage .tv-jarvis-bar-top::after,
+.jarvis-stage .tv-jarvis-bar-bottom::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--tv-accent-rgb) / 0.35) 50%,
+    transparent
+  );
+}
+.jarvis-stage .tv-jarvis-bar-top::after {
+  bottom: -1px;
+}
+.jarvis-stage .tv-jarvis-bar-bottom {
+  border-top-color: transparent;
+}
+.jarvis-stage .tv-jarvis-bar-bottom::before {
+  top: -1px;
+}
+
+/* ── UN TOUR DE PAROLE ─────────────────────────────────────────────────────
+   Chaque réponse de Jarvis est posée sur sa propre plaque, éclairée par le
+   haut, avec un liseré d'accent qui s'estompe : on lit une suite d'échanges,
+   pas une colonne de texte. */
+.jarvis-turn {
+  position: relative;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  border-radius: 1.125rem;
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.045), transparent 55%),
+    rgb(255 255 255 / 0.018);
+  padding: 0.9rem 1rem 1rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 18px 40px -28px rgb(0 0 0 / 0.8);
+}
+.jarvis-turn::before {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  top: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, rgb(var(--tv-accent-rgb) / 0.55), transparent 70%);
+}
+@media (min-width: 768px) {
+  .jarvis-turn {
+    padding: 1.1rem 1.25rem 1.2rem;
+  }
+}
+/* La question du trader : une bulle en relief, teintée d'accent, qui se
+   distingue de la plaque de Jarvis sans reprendre la couleur d'action pleine. */
+.jarvis-bubble-user {
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.22);
+  border-radius: 1.125rem 1.125rem 0.375rem 1.125rem;
+  background: linear-gradient(
+    160deg,
+    rgb(var(--tv-accent-rgb) / 0.16),
+    rgb(var(--tv-accent-rgb) / 0.05)
+  );
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--tv-text-primary);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 10px 30px -18px rgb(var(--tv-accent-rgb) / 0.55);
+}
+
+/* ── L'ÉCRITURE EN DIRECT ── un curseur au bout du texte qui s'écrit. */
+.jarvis-typing .insights-md > :last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1.05em;
+  margin-left: 0.15em;
+  vertical-align: -0.15em;
+  border-radius: 2px;
+  background: var(--tv-accent);
+  box-shadow: 0 0 12px rgb(var(--tv-accent-rgb) / 0.8);
+}
+.jarvis-typing {
+  cursor: pointer;
+}
+
+/* ── LA RÉFLEXION ── les étapes qui avancent pendant l'analyse. */
+.jarvis-steps {
+  display: grid;
+  gap: 0.5rem;
+}
+.jarvis-step {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--tv-text-muted, #64748b);
+  transition:
+    color 0.3s ease,
+    opacity 0.3s ease;
+}
+.jarvis-step[data-state="todo"] {
+  opacity: 0.45;
+}
+.jarvis-step[data-state="active"] {
+  color: var(--tv-text-primary);
+}
+.jarvis-step[data-state="done"] {
+  color: var(--tv-text-secondary, #94a3b8);
+}
+.jarvis-step-dot {
+  display: grid;
+  place-items: center;
+  height: 1rem;
+  width: 1rem;
+  flex-shrink: 0;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9999px;
+  color: #07080a;
+}
+.jarvis-step[data-state="active"] .jarvis-step-dot {
+  border-color: rgb(var(--tv-accent-rgb) / 0.8);
+  box-shadow:
+    0 0 0 3px rgb(var(--tv-accent-rgb) / 0.15),
+    0 0 14px rgb(var(--tv-accent-rgb) / 0.6);
+}
+.jarvis-step[data-state="done"] .jarvis-step-dot {
+  border-color: transparent;
+  background: var(--tv-accent);
+}
+
+/* ── LE COMPOSITEUR ── il s'allume quand on écrit. */
+.jarvis-composer {
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 1.125rem;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.01)), rgb(10 12 14 / 0.7);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 16px 40px -24px rgb(0 0 0 / 0.9);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.jarvis-composer:focus-within {
+  border-color: rgb(var(--tv-accent-rgb) / 0.5);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 3px rgb(var(--tv-accent-rgb) / 0.12),
+    0 0 40px -12px rgb(var(--tv-accent-rgb) / 0.45);
+}
+.jarvis-send-ready {
+  box-shadow: 0 0 20px -4px rgb(var(--tv-accent-rgb) / 0.7);
+}
+
+/* ── RÉGLAGES ── des cartes en relief, comme les tours de parole. */
+.jarvis-card {
+  position: relative;
+  display: grid;
+  gap: 0.875rem;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: 1.125rem;
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.04), transparent 50%),
+    rgb(255 255 255 / 0.02);
+  padding: 1rem 1.1rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 18px 40px -30px rgb(0 0 0 / 0.8);
+}
+.jarvis-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.jarvis-card-icon {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.3);
+  border-radius: 0.625rem;
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-highlight);
+  box-shadow: 0 0 18px -6px rgb(var(--tv-accent-rgb) / 0.6);
+}
+.jarvis-field,
+.jarvis-memory {
+  border: 1px solid rgb(255 255 255 / 0.06);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 0.025);
+  padding: 0.5rem 0.75rem;
+}
+.jarvis-memory {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+.jarvis-memory-kind {
+  flex-shrink: 0;
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.25);
+  border-radius: 9999px;
+  padding: 0.05rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--tv-highlight);
+}
+.jarvis-pref {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  border-top: 1px solid rgb(255 255 255 / 0.05);
+  padding-top: 0.75rem;
+}
+.jarvis-select {
+  min-width: 9rem;
+  cursor: pointer;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.625rem;
+  background: rgb(255 255 255 / 0.04);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--tv-text-primary);
+}
+.jarvis-select:focus {
+  outline: none;
+  border-color: rgb(var(--tv-accent-rgb) / 0.5);
+}
+.jarvis-switch {
+  position: relative;
+  height: 1.375rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.1);
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.jarvis-switch[aria-checked="true"] {
+  background: var(--tv-accent);
+  box-shadow: 0 0 16px -2px rgb(var(--tv-accent-rgb) / 0.7);
+}
+.jarvis-switch-knob {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  height: 1rem;
+  width: 1rem;
+  border-radius: 9999px;
+  background: #fff;
+  transition: transform 0.18s ease;
+}
+.jarvis-switch[aria-checked="true"] .jarvis-switch-knob {
+  transform: translateX(1.125rem);
+}
+.jarvis-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid rgb(239 68 68 / 0.25);
+  border-radius: 0.625rem;
+  background: rgb(239 68 68 / 0.08);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fca5a5;
+  transition: background-color 0.15s ease;
+}
+.jarvis-danger:hover {
+  background: rgb(239 68 68 / 0.16);
+}
+
+/* ── LE PIED : palier, compteur, offre ─────────────────────────────────── */
+.jarvis-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.35);
+  border-radius: 9999px;
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  padding: 0.15rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--tv-highlight);
+  box-shadow: 0 0 16px -6px rgb(var(--tv-accent-rgb) / 0.7);
+}
+.jarvis-plan-badge[data-tier="elite"] {
+  border-color: rgb(245 200 110 / 0.45);
+  background: linear-gradient(135deg, rgb(245 200 110 / 0.16), rgb(245 200 110 / 0.04));
+  color: #f5d28a;
+  box-shadow: 0 0 18px -6px rgb(245 200 110 / 0.7);
+}
+.jarvis-pip {
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.1);
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.jarvis-pip[data-on="true"] {
+  background: var(--tv-accent);
+  box-shadow: 0 0 8px rgb(var(--tv-accent-rgb) / 0.8);
+}
+.jarvis-upgrade {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  min-height: 1.875rem;
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.35);
+  border-radius: 0.625rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--tv-highlight);
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.jarvis-upgrade:hover {
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+}
+/* L'offre du palier gratuit : pleine, lumineuse — la seule surface de la
+   fenêtre qui a le droit de briller autant, parce qu'elle mène quelque part. */
+.jarvis-upgrade-hot {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--tv-accent), rgb(var(--tv-accent-rgb) / 0.75));
+  color: #04120b;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 0 22px -4px rgb(var(--tv-accent-rgb) / 0.75);
+}
+.jarvis-upgrade-hot:hover {
+  background: linear-gradient(135deg, var(--tv-accent), var(--tv-accent));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 0 30px -2px rgb(var(--tv-accent-rgb) / 0.9);
+  transform: translateY(-1px);
+}
+.jarvis-quota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  border: 1px solid rgb(245 158 11 / 0.25);
+  border-radius: 0.875rem;
+  background: linear-gradient(90deg, rgb(245 158 11 / 0.09), rgb(245 158 11 / 0.02));
+  padding: 0.75rem 0.875rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .jarvis-typing .insights-md > :last-child::after {
+    animation: jarvis-caret 1s steps(2, start) infinite;
+  }
+  .jarvis-step[data-state="active"] .jarvis-step-dot {
+    animation: jarvis-step-pulse 1.4s ease-in-out infinite;
+  }
+  .jarvis-stage::before {
+    animation: jarvis-ambient 9s ease-in-out infinite alternate;
+  }
+}
+@keyframes jarvis-caret {
+  to {
+    visibility: hidden;
+  }
+}
+@keyframes jarvis-step-pulse {
+  50% {
+    box-shadow:
+      0 0 0 5px rgb(var(--tv-accent-rgb) / 0.08),
+      0 0 20px rgb(var(--tv-accent-rgb) / 0.8);
+  }
+}
+@keyframes jarvis-ambient {
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    LE DOCK DE JARVIS — l'orbite
    ═══════════════════════════════════════════════════════════════════════════
 
@@ -4433,4 +4885,237 @@ a:focus-visible,
   .tv-jarvis-mark::after {
     animation: none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE TABLEAU DE COMPARAISON DES OFFRES (`PlanMatrix`)
+   ═══════════════════════════════════════════════════════════════════════════
+   Un vrai tableau : une ligne guide l'œil d'une colonne à l'autre, les limites
+   se lisent en chiffres, et la colonne Pro est UNE bande lumineuse continue —
+   chaque cellule porte le même fond, sans interstice, et la première et la
+   dernière arrondissent la bande. */
+.plan-cmp {
+  padding: 1.25rem 1rem 1rem;
+}
+@media (min-width: 640px) {
+  .plan-cmp {
+    padding: 1.5rem 1.5rem 1.25rem;
+  }
+}
+.plan-cmp-intro {
+  margin-bottom: 1rem;
+}
+.plan-cmp-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.plan-cmp-label {
+  padding: 0.7rem 0.75rem 0.7rem 0;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--tv-text-secondary, #cbd5e1);
+}
+.plan-cmp-col {
+  width: 8.5rem;
+  padding: 0.7rem 0.5rem;
+  text-align: center;
+}
+@media (min-width: 768px) {
+  .plan-cmp-col {
+    width: 10.5rem;
+  }
+}
+.plan-cmp-row > * {
+  border-top: 1px solid rgb(255 255 255 / 0.05);
+}
+.plan-cmp-row:hover > * {
+  background-color: rgb(255 255 255 / 0.02);
+}
+/* La bande Pro — même fond de haut en bas, liserés latéraux d'accent. */
+.plan-cmp-col.is-pro {
+  background: rgb(var(--tv-accent-rgb) / 0.07);
+  border-left: 1px solid rgb(var(--tv-accent-rgb) / 0.3);
+  border-right: 1px solid rgb(var(--tv-accent-rgb) / 0.3);
+}
+.plan-cmp-row:hover > .plan-cmp-col.is-pro {
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+}
+thead .plan-cmp-col.is-pro {
+  border-top: 1px solid rgb(var(--tv-accent-rgb) / 0.45);
+  border-radius: 1rem 1rem 0 0;
+  background: linear-gradient(
+    180deg,
+    rgb(var(--tv-accent-rgb) / 0.16),
+    rgb(var(--tv-accent-rgb) / 0.07)
+  );
+  box-shadow: 0 -18px 50px -30px rgb(var(--tv-accent-rgb) / 0.9);
+}
+.plan-cmp-end > .plan-cmp-col.is-pro {
+  border-bottom: 1px solid rgb(var(--tv-accent-rgb) / 0.3);
+  border-radius: 0 0 1rem 1rem;
+  padding: 0.4rem;
+}
+.plan-cmp-end > * {
+  padding: 0.4rem;
+}
+
+/* L'en-tête d'une offre : nom, prix, annuel, action. */
+.plan-cmp-head {
+  position: relative;
+  vertical-align: bottom;
+  padding-top: 1.75rem;
+  padding-bottom: 1rem;
+}
+.plan-cmp-head > * {
+  display: flex;
+  justify-content: center;
+}
+.plan-cmp-ribbon {
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+  border-radius: 9999px;
+  background: var(--tv-accent);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #04120b;
+  box-shadow: 0 0 20px -4px rgb(var(--tv-accent-rgb) / 0.8);
+}
+.plan-cmp-name {
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tv-text-secondary, #94a3b8);
+}
+.is-pro .plan-cmp-name {
+  color: var(--tv-highlight);
+}
+.is-free .plan-cmp-name,
+.is-free .plan-cmp-price {
+  color: var(--tv-text-muted, #64748b);
+}
+.plan-cmp-price {
+  align-items: baseline;
+  gap: 0.15rem;
+  margin-top: 0.35rem;
+  white-space: nowrap;
+  font-size: 1.625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--tv-text-primary);
+}
+.plan-cmp-per {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--tv-text-muted, #64748b);
+}
+.plan-cmp-yearly {
+  margin: 0.15rem 0 0.75rem;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  color: var(--tv-text-muted, #64748b);
+}
+.plan-cmp-cta,
+.plan-cmp-current,
+.plan-cmp-cta-slot {
+  display: inline-flex;
+  width: 100%;
+  min-height: 2.125rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.plan-cmp-cta {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.04);
+  color: var(--tv-text-primary);
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.plan-cmp-cta:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+.plan-cmp-cta-hot {
+  border-color: transparent;
+  background: var(--tv-accent);
+  color: #04120b;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 0 24px -4px rgb(var(--tv-accent-rgb) / 0.75);
+}
+.plan-cmp-cta-hot:hover {
+  background: var(--tv-accent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 0 32px -2px rgb(var(--tv-accent-rgb) / 0.9);
+  transform: translateY(-1px);
+}
+.plan-cmp-current {
+  border: 1px dashed rgb(255 255 255 / 0.18);
+  color: var(--tv-text-secondary, #94a3b8);
+}
+
+/* Les groupes : un intitulé, pas une ligne de données. */
+.plan-cmp-group > * {
+  padding-top: 1.25rem;
+  padding-bottom: 0.4rem;
+}
+.plan-cmp-group > .plan-cmp-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-text-muted, #64748b);
+}
+
+/* Les valeurs. */
+.plan-cmp-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-primary);
+}
+.is-free .plan-cmp-num {
+  color: var(--tv-text-secondary, #94a3b8);
+  font-weight: 600;
+}
+.plan-cmp-unlimited {
+  color: var(--tv-highlight);
+}
+.plan-cmp-check {
+  display: inline-grid;
+  height: 1.375rem;
+  width: 1.375rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  color: var(--tv-highlight);
+}
+.is-pro .plan-cmp-check {
+  background: var(--tv-accent);
+  color: #04120b;
+  box-shadow: 0 0 12px -2px rgb(var(--tv-accent-rgb) / 0.7);
+}
+.plan-cmp-check.is-muted {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-secondary, #94a3b8);
 }

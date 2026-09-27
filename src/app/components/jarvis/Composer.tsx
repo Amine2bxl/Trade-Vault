@@ -69,10 +69,9 @@ export default function Composer({
   return (
     <div>
       <div
-        className={cn(
-          "flex items-end gap-1.5 rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] p-1.5 transition",
-          "focus-within:border-[var(--tv-border-accent)] focus-within:ring-2 focus-within:ring-[rgb(var(--tv-accent-rgb)/0.16)]",
-        )}
+        /* Le compositeur s'allume quand on écrit : liseré d'accent et halo
+           discret, pour que le champ se lise comme l'endroit où tout commence. */
+        className="jarvis-composer flex items-end gap-1.5 p-1.5"
       >
         {micAvailable && onMic && (
           <button
@@ -119,7 +118,7 @@ export default function Composer({
           className={cn(
             "grid h-9 w-9 shrink-0 place-items-center rounded-xl transition",
             pret
-              ? "tv-accent-fill active:scale-95"
+              ? "tv-accent-fill jarvis-send-ready active:scale-95"
               : "cursor-not-allowed bg-white/[0.05] text-slate-600",
           )}
         >

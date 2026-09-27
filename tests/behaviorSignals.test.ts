@@ -89,10 +89,13 @@ test("the coach prompt carries the behaviour signals as citable evidence", () =>
   expect(grounded).toContain("Never take more than 3 trades a day");
 });
 
-test("the answer format asks for a coach reply, not a six-section report", () => {
+test("the answer format follows the question — no imposed template", () => {
   const system = buildCoachMessages({ question: "How am I doing?" })[0].content;
   expect(system).toContain("FORMAT");
-  expect(system).toContain("diagnosis");
-  // The old rigid report headings must not be imposed on every answer.
+  expect(system).toContain("No imposed headings, no mandatory plan");
+  // Ni l'ancien rapport à six titres, ni le « **Plan** » imposé, ni la règle
+  // « à adopter en un clic » greffée à chaque réponse.
   expect(system).not.toContain("## 📊 Stats Snapshot");
+  expect(system).not.toContain("**Plan**");
+  expect(system).not.toContain("single click");
 });

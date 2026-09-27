@@ -38,11 +38,8 @@ export interface MemoryLike {
 }
 
 /**
- * Intentions de mémoire. Volontairement DISTINCTES des intentions
- * d'`answerToBlocks` (qui pilotent l'affichage : weekday, riskAfterLoss…) :
- * ici on classe ce qu'il faut SAVOIR, là-bas ce qu'il faut MONTRER. Les
- * fusionner coûterait plus qu'elle ne rapporterait — ce sont deux questions
- * différentes qui évoluent séparément.
+ * Intentions de mémoire : on classe ici ce qu'il faut SAVOIR pour répondre à
+ * la question, pas ce qu'il faut afficher.
  */
 export type MemoryIntent =
   | "psychology"

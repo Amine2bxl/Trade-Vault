@@ -44,6 +44,12 @@ export interface AIRequest {
   /** Soft output budget; providers map it to their own parameter. */
   maxTokens?: number;
   temperature?: number;
+  /**
+   * Budget de réflexion (tokens) quand le fournisseur sait « penser » avant de
+   * répondre (Gemini 2.5). Absent = le budget par défaut du fournisseur. Les
+   * autres fournisseurs l'ignorent.
+   */
+  reasoningBudget?: number;
   /** Ask the provider for a strict-JSON answer when supported. */
   json?: boolean;
   /** Function-calling manifest. Ignored by providers without tool support. */
