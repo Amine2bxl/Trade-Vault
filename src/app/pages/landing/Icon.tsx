@@ -21,6 +21,7 @@ export type IName =
   | "mail"
   | "menu"
   | "mobile"
+  | "play"
   | "plus"
   | "radar"
   | "shield"
@@ -143,6 +144,7 @@ export function Icon({ n, cls = "" }: { n: IName; cls?: string }) {
         <path d="M11 18h2" />
       </>
     ),
+    play: <path d="M8 5.5v13l10.5-6.5z" />,
     plus: (
       <>
         <path d="M12 5v14M5 12h14" />
