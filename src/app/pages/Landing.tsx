@@ -14,7 +14,12 @@ import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";
 import { CookieConsent } from "./landing/CookieConsent";
-import { DefilementDoux, useApparitions, usePrefereMoinsDeMouvement } from "./landing/motion";
+import {
+  DefilementDoux,
+  allerVers,
+  useApparitions,
+  usePrefereMoinsDeMouvement,
+} from "./landing/motion";
 import { useLenis } from "lenis/react";
 import { faqPageJsonLd } from "@/shared/seo";
 import { YEARLY_PER_MONTH, eur } from "../utils/pricing";
@@ -434,12 +439,16 @@ function LandingPage() {
     scrollLockRef.current = true;
     const cible = document.getElementById(id);
     /* Sous Lenis, c'est lui qui fait le trajet (il lit `scroll-margin-top`
-       comme le navigateur) ; sans lui, le défilement natif. */
-    if (cible && lenis?.options.smoothWheel) lenis.scrollTo(cible);
-    else cible?.scrollIntoView({ behavior: "smooth", block: "start" });
+       comme le navigateur) ; sans lui, le défilement natif. `allerVers` rend
+       la durée réelle du voyage : le verrou du scrollspy se relâche quand la
+       page est arrivée, pas une seconde plus tard par convention. */
+    const duree =
+      cible && lenis?.options.smoothWheel
+        ? allerVers(lenis, cible)
+        : (cible?.scrollIntoView({ behavior: "smooth", block: "start" }), 1000);
     scrollTimerRef.current = setTimeout(() => {
       scrollLockRef.current = false;
-    }, 1000);
+    }, duree + 80);
   };
 
   return (
