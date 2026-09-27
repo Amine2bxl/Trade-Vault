@@ -15,6 +15,7 @@
  * `/` and is client-rendered, so it inherits the root defaults.
  */
 import { SITE_URL, TRUSTPILOT_URL } from "./site";
+import { URLS_RESEAUX } from "./socials";
 import { SSR_LANG, FR_PREFIX, type SiteLang } from "./lang";
 import { TIERS } from "@/domain/plans";
 
@@ -120,10 +121,12 @@ export const SITE_LOCALE = SSR_LANG === "fr" ? "fr-FR" : "en-US";
  *     paliers chiffrés. C'est exactement le genre d'écart qui fait rejeter des
  *     données structurées — et il grandit tout seul à chaque changement de
  *     tarif.
- *   • `sameAs` ne liste que des profils qui EXISTENT. Il n'y en a qu'un
- *     (Trustpilot). Le pied de page affichait cinq icônes de réseaux sociaux
- *     sans compte derrière ; elles ne sont pas devenues des `sameAs`, elles ont
- *     été retirées.
+ *   • `sameAs` ne liste que des profils qui EXISTENT, et il les lit dans la
+ *     MÊME table que le pied de page (`shared/socials.ts`). Les cinq icônes
+ *     qui pointaient vers `#` avaient été retirées faute de comptes ; deux
+ *     comptes existent désormais (TikTok, X) et arrivent ici tout seuls. Les
+ *     trois autres attendent leur `url` dans la table — tant qu'elle est
+ *     nulle, ni la page ni le graphe ne les mentionnent.
  *
  * Ce qui n'y figure PAS, volontairement : aucun `aggregateRating`, aucun
  * `review`, aucun nombre d'utilisateurs. Le site n'affiche aucune de ces
@@ -146,7 +149,7 @@ export function structuredData(): string {
         url: `${SITE_URL}/`,
         logo: `${SITE_URL}/icon-512.png`,
         email: SUPPORT_EMAIL,
-        sameAs: [TRUSTPILOT_URL],
+        sameAs: [TRUSTPILOT_URL, ...URLS_RESEAUX],
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "customer support",

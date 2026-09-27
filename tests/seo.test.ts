@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { RESEAUX, URLS_RESEAUX } from "../src/shared/socials";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -71,10 +72,25 @@ describe("le graphe schema.org ne dit que ce que la page dit", () => {
 
   test("`sameAs` ne liste que des profils qui existent vraiment", async () => {
     // Le pied de page affichait cinq icônes de réseaux sociaux sans compte
-    // derrière. Elles ont été retirées, pas promues en `sameAs`.
+    // derrière. Elles ont été retirées, pas promues en `sameAs`. Deux comptes
+    // existent depuis (TikTok, X) et sortent de la MÊME table que le pied de
+    // page — ce test vérifie donc l'égalité avec elle, pas un nombre gravé :
+    // ouvrir Instagram ne doit pas faire échouer la suite, mais poser une
+    // `url` bidon dans la table doit rester impossible à publier.
     const sameAs: string[] = node("Organization").sameAs;
-    expect(sameAs).toHaveLength(1);
+    expect(sameAs).toHaveLength(1 + URLS_RESEAUX.length);
     expect(sameAs[0]).toContain("trustpilot.com/review/");
+    expect(sameAs.slice(1)).toEqual([...URLS_RESEAUX]);
+    // Chaque profil déclaré est une adresse absolue et complète : un `#` ou
+    // un chemin relatif dans `sameAs` est exactement l'affirmation vide que
+    // les cinq icônes d'origine faisaient.
+    for (const url of URLS_RESEAUX) {
+      expect(url).toMatch(/^https:\/\/[^/]+\/.+/);
+    }
+    // Et la table ne prétend rien pour les réseaux non ouverts.
+    for (const r of RESEAUX) {
+      if (!r.url) expect(r.handle).toBeNull();
+    }
     /* On n'interdit plus `vercel.app` ici. L'interdiction supposait que la
        fiche Trustpilot avait suivi la migration vers `tradevault.be` ; elle
        ne l'a pas suivie, et les avis réels vivent toujours sur

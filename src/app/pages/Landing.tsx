@@ -36,6 +36,7 @@ import {
 } from "./landing/motion";
 import { useLenis } from "lenis/react";
 import { faqPageJsonLd } from "@/shared/seo";
+import { RESEAUX_ACTIFS } from "@/shared/socials";
 import { YEARLY_PER_MONTH, eur } from "../utils/pricing";
 import {
   LandingLangProvider,
@@ -193,10 +194,23 @@ function FooterRow({
   links: FooterLink[];
   t: (k: LandingKey) => string;
 }) {
+  const id = `pied-${links[0]?.k ?? "x"}`;
+  /* DEUX ENFANTS DE GRILLE, pas un bloc.
+     L'intitulé portait `w-[72px]` : une largeur devinée pour « Produit » et
+     « Légal » en anglais. Elle ne tient pas la première langue qui allonge
+     le mot — et rien ne le signale, l'intitulé passe simplement à la ligne
+     tout seul. Rendus côte à côte dans la grille du parent, les deux
+     intitulés se calent sur le plus long, quelle que soit la langue, et les
+     deux rangées de liens restent alignées. */
   return (
-    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-5">
-      <p className="tv-label w-[72px] shrink-0 text-slate-600">{title}</p>
-      <ul className="flex flex-wrap items-baseline gap-x-5 gap-y-0.5 text-[13px]">
+    <>
+      <p id={id} className="tv-label self-baseline text-slate-600">
+        {title}
+      </p>
+      <ul
+        aria-labelledby={id}
+        className="flex flex-wrap items-baseline gap-x-5 gap-y-0.5 text-[13px]"
+      >
         {links.map(({ k, href }) => (
           <li key={k}>
             <a
@@ -210,7 +224,50 @@ function FooterRow({
           </li>
         ))}
       </ul>
-    </div>
+    </>
+  );
+}
+
+/**
+ * LES RÉSEAUX — ceux qui existent, et eux seuls.
+ *
+ * La table (`shared/socials.ts`) en prévoit cinq et n'en ouvre que deux. Une
+ * entrée sans `url` n'est pas dessinée : c'est la règle posée le jour où les
+ * cinq icônes précédentes, toutes pointées sur `#`, ont été retirées. Un
+ * logo de réseau est une affirmation — « nous sommes là ».
+ *
+ * L'intitulé du lien porte le nom ET l'identifiant : « TikTok, @tradevault.be ».
+ * Une icône seule ne dit rien à un lecteur d'écran, et le survol montre la
+ * même chose à la souris.
+ *
+ * `rel="me"` déclare que ce profil est bien le nôtre — c'est ce que lisent
+ * les vérifications d'identité décentralisées, et c'est le pendant visible du
+ * `sameAs` des données structurées, qui sort de la même table.
+ */
+function ReseauxSociaux() {
+  if (!RESEAUX_ACTIFS.length) return null;
+  return (
+    <ul className="-ml-2.5 mt-5 flex items-center gap-0.5">
+      {RESEAUX_ACTIFS.map((r) => (
+        <li key={r.nom}>
+          <a
+            href={r.url}
+            target="_blank"
+            rel="me noopener noreferrer"
+            aria-label={`${r.nom}, ${r.handle}`}
+            title={`${r.nom} · ${r.handle}`}
+            /* 44px : la cible tactile minimale, la même que les liens de la
+               rangée au-dessus. Une icône de 18px dans un carré de 44 se
+               touche ; dans un carré de 24, on vise la suivante. */
+            className="grid h-11 w-11 place-items-center rounded-lg text-slate-500 transition-colors hover:text-white focus-visible:text-white"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="h-[17px] w-[17px]">
+              <path d={r.chemin} />
+            </svg>
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -1031,13 +1088,27 @@ function LandingPage() {
         <footer className="relative section-divider pb-8 pt-10">
           <div className="lp-container">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
+              {/* L'IDENTITÉ, ET OÙ NOUS TROUVER. Les réseaux appartiennent à
+                  ce bloc, pas à la bande basse : celle-ci porte le légal et la
+                  langue, deux choses qu'on consulte, alors qu'un réseau est
+                  une suite donnée à la marque — il se range avec le logo et
+                  la phrase qui la décrit. */}
               <div className="shrink-0">
                 <Logo />
                 <p className="mt-3 max-w-[260px] text-[13px] leading-6 text-slate-500">
                   {t("footer.tagline")}
                 </p>
+                <ReseauxSociaux />
               </div>
-              <div className="flex flex-col gap-3.5 lg:min-w-0 lg:flex-1 lg:max-w-[640px]">
+              {/* UNE SEULE GRILLE POUR LES DEUX RANGÉES. Elles étaient deux
+                  blocs indépendants : chacun décidait de la largeur de son
+                  intitulé, et rien ne garantissait que les liens commencent à
+                  la même abscisse. `auto` cale la colonne sur le plus long des
+                  deux intitulés, une fois pour les deux rangées.
+                  Sous 640px la grille retombe à une colonne : l'intitulé passe
+                  AU-DESSUS de ses liens, ce qui est la seule disposition
+                  lisible quand la largeur ne permet plus les deux côte à côte. */}
+              <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-[auto_1fr] sm:gap-y-3.5 lg:min-w-0 lg:flex-1 lg:max-w-[640px]">
                 <FooterRow title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
                 <FooterRow title={t("footer.legal")} links={FOOTER_LEGAL} t={t} />
               </div>
