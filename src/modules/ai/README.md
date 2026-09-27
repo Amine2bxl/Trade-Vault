@@ -8,7 +8,9 @@
 >
 > **Ce qui tourne réellement en production** : `agents/coach.agent.ts`
 > (`runCoach`) appelé par `backend/coach.functions.ts` (`askCoach`), avec repli
-> sur `fallback-coach.ts`. Router, agent registry et tool registry sont
+> (`runCoach`) appelé par `backend/coach.functions.ts` (`askCoach`). Il n'y a
+> PLUS de repli déterministe : une panne du modèle se dit au trader au lieu
+> d'être masquée par des phrases à trous (voir `indisponible()`).. Router, agent registry et tool registry sont
 > **compilés et testés mais non branchés** — voir `AI_ARCHITECTURE.md` §2 et §10.
 
 ## Infrastructure livrée (exécutable, testée)
