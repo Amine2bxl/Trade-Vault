@@ -42,6 +42,14 @@ import { loadOnboarding, type OnboardingData } from "../../../store";
 import { exceedsDailyLimit, incrementAiUsage, jarvisDailyLimit } from "../../../utils/aiUsage";
 import { effectiveCopyLang, readAutoSpeak } from "../prefs";
 import { jarvisConversationStore } from "../conversations";
+import { INTENT_STEPS, classifyQuestion } from "../intent";
+import type { TKey } from "../../../i18n/translations";
+import {
+  listenJarvisThread,
+  pendingQuestion,
+  startJarvisRequest,
+  type JarvisResult,
+} from "../pending";
 import { BlockList } from "../BlockRenderer";
 import { historyTextOf } from "../history";
 import type { JarvisMessage, JarvisToolBlock } from "../blocks";
@@ -546,6 +554,94 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     };
   }, [userId]);
 
+  const threadId = conversationId ?? "__jarvis_default";
+
+  /** Une réponse (ou un échec) de Jarvis, en message de conversation. */
+  const resultToMessage = useCallback(
+    (r: JarvisResult): JarvisMessage => {
+      if (!r.ok) {
+        return {
+          role: "error",
+          id: genId(),
+          blocks: [{ type: "markdown", content: t(`ai.error.${coachErrorKind(r.error)}`) }],
+          createdAt: new Date().toISOString(),
+        };
+      }
+      return {
+        role: "assistant",
+        id: genId(),
+        blocks: [
+          ...(r.degraded
+            ? [{ type: "alert" as const, level: "info" as const, message: t("ai.offlineAnalysis") }]
+            : []),
+          { type: "markdown", content: r.answer },
+        ],
+        createdAt: new Date().toISOString(),
+      };
+    },
+    [t],
+  );
+
+  /* LE RETOUR D'UNE QUESTION — celle-ci ou une posée avant la dernière
+     fermeture de la fenêtre. */
+  useEffect(() => {
+    if (!loaded) return;
+    if (pendingQuestion(threadId)) {
+      setLoading(true);
+      lastQuestionRef.current = pendingQuestion(threadId) ?? "";
+    }
+    return listenJarvisThread(threadId, (r) => {
+      setLoading(false);
+      const msg = resultToMessage(r);
+      setMessages((prev) => [...prev, msg]);
+      if (!r.ok) {
+        console.error("[coach] request failed", r.error);
+        if (coachErrorKind(r.error) === "quota") setQuotaBanner(true);
+        return;
+      }
+      if (!r.degraded) setTypingId(msg.id);
+      // Une analyse consommée — comptée APRÈS la réponse.
+      if (r.fromAi) incrementAiUsage(userId);
+      learnFrom(r.question);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId, loaded, resultToMessage, userId]);
+
+  /* ── Apprentissage ──────────────────────────────────────────────────────
+     APRÈS la réponse, sans l'attendre. Éteinte par défaut côté serveur
+     (`AI_MEMORY_EXTRACTION`) ; l'écriture passe par le `remember()` existant. */
+  const learnFrom = (question: string) => {
+    void (async () => {
+      if (!userId) return;
+      const known = memoryRef.current.map((m) => m.key).filter((k): k is string => !!k);
+      const out = await extractMemory({ data: { userMessage: question, knownKeys: known } });
+      for (const c of out.candidates) {
+        await remember(userId, c.kind, c.content, {
+          key: c.key,
+          importance: c.importance,
+          confidence: c.confidence,
+          source: c.source,
+        });
+        memoryRef.current = [
+          ...memoryRef.current,
+          {
+            id: c.key,
+            kind: c.kind,
+            content: c.content,
+            key: c.key,
+            importance: c.importance,
+            confidence: c.confidence,
+            source: c.source,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ];
+      }
+    })().catch(() => {
+      /* l'apprentissage ne doit JAMAIS dégrader la conversation */
+    });
+  };
+
   const ask = useCallback(
     async (q: string) => {
       const query = q.trim();
@@ -635,119 +731,52 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         // estimer une.
         simulation: simulationFor(query),
       });
-      /* LA RÉPONSE EST CELLE DU MODÈLE, ET RIEN D'AUTRE. Elle recevait jusqu'ici
-         une « preuve », un « Plan recommandé » et un bouton « Ajouter cette
-         règle à ma checklist » choisis par des expressions régulières sur la
-         question — les mêmes à chaque message, quelle que soit la réponse.
-         Jarvis formule lui-même ce qui mérite de l'être. */
-      const pushAnswer = (text: string, degraded = false) => {
-        const id = genId();
-        const blocks: JarvisMessage["blocks"] = [
-          ...(degraded
-            ? [{ type: "alert" as const, level: "info" as const, message: t("ai.offlineAnalysis") }]
-            : []),
-          { type: "markdown", content: text || t("ai.noResponse") },
-        ];
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", id, blocks, createdAt: new Date().toISOString() },
-        ]);
-        if (!degraded) setTypingId(id);
-      };
       lastQuestionRef.current = query;
-      try {
+      const accountId = activeAccountId ?? undefined;
+      /* LA QUESTION PART HORS DU COMPOSANT (`pending.ts`) : fermer la fenêtre
+         pendant l'analyse ne la perd plus. La réponse est remise à la
+         conversation affichée si elle écoute, sinon écrite dans la
+         conversation stockée. */
+      const run = async (): Promise<JarvisResult> => {
+        const call = () =>
+          askCoach({ data: { ...payload, question: query.slice(0, 500), accountId } });
         let res;
         try {
-          res = await askCoach({
-            data: {
-              ...payload,
-              question: query.slice(0, 500),
-              accountId: activeAccountId ?? undefined,
-            },
-          });
+          res = await call();
         } catch (firstErr) {
           // Une erreur 4xx (quota, validation, session) ne se résout pas avec un
           // retry — on ne double pas la consommation de quota.
           if (!isTransient(firstErr)) throw firstErr;
           console.warn("[coach] first attempt failed, retrying", firstErr);
-          // Backoff court : ce retry ne concerne que les erreurs transitoires
-          // (5xx/réseau). 1,5 s s'ajoutait à une attente déjà longue pour un
-          // gain de fiabilité nul — 400 ms absorbe un pic réseau tout autant.
           await new Promise((r) => setTimeout(r, 400));
-          res = await askCoach({
-            data: {
-              ...payload,
-              question: query.slice(0, 500),
-              accountId: activeAccountId ?? undefined,
-            },
-          });
+          res = await call();
         }
-        // Le serveur indique déjà si la réponse vient de l'IA ou du moteur
-        // déterministe — on ne le devine pas, on lit `source`.
-        pushAnswer(res.answer || t("ai.noResponse"), res.source !== "ai");
-        // Une analyse consommée — comptée APRÈS la réponse : une question
-        // refusée ou perdue en route ne coûte rien au compteur affiché.
-        if (res.source === "ai") incrementAiUsage(userId);
-
-        // ── Apprentissage ────────────────────────────────────────────────
-        // APRÈS la réponse, et sans l'attendre : le trader a déjà ce qu'il
-        // demandait, l'extraction ne doit lui coûter aucune milliseconde
-        // perçue. Elle est éteinte par défaut côté serveur
-        // (`AI_MEMORY_EXTRACTION`), pré-filtrée par marqueur d'engagement, et
-        // ne peut produire qu'un candidat déjà validé.
-        //
-        // L'écriture passe par le `remember()` existant — une seule voie vers
-        // `ai_memory`, donc un seul endroit qui tient l'invariant d'unicité.
-        void (async () => {
-          // Sans utilisateur identifié il n'y a pas de mémoire à alimenter :
-          // on ne dépense pas un appel pour un souvenir qu'on ne peut écrire.
-          if (!userId) return;
-          const known = memoryRef.current.map((m) => m.key).filter((k): k is string => !!k);
-          const out = await extractMemory({
-            data: { userMessage: query, knownKeys: known },
-          });
-          for (const c of out.candidates) {
-            await remember(userId, c.kind, c.content, {
-              key: c.key,
-              importance: c.importance,
-              confidence: c.confidence,
-              source: c.source,
-            });
-            memoryRef.current = [
-              ...memoryRef.current,
-              {
-                id: c.key,
-                kind: c.kind,
-                content: c.content,
-                key: c.key,
-                importance: c.importance,
-                confidence: c.confidence,
-                source: c.source,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              },
-            ];
-          }
-        })().catch(() => {
-          /* l'apprentissage ne doit JAMAIS dégrader la conversation */
-        });
-      } catch (e) {
-        /* PLUS DE RÉPONSE DÉTERMINISTE ICI NON PLUS. Le serveur a cessé d'en
-           servir une ; la servir depuis le client reviendrait à réintroduire
-           par la fenêtre ce qu'on vient de sortir par la porte. Une requête
-           qui échoue des deux côtés est une panne, et elle se dit. */
-        console.error("[coach] request failed", e);
-        const kind = coachErrorKind(e);
-        if (kind === "quota") setQuotaBanner(true);
-        push("error", t(`ai.error.${kind}`));
-      } finally {
-        setLoading(false);
-      }
+        return {
+          ok: true,
+          question: query,
+          answer: res.answer || t("ai.noResponse"),
+          // Le serveur dit d'où vient la réponse — on ne le devine pas.
+          degraded: res.source !== "ai",
+          fromAi: res.source === "ai",
+        };
+      };
+      const persist = async (r: JarvisResult) => {
+        if (!store || !conversationId) return;
+        const conv = await store.get(conversationId);
+        const prev = conv?.messages ?? [];
+        await store.saveMessages(conversationId, [...prev, resultToMessage(r)]);
+        if (r.ok && r.fromAi) incrementAiUsage(userId);
+      };
+      startJarvisRequest(threadId, query, run, persist);
     },
     [
       loading,
       messages,
       loaded,
+      store,
+      conversationId,
+      threadId,
+      resultToMessage,
       context.trades,
       context.profile,
       lang,
@@ -992,12 +1021,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               <span className="tv-label text-[var(--tv-highlight)]">{t("jarvis.thinking")}</span>
             </div>
             <ThinkingSteps
-              steps={[
-                t("jarvis.step.read"),
-                t("jarvis.step.journal").replace("{n}", String(context.trades.length)),
-                t("jarvis.step.numbers"),
-                t("jarvis.step.write"),
-              ]}
+              key={lastQuestionRef.current}
+              steps={INTENT_STEPS[classifyQuestion(lastQuestionRef.current)].map((k) =>
+                t(k as TKey).replace("{n}", String(context.trades.length)),
+              )}
             />
           </div>
         )}

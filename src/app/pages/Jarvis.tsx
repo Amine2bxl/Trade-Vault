@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { lazyPage } from "@/shared/lazy-page";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Eraser } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
@@ -16,7 +17,7 @@ import { JarvisOrb } from "@/shared/ui";
 import { useJarvisActivity } from "../components/jarvis/activity";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 
-const ConversationWorkspace = lazy(
+const ConversationWorkspace = lazyPage(
   () => import("../components/jarvis/workspaces/ConversationWorkspace"),
 );
 

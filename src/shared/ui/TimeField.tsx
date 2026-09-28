@@ -190,6 +190,8 @@ function WheelColumn({
   // défilement vers elle-même.
   const fromScroll = useRef<number | null>(null);
   const index = selected === null ? 0 : Math.max(0, values.indexOf(selected));
+  const indexRef = useRef(index);
+  indexRef.current = index;
 
   // À l'ouverture : posée sur la valeur, sans animation.
   useLayoutEffect(() => {
@@ -225,10 +227,48 @@ function WheelColumn({
   };
 
   const step = (delta: number) => {
-    const i = Math.min(values.length - 1, Math.max(0, index + delta));
+    const i = Math.min(values.length - 1, Math.max(0, indexRef.current + delta));
+    if (values[i] === values[indexRef.current] && selected !== null) return;
     fromScroll.current = null;
+    indexRef.current = i;
     onSelect(values[i]);
   };
+  const stepRef = useRef(step);
+  stepRef.current = step;
+
+  /* UN CRAN DE MOLETTE = UNE UNITÉ. Le défilement natif faisait sauter
+     plusieurs lignes par cran (un cran de souris vaut ~100 px, une ligne
+     32). La molette et le trackpad passent donc par un accumulateur : chaque
+     tranche de ~40 px de défilement vaut exactement une minute (ou une
+     heure), et la roue glisse jusqu'à la valeur suivante. Le doigt, lui,
+     garde le défilement natif aimanté. */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let acc = 0;
+    let lastAt = 0;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const now = performance.now();
+      if (now - lastAt > 220) acc = 0; // un nouveau geste repart de zéro
+      lastAt = now;
+      const px = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+      acc += px;
+      const THRESHOLD = 40;
+      while (Math.abs(acc) >= THRESHOLD) {
+        const dir = acc > 0 ? 1 : -1;
+        acc -= dir * THRESHOLD;
+        stepRef.current(dir);
+        // Un cran de souris (100 px) ne doit JAMAIS valoir deux unités.
+        if (Math.abs(px) >= 80) {
+          acc = 0;
+          break;
+        }
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
   return (
     <div

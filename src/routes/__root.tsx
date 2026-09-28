@@ -1,3 +1,4 @@
+import { reloadForStaleChunk } from "@/shared/lazy-page";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -245,12 +246,10 @@ function RootComponent() {
   // missing chunk can't loop) to pull the fresh manifest instead of crashing.
   useEffect(() => {
     const onPreloadError = (e: Event) => {
-      e.preventDefault();
-      const KEY = "tv-chunk-reload-at";
-      const last = Number(sessionStorage.getItem(KEY) || 0);
-      if (Date.now() - last > 10_000) {
-        sessionStorage.setItem(KEY, String(Date.now()));
-        window.location.reload();
+      // Rechargement unique partagé avec `lazyPage` (même clé, même garde) :
+      // les chargements différés reconnaissent l'import annulé et patientent.
+      if (reloadForStaleChunk()) {
+        e.preventDefault();
       } else {
         // Reloading didn't fix it — let the error boundary show, don't loop.
         reportAppError(e, { boundary: "vite_preload_error_persistent" });

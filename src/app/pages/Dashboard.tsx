@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { lazyPage } from "@/shared/lazy-page";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import {
   Plus,
   BarChart3,
@@ -47,7 +48,7 @@ import { newestFirst } from "../utils/tradeOrder";
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
 // no longer weighs on the initial bundle.
-const EquityChart = lazy(() => import("../components/EquityChart"));
+const EquityChart = lazyPage(() => import("../components/EquityChart"));
 
 interface DashboardProps {
   trades: Trade[];

@@ -1725,7 +1725,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   outline-offset: 3px;
 }
 
-
 /* Setup-quality stars — soft amber glow + spring pop on select */
 .star-btn {
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -3837,18 +3836,21 @@ a:focus-visible,
   justify-content: center;
   scroll-snap-align: center;
   cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
   color: var(--tv-text-muted);
-  transition: color 140ms ease;
+  transition:
+    color 140ms ease,
+    font-size 140ms ease;
 }
 .tv-wheel-item:hover {
   color: var(--tv-text-secondary);
 }
 .tv-wheel-item[aria-selected="true"] {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--tv-text-primary);
 }
 .tv-wheel-done {

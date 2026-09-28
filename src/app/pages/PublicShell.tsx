@@ -1,10 +1,11 @@
+import { lazyPage } from "@/shared/lazy-page";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 
 /**
  * Le repli SSR des écrans AUTHENTIFIÉS (`/journal`, `/settings`, …).
  *
  * POURQUOI IL EXISTE. `$page.tsx` importait `Landing.tsx` pour ce repli — en
- * STATIQUE. Le `lazy()` d'`App.tsx` ne servait alors à rien sur ces routes, et
+ * STATIQUE. Le `lazyPage()` d'`App.tsx` ne servait alors à rien sur ces routes, et
  * la page de vente partait dans le chargement initial de CHAQUE trader
  * connecté, qui ne la verra jamais.
  *

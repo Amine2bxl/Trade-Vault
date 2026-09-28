@@ -1,10 +1,10 @@
+import { lazyPage } from "@/shared/lazy-page";
 import {
   useState,
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  lazy,
   Suspense,
   startTransition,
 } from "react";
@@ -47,19 +47,19 @@ import {
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
 import LoadingScreen from "./components/LoadingScreen";
-const AiAssistant = lazy(() => import("./components/AiAssistant"));
-const Onboarding = lazy(() => import("./onboarding/Onboarding"));
-const CommandPalette = lazy(() => import("./components/CommandPalette"));
-const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
+const AiAssistant = lazyPage(() => import("./components/AiAssistant"));
+const Onboarding = lazyPage(() => import("./onboarding/Onboarding"));
+const CommandPalette = lazyPage(() => import("./components/CommandPalette"));
+const ImportCsvModal = lazyPage(() => import("./components/ImportCsvModal"));
 // Les modales ne sont montées que sur action : formulaire de trade (47 Ko de
 // source à elle seule), détail d'un trade, détail d'une notification. Elles
 // étaient importées en STATIQUE, donc payées au premier octet par un trader
 // qui ouvre son tableau de bord et ne clique sur rien. Elles sont préchargées
 // dès que le navigateur est libre (voir `preloadModals` plus bas) : au clic,
 // le chunk est déjà là.
-const TradeModal = lazy(() => import("./components/TradeModal"));
-const TradeDetailModal = lazy(() => import("./components/TradeDetailModal"));
-const NotificationDetailModal = lazy(() => import("./components/NotificationDetailModal"));
+const TradeModal = lazyPage(() => import("./components/TradeModal"));
+const TradeDetailModal = lazyPage(() => import("./components/TradeDetailModal"));
+const NotificationDetailModal = lazyPage(() => import("./components/NotificationDetailModal"));
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, isPage, type Page } from "./types";
 import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
@@ -105,7 +105,7 @@ import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import { PageActionsProvider } from "./contexts/PageActionsContext";
-const Landing = lazy(() => import("./pages/Landing"));
+const Landing = lazyPage(() => import("./pages/Landing"));
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
@@ -941,14 +941,21 @@ function AppContent() {
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       {/* Mobile : la pastille des sous-comptes flotte en bas à gauche, en miroir
           de la bulle Jarvis. Solde = départ + P&L. */}
-      <AccountSwitcher
-        variant="fab"
-        balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
-      />
+      {/* Chaque widget flottant a son propre filet : une erreur dans la bulle
+          des sous-comptes ne doit jamais faire tomber toute l'application sur
+          l'écran 500 — elle s'efface, se signale, et se relance. */}
+      <PageErrorBoundary resetKey={`fab-${page}`}>
+        <AccountSwitcher
+          variant="fab"
+          balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
+        />
+      </PageErrorBoundary>
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
-      <Suspense fallback={null}>
-        <AiAssistant trades={trades} page={page} />
-      </Suspense>
+      <PageErrorBoundary resetKey={`jarvis-${page}`}>
+        <Suspense fallback={null}>
+          <AiAssistant trades={trades} page={page} />
+        </Suspense>
+      </PageErrorBoundary>
       <Suspense fallback={null}>
         {modalOpen && (
           <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />

@@ -1,4 +1,5 @@
-import { lazy, type ComponentType, type LazyExoticComponent } from "react";
+import { lazyPage } from "@/shared/lazy-page";
+import { type ComponentType, type LazyExoticComponent } from "react";
 import type { JarvisContext } from "./context";
 
 /**
@@ -14,7 +15,7 @@ import type { JarvisContext } from "./context";
  * Conversation, directement. Le moteur de suggestions (`insights/`) reste — il
  * est pur, testé, et nourrit la conversation.
  *
- * Lazy loading : chaque workspace est un `lazy()` séparé → un espace jamais
+ * Lazy loading : chaque workspace est un `lazyPage()` séparé → un espace jamais
  * ouvert n'est jamais téléchargé. Le Shell reste extrêmement léger.
  */
 
@@ -45,7 +46,7 @@ export interface JarvisWorkspaceProps {
 export const JARVIS_WORKSPACES: Partial<
   Record<JarvisWorkspaceId, LazyExoticComponent<ComponentType<JarvisWorkspaceProps>>>
 > = {
-  conversation: lazy(() => import("./workspaces/ConversationWorkspace")),
-  settings: lazy(() => import("./workspaces/SettingsWorkspace")),
+  conversation: lazyPage(() => import("./workspaces/ConversationWorkspace")),
+  settings: lazyPage(() => import("./workspaces/SettingsWorkspace")),
   // reports, analyses, memory, goals, history, tools — à venir
 };

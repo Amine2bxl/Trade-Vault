@@ -181,6 +181,7 @@ describe("la liste de ce qui survit ne rouille pas", () => {
       "../src/app/hooks/useSidebarCollapsed.ts",
       "../src/app/utils/themes.ts",
       "../src/routes/__root.tsx",
+      "../src/shared/lazy-page.ts",
       "../src/app/contexts/AuthContext.tsx",
     ]
       .map(read)

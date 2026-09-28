@@ -19,7 +19,7 @@
  * une page ailleurs sans la précharger est donc impossible par construction.
  */
 
-import { lazy } from "react";
+import { lazyPage } from "@/shared/lazy-page";
 import type { Page } from "./types";
 
 // Un import dynamique par page. Le registre de modules ESM déduplique : appeler
@@ -44,25 +44,25 @@ const loadSubscription = () => import("./pages/Subscription");
 const loadInbox = () => import("./pages/Inbox");
 const loadMonteCarlo = () => import("./pages/MonteCarlo");
 
-export const Journal = lazy(loadJournal);
-export const Checklist = lazy(loadChecklist);
-export const CalendarPage = lazy(loadCalendar);
-export const Analytics = lazy(loadAnalytics);
-export const Mistakes = lazy(loadMistakes);
-export const Jarvis = lazy(loadJarvis);
-export const Profile = lazy(loadProfile);
-export const MissedOpportunities = lazy(loadMissed);
-export const EconomicNews = lazy(loadNews);
-export const Seasonality = lazy(loadSeasonality);
-export const LotSizeCalculator = lazy(loadCalculator);
-export const Settings = lazy(loadSettings);
-export const Reports = lazy(loadReports);
-export const Goals = lazy(loadGoals);
-export const TradingPlan = lazy(loadTradingPlan);
-export const Appearance = lazy(loadAppearance);
-export const Subscription = lazy(loadSubscription);
-export const Inbox = lazy(loadInbox);
-export const MonteCarlo = lazy(loadMonteCarlo);
+export const Journal = lazyPage(loadJournal);
+export const Checklist = lazyPage(loadChecklist);
+export const CalendarPage = lazyPage(loadCalendar);
+export const Analytics = lazyPage(loadAnalytics);
+export const Mistakes = lazyPage(loadMistakes);
+export const Jarvis = lazyPage(loadJarvis);
+export const Profile = lazyPage(loadProfile);
+export const MissedOpportunities = lazyPage(loadMissed);
+export const EconomicNews = lazyPage(loadNews);
+export const Seasonality = lazyPage(loadSeasonality);
+export const LotSizeCalculator = lazyPage(loadCalculator);
+export const Settings = lazyPage(loadSettings);
+export const Reports = lazyPage(loadReports);
+export const Goals = lazyPage(loadGoals);
+export const TradingPlan = lazyPage(loadTradingPlan);
+export const Appearance = lazyPage(loadAppearance);
+export const Subscription = lazyPage(loadSubscription);
+export const Inbox = lazyPage(loadInbox);
+export const MonteCarlo = lazyPage(loadMonteCarlo);
 
 /** `dashboard` est absent : il vit dans le chunk principal, jamais différé. */
 const LOADERS: Partial<Record<Page, () => Promise<unknown>>> = {
