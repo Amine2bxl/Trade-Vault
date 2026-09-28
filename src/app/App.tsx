@@ -105,7 +105,6 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import { PageActionsProvider } from "./contexts/PageActionsContext";
 const Landing = lazy(() => import("./pages/Landing"));
-import AccountSwitcher from "./components/AccountSwitcher";
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
@@ -937,14 +936,16 @@ function AppContent() {
           )}
         </PageActionsProvider>
       </main>
-      {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
-      <AccountSwitcher
-        variant="fab"
-        balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
-      />
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
-      <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
+      {/* Plus de pastille de compte flottante sur mobile : le compte se change
+          depuis « Plus », dans la barre du bas. */}
+      <MobileNav
+        page={page}
+        setPage={setPage}
+        onAddTrade={handleAdd}
+        balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
+      />
       <Suspense fallback={null}>
         <AiAssistant trades={trades} page={page} />
       </Suspense>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   User,
   Building2,
@@ -103,7 +104,9 @@ export default function AccountSwitcher({
    *  variante `card` (le rail), elle réduit le sélecteur au seul disque de
    *  couleur du compte — l'état du rail plié. */
   compact?: boolean;
-  variant?: "bar" | "fab" | "card";
+  /** `row` : la même pilule, posée dans la feuille « Plus » du mobile au lieu
+   *  de flotter au-dessus du contenu. */
+  variant?: "bar" | "fab" | "card" | "row";
   balance?: number;
 }) {
   const { accounts, activeAccount, switchAccount, removeAccount } = useAccounts();
@@ -251,7 +254,7 @@ export default function AccountSwitcher({
   // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
   // that opens a premium bottom sheet of tappable account cards — one tap to
   // switch sub-accounts. Original layout, no dropdown crowding the top bar.
-  if (variant === "fab") {
+  if (variant === "fab" || variant === "row") {
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
     return (
@@ -273,7 +276,12 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
-          className="md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
+          className={cn(
+            "flex items-center gap-2.5 float-shell transition active:scale-[0.98]",
+            variant === "row"
+              ? "h-14 w-full rounded-2xl pl-2 pr-3"
+              : "md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full",
+          )}
         >
           <span
             className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border"
@@ -296,136 +304,138 @@ export default function AccountSwitcher({
           <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
         </button>
 
-        {open && (
-          <div
-            className="md:hidden fixed inset-0 z-[var(--tv-z-sheet)] flex items-end bg-black/60 backdrop-blur-sm animate-fade-in"
-            onClick={() => setOpen(false)}
-          >
+        {open &&
+          createPortal(
             <div
-              onClick={(e) => e.stopPropagation()}
-              className="w-full glass-strong rounded-t-3xl border-t border-white/[0.08] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] animate-slide-up"
+              className="md:hidden fixed inset-0 z-[var(--tv-z-modal-top)] flex items-end bg-black/60 backdrop-blur-sm animate-fade-in"
+              onClick={() => setOpen(false)}
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-                <div>
-                  <h2 className="tv-title">{t("account.title")}</h2>
-                  <p className="tv-row-label">{t("account.subtitle")}</p>
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full glass-strong rounded-t-3xl border-t border-white/[0.08] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] animate-slide-up"
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                  <div>
+                    <h2 className="tv-title">{t("account.title")}</h2>
+                    <p className="tv-row-label">{t("account.subtitle")}</p>
+                  </div>
+                  <button
+                    onClick={() => setOpen(false)}
+                    aria-label={t("common.close")}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setOpen(false)}
-                  aria-label={t("common.close")}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2.5 p-4 max-h-[55vh] overflow-y-auto">
-                {accounts.map((a) => {
-                  const Icon = getAccountIcon(a);
-                  const active = a.id === activeAccount.id;
+                <div className="grid grid-cols-2 gap-2.5 p-4 max-h-[55vh] overflow-y-auto">
+                  {accounts.map((a) => {
+                    const Icon = getAccountIcon(a);
+                    const active = a.id === activeAccount.id;
 
-                  return (
-                    <div
-                      key={a.id}
-                      className={cn(
-                        "relative flex flex-col gap-2 rounded-2xl p-3.5 border transition",
-                        active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06]",
-                      )}
-                      style={
-                        active
-                          ? {
-                              borderColor: ACCOUNT_TINT.border,
-                              boxShadow: `0 0 0 1px ${ACCOUNT_TINT.ring}`,
-                            }
-                          : undefined
-                      }
-                    >
-                      <button
-                        onClick={() => {
-                          switchAccount(a.id);
-                          setOpen(false);
-                        }}
-                        className="flex flex-col gap-2 text-left active:scale-[0.97] transition-transform"
-                      >
-                        <span
-                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
-                        >
-                          <Icon className="w-4.5 h-4.5" />
-                        </span>
-                        <span className="min-w-0 pr-6">
-                          <span className="block text-sm font-bold text-white truncate">
-                            {a.name}
-                          </span>
-                          <span className="block text-[10px] text-slate-500 truncate">
-                            {t(TYPE_LABEL_KEY[a.type])}
-                          </span>
-                        </span>
-                      </button>
-
-                      {/* Rename + delete affordances */}
-                      <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1">
-                        {accounts.length > 1 && (
-                          <button
-                            onClick={() => setDeleting(a)}
-                            aria-label={t("account.delete")}
-                            className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                    return (
+                      <div
+                        key={a.id}
+                        className={cn(
+                          "relative flex flex-col gap-2 rounded-2xl p-3.5 border transition",
+                          active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06]",
                         )}
+                        style={
+                          active
+                            ? {
+                                borderColor: ACCOUNT_TINT.border,
+                                boxShadow: `0 0 0 1px ${ACCOUNT_TINT.ring}`,
+                              }
+                            : undefined
+                        }
+                      >
                         <button
                           onClick={() => {
-                            setEditingModalAccount(a);
+                            switchAccount(a.id);
                             setOpen(false);
                           }}
-                          aria-label={t("account.rename")}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
+                          className="flex flex-col gap-2 text-left active:scale-[0.97] transition-transform"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <span
+                            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
+                          >
+                            <Icon className="w-4.5 h-4.5" />
+                          </span>
+                          <span className="min-w-0 pr-6">
+                            <span className="block text-sm font-bold text-white truncate">
+                              {a.name}
+                            </span>
+                            <span className="block text-[10px] text-slate-500 truncate">
+                              {t(TYPE_LABEL_KEY[a.type])}
+                            </span>
+                          </span>
                         </button>
+
+                        {/* Rename + delete affordances */}
+                        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1">
+                          {accounts.length > 1 && (
+                            <button
+                              onClick={() => setDeleting(a)}
+                              aria-label={t("account.delete")}
+                              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setEditingModalAccount(a);
+                              setOpen(false);
+                            }}
+                            aria-label={t("account.rename")}
+                            className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {active && (
+                          <span className="tv-accent-fill absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3" strokeWidth={3} />
+                          </span>
+                        )}
                       </div>
+                    );
+                  })}
 
-                      {active && (
-                        <span className="tv-accent-fill absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3" strokeWidth={3} />
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {canAddAccount ? (
-                  <button
-                    onClick={() => {
-                      setCreateOpen(true);
-                      setOpen(false);
-                    }}
-                    className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition active:scale-[0.97] min-h-[92px]"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span className="text-xs font-semibold text-center">
-                      {t("account.newShort")}
-                    </span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      goPro();
-                      setOpen(false);
-                    }}
-                    className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-white/[0.1] bg-white/[0.03] text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/[0.06] transition active:scale-[0.97] min-h-[92px]"
-                  >
-                    <Lock className="w-5 h-5" />
-                    <span className="text-xs font-semibold text-center">
-                      {t("account.goProShort")}
-                    </span>
-                  </button>
-                )}
+                  {canAddAccount ? (
+                    <button
+                      onClick={() => {
+                        setCreateOpen(true);
+                        setOpen(false);
+                      }}
+                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition active:scale-[0.97] min-h-[92px]"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span className="text-xs font-semibold text-center">
+                        {t("account.newShort")}
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        goPro();
+                        setOpen(false);
+                      }}
+                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-white/[0.1] bg-white/[0.03] text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/[0.06] transition active:scale-[0.97] min-h-[92px]"
+                    >
+                      <Lock className="w-5 h-5" />
+                      <span className="text-xs font-semibold text-center">
+                        {t("account.goProShort")}
+                      </span>
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            </div>,
+            document.body,
+          )}
 
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
         {editingModalAccount && (

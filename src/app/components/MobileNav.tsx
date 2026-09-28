@@ -16,11 +16,14 @@ import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useHasTradeDraft } from "../utils/persistence";
 import { Sheet } from "@/shared/ui";
+import AccountSwitcher from "./AccountSwitcher";
 
 interface MobileNavProps {
   page: Page;
   setPage: (p: Page) => void;
   onAddTrade: () => void;
+  /** Solde du compte actif (départ + P&L), affiché dans « Plus ». */
+  balance?: number;
 }
 
 /**
@@ -42,7 +45,7 @@ interface MobileNavProps {
 /** Les sections rangées derrière « Plus », dans l'ordre du déroulé d'une session. */
 const MORE_SECTIONS: SectionId[] = ["preparation", "coach", "strategy", "settings"];
 
-export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps) {
+export default function MobileNav({ page, setPage, onAddTrade, balance }: MobileNavProps) {
   const { t } = useT();
   const { user } = useAuth();
   const hasDraft = useHasTradeDraft(user?.id);
@@ -150,6 +153,9 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       {/* « Plus » : les autres sections, groupées, une ligne par page. */}
       <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title={t("nav.more")}>
         <div className="space-y-5 pb-[env(safe-area-inset-bottom,0px)]">
+          {/* Le compte actif — il flottait en bas à gauche de chaque écran ;
+              il vit maintenant ici, en tête des réglages de session. */}
+          <AccountSwitcher variant="row" balance={balance} />
           {MORE_SECTIONS.map((sid) => (
             <section key={sid}>
               <h3 className="tv-label mb-1.5 px-1 text-slate-500">

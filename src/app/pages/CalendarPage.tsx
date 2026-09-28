@@ -418,7 +418,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                 {row.map((day, colIdx) => {
                   if (day === null)
                     return (
-                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[48px] md:min-h-[80px]" />
+                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[52px] md:min-h-[88px]" />
                     );
                   const dateStr = getDateStr(day);
                   const data = dailyData[dateStr];
@@ -428,14 +428,16 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                   const dayMissed = missedByDate[dateStr] || [];
                   const missedCount = dayMissed.length;
 
-                  /* LA CASE EST UNE COULEUR, PAS UN TABLEAU DE BORD.
-                     Elle portait le P&L, le nombre de trades et un R moyen :
-                     trente-et-une mini-fiches dans un mois. La teinte dit
-                     maintenant la journée — vert, rouge, ou partagée dans la
-                     proportion exacte des gains et des pertes (`dayTone`) —,
-                     et son intensité suit l'ampleur de la journée dans le
-                     mois. Le détail s'ouvre au clic ; les chiffres restent
-                     accessibles au survol et aux lecteurs d'écran. */
+                  const isAllBE = data && data.count > 0 && data.count === data.breakEven;
+                  const isWin = data && !isAllBE && data.pnl > 0;
+                  const isLoss = data && !isAllBE && data.pnl < 0;
+
+                  /* LE FOND EST UN DÉGRADÉ, LE CONTENU NE CHANGE PAS.
+                     La case garde son P&L, son nombre de trades et son R ; seul
+                     le fond dit désormais la journée : vert, rouge, ou partagé
+                     dans la proportion exacte des gains et des pertes
+                     (`dayTone`), avec une intensité qui suit l'ampleur de la
+                     journée dans le mois. */
                   const mag =
                     data && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
                   const background = tone ? dayToneBackground(tone, mag) : undefined;
@@ -462,10 +464,9 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       }}
                       disabled={!data && missedCount === 0}
                       style={cellStyle}
-                      title={summary}
                       aria-label={summary}
                       className={cn(
-                        "relative flex min-h-[48px] flex-col overflow-hidden rounded-lg border p-1.5 text-left transition-[filter,transform] duration-200 md:min-h-[80px] md:rounded-xl md:p-2",
+                        "relative flex min-h-[52px] flex-col overflow-hidden rounded-lg border p-1 text-left transition-[filter,transform] duration-200 md:min-h-[88px] md:rounded-xl md:p-2",
                         !cellStyle && !missedCount && "border-white/[0.04] bg-white/[0.02]",
                         !cellStyle && isWeekend && "bg-white/[0.03]",
                         !cellStyle && missedCount > 0 && "border-amber-500/20",
@@ -489,11 +490,53 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                         >
                           {day}
                         </span>
-                        {/* Une occasion manquée ce jour-là : un repère, sans chiffre. */}
                         {missedCount > 0 && (
-                          <Target className="h-2.5 w-2.5 text-amber-300/80" aria-hidden />
+                          <span
+                            className="flex items-center gap-0.5 text-[11px] font-bold text-amber-300"
+                            title={`${missedCount} ${t("missed.title")}`}
+                          >
+                            <Target className="h-2.5 w-2.5" />
+                            {missedCount}
+                          </span>
                         )}
                       </div>
+
+                      {/* P&L — le chiffre de la journée, au centre de la case. */}
+                      {data && (
+                        <div className="flex flex-1 flex-col justify-center">
+                          <div
+                            className={cn(
+                              "tv-figure text-sm leading-none md:text-lg",
+                              isAllBE
+                                ? "text-slate-300"
+                                : isWin
+                                  ? "text-emerald-300"
+                                  : isLoss
+                                    ? "text-red-300"
+                                    : "text-slate-200",
+                            )}
+                          >
+                            {isAllBE
+                              ? t("common.be")
+                              : `${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)}`}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Pied : nombre de trades + R moyen. */}
+                      {data && (
+                        <div className="tv-figure flex items-center gap-1.5 text-[11px]">
+                          <span className="text-slate-300/90">
+                            {data.count}{" "}
+                            {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
+                          </span>
+                          {data.avgRR > 0 && (
+                            <span className="hidden text-[var(--tv-highlight)] md:inline">
+                              {data.avgRR.toFixed(1)}R
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </button>
                   );
                 })}

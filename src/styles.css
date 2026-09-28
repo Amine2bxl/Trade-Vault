@@ -1133,7 +1133,7 @@ body {
        + Jarvis), aligné sur l'écart nav→widget (~20-25px). Le padding est fixe :
        ajouter du contenu garde TOUJOURS le même espace, rien n'est jamais
        masqué. */
-    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
     /* Clamp the scroll container to the viewport so no child can drag the
        whole page sideways on Analytics/tables. */
     overflow-x: hidden;
@@ -2573,9 +2573,11 @@ a:focus-visible,
            pourcentage, la lumière s'étirerait sur toute la hauteur de la
            fenêtre — sur une page longue, un bandeau clair de 300px en haut,
            qu'on lit comme un en-tête et non comme un éclairage. */
+    /* La plaque laisse passer le fond du site (grille + lumières) : légèrement
+       translucide, pour que la fenêtre et la page soient une seule scène. */
     background:
       linear-gradient(180deg, rgb(255 255 255 / 0.03) 0px, rgb(255 255 255 / 0) 150px),
-      var(--tv-plate-0);
+      color-mix(in srgb, var(--tv-plate-0) 82%, transparent);
     border: 0;
     border-radius: var(--tv-shell-radius);
     /* Le liseré devient un liseré INTERNE, comme celui du rail, avec le même
@@ -5235,4 +5237,44 @@ thead .plan-cmp-col.is-pro {
 }
 .dash-action svg {
   color: var(--tv-highlight);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE FOND DU SITE — celui de la vitrine, partout
+   ═══════════════════════════════════════════════════════════════════════════
+   Une grille fine qui s'efface vers le centre, une lumière en haut à droite
+   et une en bas à gauche. Les deux teintes viennent du THÈME (`--tv-accent`
+   et `--tv-accent-2`) : le studio de thèmes repeint le fond avec le reste.
+   Posé en `fixed` derrière tout : il ne défile pas, il ne coûte aucun
+   repeint au scroll. Aucune animation. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+body::before {
+  background:
+    radial-gradient(52rem 34rem at 100% 0%, rgb(var(--tv-accent-rgb) / 0.12), transparent 65%),
+    radial-gradient(
+      48rem 32rem at 0% 100%,
+      rgb(var(--tv-accent-2-rgb, var(--tv-accent-rgb)) / 0.09),
+      transparent 65%
+    );
+}
+body::after {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 25%, transparent 85%);
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 25%, transparent 85%);
+}
+@media print {
+  body::before,
+  body::after {
+    display: none;
+  }
 }
