@@ -1,3 +1,4 @@
+import { getCurrency } from "@/shared/currency";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, Check, Eraser, RotateCcw, Square, Volume2, Zap } from "lucide-react";
 import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
@@ -755,7 +756,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
          conversation stockée. */
       const run = async (): Promise<JarvisResult> => {
         const call = () =>
-          askCoach({ data: { ...payload, question: query.slice(0, 500), accountId } });
+          askCoach({
+            data: { ...payload, question: query.slice(0, 500), accountId, currency: getCurrency() },
+          });
         let res;
         try {
           res = await call();

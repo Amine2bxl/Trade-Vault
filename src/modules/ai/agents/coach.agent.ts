@@ -1,3 +1,4 @@
+import { currencySymbol, formatMoney, parseCurrency } from "@/shared/currency";
 /**
  * AI Coach — agent V1.
  *
@@ -27,6 +28,8 @@ export interface CoachInput {
   question: string;
   /** ISO 639-1 UI language — the answer is written in this language. */
   language?: string;
+  /** ISO 4217 currency of the journal — every amount is written in it. */
+  currency?: string;
   /** Precomputed stats snapshot (deterministic, from the engines). */
   stats?: Record<string, number | string | null>;
   /** Compact recent trades. */
@@ -249,9 +252,14 @@ export function buildCoachMessages(input: CoachInput, opts: BuildOptions = {}) {
   if (memoryBlock.length) builder.withMemory(memoryBlock);
 
   const lang = languageName(input.language);
+  // La devise du journal : sans elle, le modèle écrivait des « $ » à un
+  // trader qui tient son journal en euros.
+  const currency = parseCurrency(input.currency);
+  const currencyRule = `Every money amount in the data is in ${currency}. Write amounts with the ${currencySymbol(currency)} symbol (for example ${formatMoney(-1234.5, { currency })}), never with another currency.`;
   return buildPrompt({
     identity: [
       coachIdentity(lang),
+      currencyRule,
       ANTI_HALLUCINATION,
       ...(opts.tools ? [TOOL_PROTOCOL] : []),
     ].join("\n\n"),

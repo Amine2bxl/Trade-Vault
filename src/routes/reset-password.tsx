@@ -54,9 +54,14 @@ function ResetPasswordPage() {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center min-h-screen overflow-hidden"
+      /* `tv-public` : les jetons émeraude de la vitrine. Le bouton était un
+         dégradé bleu → indigo, dernière trace de l'ancienne identité. */
+      className="tv-public fixed inset-0 flex items-center justify-center min-h-screen overflow-hidden"
       style={{ background: "var(--tv-bg)" }}
     >
+      <div className="err-grille" aria-hidden />
+      <div className="err-nappe" aria-hidden />
+      <div className="err-nappe-2" aria-hidden />
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="glass-strong rounded-3xl p-8 shadow-2xl shadow-black/40">
           <div className="text-center mb-8">
@@ -111,7 +116,7 @@ function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/20"
+                className="err-cta w-full disabled:opacity-60"
               >
                 {loading ? "Updating..." : "Update password"}
               </button>

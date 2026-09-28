@@ -120,8 +120,8 @@ export default function CompAccessSection() {
   return (
     <div className="glass-strong space-y-4 rounded-3xl p-5">
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-500">
-          <Gift className="h-4 w-4 text-white" />
+        <span className="grid h-8 w-8 place-items-center rounded-lg tv-accent-fill">
+          <Gift className="h-4 w-4" />
         </span>
         <div className="min-w-0">
           <h2 className="tv-title">{fr ? "Accès offert" : "Complimentary access"}</h2>
@@ -171,7 +171,7 @@ export default function CompAccessSection() {
               key={g.email}
               className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5"
             >
-              <ShieldCheck className="h-4 w-4 shrink-0 text-violet-400" />
+              <ShieldCheck className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold text-white">{g.email}</div>
                 <div className="truncate text-[11px] text-slate-500">

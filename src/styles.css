@@ -3520,18 +3520,143 @@ a:focus-visible,
       découpe le document à la première page. Les ancêtres redeviennent donc
       de simples blocs sans hauteur, sans débordement et sans décor.
 
-   3. « Le papier est blanc. »
-      L'interface est sombre ; un aplat sombre sur une page A4 est illisible
-      et impubliable. La feuille repasse en encre noire sur fond blanc, et
-      seules les couleurs PORTEUSES DE SENS survivent — le vert du gain, le
-      rouge de la perte — avec `print-color-adjust: exact` pour que le
-      navigateur ne les efface pas au nom de l'économie d'encre.
+   3. « Le papier est un rapport TradeVault. »
+      Le PDF garde l'identité du produit : fond sombre, nappes d'accent très
+      diffuses, émeraude du CTA pour ce qui gagne, rouge pour ce qui perd.
+      `print-color-adjust: exact` sur la racine et la feuille empêche le
+      navigateur d'effacer les fonds au nom de l'économie d'encre — sans
+      lui, on retrouverait du texte clair sur du blanc. Une couverture ouvre
+      le document ; chaque section reste d'un seul tenant sur sa page.
    ────────────────────────────────────────────────────────────────────────── */
+
+.rp-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 26rem;
+}
+.rp-switch-btn {
+  display: grid;
+  place-items: center;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.75rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+.rp-switch-btn:hover:not(:disabled) {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.rp-switch-btn:disabled {
+  opacity: 0.35;
+}
+.rp-switch-label {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.75rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rp-switch-label:focus-within {
+  border-color: var(--tv-border-accent);
+}
+/* Le <select> natif couvre le libellé, invisible : au toucher, c'est la roue
+   du système qui s'ouvre. */
+.rp-switch-label select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.rp-switch-live,
+.rp-pill-live {
+  color: #fbbf24;
+  border-color: rgb(251 191 36 / 0.35);
+  background: rgb(251 191 36 / 0.1);
+}
+.rp-switch-live {
+  margin-left: auto;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid rgb(251 191 36 / 0.35);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rp-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+.rp-progress-track {
+  display: block;
+  height: 0.3rem;
+  width: 7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tv-plate-3);
+}
+.rp-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #fbbf24;
+}
+.rp-provisional {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: #fcd34d;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  background: rgb(251 191 36 / 0.05);
+}
+.rp-takeaways {
+  display: grid;
+  gap: 0.45rem;
+}
+.rp-takeaways li {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--tv-text-secondary);
+}
+.rp-takeaways li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  height: 0.35rem;
+  width: 0.35rem;
+  border-radius: 999px;
+  background: var(--tv-chart-green);
+}
 
 @media print {
   @page {
     size: A4 portrait;
-    margin: 14mm 12mm;
+    margin: 12mm 12mm 14mm;
   }
 
   /* 1 — l'élagage récursif */
@@ -3558,22 +3683,28 @@ a:focus-visible,
     backdrop-filter: none !important;
   }
 
-  /* 3 — le papier */
+  /* 3 — le papier TradeVault : la racine porte le fond (il couvre aussi les
+     marges de page), la feuille porte les nappes d'accent. */
   html,
   body {
-    background: #fff !important;
+    background: #0a0b0d !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .tv-print-sheet {
-    /* Les jetons de couleur repassent en encre : tout ce qui les lit —
-       jusqu'aux graduations des graphes recharts, qui reçoivent
-       `fill: var(--tv-text-muted)` — suit sans une règle de plus. */
-    --tv-bg: #ffffff;
-    --tv-text-primary: #0f172a;
-    --tv-text-secondary: #475569;
-    --tv-text-muted: #475569;
-    --tv-border: rgba(15, 23, 42, 0.15);
-    --tv-border-strong: rgba(15, 23, 42, 0.28);
+    --tv-bg: #0a0b0d;
+    --tv-plate-2: #13151a;
+    --tv-plate-3: #1a1d23;
+    --tv-text-primary: #f4f6f8;
+    --tv-text-secondary: #b8c0cc;
+    --tv-text-muted: #7c8594;
+    --tv-border: rgba(255, 255, 255, 0.08);
+    --tv-border-strong: rgba(255, 255, 255, 0.16);
+    --tv-chart-green: #22e08a;
+    --tv-chart-green-rgb: 34 224 138;
+    --tv-accent: #22e08a;
+    --tv-accent-rgb: 34 224 138;
 
     display: block !important;
     width: 100% !important;
@@ -3581,20 +3712,20 @@ a:focus-visible,
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background: #fff !important;
+    background:
+      radial-gradient(60% 28% at 100% 0%, rgba(34, 224, 138, 0.1), transparent 70%),
+      radial-gradient(50% 24% at 0% 100%, rgba(18, 185, 129, 0.07), transparent 70%), #0a0b0d !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
-    color: #0f172a !important;
+    color: #f4f6f8 !important;
   }
 
   .tv-print-sheet,
   .tv-print-sheet * {
-    color: #0f172a !important;
-    border-color: rgba(15, 23, 42, 0.16) !important;
     box-shadow: none !important;
     text-shadow: none !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Aucune animation ne doit être surprise à mi-course par l'impression.
@@ -3611,88 +3742,122 @@ a:focus-visible,
     transform: none !important;
   }
 
-  /* Le gris des libellés secondaires — sinon tout le document est en noir
-     plein et la hiérarchie de lecture disparaît. */
-  .tv-print-sheet .tv-label,
-  .tv-print-sheet .tv-row-label,
-  .tv-print-sheet .tv-hint,
-  .tv-print-sheet .text-slate-500,
-  .tv-print-sheet .text-slate-600,
-  .tv-print-sheet .text-slate-700 {
-    color: #64748b !important;
-  }
-
-  /* LES COULEURS QUI RESTENT — celles qui disent quelque chose. Assombries
-     par rapport à l'écran : le vert et le rouge du thème sombre sont trop
-     clairs pour tenir sur du blanc. */
-  .tv-print-sheet .rp-pos {
-    color: #047857 !important;
-  }
-  .tv-print-sheet .rp-neg {
-    color: #b91c1c !important;
-  }
-  .tv-print-sheet .rp-warn {
-    color: #b45309 !important;
-  }
-  .tv-print-sheet .rp-fill-pos {
-    background: #059669 !important;
-  }
-  .tv-print-sheet .rp-fill-neg {
-    background: #dc2626 !important;
-  }
-  .tv-print-sheet .rp-fill-flat {
-    background: #94a3b8 !important;
-  }
-  .tv-print-sheet .rp-mix,
-  .tv-print-sheet .rp-bartrack {
-    background: #e2e8f0 !important;
-  }
-  .tv-print-sheet .rp-pill-pos {
-    color: #047857 !important;
-    background: #ecfdf5 !important;
-    border-color: #a7f3d0 !important;
-  }
-  .tv-print-sheet .rp-pill-neg {
-    color: #b91c1c !important;
-    background: #fef2f2 !important;
-    border-color: #fecaca !important;
-  }
-  .tv-print-sheet .rp-rule {
-    background: rgba(15, 23, 42, 0.16) !important;
-  }
   .tv-print-sheet .tv-kpi,
   .tv-print-sheet .rp-momcell,
   .tv-print-sheet .rp-weekcell {
-    background: #fff !important;
-  }
-  .tv-print-sheet .rp-debrief {
-    border-left-color: #94a3b8 !important;
+    background: #13151a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
   }
   .tv-print-sheet .recharts-cartesian-grid line {
-    stroke: rgba(15, 23, 42, 0.12) !important;
+    stroke: rgba(255, 255, 255, 0.06) !important;
   }
 
-  /* L'en-tête et le pied de la feuille n'existent que sur le papier — et le
-     sourcil « rapport mensuel » disparaît, puisque l'en-tête le porte déjà. */
+  /* ── LA COUVERTURE — une page à elle seule ── */
   .rp-print-only {
     display: flex !important;
   }
   .rp-eyebrow {
     display: none !important;
   }
+  .rp-cover {
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 262mm;
+    padding: 6mm 4mm 4mm;
+    break-after: page;
+    page-break-after: always;
+  }
+  .rp-cover-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 15pt;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #f4f6f8;
+  }
+  .rp-cover-body {
+    margin-top: auto;
+  }
+  .rp-cover-eyebrow {
+    font-size: 10pt;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #22e08a;
+  }
+  .rp-cover-title {
+    margin-top: 0.35rem;
+    font-size: 40pt;
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    text-transform: capitalize;
+    color: #f4f6f8;
+  }
+  .rp-cover-status {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid rgba(34, 224, 138, 0.4);
+    border-radius: 999px;
+    background: rgba(34, 224, 138, 0.08);
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #22e08a;
+  }
+  .rp-cover-status-live {
+    border-color: rgba(251, 191, 36, 0.45);
+    background: rgba(251, 191, 36, 0.08);
+    color: #fbbf24;
+  }
+  .rp-cover-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem 1.5rem;
+    margin-top: 2.2rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .rp-cover-meta dt {
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7c8594;
+  }
+  .rp-cover-meta dd {
+    margin: 0.2rem 0 0;
+    font-size: 11pt;
+    font-weight: 600;
+    color: #f4f6f8;
+  }
+  .rp-cover-note {
+    margin-top: 1.2rem;
+    font-size: 9pt;
+    line-height: 1.5;
+    color: #fcd34d;
+  }
+
+  /* ── L'EN-TÊTE ET LE PIED DES PAGES DE CONTENU ── */
   .rp-paper-head {
-    align-items: baseline;
+    align-items: center;
     gap: 0.6rem;
     padding-bottom: 0.5rem;
     margin-bottom: 0.4rem;
-    border-bottom: 1.5px solid #0f172a !important;
+    border-bottom: 1px solid rgba(34, 224, 138, 0.35) !important;
     font-size: 9pt;
-    color: #475569 !important;
+    color: #b8c0cc !important;
   }
   .rp-paper-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     font-weight: 800;
     letter-spacing: -0.01em;
-    color: #0f172a !important;
+    color: #f4f6f8 !important;
   }
   .rp-paper-date {
     margin-left: auto;
@@ -3701,16 +3866,16 @@ a:focus-visible,
     justify-content: center;
     padding-top: 0.5rem;
     margin-top: 0.4rem;
-    border-top: 1px solid rgba(15, 23, 42, 0.16) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
     font-size: 8pt;
-    color: #64748b !important;
+    color: #7c8594 !important;
   }
 
   /* Une section ne se coupe pas en deux entre deux pages tant qu'elle tient
      sur une. Le titre reste avec ce qu'il annonce. */
   .tv-print-sheet .rp-section {
-    padding: 0.7rem 0 !important;
-    border-top-color: rgba(15, 23, 42, 0.14) !important;
+    padding: 0.75rem 0.2rem !important;
+    border-top-color: rgba(255, 255, 255, 0.07) !important;
     break-inside: avoid;
     page-break-inside: avoid;
   }
