@@ -6,7 +6,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 
 import { cn } from "../utils/cn";
-import { dayTone, dayToneBackground } from "../utils/calendarTone";
+import { dayTone, dayToneBackground, dayToneBorder } from "../utils/calendarTone";
+import { useIsNarrow } from "../hooks/useIsNarrow";
 import { todayLocalDate } from "@/shared/calendar-date";
 import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
@@ -205,6 +206,9 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   // Heatmap scale — the deepest tint maps to the month's single biggest |P&L|
   // day, so cell intensity reads as relative magnitude (Topstep/Lucid style),
   // not just win/loss binary.
+  // Sur téléphone, un montant à quatre chiffres ne tient pas dans une case de
+  // 50px : il passe en forme courte (« €1.2k »), jamais tronqué.
+  const narrow = useIsNarrow();
   const maxAbsDay = useMemo(() => {
     let m = 0;
     for (let d = 1; d <= new Date(year, month + 1, 0).getDate(); d++) {
@@ -347,50 +351,37 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           `overflow-hidden` reste — il sert les coins arrondis, plus à rogner
           un débordement. */}
       <div className="stat-card-elevated mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
-        <div className="flex shrink-0 items-center justify-between px-4 py-2.5 md:px-6 md:py-3 border-b border-white/[0.06]">
-          <button
-            onClick={prevMonth}
-            aria-label={t("common.previous")}
-            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition active:scale-90"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <h3 className="tv-title tracking-tight">
-              {MONTHS[month]} '{String(year).slice(-2)}
-            </h3>
-            <button
-              onClick={goToday}
-              className="flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-cyan-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 active:scale-95"
-            >
-              {t("calendar.today")}
+        {/* L'EN-TÊTE DE LA RÉFÉRENCE : le titre à gauche, le mois entre deux
+            boutons encadrés, « aujourd'hui » à côté. */}
+        <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 md:px-5 md:py-3">
+          <h3 className="tv-title hidden tracking-tight sm:block">{t("calendar.title")}</h3>
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-2 sm:flex-none">
+            <button onClick={prevMonth} aria-label={t("common.previous")} className="cal-nav-btn">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="tv-title min-w-[8.5rem] text-center tracking-tight">
+              {MONTHS[month]} {year}
+            </span>
+            <button onClick={nextMonth} aria-label={t("common.next")} className="cal-nav-btn">
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
           <button
-            onClick={nextMonth}
-            aria-label={t("common.next")}
-            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition active:scale-90"
+            onClick={goToday}
+            className="flex h-9 shrink-0 items-center rounded-lg px-3 text-xs font-semibold text-[var(--tv-highlight)] transition hover:bg-[rgb(var(--tv-accent-rgb)/0.1)] active:scale-95"
           >
-            <ChevronRight className="w-5 h-5" />
+            {t("calendar.today")}
           </button>
         </div>
         {/* Tout tient sur une page : 7 colonnes de jours sur mobile (la
             colonne semaine est masquée), 8 sur desktop. Pas de scroll. */}
-        <div className="grid shrink-0 grid-cols-7 md:grid-cols-8 border-b border-white/[0.06]">
+        <div className="grid shrink-0 grid-cols-7 gap-0.5 px-1 md:grid-cols-8 md:gap-1.5 md:px-2">
           {DAYS.map((d, i) => (
-            <div
-              key={d + i}
-              className={cn(
-                "tv-label py-1.5 md:py-2.5 text-center md:text-xs",
-                i >= 5 ? "text-slate-700" : "text-slate-500",
-              )}
-            >
+            <div key={d + i} className={cn("cal-dow", i >= 5 && "cal-dow-weekend")}>
               {d}
             </div>
           ))}
-          <div className="tv-label hidden md:block py-3 text-center text-slate-600 border-l border-white/[0.06]">
-            {t("calendar.week")}
-          </div>
+          <div className="cal-dow hidden md:block">{t("calendar.week")}</div>
         </div>
         <div className="flex flex-1 flex-col p-1 md:p-2 space-y-0.5 md:space-y-1.5">
           {calendarRows.map((row, rowIdx) => {
@@ -430,25 +421,25 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                   const isWin = data && !isAllBE && data.pnl > 0;
                   const isLoss = data && !isAllBE && data.pnl < 0;
 
-                  /* LE FOND EST UN DÉGRADÉ, LE CONTENU NE CHANGE PAS.
-                     La case garde son P&L, son nombre de trades et son R ; seul
-                     le fond dit désormais la journée : vert, rouge, ou partagé
-                     dans la proportion exacte des gains et des pertes
-                     (`dayTone`), avec une intensité qui suit l'ampleur de la
-                     journée dans le mois. */
+                  /* LA CASE DE LA RÉFÉRENCE. Un jour sans trade est une case
+                     sombre, numéro centré. Un jour tradé est teinté et bordé de
+                     la couleur de son résultat : le numéro, puis le P&L, au
+                     centre — rien d'autre. Le détail d'une journée mixte (gains,
+                     pertes, break-even, plusieurs trades) se lit dans la
+                     COMPOSITION du dégradé (`dayTone`), pas dans des « +1R » ou
+                     des « 33 % » ; l'intensité suit l'ampleur de la journée
+                     dans le mois. */
                   const mag =
                     data && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
                   const background = tone ? dayToneBackground(tone, mag) : undefined;
-                  const cellStyle: CSSProperties | undefined = background
-                    ? { background, borderColor: "rgb(255 255 255 / 0.06)" }
-                    : data
-                      ? {
-                          background: "rgb(148 163 184 / 0.1)",
-                          borderColor: "rgb(148 163 184 / 0.2)",
-                        }
-                      : undefined;
+                  const cellStyle: CSSProperties | undefined = tone
+                    ? {
+                        background: background ?? "rgb(148 163 184 / 0.1)",
+                        borderColor: dayToneBorder(tone),
+                      }
+                    : undefined;
                   const summary = data
-                    ? `${day} · ${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)} · ${data.count} ${
+                    ? `${day} · ${formatMoney(data.pnl, { signed: true })} · ${data.count} ${
                         data.count === 1 ? t("calendar.trade") : t("calendar.trades")
                       }`
                     : undefined;
@@ -464,76 +455,59 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       style={cellStyle}
                       aria-label={summary}
                       className={cn(
-                        "relative flex min-h-[52px] flex-col overflow-hidden rounded-lg border p-1 text-left transition-[filter,transform] duration-200 md:min-h-[88px] md:rounded-xl md:p-2",
-                        !cellStyle && !missedCount && "border-white/[0.04] bg-white/[0.02]",
-                        !cellStyle && isWeekend && "bg-white/[0.03]",
-                        !cellStyle && missedCount > 0 && "border-amber-500/20",
+                        "cal-cell relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-0.5 text-center transition-[filter,transform] duration-200 md:min-h-[88px] md:gap-1 md:rounded-xl",
+                        !cellStyle && "cal-cell-empty",
+                        !cellStyle && missedCount > 0 && "border-amber-500/25",
                         isToday && "ring-1 ring-inset ring-[var(--tv-border-accent)]",
                         (data || missedCount > 0) &&
                           "cursor-pointer hover:brightness-125 active:scale-[0.97]",
                       )}
                     >
-                      <div className="flex items-center justify-between">
+                      {missedCount > 0 && (
+                        <span
+                          className="absolute right-1 top-1 flex items-center gap-0.5 text-[10px] font-bold text-amber-300 md:right-1.5 md:top-1.5"
+                          title={`${missedCount} ${t("missed.title")}`}
+                        >
+                          <Target className="h-2.5 w-2.5" />
+                          <span className="hidden md:inline">{missedCount}</span>
+                        </span>
+                      )}
+                      <span
+                        className={cn(
+                          "tv-figure text-[13px] font-bold leading-none md:text-base",
+                          isToday
+                            ? "text-[var(--tv-highlight)]"
+                            : data
+                              ? "text-white"
+                              : isWeekend
+                                ? "text-slate-500"
+                                : "text-slate-300",
+                        )}
+                      >
+                        {day}
+                      </span>
+                      {data && (
                         <span
                           className={cn(
-                            "tv-figure text-xs md:text-sm",
-                            isToday
-                              ? "font-bold text-[var(--tv-highlight)]"
-                              : data
-                                ? "text-white/90"
-                                : isWeekend
-                                  ? "text-slate-600"
-                                  : "text-slate-500",
+                            "tv-figure max-w-full truncate text-[10px] font-bold leading-none sm:text-[11px] md:text-[15px]",
+                            isAllBE
+                              ? "text-slate-300"
+                              : isWin
+                                ? "text-[var(--tv-chart-green)]"
+                                : isLoss
+                                  ? "text-[var(--tv-chart-red)]"
+                                  : "text-slate-200",
                           )}
                         >
-                          {day}
+                          {isAllBE
+                            ? t("common.be")
+                            : narrow
+                              ? formatMoney(data.pnl, {
+                                  compact: Math.abs(data.pnl) >= 1000,
+                                  whole: true,
+                                })
+                              : formatMoney(data.pnl)}
                         </span>
-                        {missedCount > 0 && (
-                          <span
-                            className="flex items-center gap-0.5 text-[11px] font-bold text-amber-300"
-                            title={`${missedCount} ${t("missed.title")}`}
-                          >
-                            <Target className="h-2.5 w-2.5" />
-                            {missedCount}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* P&L — le chiffre de la journée, au centre de la case. */}
-                      {data && (
-                        <div className="flex flex-1 flex-col justify-center">
-                          <div
-                            className={cn(
-                              "tv-figure text-sm leading-none md:text-lg",
-                              isAllBE
-                                ? "text-slate-300"
-                                : isWin
-                                  ? "text-emerald-300"
-                                  : isLoss
-                                    ? "text-red-300"
-                                    : "text-slate-200",
-                            )}
-                          >
-                            {isAllBE
-                              ? t("common.be")
-                              : `${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)}`}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Pied : nombre de trades + R moyen. */}
-                      {data && (
-                        <div className="tv-figure flex items-center gap-1.5 text-[11px]">
-                          <span className="text-slate-300/90">
-                            {data.count}{" "}
-                            {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
-                          </span>
-                          {data.avgRR > 0 && (
-                            <span className="hidden text-[var(--tv-highlight)] md:inline">
-                              {data.avgRR.toFixed(1)}R
-                            </span>
-                          )}
-                        </div>
                       )}
                     </button>
                   );
@@ -543,7 +517,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                     sur une page), visible en desktop. */}
                 <div
                   className={cn(
-                    "hidden md:flex h-[112px] rounded-xl p-2.5 flex-col justify-center border border-white/[0.04] bg-white/[0.015]",
+                    "hidden md:flex rounded-xl p-2.5 flex-col items-center justify-center text-center border border-white/[0.05] bg-[var(--tv-plate-2)]",
                     week.days === 0 && "opacity-40",
                   )}
                 >
@@ -562,9 +536,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                             : "text-slate-300",
                     )}
                   >
-                    {week.days === 0
-                      ? "—"
-                      : `${week.pnl >= 0 ? "+" : "−"}${Math.abs(week.pnl).toFixed(0)}`}
+                    {week.days === 0 ? "—" : formatMoney(week.pnl, { signed: true, whole: true })}
                   </div>
                   {week.days > 0 && (
                     <div className="tv-figure text-[11px] md:text-[10px] text-slate-500 mt-0.5">
@@ -580,19 +552,37 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
 
       <div className="hidden shrink-0 md:flex items-center justify-center gap-6 mt-2 px-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20" />
+          <div
+            className="w-4 h-4 rounded-md border"
+            style={{
+              background: "rgb(var(--tv-chart-green-rgb) / 0.18)",
+              borderColor: "rgb(var(--tv-chart-green-rgb) / 0.38)",
+            }}
+          />
           <span className="text-[10px] text-slate-500">{t("calendar.legendWinningDay")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-red-500/15 to-red-600/5 border border-red-500/15" />
+          <div
+            className="w-4 h-4 rounded-md border"
+            style={{
+              background: "rgb(var(--tv-chart-red-rgb) / 0.18)",
+              borderColor: "rgb(var(--tv-chart-red-rgb) / 0.38)",
+            }}
+          />
           <span className="text-[10px] text-slate-500">{t("calendar.legendLosingDay")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-slate-500/20 to-slate-600/5 border border-slate-500/25" />
+          <div
+            className="w-4 h-4 rounded-md border"
+            style={{
+              background: "rgb(148 163 184 / 0.12)",
+              borderColor: "rgb(148 163 184 / 0.32)",
+            }}
+          />
           <span className="text-[10px] text-slate-500">{t("calendar.legendBreakEvenDay")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg ring-1 ring-cyan-500/40" />
+          <div className="w-4 h-4 rounded-md ring-1 ring-[var(--tv-border-accent)]" />
           <span className="text-[10px] text-slate-500">{t("calendar.legendToday")}</span>
         </div>
         {/* Heatmap intensity scale — deeper tint = bigger day. */}

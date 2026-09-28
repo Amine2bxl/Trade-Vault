@@ -5695,3 +5695,57 @@ body::after {
     animation: fade-in-up 260ms var(--tv-ease) both;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE CALENDRIER DU JOURNAL — d'après la référence visuelle fournie
+   ══════════════════════════════════════════════════════════════════════════
+   Des jours SÉPARÉS : chaque case est une plaque, chaque en-tête de jour
+   aussi. Le résultat se lit d'abord dans la teinte et le liseré, ensuite
+   dans le montant. */
+.cal-nav-btn {
+  display: grid;
+  place-items: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.65rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+}
+.cal-nav-btn:hover {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.cal-nav-btn:active {
+  transform: scale(0.94);
+}
+.cal-dow {
+  padding: 0.4rem 0;
+  border-radius: 0.5rem;
+  background: var(--tv-plate-2);
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-text-muted);
+}
+.cal-dow-weekend {
+  opacity: 0.6;
+}
+@media (min-width: 768px) {
+  .cal-dow {
+    padding: 0.55rem 0;
+    font-size: 0.68rem;
+  }
+}
+.cal-cell-empty {
+  border-color: rgb(255 255 255 / 0.03);
+  background: var(--tv-plate-2);
+}

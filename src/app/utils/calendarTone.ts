@@ -109,3 +109,17 @@ export function dayToneBackground(tone: DayTone, intensity: number): string | un
   if (g === 0) stops[0] = `${red(a)} 0%`;
   return `linear-gradient(155deg, ${stops.join(", ")})`;
 }
+
+/**
+ * LE LISERÉ DE LA CASE — la couleur du résultat NET, en filet d'un pixel.
+ * La référence visuelle du calendrier sépare les jours par ce liseré : on lit
+ * « gagnant / perdant / neutre » avant même de lire le montant. Une journée
+ * mixte prend la couleur de son résultat net ; son fond, lui, garde la
+ * composition exacte (`dayToneBackground`).
+ */
+export function dayToneBorder(tone: DayTone): string {
+  const sign = tone.kind === "win" ? 1 : tone.kind === "loss" ? -1 : Math.sign(tone.net);
+  if (sign > 0) return "rgb(var(--tv-chart-green-rgb) / 0.38)";
+  if (sign < 0) return "rgb(var(--tv-chart-red-rgb) / 0.38)";
+  return "rgb(148 163 184 / 0.32)";
+}

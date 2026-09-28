@@ -50,3 +50,16 @@ describe("teinte d'une journée du calendrier", () => {
     expect(bg).toContain("--tv-chart-red-rgb");
   });
 });
+
+describe("le liseré de la case", () => {
+  test("il prend la couleur du résultat NET de la journée", async () => {
+    const { dayToneBorder } = await import("../src/app/utils/calendarTone");
+    const mk = (kind: "win" | "loss" | "mixed" | "flat", net: number) =>
+      ({ kind, positiveShare: 0.5, neutralShare: 0, magnitude: 1, net, unit: "R" }) as never;
+    expect(dayToneBorder(mk("win", 2))).toContain("--tv-chart-green-rgb");
+    expect(dayToneBorder(mk("loss", -1))).toContain("--tv-chart-red-rgb");
+    expect(dayToneBorder(mk("mixed", 1))).toContain("--tv-chart-green-rgb");
+    expect(dayToneBorder(mk("mixed", -1))).toContain("--tv-chart-red-rgb");
+    expect(dayToneBorder(mk("flat", 0))).toContain("148 163 184");
+  });
+});
