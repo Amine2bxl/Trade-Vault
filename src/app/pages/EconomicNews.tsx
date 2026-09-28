@@ -413,7 +413,7 @@ export default function EconomicNews() {
 
       {/* Day navigation bar — modern minimal preset-based */}
       {!loading && events.length > 0 && (
-        <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center gap-1 mb-4">
           {[
             {
               preset: "today" as DayNavPreset,
@@ -497,7 +497,7 @@ export default function EconomicNews() {
 
       {/* "All" mode: day picker chips for each day of the week */}
       {dayPreset === "all" && (
-        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+        <div className="flex flex-wrap gap-1.5 mb-4">
           {days.map(({ iso, date, all }) => {
             const on = customDayFilter === iso;
             const isToday = iso === todayIso;

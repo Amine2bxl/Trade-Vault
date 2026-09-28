@@ -402,8 +402,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {/* Pas de marge negative ici : elle fait deborder la rangee de 4px
             de son conteneur (mesure). Le voile de defilement de
             `tv-scroll-x` se suffit a lui-meme. */}
-        <div className="tv-scroll-x min-w-0 flex-1 rounded-xl">
-          <div className="flex w-max items-center gap-1.5 py-0.5">
+        <div className="min-w-0 flex-1 rounded-xl">
+          {/* Les pastilles passent à la ligne au lieu de défiler de côté. */}
+          <div className="flex flex-wrap items-center gap-1.5 py-0.5">
             <span className="tv-label shrink-0 pr-1 text-slate-500">{t("journal.filterDay")}</span>
             <button
               onClick={() => setDayFilter("all")}
@@ -612,8 +613,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
           <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
             <h3 className="tv-title">{t("analytics.setupTable")}</h3>
           </div>
-          <div className="tv-scroll-x">
-            <table className="w-full min-w-[640px]">
+          {/* Sur téléphone, le tableau garde ses quatre colonnes essentielles
+              (setup, trades, win rate, P&L) au lieu d'imposer 640px de large
+              et de faire défiler la carte de côté. */}
+          <div>
+            <table className="w-full sm:min-w-[640px]">
               <thead>
                 <tr className="border-b border-white/[0.06]">
                   {[
@@ -628,8 +632,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     <th
                       key={i}
                       className={cn(
-                        "tv-label px-4 py-2.5 text-slate-500",
+                        "tv-label px-3 sm:px-4 py-2.5 text-slate-500",
                         i === 0 ? "text-left" : "text-right",
+                        i >= 3 && i <= 5 && "hidden sm:table-cell",
                       )}
                     >
                       {h}
@@ -658,7 +663,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {row.winRate === null ? "—" : formatPct(row.winRate)}
                       </span>
                     </td>
-                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
+                    <td className="tv-figure hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                       <span
                         className={cn(
                           "font-semibold",
@@ -668,7 +673,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {formatPnl(row.expectancy)}
                       </span>
                     </td>
-                    <td className="tv-figure px-4 py-2.5 text-xs text-right text-slate-300">
+                    <td className="tv-figure hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
                       {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
                           mieux qu'affirmer sur trois trades. */}
                       {row.profitFactor === null
@@ -677,7 +682,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           ? "99+"
                           : row.profitFactor.toFixed(2)}
                     </td>
-                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
+                    <td className="tv-figure hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                       {row.avgR === null ? (
                         <span className="text-slate-600">—</span>
                       ) : (

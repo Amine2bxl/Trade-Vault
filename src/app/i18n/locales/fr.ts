@@ -1130,6 +1130,8 @@ const fr: Dict = {
 
   "news.title": "News économiques",
 
+  "seasonality.category": "Catégorie",
+  "seasonality.asset": "Actif",
   "seasonality.title": "Saisonnalité",
   "seasonality.subtitle": "Tendances saisonnières des marchés - et dans ton propre journal",
   "seasonality.tabAssets": "Actifs",

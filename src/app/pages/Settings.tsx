@@ -271,7 +271,9 @@ export default function Settings({
 
           {anyVisible && (
             <div
-              className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
+              // Sur téléphone, une grille de deux colonnes : toutes les
+              // rubriques visibles, sans rangée qui défile de côté.
+              className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex lg:flex-col"
               role="tablist"
               aria-orientation="vertical"
             >

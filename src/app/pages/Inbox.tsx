@@ -272,14 +272,14 @@ export default function Inbox() {
       className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden px-3 py-2 md:px-5 md:py-3"
     >
       {/* ── LES FILTRES ───────────────────────────────────────────────────
-          Une rangée qui DÉFILE, jamais qui passe à la ligne. Elle est fixe en
-          tête de l'écran : huit pastilles ne tiennent pas sur une ligne de
-          téléphone, et on change de filtre sans remonter. La liste, elle,
-          défile dessous — comme un écran de notifications d'app. */}
+          Fixes en tête de l'écran : on change de filtre sans remonter. Les
+          pastilles PASSENT À LA LIGNE — une rangée qui défilait de côté
+          cachait la moitié des filtres sur téléphone. La liste défile
+          dessous, comme un écran de notifications d'app. */}
       {notifs.length > 0 && (
         <div className="animate-fade-in-up shrink-0 pb-2">
-          <div className="tv-scroll-x">
-            <div className="flex w-max items-center gap-1.5">
+          <div>
+            <div className="flex flex-wrap items-center gap-1.5">
               {filtres.map((f) => (
                 <button
                   key={f.kind}

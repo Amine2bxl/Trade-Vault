@@ -1206,6 +1206,8 @@ const en = {
   "news.title": "Economic News",
 
   // Seasonality
+  "seasonality.category": "Category",
+  "seasonality.asset": "Asset",
   "seasonality.title": "Seasonality",
   "seasonality.subtitle": "Seasonal tendencies across markets - and in your own journal",
   "seasonality.tabAssets": "Assets",
