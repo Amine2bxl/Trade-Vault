@@ -86,3 +86,33 @@ export interface AIProvider {
    */
   readonly supportsTools?: boolean;
 }
+
+/**
+ * Un refus HTTP d'un fournisseur, avec son STATUT et, pour un 429, le délai
+ * que le fournisseur demande avant de réessayer.
+ *
+ * Avant, chaque adaptateur levait un `Error` au texte générique : le routeur
+ * ne savait ni qu'il s'agissait d'un 429, ni combien de temps attendre. Il
+ * abandonnait donc Gemini au premier dépassement de débit et basculait sur des
+ * replis — dont les modèles étaient morts — au lieu d'attendre les quelques
+ * secondes que Google demandait. Jarvis affichait « analyse hors ligne ».
+ */
+export class ProviderHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly retryAfterMs?: number,
+  ) {
+    super(message);
+    this.name = "ProviderHttpError";
+  }
+}
+
+/** Délai de reprise d'un 429 : `RetryInfo.retryDelay` (Google, « 7s ») ou
+ *  l'en-tête `Retry-After` (secondes), selon ce que le fournisseur envoie. */
+export function parseRetryAfterMs(body: string, header?: string | null): number | undefined {
+  const google = body.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/);
+  if (google) return Math.ceil(Number(google[1]) * 1000);
+  const seconds = Number(header);
+  return header && Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds * 1000) : undefined;
+}

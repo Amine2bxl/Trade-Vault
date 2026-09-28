@@ -1,4 +1,12 @@
-import type { AIProvider, AIRequest, AIResponse, FinishReason, ProviderToolCall } from "./types";
+import {
+  ProviderHttpError,
+  parseRetryAfterMs,
+  type AIProvider,
+  type AIRequest,
+  type AIResponse,
+  type FinishReason,
+  type ProviderToolCall,
+} from "./types";
 
 /**
  * Fournisseurs OpenAI-compatibles (Chat Completions API).
@@ -20,7 +28,30 @@ interface OpenAIProviderConfig {
   modelEnv: string;
   defaultModel: string;
   defaultBaseUrl: string;
+  /**
+   * Choisit un modèle RÉELLEMENT servi dans la liste `/models` du fournisseur,
+   * quand le modèle configuré est refusé. Absent : pas de découverte.
+   */
+  pickModel?: (models: ListedModel[], needsTools: boolean) => string | undefined;
 }
+
+/** Une entrée de `GET /models` (format OpenAI, champs OpenRouter en plus). */
+interface ListedModel {
+  id: string;
+  context_length?: number;
+  supported_parameters?: string[];
+}
+
+/**
+ * LE MODÈLE DÉCOUVERT, RETENU UNE HEURE PAR FOURNISSEUR.
+ *
+ * Les modèles gratuits d'OpenRouter disparaissent sans préavis (« This model
+ * is unavailable for free ») : un slug écrit en dur finit toujours par mourir,
+ * et avec lui le repli de Jarvis. Quand le modèle configuré est refusé, on
+ * demande au fournisseur ce qu'il sert AUJOURD'HUI.
+ */
+const discovered = new Map<string, { model: string; until: number }>();
+const DISCOVERY_TTL_MS = 60 * 60_000;
 
 interface OpenAIToolCall {
   id?: string;
@@ -67,6 +98,25 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
   const getBaseUrl = (): string =>
     (process.env[cfg.baseUrlEnv] || cfg.defaultBaseUrl).replace(/\/$/, "");
 
+  const discoverModel = async (
+    apiKey: string,
+    needsTools: boolean,
+    refused: string,
+  ): Promise<string | undefined> => {
+    if (!cfg.pickModel) return undefined;
+    try {
+      const res = await fetch(`${getBaseUrl()}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (!res.ok) return undefined;
+      const json = (await res.json()) as { data?: ListedModel[] };
+      const models = (json.data ?? []).filter((m) => m.id !== refused);
+      return cfg.pickModel(models, needsTools);
+    } catch {
+      return undefined;
+    }
+  };
+
   return {
     id: cfg.id,
     supportsTools: true,
@@ -106,11 +156,18 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
 
         if (!res.ok) {
           const text = await res.text();
+          const detail = text.slice(0, 200);
+          // Le statut voyage avec l'erreur : les journaux disent enfin POURQUOI
+          // un repli a échoué (clé invalide, modèle retiré, débit…).
           if (res.status === 429)
-            throw new Error("Rate limit reached. Please try again in a moment.");
+            throw new ProviderHttpError(
+              `Rate limit reached (${model}): ${detail}`,
+              429,
+              parseRetryAfterMs(text, res.headers.get("retry-after")),
+            );
           if (res.status === 402 || res.status === 403)
-            throw new Error("AI credits exhausted. Please add credits to continue.");
-          throw new Error(`AI request failed: ${text.slice(0, 200)}`);
+            throw new ProviderHttpError(`AI credits exhausted (${model}): ${detail}`, res.status);
+          throw new ProviderHttpError(`AI request failed (${model}): ${detail}`, res.status);
         }
 
         const json = (await res.json()) as OpenAIResponse;
@@ -138,17 +195,26 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
         };
       };
 
+      const known = discovered.get(cfg.id);
+      const first = known && Date.now() < known.until ? known.model : getModel();
       try {
-        return await attempt(getModel());
+        return await attempt(first);
       } catch (e) {
-        // Modèle configuré indisponible (les modèles :free d'OpenRouter changent)
-        // → retentative avec le modèle par défaut fiable du code.
+        // Modèle refusé (retiré, plus gratuit, inexistant) → on demande au
+        // fournisseur la liste de ce qu'il sert, et on en prend un.
         const msg = e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase();
-        const modelIssue = /model|unavailable for free|not found/i.test(msg);
-        if (modelIssue && getModel() !== cfg.defaultModel) {
-          return attempt(cfg.defaultModel);
+        const modelIssue = /model|unavailable for free|not found|decommissioned/i.test(msg);
+        if (!modelIssue) throw e;
+        discovered.delete(cfg.id);
+        const replacement = await discoverModel(apiKey, !!req.tools?.length, first);
+        if (!replacement) {
+          if (first !== cfg.defaultModel) return attempt(cfg.defaultModel);
+          throw e;
         }
-        throw e;
+        console.warn(`[ai] ${cfg.id}: ${first} refused — using ${replacement}`);
+        const res = await attempt(replacement);
+        discovered.set(cfg.id, { model: replacement, until: Date.now() + DISCOVERY_TTL_MS });
+        return res;
       }
     },
   };
@@ -171,6 +237,17 @@ export const GroqProvider = createOpenAICompatibleProvider({
   modelEnv: "GROQ_MODEL",
   defaultModel: "llama-3.3-70b-versatile",
   defaultBaseUrl: "https://api.groq.com/openai/v1",
+  // Groq ne publie pas les capacités par modèle : on préfère les grands
+  // modèles généralistes connus pour l'appel de fonctions, dans cet ordre.
+  pickModel: (models) => {
+    const ids = models.map((m) => m.id);
+    const prefer = [/llama-3\.3-70b/, /gpt-oss-120b/, /llama-4/, /qwen/, /gpt-oss/, /llama/];
+    for (const re of prefer) {
+      const hit = ids.find((id) => re.test(id) && !/guard|whisper|tts|embed/i.test(id));
+      if (hit) return hit;
+    }
+    return undefined;
+  },
 });
 
 /** OpenRouter — des dizaines de modèles libres (:free) derrière une clé.
@@ -183,4 +260,11 @@ export const OpenRouterProvider = createOpenAICompatibleProvider({
   modelEnv: "OPENROUTER_MODEL",
   defaultModel: "deepseek/deepseek-chat-v3-0324:free",
   defaultBaseUrl: "https://openrouter.ai/api/v1",
+  // Un modèle GRATUIT (la clé n'a pas de crédits), capable d'outils si la
+  // requête en porte, et au plus grand contexte : le journal y tient.
+  pickModel: (models, needsTools) =>
+    models
+      .filter((m) => m.id.endsWith(":free"))
+      .filter((m) => !needsTools || (m.supported_parameters ?? []).includes("tools"))
+      .sort((a, b) => (b.context_length ?? 0) - (a.context_length ?? 0))[0]?.id,
 });

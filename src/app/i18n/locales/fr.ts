@@ -1358,14 +1358,16 @@ const fr: Dict = {
 
   // IA générique
   "ai.noResponse": "Pas de réponse.",
-  "ai.offlineAnalysis":
-    "Analyse hors ligne : les chiffres restent exacts, l'interprétation est plus limitée.",
   "ai.genericError": "Une erreur est survenue. Réessaie.",
   "ai.error.quota": "Tu as utilisé tes analyses Jarvis du jour. Elles reviennent à minuit.",
   "ai.error.pro": "Cette fonction de Jarvis demande un abonnement actif.",
   "ai.error.rate": "Trop de questions en peu de temps. Attends une minute et réessaie.",
   "ai.error.auth": "Ta session a expiré. Reconnecte-toi pour continuer avec Jarvis.",
   "ai.error.network": "Impossible de joindre Jarvis. Vérifie ta connexion et réessaie.",
+  "ai.error.busy":
+    "Le fournisseur d'IA est saturé en ce moment : Jarvis n'a pas pu terminer cette analyse. Réessaie dans quelques secondes.",
+  "ai.error.outage":
+    "Le service d'analyse n'a pas répondu : Jarvis n'a pas encore de réponse à te donner. Ton journal n'y est pour rien. Réessaie dans un instant.",
   "ai.retry": "Réessayer",
   "ai.rateLimited": "Trop de requêtes sur un court instant. Attends un moment puis réessaie.",
   "ai.sessionExpired": "Ta session a expiré. Reconnecte-toi puis réessaie.",

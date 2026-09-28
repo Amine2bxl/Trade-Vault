@@ -6,6 +6,7 @@ export {
   providerIds,
   isProviderConfigured,
 } from "./registry";
+export { ProviderHttpError, parseRetryAfterMs } from "./types";
 export type {
   AIProvider,
   AIRequest,

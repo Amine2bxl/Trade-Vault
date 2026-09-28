@@ -1,3 +1,4 @@
+import { AI_LIMITS } from "@/domain/ai-limits";
 import { Trade, TradeStats, isBreakEven } from "../types";
 
 export function computeStats(trades: Trade[]): TradeStats {
@@ -172,18 +173,27 @@ export function formatPct(value: number): string {
 
 // Shared shape sent to the AI coach (Insights page + floating AI Assistant) —
 // caps volume and trims fields so both callers stay in sync with the backend schema.
+/**
+ * La copie d'un trade envoyée à l'IA, bornée aux limites du schéma serveur
+ * (`AI_LIMITS`). Sans ces bornes, UNE note de plus de 1 500 caractères
+ * faisait rejeter tout le contexte : Jarvis répondait alors sans journal.
+ * Le trade complet reste intact en base et dans le journal.
+ */
 export function toInsightTradesPayload(trades: Trade[]) {
+  const cut = (v: string | undefined | null, max: number) => (v ?? "").slice(0, max);
+  const tags = (list: string[] | undefined, max: number) =>
+    (list ?? []).slice(0, max).map((x) => cut(x, AI_LIMITS.tradeTag));
   return trades.slice(0, 200).map((t) => ({
     date: t.date,
-    symbol: t.symbol,
-    direction: t.direction,
+    symbol: cut(t.symbol, AI_LIMITS.tradeSymbol),
+    direction: cut(t.direction, AI_LIMITS.tradeDirection),
     pnl: t.pnl,
     rMultiple: t.rMultiple,
-    strategy: t.strategy,
-    mistakes: t.mistakes,
+    strategy: cut(t.strategy, AI_LIMITS.tradeStrategy),
+    mistakes: tags(t.mistakes, AI_LIMITS.tradeMistakes),
     setupQuality: t.setupQuality,
-    confluences: t.confluences,
-    notes: t.notes,
+    confluences: tags(t.confluences, AI_LIMITS.tradeConfluences),
+    ...(t.notes ? { notes: t.notes.slice(0, AI_LIMITS.tradeNote) } : {}),
   }));
 }
 

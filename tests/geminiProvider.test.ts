@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { GeminiProvider } from "../src/modules/ai-provider/gemini";
+import { GeminiProvider, resetGeminiModelMemory } from "../src/modules/ai-provider/gemini";
 import { resolveToolCapableProviders } from "../src/modules/ai-provider/registry";
 
 /*
@@ -25,6 +25,7 @@ function mockFetch(responses: Array<{ status: number; json?: unknown; text?: str
 
 beforeEach(() => {
   calls = [];
+  resetGeminiModelMemory();
   process.env.GEMINI_API_KEY = "test-key";
   delete process.env.GEMINI_MODEL;
   delete process.env.AI_PROVIDER;

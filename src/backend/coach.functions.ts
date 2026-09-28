@@ -287,13 +287,27 @@ export const askCoach = createServerFn({ method: "POST" })
       }
       console.warn("[coach] provider answered but text was empty", res);
       track("fallback", "empty response");
-      return { answer: indisponible(data.language), source: "unavailable" as const };
-    } catch (err) {
-      console.warn("[coach] provider unavailable", err);
-      track("error", err instanceof Error ? err.message : String(err));
       return {
         answer: indisponible(data.language),
         source: "unavailable" as const,
+        reason: "outage" as const,
+      };
+    } catch (err) {
+      console.warn("[coach] provider unavailable", err);
+      // Une `RuntimeError` est un objet simple, pas un `Error` : `String(err)`
+      // écrivait « [object Object] » dans `ai_agent_runs`, et la vraie cause
+      // (quota Gemini, modèle retiré chez OpenRouter) restait invisible.
+      const runtime = err as { type?: string; technicalMessage?: string };
+      track(
+        "error",
+        runtime?.technicalMessage ?? (err instanceof Error ? err.message : String(err)),
+      );
+      return {
+        answer: indisponible(data.language),
+        source: "unavailable" as const,
+        // Le client en fait une erreur HONNÊTE — « le fournisseur est saturé »
+        // n'appelle pas la même attente que « le service est en panne ».
+        reason: runtime?.type === "quota" ? ("busy" as const) : ("outage" as const),
       };
     }
   });

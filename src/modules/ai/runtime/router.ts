@@ -65,6 +65,22 @@ function timeoutMs(provider: AIProvider, req?: AIRequest): number {
   return req?.reasoningBudget ? base + 20_000 : base;
 }
 
+/**
+ * ATTENDRE UN QUOTA PLUTÔT QUE D'ABANDONNER.
+ *
+ * Un 429 de Gemini dit combien de temps attendre (quelques secondes sur
+ * l'offre gratuite). Le routeur passait aussitôt au fournisseur suivant — des
+ * replis dont les modèles étaient retirés — et Jarvis finissait « hors
+ * ligne » alors que Gemini aurait répondu quatre secondes plus tard. Une
+ * réponse juste qui arrive un peu plus tard vaut mieux qu'une panne : on
+ * attend le délai demandé, dans une limite raisonnable, puis on réessaie le
+ * même fournisseur. La fonction serveur a 300 s ; ce budget en prend 30 au
+ * plus.
+ */
+const MAX_QUOTA_WAIT_MS = 20_000;
+const QUOTA_WAIT_BUDGET_MS = 30_000;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /** Retry sur le MÊME provider uniquement pour 500/réseau (transitoires). */
 function shouldRetrySame(err: RuntimeError, attempts: number): boolean {
   return attempts === 0 && isTransientType(err.type) && err.type !== "timeout";
@@ -79,6 +95,7 @@ export async function routeCompletion(
   const started = Date.now();
   const payloadBytes = JSON.stringify(req).length;
   let lastErr: RuntimeError | null = null;
+  let quotaWaited = 0;
 
   if (providers.length === 0) {
     const err: RuntimeError = {
@@ -118,12 +135,14 @@ export async function routeCompletion(
       continue;
     }
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs(provider, req));
-    const attemptStart = Date.now();
     let attempts = 0;
 
     while (true) {
+      // Un délai par TENTATIVE : une attente de quota ne doit pas consommer le
+      // temps de la tentative suivante.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs(provider, req));
+      const attemptStart = Date.now();
       try {
         const res = await provider.complete({ ...req, signal: controller.signal });
         const latencyMs = Date.now() - attemptStart;
@@ -132,7 +151,12 @@ export async function routeCompletion(
         // réponse d'outils (texte vide + toolCalls) est valide et conservée.
         if (!res.text?.trim() && !res.toolCalls?.length) {
           clearTimeout(timer);
-          circuit.trip(provider.id);
+          // Une réponse vide tient le plus souvent à LA requête (réflexion qui
+          // mange le budget, filtre de sécurité), pas à la santé du
+          // fournisseur. `trip` ouvrait le circuit au premier cas : Gemini
+          // était écarté une minute pour TOUT le monde, et Jarvis tombait sur
+          // des replis morts. Un échec compté, comme les autres.
+          circuit.recordFailure(provider.id);
           const err: RuntimeError = {
             type: "unknown",
             provider: provider.id,
@@ -185,15 +209,25 @@ export async function routeCompletion(
         });
         return res;
       } catch (e) {
+        clearTimeout(timer);
         attempts += 1;
         const err = normalizeError(e, provider.id);
         lastErr = err;
-        circuit.recordFailure(provider.id);
         const latencyMs = Date.now() - attemptStart;
         metrics.record(provider.id, "unknown", latencyMs, false);
         if (provider.id !== requested) metrics.recordFallback(provider.id, err.type);
         opts.onUsage?.({ provider: provider.id, model: "unknown", latencyMs, ok: false });
         const httpStatus = (e as { status?: number })?.status;
+        // Quota avec délai annoncé et raisonnable : on attend, puis on réessaie
+        // CE fournisseur (une fois). Un quota n'est pas une panne du fournisseur :
+        // il n'ouvre pas le circuit, qui sinon écarterait Gemini pour tout le
+        // monde pendant une minute.
+        const wait = err.type === "quota" ? err.retryAfterMs : undefined;
+        const canWait =
+          wait !== undefined &&
+          attempts === 1 &&
+          wait <= MAX_QUOTA_WAIT_MS &&
+          quotaWaited + wait <= QUOTA_WAIT_BUDGET_MS;
         logRuntime({
           requested,
           used: provider.id,
@@ -204,10 +238,17 @@ export async function routeCompletion(
           fallbackReason: err.type,
           httpStatus,
           errorType: err.type,
+          errorReason: err.technicalMessage,
+          ...(canWait ? { quotaWaitMs: wait } : {}),
           totalMs: Date.now() - started,
         });
+        if (canWait && wait !== undefined) {
+          quotaWaited += wait;
+          await sleep(wait + 250);
+          continue;
+        }
+        if (err.type !== "quota") circuit.recordFailure(provider.id);
         if (shouldRetrySame(err, attempts - 1)) continue; // 500/réseau → 1 retry même provider
-        clearTimeout(timer);
         break; // timeout/quota/4xx → provider suivant
       }
     }

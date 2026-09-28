@@ -43,6 +43,15 @@ export const AI_LIMITS = {
    * note de trade.
    */
   tradeNote: 1_500,
+  /** Champs courts d'un trade : les MÊMES bornes pour le schéma serveur et la
+   *  copie construite par le client. Une seule note trop longue faisait
+   *  rejeter tout le contexte, et Jarvis répondait sans le journal. */
+  tradeSymbol: 20,
+  tradeDirection: 10,
+  tradeStrategy: 50,
+  tradeTag: 100,
+  tradeMistakes: 20,
+  tradeConfluences: 30,
   goals: 10,
   mistakes: 40,
   rules: 30,

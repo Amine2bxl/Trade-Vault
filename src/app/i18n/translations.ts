@@ -1449,14 +1449,16 @@ const en = {
 
   // AI generic
   "ai.noResponse": "No response.",
-  "ai.offlineAnalysis":
-    "Offline analysis: the numbers are still accurate, the interpretation is more limited.",
   "ai.genericError": "Something went wrong. Please try again.",
   "ai.error.quota": "You've used today's Jarvis analyses. They reset at midnight.",
   "ai.error.pro": "This Jarvis feature needs an active plan.",
   "ai.error.rate": "Too many questions in a short time. Wait a minute and try again.",
   "ai.error.auth": "Your session has expired. Sign in again to keep talking to Jarvis.",
   "ai.error.network": "Jarvis couldn't be reached. Check your connection and retry.",
+  "ai.error.busy":
+    "The AI provider is saturated right now, so Jarvis couldn't finish this analysis. Retry in a few seconds.",
+  "ai.error.outage":
+    "The AI analysis service didn't respond, so Jarvis has no answer to give you yet. Your journal isn't the problem. Retry in a moment.",
   "ai.retry": "Retry",
   "ai.rateLimited": "Too many requests in a short window. Wait a moment and try again.",
   "ai.sessionExpired": "Your session expired. Reconnect and try again.",

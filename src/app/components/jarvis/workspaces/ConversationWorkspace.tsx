@@ -117,10 +117,25 @@ function spokenOf(m: JarvisMessage): string {
  * lisaient pareil, et le trader ne savait pas s'il devait attendre, se
  * reconnecter ou passer Pro.
  */
-type CoachErrorKind = "quota" | "pro" | "rate" | "auth" | "network";
+type CoachErrorKind = "quota" | "pro" | "rate" | "auth" | "network" | "busy" | "outage";
+
+/**
+ * Le serveur a répondu, mais SANS l'IA (fournisseur saturé ou en panne).
+ * C'était servi comme une réponse, coiffée d'un bandeau « analyse hors
+ * ligne » : le trader croyait lire une analyse. C'est une erreur, dite comme
+ * telle, avec « Réessayer ».
+ */
+class CoachUnavailableError extends Error {
+  constructor(readonly reason: "busy" | "outage") {
+    super(`AI_UNAVAILABLE:${reason}`);
+    this.name = "CoachUnavailableError";
+  }
+}
 
 function coachErrorKind(err: unknown): CoachErrorKind {
   const msg = err instanceof Error ? err.message : String(err);
+  if (/AI_UNAVAILABLE:busy/.test(msg)) return "busy";
+  if (/AI_UNAVAILABLE/.test(msg)) return "outage";
   if (/DAILY_QUOTA_REACHED/.test(msg)) return "quota";
   if (/PRO_REQUIRED/.test(msg)) return "pro";
   if (/RATE_LIMITED/.test(msg)) return "rate";
@@ -574,12 +589,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       return {
         role: "assistant",
         id: genId(),
-        blocks: [
-          ...(r.degraded
-            ? [{ type: "alert" as const, level: "info" as const, message: t("ai.offlineAnalysis") }]
-            : []),
-          { type: "markdown", content: r.answer },
-        ],
+        blocks: [{ type: "markdown", content: r.answer }],
         createdAt: new Date().toISOString(),
       };
     },
@@ -603,7 +613,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         if (coachErrorKind(r.error) === "quota") setQuotaBanner(true);
         return;
       }
-      if (!r.degraded) setTypingId(msg.id);
+      setTypingId(msg.id);
       // Une analyse consommée — comptée APRÈS la réponse.
       if (r.fromAi) incrementAiUsage(userId);
       learnFrom(r.question);
@@ -757,13 +767,18 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           await new Promise((r) => setTimeout(r, 400));
           res = await call();
         }
+        // Le serveur dit d'où vient la réponse — on ne le devine pas. Sans
+        // l'IA, ce n'est pas une réponse : c'est une erreur, et elle se dit.
+        if (res.source !== "ai") {
+          throw new CoachUnavailableError(
+            (res as { reason?: string }).reason === "busy" ? "busy" : "outage",
+          );
+        }
         return {
           ok: true,
           question: query,
           answer: res.answer || t("ai.noResponse"),
-          // Le serveur dit d'où vient la réponse — on ne le devine pas.
-          degraded: res.source !== "ai",
-          fromAi: res.source === "ai",
+          fromAi: true,
         };
       };
       const persist = async (r: JarvisResult) => {

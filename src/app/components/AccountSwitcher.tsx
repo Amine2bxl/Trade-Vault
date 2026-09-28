@@ -92,7 +92,7 @@ const AVAILABLE_ICONS = Object.keys(ICON_MAP);
 
 function getAccountIcon(a: Account) {
   if (a.icon && ICON_MAP[a.icon]) return ICON_MAP[a.icon];
-  return TYPE_ICON[a.type];
+  return TYPE_ICON[a.type] ?? User;
 }
 
 export default function AccountSwitcher({

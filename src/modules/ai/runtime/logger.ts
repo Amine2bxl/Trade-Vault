@@ -17,6 +17,11 @@ export interface RuntimeLogEntry {
   fallbackReason?: string;
   httpStatus?: number;
   errorType?: string;
+  /** Raison technique de l'échec (déjà expurgée des secrets par `normalizeError`) :
+   *  sans elle, un repli mort ne laissait que « provider_unavailable ». */
+  errorReason?: string;
+  /** Attente consentie sur un 429 avant de réessayer le même fournisseur. */
+  quotaWaitMs?: number;
   totalMs: number;
 }
 

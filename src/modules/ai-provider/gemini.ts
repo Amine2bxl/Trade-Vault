@@ -1,10 +1,12 @@
-import type {
-  AIProvider,
-  AIRequest,
-  AIResponse,
-  FinishReason,
-  ProviderTool,
-  ProviderToolCall,
+import {
+  ProviderHttpError,
+  parseRetryAfterMs,
+  type AIProvider,
+  type AIRequest,
+  type AIResponse,
+  type FinishReason,
+  type ProviderTool,
+  type ProviderToolCall,
 } from "./types";
 
 /**
@@ -28,6 +30,33 @@ function getModel(): string {
    on redescend sur Flash, qui répondait sans faute jusque-là. Une clé payante
    garde Pro ; une clé gratuite garde une réponse. */
 const FALLBACK_MODEL = "gemini-2.5-flash";
+
+/**
+ * LES MODÈLES REFUSÉS SONT RETENUS.
+ *
+ * Chaque question commençait par un appel à 2.5 Pro, refusé en 404 sur cette
+ * clé, avant de redescendre sur Flash — deux à trois fois par question avec
+ * la boucle d'outils. Ces appels perdus comptaient dans le débit gratuit et
+ * précipitaient le 429 qui rendait Jarvis « hors ligne ». Un refus est
+ * maintenant retenu un moment : les questions suivantes vont directement au
+ * modèle qui répond. La mémoire est celle de l'instance serveur, et expire —
+ * une clé passée en payant retrouve Pro sans redéploiement.
+ */
+const refusedUntil = new Map<string, number>();
+const REFUSAL_MEMORY_MS = 15 * 60_000;
+
+function isRefused(model: string): boolean {
+  const until = refusedUntil.get(model);
+  if (!until) return false;
+  if (Date.now() < until) return true;
+  refusedUntil.delete(model);
+  return false;
+}
+
+/** Tests uniquement. */
+export function resetGeminiModelMemory(): void {
+  refusedUntil.clear();
+}
 
 /** Refus qui tiennent au MODÈLE (accès, quota, inexistant) — pas à la requête. */
 function isModelRefusal(status: number, body: string): boolean {
@@ -184,11 +213,18 @@ export const GeminiProvider: AIProvider = {
         },
       );
 
-    let model = getModel();
+    let model = isRefused(getModel()) ? FALLBACK_MODEL : getModel();
     let res = await call(model);
     if (!res.ok && model !== FALLBACK_MODEL) {
       const refused = await res.clone().text();
       if (isModelRefusal(res.status, refused)) {
+        // Un 429 de DÉBIT sur Pro se lève vite ; un 404/403 (modèle absent de
+        // l'offre) dure. On retient le refus le temps qui correspond.
+        const retry = parseRetryAfterMs(refused, res.headers.get("retry-after"));
+        refusedUntil.set(
+          model,
+          Date.now() + (res.status === 429 && retry ? retry : REFUSAL_MEMORY_MS),
+        );
         console.warn(
           `[ai] gemini: ${model} refused (${res.status}) — falling back to ${FALLBACK_MODEL}`,
         );
@@ -199,11 +235,16 @@ export const GeminiProvider: AIProvider = {
 
     if (!res.ok) {
       const text = await res.text();
-      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-      if (res.status === 403) throw new Error("AI access denied. Check API key and permissions.");
-      if (res.status === 402)
-        throw new Error("AI credits exhausted. Please add credits to continue.");
-      throw new Error(`AI request failed: ${text.slice(0, 200)}`);
+      const detail = text.slice(0, 200);
+      if (res.status === 429)
+        throw new ProviderHttpError(
+          `Rate limit reached (${model}): ${detail}`,
+          429,
+          parseRetryAfterMs(text, res.headers.get("retry-after")),
+        );
+      if (res.status === 403) throw new ProviderHttpError(`AI access denied: ${detail}`, 403);
+      if (res.status === 402) throw new ProviderHttpError(`AI credits exhausted: ${detail}`, 402);
+      throw new ProviderHttpError(`AI request failed: ${detail}`, res.status);
     }
 
     const json = await res.json();

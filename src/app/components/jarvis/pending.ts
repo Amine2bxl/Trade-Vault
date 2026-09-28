@@ -16,7 +16,7 @@
  */
 
 export type JarvisResult =
-  | { ok: true; question: string; answer: string; degraded: boolean; fromAi: boolean }
+  | { ok: true; question: string; answer: string; fromAi: boolean }
   | { ok: false; question: string; error: unknown };
 
 interface Pending {
