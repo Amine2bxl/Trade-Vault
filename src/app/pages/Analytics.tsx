@@ -212,8 +212,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
       { range: "-$200~$0", count: 0, fill: "#fca5a5" },
       { range: t("common.be"), count: 0, fill: "#f59e0b" },
       { range: "$0~$200", count: 0, fill: "#86efac" },
-      { range: "$200~$500", count: 0, fill: "#4ade80" },
-      { range: "> $500", count: 0, fill: "#10b981" },
+      { range: "$200~$500", count: 0, fill: "#5bf0ab" },
+      { range: "> $500", count: 0, fill: "#22e08a" },
     ];
     for (const trade of cutoffTrades) {
       if (trade.direction === "be") b[3].count++;
@@ -740,7 +740,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                             ? {
                                 background:
                                   cell.pnl >= 0
-                                    ? `rgba(16,185,129,${0.08 + intensity * 0.45})`
+                                    ? `rgb(var(--tv-chart-green-rgb) / ${0.08 + intensity * 0.45})`
                                     : `rgba(239,68,68,${0.08 + intensity * 0.45})`,
                               }
                             : undefined
@@ -1215,7 +1215,9 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
                           key={i}
                           className="tv-figure h-7 rounded flex items-center justify-center text-[10px]"
                           style={{
-                            background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`,
+                            background: isWin
+                              ? `rgb(var(--tv-chart-green-rgb) / ${a})`
+                              : `rgb(var(--tv-chart-red-rgb) / ${a})`,
                             color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b",
                           }}
                         >

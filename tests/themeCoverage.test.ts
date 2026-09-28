@@ -92,8 +92,6 @@ describe("l'inventaire de ce qui reste en dur", () => {
         "les couleurs de départ d'un thème que le trader va créer — un thème neuf part du thème par défaut",
       "store/accounts.ts":
         "la couleur par défaut d'un COMPTE, écrite en base : une donnée, pas un style",
-      "components/UpgradeSuccessOverlay.tsx":
-        "la palette des confettis : décorative et multicolore, la réduire à l'accent l'appauvrirait",
     };
 
     const found: string[] = [];

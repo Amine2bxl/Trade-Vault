@@ -50,7 +50,7 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
   const C = 2 * Math.PI * R;
   const p = Math.max(0, Math.min(1, pct));
   return (
-    <div className="relative w-16 h-16 shrink-0">
+    <div className="relative h-11 w-11 shrink-0 sm:h-14 sm:w-14">
       <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
         <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="6" />
         <circle
@@ -68,7 +68,7 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
       </svg>
       {center && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="tv-figure text-[11px] text-slate-300">{center}</span>
+          <span className="tv-figure hidden text-[11px] text-slate-300 sm:inline">{center}</span>
         </div>
       )}
     </div>
@@ -143,7 +143,7 @@ export function Metric({
 }: MetricProps) {
   return (
     <div
-      className={cn("stat-card card-premium animate-fade-in-up", density.cardPad)}
+      className={cn("metric-tile stat-card card-premium animate-fade-in-up", density.cardPad)}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between gap-3">

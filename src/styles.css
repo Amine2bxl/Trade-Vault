@@ -122,7 +122,7 @@
   --color-surface: #16191c;
   --color-surface-light: #1d2125;
   --color-surface-lighter: #23282d;
-  --color-profit: #10b981;
+  --color-profit: #22e08a;
   --color-loss: #ef4444;
 
   /* ----------------------------------------------------------------
@@ -140,7 +140,10 @@
    * les tokens qu'elles suivent, elles ne bougent avec AUCUN thème : la donnée
    * garde ses couleurs quand l'interface change les siennes.
    * ---------------------------------------------------------------- */
+  --color-emerald-300: #5bf0ab;
   --color-emerald-400: var(--tv-chart-green);
+  --color-emerald-500: #12b981;
+  --color-emerald-600: #0e9f6e;
   --color-red-400: var(--tv-chart-red);
 
   /* ----------------------------------------------------------------
@@ -160,9 +163,15 @@
    *     soit le thème choisi — y compris un thème clair ou pastel, où l'accent
    *     seul aurait rendu le bouton illisible.
    * ---------------------------------------------------------------- */
-  --tv-cta: oklch(0.52 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-cta-hover: oklch(0.58 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-cta-active: oklch(0.46 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+  /* LE BOUTON D'ACTION EST CELUI DE LA VITRINE. Il était l'accent assombri
+     (un vert sourd, « bizarre » à côté du « Get Started ») : l'application et
+     la landing semblaient deux produits. Il prend maintenant l'accent du
+     thème lui-même — #22e08a sur le thème par défaut — et le texte blanc est
+     porté par une ombre courte (`.tv-accent-fill`), exactement comme sur la
+     vitrine. */
+  --tv-cta: var(--tv-accent);
+  --tv-cta-hover: var(--tv-highlight);
+  --tv-cta-active: var(--tv-accent-2);
 
   /* ----------------------------------------------------------------
    * Themeable accent ramps.
@@ -406,8 +415,10 @@
    * unique de la courbe, de son dégradé, de sa légende et de ses pastilles.
    * `--tv-chart-red` en est le pendant pour la perte et pour le repère de
    * plancher. */
-  --tv-chart-green: #34d399;
-  --tv-chart-green-rgb: 52 211 153;
+  /* Le vert du gain EST le vert de la vitrine (#22e08a, le « Get Started ») :
+     un seul vert dans tout le produit, de la landing à la courbe. */
+  --tv-chart-green: #22e08a;
+  --tv-chart-green-rgb: 34 224 138;
   --tv-chart-red: #f87171;
   --tv-chart-red-rgb: 248 113 113;
 
@@ -515,7 +526,7 @@
   --tv-text-muted: #8f959b;
 
   /* L5 data emphasis / L6 risk / L7 discipline */
-  --tv-success: #10b981;
+  --tv-success: #22e08a;
   --tv-warning: #f59e0b;
   --tv-danger: #ef4444;
   --tv-success-rgb: 16 185 129;
@@ -936,19 +947,61 @@ body {
   padding: 1.5rem;
   background: var(--tv-bg);
 }
-.err-nappe {
+.err-grille {
   position: fixed;
-  inset: -30% -10% auto;
-  height: 70vh;
+  inset: 0;
   pointer-events: none;
-  background: radial-gradient(55% 50% at 50% 0%, rgb(var(--tv-accent-rgb) / 0.1), transparent 70%);
-  filter: blur(60px);
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 85%);
+}
+.err-nappe,
+.err-nappe-2 {
+  position: fixed;
+  width: 70vmax;
+  height: 70vmax;
+  pointer-events: none;
+  border-radius: 50%;
+}
+.err-nappe {
+  top: -38vmax;
+  right: -30vmax;
+  background: radial-gradient(closest-side, rgb(var(--tv-accent-rgb) / 0.16), transparent);
+}
+.err-nappe-2 {
+  bottom: -40vmax;
+  left: -32vmax;
+  background: radial-gradient(closest-side, rgb(var(--tv-accent-2-rgb) / 0.11), transparent);
+}
+/* La carte : même plaque que les modales de l'application — valeur de
+   surface et liseré, un seul halo d'accent très court sous le bord haut. */
+.err-carte {
+  position: relative;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.012));
+  padding: 2.25rem 1.5rem 2rem;
+  backdrop-filter: blur(6px);
+}
+.err-carte::before {
+  content: "";
+  position: absolute;
+  inset: -1px 18% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--tv-accent-rgb) / 0.7), transparent);
+}
+@media (min-width: 640px) {
+  .err-carte {
+    padding: 2.75rem 2.5rem 2.5rem;
+  }
 }
 .err-bloc {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 30rem;
+  max-width: 32rem;
   text-align: center;
   animation: err-monte 0.55s cubic-bezier(0.19, 1, 0.22, 1) both;
 }
@@ -1974,12 +2027,24 @@ svg.lucide {
      thème. Il suit désormais l'accent. */
   background: var(--tv-cta);
   color: #ffffff;
+  /* Le relief du « Get Started » de la vitrine : arête haute éclairée et une
+     ombre portée dans l'accent, diffuse — pas de halo. */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 8px 24px -12px rgb(var(--tv-accent-rgb) / 0.55);
   transition:
     background-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.16s ease;
 }
 .btn-primary:hover {
   background: var(--tv-cta-hover);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.24),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 12px 30px -12px rgb(var(--tv-accent-rgb) / 0.7);
 }
 .btn-primary:active {
   background: var(--tv-cta-active);
@@ -2784,9 +2849,9 @@ a:focus-visible,
    ombre courte sous les lettres les ancre sans assombrir l'aplat. La vitrine
    le faisait déjà sur `.btn-primary` ; tout ce qui est plein sur ces
    surfaces le mérite pour la même raison. */
-.landing-root .tv-accent-fill,
-.err-ecran .tv-accent-fill,
-.tv-public .tv-accent-fill {
+.tv-accent-fill,
+.btn-primary,
+.fab-button {
   font-weight: 700;
   text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
 }
@@ -5253,5 +5318,206 @@ body::after {
   body::before,
   body::after {
     display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE DIALOGUE — une seule famille pour toutes les modales et popups
+   ═══════════════════════════════════════════════════════════════════════════
+   Carte centrée partout (plus de feuille qui jaillit du bas sur mobile),
+   marge d'écran constante et safe areas respectées, rayon unique, voile
+   sombre à peine flouté, entrée courte : fondu + 8 px + 2 % d'échelle. */
+.tv-dialog-wrap {
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .tv-dialog-wrap {
+    padding: 24px;
+  }
+}
+.tv-dialog-backdrop {
+  background: rgb(3 4 6 / 0.62);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.tv-dialog {
+  max-height: calc(
+    100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+  border-radius: 20px;
+  border-color: rgb(255 255 255 / 0.08);
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.035), transparent 140px), var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 30px 80px -24px rgb(0 0 0 / 0.85);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-dialog {
+    animation: tv-dialog-in 200ms var(--tv-ease) both;
+  }
+  .tv-dialog-backdrop {
+    animation: fade-in 160ms ease-out both;
+  }
+}
+@keyframes tv-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* La fenêtre de Jarvis garde sa lumière propre par-dessus le dialogue commun. */
+.tv-dialog.jarvis-stage {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.08),
+    0 40px 120px -30px rgb(0 0 0 / 0.75),
+    0 0 90px -40px rgb(var(--tv-accent-rgb) / 0.35);
+}
+/* La feuille (`Sheet`) : carte centrée sur téléphone, panneau latéral sur
+   bureau — le même langage que `.tv-dialog`. */
+.tv-sheet-wrap {
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+}
+.tv-sheet-panel {
+  max-height: calc(
+    100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.035), transparent 140px), var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 30px 80px -24px rgb(0 0 0 / 0.85);
+}
+@media (min-width: 640px) {
+  .tv-sheet-wrap {
+    padding: 0;
+  }
+  .tv-sheet-panel {
+    max-height: none;
+    border-radius: 20px 0 0 20px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-sheet-panel {
+    animation: tv-dialog-in 200ms var(--tv-ease) both;
+  }
+  @media (min-width: 640px) {
+    .tv-sheet-panel {
+      animation: tv-sheet-right 240ms var(--tv-ease) both;
+    }
+  }
+}
+
+/* ── LE MENU DES VUES D'UNE SECTION (mobile) ──
+   Ancré sous le sélecteur, même plaque que les dialogues, entrée courte. */
+.section-picker-open {
+  border-color: rgb(var(--tv-accent-rgb) / 0.35);
+  background: var(--tv-plate-2);
+}
+.section-picker-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-muted);
+}
+.section-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: var(--tv-z-nav);
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.03), transparent 120px), var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 24px 60px -20px rgb(0 0 0 / 0.85);
+  transform-origin: top center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .section-menu {
+    animation: tv-menu-in 160ms var(--tv-ease) both;
+  }
+}
+@keyframes tv-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── LES KPI ── compacts sur téléphone : quatre chiffres lisibles d'un coup
+   d'œil sans occuper l'écran. Même plaque que la courbe d'équité. */
+@media (max-width: 639px) {
+  .metric-tile {
+    padding: 0.75rem 0.875rem;
+    border-radius: 14px;
+  }
+  .metric-tile .tv-figure {
+    font-size: 1.25rem;
+    line-height: 1.15;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LES BULLES FLOTTANTES — sous-comptes et Jarvis, une seule famille
+   ═══════════════════════════════════════════════════════════════════════════
+   Elles appartiennent à la navigation : même verre que la barre du bas
+   (plaque translucide + flou), même liseré fin qui accroche l'accent en haut,
+   même ombre portée courte. Plus d'aplat opaque posé sur la page. */
+.float-shell,
+.tv-jarvis-dock {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 60%),
+    color-mix(in srgb, var(--tv-plate-2) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 10px 30px -12px rgb(0 0 0 / 0.8),
+    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.06);
+  transition:
+    transform var(--tv-dur-2) var(--tv-ease),
+    border-color var(--tv-dur-2) var(--tv-ease),
+    box-shadow var(--tv-dur-2) var(--tv-ease);
+}
+.float-shell:active,
+.tv-jarvis-dock:active {
+  transform: scale(0.96);
+}
+@media (hover: hover) {
+  .float-shell:hover,
+  .tv-jarvis-dock:hover {
+    border-color: rgb(var(--tv-accent-rgb) / 0.3);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 12px 34px -12px rgb(0 0 0 / 0.85),
+      0 0 24px -8px rgb(var(--tv-accent-rgb) / 0.35);
+  }
+}
+.tv-jarvis-dock-active,
+.tv-jarvis-dock-active:hover {
+  border-color: rgb(var(--tv-accent-rgb) / 0.45);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .float-shell,
+  .tv-jarvis-dock {
+    animation: fade-in-up 260ms var(--tv-ease) both;
   }
 }

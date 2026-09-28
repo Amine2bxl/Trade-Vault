@@ -190,7 +190,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   // Couleur de la jauge de confiance = celle du badge de statut (cohérence).
   const confidenceColor = useMemo(() => {
-    if (form.confidence >= 75) return { from: "#34d399", to: "#10b981", text: "text-emerald-400" };
+    if (form.confidence >= 75) return { from: "#5bf0ab", to: "#22e08a", text: "text-emerald-400" };
     if (form.confidence >= 50) return { from: "#fbbf24", to: "#f59e0b", text: "text-amber-400" };
     return { from: "#f87171", to: "#ef4444", text: "text-red-400" };
   }, [form.confidence]);
@@ -513,9 +513,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // and select inputs line up pixel-perfect across every row; `textareaClass`
   // reuses the same skin but stays auto-height for multiline notes.
   const fieldBase = FIELD_BASE;
-  // Mobile: compact 36px controls so every top field matches the confluence
-  // chip height (equal, symmetric bubbles). Desktop keeps the roomier 44px.
-  const inputClass = cn(fieldBase, "h-9 sm:h-11 text-xs sm:text-sm");
+  // UNE ÉCHELLE, CELLE DES CHAMPS DATE/HEURE : 40 px et 13 px sur téléphone,
+  // 44 px et 14 px au-delà. Chaque champ, chaque sélecteur, chaque puce du
+  // formulaire s'aligne dessus — rien de plus petit que 11 px nulle part.
+  const inputClass = cn(fieldBase, "h-10 sm:h-11 text-[13px] sm:text-sm");
   const textareaClass = cn(fieldBase, "py-2.5");
   const labelClass = "tv-label block text-slate-400 mb-1.5";
 
@@ -718,7 +719,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 placeholder="2.0"
                 className={inputClass}
               />
-              <div className="text-[10px] text-slate-600 mt-1">{t("trade.rrHint")}</div>
+              <div className="text-[11px] text-slate-600 mt-1">{t("trade.rrHint")}</div>
             </div>
             <div>
               <label className={labelClass}>{t("trade.estPnl")}</label>
@@ -783,7 +784,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       type="button"
                       onClick={() => setPointValue(String(p.value))}
                       className={cn(
-                        "px-2.5 py-1 rounded-lg text-[10px] font-bold transition border",
+                        "px-2.5 py-1 rounded-lg text-[11px] font-bold transition border",
                         pointValue === String(p.value)
                           ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
@@ -902,7 +903,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 key={p.t}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, entryTime: p.t, exitTime: p.v }))}
-                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-cyan-500/30"
+                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-[var(--tv-border-accent)]"
               >
                 {p.t} → {p.v}
               </button>
@@ -1280,7 +1281,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className={labelClass + " mb-0"}>{t("trade.screenshots")}</label>
-              <span className="text-[10px] text-slate-600 flex items-center gap-1">
+              <span className="text-[11px] text-slate-600 flex items-center gap-1">
                 {t("common.pasteHint")}
               </span>
             </div>
@@ -1324,7 +1325,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     )}
                   </button>
                   {/* Rang + flèches de réordonnancement (tactile). */}
-                  <span className="absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[10px] font-bold text-white">
+                  <span className="absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[11px] font-bold text-white">
                     {i + 1}
                   </span>
                   {form.screenshots.length > 1 && (
@@ -1359,13 +1360,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </div>
               ))}
               {form.screenshots.length < 3 && (
-                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-cyan-500/30 hover:bg-cyan-500/[0.03] transition">
+                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-[var(--tv-border-accent)] hover:bg-cyan-500/[0.03] transition">
                   {uploading ? (
                     <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
                   ) : (
                     <>
                       <ImagePlus className="w-5 h-5 text-slate-600" />
-                      <span className="text-[10px] text-slate-600 mt-1">{t("trade.upload")}</span>
+                      <span className="text-[11px] text-slate-600 mt-1">{t("trade.upload")}</span>
                     </>
                   )}
                   <input

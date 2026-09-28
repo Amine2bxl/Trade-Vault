@@ -300,12 +300,12 @@ export default function AccountSwitcher({
         {open &&
           createPortal(
             <div
-              className="md:hidden fixed inset-0 z-[var(--tv-z-modal-top)] flex items-end bg-black/60 backdrop-blur-sm animate-fade-in"
+              className="tv-dialog-wrap tv-dialog-backdrop fixed inset-0 z-[var(--tv-z-modal-top)] flex items-center justify-center md:hidden"
               onClick={() => setOpen(false)}
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="w-full glass-strong rounded-t-3xl border-t border-white/[0.08] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] animate-slide-up"
+                className="tv-dialog glass-strong w-full max-w-md overflow-y-auto pb-4"
               >
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
                   <div>

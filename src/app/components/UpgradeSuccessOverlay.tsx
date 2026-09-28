@@ -12,7 +12,7 @@ import { useT } from "../i18n/LanguageContext";
  * rejouer qu'une fois.
  */
 
-const CONFETTI_COLORS = ["#22d3ee", "#2dd4bf", "#f59e0b", "#a78bfa", "#f472b6", "#34d399"];
+const CONFETTI_COLORS = ["#22e08a", "#5bf0ab", "#12b981", "#e7e9ec", "#a78bfa", "#f59e0b"];
 
 interface Piece {
   left: number;

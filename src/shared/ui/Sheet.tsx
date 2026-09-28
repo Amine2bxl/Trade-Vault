@@ -60,7 +60,7 @@ export function Sheet({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[var(--tv-z-sheet)] flex items-end justify-center sm:items-stretch sm:justify-end">
+    <div className="tv-sheet-wrap fixed inset-0 z-[var(--tv-z-sheet)] flex items-center justify-center sm:items-stretch sm:justify-end">
       {/* Le voile est FAIBLE et sans flou : ce qu'on règle doit rester lisible
           derrière la feuille, sinon on règle à l'aveugle. */}
       <div className="absolute inset-0 bg-black/45 sm:bg-black/35" onClick={onClose} />
@@ -71,9 +71,10 @@ export function Sheet({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          "glass-strong tv-sheet-in relative flex max-h-[88vh] w-full flex-col rounded-t-3xl outline-none",
-          "shadow-2xl shadow-black/50",
-          "sm:max-h-none sm:w-[380px] sm:rounded-none sm:rounded-l-3xl sm:border-l sm:border-[var(--tv-border)]",
+          // Téléphone : la même carte centrée que les modales (plus de feuille
+          // qui jaillit du bas). Bureau : le panneau latéral, inchangé.
+          "glass-strong tv-sheet-panel relative flex w-full flex-col outline-none",
+          "sm:w-[380px] sm:border-l sm:border-[var(--tv-border)]",
           className,
         )}
       >

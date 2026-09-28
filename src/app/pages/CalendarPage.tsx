@@ -603,7 +603,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             className="w-16 h-3 rounded"
             style={{
               background:
-                "linear-gradient(90deg, rgba(244,63,63,0.42), rgba(244,63,63,0.08), rgba(16,185,129,0.08), rgba(16,185,129,0.42))",
+                "linear-gradient(90deg, rgb(var(--tv-chart-red-rgb) / 0.42), rgb(var(--tv-chart-red-rgb) / 0.08), rgb(var(--tv-chart-green-rgb) / 0.08), rgb(var(--tv-chart-green-rgb) / 0.42))",
             }}
           />
           <span className="text-[10px] text-slate-500">{t("calendar.legendHeat")}</span>
