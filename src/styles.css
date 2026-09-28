@@ -140,10 +140,19 @@
    * les tokens qu'elles suivent, elles ne bougent avec AUCUN thème : la donnée
    * garde ses couleurs quand l'interface change les siennes.
    * ---------------------------------------------------------------- */
+  /* Toute la rampe émeraude suit le vert du CTA « Get Started » : aucune
+     teinte de l'ancien vert ne peut plus s'afficher par une classe oubliée. */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d3fbe7;
+  --color-emerald-200: #a6f7cf;
   --color-emerald-300: #5bf0ab;
   --color-emerald-400: var(--tv-chart-green);
   --color-emerald-500: #12b981;
   --color-emerald-600: #0e9f6e;
+  --color-emerald-700: #0b7f58;
+  --color-emerald-800: #0a6247;
+  --color-emerald-900: #084a37;
+  --color-emerald-950: #042a1f;
   --color-red-400: var(--tv-chart-red);
 
   /* ----------------------------------------------------------------

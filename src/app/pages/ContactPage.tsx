@@ -42,7 +42,7 @@ export default function ContactPage() {
         className="pointer-events-none fixed inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 55% at 60% -10%,rgba(6,182,212,.09),transparent 60%),radial-gradient(ellipse 55% 45% at 95% 55%,rgba(99,102,241,.07),transparent 55%)",
+            "radial-gradient(ellipse 60% 50% at 100% 0%,rgba(34,224,138,.10),transparent 65%),radial-gradient(ellipse 55% 45% at 0% 100%,rgba(18,185,129,.07),transparent 65%)",
         }}
       />
       <div className="pointer-events-none absolute inset-0 overflow-hidden"></div>

@@ -2119,8 +2119,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ COUNTDOWN OVERLAY ══ */}
       {countdownVal !== null && (
-        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in">
+        <div className="tv-dialog-wrap tv-dialog-backdrop fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center">
+          <div className="tv-dialog glass-strong p-8 max-w-sm w-full text-center">
             <div className="text-sm font-bold text-white">{t("chk.cdTitle")}</div>
             <div className="text-xs text-slate-400 mb-5">{t("chk.cdSub")}</div>
             <div className="relative w-40 h-40 mx-auto mb-5">
@@ -2169,8 +2169,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ EDGE LOCKED OVERLAY ══ */}
       {lockOverlay && (
-        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-[rgb(var(--tv-accent-rgb)/0.20)]">
+        <div className="tv-dialog-wrap tv-dialog-backdrop fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center">
+          <div className="tv-dialog glass-strong p-8 max-w-sm w-full text-center">
             <div className="relative w-20 h-20 mx-auto mb-4">
               <div className="w-20 h-20 rounded-full tv-accent-fill flex items-center justify-center">
                 <Lock className="w-8 h-8" />
