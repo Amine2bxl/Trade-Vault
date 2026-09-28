@@ -137,6 +137,46 @@ const CoachAskShape = z.object({
  */
 const CoachAsk = withGlobalByteCeiling(CoachAskShape);
 
+/**
+ * LA QUESTION PASSE TOUJOURS.
+ *
+ * Le contexte poussé par le client est un BONUS : Jarvis lit le journal
+ * lui-même par ses outils. Or une seule borne dépassée — une réponse précédente
+ * trop longue dans l'historique, un souvenir de trop — faisait rejeter TOUTE
+ * la requête par le validateur, et le trader voyait « vérifie ta connexion »
+ * sans que le serveur n'ait jamais parlé au modèle. Quand le contexte complet
+ * ne passe pas, on garde la question, la langue, le compte et la fin de la
+ * conversation (bornée), et on journalise les champs fautifs.
+ */
+function parseCoachAsk(input: unknown) {
+  const full = CoachAsk.safeParse(input);
+  if (full.success) return full.data;
+  console.warn(
+    "[coach] context rejected, answering from the question alone",
+    full.error.issues.slice(0, 8).map((i) => `${i.path.join(".")}: ${i.message}`),
+  );
+  const raw = (input ?? {}) as Record<string, unknown>;
+  const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : undefined);
+  const turns = Array.isArray(raw.conversation) ? raw.conversation : [];
+  const conversation = turns
+    .filter(
+      (t): t is { role: "user" | "assistant"; content: string } =>
+        !!t &&
+        typeof t === "object" &&
+        ((t as { role?: unknown }).role === "user" ||
+          (t as { role?: unknown }).role === "assistant") &&
+        typeof (t as { content?: unknown }).content === "string",
+    )
+    .slice(-6)
+    .map((t) => ({ role: t.role, content: t.content.slice(0, AI_LIMITS.conversationContent) }));
+  return CoachAsk.parse({
+    question: str(raw.question, AI_LIMITS.question) || "…",
+    language: str(raw.language, 8),
+    accountId: str(raw.accountId, 64),
+    conversation,
+  });
+}
+
 function sanitizePrompt(text: string): string {
   return text
     .replace(/ignore\s+all\s+(previous|prior)\s+(instructions|directives|commands)/gi, "[redacted]")
@@ -168,7 +208,7 @@ function indisponible(language?: string) {
 
 export const askCoach = createServerFn({ method: "POST" })
   .middleware([requireJarvisAccess])
-  .inputValidator((input: unknown) => CoachAsk.parse(input))
+  .inputValidator(parseCoachAsk)
   .handler(async ({ data, context }) => {
     data.question = sanitizePrompt(data.question);
     // Télémétrie : `onUsage` est le point d'accroche prévu par

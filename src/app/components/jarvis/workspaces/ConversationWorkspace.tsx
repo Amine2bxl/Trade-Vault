@@ -597,18 +597,20 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           .filter((i) => i.tradeId)
           .map((i) => ({
             tradeId: i.tradeId as string,
-            setup: i.setup ?? null,
-            reasoning: i.reasoning ?? null,
+            // Texte libre saisi par le trader : borné aux limites du serveur,
+            // sinon une seule longue note faisait rejeter toute la question.
+            setup: i.setup?.slice(0, 100) ?? null,
+            reasoning: i.reasoning?.slice(0, 500) ?? null,
             confidence: i.confidence ?? null,
             plannedRisk: i.plannedRisk ?? null,
-            plan: i.plan ?? null,
-            emotion: i.emotion ?? null,
+            plan: i.plan?.slice(0, 500) ?? null,
+            emotion: i.emotion?.slice(0, 40) ?? null,
           })),
         reflection: Object.values(reflectionsRef.current).map((r) => ({
           tradeId: r.tradeId,
           planRespected: r.planRespected ?? null,
-          reason: r.reason ?? null,
-          note: r.note ?? null,
+          reason: r.reason?.slice(0, 40) ?? null,
+          note: r.note?.slice(0, 500) ?? null,
         })),
         session: sessionRef.current,
         conversation: priorTurns,
@@ -618,7 +620,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         rules,
         goals: measuredGoals,
         adherence,
-        question: query,
+        question: query.slice(0, 500),
         memory: memoryRef.current,
         // Déjà mémoïsés au-dessus : sans ça, `buildCoachV1Payload` reparcourait
         // tous les trades une seconde fois à chaque question.
@@ -657,7 +659,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         let res;
         try {
           res = await askCoach({
-            data: { question: query, accountId: activeAccountId ?? undefined, ...payload },
+            data: {
+              ...payload,
+              question: query.slice(0, 500),
+              accountId: activeAccountId ?? undefined,
+            },
           });
         } catch (firstErr) {
           // Une erreur 4xx (quota, validation, session) ne se résout pas avec un
@@ -669,7 +675,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           // gain de fiabilité nul — 400 ms absorbe un pic réseau tout autant.
           await new Promise((r) => setTimeout(r, 400));
           res = await askCoach({
-            data: { question: query, accountId: activeAccountId ?? undefined, ...payload },
+            data: {
+              ...payload,
+              question: query.slice(0, 500),
+              accountId: activeAccountId ?? undefined,
+            },
           });
         }
         // Le serveur indique déjà si la réponse vient de l'IA ou du moteur
