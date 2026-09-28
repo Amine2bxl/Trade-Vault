@@ -26,6 +26,7 @@ import {
 import { formatShortDate } from "../utils/tradeCalcs";
 import { useIsNarrow } from "../hooks/useIsNarrow";
 import { useT } from "../i18n/LanguageContext";
+import { formatMoney } from "@/shared/currency";
 
 type EquityPoint = { date: string; equity: number };
 
@@ -90,8 +91,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
   // qui est le sujet, se retrouve comprimée pour que l'axe respire. Sur
   // desktop les montants restent entiers, comme la référence l'exige.
   const narrow = useIsNarrow();
-  const fmtTick = (v: number) =>
-    narrow ? formatAxisMoney(v) : `$${Math.round(v).toLocaleString("en-US")}`;
+  const fmtTick = (v: number) => (narrow ? formatAxisMoney(v) : formatMoney(v, { whole: true }));
   const axisWidth = useMemo(() => {
     const widest = ticks.reduce((m, t) => Math.max(m, Math.abs(t)), 0);
     const longest = Math.max(...ticks.map((t) => fmtTick(t).length), 1);
@@ -235,11 +235,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                           : "tv-figure text-[11px] text-red-400"
                       }
                     >
-                      {delta >= 0 ? "+$" : "-$"}
-                      {Math.abs(delta).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatMoney(delta, { signed: true })}
                     </p>
                   </div>
                 );

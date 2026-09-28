@@ -13,6 +13,7 @@ import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useT } from "../i18n/LanguageContext";
 import { Kpi, KpiGrid } from "@/shared/ui";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
+import { formatMoney } from "@/shared/currency";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -260,10 +261,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           [
             {
               label: t("calendar.monthlyPnl"),
-              value:
-                monthlySummary.tradingDays === 0
-                  ? "$0.00"
-                  : `${monthlySummary.total >= 0 ? "" : "-"}$${Math.abs(monthlySummary.total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              value: formatMoney(monthlySummary.tradingDays === 0 ? 0 : monthlySummary.total),
               tone:
                 monthlySummary.tradingDays === 0
                   ? "neutral"

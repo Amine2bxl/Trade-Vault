@@ -63,6 +63,7 @@ import {
   EQUITY_LINE,
   tooltipStyle,
 } from "../utils/chartTheme";
+import { currencySymbol } from "@/shared/currency";
 
 interface Props {
   trades: Trade[];
@@ -819,7 +820,7 @@ function PanneauReglages({
           min={1000}
           max={500000}
           step={1000}
-          unite="$"
+          unite={currencySymbol()}
           format={(v) => formatMoney(v)}
         />
         <Reglage
@@ -829,7 +830,7 @@ function PanneauReglages({
           min={1}
           max={Math.max(50, Math.round(solde * 0.1))}
           step={Math.max(1, Math.round(solde * 0.001))}
-          unite="$"
+          unite={currencySymbol()}
           format={(v) => formatMoney(v)}
           hint={`${((risque / solde) * 100).toFixed(2)}% ${t("mc.ofBalance")}`}
         />

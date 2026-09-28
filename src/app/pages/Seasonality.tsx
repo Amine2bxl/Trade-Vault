@@ -49,6 +49,7 @@ import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
 import { PageContainer, Card, Kpi, KpiGrid } from "@/shared/ui";
+import { formatMoney } from "@/shared/currency";
 
 interface SeasonalityProps {
   trades: Trade[];
@@ -554,7 +555,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                 {...tooltipStyle}
                 formatter={
                   ((value: unknown) => [
-                    `$${Number(value).toFixed(2)}`,
+                    formatMoney(Number(value)),
                     t("journal.colPnl" as never),
                   ]) as never
                 }
@@ -618,7 +619,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   {...tooltipStyle}
                   formatter={
                     ((value: unknown) => [
-                      `$${Number(value).toFixed(2)}`,
+                      formatMoney(Number(value)),
                       t("journal.colPnl" as never),
                     ]) as never
                   }
@@ -647,7 +648,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   {...tooltipStyle}
                   formatter={
                     ((value: unknown) => [
-                      `$${Number(value).toFixed(2)}`,
+                      formatMoney(Number(value)),
                       t("journal.colPnl" as never),
                     ]) as never
                   }
@@ -682,7 +683,7 @@ function YearRow({ year, values, heatMax }: { year: number; values: number[]; he
         return (
           <div
             key={i}
-            title={v === 0 ? "—" : `$${v.toFixed(2)}`}
+            title={v === 0 ? "—" : formatMoney(v)}
             className="tv-figure h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >

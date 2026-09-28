@@ -33,6 +33,7 @@ import { isPlanLimitError } from "../utils/planLimits";
 import { cn } from "../utils/cn";
 import type { Account, AccountType } from "../store";
 import { Modal, FIELD_BASE, Chip, CHIP_ROW } from "@/shared/ui";
+import { currencySymbol, formatMoney, useCurrency } from "@/shared/currency";
 
 const TYPE_ICON: Record<AccountType, typeof User> = {
   personal: User,
@@ -110,7 +111,8 @@ export default function AccountSwitcher({
   const { accounts, activeAccount, switchAccount, removeAccount } = useAccounts();
   const { accountLimit } = useSubscription();
   const computedBalance = balanceProp ?? activeAccount?.startingBalance ?? 0;
-  const fmtBalance = `$${Math.round(computedBalance).toLocaleString("en-US")}`;
+  useCurrency(); // redessine le solde quand la devise change
+  const fmtBalance = formatMoney(computedBalance, { whole: true });
   const { t } = useT();
   const [open, setOpen] = useState(false);
   // Échap ferme la fenêtre, comme toutes les autres modales.
@@ -917,7 +919,7 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
           <label className={label}>{t("account.startingBalance")}</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-              $
+              {currencySymbol()}
             </span>
             <input
               type="number"
@@ -925,7 +927,9 @@ function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Acc
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              className={cn(FIELD_BASE, "h-11 pl-7")}
+              className={cn(FIELD_BASE, "h-11")}
+              // Le symbole peut faire un caractère (« $ ») ou trois (« CHF »).
+              style={{ paddingLeft: `${1.1 + currencySymbol().length * 0.55}rem` }}
             />
           </div>
         </div>

@@ -68,17 +68,17 @@ function enOvertrading(insight: JarvisInsight, mode: JarvisVoiceMode): HeroLineS
   if (mode === "beginner") {
     lines.push({
       kind: "observation",
-      text: `On your busy days you lose ${formatMoney(Math.abs(busy), "en")} per trade, versus ${calm >= 0 ? "+" : ""}${Math.round(calm)}$ on calm days. A busy day is a day with many trades.`,
+      text: `On your busy days you lose ${formatMoney(Math.abs(busy), "en")} per trade, versus ${calm >= 0 ? "+" : "-"}${formatMoney(Math.abs(calm), "en")} on calm days. A busy day is a day with many trades.`,
     });
   } else if (mode === "advanced") {
     lines.push({
       kind: "observation",
-      text: `Busy days: ${busy}$/trade vs ${calm >= 0 ? "+" : ""}${Math.round(calm)}$ on calm days.`,
+      text: `Busy days: ${busy < 0 ? "-" : "+"}${formatMoney(Math.abs(busy), "en")}/trade vs ${calm >= 0 ? "+" : "-"}${formatMoney(Math.abs(calm), "en")} on calm days.`,
     });
   } else {
     lines.push({
       kind: "observation",
-      text: `On busy days you lose ${formatMoney(Math.abs(busy), "en")} per trade, versus ${calm >= 0 ? "+" : ""}${Math.round(calm)}$ on calm days.`,
+      text: `On busy days you lose ${formatMoney(Math.abs(busy), "en")} per trade, versus ${calm >= 0 ? "+" : "-"}${formatMoney(Math.abs(calm), "en")} on calm days.`,
     });
   }
   if (insight.impact) {

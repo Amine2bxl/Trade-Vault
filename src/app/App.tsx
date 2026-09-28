@@ -71,6 +71,7 @@ import {
   loadOnboarding,
   loadStartingBalance,
   loadMonthlyReports,
+  loadCurrency,
   attachTradeToSession,
   saveTradeIntent,
   saveTradeReflection,
@@ -103,6 +104,7 @@ import { startOfWeek } from "./utils/economicEvents";
 import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { clearCurrencyCache, setCurrency, useCurrency } from "@/shared/currency";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import { PageActionsProvider } from "./contexts/PageActionsContext";
 const Landing = lazyPage(() => import("./pages/Landing"));
@@ -130,6 +132,27 @@ function AppContent() {
   // convertit les lignes une fois en base, pas une lentille appliquée à
   // chaque lecture (voir `utils/accountCalibration.ts`).
   const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  /* LA DEVISE DU TRADER — chargée du profil à la connexion, oubliée à la
+     déconnexion. La page est remontée quand elle change : chaque montant,
+     y compris ceux calculés une fois dans un `useMemo`, se réécrit. */
+  const currency = useCurrency();
+  useEffect(() => {
+    if (!user?.id) {
+      clearCurrencyCache();
+      return;
+    }
+    let active = true;
+    loadCurrency(user.id)
+      .then((c) => {
+        if (active) setCurrency(c);
+      })
+      .catch(() => {
+        /* la préférence locale reste en place ; rien ne bloque l'app */
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
   // Multi-appareils : ce qui est encodé/modifié/supprimé ailleurs arrive ici
   // instantanément, sans rafraîchissement (voir `useRealtimeTrades`).
   useRealtimeTrades(user?.id, activeId);
@@ -840,7 +863,7 @@ function AppContent() {
         </div>
         <PageActionsProvider setActions={setHeaderSlot}>
           {accountsReady && gateResolved ? (
-            <PageErrorBoundary resetKey={page}>
+            <PageErrorBoundary key={currency} resetKey={page}>
               {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
               En dessous, le chunk est déjà en mémoire (préchargement au survol

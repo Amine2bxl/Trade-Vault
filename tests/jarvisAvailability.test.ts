@@ -71,7 +71,7 @@ describe("Gemini", () => {
     });
     mockFetch([{ status: 429, body }]);
     const err = await GeminiProvider.complete(req).catch((e) => e);
-    expect(err).toBeInstanceOf(ProviderHttpError);
+    expect(err instanceof ProviderHttpError).toBe(true);
     expect(err.status).toBe(429);
     expect(err.retryAfterMs).toBe(7000);
   });

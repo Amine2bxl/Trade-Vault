@@ -196,6 +196,9 @@ const en = {
   // Profile
   "profile.preferences": "Preferences",
   "profile.language": "Language",
+  "settings.currency": "Currency",
+  "settings.currencyHint":
+    "The currency your journal is kept in. Every amount — dashboard, journal, analytics, reports and PDFs — is shown in it. Amounts are labelled, not converted.",
   "profile.startingEquity": "Starting Account Equity",
   "profile.startingEquityHint": "Used as the baseline for your equity curve and account growth.",
   "profile.accountActions": "Account",
@@ -1050,7 +1053,7 @@ const en = {
   "quant.avgRRSub": "avg planned reward-to-risk",
   // Plain-language metric explanations (info tooltips)
   "quant.infoAvgRR":
-    "On average, how many dollars you aim to win for every dollar you risk. 2R means targeting $2 for every $1 at risk.",
+    "On average, how much you aim to win for every unit you risk. 2R means targeting 2 for every 1 at risk.",
   "quant.infoExpectancy":
     "What you earn on an average trade, wins and losses blended together. Positive = your system makes money over time.",
   "quant.infoSharpe":
@@ -1557,7 +1560,7 @@ const en = {
   "mistakes.tipRevenge":
     "After a loss, step away for 15 minutes. Take deep breaths. The market will be there tomorrow.",
   "mistakes.tipFomo":
-    "Wait for your setup. Missing a trade costs $0. Entering badly can cost everything.",
+    "Wait for your setup. Missing a trade costs nothing. Entering badly can cost everything.",
   "mistakes.tipPrematureExit":
     "Trust your plan. Move your stop to breakeven instead of closing. Let the trade work.",
   "mistakes.tipHolding":
@@ -1761,7 +1764,7 @@ const en = {
   "recal.safeBehaviour":
     "Ratios (R multiple, risk %) and behaviour (mistakes, rule adherence, checklists) are never altered: only the monetary amounts change.",
   "recal.goalsNote":
-    "Goals expressed in $ (capital target) are not converted — they belong to your plan, not to one account. Check yours after recalibrating.",
+    "Goals expressed as an amount (capital target) are not converted — they belong to your plan, not to one account. Check yours after recalibrating.",
   "recal.confirm": "Recalibrate",
   "recal.reset": "Back to original",
   "recal.done": "{n} trades converted to the new scale.",

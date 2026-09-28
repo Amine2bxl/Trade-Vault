@@ -33,6 +33,7 @@ import TradeDetailModal from "../components/TradeDetailModal";
 import { PageContainer, Button, EmptyState, Card, Modal, Kpi, KpiGrid } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 import { compareChronological } from "../utils/tradeOrder";
+import { currencySymbol } from "@/shared/currency";
 
 interface JournalProps {
   trades: Trade[];
@@ -802,7 +803,7 @@ export default function Journal({
                       <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
                         <QuickEditCell
                           value={trade.riskAmount}
-                          prefix="$"
+                          prefix={currencySymbol()}
                           decimals={0}
                           min={0}
                           disabled={!onQuickEdit}

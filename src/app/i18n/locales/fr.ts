@@ -160,6 +160,9 @@ const fr: Dict = {
   "stats.performance": "Performance",
   "profile.preferences": "Préférences",
   "profile.language": "Langue",
+  "settings.currency": "Devise",
+  "settings.currencyHint":
+    "La devise dans laquelle tu tiens ton journal. Chaque montant — tableau de bord, journal, analyses, rapports et PDF — s'y affiche. Les montants sont étiquetés, pas convertis.",
   "profile.startingEquity": "Capital de départ",
   "profile.startingEquityHint":
     "Utilisé comme base pour votre courbe d'équité et la croissance du compte.",
@@ -985,7 +988,7 @@ const fr: Dict = {
   "quant.recoverySub": "du drawdown au nouveau sommet",
   "quant.avgRRSub": "ratio gain/risque moyen visé",
   "quant.infoAvgRR":
-    "En moyenne, combien de dollars tu vises pour chaque dollar risqué. 2R = viser 2 $ pour 1 $ risqué.",
+    "En moyenne, combien tu vises pour chaque unité risquée. 2R = viser 2 pour 1 risqué.",
   "quant.infoExpectancy":
     "Ce que rapporte un trade moyen, gains et pertes confondus. Positif = ton système gagne de l'argent sur la durée.",
   "quant.infoSharpe":
@@ -1459,7 +1462,8 @@ const fr: Dict = {
     "Fixe un max de 3-5 trades par jour. La qualité avant la quantité. Limite atteinte ? Ferme la plateforme.",
   "mistakes.tipRevenge":
     "Après une perte, éloigne-toi 15 minutes. Respire profondément. Le marché sera encore là demain.",
-  "mistakes.tipFomo": "Attends ton setup. Rater un trade coûte 0 $. Entrer mal peut tout coûter.",
+  "mistakes.tipFomo":
+    "Attends ton setup. Rater un trade ne coûte rien. Entrer mal peut tout coûter.",
   "mistakes.tipPrematureExit":
     "Fais confiance à ton plan. Remonte ton stop au breakeven au lieu de fermer. Laisse le trade travailler.",
   "mistakes.tipHolding":
@@ -1670,7 +1674,7 @@ const fr: Dict = {
   "recal.safeBehaviour":
     "Les ratios (R multiple, risque %) et le comportement (erreurs, respect des règles, checklists) ne sont jamais modifiés : seuls les montants changent.",
   "recal.goalsNote":
-    "Les objectifs exprimés en $ (cible de capital) ne sont pas convertis — ils appartiennent à ton plan, pas à un compte. Vérifie le tien après recalibrage.",
+    "Les objectifs exprimés en montant (cible de capital) ne sont pas convertis — ils appartiennent à ton plan, pas à un compte. Vérifie le tien après recalibrage.",
   "recal.confirm": "Recalibrer",
   "recal.reset": "Revenir à l'origine",
   "recal.done": "{n} trades convertis à la nouvelle échelle.",

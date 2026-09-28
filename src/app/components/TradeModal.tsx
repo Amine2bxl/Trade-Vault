@@ -62,6 +62,7 @@ import {
   loadTradeReflection,
 } from "../store/tradeIntel";
 import { EMOTIONAL_STATES, type EmotionalState } from "../utils/readiness";
+import { currencySymbol, formatMoney } from "@/shared/currency";
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -680,7 +681,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <div className="flex gap-1.5">
                 <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                    {form.riskType === "dollar" ? "$" : ""}
+                    {form.riskType === "dollar" ? currencySymbol() : ""}
                   </span>
                   <input
                     type="number"
@@ -688,7 +689,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     value={form.riskAmount}
                     onChange={(e) => setForm((f) => ({ ...f, riskAmount: e.target.value }))}
                     placeholder={form.riskType === "dollar" ? "0.00" : "1.0"}
-                    className={cn(inputClass, "pl-7")}
+                    className={inputClass}
+                    style={{
+                      paddingLeft:
+                        form.riskType === "dollar"
+                          ? `${1.1 + currencySymbol().length * 0.55}rem`
+                          : undefined,
+                    }}
                   />
                   {form.riskType === "percent" && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
@@ -705,7 +712,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   }
                   className="px-3 rounded-xl border border-white/[0.08] text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition shrink-0"
                 >
-                  {form.riskType === "dollar" ? "$" : "%"}
+                  {form.riskType === "dollar" ? currencySymbol() : "%"}
                 </button>
               </div>
             </div>
@@ -1399,7 +1406,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             {showAdvanced && (
               <div className="px-3 pb-3 grid grid-cols-3 gap-2">
                 <div>
-                  <label className={labelClass}>MAE ($)</label>
+                  <label className={labelClass}>MAE ({currencySymbol()})</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1411,7 +1418,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   <div className="text-[11px] text-slate-600 mt-1">{t("trade.maeHint")}</div>
                 </div>
                 <div>
-                  <label className={labelClass}>MFE ($)</label>
+                  <label className={labelClass}>MFE ({currencySymbol()})</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1423,7 +1430,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   <div className="text-[11px] text-slate-600 mt-1">{t("trade.mfeHint")}</div>
                 </div>
                 <div>
-                  <label className={labelClass}>{t("trade.slippage")} ($)</label>
+                  <label className={labelClass}>
+                    {t("trade.slippage")} ({currencySymbol()})
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -1474,9 +1483,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         : "text-red-400",
                   )}
                 >
-                  {form.direction === "be"
-                    ? "BE"
-                    : `${calculatedPnl >= 0 ? "+" : ""}$${Math.abs(calculatedPnl).toFixed(2)}`}
+                  {form.direction === "be" ? "BE" : formatMoney(calculatedPnl, { signed: true })}
                 </span>
               </>
             ) : (

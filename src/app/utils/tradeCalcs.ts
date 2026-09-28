@@ -1,3 +1,4 @@
+import { formatMoney } from "@/shared/currency";
 import { AI_LIMITS } from "@/domain/ai-limits";
 import { Trade, TradeStats, isBreakEven } from "../types";
 
@@ -158,13 +159,9 @@ export function withPnlFromRiskAndR(trade: Trade, patch: Partial<Trade>): Trade 
   return { ...next, pnl: Math.round(next.riskAmount * next.rMultiple * 100) / 100 };
 }
 
+/** P&L signé dans la devise du trader : « +$1,234.50 », « -€80.00 », « +¥1,235 ». */
 export function formatPnl(value: number): string {
-  if (Math.abs(value) < 0.005) return "$0.00";
-  const prefix = value >= 0 ? "+$" : "-$";
-  return (
-    prefix +
-    Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  );
+  return formatMoney(value, { signed: true });
 }
 
 export function formatPct(value: number): string {

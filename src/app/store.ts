@@ -71,6 +71,8 @@ export {
   buildJarvisPrefill,
   loadChecklistConfig,
   saveChecklistConfig,
+  loadCurrency,
+  saveCurrency,
 } from "./store/profile";
 export {
   type TradingSession,

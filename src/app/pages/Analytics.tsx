@@ -48,8 +48,10 @@ import {
   moneyAxisProps,
   tooltipStyle,
   glowActiveDot,
+  formatAxisMoney,
 } from "../utils/chartTheme";
 import EquityChart from "../components/EquityChart";
+import { formatMoney } from "@/shared/currency";
 
 interface AnalyticsProps {
   trades: Trade[];
@@ -206,14 +208,15 @@ export default function Analytics({ trades }: AnalyticsProps) {
     return arr;
   }, [stats.wins, stats.losses, stats.breakEven, t]);
   const pnlDistribution = useMemo(() => {
+    const m = (v: number) => formatMoney(v, { whole: true });
     const b = [
-      { range: "< -$500", count: 0, fill: CHART_RED },
-      { range: "-$500~-$200", count: 0, fill: CHART_RED },
-      { range: "-$200~$0", count: 0, fill: "#fca5a5" },
+      { range: `< ${m(-500)}`, count: 0, fill: CHART_RED },
+      { range: `${m(-500)}~${m(-200)}`, count: 0, fill: CHART_RED },
+      { range: `${m(-200)}~${m(0)}`, count: 0, fill: "#fca5a5" },
       { range: t("common.be"), count: 0, fill: "#f59e0b" },
-      { range: "$0~$200", count: 0, fill: "#86efac" },
-      { range: "$200~$500", count: 0, fill: "#5bf0ab" },
-      { range: "> $500", count: 0, fill: "#22e08a" },
+      { range: `${m(0)}~${m(200)}`, count: 0, fill: "#86efac" },
+      { range: `${m(200)}~${m(500)}`, count: 0, fill: "#5bf0ab" },
+      { range: `> ${m(500)}`, count: 0, fill: "#22e08a" },
     ];
     for (const trade of cutoffTrades) {
       if (trade.direction === "be") b[3].count++;
@@ -784,7 +787,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     <Tooltip
                       {...tooltipStyle}
                       formatter={(value: any, name: any) => [
-                        name === "winRate" ? `${value}%` : `$${Number(value).toFixed(2)}`,
+                        name === "winRate" ? `${value}%` : formatMoney(Number(value)),
                         name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                       ]}
                     />
@@ -899,7 +902,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     formatter={(value: any, name: any) => {
                       if (name === "winRate") return [`${value}%`, t("analytics.winRateLabel")];
                       if (name === "avgRR") return [`${value}R`, t("dashboard.avgRR")];
-                      return [`$${Number(value).toFixed(2)}`, t("journal.colPnl")];
+                      return [formatMoney(Number(value)), t("journal.colPnl")];
                     }}
                   />
                   <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
@@ -981,7 +984,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <Tooltip
                     {...tooltipStyle}
                     formatter={(value: any, name: any) => [
-                      name === "winRate" ? `${value}%` : `$${Number(value).toFixed(2)}`,
+                      name === "winRate" ? `${value}%` : formatMoney(Number(value)),
                       name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                     ]}
                   />
@@ -1012,7 +1015,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <XAxis
                     type="number"
                     tick={AXIS_TICK}
-                    tickFormatter={(v) => `$${v}`}
+                    tickFormatter={(v) => formatAxisMoney(Number(v))}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1026,10 +1029,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   />
                   <Tooltip
                     {...tooltipStyle}
-                    formatter={(value: any) => [
-                      `$${Number(value).toFixed(2)}`,
-                      t("journal.colPnl"),
-                    ]}
+                    formatter={(value: any) => [formatMoney(Number(value)), t("journal.colPnl")]}
                   />
                   <Bar dataKey="pnl" radius={BAR_RADIUS_H} {...CHART_ANIMATION}>
                     {strategyData.map((e, i) => (

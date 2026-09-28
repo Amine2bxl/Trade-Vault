@@ -17,10 +17,17 @@ import {
   AlertTriangle,
   FileText,
   ShieldCheck,
+  Coins,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Trade, LANGUAGES } from "../types";
-import { loadLanguage, saveLanguage, loadStartingBalance, saveStartingBalance } from "../store";
+import {
+  loadLanguage,
+  saveLanguage,
+  loadStartingBalance,
+  saveStartingBalance,
+  saveCurrency,
+} from "../store";
 import { exportTradesCSV } from "../utils/exportCsv";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
@@ -34,6 +41,13 @@ import { isCalibrated } from "../utils/accountCalibration";
 import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
 import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
 import PromoCodeSection from "../components/PromoCodeSection";
+import {
+  CURRENCIES,
+  currencySymbol,
+  parseCurrency,
+  setCurrency,
+  useCurrency,
+} from "@/shared/currency";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -112,8 +126,11 @@ export default function Settings({
         t("settings.preferences"),
         t("profile.language"),
         t("profile.startingEquity"),
+        t("settings.currency"),
         "language",
         "langue",
+        "currency",
+        "devise",
         "equity",
       ),
       notifs: match(t("push.title"), t("push.enable"), "push", "notification"),
@@ -189,6 +206,23 @@ export default function Settings({
       flash("lang");
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  /* LA DEVISE. Appliquée tout de suite (chaque montant de l'app se réécrit),
+     puis enregistrée sur le profil ; un échec d'écriture remet l'ancienne. */
+  const currency = useCurrency();
+  const handleCurrency = async (val: string) => {
+    if (!user) return;
+    const next = parseCurrency(val);
+    const previous = currency;
+    setCurrency(next);
+    try {
+      await saveCurrency(user.id, next);
+      flash("cur");
+    } catch (e) {
+      console.error(e);
+      setCurrency(previous);
     }
   };
 
@@ -332,13 +366,34 @@ export default function Settings({
               <label className="block">
                 <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
                   <span className="flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5" /> {t("settings.currency")}
+                  </span>
+                  {savedFlash === "cur" && <SavedBadge label={t("common.saved")} />}
+                </span>
+                <select
+                  value={currency}
+                  onChange={(e) => handleCurrency(e.target.value)}
+                  className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code} className="bg-[var(--tv-plate-2)]">
+                      {c.code} · {currencySymbol(c.code)} — {c.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="tv-hint mt-1.5">{t("settings.currencyHint")}</p>
+              </label>
+
+              <label className="block">
+                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
+                  <span className="flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
                   </span>
                   {savedFlash === "eq" && <SavedBadge label={t("common.saved")} />}
                 </span>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                    $
+                    {currencySymbol()}
                   </span>
                   <input
                     type="number"
@@ -348,7 +403,8 @@ export default function Settings({
                     onBlur={handleEquityBlur}
                     min={0}
                     step={100}
-                    className={cn(FIELD_BASE, "h-11 pl-7")}
+                    className={cn(FIELD_BASE, "h-11")}
+                    style={{ paddingLeft: `${1.1 + currencySymbol().length * 0.55}rem` }}
                   />
                 </div>
                 <p className="tv-hint mt-1.5">{t("profile.startingEquityHint")}</p>

@@ -1,3 +1,4 @@
+import { currencySymbol } from "@/shared/currency";
 import type { JarvisInsight } from "../types";
 
 /**
@@ -32,7 +33,7 @@ export function voiceModeOf(experience?: string | null): JarvisVoiceMode {
 }
 
 /** Montant monétaire court, testable (pas de regroupement de milliers). */
-export function formatMoney(amount: number, lang: "fr" | "en", unit = "$"): string {
+export function formatMoney(amount: number, lang: "fr" | "en", unit = currencySymbol()): string {
   const n = Math.round(Math.abs(amount));
   return lang === "fr" ? `${n} ${unit}` : `${unit}${n}`;
 }

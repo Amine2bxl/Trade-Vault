@@ -44,6 +44,7 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { computeChecklistStreakStats, recentChecklistPeriods } from "../utils/checklistStreak";
 import { newestFirst } from "../utils/tradeOrder";
+import { formatMoney } from "@/shared/currency";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
@@ -460,10 +461,12 @@ export default function Dashboard({
                       <span className="text-[10px] text-slate-600">Silver Bullet</span>
                     </div>
                     <div className="text-[10px] text-slate-600">
-                      10:03 · 2R · $150 {t("dashboard.riskSuffix")}
+                      10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-emerald-400">+$300.00</div>
+                  <div className="text-sm font-bold text-emerald-400">
+                    {formatMoney(300, { signed: true })}
+                  </div>
                 </div>
               </div>
             </div>

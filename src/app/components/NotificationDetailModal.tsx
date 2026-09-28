@@ -5,6 +5,7 @@ import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { AppNotification } from "@/modules/notifications/types";
 import { encodeFilter, type UnifiedFilter } from "../utils/tradeFilter";
+import { formatMoney } from "@/shared/currency";
 
 /**
  * NotificationDetailModal — le popup centré (fond flouté) qui s'ouvre quand on
@@ -37,7 +38,7 @@ function essentials(n: AppNotification): Array<[string, string]> {
   if (typeof d.mistake === "string") rows.push(["Erreur", d.mistake]);
   if (typeof d.days === "number") rows.push(["Jours sans session", `${d.days}`]);
   if (typeof d.winRate === "number") rows.push(["Win rate", `${Math.round(d.winRate * 100)}%`]);
-  if (typeof d.pnl === "number") rows.push(["P&L", `${Math.round(d.pnl)}$`]);
+  if (typeof d.pnl === "number") rows.push(["P&L", formatMoney(d.pnl, { signed: true })]);
   return rows;
 }
 

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { TradeStats } from "../types";
 import type { QuantStats } from "./quantStats";
+import { formatMoney } from "@/shared/currency";
 
 // Goals 2.0 — the trader selects SEVERAL fully customizable goals at once;
 // TradeVault derives a progressive 6-month action plan from them: one
@@ -530,11 +531,11 @@ function leakTask(
   fr: boolean,
   m: { name: string; totalPnl: number; count: number },
 ): { title: string; desc: string } {
-  const cost = Math.round(Math.abs(m.totalPnl));
+  const cost = formatMoney(Math.abs(m.totalPnl), { whole: true });
   const stagesFr: [string, string][] = [
     [
       `Cible ta fuite n°1 : ${m.name}`,
-      `« ${m.name} » t'a coûté environ ${cost} $ sur ${m.count} trades. Ce mois-ci, marque chaque occurrence dans ton journal — on mesure avant de corriger.`,
+      `« ${m.name} » t'a coûté environ ${cost} sur ${m.count} trades. Ce mois-ci, marque chaque occurrence dans ton journal — on mesure avant de corriger.`,
     ],
     [
       `Écris la règle anti « ${m.name} »`,
@@ -554,13 +555,13 @@ function leakTask(
     ],
     [
       `Prouve que la fuite est fermée`,
-      `Vise zéro « ${m.name} » ce mois-ci. Compare le coût actuel aux ${cost} $ de départ : c'est ta preuve chiffrée de progrès.`,
+      `Vise zéro « ${m.name} » ce mois-ci. Compare le coût actuel aux ${cost} de départ : c'est ta preuve chiffrée de progrès.`,
     ],
   ];
   const stagesEn: [string, string][] = [
     [
       `Target your #1 leak: ${m.name}`,
-      `"${m.name}" cost you about $${cost} across ${m.count} trades. This month, flag every occurrence in your journal — measure before you fix.`,
+      `"${m.name}" cost you about ${cost} across ${m.count} trades. This month, flag every occurrence in your journal — measure before you fix.`,
     ],
     [
       `Write the anti-"${m.name}" rule`,
@@ -580,7 +581,7 @@ function leakTask(
     ],
     [
       `Prove the leak is closed`,
-      `Aim for zero "${m.name}" this month. Compare today's cost to the starting $${cost}: that's your measurable proof of progress.`,
+      `Aim for zero "${m.name}" this month. Compare today's cost to the starting ${cost}: that's your measurable proof of progress.`,
     ],
   ];
   const [title, desc] = (fr ? stagesFr : stagesEn)[i % 6];

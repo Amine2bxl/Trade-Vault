@@ -1,3 +1,4 @@
+import { formatMoney } from "@/shared/currency";
 // Shared Recharts theming so every chart across the app (Dashboard, Analytics,
 // Mistakes, Calendar) animates and looks the same — one place to tune "premium feel".
 
@@ -219,13 +220,7 @@ export const AXIS_TICK = { fill: "var(--tv-text-muted)", fontSize: 11 } as const
 // Compact money labels ($1.2k) so the Y axis stays narrow and readable at any
 // account size instead of wrapping five-digit numbers.
 export function formatAxisMoney(v: number): string {
-  const abs = Math.abs(v);
-  const sign = v < 0 ? "-" : "";
-  if (abs >= 1000) {
-    const k = abs / 1000;
-    return `${sign}$${k >= 10 ? Math.round(k) : k.toFixed(1)}k`;
-  }
-  return `${sign}$${Math.round(abs)}`;
+  return formatMoney(v, { compact: true });
 }
 
 // Hover cursor shared by every chart: a neutral hairline guide, no accent tint
