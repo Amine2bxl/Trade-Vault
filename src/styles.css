@@ -1133,7 +1133,7 @@ body {
        + Jarvis), aligné sur l'écart nav→widget (~20-25px). Le padding est fixe :
        ajouter du contenu garde TOUJOURS le même espace, rien n'est jamais
        masqué. */
-    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
     /* Clamp the scroll container to the viewport so no child can drag the
        whole page sideways on Analytics/tables. */
     overflow-x: hidden;
@@ -1725,31 +1725,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   outline-offset: 3px;
 }
 
-/* Une ligne de la feuille « Plus » — 48 px, cible confortable au pouce. */
-.more-row {
-  display: flex;
-  width: 100%;
-  min-height: 3rem;
-  align-items: center;
-  gap: 0.75rem;
-  border-radius: 0.75rem;
-  padding: 0 0.75rem;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--tv-text-secondary);
-  transition: background-color var(--tv-dur-1) var(--tv-ease);
-}
-.more-row:hover,
-.more-row:active {
-  background: rgb(255 255 255 / 0.05);
-}
-.more-row-on {
-  background: rgb(var(--tv-accent-rgb) / 0.1);
-  color: var(--tv-text-primary);
-}
-.more-row-on svg {
-  color: var(--tv-highlight);
-}
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
 .star-btn {

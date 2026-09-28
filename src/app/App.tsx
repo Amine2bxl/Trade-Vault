@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
 import ChartDefs from "./components/ChartDefs";
 import MobileNav from "./components/MobileNav";
+import AccountSwitcher from "./components/AccountSwitcher";
 import MobileActions from "./components/MobileActions";
 import SectionTabs from "./components/SectionTabs";
 import { pagesOfSection, sectionForPage } from "./navigation";
@@ -938,14 +939,13 @@ function AppContent() {
       </main>
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
-      {/* Plus de pastille de compte flottante sur mobile : le compte se change
-          depuis « Plus », dans la barre du bas. */}
-      <MobileNav
-        page={page}
-        setPage={setPage}
-        onAddTrade={handleAdd}
+      {/* Mobile : la pastille des sous-comptes flotte en bas à gauche, en miroir
+          de la bulle Jarvis. Solde = départ + P&L. */}
+      <AccountSwitcher
+        variant="fab"
         balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
       />
+      <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
       <Suspense fallback={null}>
         <AiAssistant trades={trades} page={page} />
       </Suspense>

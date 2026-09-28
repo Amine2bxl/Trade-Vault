@@ -104,9 +104,7 @@ export default function AccountSwitcher({
    *  variante `card` (le rail), elle réduit le sélecteur au seul disque de
    *  couleur du compte — l'état du rail plié. */
   compact?: boolean;
-  /** `row` : la même pilule, posée dans la feuille « Plus » du mobile au lieu
-   *  de flotter au-dessus du contenu. */
-  variant?: "bar" | "fab" | "card" | "row";
+  variant?: "bar" | "fab" | "card";
   balance?: number;
 }) {
   const { accounts, activeAccount, switchAccount, removeAccount } = useAccounts();
@@ -254,7 +252,7 @@ export default function AccountSwitcher({
   // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
   // that opens a premium bottom sheet of tappable account cards — one tap to
   // switch sub-accounts. Original layout, no dropdown crowding the top bar.
-  if (variant === "fab" || variant === "row") {
+  if (variant === "fab") {
     if (!activeAccount) return null;
     const ActiveIcon = getAccountIcon(activeAccount);
     return (
@@ -276,12 +274,7 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
-          className={cn(
-            "flex items-center gap-2.5 float-shell transition active:scale-[0.98]",
-            variant === "row"
-              ? "h-14 w-full rounded-2xl pl-2 pr-3"
-              : "md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full",
-          )}
+          className="md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
         >
           <span
             className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border"

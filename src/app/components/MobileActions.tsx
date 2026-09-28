@@ -1,4 +1,4 @@
-import { Bell, Bot } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import type { Page } from "../types";
 import { preloadPage } from "../pageModules";
 import { cn } from "../utils/cn";
@@ -72,17 +72,17 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
   return (
     <div className="flex items-center gap-1 md:hidden">
       {action(
-        "insights",
-        t("nav.jarvis"),
-        <Bot className="h-[19px] w-[19px]" strokeWidth={1.9} />,
-        page === "insights",
-      )}
-      {action(
         "inbox",
         t("nav.inbox"),
         <Bell className="h-[19px] w-[19px]" strokeWidth={1.9} />,
         page === "inbox",
         unread,
+      )}
+      {action(
+        "settings",
+        t("nav.settings"),
+        <Settings className="h-[19px] w-[19px]" strokeWidth={1.9} />,
+        page === "settings",
       )}
     </div>
   );

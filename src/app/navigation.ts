@@ -109,11 +109,11 @@ export function defaultPageOfSection(id: SectionId): Page {
 }
 
 /**
- * Sections promues dans la barre du bas mobile : Accueil · Journal · [+] ·
- * Analyse · Plus. Les autres sections (préparation, Jarvis, stratégie,
- * réglages) vivent dans la feuille « Plus » (`MobileNav`).
+ * Sections de la barre du bas mobile, autour du bouton d'ajout :
+ * Accueil · Préparation · [+] · Journal · Analyse. Pas de menu « Plus » : les
+ * sous-pages d'une section se parcourent par ses onglets, dans la page.
  */
-export const MOBILE_SECTIONS: SectionId[] = ["dashboard", "journal", "analysis"];
+export const MOBILE_SECTIONS: SectionId[] = ["dashboard", "preparation", "journal", "analysis"];
 
 /** Liste plate (ordre produit) — utilisée par la palette de commandes. */
 export const NAV_ITEMS: NavItem[] = PAGES.map(navItem);
