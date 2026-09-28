@@ -431,6 +431,7 @@ const MONTH_KEYS = [
 
 function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
   const { t, lang } = useT();
+  const monthRows = useMonthRows();
 
   const monthLabel = (m: number) =>
     new Date(2026, m, 1).toLocaleDateString(lang, { month: "short" });
@@ -550,7 +551,6 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
   }
 
   const { monthly, years, heatMax, weekdays, hours, best, worst, bestDay, bestHour } = data;
-  const monthRows = useMonthRows();
 
   return (
     <div className="animate-fade-in">
