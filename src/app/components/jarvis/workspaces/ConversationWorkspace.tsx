@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Check, Eraser, Square, Volume2, Zap } from "lucide-react";
+import { ArrowUpRight, Check, Eraser, RotateCcw, Square, Volume2, Zap } from "lucide-react";
 import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
 import TypedAnswer from "../TypedAnswer";
@@ -103,11 +103,29 @@ function spokenOf(m: JarvisMessage): string {
 }
 
 /** 4xx (quota, validation, auth) → non rétentable ; 5xx/réseau → rétentable. */
+/**
+ * Ce que le serveur a VRAIMENT répondu. Tout finissait en « Something went
+ * wrong » : un quota atteint, une session expirée et une panne réseau se
+ * lisaient pareil, et le trader ne savait pas s'il devait attendre, se
+ * reconnecter ou passer Pro.
+ */
+type CoachErrorKind = "quota" | "pro" | "rate" | "auth" | "network";
+
+function coachErrorKind(err: unknown): CoachErrorKind {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/DAILY_QUOTA_REACHED/.test(msg)) return "quota";
+  if (/PRO_REQUIRED/.test(msg)) return "pro";
+  if (/RATE_LIMITED/.test(msg)) return "rate";
+  if (/Unauthorized/i.test(msg)) return "auth";
+  return "network";
+}
+
+/** Seule une panne réseau / serveur mérite une seconde tentative automatique :
+ *  un refus (quota, abonnement, session) ne change pas en 400 ms. */
 function isTransient(err: unknown): boolean {
   const status = (err as { status?: number })?.status;
   if (typeof status === "number") return status >= 500 || status === 0;
-  const msg = err instanceof Error ? err.message : String(err);
-  return !/RATE_LIMITED|PRO_REQUIRED|Unauthorized|400|422/i.test(msg);
+  return coachErrorKind(err) === "network";
 }
 
 const seededUsers = new Set<string>();
@@ -335,6 +353,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // Limite gratuite 5/j : la bannière Premium apparaît quand la limite est
   // atteinte, pour inviter à l'upgrade plutôt que de bloquer en silence.
   const [quotaBanner, setQuotaBanner] = useState(false);
+  // La dernière question envoyée — pour « Réessayer » après une panne.
+  const lastQuestionRef = useRef<string>("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Mémoire persistante chargée UNE fois par utilisateur, hors du chemin de la
@@ -632,9 +652,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         ]);
         if (!degraded) setTypingId(id);
       };
+      lastQuestionRef.current = query;
       try {
-        // Une analyse consommée — comptée localement, jamais d'appel réseau.
-        incrementAiUsage(userId);
         let res;
         try {
           res = await askCoach({
@@ -656,6 +675,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         // Le serveur indique déjà si la réponse vient de l'IA ou du moteur
         // déterministe — on ne le devine pas, on lit `source`.
         pushAnswer(res.answer || t("ai.noResponse"), res.source !== "ai");
+        // Une analyse consommée — comptée APRÈS la réponse : une question
+        // refusée ou perdue en route ne coûte rien au compteur affiché.
+        if (res.source === "ai") incrementAiUsage(userId);
 
         // ── Apprentissage ────────────────────────────────────────────────
         // APRÈS la réponse, et sans l'attendre : le trader a déjà ce qu'il
@@ -705,7 +727,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
            par la fenêtre ce qu'on vient de sortir par la porte. Une requête
            qui échoue des deux côtés est une panne, et elle se dit. */
         console.error("[coach] request failed", e);
-        push("error", t("ai.genericError"));
+        const kind = coachErrorKind(e);
+        if (kind === "quota") setQuotaBanner(true);
+        push("error", t(`ai.error.${kind}`));
       } finally {
         setLoading(false);
       }
@@ -725,6 +749,20 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       activeAccountId,
     ],
   );
+
+  /** Réessayer : on retire la bulle d'erreur ET la question restée sans
+   *  réponse, puis on renvoie la même question. */
+  const retry = () => {
+    const q = lastQuestionRef.current;
+    if (!q || loading) return;
+    setMessages((prev) => {
+      const next = prev[prev.length - 1]?.role === "error" ? prev.slice(0, -1) : [...prev];
+      const last = next[next.length - 1];
+      return last?.role === "user" && textOf(last) === q ? next.slice(0, -1) : next;
+    });
+    // Laisse React retirer les bulles avant de relancer.
+    window.setTimeout(() => void ask(q), 0);
+  };
 
   // A page (Checklist, Missed…) opened Jarvis with a ready-made prompt.
   const askedRef = useRef<string | null>(null);
@@ -919,8 +957,14 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 ) : m.role === "assistant" ? (
                   <BlockList blocks={m.blocks} onTool={handleTool} />
                 ) : (
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-300">
-                    {textOf(m) || ""}
+                  <div className="jarvis-error">
+                    <span className="min-w-0 flex-1">{textOf(m) || ""}</span>
+                    {m.id === messages[messages.length - 1]?.id && lastQuestionRef.current && (
+                      <button type="button" onClick={retry} className="jarvis-error-retry">
+                        <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                        {t("ai.retry")}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

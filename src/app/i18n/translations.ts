@@ -704,6 +704,8 @@ const en = {
   "dashboard.title": "Dashboard",
   "dashboard.subtitle": "Your trading performance at a glance",
   "dashboard.profitFactor": "Profit Factor",
+  "dashboard.netR": "Net R",
+  "dashboard.askJarvis": "Ask Jarvis",
   "dashboard.maxDrawdown": "Max Drawdown",
   "dashboard.periodPeak": "Period peak",
   "dashboard.greenDays": "Green days",
@@ -889,6 +891,7 @@ const en = {
   "trade.accountBalance": "Account $",
   "trade.entryTime": "Entry Time",
   "trade.exitTime": "Exit Time",
+  "trade.error.exitBeforeEntry": "Exit time can't be earlier than entry time.",
   "trade.strategy": "Strategy",
   "trade.setupQuality": "Setup Quality",
   "trade.confidence": "Confidence",
@@ -1070,7 +1073,9 @@ const en = {
   "trade.slippage": "Slippage",
   "trade.fillRequired": "Fill symbol, risk and R to save",
   "trade.draftBadge": "Draft",
-  "trade.discardDraft": "Discard draft",
+  "trade.discardDraft": "Delete draft",
+  "trade.discardDraftConfirm": "Are you sure you want to delete this draft?",
+  "common.irreversible": "This action cannot be undone.",
 
   // Trade intent & reflection (Phase 0b)
   "trade.intent": "Before the trade (optional)",
@@ -1431,6 +1436,12 @@ const en = {
   "ai.offlineAnalysis":
     "Offline analysis: the numbers are still accurate, the interpretation is more limited.",
   "ai.genericError": "Something went wrong. Please try again.",
+  "ai.error.quota": "You've used today's Jarvis analyses. They reset at midnight.",
+  "ai.error.pro": "This Jarvis feature needs an active plan.",
+  "ai.error.rate": "Too many questions in a short time. Wait a minute and try again.",
+  "ai.error.auth": "Your session has expired. Sign in again to keep talking to Jarvis.",
+  "ai.error.network": "Jarvis couldn't be reached. Check your connection and retry.",
+  "ai.retry": "Retry",
   "ai.rateLimited": "Too many requests in a short window. Wait a moment and try again.",
   "ai.sessionExpired": "Your session expired. Reconnect and try again.",
   "ai.validationError":

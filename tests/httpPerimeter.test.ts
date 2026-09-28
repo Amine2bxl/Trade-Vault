@@ -96,11 +96,15 @@ describe("server functions", () => {
       "aiGenerateDailyBrief",
       "aiGenerateLessons",
       "aiGenerateWeeklyReview",
-      "askCoach",
-      "extractMemory",
     ]) {
       expect(fns.get(name), name).toBe("requireProAccess");
     }
+    // Jarvis fait partie de l'offre GRATUITE (3 analyses par jour) : il est
+    // gardé par le quota du palier, jamais par l'abonnement — sinon un compte
+    // gratuit est refusé avant son quota. L'extraction de mémoire suit une
+    // question déjà décomptée : elle ne doit pas en consommer une deuxième.
+    expect(fns.get("askCoach")).toBe("requireJarvisAccess");
+    expect(fns.get("extractMemory")).toBe("requireJarvisSideAccess");
     // La synthèse vocale brûle un quota ElevenLabs : elle était ANONYME.
     expect(fns.get("ttsSpeak")).toBe("requireSupabaseAuth");
   });

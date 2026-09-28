@@ -1,0 +1,43 @@
+import { describe, expect, test } from "bun:test";
+import { dayTone, dayToneBackground } from "../src/app/utils/calendarTone";
+import type { Trade } from "../src/app/types";
+
+const trade = (pnl: number, rMultiple: number, direction: Trade["direction"] = "long") =>
+  ({ pnl, rMultiple, direction }) as Trade;
+
+describe("teinte d'une journée du calendrier", () => {
+  test("+2R et −1R : mixte, aux deux tiers positive", () => {
+    const tone = dayTone([trade(200, 2), trade(-100, -1)]);
+    expect(tone.kind).toBe("mixed");
+    expect(tone.unit).toBe("R");
+    expect(tone.positiveShare).toBeCloseTo(2 / 3, 5);
+    expect(tone.net).toBe(1);
+  });
+
+  test("la MAGNITUDE compte, pas le nombre de gagnants", () => {
+    // Deux petits gains, une grosse perte : majoritairement ROUGE.
+    const tone = dayTone([trade(50, 0.5), trade(50, 0.5), trade(-300, -3)]);
+    expect(tone.positiveShare).toBeCloseTo(0.25, 5);
+  });
+
+  test("repli sur le P&L quand un trade n'a pas de R", () => {
+    const tone = dayTone([trade(300, 0), trade(-100, -1)]);
+    expect(tone.unit).toBe("pnl");
+    expect(tone.positiveShare).toBeCloseTo(0.75, 5);
+  });
+
+  test("journée neutre : break-even seulement → aucune teinte", () => {
+    const tone = dayTone([trade(0, 0, "be")]);
+    expect(tone.kind).toBe("flat");
+    expect(dayToneBackground(tone, 1)).toBeUndefined();
+  });
+
+  test("le dégradé ne contient AUCUN texte ni pourcentage lisible — seulement des couleurs du thème", () => {
+    const bg = dayToneBackground(dayTone([trade(200, 2), trade(-100, -1)]), 0.5)!;
+    expect(bg).toContain("--tv-chart-green-rgb");
+    expect(bg).toContain("--tv-chart-red-rgb");
+    // La frontière est posée vers 67 %, adoucie de part et d'autre.
+    expect(bg).toContain(" 58%");
+    expect(bg).toContain(" 76%");
+  });
+});

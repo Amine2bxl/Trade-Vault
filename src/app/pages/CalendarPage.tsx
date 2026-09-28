@@ -6,6 +6,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 
 import { cn } from "../utils/cn";
+import { dayTone, dayToneBackground } from "../utils/calendarTone";
+import { todayLocalDate } from "@/shared/calendar-date";
 import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useT } from "../i18n/LanguageContext";
@@ -416,39 +418,40 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                 {row.map((day, colIdx) => {
                   if (day === null)
                     return (
-                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[52px] md:min-h-[88px]" />
+                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[48px] md:min-h-[80px]" />
                     );
                   const dateStr = getDateStr(day);
                   const data = dailyData[dateStr];
-                  const isAllBE = data && data.count > 0 && data.count === data.breakEven;
-                  const isWin = data && !isAllBE && data.pnl > 0;
-                  const isLoss = data && !isAllBE && data.pnl < 0;
-                  const isToday = dateStr === new Date().toISOString().split("T")[0];
+                  const tone = data ? dayTone(data.trades) : null;
+                  const isToday = dateStr === todayLocalDate();
                   const isWeekend = colIdx >= 5;
                   const dayMissed = missedByDate[dateStr] || [];
                   const missedCount = dayMissed.length;
 
-                  // Heatmap intensity: 0 → the day with the largest |P&L| this month.
+                  /* LA CASE EST UNE COULEUR, PAS UN TABLEAU DE BORD.
+                     Elle portait le P&L, le nombre de trades et un R moyen :
+                     trente-et-une mini-fiches dans un mois. La teinte dit
+                     maintenant la journée — vert, rouge, ou partagée dans la
+                     proportion exacte des gains et des pertes (`dayTone`) —,
+                     et son intensité suit l'ampleur de la journée dans le
+                     mois. Le détail s'ouvre au clic ; les chiffres restent
+                     accessibles au survol et aux lecteurs d'écran. */
                   const mag =
                     data && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
-                  const a = 0.08 + 0.34 * mag; // fill alpha
-                  const b = 0.18 + 0.24 * mag; // border alpha
-                  let cellStyle: CSSProperties | undefined;
-                  if (isWin)
-                    cellStyle = {
-                      background: `linear-gradient(155deg, rgba(16,185,129,${a}), rgba(16,185,129,${a * 0.35}))`,
-                      borderColor: `rgba(16,185,129,${b})`,
-                    };
-                  else if (isLoss)
-                    cellStyle = {
-                      background: `linear-gradient(155deg, rgba(244,63,63,${a}), rgba(244,63,63,${a * 0.35}))`,
-                      borderColor: `rgba(244,63,63,${b})`,
-                    };
-                  else if (isAllBE)
-                    cellStyle = {
-                      background: "rgba(148,163,184,0.10)",
-                      borderColor: "rgba(148,163,184,0.22)",
-                    };
+                  const background = tone ? dayToneBackground(tone, mag) : undefined;
+                  const cellStyle: CSSProperties | undefined = background
+                    ? { background, borderColor: "rgb(255 255 255 / 0.06)" }
+                    : data
+                      ? {
+                          background: "rgb(148 163 184 / 0.1)",
+                          borderColor: "rgb(148 163 184 / 0.2)",
+                        }
+                      : undefined;
+                  const summary = data
+                    ? `${day} · ${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)} · ${data.count} ${
+                        data.count === 1 ? t("calendar.trade") : t("calendar.trades")
+                      }`
+                    : undefined;
 
                   return (
                     <button
@@ -459,31 +462,26 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       }}
                       disabled={!data && missedCount === 0}
                       style={cellStyle}
+                      title={summary}
+                      aria-label={summary}
                       className={cn(
-                        // LE PLANCHER DE LA CELLULE — ce qui empêche la grille
-                        // de s'écraser. Il valait `md:min-h-[0]` : combiné au
-                        // `flex-1` de la ligne et à la hauteur fixe du cadre,
-                        // une cellule pouvait descendre à quelques pixels et
-                        // laminer son contenu. 88px tient la date, le P&L et le
-                        // nombre de trades ; au-delà, `flex-1` étire toujours.
-                        "min-h-[52px] md:min-h-[88px] md:p-2 p-1 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
+                        "relative flex min-h-[48px] flex-col overflow-hidden rounded-lg border p-1.5 text-left transition-[filter,transform] duration-200 md:min-h-[80px] md:rounded-xl md:p-2",
                         !cellStyle && !missedCount && "border-white/[0.04] bg-white/[0.02]",
                         !cellStyle && isWeekend && "bg-white/[0.03]",
-                        !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
-                        isToday && "ring-1 ring-inset ring-cyan-400/60",
+                        !cellStyle && missedCount > 0 && "border-amber-500/20",
+                        isToday && "ring-1 ring-inset ring-[var(--tv-border-accent)]",
                         (data || missedCount > 0) &&
                           "cursor-pointer hover:brightness-125 active:scale-[0.97]",
                       )}
                     >
-                      {/* Day number */}
                       <div className="flex items-center justify-between">
                         <span
                           className={cn(
                             "tv-figure text-xs md:text-sm",
                             isToday
-                              ? "text-cyan-300"
+                              ? "font-bold text-[var(--tv-highlight)]"
                               : data
-                                ? "text-slate-300"
+                                ? "text-white/90"
                                 : isWeekend
                                   ? "text-slate-600"
                                   : "text-slate-500",
@@ -491,53 +489,11 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                         >
                           {day}
                         </span>
+                        {/* Une occasion manquée ce jour-là : un repère, sans chiffre. */}
                         {missedCount > 0 && (
-                          <span
-                            className="flex items-center gap-0.5 text-amber-300 text-[11px] font-bold"
-                            title={`${missedCount} ${t("missed.title")}`}
-                          >
-                            <Target className="w-2.5 h-2.5" />
-                            {missedCount}
-                          </span>
+                          <Target className="h-2.5 w-2.5 text-amber-300/80" aria-hidden />
                         )}
                       </div>
-
-                      {/* P&L — the hero number, centered in the cell */}
-                      {data && (
-                        <div className="flex-1 flex flex-col justify-center">
-                          <div
-                            className={cn(
-                              "tv-figure text-sm md:text-lg leading-none",
-                              isAllBE
-                                ? "text-slate-300"
-                                : isWin
-                                  ? "text-emerald-300"
-                                  : isLoss
-                                    ? "text-red-300"
-                                    : "text-slate-400",
-                            )}
-                          >
-                            {isAllBE
-                              ? t("common.be")
-                              : `${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)}`}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Footer: trade count + RR */}
-                      {data && (
-                        <div className="tv-figure flex items-center gap-1.5 text-[11px]">
-                          <span className="text-slate-400">
-                            {data.count}{" "}
-                            {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
-                          </span>
-                          {data.avgRR > 0 && (
-                            <span className="text-cyan-400/80 hidden md:inline">
-                              {data.avgRR.toFixed(1)}R
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </button>
                   );
                 })}

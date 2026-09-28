@@ -1553,6 +1553,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                     value={config.startTime}
                     onChange={(v) => v && patch({ startTime: v })}
                     locale={intlLocale(lang)}
+                    doneLabel={t("common.done")}
                     aria-label={t("chk.cfgStart")}
                     className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />

@@ -51,13 +51,15 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
       className={cn(
         "relative grid h-9 w-9 place-items-center rounded-xl",
         "transition-colors duration-200",
-        active ? "bg-cyan-500/10 text-cyan-300" : "text-slate-400 hover:bg-white/[0.04]",
+        active
+          ? "bg-white/[0.06] text-[var(--tv-highlight)]"
+          : "text-slate-400 hover:bg-white/[0.04]",
       )}
     >
       {icon}
       {badge !== undefined && badge > 0 && (
         <span
-          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-500 px-1 text-[10px] font-bold leading-none text-white"
+          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--tv-accent)] px-1 text-[10px] font-bold leading-none text-white"
           role="status"
           aria-label={`${badge} ${badge > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
         >

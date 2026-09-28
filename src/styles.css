@@ -1659,87 +1659,96 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 .bottom-nav-item {
   position: relative;
   min-width: 44px;
-  min-height: 50px;
+  min-height: 52px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 16px;
+  border-radius: 14px;
   transition:
-    color 0.2s,
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    color var(--tv-dur-2) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
   -webkit-tap-highlight-color: transparent;
 }
 .bottom-nav-item:active {
-  transform: scale(0.9);
+  transform: scale(0.94);
 }
-
-/* Le trait lumineux qui s'allumait sous l'onglet actif a été supprimé : il
-   disait la même chose que la pastille, une deuxième fois. Les deux classes
-   restent inertes le temps que les derniers appels disparaissent. */
-.bottom-nav-bar,
-.bottom-nav-bar-active {
-  display: none;
+.bottom-nav-item:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: -2px;
 }
-
-/* L'icône est posée sur une pastille. Active, la pastille devient BLANCHE
-   pleine et l'icône passe en vert très foncé — exactement la pilule du rail. */
-.bottom-nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 30px;
+/* L'ONGLET ACTIF — un trait d'accent sous le libellé, rien d'autre. La
+   pastille pleine découpée dans la barre était un aplat lourd, difficile à
+   lire comme « tu es ici ». */
+.bottom-nav-dot {
+  height: 3px;
+  width: 14px;
   border-radius: 9999px;
-  transition: background-color var(--tv-dur-2) var(--tv-ease);
+  background: transparent;
+  transform: scaleX(0.4);
+  transition:
+    background-color var(--tv-dur-2) var(--tv-ease),
+    transform var(--tv-dur-2) var(--tv-ease);
 }
-/* L'ONGLET ACTIF, MOBILE — la même grammaire que le rail de bureau.
-   C'était une pastille BLANCHE PLEINE : le seul aplat blanc du produit, posé
-   au milieu d'une barre verte, et une deuxième façon de dire « actif » alors
-   que le rail en a déjà une. Elle prend maintenant la couleur de la FENÊTRE DE
-   CONTENU avec l'icône à l'accent, exactement comme `.rail-item-active` : sur
-   les deux écrans, l'onglet actif est un morceau de la page découpé dans la
-   navigation. */
-.bottom-nav-icon-active {
-  background: var(--tv-plate-0);
-  color: var(--tv-accent);
-  box-shadow: inset 0 0 0 1px var(--tv-border);
+.bottom-nav-dot-on {
+  background: var(--tv-accent);
+  transform: scaleX(1);
 }
 
-/* The "add trade" FAB.
- *
- * It used to breathe forever (`fabBreathe`, a 3.2s infinite box-shadow pulse).
- * Two problems, both real: an animated box-shadow is a paint on every frame,
- * for the entire session, on the device least able to afford it; and a control
- * that pulses without anything having happened is decoration pretending to be
- * feedback. The button is already the largest, brightest, most central element
- * on the bar — it does not need to wave. Static now; the press response is
- * where the motion belongs. */
+/* LE « + » — l'action principale : la seule surface pleine de la barre,
+   légèrement surélevée pour se détacher sans masquer le contenu. */
 .fab-button {
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
+  margin-top: -18px;
   border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Un à-plat vert, un chiffre de contraste maximal dessus. Le bouton était
-     un dégradé cerclé d'un liseré clair et posé sur un halo de 22px : trois
-     effets pour dire « appuie ici », là où la taille, la position centrale et
-     la seule couleur saturée de l'écran le disaient déjà. */
-  /* La teinte d'ACTION, comme tout bouton plein du produit : le « + » est
-     l'action principale de l'écran mobile, il doit porter exactement le même
-     vert et le même blanc que le bouton principal du bureau. */
   background: var(--tv-cta);
   color: #ffffff;
   border: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    0 8px 20px -8px rgb(var(--tv-accent-rgb) / 0.8),
+    0 0 0 4px var(--tv-bg);
   transition: transform var(--tv-dur-2) var(--tv-ease);
+  -webkit-tap-highlight-color: transparent;
 }
 .fab-button:active {
-  /* La rotation de 90° était une cabriole : le bouton ouvre un formulaire,
-     il ne se transforme pas. Reste l'enfoncement, qui est un vrai retour. */
   transform: scale(0.92);
+}
+.fab-button:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.8);
+  outline-offset: 3px;
+}
+
+/* Une ligne de la feuille « Plus » — 48 px, cible confortable au pouce. */
+.more-row {
+  display: flex;
+  width: 100%;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  padding: 0 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--tv-text-secondary);
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.more-row:hover,
+.more-row:active {
+  background: rgb(255 255 255 / 0.05);
+}
+.more-row-on {
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-text-primary);
+}
+.more-row-on svg {
+  color: var(--tv-highlight);
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
@@ -3799,38 +3808,85 @@ a:focus-visible,
 }
 
 /* Les colonnes du sélecteur d'heure. */
-.tv-pop-col {
-  max-height: 11rem;
-  overflow-y: auto;
-  scrollbar-width: thin;
+/* ── LA ROUE D'HEURE (`TimeField`) ─────────────────────────────────────────
+   Deux roues aimantées : la valeur s'arrête au centre, sous la bande. Pas de
+   barre de défilement, un fondu en haut et en bas pour dire « ça continue ». */
+.tv-wheel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.tv-wheel-band {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 2rem;
+  transform: translateY(-50%);
+  border: 1px solid var(--tv-border);
   border-radius: 0.6rem;
-  background: rgb(0 0 0 / 0.2);
-  padding: 0.2rem;
+  background: rgb(255 255 255 / 0.05);
+  pointer-events: none;
+  transition: border-color 140ms ease;
 }
-.tv-pop-cell {
-  display: block;
-  width: 100%;
-  padding: 0.3rem 0;
-  border-radius: 0.45rem;
-  font-size: 0.78rem;
-  font-weight: 600;
+.tv-wheel:focus-within .tv-wheel-band {
+  border-color: var(--tv-border-accent);
+}
+.tv-wheel-sep {
+  position: relative;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--tv-text-muted);
+}
+.tv-wheel-col {
+  position: relative;
+  height: 10rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  padding-block: 4rem;
+  outline: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+}
+.tv-wheel-col::-webkit-scrollbar {
+  display: none;
+}
+.tv-wheel-item {
+  display: flex;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--tv-text-secondary);
-  transition:
-    background 140ms ease,
-    color 140ms ease;
+  color: var(--tv-text-muted);
+  transition: color 140ms ease;
 }
-.tv-pop-cell:hover {
-  background: rgb(255 255 255 / 0.07);
+.tv-wheel-item:hover {
+  color: var(--tv-text-secondary);
+}
+.tv-wheel-item[aria-selected="true"] {
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--tv-text-primary);
 }
-.tv-pop-cell-on {
-  background: var(--tv-accent);
-  color: #fff;
+.tv-wheel-done {
+  margin-top: 0.5rem;
+  width: 100%;
+  min-height: 2.25rem;
+  border-radius: 0.6rem;
+  background: rgb(255 255 255 / 0.06);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tv-text-primary);
+  transition: background-color 140ms ease;
 }
-.tv-pop-cell-on:hover {
-  background: var(--tv-accent);
-  color: #fff;
+.tv-wheel-done:hover {
+  background: rgb(255 255 255 / 0.1);
 }
 
 /* ══ UN RÉGLAGE MONTE-CARLO = UNE SEULE LIGNE ══
@@ -4770,6 +4826,34 @@ a:focus-visible,
     0 0 30px -2px rgb(var(--tv-accent-rgb) / 0.9);
   transform: translateY(-1px);
 }
+.jarvis-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgb(var(--tv-chart-red-rgb, 244 63 63) / 0.25);
+  border-radius: 0.875rem;
+  background: rgb(var(--tv-chart-red-rgb, 244 63 63) / 0.08);
+  padding: 0.625rem 0.75rem 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--tv-text-primary);
+}
+.jarvis-error-retry {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 0.625rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.jarvis-error-retry:hover {
+  background: rgb(255 255 255 / 0.06);
+}
 .jarvis-quota {
   display: flex;
   align-items: flex-start;
@@ -5118,4 +5202,37 @@ thead .plan-cmp-col.is-pro {
 .plan-cmp-check.is-muted {
   background: rgb(255 255 255 / 0.06);
   color: var(--tv-text-secondary, #94a3b8);
+}
+
+/* ── Les trois portes du tableau de bord (Journal · Jarvis · Analyse) ──
+   Des boutons de 44 px, pas des cartes : l'action se lit sans se déguiser en
+   tuile de données. */
+.dash-action {
+  display: inline-flex;
+  min-height: 2.75rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.875rem;
+  background: var(--tv-plate-2);
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: color, border-color, background-color;
+  transition-duration: var(--tv-dur-1);
+  transition-timing-function: var(--tv-ease);
+}
+.dash-action:hover {
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+.dash-action:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
+}
+.dash-action svg {
+  color: var(--tv-highlight);
 }

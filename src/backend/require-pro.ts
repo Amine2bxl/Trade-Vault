@@ -69,71 +69,97 @@ class DailyQuotaError extends Error {
  */
 const ENTITLEMENT_COLS = "plan, status, source, trial_ends_at, current_period_end";
 
-export const requireProAccess = createMiddleware({ type: "function" })
-  .middleware([requireSupabaseAuth])
-  .server(async ({ next, context }) => {
-    const { supabase, userId } = context;
+/**
+ * LES TROIS GARDES IA — une seule fabrique, pour qu'aucune ne diverge.
+ *
+ * `entitlement` : exiger un abonnement payant actif (ou un essai) — seulement
+ * quand `AI_REQUIRE_PRO` est activé.
+ * `daily` : décompter le quota QUOTIDIEN du palier (3 / 20 / illimité).
+ *
+ * ── POURQUOI JARVIS N'EXIGE PAS D'ABONNEMENT ──
+ * L'offre gratuite INCLUT Jarvis (« Jarvis 3 fois par jour », `LIMITS.free`).
+ * Or `askCoach` passait par la garde payante : dès `AI_REQUIRE_PRO=true`, un
+ * compte gratuit était refusé (`PRO_REQUIRED`) avant même d'atteindre son quota
+ * de 3 — et le client affichait « Something went wrong ». Jarvis est donc gardé
+ * par le QUOTA du palier, pas par l'abonnement.
+ */
+function accessGuard(opts: { entitlement: boolean; daily: boolean }) {
+  return createMiddleware({ type: "function" })
+    .middleware([requireSupabaseAuth])
+    .server(async ({ next, context }) => {
+      const { supabase, userId } = context;
 
-    // ── 1) La ligne d'abonnement ────────────────────────────────────────────
-    //
-    // Lue SYSTÉMATIQUEMENT, et plus seulement quand le paywall est actif : le
-    // quota quotidien de Jarvis dépend du PALIER, et le palier vient de cette
-    // ligne. Une lecture sur clé primaire indexée, une par appel IA — négligeable
-    // devant l'appel modèle qui suit.
-    const { data: row, error: rowError } = await supabase
-      .from("subscriptions")
-      .select(ENTITLEMENT_COLS)
-      .eq("user_id", userId)
-      .maybeSingle();
+      // ── 1) La ligne d'abonnement ────────────────────────────────────────────
+      //
+      // Lue SYSTÉMATIQUEMENT, et plus seulement quand le paywall est actif : le
+      // quota quotidien de Jarvis dépend du PALIER, et le palier vient de cette
+      // ligne. Une lecture sur clé primaire indexée, une par appel IA — négligeable
+      // devant l'appel modèle qui suit.
+      const { data: row, error: rowError } = await supabase
+        .from("subscriptions")
+        .select(ENTITLEMENT_COLS)
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    // ── 2) Entitlement ──────────────────────────────────────────────────────
-    //
-    // Appliqué uniquement quand la monétisation est activée. Pendant l'accès
-    // anticipé gratuit, ce bloc est sauté et tout compte connecté a l'IA.
-    // ÉCHOUE FERMÉ sur erreur de lecture : un paywall qui s'ouvre pendant une
-    // panne n'est pas un paywall.
-    if (REQUIRE_PRO) {
-      if (rowError || !isEntitled(row)) throw new ProRequiredError();
-    }
-
-    // ── 3) Quota QUOTIDIEN par palier ───────────────────────────────────────
-    //
-    // 3 requêtes/jour en gratuit, 20 en Pro, aucune limite en Elite — les
-    // chiffres viennent du catalogue (`domain/plans.ts`), donc changer l'offre
-    // ne demande aucune modification ici.
-    //
-    // Ce quota était compté dans `localStorage` et nulle part ailleurs : un
-    // `localStorage.clear()` le remettait à zéro, et le serveur autorisait de
-    // toute façon 60 appels PAR HEURE quel que soit le palier — soit 1 440 par
-    // jour pour un compte gratuit censé en avoir 3.
-    //
-    // POURQUOI IL SUIT `REQUIRE_PRO`. Ce quota fait partie de l'OFFRE, pas de
-    // la protection anti-abus : c'est lui qui différencie le gratuit du Pro.
-    // Pendant l'accès anticipé gratuit — la décision produit en vigueur, que
-    // ce travail ne remet pas en cause — l'offre n'est pas vendue, donc elle
-    // n'est pas appliquée. Le plafond horaire ci-dessous, lui, tourne toujours.
-    // Basculer `AI_REQUIRE_PRO` active les deux d'un coup, ce qui est
-    // exactement ce que le README promet.
-    if (REQUIRE_PRO) {
-      const dailyLimit = LIMITS[effectiveTier(row)].jarvisPerDay;
-      if (Number.isFinite(dailyLimit)) {
-        const allowed = await consumeQuota(supabase, "daily", dailyLimit, 86_400);
-        // ÉCHOUE FERMÉ ici aussi : quand le quota EST le produit vendu, ne pas
-        // savoir où en est quelqu'un ne doit pas valoir « laisse passer ».
-        if (allowed !== true) throw new DailyQuotaError();
+      // ── 2) Entitlement ──────────────────────────────────────────────────────
+      //
+      // Appliqué uniquement quand la monétisation est activée. Pendant l'accès
+      // anticipé gratuit, ce bloc est sauté et tout compte connecté a l'IA.
+      // ÉCHOUE FERMÉ sur erreur de lecture : un paywall qui s'ouvre pendant une
+      // panne n'est pas un paywall.
+      if (REQUIRE_PRO && opts.entitlement) {
+        if (rowError || !isEntitled(row)) throw new ProRequiredError();
       }
-    }
 
-    // ── 4) Plafond horaire anti-abus ────────────────────────────────────────
-    //
-    // Toujours actif, indépendant de l'offre : il protège le coût, pas le
-    // revenu. Échoue OUVERT — un incident sur le compteur ne doit pas priver
-    // d'IA un utilisateur qui n'a rien demandé.
-    const withinHourly = await consumeQuota(supabase, "hourly", RATE_LIMIT_PER_HOUR, 3_600);
-    if (withinHourly === false) throw new RateLimitError();
+      // ── 3) Quota QUOTIDIEN par palier ───────────────────────────────────────
+      //
+      // 3 requêtes/jour en gratuit, 20 en Pro, aucune limite en Elite — les
+      // chiffres viennent du catalogue (`domain/plans.ts`), donc changer l'offre
+      // ne demande aucune modification ici.
+      //
+      // Ce quota était compté dans `localStorage` et nulle part ailleurs : un
+      // `localStorage.clear()` le remettait à zéro, et le serveur autorisait de
+      // toute façon 60 appels PAR HEURE quel que soit le palier — soit 1 440 par
+      // jour pour un compte gratuit censé en avoir 3.
+      //
+      // POURQUOI IL SUIT `REQUIRE_PRO`. Ce quota fait partie de l'OFFRE, pas de
+      // la protection anti-abus : c'est lui qui différencie le gratuit du Pro.
+      // Pendant l'accès anticipé gratuit — la décision produit en vigueur, que
+      // ce travail ne remet pas en cause — l'offre n'est pas vendue, donc elle
+      // n'est pas appliquée. Le plafond horaire ci-dessous, lui, tourne toujours.
+      // Basculer `AI_REQUIRE_PRO` active les deux d'un coup, ce qui est
+      // exactement ce que le README promet.
+      if (REQUIRE_PRO && opts.daily) {
+        const dailyLimit = LIMITS[effectiveTier(row)].jarvisPerDay;
+        if (Number.isFinite(dailyLimit)) {
+          const allowed = await consumeQuota(supabase, "daily", dailyLimit, 86_400);
+          // ÉCHOUE FERMÉ ici aussi : quand le quota EST le produit vendu, ne pas
+          // savoir où en est quelqu'un ne doit pas valoir « laisse passer ».
+          if (allowed !== true) throw new DailyQuotaError();
+        }
+      }
 
-    return next();
-  });
+      // ── 4) Plafond horaire anti-abus ────────────────────────────────────────
+      //
+      // Toujours actif, indépendant de l'offre : il protège le coût, pas le
+      // revenu. Échoue OUVERT — un incident sur le compteur ne doit pas priver
+      // d'IA un utilisateur qui n'a rien demandé.
+      const withinHourly = await consumeQuota(supabase, "hourly", RATE_LIMIT_PER_HOUR, 3_600);
+      if (withinHourly === false) throw new RateLimitError();
+
+      return next();
+    });
+}
+
+/** Fonctions IA réservées aux abonnés (rapports, analyses, briefs…). */
+export const requireProAccess = accessGuard({ entitlement: true, daily: true });
+
+/** La conversation Jarvis : ouverte à tous les paliers, bornée par leur quota. */
+export const requireJarvisAccess = accessGuard({ entitlement: false, daily: true });
+
+/** Les appels ANNEXES d'une question Jarvis (extraction de mémoire) : ils ne
+ *  doivent pas consommer une deuxième analyse du quota quotidien. */
+export const requireJarvisSideAccess = accessGuard({ entitlement: false, daily: false });
 
 /**
  * Consomme un jeton de quota dans une fenêtre fixe.

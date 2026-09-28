@@ -32,6 +32,7 @@ import { useTradeFilter } from "../hooks/useTradeFilter";
 import TradeDetailModal from "../components/TradeDetailModal";
 import { PageContainer, Button, EmptyState, Card, Modal, Kpi, KpiGrid } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
+import { compareChronological } from "../utils/tradeOrder";
 
 interface JournalProps {
   trades: Trade[];
@@ -153,7 +154,8 @@ export default function Journal({
     if (strategyFilter !== "all") list = list.filter((t) => t.strategy === strategyFilter);
 
     if (dayFilter !== "all") {
-      list = list.filter((t) => new Date(t.date).getDay().toString() === dayFilter);
+      // Midi local : `new Date("YYYY-MM-DD")` est minuit UTC, donc la veille à New York.
+      list = list.filter((t) => new Date(`${t.date}T12:00:00`).getDay().toString() === dayFilter);
     }
 
     if (resultFilter === "win") list = list.filter((t) => !isBreakEven(t) && t.pnl > 0);
@@ -162,7 +164,8 @@ export default function Journal({
 
     list.sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "date") cmp = a.date.localeCompare(b.date);
+      // Date PUIS heure d'entrée : le plus récent en haut, jusque dans la journée.
+      if (sortKey === "date") cmp = compareChronological(a, b);
       else if (sortKey === "symbol") cmp = a.symbol.localeCompare(b.symbol);
       else if (sortKey === "pnl") cmp = a.pnl - b.pnl;
       else if (sortKey === "strategy") cmp = a.strategy.localeCompare(b.strategy);

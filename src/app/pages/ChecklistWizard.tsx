@@ -673,6 +673,7 @@ export default function ChecklistWizard({
                     value={time.startTime}
                     onChange={(v) => v && setTime((t) => ({ ...t, startTime: v }))}
                     locale={intlLocale(lang)}
+                    doneLabel={tr("Valider", "Done")}
                     aria-label={tr("Heure perso", "Custom time")}
                     className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />

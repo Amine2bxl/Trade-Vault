@@ -31,6 +31,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
@@ -358,7 +359,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     if (dirty) setDraftRestored(true);
   }, [dirty]);
 
-  const discardDraft = () => {
+  const confirm = useConfirm();
+  /* SUPPRIMER UN BROUILLON SE CONFIRME. Un clic sur le badge effaçait tout ce
+     qui avait été saisi, sans retour possible — et le badge est posé à côté du
+     titre, là où le pouce passe. */
+  const discardDraft = async () => {
+    const ok = await confirm(t("trade.discardDraftConfirm"), {
+      danger: true,
+      detail: t("common.irreversible"),
+      confirmLabel: t("trade.discardDraft"),
+    });
+    if (!ok) return;
     removeKey(draftKey);
     setDraftRestored(false);
     setForm({ ...defaultForm });
@@ -473,9 +484,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     );
   };
 
+  /* Une sortie AVANT l'entrée est une donnée impossible pour un trade du jour
+     (le modèle n'a qu'une date par trade : pas de trade de nuit à préserver).
+     Même minute = autorisé : un scalp tient souvent dans la minute. Les heures
+     sont normalisées (« 9:05 » importé d'un CSV → « 09:05 ») avant comparaison. */
+  const hhmm = (v: string) => {
+    const m = /^(\d{1,2}):(\d{2})/.exec(v ?? "");
+    return m ? `${m[1].padStart(2, "0")}:${m[2]}` : "";
+  };
   const timeError =
-    form.entryTime && form.exitTime && form.entryTime >= form.exitTime
-      ? "L'heure d'entrée doit être antérieure à l'heure de sortie."
+    form.entryTime && form.exitTime && hhmm(form.exitTime) < hhmm(form.entryTime)
+      ? t("trade.error.exitBeforeEntry")
       : null;
   const rMultipleError =
     form.direction !== "be" && form.rMultiple !== "" && isNaN(parseFloat(form.rMultiple))
@@ -563,7 +582,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
             {!trade && draftRestored && (
               <button
-                onClick={discardDraft}
+                onClick={() => void discardDraft()}
                 title={t("trade.discardDraft")}
                 className="tv-label group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
               >
@@ -833,6 +852,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 onChange={(v) => setForm((f) => ({ ...f, entryTime: v }))}
                 locale={intlLocale(lang)}
                 aria-label={t("trade.entryTime")}
+                doneLabel={t("common.done")}
                 className={inputClass}
               />
             </div>
@@ -843,8 +863,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 onChange={(v) => setForm((f) => ({ ...f, exitTime: v }))}
                 locale={intlLocale(lang)}
                 aria-label={t("trade.exitTime")}
-                className={inputClass}
+                doneLabel={t("common.done")}
+                className={cn(inputClass, timeError && "border-red-500/50")}
               />
+              {/* L'erreur se lit SOUS le champ fautif, pas seulement en pied. */}
+              {timeError && (
+                <p role="alert" className="mt-1 text-[11px] text-red-400">
+                  {timeError}
+                </p>
+              )}
             </div>
             <div>
               <label className={labelClass}>{t("trade.strategy")}</label>

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireProAccess } from "@/backend/require-pro";
+import { requireJarvisAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
 import { ensureJarvisTools } from "@/backend/ai-tools";
 import { recordAgentRun } from "./telemetry.server";
@@ -17,7 +17,7 @@ import { AI_LIMITS } from "@/domain/ai-limits";
 /**
  * AI Coach V1 — server function. Validates the trader's real data (Zod, with
  * size caps), runs the coach agent (grounded prompt → provider), returns the
- * Markdown answer. Auth + rate-limit come from `requireProAccess`; secrets stay
+ * Markdown answer. Auth + quota come from `requireJarvisAccess`; secrets stay
  * server-side. No memory, no proactivity, no other agents — the V1 surface.
  */
 
@@ -167,7 +167,7 @@ function indisponible(language?: string) {
 }
 
 export const askCoach = createServerFn({ method: "POST" })
-  .middleware([requireProAccess])
+  .middleware([requireJarvisAccess])
   .inputValidator((input: unknown) => CoachAsk.parse(input))
   .handler(async ({ data, context }) => {
     data.question = sanitizePrompt(data.question);

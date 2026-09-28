@@ -6,10 +6,16 @@ import { Modal } from "@/shared/ui";
 
 interface ConfirmOptions {
   danger?: boolean;
+  /** Ligne secondaire sous la question (« Cette action est irréversible. »). */
+  detail?: string;
+  /** Libellé du bouton de confirmation — le verbe de l'action, pas « Confirmer ». */
+  confirmLabel?: string;
 }
 interface PendingConfirm {
   message: string;
   danger: boolean;
+  detail?: string;
+  confirmLabel?: string;
 }
 
 type ConfirmFn = (message: string, options?: ConfirmOptions) => Promise<boolean>;
@@ -21,7 +27,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const resolver = useRef<((v: boolean) => void) | null>(null);
 
   const confirm = useCallback<ConfirmFn>((message, options) => {
-    setPending({ message, danger: !!options?.danger });
+    setPending({
+      message,
+      danger: !!options?.danger,
+      detail: options?.detail,
+      confirmLabel: options?.confirmLabel,
+    });
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
     });
@@ -50,12 +61,18 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <div
               className={cn(
                 "w-11 h-11 rounded-2xl flex items-center justify-center mb-4",
-                pending.danger ? "bg-red-500/15 text-red-400" : "bg-cyan-500/15 text-cyan-400",
+                pending.danger
+                  ? "bg-red-500/15 text-red-400"
+                  : "bg-[rgb(var(--tv-accent-rgb)/0.15)] text-[var(--tv-highlight)]",
               )}
             >
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <p className="text-sm text-slate-200 leading-relaxed mb-6">{pending.message}</p>
+            <p className="text-[15px] font-semibold leading-snug text-white">{pending.message}</p>
+            {pending.detail && (
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{pending.detail}</p>
+            )}
+            <div className="mb-6" />
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => settle(false)}
@@ -70,7 +87,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   pending.danger ? "bg-red-500 hover:bg-red-400" : "tv-accent-fill",
                 )}
               >
-                {t("common.confirm")}
+                {pending.confirmLabel ?? t("common.confirm")}
               </button>
             </div>
           </div>
