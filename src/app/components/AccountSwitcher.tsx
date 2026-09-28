@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   User,
@@ -113,6 +113,15 @@ export default function AccountSwitcher({
   const fmtBalance = `$${Math.round(computedBalance).toLocaleString("en-US")}`;
   const { t } = useT();
   const [open, setOpen] = useState(false);
+  // Échap ferme la fenêtre, comme toutes les autres modales.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleting, setDeleting] = useState<Account | null>(null);
   const [editingModalAccount, setEditingModalAccount] = useState<Account | null>(null);
@@ -304,6 +313,9 @@ export default function AccountSwitcher({
               onClick={() => setOpen(false)}
             >
               <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("account.title")}
                 onClick={(e) => e.stopPropagation()}
                 className="tv-dialog glass-strong w-full max-w-md overflow-y-auto pb-4"
               >

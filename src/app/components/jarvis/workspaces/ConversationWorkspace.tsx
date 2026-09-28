@@ -320,7 +320,12 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const store = useMemo(() => (userId ? jarvisConversationStore(userId) : null), [userId]);
 
   const [messages, setMessages] = useState<JarvisMessage[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  /* « Chargé » vaut POUR UN FIL : quand le fil change, `loaded` redevient
+     faux dans le même rendu. Un booléen seul restait vrai le temps d'un
+     rendu, et une question posée à cet instant était effacée par le
+     chargement du nouveau fil. */
+  const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
+  const loaded = loadedFor === (conversationId ?? null);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
@@ -378,21 +383,20 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   useEffect(() => {
     if (!store || !conversationId) {
       setMessages([]);
-      setLoaded(true);
+      setLoadedFor(conversationId ?? null);
       return;
     }
     let active = true;
-    setLoaded(false);
     setQuestion(readDraft(draftKey));
     void store
       .get(conversationId)
       .then((conv) => {
         if (!active) return;
         setMessages(conv?.messages ?? []);
-        setLoaded(true);
+        setLoadedFor(conversationId);
       })
       .catch(() => {
-        if (active) setLoaded(true);
+        if (active) setLoadedFor(conversationId);
       });
     return () => {
       active = false;
@@ -645,7 +649,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const ask = useCallback(
     async (q: string) => {
       const query = q.trim();
-      if (!query || loading || !loaded) return;
+      // Le fil est créé à l'ouverture (AiAssistant) : on n'envoie pas avant,
+      // sinon la question ne serait enregistrée nulle part.
+      if (!query || loading || !loaded || (store && !conversationId)) return;
       // Quota du jour (3 en gratuit, 20 en Pro, aucun en Elite) : au-delà, on
       // explique et on oriente vers l'offre supérieure — aucune requête n'est
       // envoyée, donc zéro token consommé.
@@ -806,11 +812,16 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // A page (Checklist, Missed…) opened Jarvis with a ready-made prompt.
   const askedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (initialPrompt && askedRef.current !== initialPrompt && loaded) {
+    if (
+      initialPrompt &&
+      askedRef.current !== initialPrompt &&
+      loaded &&
+      (!store || conversationId)
+    ) {
       askedRef.current = initialPrompt;
       void ask(initialPrompt);
     }
-  }, [initialPrompt, ask, loaded]);
+  }, [initialPrompt, ask, loaded, store, conversationId]);
 
   const toggleMic = useCallback(() => {
     if (!SpeechRecognitionCtor) return;
