@@ -29,6 +29,7 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { intlLocale } from "../i18n/locale";
 import { useTradeFilter } from "../hooks/useTradeFilter";
+import { useAvailableHeight } from "../hooks/useAvailableHeight";
 import TradeDetailModal from "../components/TradeDetailModal";
 import { PageContainer, Button, EmptyState, Card, Modal, Kpi, KpiGrid } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
@@ -286,46 +287,70 @@ export default function Journal({
   );
   usePageActions(headerActions);
 
+  /* LA PAGE NE DÉFILE PAS, LE BLOC DES TRADES SI.
+     Parcourir deux cents trades faisait défiler toute la page : les KPI et la
+     barre de filtres partaient avec, et il fallait remonter pour changer un
+     filtre. La page prend la hauteur réellement disponible (mesurée, comme le
+     calendrier) ; le bloc des trades en occupe le reste et défile seul. En
+     approchant du bas, la page suivante de trades se charge d'elle-même. */
+  const { boxRef, height } = useAvailableHeight();
+  const onListScroll = (e: React.UIEvent<HTMLElement>) => {
+    const el = e.currentTarget;
+    if (hasMore && el.scrollTop + el.clientHeight >= el.scrollHeight - 240)
+      setVisibleCount((c) => c + PAGE_SIZE);
+  };
+  const loadMore = hasMore && (
+    <div className="py-3 text-center">
+      <button
+        onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+        className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.08]"
+      >
+        {t("journal.loadMore")} ({filtered.length - visibleCount})
+      </button>
+    </div>
+  );
+
   return (
     <PageContainer>
-      {/* Quatre cases statiques : un libellé, un chiffre, aucune interaction.
+      <div ref={boxRef} style={height ? { height } : undefined} className="flex min-h-0 flex-col">
+        {/* Quatre cases statiques : un libellé, un chiffre, aucune interaction.
           C'est `Kpi`, la case du produit — pas une tuile de carte réécrite
           ici. Elles suivent donc la compaction de toutes les autres. */}
-      {filtered.length > 0 && (
-        <KpiGrid cols={4} className="mb-2.5">
-          <Kpi
-            label={t("stats.totalPnl")}
-            value={formatPnl(summary.totalPnl)}
-            tone={summary.totalPnl >= 0 ? "pos" : "neg"}
-          />
-          <Kpi label={t("stats.winRate")} value={formatPct(summary.winRate)} />
-          <Kpi label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
-          <Kpi
-            /* « P&L » + la mention « BEST » se lisaient « P&L BEST », qui
+        {filtered.length > 0 && (
+          <KpiGrid cols={4} className="mb-2.5 shrink-0">
+            <Kpi
+              label={t("stats.totalPnl")}
+              value={formatPnl(summary.totalPnl)}
+              tone={summary.totalPnl >= 0 ? "pos" : "neg"}
+            />
+            <Kpi label={t("stats.winRate")} value={formatPct(summary.winRate)} />
+            <Kpi label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
+            <Kpi
+              /* « P&L » + la mention « BEST » se lisaient « P&L BEST », qui
                n'est le nom de rien. La tuile a déjà un libellé pour ça. */
-            label={t("dashboard.bestTrade")}
-            value={formatPnl(summary.bestTrade?.pnl ?? 0)}
-            tone="pos"
-          />
-        </KpiGrid>
-      )}
+              label={t("dashboard.bestTrade")}
+              value={formatPnl(summary.bestTrade?.pnl ?? 0)}
+              tone="pos"
+            />
+          </KpiGrid>
+        )}
 
-      {/* Deep-link filter actif — un chip qui permet de revenir à la vue complète */}
-      {deepFilter.trades && deepFilter.trades.length > 0 && (
-        <div className="mb-2.5 md:mb-3 flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] px-3 py-2 text-xs">
-          <span className="text-cyan-300 font-semibold">
-            {deepFilter.trades.length} {t("common.trades")} · {t("journal.fromJarvis")}
-          </span>
-          <button
-            onClick={() => setDeepFilter({})}
-            className="ml-auto font-semibold text-slate-400 hover:text-white transition-colors"
-          >
-            {t("common.clear")} ✕
-          </button>
-        </div>
-      )}
+        {/* Deep-link filter actif — un chip qui permet de revenir à la vue complète */}
+        {deepFilter.trades && deepFilter.trades.length > 0 && (
+          <div className="mb-2.5 md:mb-3 flex shrink-0 items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] px-3 py-2 text-xs">
+            <span className="text-cyan-300 font-semibold">
+              {deepFilter.trades.length} {t("common.trades")} · {t("journal.fromJarvis")}
+            </span>
+            <button
+              onClick={() => setDeepFilter({})}
+              className="ml-auto font-semibold text-slate-400 hover:text-white transition-colors"
+            >
+              {t("common.clear")} ✕
+            </button>
+          </div>
+        )}
 
-      {/* ── LA BARRE DE FILTRES — UNE SEULE RANGÉE ──
+        {/* ── LA BARRE DE FILTRES — UNE SEULE RANGÉE ──
           Elle en occupait DEUX sur bureau, et la seconde portait, en plus de
           deux listes, le bouton vert « setups manqués » : une NAVIGATION posée
           au milieu de filtres, du vert au centre de l'écran là où le vert doit
@@ -346,422 +371,304 @@ export default function Journal({
           La bascule passe de `md` à `lg` : sur une tablette, le rail laisse
           570px de contenu, où cinq contrôles ne tiennent pas sur une ligne. En
           dessous, la feuille de filtres prend le relais. */}
-      <div className="mb-2.5 flex flex-wrap items-center gap-1.5 md:mb-3">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("journal.searchPlaceholder")}
-          enterKeyHint="search"
-          className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] lg:h-9 lg:w-44 lg:flex-none"
-        />
-        {/* Le bouton n'existe que sous `lg` — au-dessus les listes sont
+        <div className="mb-2.5 flex shrink-0 flex-wrap items-center gap-1.5 md:mb-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("journal.searchPlaceholder")}
+            enterKeyHint="search"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] lg:h-9 lg:w-44 lg:flex-none"
+          />
+          {/* Le bouton n'existe que sous `lg` — au-dessus les listes sont
             directement là, il n'aurait rien à ouvrir. */}
-        <button
-          type="button"
-          onClick={() => setFiltersOpen(true)}
-          aria-haspopup="dialog"
-          className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 text-sm font-semibold text-slate-300 transition-colors active:bg-white/[0.07] lg:hidden"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          {t("common.filters")}
-          {sheetFilterCount > 0 && (
-            <span className="tv-figure tv-accent-fill grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px]">
-              {sheetFilterCount}
-            </span>
-          )}
-        </button>
-
-        <FiltrePill
-          label={t("common.period")}
-          value={periodFilter}
-          onChange={setPeriodFilter}
-          options={[
-            { v: "all", l: t("common.all") },
-            { v: "7d", l: t("common.7d") },
-            { v: "30d", l: t("common.30d") },
-            { v: "90d", l: t("common.90d") },
-            { v: "1y", l: t("common.1y") },
-          ]}
-        />
-        <FiltrePill
-          label={t("journal.colStrategy")}
-          value={strategyFilter}
-          onChange={setStrategyFilter}
-          options={[{ v: "all", l: t("common.all") }, ...STRATEGIES.map((x) => ({ v: x, l: x }))]}
-        />
-        <FiltrePill
-          label={t("journal.filterDay")}
-          value={dayFilter}
-          onChange={setDayFilter}
-          options={[
-            { v: "all", l: t("common.all") },
-            ...jours.map((n, i) => ({ v: String(i), l: n })),
-          ]}
-        />
-
-        {/* Le segment RÉSULTAT — le filtre qu'on touche vraiment, et le seul
-            qui porte des compteurs. */}
-        <div className="flex w-full items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 lg:w-auto lg:flex-none">
-          {(
-            [
-              { v: "all", label: t("common.all") },
-              { v: "win", label: t("common.win") },
-              { v: "loss", label: t("common.loss") },
-              { v: "be", label: t("common.be") },
-            ] as { v: ResultFilter; label: string }[]
-          ).map((opt) => (
-            <button
-              key={opt.v}
-              onClick={() => setResultFilter(opt.v)}
-              className={cn(
-                "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition lg:h-8 lg:flex-none lg:px-3",
-                resultFilter === opt.v
-                  ? opt.v === "win"
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : opt.v === "loss"
-                      ? "bg-red-500/15 text-red-400"
-                      : opt.v === "be"
-                        ? "bg-slate-500/20 text-slate-200"
-                        : "bg-cyan-500/15 text-cyan-400"
-                  : "text-slate-500 hover:text-slate-300",
-              )}
-            >
-              {opt.label}
-              <span
-                className={cn(
-                  "tv-figure text-[10px]",
-                  resultFilter === opt.v ? "opacity-70" : "text-slate-600",
-                )}
-              >
-                {counts[opt.v]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Il n'apparaît que s'il y a quelque chose à effacer. */}
-        {activeFilterCount > 0 && (
           <button
             type="button"
-            onClick={() => {
-              resetFilters();
-              setResultFilter("all");
-              setSearchQuery("");
-            }}
-            className="hidden h-9 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white lg:inline-flex"
+            onClick={() => setFiltersOpen(true)}
+            aria-haspopup="dialog"
+            className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 text-sm font-semibold text-slate-300 transition-colors active:bg-white/[0.07] lg:hidden"
           >
-            {t("common.reset")}
+            <SlidersHorizontal className="h-4 w-4" />
+            {t("common.filters")}
+            {sheetFilterCount > 0 && (
+              <span className="tv-figure tv-accent-fill grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px]">
+                {sheetFilterCount}
+              </span>
+            )}
           </button>
-        )}
-      </div>
 
-      {/* La feuille de filtres — mobile seulement. */}
-      <Modal
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        wrapperClassName="z-[var(--tv-z-modal)] md:hidden"
-        className="md:max-w-sm"
-      >
-        <div className="flex items-center justify-between px-5 pb-2 pt-4">
-          <h2 className="tv-title">{t("common.filters")}</h2>
-          {sheetFilterCount > 0 && (
+          <FiltrePill
+            label={t("common.period")}
+            value={periodFilter}
+            onChange={setPeriodFilter}
+            options={[
+              { v: "all", l: t("common.all") },
+              { v: "7d", l: t("common.7d") },
+              { v: "30d", l: t("common.30d") },
+              { v: "90d", l: t("common.90d") },
+              { v: "1y", l: t("common.1y") },
+            ]}
+          />
+          <FiltrePill
+            label={t("journal.colStrategy")}
+            value={strategyFilter}
+            onChange={setStrategyFilter}
+            options={[{ v: "all", l: t("common.all") }, ...STRATEGIES.map((x) => ({ v: x, l: x }))]}
+          />
+          <FiltrePill
+            label={t("journal.filterDay")}
+            value={dayFilter}
+            onChange={setDayFilter}
+            options={[
+              { v: "all", l: t("common.all") },
+              ...jours.map((n, i) => ({ v: String(i), l: n })),
+            ]}
+          />
+
+          {/* Le segment RÉSULTAT — le filtre qu'on touche vraiment, et le seul
+            qui porte des compteurs. */}
+          <div className="flex w-full items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 lg:w-auto lg:flex-none">
+            {(
+              [
+                { v: "all", label: t("common.all") },
+                { v: "win", label: t("common.win") },
+                { v: "loss", label: t("common.loss") },
+                { v: "be", label: t("common.be") },
+              ] as { v: ResultFilter; label: string }[]
+            ).map((opt) => (
+              <button
+                key={opt.v}
+                onClick={() => setResultFilter(opt.v)}
+                className={cn(
+                  "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition lg:h-8 lg:flex-none lg:px-3",
+                  resultFilter === opt.v
+                    ? opt.v === "win"
+                      ? "bg-emerald-500/15 text-emerald-400"
+                      : opt.v === "loss"
+                        ? "bg-red-500/15 text-red-400"
+                        : opt.v === "be"
+                          ? "bg-slate-500/20 text-slate-200"
+                          : "bg-cyan-500/15 text-cyan-400"
+                    : "text-slate-500 hover:text-slate-300",
+                )}
+              >
+                {opt.label}
+                <span
+                  className={cn(
+                    "tv-figure text-[10px]",
+                    resultFilter === opt.v ? "opacity-70" : "text-slate-600",
+                  )}
+                >
+                  {counts[opt.v]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Il n'apparaît que s'il y a quelque chose à effacer. */}
+          {activeFilterCount > 0 && (
             <button
               type="button"
-              onClick={resetFilters}
-              className="text-[13px] font-semibold text-slate-400 active:text-white"
+              onClick={() => {
+                resetFilters();
+                setResultFilter("all");
+                setSearchQuery("");
+              }}
+              className="hidden h-9 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white lg:inline-flex"
             >
               {t("common.reset")}
             </button>
           )}
         </div>
-        <div className="space-y-3 p-4 pt-2">
-          {(
-            [
-              {
-                k: "period",
-                label: t("common.period"),
-                value: periodFilter,
-                set: setPeriodFilter,
-                opts: [
-                  { v: "all", l: t("common.all") },
-                  { v: "7d", l: t("common.7d") },
-                  { v: "30d", l: t("common.30d") },
-                  { v: "90d", l: t("common.90d") },
-                  { v: "1y", l: t("common.1y") },
-                ],
-              },
-              {
-                k: "strategy",
-                label: t("journal.colStrategy"),
-                value: strategyFilter,
-                set: setStrategyFilter,
-                opts: [
-                  { v: "all", l: t("common.all") },
-                  ...STRATEGIES.map((x) => ({ v: x, l: x })),
-                ],
-              },
-              {
-                k: "day",
-                label: t("journal.filterDay"),
-                value: dayFilter,
-                set: setDayFilter,
-                opts: [
-                  { v: "all", l: t("common.all") },
-                  ...jours.map((n, i) => ({ v: String(i), l: n })),
-                ],
-              },
-            ] as {
-              k: string;
-              label: string;
-              value: string;
-              set: (v: string) => void;
-              opts: { v: string; l: string }[];
-            }[]
-          ).map((f) => (
-            <label key={f.k} className="block">
-              <span className="tv-label mb-1.5 block text-slate-500">{f.label}</span>
-              <select
-                value={f.value}
-                onChange={(e) => f.set(e.target.value)}
-                className="h-11 w-full appearance-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold text-slate-200 outline-none"
-              >
-                {f.opts.map((o) => (
-                  <option key={o.v} value={o.v}>
-                    {o.l}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              setFiltersOpen(false);
-              onOpenMissed();
-            }}
-            className="flex h-11 w-full items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold text-slate-200"
-          >
-            <Target className="h-4 w-4 text-[var(--tv-accent)]" />
-            {t("missed.title")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(false)}
-            className="btn-primary w-full"
-          >
-            {t("common.done")}
-          </button>
-        </div>
-      </Modal>
 
-      {/* ── Mobile: Card List ── */}
-      <div className="md:hidden space-y-1.5">
-        {trades.length === 0 ? (
-          <EmptyState
-            icon={<Target className="w-7 h-7" />}
-            title={t("empty.title")}
-            description={t("empty.subtitle")}
-            action={
-              <Button variant="accent" size="sm" onClick={onAdd}>
-                <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-              </Button>
-            }
-          />
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            title={t("common.noTradesFound")}
-            action={
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setResultFilter("all");
-                  setStrategyFilter("all");
-                  setDayFilter("all");
-                }}
+        {/* La feuille de filtres — mobile seulement. */}
+        <Modal
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          wrapperClassName="z-[var(--tv-z-modal)] md:hidden"
+          className="md:max-w-sm"
+        >
+          <div className="flex items-center justify-between px-5 pb-2 pt-4">
+            <h2 className="tv-title">{t("common.filters")}</h2>
+            {sheetFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-[13px] font-semibold text-slate-400 active:text-white"
               >
-                {t("common.all")}
-              </Button>
-            }
-          />
-        ) : (
-          shown.map((trade, i) => {
-            const be = isBreakEven(trade);
-            return (
-              <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
-                <div className="flex items-center gap-2 px-2.5 py-1.5">
-                  <button
-                    type="button"
-                    className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
-                    onClick={() => setViewingIdx(i)}
-                  >
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                        be
-                          ? "bg-slate-500/10"
-                          : trade.pnl >= 0
-                            ? "bg-emerald-500/10"
-                            : "bg-red-500/10",
-                      )}
-                    >
-                      {be ? (
-                        <Minus className="w-4 h-4 text-slate-300" />
-                      ) : trade.pnl >= 0 ? (
-                        <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-400" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[13px] font-bold text-white truncate">
-                          {trade.symbol}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
-                            directionBadgeClass(trade.direction),
-                          )}
-                        >
-                          {directionLabel(trade.direction)}
-                        </span>
-                        {trade.isExample && (
-                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                            {t("journal.exampleBadge")}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-500 truncate">
-                        {trade.strategy} · {formatShortDate(trade.date)}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div
-                        className={cn(
-                          "text-[13px] font-bold leading-tight",
-                          be
-                            ? "text-slate-300"
-                            : trade.pnl >= 0
-                              ? "text-emerald-400"
-                              : "text-red-400",
-                        )}
-                      >
-                        {formatPnl(trade.pnl)}
-                      </div>
-                      <div
-                        className={cn(
-                          "text-[10px] font-semibold",
-                          be
-                            ? "text-slate-300/60"
-                            : trade.rMultiple >= 0
-                              ? "text-emerald-400/60"
-                              : "text-red-400/60",
-                        )}
-                      >
-                        {trade.rMultiple.toFixed(1)}R
-                      </div>
-                    </div>
-                  </button>
-                  <div className="flex items-center shrink-0 -mr-1">
-                    <button
-                      onClick={() => onEdit(trade)}
-                      aria-label={t("common.edit")}
-                      className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(trade.id)}
-                      aria-label={t("common.delete")}
-                      className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+                {t("common.reset")}
+              </button>
+            )}
+          </div>
+          <div className="space-y-3 p-4 pt-2">
+            {(
+              [
+                {
+                  k: "period",
+                  label: t("common.period"),
+                  value: periodFilter,
+                  set: setPeriodFilter,
+                  opts: [
+                    { v: "all", l: t("common.all") },
+                    { v: "7d", l: t("common.7d") },
+                    { v: "30d", l: t("common.30d") },
+                    { v: "90d", l: t("common.90d") },
+                    { v: "1y", l: t("common.1y") },
+                  ],
+                },
+                {
+                  k: "strategy",
+                  label: t("journal.colStrategy"),
+                  value: strategyFilter,
+                  set: setStrategyFilter,
+                  opts: [
+                    { v: "all", l: t("common.all") },
+                    ...STRATEGIES.map((x) => ({ v: x, l: x })),
+                  ],
+                },
+                {
+                  k: "day",
+                  label: t("journal.filterDay"),
+                  value: dayFilter,
+                  set: setDayFilter,
+                  opts: [
+                    { v: "all", l: t("common.all") },
+                    ...jours.map((n, i) => ({ v: String(i), l: n })),
+                  ],
+                },
+              ] as {
+                k: string;
+                label: string;
+                value: string;
+                set: (v: string) => void;
+                opts: { v: string; l: string }[];
+              }[]
+            ).map((f) => (
+              <label key={f.k} className="block">
+                <span className="tv-label mb-1.5 block text-slate-500">{f.label}</span>
+                <select
+                  value={f.value}
+                  onChange={(e) => f.set(e.target.value)}
+                  className="h-11 w-full appearance-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold text-slate-200 outline-none"
+                >
+                  {f.opts.map((o) => (
+                    <option key={o.v} value={o.v}>
+                      {o.l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setFiltersOpen(false);
+                onOpenMissed();
+              }}
+              className="flex h-11 w-full items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold text-slate-200"
+            >
+              <Target className="h-4 w-4 text-[var(--tv-accent)]" />
+              {t("missed.title")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              className="btn-primary w-full"
+            >
+              {t("common.done")}
+            </button>
+          </div>
+        </Modal>
 
-      {/* ── Desktop: Table ── */}
-      <Card className="hidden md:block overflow-hidden">
-        <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-          <table className="w-full min-w-[880px]">
-            <thead className="sticky top-0 z-10 bg-[var(--tv-plate-1)]">
-              <tr className="border-b border-white/[0.06]">
-                {(["date", "symbol", "strategy", "pnl", "rMultiple"] as SortKey[]).map((key) => (
-                  <th
-                    key={key}
-                    onClick={() => handleSort(key)}
-                    className="tv-label px-4 py-2 text-left text-slate-500 cursor-pointer hover:text-slate-300 transition-colors select-none"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      {key === "pnl"
-                        ? t("journal.colPnl")
-                        : key === "rMultiple"
-                          ? t("journal.colRR")
-                          : key === "date"
-                            ? t("journal.colDate")
-                            : key === "symbol"
-                              ? t("journal.colSymbol")
-                              : t("journal.colStrategy")}
-                      <SortIcon col={key} />
-                    </span>
-                  </th>
-                ))}
-                <th className="tv-label px-4 py-2 text-left text-slate-500">{t("common.side")}</th>
-                <th className="tv-label px-4 py-2 text-left text-slate-500">{t("common.risk")}</th>
-                <th className="tv-label px-4 py-2 text-right text-slate-500">
-                  {t("common.actions")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.04]">
-              {trades.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-5 py-10 text-center">
-                    <div className="text-sm font-semibold text-white mb-1">{t("empty.title")}</div>
-                    <p className="tv-prose text-slate-500 mb-3">{t("empty.subtitle")}</p>
-                    <Button variant="accent" size="sm" onClick={onAdd}>
-                      <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
-                    </Button>
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-5 py-10 text-center text-slate-600 text-sm">
-                    {t("common.noTradesFound")}
-                  </td>
-                </tr>
-              ) : (
-                shown.map((trade, i) => {
-                  const be = isBreakEven(trade);
-                  return (
-                    <tr
-                      key={trade.id}
-                      className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
+        {/* ── Mobile: Card List ── */}
+        <div
+          onScroll={onListScroll}
+          className="journal-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain md:hidden"
+        >
+          {trades.length === 0 ? (
+            <EmptyState
+              icon={<Target className="w-7 h-7" />}
+              title={t("empty.title")}
+              description={t("empty.subtitle")}
+              action={
+                <Button variant="accent" size="sm" onClick={onAdd}>
+                  <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
+                </Button>
+              }
+            />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              title={t("common.noTradesFound")}
+              action={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setResultFilter("all");
+                    setStrategyFilter("all");
+                    setDayFilter("all");
+                  }}
+                >
+                  {t("common.all")}
+                </Button>
+              }
+            />
+          ) : (
+            shown.map((trade, i) => {
+              const be = isBreakEven(trade);
+              return (
+                <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5">
+                    <button
+                      type="button"
+                      className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
                       onClick={() => setViewingIdx(i)}
                     >
-                      <td className="px-4 py-1.5 text-sm text-slate-300">
-                        {formatShortDate(trade.date)}
-                      </td>
-                      <td className="px-4 py-1.5">
-                        <span className="text-sm font-bold text-white">{trade.symbol}</span>
-                        {trade.isExample && (
-                          <span className="ml-2 text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
-                            {t("journal.exampleBadge")}
-                          </span>
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                          be
+                            ? "bg-slate-500/10"
+                            : trade.pnl >= 0
+                              ? "bg-emerald-500/10"
+                              : "bg-red-500/10",
                         )}
-                      </td>
-                      <td className="px-4 py-1.5 text-sm text-slate-400">{trade.strategy}</td>
-                      <td className="px-4 py-1.5">
-                        <span
+                      >
+                        {be ? (
+                          <Minus className="w-4 h-4 text-slate-300" />
+                        ) : trade.pnl >= 0 ? (
+                          <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <ArrowDownRight className="w-4 h-4 text-red-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[13px] font-bold text-white truncate">
+                            {trade.symbol}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
+                              directionBadgeClass(trade.direction),
+                            )}
+                          >
+                            {directionLabel(trade.direction)}
+                          </span>
+                          {trade.isExample && (
+                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                              {t("journal.exampleBadge")}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {trade.strategy} · {formatShortDate(trade.date)}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div
                           className={cn(
-                            "text-sm font-bold",
+                            "text-[13px] font-bold leading-tight",
                             be
                               ? "text-slate-300"
                               : trade.pnl >= 0
@@ -770,98 +677,220 @@ export default function Journal({
                           )}
                         >
                           {formatPnl(trade.pnl)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
-                        <QuickEditCell
-                          value={trade.rMultiple}
-                          suffix="R"
-                          decimals={2}
-                          disabled={be || !onQuickEdit}
-                          onCommit={(v) => onQuickEdit?.(trade.id, { rMultiple: v })}
-                          title={t("journal.quickEditR")}
-                          className={cn(
-                            "text-sm font-bold",
-                            be
-                              ? "text-slate-300"
-                              : trade.rMultiple >= 0
-                                ? "text-emerald-400"
-                                : "text-red-400",
-                          )}
-                        />
-                      </td>
-                      <td className="px-4 py-1.5">
-                        <span
-                          className={cn(
-                            "text-[10px] font-bold px-2 py-1 rounded-lg",
-                            directionBadgeClass(trade.direction),
-                          )}
-                        >
-                          {directionLabel(trade.direction)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
-                        <QuickEditCell
-                          value={trade.riskAmount}
-                          prefix={currencySymbol()}
-                          decimals={0}
-                          min={0}
-                          disabled={!onQuickEdit}
-                          onCommit={(v) => onQuickEdit?.(trade.id, { riskAmount: v })}
-                          title={t("journal.quickEditRisk")}
-                          className="tv-figure text-sm text-slate-300"
-                        />
-                      </td>
-                      <td className="px-4 py-1.5">
-                        <div
-                          className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={() => setViewingIdx(i)}
-                            aria-label={t("missed.preview")}
-                            title={t("missed.preview")}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => onEdit(trade)}
-                            aria-label={t("common.edit")}
-                            title={t("common.edit")}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => onDelete(trade.id)}
-                            aria-label={t("common.delete")}
-                            title={t("common.delete")}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        <div
+                          className={cn(
+                            "text-[10px] font-semibold",
+                            be
+                              ? "text-slate-300/60"
+                              : trade.rMultiple >= 0
+                                ? "text-emerald-400/60"
+                                : "text-red-400/60",
+                          )}
+                        >
+                          {trade.rMultiple.toFixed(1)}R
+                        </div>
+                      </div>
+                    </button>
+                    <div className="flex items-center shrink-0 -mr-1">
+                      <button
+                        onClick={() => onEdit(trade)}
+                        aria-label={t("common.edit")}
+                        className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onDelete(trade.id)}
+                        aria-label={t("common.delete")}
+                        className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          {loadMore}
         </div>
-      </Card>
 
-      {hasMore && (
-        <div className="mt-3 text-center">
-          <button
-            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-            className="px-5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 transition"
+        {/* ── Desktop: Table ── */}
+        <Card className="hidden min-h-0 flex-1 flex-col overflow-hidden md:flex">
+          <div
+            onScroll={onListScroll}
+            className="journal-scroll min-h-0 flex-1 overflow-auto overscroll-contain"
           >
-            {t("journal.loadMore")} ({filtered.length - visibleCount})
-          </button>
-        </div>
-      )}
+            <table className="w-full min-w-[880px]">
+              <thead className="sticky top-0 z-10 bg-[var(--tv-plate-1)]">
+                <tr className="border-b border-white/[0.06]">
+                  {(["date", "symbol", "strategy", "pnl", "rMultiple"] as SortKey[]).map((key) => (
+                    <th
+                      key={key}
+                      onClick={() => handleSort(key)}
+                      className="tv-label px-4 py-2 text-left text-slate-500 cursor-pointer hover:text-slate-300 transition-colors select-none"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {key === "pnl"
+                          ? t("journal.colPnl")
+                          : key === "rMultiple"
+                            ? t("journal.colRR")
+                            : key === "date"
+                              ? t("journal.colDate")
+                              : key === "symbol"
+                                ? t("journal.colSymbol")
+                                : t("journal.colStrategy")}
+                        <SortIcon col={key} />
+                      </span>
+                    </th>
+                  ))}
+                  <th className="tv-label px-4 py-2 text-left text-slate-500">
+                    {t("common.side")}
+                  </th>
+                  <th className="tv-label px-4 py-2 text-left text-slate-500">
+                    {t("common.risk")}
+                  </th>
+                  <th className="tv-label px-4 py-2 text-right text-slate-500">
+                    {t("common.actions")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {trades.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-10 text-center">
+                      <div className="text-sm font-semibold text-white mb-1">
+                        {t("empty.title")}
+                      </div>
+                      <p className="tv-prose text-slate-500 mb-3">{t("empty.subtitle")}</p>
+                      <Button variant="accent" size="sm" onClick={onAdd}>
+                        <Plus className="w-3.5 h-3.5" /> {t("empty.cta")}
+                      </Button>
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-10 text-center text-slate-600 text-sm">
+                      {t("common.noTradesFound")}
+                    </td>
+                  </tr>
+                ) : (
+                  shown.map((trade, i) => {
+                    const be = isBreakEven(trade);
+                    return (
+                      <tr
+                        key={trade.id}
+                        className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
+                        onClick={() => setViewingIdx(i)}
+                      >
+                        <td className="px-4 py-1.5 text-sm text-slate-300">
+                          {formatShortDate(trade.date)}
+                        </td>
+                        <td className="px-4 py-1.5">
+                          <span className="text-sm font-bold text-white">{trade.symbol}</span>
+                          {trade.isExample && (
+                            <span className="ml-2 text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
+                              {t("journal.exampleBadge")}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-1.5 text-sm text-slate-400">{trade.strategy}</td>
+                        <td className="px-4 py-1.5">
+                          <span
+                            className={cn(
+                              "text-sm font-bold",
+                              be
+                                ? "text-slate-300"
+                                : trade.pnl >= 0
+                                  ? "text-emerald-400"
+                                  : "text-red-400",
+                            )}
+                          >
+                            {formatPnl(trade.pnl)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
+                          <QuickEditCell
+                            value={trade.rMultiple}
+                            suffix="R"
+                            decimals={2}
+                            disabled={be || !onQuickEdit}
+                            onCommit={(v) => onQuickEdit?.(trade.id, { rMultiple: v })}
+                            title={t("journal.quickEditR")}
+                            className={cn(
+                              "text-sm font-bold",
+                              be
+                                ? "text-slate-300"
+                                : trade.rMultiple >= 0
+                                  ? "text-emerald-400"
+                                  : "text-red-400",
+                            )}
+                          />
+                        </td>
+                        <td className="px-4 py-1.5">
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold px-2 py-1 rounded-lg",
+                              directionBadgeClass(trade.direction),
+                            )}
+                          >
+                            {directionLabel(trade.direction)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
+                          <QuickEditCell
+                            value={trade.riskAmount}
+                            prefix={currencySymbol()}
+                            decimals={0}
+                            min={0}
+                            disabled={!onQuickEdit}
+                            onCommit={(v) => onQuickEdit?.(trade.id, { riskAmount: v })}
+                            title={t("journal.quickEditRisk")}
+                            className="tv-figure text-sm text-slate-300"
+                          />
+                        </td>
+                        <td className="px-4 py-1.5">
+                          <div
+                            className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => setViewingIdx(i)}
+                              aria-label={t("missed.preview")}
+                              title={t("missed.preview")}
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onEdit(trade)}
+                              aria-label={t("common.edit")}
+                              title={t("common.edit")}
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onDelete(trade.id)}
+                              aria-label={t("common.delete")}
+                              title={t("common.delete")}
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+            {loadMore}
+          </div>
+        </Card>
+      </div>
 
       {viewing && viewingIdx !== null && (
         <TradeDetailModal
