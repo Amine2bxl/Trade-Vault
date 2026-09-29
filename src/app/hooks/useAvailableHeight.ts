@@ -51,10 +51,30 @@ export function useAvailableHeight(): {
     if (!el) return;
 
     const mesurer = () => {
+      const sc = el.closest("main");
+      if (sc) {
+        /* MESURÉ DANS LA FENÊTRE DE DÉFILEMENT, PAS DEVINÉ.
+           La marge basse était une constante (16px sur bureau, 172px sur
+           téléphone) : une hypothèse sur les paddings qui suivent le bloc.
+           Sur bureau, le padding de page en valait 36 — le Journal débordait
+           de 20px et `<main>` défilait alors que la page se veut fixe. On
+           additionne donc ce qui suit RÉELLEMENT le bloc : les paddings,
+           bordures et marges basses de chaque ancêtre jusqu'à `<main>`
+           (dont les 140px réservés aux widgets flottants sur téléphone). */
+        const scRect = sc.getBoundingClientRect();
+        const haut = el.getBoundingClientRect().top - scRect.top + sc.scrollTop;
+        let queue = parseFloat(getComputedStyle(el).marginBottom) || 0;
+        for (let a = el.parentElement; a; a = a.parentElement) {
+          const cs = getComputedStyle(a);
+          queue += (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+          if (a === sc) break;
+          queue += parseFloat(cs.marginBottom) || 0;
+        }
+        setHeight(Math.max(360, Math.round(sc.clientHeight - haut - queue)));
+        return;
+      }
       const haut = topAtRest(el);
-      // Mobile : en plus des 84px de widgets fixes (nav + sous-comptes + dock),
-      // le `<main>` réserve ~140px de padding bas pour ne jamais masquer de
-      // contenu. On rend la page dans ce qui reste réellement visible.
+      // Hors de la coquille (aucun `<main>`) : l'ancienne estimation.
       const basse = window.innerWidth < 768 ? 172 : 16;
       setHeight(Math.max(360, Math.round(stableViewportHeight() - haut - basse)));
     };

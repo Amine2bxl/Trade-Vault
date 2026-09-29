@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,7 +12,6 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import { cn } from "./cn";
 import { FIELD_BASE } from "./Input";
-import { usePopPlacement } from "./usePopPlacement";
 import { DateField } from "./DateField";
 
 /**
@@ -52,6 +52,7 @@ type Variant = "pill" | "field";
 
 /* ── Le point de rupture, sans dépendre de `app/` ── */
 const NARROW = "(max-width: 639px)";
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 function subscribeNarrow(cb: () => void) {
   if (typeof window === "undefined" || !window.matchMedia) return () => {};
   const mq = window.matchMedia(NARROW);
@@ -88,7 +89,56 @@ export function PickerPanel({
 }) {
   const narrow = useNarrow();
   const panRef = useRef<HTMLDivElement | null>(null);
-  const pose = usePopPlacement(panRef, open && !narrow);
+  const [pos, setPos] = useState<{
+    left: number;
+    top?: number;
+    bottom?: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
+
+  /* La place : sous le déclencheur s'il y en a assez, sinon au-dessus ; à
+     gauche du champ, sinon aligné sur son bord droit. Recalculée au
+     défilement (le déclencheur bouge) et au redimensionnement. */
+  useIsoLayoutEffect(() => {
+    if (!open || narrow) {
+      setPos(null);
+      return;
+    }
+    const place = () => {
+      const a = anchorRef.current?.getBoundingClientRect();
+      if (!a) return;
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const want = width.endsWith("rem") ? parseFloat(width) * rem : parseFloat(width) || 272;
+      const w = Math.min(Math.max(a.width, want), window.innerWidth - 16);
+      const left = a.left + w > window.innerWidth - 8 ? Math.max(8, a.right - w) : a.left;
+      const below = window.innerHeight - a.bottom - 12;
+      const above = a.top - 12;
+      const cap = Math.min(26 * rem, window.innerHeight * 0.7);
+      if (below >= Math.min(cap, 320) || below >= above) {
+        setPos({ left, top: a.bottom + 6, width: w, maxHeight: Math.min(cap, below) });
+      } else {
+        setPos({
+          left,
+          bottom: window.innerHeight - a.top + 6,
+          width: w,
+          maxHeight: Math.min(cap, above),
+        });
+      }
+    };
+    place();
+    // Le défilement de la liste du panneau lui-même ne déplace rien.
+    const onScroll = (e: Event) => {
+      if (panRef.current?.contains(e.target as Node)) return;
+      place();
+    };
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open, narrow, anchorRef, width]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,21 +192,34 @@ export function PickerPanel({
     );
   }
 
-  return (
+  /* SUR BUREAU, LE PANNEAU EST PORTÉ AU NIVEAU DU DOCUMENT, en position fixe
+     calée sur son déclencheur. Posé en absolu à côté du champ, il était rogné
+     par le premier ancêtre qui masque son débordement — dans une modale, le
+     corps qui défile : le bas de la palette de couleurs du créateur de thème
+     débordait sous la modale et le voile interceptait les clics (mesuré en
+     E2E). En position fixe, rien ne le rogne. */
+  if (typeof document === "undefined" || !pos) return null;
+  return createPortal(
     <div
       ref={panRef}
       role="dialog"
       aria-label={label}
-      style={{ width: `max(100%, ${width})` }}
+      style={{
+        position: "fixed",
+        left: pos.left,
+        top: pos.top,
+        bottom: pos.bottom,
+        width: pos.width,
+        maxHeight: overflowVisible ? undefined : pos.maxHeight,
+      }}
       className={cn(
-        "tv-pop tv-pick-in absolute z-[var(--tv-z-modal-top)] flex flex-col",
-        !overflowVisible && "max-h-[min(26rem,70vh)] overflow-hidden",
-        pose.align === "end" ? "right-0" : "left-0",
-        pose.side === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5",
+        "tv-pop tv-pick-in z-[var(--tv-z-modal-top)] flex flex-col",
+        !overflowVisible && "overflow-hidden",
       )}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

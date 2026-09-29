@@ -140,7 +140,7 @@ export function ColorPicker({
         label={label}
         width="18.5rem"
       >
-        <div id={id} className="overflow-y-auto overscroll-contain p-3">
+        <div id={id} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
           {/* 1. LA FAMILLE */}
           <div className="tv-label mb-2 text-slate-500">{labels.family}</div>
           <div className="grid grid-cols-6 gap-2">
