@@ -51,16 +51,17 @@ import { cn } from "../utils/cn";
 import { PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
 import { useIsNarrow } from "../hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";
+import { SeasonalEquity } from "../components/seasonality/SeasonalEquity";
 
 interface SeasonalityProps {
   trades: Trade[];
   tradesLoading?: boolean;
 }
 
-export default function Seasonality(_props: SeasonalityProps) {
+export default function Seasonality({ trades }: SeasonalityProps) {
   return (
     <PageContainer>
-      <AssetSeasonality />
+      <AssetSeasonality trades={trades} />
     </PageContainer>
   );
 }
@@ -69,7 +70,7 @@ export default function Seasonality(_props: SeasonalityProps) {
  * Asset seasonal tendencies (curated historical dataset)
  * ============================================================ */
 
-function AssetSeasonality() {
+function AssetSeasonality({ trades }: { trades: Trade[] }) {
   const { t, lang } = useT();
   const { user } = useAuth();
   const catKey = nsKey(user?.id, "seasonality.cat");
@@ -286,6 +287,15 @@ function AssetSeasonality() {
           ))}
         </div>
       </div>
+
+      {/* Les courbes : la saison composée de l'actif, et l'equity réelle du
+          trader sur ce même actif. */}
+      <SeasonalEquity
+        asset={asset}
+        peers={inCategory}
+        currentMonth={currentMonth}
+        trades={trades}
+      />
 
       {/* Category heatmap */}
       <div className="glass rounded-3xl p-4 md:p-5 card-premium">
