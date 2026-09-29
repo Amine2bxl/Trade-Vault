@@ -4,7 +4,8 @@ import { Modal } from "@/shared/ui";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import type { AppNotification } from "@/modules/notifications/types";
-import { encodeFilter, type UnifiedFilter } from "../utils/tradeFilter";
+import { CATEGORY_LABEL, WHY_KEY, notificationTarget } from "../utils/notificationMeta";
+import type { TKey } from "../i18n/translations";
 import { formatMoney } from "@/shared/currency";
 
 /**
@@ -20,61 +21,18 @@ interface Props {
   onMarkRead?: (id: string) => void;
 }
 
-const CATEGORY_LABEL: Record<string, string> = {
-  discipline: "Discipline",
-  goals: "Goals",
-  risk: "Risk",
-  jarvis: "Jarvis",
-  economic: "Economic News",
-  activity: "Activity",
-  system: "System",
-};
-
 /** L'essentiel, chiffré — dérivé du payload structuré de la notification. */
-function essentials(n: AppNotification): Array<[string, string]> {
+function essentials(n: AppNotification, t: (k: TKey) => string): Array<[string, string]> {
   const d = n.data ?? {};
   const rows: Array<[string, string]> = [];
-  if (typeof d.streak === "number") rows.push(["Pertes consécutives", `${d.streak}`]);
-  if (typeof d.mistake === "string") rows.push(["Erreur", d.mistake]);
-  if (typeof d.days === "number") rows.push(["Jours sans session", `${d.days}`]);
-  if (typeof d.winRate === "number") rows.push(["Win rate", `${Math.round(d.winRate * 100)}%`]);
-  if (typeof d.pnl === "number") rows.push(["P&L", formatMoney(d.pnl, { signed: true })]);
+  if (typeof d.streak === "number") rows.push([t("inbox.essStreak"), `${d.streak}`]);
+  if (typeof d.mistake === "string") rows.push([t("inbox.essMistake"), d.mistake]);
+  if (typeof d.days === "number") rows.push([t("inbox.essDays"), `${d.days}`]);
+  if (typeof d.winRate === "number")
+    rows.push([t("inbox.essWinRate"), `${Math.round(d.winRate * 100)}%`]);
+  if (typeof d.pnl === "number")
+    rows.push([t("inbox.essPnl"), formatMoney(d.pnl, { signed: true })]);
   return rows;
-}
-
-function pageFrom(n: AppNotification): string {
-  const cta = (n.data?.ctaPage as string | undefined) ?? "";
-  if (
-    [
-      "dashboard",
-      "inbox",
-      "journal",
-      "checklist",
-      "calendar",
-      "analytics",
-      "mistakes",
-      "missed",
-      "insights",
-      "news",
-      "seasonality",
-      "calculator",
-      "settings",
-      "reports",
-      "goals",
-      "tradingplan",
-      "appearance",
-      "subscription",
-      "profile",
-    ].includes(cta)
-  )
-    return cta;
-  const url = n.url ?? "";
-  if (url.startsWith("/journal")) return "journal";
-  if (url.startsWith("/mistakes")) return "mistakes";
-  if (url.startsWith("/checklist")) return "checklist";
-  if (url.startsWith("/reports")) return "reports";
-  if (url.startsWith("/inbox")) return "inbox";
-  return "dashboard";
 }
 
 export default function NotificationDetailModal({ notification: n, onClose, onMarkRead }: Props) {
@@ -88,21 +46,11 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
 
   const ctaLabel = (n.data?.ctaLabel as string | undefined) ?? t("inbox.ctaDefault");
   const plan = (n.data?.plan as string | undefined) ?? t("inbox.planDefault");
-  const catLabel = CATEGORY_LABEL[n.category] ?? "Jarvis";
-  const rows = essentials(n);
+  const catLabel = t(CATEGORY_LABEL[n.category] ?? "inbox.filterJarvis");
+  const rows = essentials(n, t);
 
   const go = () => {
-    // Le deep-link porte un FILTRE (ex. « voir CE trade ») : on réutilise le
-    // canal `tv:navigate` existant, qui pose `?f=` et prévient les pages.
-    const filter = (n.data?.filter as UnifiedFilter | undefined) ?? undefined;
-    window.dispatchEvent(
-      new CustomEvent("tv:navigate", {
-        detail: {
-          page: pageFrom(n),
-          ...(filter ? { filter: encodeFilter(filter) } : {}),
-        },
-      }),
-    );
+    window.dispatchEvent(new CustomEvent("tv:navigate", { detail: notificationTarget(n) }));
     onClose();
   };
 
@@ -151,11 +99,17 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
         <div>
           <h3 className="tv-title leading-snug">{n.title}</h3>
           <p className="text-[13px] text-slate-300 leading-relaxed mt-1.5">{n.body}</p>
+          {WHY_KEY[n.kind] && (
+            <p className="mt-2 text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-400">{t("inbox.why")}</span>{" "}
+              {t(WHY_KEY[n.kind]!)}
+            </p>
+          )}
         </div>
 
         {/* L'essentiel, chiffré */}
         {rows.length > 0 && (
-          <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] divide-y divide-white/[0.05]">
+          <div className="tv-relief-inset rounded-xl border border-[var(--tv-border)] divide-y divide-white/[0.05]">
             {rows.map(([k, v]) => (
               <div key={k} className="flex items-center justify-between px-3.5 py-2">
                 <span className="text-[11px] text-slate-500">{k}</span>

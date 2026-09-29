@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnreadCount } from "../hooks/useUnreadCount";
+import { badgeLabel } from "@/modules/notifications";
 
 interface MobileActionsProps {
   page: Page;
@@ -63,7 +64,7 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
           role="status"
           aria-label={`${badge} ${badge > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
         >
-          {badge > 99 ? "99+" : badge}
+          {badgeLabel(badge)}
         </span>
       )}
     </button>

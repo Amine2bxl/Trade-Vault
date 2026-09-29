@@ -93,9 +93,14 @@ import {
   initNotificationListeners,
   dispatchCodedNotifications,
   markNotificationRead,
+  loadRecentDedupKeys,
+  maintainNotifications,
+  noteTradeAction,
+  shouldInterrupt,
 } from "@/modules/notifications";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
+import { todayLocalDate } from "@/shared/calendar-date";
 import { previewTrades } from "./utils/previewTrades";
 import { canLogTrade, isPlanLimitError } from "./utils/planLimits";
 import { computeBehavioral } from "./utils/behavioral";
@@ -443,8 +448,13 @@ function AppContent() {
            toute seule.
 
            SEULEMENT `error`. Étendre aux avertissements ferait un popup par
-           séance, et le popup ne voudrait plus rien dire. */
-        if (n.severity === "error") {
+           séance, et le popup ne voudrait plus rien dire.
+
+           ET SEULEMENT EN CONTEXTE (`shouldInterrupt`) : l'alerte doit
+           répondre à un trade enregistré à l'instant. Recalculée au
+           chargement de l'application, la même alerte va dans la boîte sans
+           interrompre — c'était le popup « à un moment aléatoire ». */
+        if (shouldInterrupt(n)) {
           window.dispatchEvent(
             new CustomEvent("tv:open-notification", { detail: { notification: n } }),
           );
@@ -496,10 +506,42 @@ function AppContent() {
      donc aucun état « en pause » à gérer ici. */
   const { events: economicEvents } = useEconomicCalendar(semaineCourante);
 
+  /* L'ENTRETIEN DE LA BOÎTE — une fois par jour et par appareil : les non
+     lues expirées et les doublons sont archivés, l'historique lu de plus de
+     90 jours est purgé. Voir `modules/notifications/policy.ts`. */
+  useEffect(() => {
+    if (!user?.id) return;
+    const uid = user.id;
+    const key = `tv.notif.maint.${uid}`;
+    try {
+      if (localStorage.getItem(key) === todayLocalDate()) return;
+    } catch {
+      /* stockage indisponible : on entretient quand même */
+    }
+    void maintainNotifications(uid)
+      .then(() => {
+        try {
+          localStorage.setItem(key, todayLocalDate());
+        } catch {
+          /* best-effort */
+        }
+        window.dispatchEvent(new CustomEvent("tv:notif-updated"));
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
+  /* Les clés déjà émises par ce compte, lues en base : la déduplication vaut
+     pour tous ses appareils. Relue au plus toutes les dix minutes. */
+  const dedupRef = useRef<{ at: number; keys: Set<string> } | null>(null);
+
   useEffect(() => {
     if (!user?.id || !accountsReady || tradesLoading) return;
     const uid = user.id;
     const evaluer = async () => {
+      if (!dedupRef.current || Date.now() - dedupRef.current.at > 10 * 60_000) {
+        const keys = await loadRecentDedupKeys(uid).catch(() => null);
+        if (keys) dedupRef.current = { at: Date.now(), keys };
+      }
       // Le solde est nécessaire aux règles de risque en % ; il est chargé une
       // fois ici plutôt qu'à chaque évaluation.
       const balance =
@@ -534,7 +576,11 @@ function AppContent() {
             ratePct: a.ratePct,
           })),
         },
-        (id, input) => NotificationEngine.notify(id, input),
+        (id, input) => {
+          if (input.dedupKey) dedupRef.current?.keys.add(input.dedupKey);
+          return NotificationEngine.notify(id, input);
+        },
+        dedupRef.current?.keys,
       );
     };
 
@@ -559,6 +605,9 @@ function AppContent() {
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
+      // Le contexte « le trader vient d'agir » : seules les alertes graves
+      // nées dans les deux minutes qui suivent ouvrent un popup.
+      noteTradeAction();
       // Quota mensuel d'encodage. Il porte sur les CRÉATIONS : corriger un
       // trade déjà saisi reste possible quel que soit le palier — bloquer une
       // correction serait punitif et sans rapport avec l'offre.
