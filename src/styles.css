@@ -6382,3 +6382,61 @@ body::after {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CALCULATEUR — LE CHOIX DU MARCHÉ
+   ══════════════════════════════════════════════════════════════════════════
+   Deux options décrites et un indicateur qui GLISSE (transform seul) de l'une
+   à l'autre : la bascule se voit, se comprend, et ne recalcule aucune mise en
+   page. */
+.calc-market {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--tv-border);
+  border-radius: 18px;
+  background: var(--tv-plate-1);
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+}
+.calc-market-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 6px);
+  border-radius: 14px;
+  border: 1px solid var(--tv-border-accent);
+  background: var(--tv-plate-3);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 8px 20px -12px rgb(var(--tv-accent-rgb) / 0.55);
+  transition: transform var(--tv-dur-3) var(--tv-ease);
+}
+.calc-market[data-mode="futures"] .calc-market-thumb {
+  transform: translateX(calc(100% + 4px));
+}
+.calc-market-opt {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: var(--tv-text-muted);
+  transition: color var(--tv-dur-2) var(--tv-ease);
+}
+.calc-market-opt.is-on {
+  color: var(--tv-text-primary);
+}
+.calc-market-opt.is-on svg {
+  color: var(--tv-highlight);
+}
+@media (prefers-reduced-motion: reduce) {
+  .calc-market-thumb {
+    transition: none;
+  }
+}
