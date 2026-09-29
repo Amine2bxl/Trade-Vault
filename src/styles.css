@@ -2978,7 +2978,15 @@ a:focus-visible,
      comme un mouvement, seulement comme un scintillement — elle coûtait donc
      son prix sans rien rendre. Assez longue pour être lue, assez courte pour
      ne jamais se mettre entre le trader et sa donnée. */
-  animation: pageIn var(--tv-dur-3) var(--tv-ease-out) both;
+  /* `backwards`, PAS `both`. Avec `both`, l'état final restait appliqué :
+     `transform: translate3d(0,0,0)` pour toujours. Or TOUT `transform`
+     (même nul) fait de l'élément le bloc conteneur de ses descendants
+     `position: fixed`. Chaque couche plein écran d'une page (le fond de la
+     Checklist, une modale rendue dans la page…) se calait alors sur la page
+     et non sur la fenêtre : décalée de la largeur du rail, et la fenêtre de
+     contenu débordait de 249px. `backwards` applique l'état de départ avant
+     l'animation et ne laisse RIEN après elle. */
+  animation: pageIn var(--tv-dur-3) var(--tv-ease-out) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .page-in {
