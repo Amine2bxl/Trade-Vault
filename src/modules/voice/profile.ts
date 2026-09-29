@@ -12,11 +12,12 @@ import type { VoiceProfile } from "./types";
  * the browser engine closest to it.
  */
 export const JARVIS_VOICE: VoiceProfile = {
-  // « Brian » (voix de la bibliothèque ElevenLabs) : grave, résonante, le
-  // timbre des voix off publicitaires. L'ancienne voix, plus neutre, sonnait
-  // « assistant » ; Jarvis doit sonner « bande-annonce ». Une seule voix pour
-  // tout le produit : accueil, onboarding, checklist, Jarvis.
-  hostedVoiceId: "nPczCjzI2devNBz1zQrb",
+  // LA voix de Jarvis — celle que le fondateur a choisie et fait créer :
+  // charismatique, posée, identique aux clips pré-rendus de la checklist.
+  // Elle avait été remplacée le 27/09 par « Brian », une voix générique de la
+  // bibliothèque ElevenLabs : Jarvis avait perdu son timbre. Rétablie à
+  // l'identique (identifiant ET réglages de voix dans `tts.functions.ts`).
+  hostedVoiceId: "PEuehAGHRfRnnYqUDPCo",
   hostedModelId: "eleven_multilingual_v2",
   // Slightly under natural pace: a coach lands the number, then moves on.
   rate: 0.94,

@@ -24,9 +24,21 @@ export function hostedAvailable(): Promise<boolean> {
   return probe;
 }
 
-/** La voix hébergée a refusé (quota, réseau) : on n'insiste plus cette session. */
+/**
+ * La voix hébergée a refusé une réplique.
+ *
+ * Un seul échec coupait la voix pour TOUTE la session : un hoquet réseau à la
+ * première phrase, et Jarvis parlait ensuite avec la voix robot du navigateur
+ * jusqu'au rechargement. On ne renonce qu'après deux refus d'affilée — un
+ * vrai problème (quota, service indisponible), pas une coupure passagère.
+ */
+let failures = 0;
 export function markHostedDown(): void {
-  probe = Promise.resolve(false);
+  failures += 1;
+  if (failures >= 2) probe = Promise.resolve(false);
+}
+function markHostedUp(): void {
+  failures = 0;
 }
 
 const cache = new Map<string, Promise<string | null>>();
@@ -43,6 +55,7 @@ export function hostedAudio(text: string): Promise<string | null> {
     // Un échec n'est pas mémorisé : la réplique pourra être retentée.
     void pending.then((a) => {
       if (!a) cache.delete(key);
+      else markHostedUp();
     });
   }
   return pending;
