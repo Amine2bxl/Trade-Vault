@@ -3363,6 +3363,18 @@ a:focus-visible,
 .rp-section + .rp-section {
   border-top: 1px solid var(--tv-border);
 }
+/* `.rp-duo` groupe deux sections courtes que le PDF pose côte à côte. À
+   l'écran il s'efface (`display: contents`) : ses sections restent dans la
+   colonne, et leurs filets de séparation sont repris ici, puisque le
+   regroupement coupe la relation de fratrie que `+` utilise. */
+.rp-duo {
+  display: contents;
+}
+.rp-section + .rp-duo > .rp-section:first-child,
+.rp-duo + .rp-duo > .rp-section:first-child,
+.rp-duo + .rp-section {
+  border-top: 1px solid var(--tv-border);
+}
 
 .rp-head {
   display: flex;
@@ -3744,9 +3756,10 @@ a:focus-visible,
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
+    /* UNE seule lueur, en haut à droite — la signature de la vitrine. La
+       seconde, en bas à gauche, en faisait une nappe décorative. */
     background:
-      radial-gradient(60% 28% at 100% 0%, rgba(34, 224, 138, 0.1), transparent 70%),
-      radial-gradient(50% 24% at 0% 100%, rgba(18, 185, 129, 0.07), transparent 70%), #0a0b0d !important;
+      radial-gradient(55% 22% at 100% 0%, rgba(34, 224, 138, 0.09), transparent 72%), #0a0b0d !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
     color: #f4f6f8 !important;
@@ -3784,57 +3797,95 @@ a:focus-visible,
     stroke: rgba(255, 255, 255, 0.06) !important;
   }
 
-  /* ── LA COUVERTURE — une page à elle seule ── */
+  /* ── LA DENSITÉ DU PAPIER ──
+     La feuille imprimée fait ~700px de large : les points de rupture `md`
+     n'y jouent jamais, et tout retombe sur la mise en page du téléphone.
+     La taille de base descend à 13px — tout ce qui est en rem suit d'un
+     seul geste — et les grilles du papier sont fixées ici. */
+  html:has(.tv-print-sheet) {
+    font-size: 13px !important;
+  }
   .rp-print-only {
     display: flex !important;
   }
+  .rp-screen-only,
   .rp-eyebrow {
     display: none !important;
   }
-  .rp-cover {
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 262mm;
-    padding: 6mm 4mm 4mm;
-    break-after: page;
-    page-break-after: always;
+  .tv-print-sheet .rp-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
-  .rp-cover-brand {
+  .tv-print-sheet .rp-curve {
+    height: 150px !important;
+  }
+  .tv-print-sheet .rp-setups {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .tv-print-sheet .rp-duo {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .tv-print-sheet .rp-duo:empty {
+    display: none !important;
+  }
+  .tv-print-sheet .rp-duo > .rp-section {
+    border-top: 0 !important;
+  }
+  .tv-print-sheet .rp-debrief {
+    font-size: 0.92em;
+  }
+
+  /* ── LE BANDEAU DE TÊTE (à la place de la couverture) ── */
+  .rp-masthead {
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.2rem 0.2rem 0.75rem;
+    border-bottom: 1px solid rgba(34, 224, 138, 0.3);
+  }
+  .rp-mast-row {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    font-size: 15pt;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: #f4f6f8;
+    gap: 0.7rem;
   }
-  .rp-cover-body {
-    margin-top: auto;
-  }
-  .rp-cover-eyebrow {
-    font-size: 10pt;
+  .rp-mast-doc {
+    margin-left: auto;
+    font-size: 8pt;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: #22e08a;
   }
-  .rp-cover-title {
-    margin-top: 0.35rem;
-    font-size: 40pt;
-    font-weight: 800;
-    line-height: 1.02;
-    letter-spacing: -0.035em;
-    text-transform: capitalize;
+  .rp-mast-meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, auto));
+    justify-content: start;
+    gap: 0 1.6rem;
+    margin: 0;
+  }
+  .rp-mast-meta dt {
+    font-size: 6.5pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7c8594;
+  }
+  .rp-mast-meta dd {
+    margin: 0.1rem 0 0;
+    font-size: 8.5pt;
+    font-weight: 600;
     color: #f4f6f8;
   }
   .rp-cover-status {
     display: inline-block;
-    margin-top: 1rem;
-    padding: 0.25rem 0.7rem;
+    padding: 0.15rem 0.55rem;
     border: 1px solid rgba(34, 224, 138, 0.4);
     border-radius: 999px;
     background: rgba(34, 224, 138, 0.08);
-    font-size: 9pt;
+    font-size: 7pt;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -3845,62 +3896,28 @@ a:focus-visible,
     background: rgba(251, 191, 36, 0.08);
     color: #fbbf24;
   }
-  .rp-cover-meta {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem 1.5rem;
-    margin-top: 2.2rem;
-    padding-top: 1.2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  .rp-cover-meta dt {
-    font-size: 8pt;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #7c8594;
-  }
-  .rp-cover-meta dd {
-    margin: 0.2rem 0 0;
-    font-size: 11pt;
-    font-weight: 600;
-    color: #f4f6f8;
-  }
-  .rp-cover-note {
-    margin-top: 1.2rem;
-    font-size: 9pt;
-    line-height: 1.5;
-    color: #fcd34d;
-  }
-
-  /* ── L'EN-TÊTE ET LE PIED DES PAGES DE CONTENU ── */
-  .rp-paper-head {
-    align-items: center;
-    gap: 0.6rem;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.4rem;
-    border-bottom: 1px solid rgba(34, 224, 138, 0.35) !important;
-    font-size: 9pt;
-    color: #b8c0cc !important;
-  }
   .rp-paper-brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.45rem;
+    font-size: 12pt;
     font-weight: 800;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     color: #f4f6f8 !important;
   }
-  .rp-paper-date {
-    margin-left: auto;
-  }
   .rp-paper-foot {
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
     padding-top: 0.5rem;
     margin-top: 0.4rem;
     border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-    font-size: 8pt;
+    font-size: 7.5pt;
     color: #7c8594 !important;
+  }
+  .rp-paper-domain {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #22e08a;
   }
 
   /* Une section ne se coupe pas en deux entre deux pages tant qu'elle tient

@@ -27,6 +27,7 @@ import {
   Clock3,
 } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo-128.png";
+import { SITE_URL } from "@/shared/site";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { useT } from "../i18n/LanguageContext";
@@ -73,6 +74,9 @@ const LOCALE_MAP: Record<string, string> = {
 };
 
 /** "2026-06" → "June 2026" in the app language. */
+/** Le domaine imprimé au pied du PDF (`tradevault.be`, sans protocole). */
+const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
+
 function monthLabel(month: string, locale: string): string {
   const [y, m] = month.split("-").map(Number);
   return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
@@ -511,24 +515,27 @@ function ReportSheet({
 
   return (
     <article className="tv-print-sheet glass animate-fade-in-up overflow-hidden rounded-3xl">
-      {/* L'EN-TÊTE DE PAPIER — invisible à l'écran (la page a déjà son titre),
-          il n'apparaît que sur le PDF, où la feuille arrive seule. */}
-      {/* LA COUVERTURE — elle n'existe que sur le PDF, où le rapport arrive
-          seul et doit dire d'emblée ce qu'il est, pour quel compte, sur
-          quelle période, et s'il est définitif. */}
-      <div className="rp-print-only rp-cover">
-        <div className="rp-cover-brand">
-          <img src={logoSrc} alt="" width={40} height={40} />
-          <span>TradeVault</span>
-        </div>
-        <div className="rp-cover-body">
-          <div className="rp-cover-eyebrow">{t("reports.docLabel")}</div>
-          <div className="rp-cover-title">{monthLabel(row.month, locale)}</div>
-          <div className={cn("rp-cover-status", inProgress && "rp-cover-status-live")}>
+      {/* LE BANDEAU DE TÊTE DU PDF — invisible à l'écran (la page a déjà son
+          titre et son sélecteur).
+
+          Il remplace une COUVERTURE pleine page : un logo, un titre et quatre
+          métadonnées sur une feuille A4 entière, soit un tiers du document pour
+          ne rien dire que ces quatre lignes ne disent pas. Le rapport visait
+          trois ou quatre pages ; il en vise désormais une, deux au plus, et
+          tout ce que la couverture annonçait — marque, nature du document,
+          statut, compte, période, devise, date — tient ici sur deux lignes. */}
+      <div className="rp-print-only rp-masthead">
+        <div className="rp-mast-row">
+          <span className="rp-paper-brand">
+            <img src={logoSrc} alt="" width={22} height={22} />
+            TradeVault
+          </span>
+          <span className="rp-mast-doc">{t("reports.docLabel")}</span>
+          <span className={cn("rp-cover-status", inProgress && "rp-cover-status-live")}>
             {inProgress ? t("reports.inProgress") : t("reports.final")}
-          </div>
+          </span>
         </div>
-        <dl className="rp-cover-meta">
+        <dl className="rp-mast-meta">
           {accountName && (
             <div>
               <dt>{t("reports.coverAccount")}</dt>
@@ -550,15 +557,6 @@ function ReportSheet({
             <dd>{printedOn}</dd>
           </div>
         </dl>
-        {inProgress && <p className="rp-cover-note">{t("reports.provisionalNote")}</p>}
-      </div>
-      <div className="rp-print-only rp-paper-head">
-        <span className="rp-paper-brand">
-          <img src={logoSrc} alt="" width={16} height={16} />
-          TradeVault
-        </span>
-        <span className="capitalize">{monthLabel(row.month, locale)}</span>
-        <span className="rp-paper-date">{inProgress ? t("reports.inProgress") : printedOn}</span>
       </div>
 
       {/* ── LE VERDICT ─────────────────────────────────────────────────── */}
@@ -673,7 +671,7 @@ function ReportSheet({
       {curve.length > 1 && (
         <section className="rp-section">
           <SectionTitle sub={t("reports.curveSub")}>{t("reports.curve")}</SectionTitle>
-          <div className="h-[240px] md:h-[280px]">
+          <div className="rp-curve h-[240px] md:h-[280px]">
             <EquityChart data={curve} />
           </div>
         </section>
@@ -683,7 +681,9 @@ function ReportSheet({
       {weekly.length > 0 && (
         <section className="rp-section">
           <SectionTitle sub={t("reports.weeklySub")}>{t("reports.weekly")}</SectionTitle>
-          <div className="h-[190px]">
+          {/* Sur le papier, le graphe s'efface devant la table qui le suit :
+              mêmes montants, cinq fois moins de hauteur. */}
+          <div className="rp-screen-only h-[190px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekly} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid {...EQUITY_GRID} />
@@ -730,57 +730,76 @@ function ReportSheet({
         </section>
       )}
 
-      {/* ── LA COMPOSITION ─────────────────────────────────────────────── */}
-      {r.trades > 0 && (
-        <section className="rp-section">
-          <SectionTitle sub={t("reports.mixSub")}>{t("reports.mix")}</SectionTitle>
-          <MixBar wins={r.wins} losses={r.losses} breakEven={r.breakEven} total={r.trades} />
-        </section>
-      )}
+      {/* Composition et sessions : l'une sous l'autre à l'écran, côte à côte
+          sur le papier (`.rp-duo`) — deux blocs courts qui prenaient chacun
+          toute la largeur d'une A4. */}
+      <div className="rp-duo">
+        {/* ── LA COMPOSITION ─────────────────────────────────────────────── */}
+        {r.trades > 0 && (
+          <section className="rp-section">
+            <SectionTitle sub={t("reports.mixSub")}>{t("reports.mix")}</SectionTitle>
+            <MixBar wins={r.wins} losses={r.losses} breakEven={r.breakEven} total={r.trades} />
+          </section>
+        )}
 
-      {/* ── LES SESSIONS ───────────────────────────────────────────────── */}
-      {sessions.length > 0 && (
-        <section className="rp-section">
-          <SectionTitle sub={t("reports.sessionsSub")}>{t("reports.sessions")}</SectionTitle>
-          <BarList
-            rows={sessions.map((b) => ({
-              key: b.key,
-              label: t(`session.${b.key}` as never),
-              meta: `×${b.count}`,
-              value: Math.round(b.pnl * 100) / 100,
-            }))}
-          />
-        </section>
-      )}
+        {/* ── LES SESSIONS ───────────────────────────────────────────────── */}
+        {sessions.length > 0 && (
+          <section className="rp-section">
+            <SectionTitle sub={t("reports.sessionsSub")}>{t("reports.sessions")}</SectionTitle>
+            <BarList
+              rows={sessions.map((b) => ({
+                key: b.key,
+                label: t(`session.${b.key}` as never),
+                meta: `×${b.count}`,
+                value: Math.round(b.pnl * 100) / 100,
+              }))}
+            />
+          </section>
+        )}
+      </div>
 
-      {/* ── LA COMPARAISON ─────────────────────────────────────────────── */}
-      {r.prev && (
-        <section className="rp-section">
-          <SectionTitle>{t("reports.mom")}</SectionTitle>
-          <div className="rp-momgrid">
-            <MomCell
-              label={t("stats.totalPnl")}
-              prev={formatPnl(r.prev.totalPnl)}
-              now={formatPnl(r.totalPnl)}
-              up={r.totalPnl >= r.prev.totalPnl}
-            />
-            <MomCell
-              label={t("stats.winRate")}
-              prev={formatPct(r.prev.winRate)}
-              now={formatPct(r.winRate)}
-              up={r.winRate >= r.prev.winRate}
-            />
-            <MomCell
-              label={t("stats.trades")}
-              prev={String(r.prev.trades)}
-              now={String(r.trades)}
-              up={r.trades >= r.prev.trades}
-              neutral
-            />
-          </div>
-          <p className="tv-row-label mt-2 capitalize">{monthLabel(r.prev.month, locale)}</p>
-        </section>
-      )}
+      <div className="rp-duo">
+        {/* ── LA COMPARAISON ─────────────────────────────────────────────── */}
+        {r.prev && (
+          <section className="rp-section">
+            <SectionTitle>{t("reports.mom")}</SectionTitle>
+            <div className="rp-momgrid">
+              <MomCell
+                label={t("stats.totalPnl")}
+                prev={formatPnl(r.prev.totalPnl)}
+                now={formatPnl(r.totalPnl)}
+                up={r.totalPnl >= r.prev.totalPnl}
+              />
+              <MomCell
+                label={t("stats.winRate")}
+                prev={formatPct(r.prev.winRate)}
+                now={formatPct(r.winRate)}
+                up={r.winRate >= r.prev.winRate}
+              />
+              <MomCell
+                label={t("stats.trades")}
+                prev={String(r.prev.trades)}
+                now={String(r.trades)}
+                up={r.trades >= r.prev.trades}
+                neutral
+              />
+            </div>
+            <p className="tv-row-label mt-2 capitalize">{monthLabel(r.prev.month, locale)}</p>
+          </section>
+        )}
+
+        {/* ── LES CONSTATS ───────────────────────────────────────────────── */}
+        {takeaways.length > 0 && (
+          <section className="rp-section">
+            <SectionTitle>{t("reports.takeaways")}</SectionTitle>
+            <ul className="rp-takeaways">
+              {takeaways.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
 
       {/* ── LE DÉBRIEF DE JARVIS ───────────────────────────────────────── */}
       {r.aiSummary && (
@@ -797,7 +816,7 @@ function ReportSheet({
       {/* ── LES SETUPS ─────────────────────────────────────────────────── */}
       {(r.bestSetups.length > 0 || r.worstSetups.length > 0) && (
         <section className="rp-section">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="rp-setups grid gap-4 md:grid-cols-2">
             {r.bestSetups.length > 0 && (
               <SetupList title={t("reports.bestSetups")} setups={r.bestSetups} positive />
             )}
@@ -825,21 +844,14 @@ function ReportSheet({
         </section>
       )}
 
-      {/* ── LES CONSTATS ───────────────────────────────────────────────── */}
-      {takeaways.length > 0 && (
-        <section className="rp-section">
-          <SectionTitle>{t("reports.takeaways")}</SectionTitle>
-          <ul className="rp-takeaways">
-            {takeaways.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        </section>
-      )}
-
+      {/* LE PIED — le domaine d'abord : c'est l'adresse où l'on retrouve le
+          produit quand le PDF circule hors de l'application. */}
       <div className="rp-print-only rp-paper-foot">
-        TradeVault · {monthLabel(row.month, locale)} ·{" "}
-        {inProgress ? t("reports.inProgress") : printedOn}
+        <span className="rp-paper-domain">{SITE_HOST}</span>
+        <span>
+          TradeVault · <span className="capitalize">{monthLabel(row.month, locale)}</span> ·{" "}
+          {inProgress ? t("reports.inProgress") : printedOn}
+        </span>
       </div>
     </article>
   );
