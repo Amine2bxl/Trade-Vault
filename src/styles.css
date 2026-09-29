@@ -5325,9 +5325,8 @@ a:focus-visible,
    point qui clignote dit « notification en attente », ce qui serait un
    mensonge au repos. Elle tourne, donc elle dit « ça tourne ».
 
-   Douze secondes par tour : assez lent pour qu'on ne le remarque qu'en
-   s'arrêtant dessus, assez présent pour que le bouton ne soit jamais tout à
-   fait inerte. `prefers-reduced-motion` l'immobilise sans rien supprimer.
+   Au repos l'anneau est immobile ; il tourne au survol (six secondes par
+   tour). `prefers-reduced-motion` l'immobilise sans rien supprimer.
    ═══════════════════════════════════════════════════════════════════════════ */
 .tv-jarvis-mark {
   position: relative;
@@ -5357,14 +5356,20 @@ a:focus-visible,
     transparent calc(100% - 1.5px),
     #000 calc(100% - 1.5px)
   );
-  animation: tv-jarvis-orbit 12s linear infinite;
   opacity: 0.75;
   transition: opacity var(--tv-dur-2) var(--tv-ease);
 }
-@media (hover: hover) {
+/* L'orbite ne tourne QU'AU SURVOL. Elle tournait en boucle, sur chaque page :
+   une animation infinie sur un pseudo-élément masqué, logé dans une bulle
+   fixe en `backdrop-filter`. Mesuré au défilement mobile : un recalcul de
+   style à chaque trame (~60/s) sur toutes les pages, et sur iOS le verre de
+   la bulle se recompose à chaque trame par-dessus le contenu qui défile —
+   du travail GPU permanent pour un ornement. Au repos, l'anneau ouvert
+   reste dessiné : le bouton garde sa signature sans rien faire tourner. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .tv-jarvis-dock:hover .tv-jarvis-mark::after {
     opacity: 1;
-    animation-duration: 6s;
+    animation: tv-jarvis-orbit 6s linear infinite;
   }
 }
 /* Ouvert, l'orbite s'efface : la fenêtre est là, le bouton n'a plus à faire
@@ -5376,11 +5381,6 @@ a:focus-visible,
 @keyframes tv-jarvis-orbit {
   to {
     transform: rotate(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-jarvis-mark::after {
-    animation: none;
   }
 }
 
@@ -5942,7 +5942,6 @@ body::after {
     animation: fade-in-up 260ms var(--tv-ease) both;
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════════════════
    LE CALENDRIER DU JOURNAL — d'après la référence visuelle fournie
