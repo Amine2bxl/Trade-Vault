@@ -197,3 +197,17 @@ describe("routeur", () => {
     expect(res.text).toBe("Réponse réelle");
   });
 });
+
+describe("Jarvis connaît la date du jour", () => {
+  test("« ce mois-ci » est borné par la date locale du trader, pas par celle du modèle", async () => {
+    const { dateRule } = await import("../src/modules/ai/agents/coach.agent");
+    const r = dateRule("2026-09-29");
+    expect(r).toContain("Tuesday 2026-09-29");
+    expect(r).toContain("September 2026, from 2026-09-01 to 2026-09-29");
+    expect(r).toContain("Monday 2026-09-28");
+  });
+  test("une date invalide retombe sur la date du serveur", async () => {
+    const { dateRule } = await import("../src/modules/ai/agents/coach.agent");
+    expect(dateRule("n'importe quoi")).toMatch(/TODAY is \w+ \d{4}-\d{2}-\d{2}/);
+  });
+});

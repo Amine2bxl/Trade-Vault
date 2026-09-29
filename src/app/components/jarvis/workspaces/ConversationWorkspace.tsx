@@ -757,7 +757,15 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       const run = async (): Promise<JarvisResult> => {
         const call = () =>
           askCoach({
-            data: { ...payload, question: query.slice(0, 500), accountId, currency: getCurrency() },
+            data: {
+              ...payload,
+              question: query.slice(0, 500),
+              accountId,
+              currency: getCurrency(),
+              // La date LOCALE : le serveur tourne en UTC, et le modèle ne
+              // connaît pas le jour qu'il est.
+              today: todayLocalDate(),
+            },
           });
         let res;
         try {

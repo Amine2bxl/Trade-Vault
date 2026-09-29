@@ -28,6 +28,11 @@ const CoachAskShape = z.object({
   language: z.string().min(2).max(8).optional(),
   /** Devise du journal (ISO 4217) — Jarvis écrit ses montants dans celle-ci. */
   currency: z.string().length(3).optional(),
+  /** La date civile LOCALE du trader (YYYY-MM-DD) : « aujourd'hui », « ce mois-ci ». */
+  today: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   /**
    * Le sous-compte que le trader regarde. Il ne sert PAS à filtrer le contexte
    * poussé (le client l'a déjà filtré) : il cloisonne les OUTILS, qui lisent la
@@ -176,6 +181,10 @@ function parseCoachAsk(input: unknown) {
     language: str(raw.language, 8),
     currency:
       typeof raw.currency === "string" && raw.currency.length === 3 ? raw.currency : undefined,
+    today:
+      typeof raw.today === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.today)
+        ? raw.today
+        : undefined,
     accountId: str(raw.accountId, 64),
     conversation,
   });

@@ -1,3 +1,4 @@
+import { todayLocalDate } from "@/shared/calendar-date";
 import { currencySymbol, formatMoney, parseCurrency } from "@/shared/currency";
 /**
  * AI Coach — agent V1.
@@ -30,6 +31,8 @@ export interface CoachInput {
   language?: string;
   /** ISO 4217 currency of the journal — every amount is written in it. */
   currency?: string;
+  /** The trader's LOCAL civil date (YYYY-MM-DD). Absent: the server's date. */
+  today?: string;
   /** Precomputed stats snapshot (deterministic, from the engines). */
   stats?: Record<string, number | string | null>;
   /** Compact recent trades. */
@@ -138,6 +141,31 @@ export function coachIdentity(lang: string): string {
     `8. When the data is too thin to support a claim, say exactly what is missing ` +
     `rather than padding with generic advice.\n\n` +
     `Write the ENTIRE written response in ${lang}.`
+  );
+}
+
+/**
+ * LA DATE DU JOUR — sans elle, « ce mois-ci » était une supposition.
+ *
+ * Le prompt ne disait jamais quel jour on était. Interrogé sur « mon taux de
+ * réussite ce mois-ci », le modèle prenait le mois de sa propre date
+ * d'entraînement (vérifié en E2E : « ce mois-ci (novembre 2025) » un
+ * 29 septembre 2026) et citait le mauvais chiffre. La date civile LOCALE du
+ * trader est donc posée en tête, avec les bornes des périodes relatives, pour
+ * que les outils soient appelés sur la bonne fenêtre.
+ */
+export function dateRule(today?: string): string {
+  const iso = today && /^\d{4}-\d{2}-\d{2}$/.test(today) ? today : todayLocalDate();
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d, 12);
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  const month = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const monday = new Date(y, m - 1, d - ((date.getDay() + 6) % 7), 12);
+  return (
+    `TODAY is ${weekday} ${iso} (the trader's local date). "This month" means ${month}, ` +
+    `from ${iso.slice(0, 8)}01 to ${iso}; "this week" starts on Monday ${todayLocalDate(monday)}; ` +
+    `"today" is ${iso}. Resolve every relative period from this date — never from ` +
+    `your own knowledge of the current date — and name the period you used.`
   );
 }
 
@@ -259,6 +287,7 @@ export function buildCoachMessages(input: CoachInput, opts: BuildOptions = {}) {
   return buildPrompt({
     identity: [
       coachIdentity(lang),
+      dateRule(input.today),
       currencyRule,
       ANTI_HALLUCINATION,
       ...(opts.tools ? [TOOL_PROTOCOL] : []),
